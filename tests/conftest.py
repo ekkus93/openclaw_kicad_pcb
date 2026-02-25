@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import uuid
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -45,7 +46,7 @@ _HOME_TMP_BASE = Path.home() / "tmp" / "kicad-tests"
 
 
 @pytest.fixture()
-def home_tmp() -> Path:
+def home_tmp() -> Generator[Path, None, None]:
     """Return a unique temp dir under ~/ (accessible to Flatpak kicad-cli)."""
     run_dir = _HOME_TMP_BASE / str(uuid.uuid4())
     run_dir.mkdir(parents=True, exist_ok=True)
