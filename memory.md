@@ -1,6 +1,24 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T04:27:38Z_
+_Last updated: 2026-02-25T16:45:00Z_
+
+---
+
+## 2026-02-25T16:45:00Z — Lint clean pass (ruff + mypy)
+
+- ruff auto-fixed 53 violations (F401, F541, UP006, UP045, I001)
+- Manual fixed 33 remaining violations:
+  - PTH123 (8x): `open()` → `Path.open()` throughout kicad_pcb.py
+  - PLW1510 (6x): added `check=False` to all `subprocess.run` calls
+  - PLC0415 (1x): `import cairosvg` noqa (intentional optional dep)
+  - PTH105/PTH108/SIM105: refactored `_atomic_write` cleanup to use `Path.replace/unlink` + `contextlib.suppress`
+  - PLR0912 (2x): `#noqa` on `cmd_auto_route` and `cmd_doctor`
+  - PLR0915 (1x): `#noqa` on `def main()`
+  - E501 (4x): wrapped long lines in cmd_doctor print, p_conn.add_argument, p_nl subparser, Freerouting subprocess args
+  - Tests: moved inner imports (`sys`, `os`, `re`) to top level; combined nested `with` (SIM117×2); replaced try/except/pass with `contextlib.suppress` (SIM105)
+- mypy: clean pass (exit 0, no errors); 3 annotation-unchecked notes (expected)
+- All 45 tests pass
+- Committed as `b7645fc` — "tidy: ruff + mypy clean pass (PTH, SIM, PLW, PLC, E501)"
 
 ---
 
