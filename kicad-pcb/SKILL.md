@@ -92,7 +92,7 @@ python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote -
 
 | Command | Description |
 |---------|-------------|
-| `import-netlist` | Import schematic to PCB |
+| `import-netlist` | Export netlist from schematic and report components ready for PCB layout |
 | `auto-place` | Auto-place components |
 | `auto-route` | Auto-route traces |
 | `set-board-size <W>x<H>` | Set board dimensions (mm) |
@@ -236,6 +236,16 @@ PCBWay typical pricing (2-layer, 100x100mm, qty 5):
 ⚠️ **High Voltage Warning**: This skill does not validate electrical safety. For mains-connected circuits, consult a qualified engineer.
 
 ⚠️ **No Auto-Order (Yet)**: Cart placement requires your explicit confirmation.
+
+## File Safety
+
+All schematic (`.kicad_sch`) and PCB (`.kicad_pcb`) write operations include a
+basic S-expression syntax check before committing to disk. If the generated
+output fails the balanced-parentheses or root-node check, the write is aborted
+and the original file is left untouched. A `ParseError` is raised describing
+the failure.
+
+---
 
 ## Changelog
 

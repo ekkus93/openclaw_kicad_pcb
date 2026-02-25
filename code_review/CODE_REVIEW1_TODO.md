@@ -44,9 +44,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
   - [x] Fix `connect` docs to reflect `--from X,Y --to X,Y` (matches implementation).
   - [x] Fix `add-net` docs to reflect actual args/options (`NAME [--x X] [--y Y]`).
   - [x] Remove unsupported examples/options (e.g. `preview-pcb --layers` not shown).
-  - [ ] Clarify behavior of `import-netlist` — SKILL.md still says "Import schematic to PCB" but actual behavior is "Export netlist and report components for PCB".
+  - [x] Clarify behavior of `import-netlist` — updated to "Export netlist from schematic and report components ready for PCB layout".
 - [x] Add examples that actually work with the current CLI syntax (Quick Start section).
-- [ ] Add a note that strict validation may reject writes on malformed output (after implemented).
+- [x] Add a note that strict validation may reject writes on malformed output — added "File Safety" section to SKILL.md.
 
 ### 1.2 Add a `doctor` command (or equivalent preflight check)
 - [x] Implement `doctor` command to print environment checks:
@@ -431,7 +431,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [ ] All mutating commands use transactional write + validation pipeline — `cmd_new` still uses direct writes for new file creation.
 - [ ] Syntax + structural linting implemented and enabled by default — only basic sexp balance/root check exists; no structural lint framework.
 - [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — not integrated into mutation pipeline.
-- [x] `SKILL.md` mostly matches actual command behavior — minor: `import-netlist` description still misleading.
+- [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
 - [ ] Unit tests cover parser/serializer and core mutations — no S-expr parser yet.
 - [x] Regression fixtures for known-bad cases (`tests/fixtures/broken/` has bug1–bug4).
 
@@ -446,7 +446,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 ## Suggested Implementation Order (Copilot-Friendly)
 
-1. [x] Fix docs mismatch (`SKILL.md`) and add `doctor` — done; minor gap: `import-netlist` description.
+1. [x] Fix docs mismatch (`SKILL.md`) and add `doctor` — fully done.
 2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — done; minor gaps: `.bak` backup, `cmd_new` not using `_atomic_write`.
 3. [ ] Split CLI from services and introduce `Runner` / `KicadCliAdapter`.
 4. [ ] Implement S-expression tokenizer/parser/serializer + tests.
