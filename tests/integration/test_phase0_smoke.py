@@ -177,3 +177,135 @@ class TestFullPipeline:
         assert "(instances" in raw, (
             "Bug 4 regression: placed symbol missing (instances ...) block"
         )
+
+    def test_set_board_size_pcb_drc_runs(self) -> None:
+        """set-board-size → kicad-cli pcb drc loads and runs without hard error."""
+        self._run("new", "TestProj")
+        result = self._run("set-board-size", "50x30")
+        assert result.returncode == 0, f"set-board-size failed:\n{result.stderr}"
+
+        pcb_path = self.projects_dir / "TestProj" / "TestProj.kicad_pcb"
+        assert pcb_path.exists(), "PCB file not found after set-board-size"
+
+        drc_report = self.projects_dir / "TestProj" / "drc_report.json"
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli, "pcb", "drc",
+                "--output", str(drc_report),
+                "--format", "json",
+                str(pcb_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli pcb drc failed (exit {proc.returncode}):\n{proc.stderr}"
+        )
+        assert drc_report.exists(), "DRC report file not created"
+
+    def test_set_board_size_pcb_gerbers_export(self) -> None:
+        """set-board-size → kicad-cli pcb export gerbers produces Gerber files."""
+        self._run("new", "TestProj")
+        result = self._run("set-board-size", "50x30")
+        assert result.returncode == 0, f"set-board-size failed:\n{result.stderr}"
+
+        pcb_path = self.projects_dir / "TestProj" / "TestProj.kicad_pcb"
+        gerbers_dir = self.projects_dir / "TestProj" / "gerbers"
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli, "pcb", "export", "gerbers",
+                "--output", str(gerbers_dir),
+                str(pcb_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli pcb export gerbers failed (exit {proc.returncode}):\n{proc.stderr}"
+        )
+        gerber_files = list(gerbers_dir.glob("*.g*"))
+        assert gerber_files, f"No Gerber files produced in {gerbers_dir}"
+
+    def test_full_mini_flow_resistor_divider(self) -> None:
+        """Full flow: new → 2× add-component → set-board-size → BOM + DRC + Gerbers.
+
+        This is a resistor-divider (R1=10k, R2=4.7k).  The test verifies that
+        the complete chain of commands completes without error and that the
+        key output artifacts (netlist, BOM, DRC report, Gerber files) are all
+        produced and non-empty.
+        """
+        # --- schematic phase ---
+        assert self._run("new", "TestProj").returncode == 0
+        assert self._run("add-component", "Device:R", "R1", "--value", "10k").returncode == 0
+        assert self._run("add-component", "Device:R", "R2", "--value", "4.7k").returncode == 0
+
+        sch_path = self.projects_dir / "TestProj" / "TestProj.kicad_sch"
+        pcb_path = self.projects_dir / "TestProj" / "TestProj.kicad_pcb"
+        assert sch_path.exists()
+        assert pcb_path.exists()
+
+        # BOM must list both components
+        bom_result = self._run("export-bom")
+        assert bom_result.returncode == 0, f"export-bom failed:\n{bom_result.stderr}"
+        bom_output = bom_result.stdout + bom_result.stderr
+        assert "R1" in bom_output and "R2" in bom_output, (
+            f"BOM missing R1/R2:\n{bom_output}"
+        )
+
+        # --- PCB phase ---
+        board_result = self._run("set-board-size", "50x30")
+        assert board_result.returncode == 0, f"set-board-size failed:\n{board_result.stderr}"
+
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+
+        # kicad-cli must load and export netlist from schematic
+        netlist_path = self.projects_dir / "TestProj" / "TestProj.xml"
+        net_proc = subprocess.run(
+            [
+                kicad_cli, "sch", "export", "netlist",
+                "--format", "kicadsexpr",
+                "--output", str(netlist_path),
+                str(sch_path),
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        assert net_proc.returncode == 0, (
+            f"Netlist export failed (exit {net_proc.returncode}):\n{net_proc.stderr}"
+        )
+        assert '(ref "R1")' in netlist_path.read_text() or "(ref R1)" in netlist_path.read_text()
+        assert '(ref "R2")' in netlist_path.read_text() or "(ref R2)" in netlist_path.read_text()
+
+        # kicad-cli DRC must run without hard error (violations allowed, crash not)
+        drc_path = self.projects_dir / "TestProj" / "drc_report.json"
+        drc_proc = subprocess.run(
+            [
+                kicad_cli, "pcb", "drc",
+                "--output", str(drc_path),
+                "--format", "json",
+                str(pcb_path),
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        assert drc_proc.returncode == 0, (
+            f"kicad-cli pcb drc crashed (exit {drc_proc.returncode}):\n{drc_proc.stderr}"
+        )
+        assert drc_path.exists(), "DRC report not created"
+
+        # Gerber export must succeed and produce files
+        gerbers_dir = self.projects_dir / "TestProj" / "gerbers"
+        ger_proc = subprocess.run(
+            [
+                kicad_cli, "pcb", "export", "gerbers",
+                "--output", str(gerbers_dir),
+                str(pcb_path),
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        assert ger_proc.returncode == 0, (
+            f"Gerber export failed (exit {ger_proc.returncode}):\n{ger_proc.stderr}"
+        )
+        assert list(gerbers_dir.glob("*.g*")), "No Gerber files produced"
