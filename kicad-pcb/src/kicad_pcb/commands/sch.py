@@ -1,8 +1,13 @@
 """Schematic editing commands: add-component, add-net, connect.
 
-All structural modifications to ``.kicad_sch`` files are performed through
-:class:`~kicad_pcb.sch_doc.SchematicDoc`, which operates on the S-expression
-AST rather than regex/string splicing.
+All structural modifications to ``.kicad_sch`` files go through
+:func:`~kicad_pcb.pipeline.mutate_and_validate_sch`, which:
+
+1. Loads the file into an AST-backed :class:`~kicad_pcb.sch_doc.SchematicDoc`.
+2. Applies the mutation via a closure.
+3. Round-trip serialises and re-parses the result (syntax check).
+4. Runs structural lint rules (SCH001–SCH009).
+5. Commits atomically only when all checks pass.
 """
 from __future__ import annotations
 
@@ -12,6 +17,7 @@ from ..config import get_current_project
 from ..errors import UserError
 from ..fs import _new_uuid
 from ..models import ComponentSpec, NetLabelSpec, WireSegment
+from ..pipeline import mutate_and_validate_sch
 from ..results import AddComponentResult, AddNetResult, ConnectResult
 from ..sch_doc import SchematicDoc, read_lib_symbol_def, read_lib_symbol_pins
 
@@ -48,34 +54,37 @@ def cmd_add_component(args) -> AddComponentResult:
         print("   Using default pins [1, 2]. Edit footprint assignment in KiCad.")
         pin_nums = ["1", "2"]
 
-    doc = SchematicDoc.load(sch_file)
-    x, y = doc.next_component_position()
-    sym_uuid = _new_uuid()
-    pin_uuids = [_new_uuid() for _ in pin_nums]
-
-    doc.add_symbol(
-        spec.lib_sym, spec.ref, spec.value, spec.footprint,
-        x, y, sym_uuid, pin_nums, pin_uuids, project.name,
-    )
-
-    # Embed the symbol definition so kicad-cli can generate library part info
-    # for netlist/BOM export.  read_lib_symbol_def uses AST-based extraction,
-    # stripping (id N) and using short sub-symbol names (e.g. "R_0_1", not
-    # "Device:R_0_1") for KiCad compatibility.
+    # Load the symbol definition before the pipeline so we can embed it.
+    # read_lib_symbol_def uses AST-based extraction, stripping (id N) and
+    # using short sub-symbol names (e.g. "R_0_1") for KiCad compatibility.
     sym_def = read_lib_symbol_def(
         spec.lib_name, spec.sym_name, symbols_dir=KICAD_SYMBOLS_DIR
     )
-    if sym_def is not None:
-        doc.embed_lib_symbol(sym_def)
 
-    doc.save(sch_file)
+    # Capture placement coordinates from inside the closure.
+    _placed: dict[str, object] = {}
+
+    def _mutate(doc: SchematicDoc) -> None:
+        x, y = doc.next_component_position()
+        sym_uuid = _new_uuid()
+        pin_uuids = [_new_uuid() for _ in pin_nums]
+        doc.add_symbol(
+            spec.lib_sym, spec.ref, spec.value, spec.footprint,
+            x, y, sym_uuid, pin_nums, pin_uuids, project.name,
+        )
+        if sym_def is not None:
+            doc.embed_lib_symbol(sym_def)
+        _placed["x"] = x
+        _placed["y"] = y
+
+    mutate_and_validate_sch(sch_file, _mutate, operation="add-component")
 
     return AddComponentResult(
         ref=spec.ref,
         lib_sym=spec.lib_sym,
         value=spec.value,
-        x=x,
-        y=y,
+        x=float(_placed["x"]),  # type: ignore[arg-type]
+        y=float(_placed["y"]),  # type: ignore[arg-type]
         pins=tuple(pin_nums),
         has_footprint=bool(spec.footprint),
     )
@@ -96,9 +105,12 @@ def cmd_add_net(args) -> AddNetResult:
         raise UserError(f"Schematic not found: {sch_file}")
 
     label = NetLabelSpec.from_args(args)
-    doc = SchematicDoc.load(sch_file)
-    doc.add_label(label.name, label.x, label.y, _new_uuid())
-    doc.save(sch_file)
+    uuid = _new_uuid()
+
+    def _mutate(doc: SchematicDoc) -> None:
+        doc.add_label(label.name, label.x, label.y, uuid)
+
+    mutate_and_validate_sch(sch_file, _mutate, operation="add-net")
     return AddNetResult(name=label.name, x=label.x, y=label.y)
 
 
@@ -119,7 +131,10 @@ def cmd_connect(args) -> ConnectResult:
         raise UserError(f"Schematic not found: {sch_file}")
 
     wire = WireSegment.from_args(args)
-    doc = SchematicDoc.load(sch_file)
-    doc.add_wire(wire.x1, wire.y1, wire.x2, wire.y2, _new_uuid())
-    doc.save(sch_file)
+    uuid = _new_uuid()
+
+    def _mutate(doc: SchematicDoc) -> None:
+        doc.add_wire(wire.x1, wire.y1, wire.x2, wire.y2, uuid)
+
+    mutate_and_validate_sch(sch_file, _mutate, operation="connect")
     return ConnectResult(x1=wire.x1, y1=wire.y1, x2=wire.x2, y2=wire.y2)

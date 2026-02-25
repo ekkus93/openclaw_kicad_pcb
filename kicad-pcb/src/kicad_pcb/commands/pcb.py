@@ -11,6 +11,7 @@ from ..config import get_current_project
 from ..errors import ToolError, UserError
 from ..models import BoardOutlineRect, FootprintMoveSpec
 from ..pcb_doc import PcbDoc
+from ..pipeline import mutate_and_validate_pcb
 from ..results import AutoPlaceResult, AutoRouteResult, ImportNetlistResult, SetBoardSizeResult
 from ..runner import KICAD_CLI, check_kicad
 
@@ -30,10 +31,11 @@ def cmd_set_board_size(args) -> SetBoardSizeResult:
         raise UserError(f"PCB file not found: {pcb_file}")
 
     outline = BoardOutlineRect.from_args(args)
-    doc = PcbDoc.load(pcb_file)
-    doc.set_rect_outline(outline.width, outline.height)
-    doc.save(pcb_file)
 
+    def _mutate(doc: PcbDoc) -> None:
+        doc.set_rect_outline(outline.width, outline.height)
+
+    mutate_and_validate_pcb(pcb_file, _mutate, operation="set-board-size")
     return SetBoardSizeResult(
         width=outline.width, height=outline.height, pcb_file_name=pcb_file.name
     )
@@ -101,21 +103,22 @@ def cmd_auto_place(args) -> AutoPlaceResult:
             "   Add components to the schematic, then run import-netlist."
         )
 
-    placed: list[FootprintMoveSpec] = []
+    placements: list[FootprintMoveSpec] = []
     col_size = 5
     col_width = spacing * 3
-
     for idx, (ref, _node) in enumerate(footprints):
         col = idx // col_size
         row = idx % col_size
         nx = 10.0 + col * col_width
         ny = 10.0 + row * spacing
-        doc.move_footprint(ref, nx, ny)
-        placed.append(FootprintMoveSpec(ref=ref, x=nx, y=ny))
+        placements.append(FootprintMoveSpec(ref=ref, x=nx, y=ny))
 
-    doc.save(pcb_file)
+    def _mutate(doc: PcbDoc) -> None:
+        for spec in placements:
+            doc.move_footprint(spec.ref, spec.x, spec.y)
 
-    return AutoPlaceResult(placed=tuple(placed), spacing=spacing)
+    mutate_and_validate_pcb(pcb_file, _mutate, operation="auto-place")
+    return AutoPlaceResult(placed=tuple(placements), spacing=spacing)
 
 
 def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> AutoRouteResult:  # noqa: PLR0912
