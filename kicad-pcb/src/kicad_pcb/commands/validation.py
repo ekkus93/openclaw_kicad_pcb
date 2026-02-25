@@ -1,17 +1,22 @@
 """Design/electrical rules check commands: drc, erc."""
 from __future__ import annotations
 
-import json
-
+from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import UserError
 from ..models import ValidationResult
-from ..runner import check_kicad, run_kicad_cli
+from ..runner import KICAD_CLI, check_kicad
 
 
-def cmd_drc(args) -> None:
-    """Run design rules check on PCB."""
-    check_kicad()
+def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> None:
+    """Run design rules check on PCB.
+
+    *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`.
+    When ``None``, a default adapter using the system ``kicad-cli`` is created.
+    """
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -25,13 +30,7 @@ def cmd_drc(args) -> None:
 
     print(f"🔍 Running DRC on {pcb_file.name}...")
 
-    result = run_kicad_cli([
-        "pcb", "drc",
-        "--format", "json",
-        "--output", str(output_file),
-        "--severity-all",
-        str(pcb_file),
-    ])
+    result, report = cli.drc(pcb_file, output_file)
 
     if result.returncode != 0:
         print("⚠️  DRC completed with issues")
@@ -40,11 +39,8 @@ def cmd_drc(args) -> None:
     else:
         print("✅ DRC passed!")
 
-    # Parse and display results using typed ValidationResult
-    if output_file.exists():
-        with output_file.open() as f:
-            report = json.load(f)
-
+    # Display results using typed ValidationResult
+    if report is not None:
         validation = ValidationResult.from_report(report, result.returncode)
         if validation.issues:
             print(f"\n📋 Found {len(validation.issues)} issues:")
@@ -56,9 +52,15 @@ def cmd_drc(args) -> None:
             print("\n✅ No violations found!")
 
 
-def cmd_erc(args) -> None:
-    """Run electrical rules check on schematic."""
-    check_kicad()
+def cmd_erc(args, *, cli: KicadCliAdapter | None = None) -> None:
+    """Run electrical rules check on schematic.
+
+    *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`.
+    When ``None``, a default adapter using the system ``kicad-cli`` is created.
+    """
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -72,13 +74,7 @@ def cmd_erc(args) -> None:
 
     print(f"🔍 Running ERC on {sch_file.name}...")
 
-    result = run_kicad_cli([
-        "sch", "erc",
-        "--format", "json",
-        "--output", str(output_file),
-        "--severity-all",
-        str(sch_file),
-    ])
+    result, _ = cli.erc(sch_file, output_file)
 
     if result.returncode != 0:
         print("⚠️  ERC completed with issues")

@@ -6,6 +6,18 @@ backward compatibility after the Phase 2.1 module split.
 """
 from __future__ import annotations
 
+# Injectable adapters (Phase 2.3)
+from .adapters import (
+    FakeFs,
+    FakeRunner,
+    FsProtocol,
+    KicadCliAdapter,
+    RealFs,
+    RunnerProtocol,
+    RunResult,
+    SubprocessRunner,
+)
+
 # CLI entry-point
 from .cli import main
 
@@ -92,6 +104,15 @@ __all__ = [
     "FootprintMoveSpec",
     "LintIssue",
     "ValidationResult",
+    # adapters
+    "RunResult",
+    "RunnerProtocol",
+    "SubprocessRunner",
+    "FakeRunner",
+    "FsProtocol",
+    "RealFs",
+    "FakeFs",
+    "KicadCliAdapter",
     # config
     "CONFIG_DIR",
     "CONFIG_FILE",

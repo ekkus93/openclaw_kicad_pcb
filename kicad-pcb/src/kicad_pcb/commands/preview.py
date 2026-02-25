@@ -1,14 +1,17 @@
 """Preview generation commands: preview-schematic, preview-pcb."""
 from __future__ import annotations
 
+from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import UserError
-from ..runner import check_kicad, run_kicad_cli
+from ..runner import KICAD_CLI, check_kicad
 
 
-def cmd_preview_schematic(args) -> None:
+def cmd_preview_schematic(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Generate schematic preview image."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -22,11 +25,7 @@ def cmd_preview_schematic(args) -> None:
 
     print("🖼️  Generating schematic preview...")
 
-    result = run_kicad_cli([
-        "sch", "export", "svg",
-        "--output", str(output_file),
-        str(sch_file),
-    ])
+    result = cli.export_svg_sch(sch_file, output_file)
 
     if result.returncode == 0 and output_file.exists():
         print(f"✅ Preview saved: {output_file}")
@@ -44,9 +43,11 @@ def cmd_preview_schematic(args) -> None:
         print("❌ Preview generation failed")
 
 
-def cmd_preview_pcb(args) -> None:
+def cmd_preview_pcb(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Generate PCB preview images."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -63,21 +64,12 @@ def cmd_preview_pcb(args) -> None:
 
     for layer in layers:
         output_file = project.path / f"pcb_preview_{layer.replace('.', '_')}.svg"
-        result = run_kicad_cli([
-            "pcb", "export", "svg",
-            "--output", str(output_file),
-            "--layers", layer,
-            str(pcb_file),
-        ])
+        result = cli.export_svg_pcb(pcb_file, output_file, layer)
         if result.returncode == 0:
             print(f"   ✅ {layer}: {output_file.name}")
 
     # Try 3D export
     glb_file = project.path / "pcb_3d.glb"
-    result = run_kicad_cli([
-        "pcb", "export", "glb",
-        "--output", str(glb_file),
-        str(pcb_file),
-    ])
+    result = cli.export_glb(pcb_file, glb_file)
     if result.returncode == 0 and glb_file.exists():
         print(f"   ✅ 3D: {glb_file.name}")

@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import zipfile
 
+from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import ToolError, UserError
-from ..runner import check_kicad, run_kicad_cli
+from ..runner import KICAD_CLI, check_kicad
 
 
-def cmd_export_gerbers(args) -> None:
+def cmd_export_gerbers(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export Gerber files for manufacturing."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -21,15 +24,10 @@ def cmd_export_gerbers(args) -> None:
         raise UserError(f"PCB file not found: {pcb_file}")
 
     output_dir = project.path / "gerbers"
-    output_dir.mkdir(exist_ok=True)
 
     print("📤 Exporting Gerbers...")
 
-    result = run_kicad_cli([
-        "pcb", "export", "gerbers",
-        "--output", str(output_dir),
-        str(pcb_file),
-    ])
+    result, gerber_files = cli.export_gerbers(pcb_file, output_dir)
 
     if result.returncode != 0:
         msg = "Gerber export failed"
@@ -37,16 +35,16 @@ def cmd_export_gerbers(args) -> None:
             msg += f"\n{result.stderr}"
         raise ToolError(msg)
 
-    # Count exported files
-    gerber_files = list(output_dir.glob("*"))
     print(f"✅ Exported {len(gerber_files)} Gerber files to {output_dir}")
     for f in gerber_files:
         print(f"   {f.name}")
 
 
-def cmd_export_drill(args) -> None:
+def cmd_export_drill(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export drill files."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -54,19 +52,10 @@ def cmd_export_drill(args) -> None:
 
     pcb_file = project.pcb_file
     output_dir = project.path / "gerbers"
-    output_dir.mkdir(exist_ok=True)
 
     print("📤 Exporting drill files...")
 
-    result = run_kicad_cli([
-        "pcb", "export", "drill",
-        "--output", str(output_dir),
-        "--format", "excellon",
-        "--excellon-separate-th",
-        "--generate-map",
-        "--map-format", "pdf",
-        str(pcb_file),
-    ])
+    result = cli.export_drill(pcb_file, output_dir)
 
     if result.returncode == 0:
         print(f"✅ Drill files exported to {output_dir}")
@@ -74,9 +63,11 @@ def cmd_export_drill(args) -> None:
         print("❌ Drill export failed")
 
 
-def cmd_export_bom(args) -> None:
+def cmd_export_bom(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export bill of materials using kicad-cli."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -89,19 +80,9 @@ def cmd_export_bom(args) -> None:
     output_file = project.path / "bom.csv"
     print("📤 Exporting BOM...")
 
-    result = run_kicad_cli([
-        "sch", "export", "bom",
-        "--output", str(output_file),
-        "--fields", "Reference,Value,Footprint,${QUANTITY},Datasheet",
-        "--labels", "Refs,Value,Footprint,Qty,Datasheet",
-        "--group-by", "Value,Footprint",
-        "--sort-field", "Reference",
-        str(sch_file),
-    ])
+    result, lines = cli.export_bom(sch_file, output_file)
 
-    if result.returncode == 0 and output_file.exists():
-        with output_file.open() as f:
-            lines = f.readlines()
+    if result.returncode == 0 and lines:
         print(f"✅ BOM exported: {output_file}")
         print(f"   {max(0, len(lines) - 1)} component line(s)")
         for line in lines[:20]:
@@ -141,9 +122,11 @@ def cmd_package_for_fab(args) -> None:
     print("\n📤 Ready to upload to PCBWay!")
 
 
-def cmd_export_pos(args) -> None:
+def cmd_export_pos(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export component position (pick-and-place) file."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -156,20 +139,11 @@ def cmd_export_pos(args) -> None:
     output_file = project.path / f"{project.name}-pos.csv"
     print("📤 Exporting position file...")
 
-    result = run_kicad_cli([
-        "pcb", "export", "pos",
-        "--output", str(output_file),
-        "--format", "csv",
-        "--units", "mm",
-        "--side", "both",
-        str(pcb_file),
-    ])
+    result, lines = cli.export_pos(pcb_file, output_file)
 
     if result.returncode == 0:
         print(f"✅ Position file: {output_file}")
-        if output_file.exists():
-            lines = output_file.read_text().splitlines()
-            print(f"   {max(0, len(lines) - 1)} component(s)")
+        print(f"   {max(0, len(lines) - 1)} component(s)")
     else:
         msg = "Position export failed"
         if result.stderr:
@@ -177,9 +151,11 @@ def cmd_export_pos(args) -> None:
         raise ToolError(msg)
 
 
-def cmd_export_3d(args) -> None:
+def cmd_export_3d(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export PCB as STEP 3D model."""
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -192,16 +168,10 @@ def cmd_export_3d(args) -> None:
     output_file = project.path / f"{project.name}.step"
     print("📤 Exporting STEP 3D model...")
 
-    result = run_kicad_cli([
-        "pcb", "export", "step",
-        "--output", str(output_file),
-        "--force",
-        "--no-unspecified",
-        str(pcb_file),
-    ])
+    result, size_bytes = cli.export_step(pcb_file, output_file)
 
-    if result.returncode == 0 and output_file.exists():
-        size_kb = output_file.stat().st_size / 1024
+    if result.returncode == 0 and size_bytes > 0:
+        size_kb = size_bytes / 1024
         print(f"✅ STEP model: {output_file}")
         print(f"   Size: {size_kb:.1f} KB")
         print("   Open with FreeCAD, Fusion 360, or any STEP viewer.")

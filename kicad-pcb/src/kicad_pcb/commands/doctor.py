@@ -2,16 +2,22 @@
 from __future__ import annotations
 
 import shutil
-import subprocess
 from pathlib import Path
 
+from ..adapters import RunnerProtocol, SubprocessRunner
 from ..commands.sch import KICAD_SYMBOLS_DIR
 from ..config import CONFIG_DIR, PROJECTS_DIR, get_current_project
 from ..errors import UserError
 
 
-def cmd_doctor(args) -> None:  # noqa: PLR0912, PLR0915
-    """Check system configuration and diagnose common issues."""
+def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> None:  # noqa: PLR0912, PLR0915
+    """Check system configuration and diagnose common issues.
+
+    *runner* is an optional injectable :class:`~kicad_pcb.adapters.RunnerProtocol`
+    used for subprocess calls (kicad-cli version, java version).  When ``None``,
+    a real :class:`~kicad_pcb.adapters.SubprocessRunner` is used.
+    """
+    _runner: RunnerProtocol = runner or SubprocessRunner()
     overall_ok = True
 
     print("\U0001fa7a kicad-pcb doctor\n")
@@ -20,10 +26,7 @@ def cmd_doctor(args) -> None:  # noqa: PLR0912, PLR0915
     cli_path = shutil.which("kicad-cli")
     if cli_path:
         try:
-            r = subprocess.run(
-                [cli_path, "--version"],
-                capture_output=True, text=True, timeout=5, check=False,
-            )
+            r = _runner.run([cli_path, "--version"])
             version = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
             print(f"  \u2705 kicad-cli: {cli_path}")
             if version:
@@ -77,10 +80,7 @@ def cmd_doctor(args) -> None:  # noqa: PLR0912, PLR0915
     java_path = shutil.which("java")
     if java_path:
         try:
-            r = subprocess.run(
-                [java_path, "-version"],
-                capture_output=True, text=True, timeout=5, check=False,
-            )
+            r = _runner.run([java_path, "-version"])
             version_line = (r.stderr.strip() or r.stdout.strip()).splitlines()[0]
             print(f"  \u2705 java: {java_path}")
             if version_line:
