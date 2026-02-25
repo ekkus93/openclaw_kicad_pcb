@@ -1,8 +1,8 @@
 ---
 name: kicad-pcb
 version: 1.0.0
-description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline.
-author: PaxSwarm
+description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline. Based on kicad-pcb by PaxSwarm.
+author: Phillip Chin
 license: MIT
 keywords: [pcb, kicad, electronics, gerber, schematic, circuit, pcbway, manufacturing, hardware]
 triggers: ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbway", "electronics project"]
