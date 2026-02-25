@@ -1,8 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T18:30:00Z_
+_Last updated: 2026-02-25T20:00:00Z_
 
 ---
+
+## 2026-02-25T20:00:00Z — Phase 2.2: typed domain models
+
+- Added `kicad-pcb/src/kicad_pcb/models.py` with 8 frozen dataclasses:
+  - `ProjectRef` — typed project reference (replaces raw dict); file-path properties `.sch_file`, `.pcb_file`, `.pro_file`; `from_dict`/`to_dict` for JSON compat
+  - `ComponentSpec` — lib_sym/ref/value/footprint; `.lib_name`/`.sym_name` properties; `from_args()` factory
+  - `WireSegment` — x1/y1/x2/y2 coordinates; `from_args()` factory parses `--from X,Y --to X,Y`
+  - `NetLabelSpec` — name/x/y; `from_args()` factory with coordinate defaults (50.8)
+  - `BoardOutlineRect` — width/height; `from_args()` factory parses `WxH`; `.corners` property
+  - `FootprintMoveSpec` — ref/x/y for auto-place results
+  - `LintIssue` — severity/description; `from_dict()` factory for DRC/ERC JSON entries
+  - `ValidationResult` — passed/issues; `from_report()` factory; `.error_count`/`.warning_count`
+- `config.get_current_project()` now returns `ProjectRef | None` (was `dict | None`)
+- `config.set_current_project()` accepts `ProjectRef` (calls `.to_dict()` before JSON write)
+- All 10 command modules updated: `project["name"]`/`project["path"]` → `project.name`/`project.path`/`project.sch_file`/`project.pcb_file`; `Path(project["path"])` constructors removed
+- `validation.cmd_drc` uses `ValidationResult.from_report()` to display typed issues
+- 31 new unit tests in `tests/unit/test_models.py`
+- Committed `44030f8` — 80/80 tests pass; ruff 0; mypy 0 errors in 16 files
 
 ## 2026-02-25T18:30:00Z — Phase 2.1: module split (Tidy First)
 

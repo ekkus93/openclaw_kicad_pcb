@@ -105,16 +105,17 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - Committed `01809c6` — 49/49 tests, ruff 0, mypy 0 errors in 15 files.
 
 ### 2.2 Introduce typed domain models
-- [ ] Create dataclasses (or Pydantic models if preferred) for domain objects:
-  - [ ] `ProjectRef`
-  - [ ] `ComponentSpec`
-  - [ ] `WireSegment`
-  - [ ] `NetLabelSpec`
-  - [ ] `BoardOutlineRect`
-  - [ ] `FootprintMoveSpec`
-  - [ ] `LintIssue`
-  - [ ] `ValidationResult`
-- [ ] Move argument normalization/parsing into model constructors or parser helpers.
+- [x] Create dataclasses (or Pydantic models if preferred) for domain objects:
+  - [x] `ProjectRef`
+  - [x] `ComponentSpec`
+  - [x] `WireSegment`
+  - [x] `NetLabelSpec`
+  - [x] `BoardOutlineRect`
+  - [x] `FootprintMoveSpec`
+  - [x] `LintIssue`
+  - [x] `ValidationResult`
+- [x] Move argument normalization/parsing into model constructors or parser helpers.
+- Committed `44030f8` — 80/80 tests, ruff 0, mypy 0 errors in 16 files.
 
 ### 2.3 Isolate side effects behind injectable adapters
 - [ ] Introduce filesystem helper interface/utilities for read/write/list operations.
