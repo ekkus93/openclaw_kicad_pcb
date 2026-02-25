@@ -1,6 +1,30 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T20:00:00Z_
+_Last updated: 2026-02-25T21:30:00Z_
+
+---
+
+## 2026-02-25T21:30:00Z — Phase 2.3: injectable adapters
+
+- Added `kicad-pcb/src/kicad_pcb/adapters.py` with:
+  - `RunResult(returncode, stdout, stderr)` — frozen dataclass replacing `CompletedProcess`; `.ok` property, `.output_text()` helper
+  - `RunnerProtocol` — `@runtime_checkable` Protocol with `run(cmd, *, capture) -> RunResult`
+  - `SubprocessRunner` — real implementation delegating to `subprocess.run`
+  - `FakeRunner` — configurable test fake; maps `"pcb drc"`/`"sch erc"`/etc. keys → `RunResult`; records calls in `.calls`
+  - `FsProtocol` — `@runtime_checkable` Protocol with `read_text/write_text/exists/mkdir/glob/iterdir/unlink/stat_size`
+  - `RealFs` — thin delegate to `pathlib.Path`
+  - `FakeFs` — in-memory filesystem; pre-loaded from `files` dict + `dirs` set; supports `glob` via `fnmatch`
+  - `KicadCliAdapter` — typed wrapper for all kicad-cli sub-commands; injected `runner` + `fs`; methods: `version`, `drc`, `erc`, `export_gerbers`, `export_drill`, `export_bom`, `export_netlist`, `export_pos`, `export_step`, `export_svg_sch`, `export_svg_pcb`, `export_glb`, `export_specctra_dsn`, `import_specctra_ses`
+- Updated `runner.py`: `run_kicad_cli()` now returns `RunResult` (via `SubprocessRunner`); old `subprocess.CompletedProcess[str]` removed; backward-compat preserved (all callers unchanged)
+- Updated 5 command modules to accept optional injected `KicadCliAdapter`:
+  - `commands/validation.py`: `cmd_drc(args, *, cli=None)`, `cmd_erc(args, *, cli=None)`
+  - `commands/export.py`: all 5 kicad-cli-using commands accept `cli=None` kwarg
+  - `commands/preview.py`: `cmd_preview_schematic`, `cmd_preview_pcb` accept `cli=None`
+  - `commands/pcb.py`: `cmd_import_netlist`, `cmd_auto_route` accept `cli=None`
+  - `commands/doctor.py`: `cmd_doctor(args, *, runner=None)` — injects `RunnerProtocol` for `kicad-cli --version` + `java -version` subprocess calls; `subprocess` import removed
+- Updated `__init__.py` to export all 8 adapter symbols
+- 70 new unit tests in `tests/unit/test_adapters.py`
+- Committed TBD — 150/150 tests pass; ruff 0; mypy 0 errors in 17 files
 
 ---
 
