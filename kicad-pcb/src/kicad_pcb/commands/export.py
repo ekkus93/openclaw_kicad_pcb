@@ -14,14 +14,14 @@ from ..results import (
     ExportPosResult,
     PackageFabResult,
 )
-from ..runner import KICAD_CLI, check_kicad
+from ..runner import check_kicad, find_kicad_cli
 
 
 def cmd_export_gerbers(args, *, cli: KicadCliAdapter | None = None) -> ExportGerbersResult:
     """Export Gerber files for manufacturing."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -48,7 +48,7 @@ def cmd_export_drill(args, *, cli: KicadCliAdapter | None = None) -> ExportDrill
     """Export drill files."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -68,7 +68,7 @@ def cmd_export_bom(args, *, cli: KicadCliAdapter | None = None) -> ExportBomResu
     """Export bill of materials using kicad-cli."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -116,7 +116,7 @@ def cmd_export_pos(args, *, cli: KicadCliAdapter | None = None) -> ExportPosResu
     """Export component position (pick-and-place) file."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -145,7 +145,7 @@ def cmd_export_3d(args, *, cli: KicadCliAdapter | None = None) -> Export3dResult
     """Export PCB as STEP 3D model."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:

@@ -13,7 +13,7 @@ from ..models import BoardOutlineRect, FootprintMoveSpec
 from ..pcb_doc import PcbDoc
 from ..pipeline import mutate_and_validate_pcb
 from ..results import AutoPlaceResult, AutoRouteResult, ImportNetlistResult, SetBoardSizeResult
-from ..runner import KICAD_CLI, check_kicad
+from ..runner import check_kicad, find_kicad_cli
 
 
 def cmd_set_board_size(args) -> SetBoardSizeResult:
@@ -54,7 +54,7 @@ def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> ImportNet
     """
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -136,7 +136,7 @@ def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> AutoRouteResu
     """
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:

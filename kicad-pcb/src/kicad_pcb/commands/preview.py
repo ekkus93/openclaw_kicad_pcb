@@ -7,14 +7,14 @@ from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import ToolError, UserError
 from ..results import PreviewPcbResult, PreviewSchematicResult
-from ..runner import KICAD_CLI, check_kicad
+from ..runner import check_kicad, find_kicad_cli
 
 
 def cmd_preview_schematic(args, *, cli: KicadCliAdapter | None = None) -> PreviewSchematicResult:
     """Generate schematic preview image."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -49,7 +49,7 @@ def cmd_preview_pcb(args, *, cli: KicadCliAdapter | None = None) -> PreviewPcbRe
     """Generate PCB preview images."""
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:

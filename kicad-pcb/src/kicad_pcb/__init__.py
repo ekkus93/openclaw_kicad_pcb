@@ -140,7 +140,7 @@ from .results import (
 )
 
 # CLI runner
-from .runner import KICAD_CLI, check_kicad, run_kicad_cli
+from .runner import KICAD_CLI, check_kicad, find_kicad_cli, run_kicad_cli
 
 # KiCad document wrappers (Phase 4)
 from .sch_doc import (
@@ -227,6 +227,7 @@ __all__ = [
     # runner
     "KICAD_CLI",
     "check_kicad",
+    "find_kicad_cli",
     "run_kicad_cli",
     # fs
     "_check_sexp",

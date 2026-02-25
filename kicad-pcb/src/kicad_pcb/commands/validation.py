@@ -6,7 +6,7 @@ from ..config import get_current_project
 from ..errors import UserError
 from ..models import ValidationResult
 from ..results import DrcResult, ErcResult
-from ..runner import KICAD_CLI, check_kicad
+from ..runner import check_kicad, find_kicad_cli
 
 
 def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> DrcResult:
@@ -17,7 +17,7 @@ def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> DrcResult:
     """
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
@@ -47,7 +47,7 @@ def cmd_erc(args, *, cli: KicadCliAdapter | None = None) -> ErcResult:
     """
     if cli is None:
         check_kicad()
-        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
+        cli = KicadCliAdapter(kicad_cli=find_kicad_cli())
 
     project = get_current_project()
     if not project:
