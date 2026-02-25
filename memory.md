@@ -1,6 +1,35 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T20:25:00Z_
+_Last updated: 2026-02-25T21:15:00Z_
+
+---
+
+## 2026-02-25T21:15:00Z — Phase 8.2: Symbol library path discovery (commit 00c4689)
+
+### Summary
+Replaces hardcoded `/usr/share/kicad/symbols` with a runtime discovery chain.
+
+### New: `config.py` additions
+- `SYMBOLS_CANDIDATES` — 7 platform paths (Linux system, local, user, Flatpak 7/8/9, macOS)
+- `SymbolsDir(path, source)` — frozen dataclass, `source` describes how path was found
+- `discover_symbols_dir(*, explicit=None)` — priority: explicit > `KICAD_SYMBOLS_DIR` env > `config.json` `symbols_dir` key > platform candidates; returns `SymbolsDir | None`
+- `get_symbols_dir_config()` / `set_symbols_dir_config(path)` — read/write config.json key
+
+### Modified: `sch.py`
+- `cmd_add_component` calls `discover_symbols_dir(explicit=args.symbols_dir)` at call time
+- `KICAD_SYMBOLS_DIR` constant retained as fallback for backward compat
+
+### Modified: `cli.py`
+- `add-component` subcommand gains `--symbols-dir PATH` option
+
+### Modified: `doctor.py`
+- Symbols check uses `discover_symbols_dir()` instead of hardcoded path
+- Detail shows discovery source in brackets, e.g. `3 libs  [env:KICAD_SYMBOLS_DIR]`
+- Error message when nothing found: "set KICAD_SYMBOLS_DIR or symbols_dir in config"
+
+### Tests
+- `tests/unit/test_symbols_discovery.py` — 28 new tests covering all priority levels
+- Total: 731 unit tests passing
 
 ---
 
