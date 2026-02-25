@@ -118,10 +118,11 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - Committed `44030f8` — 80/80 tests, ruff 0, mypy 0 errors in 16 files.
 
 ### 2.3 Isolate side effects behind injectable adapters
-- [ ] Introduce filesystem helper interface/utilities for read/write/list operations.
-- [ ] Introduce subprocess runner wrapper (`Runner`) with typed results.
-- [ ] Introduce `KicadCliAdapter` with typed methods (ERC/DRC/exports/etc.).
-- [ ] Inject runner/fs adapters into services for unit testing.
+- [x] Introduce filesystem helper interface/utilities for read/write/list operations.
+- [x] Introduce subprocess runner wrapper (`Runner`) with typed results.
+- [x] Introduce `KicadCliAdapter` with typed methods (ERC/DRC/exports/etc.).
+- [x] Inject runner/fs adapters into services for unit testing.
+- Committed `TBD` — 150/150 tests, ruff 0, mypy 0 errors in 17 files.
 
 ### 2.4 Separate CLI presentation from business logic
 - [ ] Refactor command handlers so they return structured results instead of printing directly.
@@ -458,7 +459,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 1. [x] Fix docs mismatch (`SKILL.md`) and add `doctor` — fully done.
 2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — fully done (`.bak` backup added, `cmd_new` uses `_atomic_write`).
 3. [x] Split monolithic script into `src/kicad_pcb/` package (Phase 2.1) — fully done (`01809c6`).
-4. [ ] Introduce typed domain models + injectable Runner / KicadCliAdapter (Phases 2.2–2.3).
+4. [x] Introduce typed domain models + injectable Runner / KicadCliAdapter (Phases 2.2–2.3).
 5. [ ] Implement S-expression tokenizer/parser/serializer + tests (Phase 3).
 6. [ ] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
 7. [ ] Add lint framework + key schematic/PCB lints (Phase 5).
