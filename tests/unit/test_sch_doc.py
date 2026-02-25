@@ -82,6 +82,10 @@ MINIMAL_LIB_SYM_WITH_ID = """\
 (kicad_symbol_lib (version 20230121) (generator test)
   (symbol "R"
     (id 0)
+    (property "Reference" "R" (id 0)
+      (at 2.032 0 90)
+      (effects (font (size 1.27 1.27)))
+    )
     (symbol "R_1_1"
       (pin passive passive (at 0 2.54 270) (length 1.27)
         (name "~" (effects (font (size 1.27 1.27))))

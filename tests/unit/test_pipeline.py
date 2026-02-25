@@ -347,7 +347,9 @@ class TestMutateSchKicadMode:
         """mode=LINT (< KICAD) must never call the CLI adapter, even if one is provided."""
         failing_cli = _FakeCli(erc_response=(RunResult(1, "", "should not be called"), None))
         # Should write OK — CLI is not reached at LINT level.
-        mutate_and_validate_sch(sch_file, lambda doc: None, mode=ValidationMode.LINT, cli=failing_cli)  # type: ignore[arg-type]
+        mutate_and_validate_sch(  # type: ignore[arg-type]
+            sch_file, lambda doc: None, mode=ValidationMode.LINT, cli=failing_cli
+        )
         assert sch_file.exists()
         assert failing_cli.erc_call_count == 0
 
@@ -469,7 +471,9 @@ class TestMutatePcbKicadMode:
     def test_passes_when_cli_returns_ok(self, pcb_file_with_outline: Path) -> None:
         """mode=KICAD with a passing CLI stub must commit the file."""
         cli = _FakeCli(drc_response=(RunResult(0, "", ""), None))
-        mutate_and_validate_pcb(pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli)  # type: ignore[arg-type]
+        mutate_and_validate_pcb(  # type: ignore[arg-type]
+            pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli
+        )
         assert pcb_file_with_outline.exists()
         assert cli.drc_call_count == 1
 
@@ -478,7 +482,9 @@ class TestMutatePcbKicadMode:
         original = pcb_file_with_outline.read_text()
         cli = _FakeCli(drc_response=(RunResult(1, "", "DRC found 3 errors"), None))
         with pytest.raises(ToolError, match="DRC"):
-            mutate_and_validate_pcb(pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli)  # type: ignore[arg-type]
+            mutate_and_validate_pcb(  # type: ignore[arg-type]
+                pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli
+            )
         assert pcb_file_with_outline.read_text() == original
 
     def test_violations_in_report_raise_tool_error(self, pcb_file_with_outline: Path) -> None:
@@ -487,19 +493,25 @@ class TestMutatePcbKicadMode:
         report = {"violations": [{"type": "clearance", "description": "Clearance violation"}]}
         cli = _FakeCli(drc_response=(RunResult(0, "", ""), report))
         with pytest.raises(ToolError, match="DRC"):
-            mutate_and_validate_pcb(pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli)  # type: ignore[arg-type]
+            mutate_and_validate_pcb(  # type: ignore[arg-type]
+                pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=cli
+            )
         assert pcb_file_with_outline.read_text() == original
 
     def test_mode_lint_skips_kicad_even_with_cli(self, pcb_file_with_outline: Path) -> None:
         """mode=LINT (< KICAD) must never call the CLI adapter."""
         failing_cli = _FakeCli(drc_response=(RunResult(1, "", "should not be called"), None))
-        mutate_and_validate_pcb(pcb_file_with_outline, lambda doc: None, mode=ValidationMode.LINT, cli=failing_cli)  # type: ignore[arg-type]
+        mutate_and_validate_pcb(  # type: ignore[arg-type]
+            pcb_file_with_outline, lambda doc: None, mode=ValidationMode.LINT, cli=failing_cli
+        )
         assert pcb_file_with_outline.exists()
         assert failing_cli.drc_call_count == 0
 
     def test_mode_kicad_none_cli_skips_kicad_validation(self, pcb_file_with_outline: Path) -> None:
         """mode=KICAD with cli=None must not raise — kicad step is silently skipped."""
-        mutate_and_validate_pcb(pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=None)
+        mutate_and_validate_pcb(
+            pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=None
+        )
         assert pcb_file_with_outline.exists()
 
 

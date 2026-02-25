@@ -262,12 +262,23 @@ def read_lib_symbol_def(
     new_items: list[Node] = list(sym_node.items)
     new_items[1] = string(full_id)
 
-    # Strip (id N) items — not used in KiCad 9 schematics.
-    new_items = [
-        it for it in new_items
-        if not (isinstance(it, ListNode) and it.key == "id")
-    ]
-    return ListNode(tuple(new_items), NO_POS)
+    # Strip (id N) items recursively — not used in KiCad 9 schematics.
+    # In real KiCad library files (id N) appears both as a direct child of
+    # the symbol node AND nested inside (property ...) sub-nodes.
+    return _strip_id_nodes(ListNode(tuple(new_items), NO_POS))
+
+
+def _strip_id_nodes(node: ListNode) -> ListNode:
+    """Return a copy of *node* with every ``(id N)`` descendant removed."""
+    new_children: list[Node] = []
+    for item in node.items:
+        if isinstance(item, ListNode) and item.key == "id":
+            continue  # drop (id N) at any nesting level
+        if isinstance(item, ListNode):
+            new_children.append(_strip_id_nodes(item))
+        else:
+            new_children.append(item)
+    return ListNode(tuple(new_children), node.pos)
 
 
 def read_lib_symbol_pins(
