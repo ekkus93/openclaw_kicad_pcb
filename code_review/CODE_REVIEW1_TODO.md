@@ -81,20 +81,28 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ## Phase 2 — Refactor for Testability and Maintainability
 
 ### 2.1 Split the monolithic script into modules
-- [ ] Create a package structure (example):
-  - [ ] `kicad_pcb/cli.py` (argparse + dispatch only)
-  - [ ] `kicad_pcb/errors.py`
-  - [ ] `kicad_pcb/models.py`
-  - [ ] `kicad_pcb/config.py`
-  - [ ] `kicad_pcb/fs.py`
-  - [ ] `kicad_pcb/runner.py`
-  - [ ] `kicad_pcb/sexpr/*`
-  - [ ] `kicad_pcb/sch_doc.py`
-  - [ ] `kicad_pcb/pcb_doc.py`
-  - [ ] `kicad_pcb/lint/*`
-  - [ ] `kicad_pcb/validate/*`
-  - [ ] `kicad_pcb/services/*`
-- [ ] Keep `scripts/kicad_pcb.py` as a thin entrypoint wrapper (temporary compatibility).
+- [x] Create a package structure at `kicad-pcb/src/kicad_pcb/` (src-layout):
+  - [x] `cli.py` (argparse + dispatch only)
+  - [x] `errors.py`
+  - [x] `config.py`
+  - [x] `fs.py`
+  - [x] `runner.py`
+  - [x] `commands/project.py` (`cmd_new`, `cmd_info`, `cmd_open`)
+  - [x] `commands/validation.py` (`cmd_drc`, `cmd_erc`)
+  - [x] `commands/export.py` (gerbers/drill/bom/pos/3d, package-for-fab)
+  - [x] `commands/preview.py` (`cmd_preview_schematic`, `cmd_preview_pcb`)
+  - [x] `commands/sch.py` (schematic helpers + add-component/net/connect)
+  - [x] `commands/pcb.py` (set-board-size/import-netlist/auto-place/auto-route)
+  - [x] `commands/external.py` (`cmd_pcbway_quote`)
+  - [x] `commands/doctor.py` (`cmd_doctor`)
+  - [x] `__init__.py` (re-exports all public symbols for backward compat)
+  - [ ] `models.py` (typed domain models — deferred to 2.2)
+  - [ ] `sexpr/*` (S-expression AST — deferred to Phase 3)
+  - [ ] `sch_doc.py`, `pcb_doc.py` (deferred to Phase 4)
+  - [ ] `lint/*`, `validate/*`, `services/*` (deferred to later phases)
+- [x] Keep `scripts/kicad_pcb.py` as a thin 17-line entrypoint wrapper.
+- [x] pyproject.toml updated: pythonpath + coverage source pointing to `kicad-pcb/src`.
+- Committed `01809c6` — 49/49 tests, ruff 0, mypy 0 errors in 15 files.
 
 ### 2.2 Introduce typed domain models
 - [ ] Create dataclasses (or Pydantic models if preferred) for domain objects:
@@ -448,14 +456,14 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 1. [x] Fix docs mismatch (`SKILL.md`) and add `doctor` — fully done.
 2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — fully done (`.bak` backup added, `cmd_new` uses `_atomic_write`).
-3. [ ] Split CLI from services and introduce `Runner` / `KicadCliAdapter`.
-4. [ ] Implement S-expression tokenizer/parser/serializer + tests.
-5. [ ] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops.
-6. [ ] Add lint framework + key schematic/PCB lints.
-7. [ ] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands.
-8. [ ] Add golden tests + integration tests.
-9. [ ] Add version compatibility layer + symbol library discovery improvements.
-10. [ ] Improve generation quality via IR/templates and semantic preflight checks.
+3. [x] Split monolithic script into `src/kicad_pcb/` package (Phase 2.1) — fully done (`01809c6`).
+4. [ ] Introduce typed domain models + injectable Runner / KicadCliAdapter (Phases 2.2–2.3).
+5. [ ] Implement S-expression tokenizer/parser/serializer + tests (Phase 3).
+6. [ ] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
+7. [ ] Add lint framework + key schematic/PCB lints (Phase 5).
+8. [ ] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 6).
+9. [ ] Add golden tests + integration tests (Phase 7).
+10. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 9).
 
 ---
 

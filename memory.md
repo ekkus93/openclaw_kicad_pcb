@@ -1,6 +1,25 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T16:45:00Z_
+_Last updated: 2026-02-25T18:30:00Z_
+
+---
+
+## 2026-02-25T18:30:00Z — Phase 2.1: module split (Tidy First)
+
+- Split the 1553-line monolithic `kicad-pcb/scripts/kicad_pcb.py` into a proper
+  Python package at `kicad-pcb/src/kicad_pcb/` (src-layout).
+- Package structure:
+  - `errors.py` — exception hierarchy
+  - `config.py` — constants + config R/W
+  - `runner.py` — KICAD_CLI, check_kicad, run_kicad_cli
+  - `fs.py` — _check_sexp, _atomic_write, _new_uuid
+  - `commands/project.py`, `validation.py`, `export.py`, `preview.py`, `sch.py`, `pcb.py`, `external.py`, `doctor.py`
+  - `cli.py` — main() with argparse
+  - `__init__.py` — re-exports all public symbols for backward compat
+- `kicad-pcb/scripts/kicad_pcb.py` → 17-line thin wrapper (adds src/ to sys.path, calls main())
+- `pyproject.toml`: pythonpath changed from `kicad-pcb/scripts` to `kicad-pcb/src`; coverage source updated; `[tool.setuptools.packages.find]` added
+- 49/49 tests pass; ruff 0 violations; mypy 0 errors in 15 files
+- Committed `01809c6` — "tidy: Phase 2.1 — split monolithic kicad_pcb.py into src/kicad_pcb/ package"
 
 ---
 
@@ -26,7 +45,8 @@ _Last updated: 2026-02-25T16:45:00Z_
 
 - **Repo**: `/home/ubo/work/openclaw_kicad_pcb` (GitHub repo)
 - **Skill symlink**: `/home/ubo/.openclaw/skills/kicad_pcb` → `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/`
-- **Script**: `kicad-pcb/scripts/kicad_pcb.py` (monolith, ~1401 lines, being refactored)
+- **Script** (thin wrapper): `kicad-pcb/scripts/kicad_pcb.py` (17 lines — delegates to package)
+- **Package** (src-layout): `kicad-pcb/src/kicad_pcb/` (15 modules)
 - **KiCad projects dir**: `/home/ubo/kicad-projects/`
 - **KiCad CLI**: `/usr/bin/kicad-cli` v9.0.7
 - **KiCad symbol libraries**: `/usr/share/kicad/symbols/*.kicad_sym`, format version `20211014`
