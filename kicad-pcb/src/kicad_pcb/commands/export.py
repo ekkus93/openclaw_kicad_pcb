@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
 
 from ..config import get_current_project
 from ..errors import ToolError, UserError
@@ -17,13 +16,11 @@ def cmd_export_gerbers(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
-
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
-    output_dir = project_dir / "gerbers"
+    output_dir = project.path / "gerbers"
     output_dir.mkdir(exist_ok=True)
 
     print("📤 Exporting Gerbers...")
@@ -55,10 +52,8 @@ def cmd_export_drill(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
-
-    output_dir = project_dir / "gerbers"
+    pcb_file = project.pcb_file
+    output_dir = project.path / "gerbers"
     output_dir.mkdir(exist_ok=True)
 
     print("📤 Exporting drill files...")
@@ -87,13 +82,11 @@ def cmd_export_bom(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
-
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic not found: {sch_file}")
 
-    output_file = project_dir / "bom.csv"
+    output_file = project.path / "bom.csv"
     print("📤 Exporting BOM...")
 
     result = run_kicad_cli([
@@ -126,15 +119,14 @@ def cmd_package_for_fab(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    gerber_dir = project_dir / "gerbers"
+    gerber_dir = project.path / "gerbers"
 
     if not gerber_dir.exists() or not list(gerber_dir.glob("*")):
         print("⚠️  No Gerber files found. Running export first...")
         # Would call cmd_export_gerbers here
 
-    output_name = args.output or f"{project['name']}_fab.zip"
-    output_path = project_dir / output_name
+    output_name = args.output or f"{project.name}_fab.zip"
+    output_path = project.path / output_name
 
     print("📦 Creating fabrication package...")
 
@@ -157,12 +149,11 @@ def cmd_export_pos(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
-    output_file = project_dir / f"{project['name']}-pos.csv"
+    output_file = project.path / f"{project.name}-pos.csv"
     print("📤 Exporting position file...")
 
     result = run_kicad_cli([
@@ -194,12 +185,11 @@ def cmd_export_3d(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
-    output_file = project_dir / f"{project['name']}.step"
+    output_file = project.path / f"{project.name}.step"
     print("📤 Exporting STEP 3D model...")
 
     result = run_kicad_cli([

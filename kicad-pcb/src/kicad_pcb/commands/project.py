@@ -9,6 +9,7 @@ from pathlib import Path
 from ..config import PROJECTS_DIR, get_current_project, load_config, set_current_project
 from ..errors import UserError
 from ..fs import _atomic_write
+from ..models import ProjectRef
 
 
 def cmd_new(args) -> None:
@@ -86,12 +87,12 @@ def cmd_new(args) -> None:
     _atomic_write(pcb_file, pcb_content, "kicad_pcb", operation="new")
 
     # Save as current project
-    project: dict = {
-        "name": name,
-        "path": str(project_dir),
-        "created": datetime.now().isoformat(),
-        "description": args.description or "",
-    }
+    project = ProjectRef(
+        name=name,
+        path=project_dir,
+        created=datetime.now().isoformat(),
+        description=args.description or "",
+    )
     set_current_project(project)
 
     print(f"✅ Created project: {name}")
@@ -112,19 +113,17 @@ def cmd_info(args) -> None:
     if not project:
         raise UserError("No project selected\n      Use: kicad_pcb.py new <name>")
 
-    project_dir = Path(project["path"])
-
     print("╭─────────────────────────────────────╮")
     print("│      🔧 KICAD PROJECT INFO          │")
     print("├─────────────────────────────────────┤")
-    print(f"│  Name: {project['name']:<27} │")
-    print(f"│  Path: {str(project_dir)[:27]:<27} │")
+    print(f"│  Name: {project.name:<27} │")
+    print(f"│  Path: {str(project.path)[:27]:<27} │")
     print("╰─────────────────────────────────────╯")
 
     # List files
-    if project_dir.exists():
+    if project.path.exists():
         print("\nFiles:")
-        for f in sorted(project_dir.iterdir()):
+        for f in sorted(project.path.iterdir()):
             size = f.stat().st_size
             print(f"  {f.name:<30} {size:>8} bytes")
 
@@ -149,11 +148,11 @@ def cmd_open(args) -> None:
 
     name = pro_file.stem
 
-    project: dict = {
-        "name": name,
-        "path": str(project_dir),
-        "opened": datetime.now().isoformat(),
-    }
+    project = ProjectRef(
+        name=name,
+        path=project_dir,
+        created=datetime.now().isoformat(),
+    )
     set_current_project(project)
 
     print(f"✅ Opened project: {name}")

@@ -56,9 +56,9 @@ def cmd_doctor(args) -> None:  # noqa: PLR0912, PLR0915
     # Current project
     project = get_current_project()
     if project:
-        pdir = Path(project["path"])
+        pdir = project.path
         pmark = "\u2705" if pdir.exists() else "\u26a0\ufe0f "
-        print(f"  {pmark} Current project: {project['name']}  ({pdir})")
+        print(f"  {pmark} Current project: {project.name}  ({pdir})")
     else:
         print("  \u2139\ufe0f  No current project selected  (run: new <name>  or  open <path>)")
 

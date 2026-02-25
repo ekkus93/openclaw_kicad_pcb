@@ -62,6 +62,18 @@ from .errors import KiCadError, ParseError, ToolError, UserError
 # File-system utilities
 from .fs import _atomic_write, _check_sexp, _new_uuid
 
+# Typed domain models
+from .models import (
+    BoardOutlineRect,
+    ComponentSpec,
+    FootprintMoveSpec,
+    LintIssue,
+    NetLabelSpec,
+    ProjectRef,
+    ValidationResult,
+    WireSegment,
+)
+
 # CLI runner
 from .runner import KICAD_CLI, check_kicad, run_kicad_cli
 
@@ -71,6 +83,15 @@ __all__ = [
     "UserError",
     "ToolError",
     "ParseError",
+    # models
+    "ProjectRef",
+    "ComponentSpec",
+    "WireSegment",
+    "NetLabelSpec",
+    "BoardOutlineRect",
+    "FootprintMoveSpec",
+    "LintIssue",
+    "ValidationResult",
     # config
     "CONFIG_DIR",
     "CONFIG_FILE",

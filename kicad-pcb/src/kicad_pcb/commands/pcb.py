@@ -9,6 +9,7 @@ from pathlib import Path
 from ..config import get_current_project
 from ..errors import ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
+from ..models import BoardOutlineRect, FootprintMoveSpec
 from ..runner import check_kicad, run_kicad_cli
 
 
@@ -22,26 +23,15 @@ def cmd_set_board_size(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
-    try:
-        w, h = (float(v) for v in args.size.lower().split("x"))
-    except ValueError:
-        raise UserError("Size must be WxH in mm  e.g. 50x30")
-
-    corners = [
-        ((0, 0), (w, 0)),
-        ((w, 0), (w, h)),
-        ((w, h), (0, h)),
-        ((0, h), (0, 0)),
-    ]
+    outline = BoardOutlineRect.from_args(args)
     lines = "\n".join(
         f'  (gr_line (start {s[0]:.3f} {s[1]:.3f}) (end {e[0]:.3f} {e[1]:.3f})\n'
         f'    (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "{_new_uuid()}"))'
-        for s, e in corners
+        for s, e in outline.corners
     )
 
     text = pcb_file.read_text()
@@ -55,7 +45,7 @@ def cmd_set_board_size(args) -> None:
     text = text[:last_paren] + "\n" + lines + "\n)\n"
     _atomic_write(pcb_file, text, "kicad_pcb", operation="set-board-size")
 
-    print(f"✅ Board outline: {w} mm × {h} mm")
+    print(f"✅ Board outline: {outline.width} mm × {outline.height} mm")
     print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
 
 
@@ -72,12 +62,11 @@ def cmd_import_netlist(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic not found: {sch_file}")
 
-    output_file = project_dir / f"{project['name']}.net"
+    output_file = project.path / f"{project.name}.net"
     print("📋 Exporting netlist...")
 
     result = run_kicad_cli([
@@ -119,8 +108,7 @@ def cmd_auto_place(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
@@ -139,7 +127,7 @@ def cmd_auto_place(args) -> None:
         print("   Add components to the schematic, then run import-netlist.")
         return
 
-    placed: list[tuple[str, float, float]] = []
+    placed: list[FootprintMoveSpec] = []
     col_size = 5
     col_width = spacing * 3
 
@@ -149,16 +137,16 @@ def cmd_auto_place(args) -> None:
         row = idx % col_size
         nx = 10.0 + col * col_width
         ny = 10.0 + row * spacing
-        placed.append((m.group(2), nx, ny))
+        placed.append(FootprintMoveSpec(ref=m.group(2), x=nx, y=ny))
         return f"{m.group(1)}{nx:.3f} {ny:.3f}{m.group(5)}"
 
     new_text = fp_pattern.sub(replacer, text)
     _atomic_write(pcb_file, new_text, "kicad_pcb", operation="auto-place")
 
     print(f"✅ Placed {len(placed)} footprint(s) (spacing {spacing} mm):")
-    for fp_ref, nx, ny in placed:
-        label = fp_ref.split(":")[-1] if ":" in fp_ref else fp_ref
-        print(f"   {label:<30} → ({nx:.1f}, {ny:.1f})")
+    for spec in placed:
+        label = spec.ref.split(":")[-1] if ":" in spec.ref else spec.ref
+        print(f"   {label:<30} → ({spec.x:.1f}, {spec.y:.1f})")
     print("\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
 
 
@@ -174,8 +162,7 @@ def cmd_auto_route(args) -> None:  # noqa: PLR0912
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
@@ -206,8 +193,8 @@ def cmd_auto_route(args) -> None:  # noqa: PLR0912
         print("❌ Java not found. Install: sudo apt install openjdk-17-jre")
         return
 
-    dsn_file = project_dir / f"{project['name']}.dsn"
-    ses_file = project_dir / f"{project['name']}.ses"
+    dsn_file = project.path / f"{project.name}.dsn"
+    ses_file = project.path / f"{project.name}.ses"
 
     print("📤 Exporting Specctra DSN...")
     result = run_kicad_cli([

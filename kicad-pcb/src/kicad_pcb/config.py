@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .models import ProjectRef
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -54,19 +56,20 @@ def save_config(config: dict) -> None:
         json.dump(config, f, indent=2)
 
 
-def get_current_project() -> dict | None:
-    """Return the currently-selected project dict, or None."""
+def get_current_project() -> ProjectRef | None:
+    """Return the currently-selected project as a :class:`.ProjectRef`, or None."""
     if CURRENT_PROJECT_FILE.exists():
         try:
             with CURRENT_PROJECT_FILE.open() as f:
-                return json.load(f)
+                data = json.load(f)
+            return ProjectRef.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError):
             pass
     return None
 
 
-def set_current_project(project: dict) -> None:
-    """Persist the current project."""
+def set_current_project(project: ProjectRef) -> None:
+    """Persist *project* to ``current_project.json``."""
     ensure_dirs()
     with CURRENT_PROJECT_FILE.open("w") as f:
-        json.dump(project, f, indent=2)
+        json.dump(project.to_dict(), f, indent=2)
