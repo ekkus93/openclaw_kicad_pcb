@@ -372,10 +372,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 ## Phase 8 — Version Compatibility and Platform Hardening
 
-### 8.1 KiCad CLI version compatibility layer
-- [ ] Detect `kicad-cli` version at runtime.
-- [ ] Maintain capability map for commands/options by version.
-- [ ] Gracefully degrade or error with clear guidance if unsupported options are requested.
+### 8.1 KiCad CLI version compatibility layer ✅ (commit ca50af3)
+- [x] Detect `kicad-cli` version at runtime.
+- [x] Maintain capability map for commands/options by version.
+- [x] Gracefully degrade or error with clear guidance if unsupported options are requested.
 
 ### 8.2 Symbol library path handling
 - [ ] Replace hardcoded `/usr/share/kicad/symbols` assumptions with discovery logic/config override.
