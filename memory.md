@@ -1,6 +1,29 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-27T00:00:00Z_
+_Last updated: 2026-02-28T00:00:00Z_
+
+---
+
+## 2026-02-28T00:00:00Z — Phase 6: CLI and Skill UX Improvements (commit 099266e)
+
+### Summary
+Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new standalone file commands.
+
+### Changes
+- **`--dry-run`** on `add-component`, `add-net`, `connect`, `set-board-size`, `auto-place`: pipeline (`mutate_and_validate_sch`/`mutate_and_validate_pcb`) now accepts `dry_run=True` which skips `_atomic_write`; 5 result types carry `dry_run: bool = False`
+- **`--json`** global flag on root parser: calls `format_result_json()` (dataclasses.asdict + `_ResultEncoder` for Path/Enum)
+- **`LINT_SUGGESTIONS: dict[str, str]`** in `lint.py` — 19 entries (SCH001-9, PCB001-9) — shown in CLI error output and formatters
+- **3 new result types** in `results.py`: `LintFileResult`, `ValidateFileResult`, `FormatFileResult`
+- **New module `commands/lint.py`**: `cmd_lint_sch`, `cmd_lint_pcb`, `cmd_validate_sch`, `cmd_validate_pcb`, `cmd_format_sch`, `cmd_format_pcb` — standalone, no project context required
+- **`formatting.py`**: 3 new formatters + dry_run prefix on 5 existing formatters + `format_result_json()`
+- **`cli.py`**: `--json`, `--dry-run` on 5 parsers, 6 new subcommands, structured `LintError` display (code + suggestion), exit non-zero for lint/validate failures
+- **46 new tests** in `tests/unit/test_phase6.py`; **584 total tests**, all passing
+
+### Key design decisions
+- `dry_run` in pipeline: guard around `_atomic_write` only; all validation still runs
+- `format_result_json`: uses `dataclasses.asdict` + custom encoder; raises `TypeError` for unhandled types (no silent fallback)
+- Exit codes: `LintFileResult.ok==False` or `ValidateFileResult.ok==False` → `sys.exit(1)`
+- `commands/lint.py` helpers: `_parse_or_raise()` returns `None` on parse failure (callers decide to raise or return `syntax_ok=False`)
 
 ---
 
@@ -346,3 +369,30 @@ High-priority next phases:
 ### Test results (Phase 1)
 - 45 tests: 37 unit + 8 integration — all pass
 - New test file: `tests/unit/test_phase1_reliability.py` (22 tests)
+
+## 2025-01-01T00:00:00Z — Phase 7 test suite (7.1–7.6) complete
+
+### Phase 7 test files (16 total in tests/unit/):
+- 7.2: `test_sexpr_tokenizer.py`, `test_sexpr_parser.py`, `test_sexpr_serializer.py`, `test_sexpr_utils.py`
+- 7.3: `test_sch_doc.py`, `test_pcb_doc.py`
+- 7.4: `test_pipeline.py` (mocked kicad-cli via `_FakeCli` stub)
+- 7.5: `test_cli.py` (`_build_parser()` extracted from `cli.py`)
+- 7.6: `test_golden.py` (14 tests: round-trip, lint-clean, bug regressions)
+
+### Phase 7.6 golden fixtures (tests/fixtures/golden/):
+- `minimal.kicad_sch` — minimal valid schematic (canonical serialized form)
+- `sch_with_resistor.kicad_sch` — schematic with embedded Device:R + placed symbol + instances block
+- `minimal.kicad_pcb` — minimal valid PCB
+- `pcb_with_footprint.kicad_pcb` — PCB with one footprint + 4-sided Edge.Cuts outline
+
+### Key design decisions for Phase 7.6:
+- Golden fixtures are stored in canonical serialized form (serializer output); tests compare
+  `serialize(parse(content.rstrip("\n"))) == content.rstrip("\n")` (serializer has no trailing newline)
+- Broken fixture regressions use `kicad_pcb.sexpr` (not kiutils) so they're orthogonal to test_fixtures.py
+- bug1: AST walk for sub-symbol names with "Device:" prefix inside lib_symbols
+- bug2: textual regex `\(id\s+\d+\)` + AST structural check for (id N) child nodes
+- bug3: count bare ')' lines at column 0 — well-formed files have exactly 1 (root close), bug3 has ≥2
+- bug4: find_first(sym, "instances") is None on placed symbols
+
+### Total test count: 661 (up from 647 after 7.5)
+- Commit for 7.6: pending
