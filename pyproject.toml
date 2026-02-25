@@ -21,7 +21,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["kicad-pcb/scripts"]
+pythonpath = ["kicad-pcb/src"]
 addopts = "-q --strict-markers"
 markers = [
     "integration: marks tests as integration tests (may require external tools)",
@@ -40,7 +40,10 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.coverage.run]
-source = ["kicad-pcb/scripts"]
+source = ["kicad-pcb/src"]
+
+[tool.setuptools.packages.find]
+where = ["kicad-pcb/src"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
