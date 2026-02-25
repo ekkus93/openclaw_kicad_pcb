@@ -47,7 +47,6 @@ source = ["kicad-pcb/src"]
 
 [tool.setuptools.packages.find]
 where = ["kicad-pcb/src"]
-omit = ["tests/*"]
 
 [tool.coverage.report]
 show_missing = true
