@@ -56,6 +56,16 @@ from .commands.sch import (
 )
 from .commands.validation import cmd_drc, cmd_erc
 
+# Version compatibility (Phase 8.1)
+from .compat import (
+    CAPABILITY_MAP,
+    MINIMUM_VERSION,
+    CliCapability,
+    KiCadVersion,
+    parse_version,
+    require_capability,
+)
+
 # Config constants and helpers
 from .config import (
     CONFIG_DIR,
@@ -167,6 +177,13 @@ __all__ = [
     "UserError",
     "ToolError",
     "ParseError",
+    # compat (Phase 8.1)
+    "KiCadVersion",
+    "MINIMUM_VERSION",
+    "CliCapability",
+    "CAPABILITY_MAP",
+    "parse_version",
+    "require_capability",
     # models
     "ProjectRef",
     "ComponentSpec",

@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Literal
 
 from ..adapters import RunnerProtocol, SubprocessRunner
 from ..commands.sch import KICAD_SYMBOLS_DIR
+from ..compat import MINIMUM_VERSION, parse_version
 from ..config import CONFIG_DIR, PROJECTS_DIR, get_current_project
 from ..results import DoctorCheckItem, DoctorResult
 
@@ -26,15 +28,31 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
     if cli_path:
         try:
             r = _runner.run([cli_path, "--version"])
-            version = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
+            raw = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
+            version_str = raw
+            try:
+                ver = parse_version(raw)
+                supported = ver >= MINIMUM_VERSION
+                support_note = (
+                    f"supported (>= {MINIMUM_VERSION})"
+                    if supported
+                    else f"UNSUPPORTED — minimum required: {MINIMUM_VERSION}"
+                )
+                detail = f"version: {ver}  [{support_note}]"
+                status: Literal["ok", "warn"] = "ok" if supported else "warn"
+            except ValueError:
+                detail = f"version string unrecognised: {version_str!r}"
+                status = "warn"
             checks.append(
                 DoctorCheckItem(
-                    status="ok",
+                    status=status,
                     label="kicad-cli",
                     message=cli_path,
-                    detail=f"version: {version}" if version else None,
+                    detail=detail,
                 )
             )
+            if status == "warn" and "UNSUPPORTED" in (detail or ""):
+                overall_ok = False
         except Exception as exc:  # noqa: BLE001
             checks.append(
                 DoctorCheckItem(
