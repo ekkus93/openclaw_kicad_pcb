@@ -9,8 +9,8 @@ from pathlib import Path
 from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import ToolError, UserError
-from ..fs import _atomic_write, _new_uuid
 from ..models import BoardOutlineRect, FootprintMoveSpec
+from ..pcb_doc import PcbDoc
 from ..results import AutoPlaceResult, AutoRouteResult, ImportNetlistResult, SetBoardSizeResult
 from ..runner import KICAD_CLI, check_kicad
 
@@ -30,22 +30,9 @@ def cmd_set_board_size(args) -> SetBoardSizeResult:
         raise UserError(f"PCB file not found: {pcb_file}")
 
     outline = BoardOutlineRect.from_args(args)
-    lines = "\n".join(
-        f'  (gr_line (start {s[0]:.3f} {s[1]:.3f}) (end {e[0]:.3f} {e[1]:.3f})\n'
-        f'    (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "{_new_uuid()}"))'
-        for s, e in outline.corners
-    )
-
-    text = pcb_file.read_text()
-    # Remove any previous Edge.Cuts gr_line entries
-    text = re.sub(
-        r'\s*\(gr_line[^\n]*\n[^\n]*"Edge\.Cuts"[^\n]*\n[^)]*\)',
-        "",
-        text,
-    )
-    last_paren = text.rfind(")")
-    text = text[:last_paren] + "\n" + lines + "\n)\n"
-    _atomic_write(pcb_file, text, "kicad_pcb", operation="set-board-size")
+    doc = PcbDoc.load(pcb_file)
+    doc.set_rect_outline(outline.width, outline.height)
+    doc.save(pcb_file)
 
     return SetBoardSizeResult(
         width=outline.width, height=outline.height, pcb_file_name=pcb_file.name
@@ -105,16 +92,10 @@ def cmd_auto_place(args) -> AutoPlaceResult:
         raise UserError(f"PCB file not found: {pcb_file}")
 
     spacing: float = float(args.spacing) if args.spacing else 10.0
-    text = pcb_file.read_text()
+    doc = PcbDoc.load(pcb_file)
 
-    # Match footprint blocks: (footprint "lib:name" ... (at X Y ...) ...)
-    fp_pattern = re.compile(
-        r'(\(footprint "([^"]*)"(?:.*?\n)*?\s*\(at )([\d.-]+) ([\d.-]+)([^)]*\))',
-        re.MULTILINE,
-    )
-    matches = list(fp_pattern.finditer(text))
-
-    if not matches:
+    footprints = doc.all_footprints()
+    if not footprints:
         raise UserError(
             "No footprints found in PCB file.\n"
             "   Add components to the schematic, then run import-netlist."
@@ -124,17 +105,15 @@ def cmd_auto_place(args) -> AutoPlaceResult:
     col_size = 5
     col_width = spacing * 3
 
-    def replacer(m: re.Match) -> str:
-        idx = len(placed)
+    for idx, (ref, _node) in enumerate(footprints):
         col = idx // col_size
         row = idx % col_size
         nx = 10.0 + col * col_width
         ny = 10.0 + row * spacing
-        placed.append(FootprintMoveSpec(ref=m.group(2), x=nx, y=ny))
-        return f"{m.group(1)}{nx:.3f} {ny:.3f}{m.group(5)}"
+        doc.move_footprint(ref, nx, ny)
+        placed.append(FootprintMoveSpec(ref=ref, x=nx, y=ny))
 
-    new_text = fp_pattern.sub(replacer, text)
-    _atomic_write(pcb_file, new_text, "kicad_pcb", operation="auto-place")
+    doc.save(pcb_file)
 
     return AutoPlaceResult(placed=tuple(placed), spacing=spacing)
 

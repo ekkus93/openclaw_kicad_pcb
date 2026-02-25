@@ -42,12 +42,6 @@ from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import (
     KICAD_SYMBOLS_DIR,
-    _append_to_schematic,
-    _embed_lib_symbol,
-    _extract_balanced,
-    _find_symbol_def,
-    _find_symbol_pins,
-    _next_component_position,
     cmd_add_component,
     cmd_add_net,
     cmd_connect,
@@ -88,6 +82,7 @@ from .models import (
     ValidationResult,
     WireSegment,
 )
+from .pcb_doc import PcbDoc, make_gr_line_node
 
 # Typed result objects (Phase 2.4)
 from .results import (
@@ -119,6 +114,16 @@ from .results import (
 # CLI runner
 from .runner import KICAD_CLI, check_kicad, run_kicad_cli
 
+# KiCad document wrappers (Phase 4)
+from .sch_doc import (
+    SchematicDoc,
+    make_label_node,
+    make_symbol_node,
+    make_wire_node,
+    read_lib_symbol_def,
+    read_lib_symbol_pins,
+)
+
 # S-expression sub-package (Phase 3) — expose top-level symbols
 from .sexpr import (
     NO_POS,
@@ -141,6 +146,7 @@ from .sexpr import (
     tokenize,
     walk,
 )
+from .sexpr.builder import L, atom, fnum, string
 
 __all__ = [
     # errors
@@ -187,12 +193,20 @@ __all__ = [
     "_new_uuid",
     # sch helpers
     "KICAD_SYMBOLS_DIR",
-    "_extract_balanced",
-    "_find_symbol_def",
-    "_find_symbol_pins",
-    "_embed_lib_symbol",
-    "_next_component_position",
-    "_append_to_schematic",
+    # document wrappers (Phase 4)
+    "SchematicDoc",
+    "PcbDoc",
+    "read_lib_symbol_def",
+    "read_lib_symbol_pins",
+    "make_symbol_node",
+    "make_wire_node",
+    "make_label_node",
+    "make_gr_line_node",
+    # sexpr builder (Phase 4)
+    "atom",
+    "string",
+    "L",
+    "fnum",
     # commands
     "cmd_new",
     "cmd_info",

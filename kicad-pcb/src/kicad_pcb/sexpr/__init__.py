@@ -34,9 +34,13 @@ From :mod:`.serializer`:
 From :mod:`.utils`:
     ``walk``, ``find_first``, ``find_all``,
     ``replace_section``, ``append_to_section``, ``node_path``
+
+From :mod:`.builder`:
+    ``atom``, ``string``, ``L``, ``fnum``
 """
 from __future__ import annotations
 
+from .builder import L, atom, fnum, string
 from .nodes import NO_POS, AtomNode, ListNode, Node, Position, StringNode
 from .parser import parse, parse_file
 from .serializer import serialize, serialize_file
@@ -75,4 +79,9 @@ __all__ = [
     "replace_section",
     "append_to_section",
     "node_path",
+    # builder
+    "atom",
+    "string",
+    "L",
+    "fnum",
 ]
