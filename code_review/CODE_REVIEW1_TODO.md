@@ -341,7 +341,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ### 7.4 Unit tests for validation pipeline
 - [x] Failed syntax validation prevents overwrite (`test_no_temp_file_left_on_parse_error`, `test_with_root_check_bad_content_no_clobber`).
 - [x] Failed lint prevents overwrite — `test_pipeline.py` covers lint-failure rollback; `mutate_and_validate_sch/pcb` raises `LintError` before `_atomic_write` (Phase 5).
-- [ ] Failed mocked `kicad-cli` validation prevents overwrite — not yet tested with mock.
+- [x] Failed mocked `kicad-cli` validation prevents overwrite — `TestMutateSchKicadMode` / `TestMutatePcbKicadMode` use `_FakeCli` stub; non-zero exit and `violations` in report both raise `ToolError` before `_atomic_write`; file is verified unchanged.
 - [x] Successful validation commits atomically (`test_writes_content`, `test_with_root_check_valid`).
 - [x] Backup creation behavior works as configured — `test_backup_created_before_overwrite` and `test_no_backup_when_flag_false` added.
 
@@ -437,7 +437,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Syntax + structural linting implemented and enabled by default — `kicad_pcb.lint` with 18 rules (SCH/PCB 001-009), `ValidationMode.LINT` default, `LintError` on failures (Phase 5).
 - [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — `KicadCliAdapter` exists and `ValidationMode.KICAD/FULL` is wired, but not the default mutation mode.
 - [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
-- [x] Unit tests cover parser/serializer and core mutations — 584 unit tests across 14 test files (tokenizer, parser, serializer, `SchematicDoc`, `PcbDoc`, lint, pipeline, Phase 6 commands).
+- [x] Unit tests cover parser/serializer and core mutations — 594 unit tests across 14 test files (tokenizer, parser, serializer, `SchematicDoc`, `PcbDoc`, lint, pipeline, Phase 6 commands).
 - [x] Regression fixtures for known-bad cases (`tests/fixtures/broken/` has bug1–bug4).
 
 ### “Rock solid” target
@@ -460,8 +460,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 7. [x] Add lint framework + key schematic/PCB lints (Phase 5) — `kicad_pcb.lint`, 18 rules, `5e24bd7`.
 8. [x] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 5) — `kicad_pcb.pipeline`, `ValidationMode`, `5e24bd7`.
 9. [x] Add CLI UX improvements: `--dry-run`, `--json`, lint/validate/format commands, structured error display, `LINT_SUGGESTIONS` (Phase 6) — `099266e`; 584 tests pass.
-10. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 14 test files; golden file fixtures and full integration flow tests remain).
-11. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
+10. [x] Add mocked kicad-cli tests for KICAD/FULL modes (`TestMutateSchKicadMode`, `TestMutatePcbKicadMode` using `_FakeCli` stub) — 594 tests pass; Phase 7.4 fully done.
+11. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 14 test files; golden file fixtures and full integration flow tests remain).
+12. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
 
 ---
 
