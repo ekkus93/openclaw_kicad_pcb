@@ -353,13 +353,13 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ### 7.6 Golden file tests (critical for regression prevention)
 - [x] Regression fixtures for known-bad cases added (`tests/fixtures/broken/`: bug1–bug4 `.kicad_sch` files).
 - [x] Working fixture for smoke comparison (`tests/fixtures/working/SmokeTest_R1.kicad_sch`).
-- [ ] Create fixture inputs/expected outputs:
-  - [ ] minimal schematic
-  - [ ] schematic with one/two symbols
-  - [ ] minimal PCB
-  - [ ] PCB with a few footprints
-- [ ] Assert AST equality and/or canonical serialized equality.
-- [ ] Add regressions for every previously broken file case found in Phase 0.
+- [x] Create fixture inputs/expected outputs:
+  - [x] minimal schematic (`tests/fixtures/golden/minimal.kicad_sch`)
+  - [x] schematic with one symbol (`tests/fixtures/golden/sch_with_resistor.kicad_sch`)
+  - [x] minimal PCB (`tests/fixtures/golden/minimal.kicad_pcb`)
+  - [x] PCB with a footprint + Edge.Cuts outline (`tests/fixtures/golden/pcb_with_footprint.kicad_pcb`)
+- [x] Assert canonical serialized equality — `TestGoldenRoundTrip` (6 tests): `serialize(parse(content)) == content` for all 4 golden fixtures + `SmokeTest_R1` double-round-trip; `TestGoldenLintClean` (5 tests): lint_schematic/lint_pcb on all golden fixtures produce zero ERROR-level findings.
+- [x] Add regressions for every previously broken file case found in Phase 0 — `TestBrokenFixtureRegressions` (4 tests): bug1 sub-symbol prefix via AST walk; bug2 old `(id N)` token via textual + AST checks; bug3 `lib_symbols` closes at column 0; bug4 placed symbol missing `instances` block via AST.
 
 ### 7.7 Integration tests with real KiCad (skip if unavailable)
 - [x] Create project → schematic files created and loadable by kicad-cli (`test_schematic_loadable_by_kicad_cli`).
@@ -462,7 +462,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 9. [x] Add CLI UX improvements: `--dry-run`, `--json`, lint/validate/format commands, structured error display, `LINT_SUGGESTIONS` (Phase 6) — `099266e`; 584 tests pass.
 10. [x] Add mocked kicad-cli tests for KICAD/FULL modes (`TestMutateSchKicadMode`, `TestMutatePcbKicadMode` using `_FakeCli` stub) — 594 tests pass; Phase 7.4 fully done.
 11. [x] Add CLI arg-parsing tests — extract `_build_parser()` from `cli.py`; `test_cli.py` `TestArgParsing` + `TestInvalidArgs` (53 tests); 647 tests pass; Phase 7.5 fully done.
-12. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 15 test files; golden file fixtures and full integration flow tests remain).
+12. [x] Add golden file tests — 4 canonical fixture files in `tests/fixtures/golden/`; `test_golden.py` adds 14 tests (round-trip stability, lint cleanliness, 4 broken-fixture regressions); 661 tests pass; Phase 7.6 fully done. Integration flow tests remain (Phase 7.7).
 13. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
 
 ---
