@@ -396,14 +396,14 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [ ] Remove or clearly mark aspirational NL-to-PCB features if not implemented.
 - [ ] Add examples that demonstrate supported flows reliably.
 
-### 9.2 Add validated generation patterns/templates
-- [ ] Add a small library of known-good patterns:
-  - [ ] resistor divider
-  - [ ] LED + resistor
-  - [ ] connector breakout
-  - [ ] decoupling capacitor pattern
-- [ ] Emit from IR + validate before commit.
-- [ ] Use templates as “known good” building blocks for LLM-driven workflows.
+### 9.2 Add validated generation patterns/templates ✅ (commit d59a980)
+- [x] Add a small library of known-good patterns:
+  - [x] resistor divider
+  - [x] LED + resistor
+  - [x] connector breakout
+  - [x] decoupling capacitor pattern
+- [x] Emit from IR + validate before commit.
+- [x] Use templates as "known good" building blocks for LLM-driven workflows.
 
 ### 9.3 Preflight semantic checks before generation
 - [x] Detect duplicate references before emitting.
