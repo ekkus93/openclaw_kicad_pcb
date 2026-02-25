@@ -1,6 +1,40 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T22:27:33Z_
+_Last updated: 2026-02-25T23:00:00Z_
+
+---
+
+## 2026-02-25T23:00:00Z — Phase 10.2: CI test pipeline (commits be210fe, 7ef713a)
+
+### Summary
+Added GitHub Actions CI. Tidy commit first (ruff format applied to 58 files,
+no logic changes), then feature commit with two workflow files and pyproject.toml
+mypy addition.
+
+### New: `.github/workflows/ci.yml`
+- Trigger: push/PR to `main` or `master`
+- Steps: ruff check → ruff format --check → mypy → pytest tests/unit/ --cov
+- Coverage: uses `[tool.coverage.run] source` + `fail_under=70` from pyproject.toml
+- Artifacts: uploads `coverage.xml` (14-day retention)
+
+### New: `.github/workflows/integration.yml`
+- Trigger: nightly cron `0 3 * * *` + manual `workflow_dispatch`
+- Installs KiCad from `ppa:kicad/kicad-9-releases`
+- Steps: install kicad → pytest tests/integration/ -m requires_kicad
+- Artifacts: uploads `integration-results.xml` + `/tmp/pytest-*/` on failure (7-day)
+
+### Modified: `pyproject.toml`
+- Added `mypy>=1.10` to `[project.optional-dependencies] dev`
+  (was being used in the project but not declared as a dependency)
+
+### Tidy commit: `be210fe`
+- `ruff format .` applied to 58 files (formatting-only, no logic changes)
+- All subsequent ruff format --check runs pass cleanly
+
+### Notes
+- `ruff check` and `ruff format --check` now both enforced in CI
+- `fail_under=70` already in pyproject.toml; pytest-cov reads it automatically
+- KiCad install step uses `--no-install-recommends` to reduce image bloat
 
 ---
 
