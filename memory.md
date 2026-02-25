@@ -24,7 +24,7 @@ _Last updated: 2026-02-25T21:30:00Z_
   - `commands/doctor.py`: `cmd_doctor(args, *, runner=None)` — injects `RunnerProtocol` for `kicad-cli --version` + `java -version` subprocess calls; `subprocess` import removed
 - Updated `__init__.py` to export all 8 adapter symbols
 - 70 new unit tests in `tests/unit/test_adapters.py`
-- Committed TBD — 150/150 tests pass; ruff 0; mypy 0 errors in 17 files
+- Committed `bf50288` — 150/150 tests pass; ruff 0; mypy 0 errors in 17 files
 
 ---
 
