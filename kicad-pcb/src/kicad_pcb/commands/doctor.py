@@ -6,9 +6,8 @@ from pathlib import Path
 from typing import Literal
 
 from ..adapters import RunnerProtocol, SubprocessRunner
-from ..commands.sch import KICAD_SYMBOLS_DIR
 from ..compat import MINIMUM_VERSION, parse_version
-from ..config import CONFIG_DIR, PROJECTS_DIR, get_current_project
+from ..config import CONFIG_DIR, PROJECTS_DIR, discover_symbols_dir, get_current_project
 from ..results import DoctorCheckItem, DoctorResult
 
 
@@ -68,15 +67,17 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         overall_ok = False
 
     # KiCad symbol libraries
-    if KICAD_SYMBOLS_DIR.exists():
-        n = sum(1 for _ in KICAD_SYMBOLS_DIR.glob("*.kicad_sym"))
+    sym_dir_result = discover_symbols_dir()
+    if sym_dir_result is not None:
+        sym_dir = sym_dir_result.path
+        n = sum(1 for _ in sym_dir.glob("*.kicad_sym"))
         if n:
             checks.append(
                 DoctorCheckItem(
                     status="ok",
                     label="Symbol libraries",
-                    message=str(KICAD_SYMBOLS_DIR),
-                    detail=f"{n} libs",
+                    message=str(sym_dir),
+                    detail=f"{n} libs  [{sym_dir_result.source}]",
                 )
             )
         else:
@@ -84,7 +85,8 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
                 DoctorCheckItem(
                     status="error",
                     label="Symbol libraries",
-                    message=f"directory exists but no .kicad_sym files: {KICAD_SYMBOLS_DIR}",
+                    message=f"directory exists but no .kicad_sym files: {sym_dir}",
+                    detail=f"[{sym_dir_result.source}]",
                 )
             )
             overall_ok = False
@@ -93,7 +95,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
             DoctorCheckItem(
                 status="error",
                 label="Symbol libraries",
-                message=f"not found at {KICAD_SYMBOLS_DIR}",
+                message="not found — set KICAD_SYMBOLS_DIR or symbols_dir in config",
             )
         )
         overall_ok = False

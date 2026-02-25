@@ -73,11 +73,16 @@ from .config import (
     CURRENT_PROJECT_FILE,
     DEFAULT_PCB_OPTIONS,
     PROJECTS_DIR,
+    SYMBOLS_CANDIDATES,
+    SymbolsDir,
+    discover_symbols_dir,
     ensure_dirs,
     get_current_project,
+    get_symbols_dir_config,
     load_config,
     save_config,
     set_current_project,
+    set_symbols_dir_config,
 )
 
 # Errors
@@ -213,6 +218,12 @@ __all__ = [
     "save_config",
     "get_current_project",
     "set_current_project",
+    # symbol library discovery (Phase 8.2)
+    "SYMBOLS_CANDIDATES",
+    "SymbolsDir",
+    "discover_symbols_dir",
+    "get_symbols_dir_config",
+    "set_symbols_dir_config",
     # runner
     "KICAD_CLI",
     "check_kicad",

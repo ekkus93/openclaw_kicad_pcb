@@ -1,7 +1,18 @@
-"""Project configuration constants and R/W helpers."""
+"""Project configuration constants and R/W helpers.
+
+Symbol library discovery (:func:`discover_symbols_dir`) uses the following
+priority chain so that users can override the default system path at any level:
+
+1. Explicit ``Path`` argument (passed by callers, e.g. from ``--symbols-dir``).
+2. ``KICAD_SYMBOLS_DIR`` environment variable.
+3. ``symbols_dir`` key in ``~/.kicad-pcb/config.json``.
+4. Well-known platform-specific paths (:data:`SYMBOLS_CANDIDATES`).
+"""
 from __future__ import annotations
 
 import json
+import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from .models import ProjectRef
@@ -24,6 +35,99 @@ DEFAULT_PCB_OPTIONS: dict = {
     "min_hole": 0.3,
     "min_trace": 0.15,
 }
+
+# ---------------------------------------------------------------------------
+# Symbol library discovery
+# ---------------------------------------------------------------------------
+
+#: Platform-specific candidate paths for the KiCad symbol library directory,
+#: tried in order when no explicit path or env-var override is provided.
+SYMBOLS_CANDIDATES: tuple[Path, ...] = (
+    Path("/usr/share/kicad/symbols"),            # Linux system package
+    Path("/usr/local/share/kicad/symbols"),      # Linux local install
+    Path.home() / ".local/share/kicad/symbols",  # Linux user install
+    # Flatpak — check newest major version first
+    Path.home() / ".var/app/org.kicad.KiCad/data/kicad/9.0/symbols",
+    Path.home() / ".var/app/org.kicad.KiCad/data/kicad/8.0/symbols",
+    Path.home() / ".var/app/org.kicad.KiCad/data/kicad/7.0/symbols",
+    # macOS
+    Path("/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols"),
+)
+
+
+@dataclass(frozen=True)
+class SymbolsDir:
+    """Result of :func:`discover_symbols_dir` — a located path and its origin.
+
+    *source* values:
+
+    * ``"explicit"`` — passed directly by the caller (e.g. ``--symbols-dir``)
+    * ``"env:KICAD_SYMBOLS_DIR"`` — from the ``KICAD_SYMBOLS_DIR`` env var
+    * ``"config"`` — from the ``symbols_dir`` key in config.json
+    * ``"platform:<absolute-path>"`` — a well-known platform path that exists
+    """
+
+    path: Path
+    source: str
+
+    def __str__(self) -> str:
+        return f"{self.path}  (via {self.source})"
+
+
+def discover_symbols_dir(*, explicit: Path | None = None) -> SymbolsDir | None:
+    """Return the first valid symbol library directory and its discovery source.
+
+    Search order:
+
+    1. *explicit* — caller-supplied path (e.g. from the ``--symbols-dir`` CLI
+       flag).  The directory must exist; if it doesn't, the search continues.
+    2. ``KICAD_SYMBOLS_DIR`` environment variable.
+    3. ``symbols_dir`` key in ``~/.kicad-pcb/config.json``.
+    4. :data:`SYMBOLS_CANDIDATES` — platform-specific well-known paths.
+
+    Returns ``None`` if no existing directory can be found anywhere.
+    """
+    # Non-existent explicit path is silently skipped: fall through so callers
+    # get a useful warning from the higher-level code rather than silent None.
+    if explicit is not None and explicit.is_dir():
+        return SymbolsDir(explicit, "explicit")
+
+    env_val = os.environ.get("KICAD_SYMBOLS_DIR")
+    if env_val:
+        p = Path(env_val)
+        if p.is_dir():
+            return SymbolsDir(p, "env:KICAD_SYMBOLS_DIR")
+
+    cfg = load_config()
+    cfg_val = cfg.get("symbols_dir")
+    if cfg_val:
+        p = Path(cfg_val)
+        if p.is_dir():
+            return SymbolsDir(p, "config")
+
+    for candidate in SYMBOLS_CANDIDATES:
+        if candidate.is_dir():
+            return SymbolsDir(candidate, f"platform:{candidate}")
+
+    return None
+
+
+def get_symbols_dir_config() -> str | None:
+    """Return the ``symbols_dir`` value from config.json, or ``None``."""
+    return load_config().get("symbols_dir")  # type: ignore[return-value]
+
+
+def set_symbols_dir_config(path: Path | str | None) -> None:
+    """Persist (or clear) the ``symbols_dir`` entry in config.json.
+
+    Pass ``None`` to remove the override so that normal discovery applies.
+    """
+    cfg = load_config()
+    if path is None:
+        cfg.pop("symbols_dir", None)
+    else:
+        cfg["symbols_dir"] = str(path)
+    save_config(cfg)
 
 
 # ---------------------------------------------------------------------------
