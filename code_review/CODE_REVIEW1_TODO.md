@@ -98,7 +98,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
   - [x] `__init__.py` (re-exports all public symbols for backward compat)
   - [ ] `models.py` (typed domain models — deferred to 2.2)
   - [ ] `sexpr/*` (S-expression AST — deferred to Phase 3)
-  - [ ] `sch_doc.py`, `pcb_doc.py` (deferred to Phase 4)
+  - [x] `sch_doc.py`, `pcb_doc.py` (deferred to Phase 4)
   - [ ] `lint/*`, `validate/*`, `services/*` (deferred to later phases)
 - [x] Keep `scripts/kicad_pcb.py` as a thin 17-line entrypoint wrapper.
 - [x] pyproject.toml updated: pythonpath + coverage source pointing to `kicad-pcb/src`.
@@ -176,43 +176,44 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ---
 
 ## Phase 4 — KiCad-Specific Document Wrappers (AST-Based Editing)
+<!-- Completed in commit f1c4527 — 449 tests pass -->
 
 ### 4.1 `SchematicDoc` wrapper (`.kicad_sch`)
-- [ ] Implement parser/loader for schematic files into AST.
-- [ ] Validate root node is `kicad_sch`.
-- [ ] Implement safe mutation methods:
-  - [ ] `add_symbol(...)`
-  - [ ] `add_wire(...)`
-  - [ ] `add_label(...)`
-  - [ ] `embed_lib_symbol(...)`
-  - [ ] `ensure_lib_symbols_section()`
-- [ ] Replace regex/string insertion helpers with AST-based insertion.
-- [ ] Replace `_find_symbol_def` / `_find_symbol_pins` heuristic parsing with structured parsing where feasible.
-  - [ ] Remove fixed-window scan heuristic (`12k` chars style logic).
-  - [ ] Parse library symbol S-expr properly.
-- [ ] Normalize UUID creation (real UUIDs everywhere, no timestamp pseudo-UUIDs).
+- [x] Implement parser/loader for schematic files into AST.
+- [x] Validate root node is `kicad_sch`.
+- [x] Implement safe mutation methods:
+  - [x] `add_symbol(...)`
+  - [x] `add_wire(...)`
+  - [x] `add_label(...)`
+  - [x] `embed_lib_symbol(...)`
+  - [x] `ensure_lib_symbols_section()`
+- [x] Replace regex/string insertion helpers with AST-based insertion.
+- [x] Replace `_find_symbol_def` / `_find_symbol_pins` heuristic parsing with structured parsing where feasible.
+  - [x] Remove fixed-window scan heuristic (`12k` chars style logic).
+  - [x] Parse library symbol S-expr properly.
+- [x] Normalize UUID creation (real UUIDs everywhere, no timestamp pseudo-UUIDs).
 
 ### 4.2 `PcbDoc` wrapper (`.kicad_pcb`)
-- [ ] Implement parser/loader for PCB files into AST.
-- [ ] Validate root node is `kicad_pcb`.
-- [ ] Implement safe mutation methods:
-  - [ ] `set_rect_outline(...)`
-  - [ ] `clear_generated_outline(...)`
-  - [ ] `move_footprint(...)`
-  - [ ] `find_footprint_by_ref(...)`
-- [ ] Replace regex-based `Edge.Cuts` editing with AST edits.
-- [ ] Replace regex-based footprint position updates with AST edits.
-- [ ] Preserve rotation and footprint child content when moving footprints.
+- [x] Implement parser/loader for PCB files into AST.
+- [x] Validate root node is `kicad_pcb`.
+- [x] Implement safe mutation methods:
+  - [x] `set_rect_outline(...)`
+  - [x] `clear_generated_outline(...)`
+  - [x] `move_footprint(...)`
+  - [x] `find_footprint_by_ref(...)`
+- [x] Replace regex-based `Edge.Cuts` editing with AST edits.
+- [x] Replace regex-based footprint position updates with AST edits.
+- [x] Preserve rotation and footprint child content when moving footprints.
 
 ### 4.3 Internal intermediate representation (IR) for generation (Recommended)
-- [ ] Define a small IR for generated content:
-  - [ ] components
-  - [ ] placements
-  - [ ] wires
-  - [ ] labels/nets
-  - [ ] board outline
-- [ ] Build AST emitters from IR instead of hand-concatenating strings.
-- [ ] Use IR in higher-level commands for clarity and validation.
+- [x] Define a small IR for generated content:
+  - [x] components
+  - [x] placements
+  - [x] wires
+  - [x] labels/nets
+  - [x] board outline
+- [x] Build AST emitters from IR instead of hand-concatenating strings.
+- [x] Use IR in higher-level commands for clarity and validation.
 
 ---
 
@@ -467,7 +468,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 3. [x] Split monolithic script into `src/kicad_pcb/` package (Phase 2.1) — fully done (`01809c6`).
 4. [x] Introduce typed domain models + injectable Runner / KicadCliAdapter (Phases 2.2–2.3).
 5. [ ] Implement S-expression tokenizer/parser/serializer + tests (Phase 3).
-6. [ ] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
+6. [x] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
 7. [ ] Add lint framework + key schematic/PCB lints (Phase 5).
 8. [ ] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 6).
 9. [ ] Add golden tests + integration tests (Phase 7).

@@ -1,6 +1,35 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T23:30:00Z_
+_Last updated: 2026-02-26T00:00:00Z_
+
+---
+
+## 2026-02-26T00:00:00Z — Phase 4: KiCad document wrappers (AST-based editing)
+
+- Added `kicad-pcb/src/kicad_pcb/sexpr/builder.py`:
+  - `atom(value)→AtomNode`, `string(value)→StringNode`, `L(*items)→ListNode`, `fnum(f, decimals=3)→AtomNode`
+  - All nodes use `NO_POS` sentinel; thin wrappers for programmatic AST tree building
+- Added `kicad-pcb/src/kicad_pcb/sch_doc.py` — `SchematicDoc` wrapper for `.kicad_sch`:
+  - `load(path)`, `save(path, *, backup=False)`
+  - `ensure_lib_symbols_section()`, `embed_lib_symbol(sym_def_node)`
+  - `add_symbol(lib_sym, ref, value, footprint, x, y, sym_uuid, pin_nums, pin_uuids, project_name)`
+  - `add_wire(x1, y1, x2, y2, wire_uuid)`, `add_label(name, x, y, label_uuid)`
+  - `next_component_position() → (x, y)` — scans existing symbols to compute next slot
+  - Public helpers: `read_lib_symbol_def(lib, sym, *, symbols_dir)`, `read_lib_symbol_pins(lib, sym, *, symbols_dir)`
+  - AST emitters: `make_symbol_node(...)`, `make_wire_node(...)`, `make_label_node(...)`
+  - `_DEFAULT_SYMBOLS_DIR = Path("/usr/share/kicad/symbols")` — avoids circular import with `commands/sch.py`
+- Added `kicad-pcb/src/kicad_pcb/pcb_doc.py` — `PcbDoc` wrapper for `.kicad_pcb`:
+  - `load(path)`, `save(path, *, backup=False)`
+  - `clear_generated_outline()`, `set_rect_outline(width, height)`
+  - `find_footprint_by_ref(ref)`, `all_footprints() → list[tuple[str, ListNode]]`, `move_footprint(ref, x, y)`
+  - `all_footprints()` falls back to footprint lib name when `Reference` property missing
+  - `_update_footprint_at` preserves rotation (extra items after x,y in `at` node)
+  - AST emitter: `make_gr_line_node(sx, sy, ex, ey, uuid, *, layer, width)`
+- Refactored `commands/sch.py`: removed all 6 regex helpers; rewritten with `SchematicDoc.load()` → mutate → `.save()`
+- Refactored `commands/pcb.py`: `cmd_set_board_size` and `cmd_auto_place` rewritten with `PcbDoc`
+- Updated `kicad_pcb/__init__.py` and `kicad_pcb/sexpr/__init__.py` to export all new Phase 4 symbols
+- Added 96 new tests: `test_sch_doc.py` (56) + `test_pcb_doc.py` (40); total suite: 449 pass
+- Committed `f1c4527` — 449/449 tests pass; ruff 0; mypy 0 errors in 3 source files
 
 ---
 
@@ -231,8 +260,8 @@ High-priority next phases:
 1. **Phase 0 — Baseline fixtures** ✅ (captured in `tests/fixtures/`)
 2. **Phase 1 — Reliability** ✅ (see below)
 3. **Phase 2 — Testability**: module split, Pydantic models, injectable adapters  
-4. **Phase 3 — kiutils parser**: replace all regex/string S-expr manipulation
-5. **Phase 4 — Doc wrappers**: `SchematicDoc`/`PcbDoc` AST editing API
+4. **Phase 3 — kiutils parser**: replace all regex/string S-expr manipulation ✅
+5. **Phase 4 — Doc wrappers**: `SchematicDoc`/`PcbDoc` AST editing API ✅
 6. **Phase 5 — Validation pipeline**: lint → validate → transactional write
 
 ---
