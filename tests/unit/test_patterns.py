@@ -235,9 +235,16 @@ class TestResistorDividerPattern:
         assert abs(delta - V_SPACING) < 1e-9
 
     def test_fallback_pins_when_no_library(self) -> None:
-        """Pattern uses fallback ["1","2"] when symbol library is unavailable."""
+        """Pattern uses fallback ["1","2"] when symbols_dir is None (offline mode).
+
+        The ``_no_sym_library`` autouse fixture patches ``_DEFAULT_SYMBOLS_DIR``
+        to ``/nonexistent``, so ``_place_component(symbols_dir=None)`` falls back
+        to ``["1", "2"]``.  Explicitly providing an invalid path would raise
+        ``UserError`` instead (see Phase 9.3 preflight checks).
+        """
         doc = _make_doc()
-        outcome = pattern_resistor_divider(doc, 0.0, 0.0, symbols_dir=Path("/nonexistent"))
+        # symbols_dir defaults to None → preflight check is skipped → fallback
+        outcome = pattern_resistor_divider(doc, 0.0, 0.0)
         for comp in outcome.components:
             assert comp.pins == ("1", "2")
 

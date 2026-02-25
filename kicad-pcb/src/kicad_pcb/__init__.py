@@ -121,6 +121,17 @@ from .patterns import (
 from .pcb_doc import PcbDoc, make_gr_line_node
 from .pipeline import ValidationMode, mutate_and_validate_pcb, mutate_and_validate_sch
 
+# Preflight semantic checks (Phase 9.3)
+from .preflight import (
+    check_footprints_assigned,
+    check_net_names_valid,
+    check_no_duplicate_refs,
+    check_refs_unique_in_request,
+    check_symbol_accessible,
+    collect_existing_net_names,
+    collect_existing_refs,
+)
+
 # Typed result objects (Phase 2.4)
 from .results import (
     AddComponentResult,
@@ -345,6 +356,14 @@ __all__ = [
     "pattern_led_resistor",
     "pattern_connector_breakout",
     "pattern_decoupling_cap",
+    # preflight checks (Phase 9.3)
+    "collect_existing_refs",
+    "collect_existing_net_names",
+    "check_no_duplicate_refs",
+    "check_refs_unique_in_request",
+    "check_net_names_valid",
+    "check_symbol_accessible",
+    "check_footprints_assigned",
     # sexpr (Phase 3)
     "Position",
     "NO_POS",

@@ -170,6 +170,10 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Path to KiCad symbol library directory",
     )
     p_pat.add_argument(
+        "--require-footprints", action="store_true", dest="require_footprints",
+        help="Fail if any component has no footprint assigned (required for PCB layout)",
+    )
+    p_pat.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
     p_pat.set_defaults(func=cmd_apply_pattern)
