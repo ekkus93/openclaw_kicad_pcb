@@ -1,6 +1,21 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T22:30:00Z_
+_Last updated: 2026-02-25T23:30:00Z_
+
+---
+
+## 2026-02-25T23:30:00Z — Phase 3: S-expression parsing/serialization
+
+- Added `kicad-pcb/src/kicad_pcb/sexpr/` sub-package (6 modules):
+  - `nodes.py`: `Position`, `NO_POS`, `AtomNode`, `StringNode`, `ListNode`, `Node` — all `@dataclass(frozen=True)`; `ListNode.key` / `ListNode.head` convenience properties
+  - `tokenizer.py`: `Token(kind, value, line, col)`; `tokenize(src) -> list[Token]`; handles parens, atoms, strings with escape sequences, whitespace, `;` line comments; raises `ParseError` on unterminated strings
+  - `parser.py`: `parse(src) -> ListNode`; `parse_file(path) -> ListNode`; discards comments; validates single top-level list, balanced nesting, no trailing content
+  - `serializer.py`: `serialize(node, indent) -> str`; `serialize_file(path, node)`; inline if ≤80 chars at current indent, else block-indented (2 spaces); `_escape_string()` helper; round-trip stable
+  - `utils.py`: `walk(node)` depth-first iterator; `find_first(root, key)`, `find_all(root, key)` — direct children only; `replace_section(root, key, new)` — replaces or appends; `append_to_section(root, key, item)` — raises `KeyError` if section missing; `node_path(root, *keys)` → dot-notation string
+  - `__init__.py`: re-exports all 20 public symbols
+- Updated main `__init__.py` and `__all__` with all 20 new sexpr symbols
+- 159 new tests: `test_sexpr_tokenizer.py`, `test_sexpr_parser.py`, `test_sexpr_serializer.py`, `test_sexpr_utils.py`
+- Committed `f658eb2` — 361/361 tests pass; ruff 0; mypy 0 errors in 25 files
 
 ---
 
