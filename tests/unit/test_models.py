@@ -1,4 +1,5 @@
 """Unit tests for kicad_pcb.models — typed domain objects."""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -55,9 +56,7 @@ class TestProjectRef:
 
     def test_from_dict_opened_key_compat(self) -> None:
         """Legacy dicts stored 'opened' instead of 'created' for cmd_open."""
-        ref = ProjectRef.from_dict(
-            {"name": "x", "path": "/tmp/x", "opened": "2026-02-01T09:00:00"}
-        )
+        ref = ProjectRef.from_dict({"name": "x", "path": "/tmp/x", "opened": "2026-02-01T09:00:00"})
         assert ref.created == "2026-02-01T09:00:00"
 
     def test_file_path_properties(self, tmp_path: Path) -> None:

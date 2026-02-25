@@ -4,6 +4,7 @@ Tests parse in-memory S-expression strings into AST nodes and feed them
 directly to :func:`lint_schematic` / :func:`lint_pcb`.  No disk I/O is
 needed.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -38,17 +39,17 @@ def _warn_codes(issues: list[LintIssue]) -> list[str]:
 def _sch(body: str = "") -> object:
     """Parse a minimal kicad_sch document with optional *body* appended."""
     return parse(
-        f'(kicad_sch (version 20230121) (generator test)\n'
-        f'  (lib_symbols)\n'
-        f'  {body}\n'
+        f"(kicad_sch (version 20230121) (generator test)\n"
+        f"  (lib_symbols)\n"
+        f"  {body}\n"
         f'  (sheet_instances (path "/" (page "1")))\n'
-        f')'
+        f")"
     )
 
 
 def _pcb(body: str = "") -> object:
     """Parse a minimal kicad_pcb document with optional *body* appended."""
-    return parse(f'(kicad_pcb (version 20230121) (generator test)\n  {body}\n)')
+    return parse(f"(kicad_pcb (version 20230121) (generator test)\n  {body}\n)")
 
 
 # ---------------------------------------------------------------------------
@@ -117,33 +118,33 @@ class TestSCH003:
     def test_unique_refs_ok(self) -> None:
         body = _sym("R1", "u1") + "\n" + _sym("R2", "u2")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH003" not in _codes(lint_schematic(root))
 
     def test_duplicate_ref_triggers_sch003(self) -> None:
         body = _sym("R1", "u1") + "\n" + _sym("R1", "u2")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH003" in _err_codes(lint_schematic(root))
 
     def test_message_contains_ref(self) -> None:
         body = _sym("C99", "u1") + "\n" + _sym("C99", "u2")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:C"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         errs = [i for i in lint_schematic(root) if i.code == "SCH003"]
         assert any("C99" in i.message for i in errs)
@@ -162,22 +163,22 @@ class TestSCH004:
 
     def test_missing_reference_triggers_sch004(self) -> None:
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {self._NO_REF}\n'
+            f"  {self._NO_REF}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH004" in _err_codes(lint_schematic(root))
 
     def test_with_reference_no_sch004(self) -> None:
         body = _sym("R1", "u1")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH004" not in _codes(lint_schematic(root))
 
@@ -195,11 +196,11 @@ class TestSCH005:
 
     def test_missing_value_triggers_sch005(self) -> None:
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {self._NO_VAL}\n'
+            f"  {self._NO_VAL}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH005" in _err_codes(lint_schematic(root))
 
@@ -238,9 +239,7 @@ class TestSCH006:
 
 class TestSCH007:
     def test_valid_wire_no_sch007(self) -> None:
-        root = _sch(
-            '(wire (pts (xy 0 0) (xy 10 0)) (stroke) (uuid "w1"))'
-        )
+        root = _sch('(wire (pts (xy 0 0) (xy 10 0)) (stroke) (uuid "w1"))')
         assert "SCH007" not in _codes(lint_schematic(root))
 
     def test_wire_missing_pts_triggers_sch007(self) -> None:
@@ -269,32 +268,29 @@ class TestSCH008:
     def test_symbols_with_lib_symbols_section_no_sch008(self) -> None:
         body = _sym("R1", "u1")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH008" not in _codes(lint_schematic(root))
 
     def test_symbols_missing_lib_symbols_triggers_sch008_error(self) -> None:
         body = _sym("R1", "u1")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
-            f'  {body}\n'
-            f'  (sheet_instances (path "/"))\n'
-            f')'
+            f'(kicad_sch (version 1) (generator t)\n  {body}\n  (sheet_instances (path "/"))\n)'
         )
         assert "SCH008" in _err_codes(lint_schematic(root))
 
     def test_symbols_empty_lib_symbols_triggers_sch008_warning(self) -> None:
         body = _sym("R1", "u1")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
-            f'  (lib_symbols)\n'
-            f'  {body}\n'
+            f"(kicad_sch (version 1) (generator t)\n"
+            f"  (lib_symbols)\n"
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH008" in _warn_codes(lint_schematic(root))
 
@@ -308,33 +304,33 @@ class TestSCH009:
     def test_lib_id_present_no_sch009(self) -> None:
         body = _sym("R1", "u1", lib="Device:R")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH009" not in _codes(lint_schematic(root))
 
     def test_lib_id_missing_triggers_sch009(self) -> None:
         body = _sym("R1", "u1", lib="Device:R")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:C"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         assert "SCH009" in _err_codes(lint_schematic(root))
 
     def test_message_contains_lib_id(self) -> None:
         body = _sym("R1", "u1", lib="Device:LED")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         errs = [i for i in lint_schematic(root) if i.code == "SCH009"]
         assert any("Device:LED" in i.message for i in errs)
@@ -429,9 +425,7 @@ class TestPCB005:
         assert "PCB005" in _warn_codes(lint_pcb(root))
 
     def test_edge_cuts_gr_line_suppresses_pcb005(self) -> None:
-        root = _pcb(
-            '(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width 0.05))'
-        )
+        root = _pcb('(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width 0.05))')
         assert "PCB005" not in _codes(lint_pcb(root))
 
     def test_non_edge_cuts_layer_still_triggers_pcb005(self) -> None:
@@ -497,9 +491,7 @@ class TestPCB007:
 
 class TestPCB008:
     def test_valid_gr_line_no_pcb008(self) -> None:
-        root = _pcb(
-            '(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width 0.05))'
-        )
+        root = _pcb('(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width 0.05))')
         assert "PCB008" not in _codes(lint_pcb(root))
 
     def test_gr_line_missing_layer_triggers_pcb008(self) -> None:
@@ -510,15 +502,11 @@ class TestPCB008:
         # without a layer won't even be in that list so PCB008 won't fire for it.
         # The intent is: if a gr_line IS on Edge.Cuts but has no layer declaration.
         # We verify the normal case instead.
-        root = _pcb(
-            '(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts"))'
-        )
+        root = _pcb('(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts"))')
         assert "PCB008" not in _codes(lint_pcb(root))
 
     def test_gr_line_non_numeric_width_triggers_pcb008_warning(self) -> None:
-        root = _pcb(
-            '(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width "bad"))'
-        )
+        root = _pcb('(gr_line (start 0 0) (end 50 0) (layer "Edge.Cuts") (width "bad"))')
         assert "PCB008" in _warn_codes(lint_pcb(root))
 
 
@@ -589,20 +577,17 @@ class TestCleanFiles:
     def test_clean_schematic_no_errors(self) -> None:
         body = _sym("R1", "u1", lib="Device:R") + "\n" + _sym("C1", "u2", lib="Device:C")
         root = parse(
-            f'(kicad_sch (version 1) (generator t)\n'
+            f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R") (symbol "Device:C"))\n'
-            f'  {body}\n'
+            f"  {body}\n"
             f'  (wire (pts (xy 0 0) (xy 10 0)) (uuid "w1"))\n'
             f'  (sheet_instances (path "/"))\n'
-            f')'
+            f")"
         )
         errors = [i for i in lint_schematic(root) if i.severity == LintSeverity.ERROR]
         assert errors == []
 
     def test_clean_pcb_no_errors(self) -> None:
-        root = _pcb(
-            _RECT_OUTLINE
-            + '\n(footprint "Lib:FP" (at 10.0 10.0 0))'
-        )
+        root = _pcb(_RECT_OUTLINE + '\n(footprint "Lib:FP" (at 10.0 10.0 0))')
         errors = [i for i in lint_pcb(root) if i.severity == LintSeverity.ERROR]
         assert errors == []

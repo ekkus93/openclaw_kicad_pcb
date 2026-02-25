@@ -1,4 +1,5 @@
 """Project management commands: new, info, open."""
+
 from __future__ import annotations
 
 import json
@@ -50,7 +51,7 @@ def cmd_new(args) -> NewProjectResult:
 
     # Create empty PCB
     pcb_file = project_dir / f"{name}.kicad_pcb"
-    pcb_content = '''(kicad_pcb (version 20230121) (generator pcbnew)
+    pcb_content = """(kicad_pcb (version 20230121) (generator pcbnew)
   (general
     (thickness 1.6)
   )
@@ -84,7 +85,7 @@ def cmd_new(args) -> NewProjectResult:
   )
   (net 0 "")
 )
-'''
+"""
     _atomic_write(pcb_file, pcb_content, "kicad_pcb", operation="new")
 
     # Save as current project
@@ -113,9 +114,7 @@ def cmd_info(args) -> InfoResult:
 
     files: tuple[tuple[str, int], ...] = ()
     if project.path.exists():
-        files = tuple(
-            (f.name, f.stat().st_size) for f in sorted(project.path.iterdir())
-        )
+        files = tuple((f.name, f.stat().st_size) for f in sorted(project.path.iterdir()))
     return InfoResult(project=project, files=files)
 
 

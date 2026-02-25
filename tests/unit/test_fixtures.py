@@ -9,6 +9,7 @@ These are NOT testing kicad_pcb.py itself yet — that comes in Phase 1+.
 The fixtures serve as static regression anchors: they must not change
 accidentally as refactoring proceeds.
 """
+
 from __future__ import annotations
 
 import re
@@ -54,7 +55,7 @@ class TestWorkingFixture:
     def test_no_id_properties(self) -> None:
         """Properties must not contain the old (id N) format rejected by kicad-cli 9."""
         raw = (WORKING / "SmokeTest_R1.kicad_sch").read_text()
-        assert not re.search(r'\(id\s+\d+\)', raw), "Found old (id N) property format"
+        assert not re.search(r"\(id\s+\d+\)", raw), "Found old (id N) property format"
 
     def test_placed_symbol_has_instances_block(self) -> None:
         """Placed symbols must have an (instances ...) block for netlist export."""
@@ -103,7 +104,7 @@ class TestBug2IdProperty:
     def test_fixture_contains_id_property(self) -> None:
         """Regression anchor: fixture must contain (id N) tokens."""
         raw = self.FIXTURE.read_text()
-        assert re.search(r'\(id\s+\d+\)', raw), (
+        assert re.search(r"\(id\s+\d+\)", raw), (
             "Bug2 fixture no longer contains the old (id N) property format"
         )
 

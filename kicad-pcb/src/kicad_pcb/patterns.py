@@ -30,6 +30,7 @@ resolves the connection without requiring explicit wire segments.
 Consecutive components are spaced ``2 × PIN_OFFSET`` apart vertically so
 their adjacent pins share the same grid coordinate.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -226,14 +227,32 @@ def pattern_resistor_divider(  # noqa: PLR0913
     # --- Placement ---
     x = origin_x
     y0 = origin_y
-    y_mid = y0 + PIN_OFFSET         # shared connection point: R1-pin2 / R2-pin1
-    y_bot = y0 + V_SPACING          # R2 centre
-    y_gnd = y_bot + PIN_OFFSET      # GND pin
+    y_mid = y0 + PIN_OFFSET  # shared connection point: R1-pin2 / R2-pin1
+    y_bot = y0 + V_SPACING  # R2 centre
+    y_gnd = y_bot + PIN_OFFSET  # GND pin
 
-    r1 = _place_component(doc, "Device:R", r1_ref, r1_value, footprint, x, y0,
-                          symbols_dir=symbols_dir, project_name=project_name)
-    r2 = _place_component(doc, "Device:R", r2_ref, r2_value, footprint, x, y_bot,
-                          symbols_dir=symbols_dir, project_name=project_name)
+    r1 = _place_component(
+        doc,
+        "Device:R",
+        r1_ref,
+        r1_value,
+        footprint,
+        x,
+        y0,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
+    r2 = _place_component(
+        doc,
+        "Device:R",
+        r2_ref,
+        r2_value,
+        footprint,
+        x,
+        y_bot,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
 
     _place_label(doc, vin_net, x, y0 - PIN_OFFSET)
     _place_label(doc, vout_net, x, y_mid)
@@ -315,10 +334,28 @@ def pattern_led_resistor(  # noqa: PLR0913
     y_d = y0 + V_SPACING
     y_gnd = y_d + PIN_OFFSET
 
-    r = _place_component(doc, "Device:R", r_ref, r_value, r_footprint, x, y0,
-                         symbols_dir=symbols_dir, project_name=project_name)
-    d = _place_component(doc, "Device:LED", d_ref, led_value, led_footprint, x, y_d,
-                         symbols_dir=symbols_dir, project_name=project_name)
+    r = _place_component(
+        doc,
+        "Device:R",
+        r_ref,
+        r_value,
+        r_footprint,
+        x,
+        y0,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
+    d = _place_component(
+        doc,
+        "Device:LED",
+        d_ref,
+        led_value,
+        led_footprint,
+        x,
+        y_d,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
 
     _place_label(doc, vcc_net, x, y0 - PIN_OFFSET)
     _place_label(doc, gnd_net, x, y_gnd)
@@ -397,9 +434,17 @@ def pattern_connector_breakout(  # noqa: PLR0913
     x = origin_x
     y_center = origin_y
 
-    conn = _place_component(doc, lib_sym, conn_ref, f"Conn_01x{n_pins:02d}", footprint,
-                            x, y_center,
-                            symbols_dir=symbols_dir, project_name=project_name)
+    conn = _place_component(
+        doc,
+        lib_sym,
+        conn_ref,
+        f"Conn_01x{n_pins:02d}",
+        footprint,
+        x,
+        y_center,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
 
     # Place one net label per pin on the right side of the connector.
     # Conn_01xN has all pins on the right; pin 1 is topmost, at
@@ -477,8 +522,17 @@ def pattern_decoupling_cap(  # noqa: PLR0913
     x = origin_x
     y0 = origin_y
 
-    c = _place_component(doc, "Device:C", c_ref, c_value, footprint, x, y0,
-                         symbols_dir=symbols_dir, project_name=project_name)
+    c = _place_component(
+        doc,
+        "Device:C",
+        c_ref,
+        c_value,
+        footprint,
+        x,
+        y0,
+        symbols_dir=symbols_dir,
+        project_name=project_name,
+    )
 
     _place_label(doc, vcc_net, x, y0 - PIN_OFFSET)
     _place_label(doc, gnd_net, x, y0 + PIN_OFFSET)

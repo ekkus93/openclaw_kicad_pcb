@@ -1,4 +1,5 @@
 """File-system helpers: S-expression validator and atomic writer."""
+
 from __future__ import annotations
 
 import contextlib
@@ -38,14 +39,10 @@ def _check_sexp(content: str, root: str) -> None:
             elif ch == ")":
                 depth -= 1
     if depth != 0:
-        raise ParseError(
-            f"Unbalanced parentheses (depth={depth}) — file may be corrupted"
-        )
+        raise ParseError(f"Unbalanced parentheses (depth={depth}) — file may be corrupted")
     stripped = content.lstrip()
     if not stripped.startswith(f"({root}"):
-        raise ParseError(
-            f"Expected root node ({root} ...) but got: {stripped[:40]!r}"
-        )
+        raise ParseError(f"Expected root node ({root} ...) but got: {stripped[:40]!r}")
 
 
 # ---------------------------------------------------------------------------

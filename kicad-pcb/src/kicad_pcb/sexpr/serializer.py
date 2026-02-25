@@ -14,6 +14,7 @@ Public API
 :func:`serialize`       — serialize a node to a string (pretty-printed)
 :func:`serialize_file`  — serialize and write to a file (UTF-8)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -106,11 +107,7 @@ def serialize(node: Node, indent: int = 0) -> str:
         return "(" + head + ")"
 
     rest = ("\n" + prefix).join(child_strs[1:])
-    return (
-        "(" + head + "\n"
-        + prefix + rest
-        + "\n" + " " * indent + ")"
-    )
+    return "(" + head + "\n" + prefix + rest + "\n" + " " * indent + ")"
 
 
 def serialize_file(path: Path, node: Node) -> None:

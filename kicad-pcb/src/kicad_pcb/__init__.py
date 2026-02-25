@@ -4,6 +4,7 @@ This ``__init__.py`` re-exports all symbols that external consumers (tests,
 scripts) have historically accessed via ``import kicad_pcb``, preserving
 backward compatibility after the Phase 2.1 module split.
 """
+
 from __future__ import annotations
 
 # Injectable adapters (Phase 2.3)

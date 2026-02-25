@@ -5,6 +5,7 @@ When run directly as a script (e.g. ``python kicad_pcb.py new myproject``),
 this file adds the sibling ``src/`` directory to *sys.path* so the
 ``kicad_pcb`` package can be imported without a prior ``pip install``.
 """
+
 import sys
 from pathlib import Path
 

@@ -3,6 +3,7 @@
 All tests use temporary directories and in-memory fixtures so no real KiCad
 installation is required.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -71,6 +72,7 @@ def pcb_file_with_outline(tmp_path: Path) -> Path:
 # Returns pre-configured (RunResult, report) pairs without invoking kicad-cli.
 # Used in TestMutateSchKicadMode / TestMutatePcbKicadMode below.
 # ---------------------------------------------------------------------------
+
 
 class _FakeCli:
     """Injectable KicadCliAdapter stub for unit tests.
@@ -145,10 +147,9 @@ class TestMutateSchSuccess:
         labels = find_all(root, "label")
         assert len(labels) == 1
 
-    def test_operation_label_included_in_parse_error_message(
-        self, sch_file: Path
-    ) -> None:
+    def test_operation_label_included_in_parse_error_message(self, sch_file: Path) -> None:
         """The *operation* arg appears in ParseError messages for bad mutations."""
+
         def _corrupt(doc: SchematicDoc) -> None:
             # Replace root with a pcb doc to trigger root-node mismatch.
             doc.root = parse("(kicad_pcb (version 1))")  # type: ignore[assignment]
@@ -170,9 +171,7 @@ class TestMutateSchSyntaxMode:
             doc.root = parse("(kicad_pcb (version 1))")  # type: ignore[assignment]
 
         with pytest.raises(ParseError):
-            mutate_and_validate_sch(
-                sch_file, _corrupt, mode=ValidationMode.SYNTAX
-            )
+            mutate_and_validate_sch(sch_file, _corrupt, mode=ValidationMode.SYNTAX)
         # Original file must be unchanged.
         assert sch_file.read_text() == original
 
@@ -188,6 +187,7 @@ class TestMutateSchSyntaxMode:
 
     def test_mode_none_skips_lint(self, sch_file: Path) -> None:
         """Mode NONE skips lint checks — duplicate UUIDs must not raise."""
+
         # In LINT mode this would raise SCH002; NONE mode skips lint entirely
         # and writes the file as long as it stays a valid kicad_sch document.
         def _add_dup_uuids(doc: SchematicDoc) -> None:
@@ -237,7 +237,7 @@ class TestMutateSchLintMode:
             sym = parse(
                 '(symbol (lib_id "Device:R") (at 50 76 0) (unit 1) (uuid "s1")\n'
                 '  (property "Value" "10k" (at 0 0 0))\n'
-                ')'
+                ")"
             )
             lib_sym = parse('(lib_symbols (symbol "Device:R"))')
             new_items = doc.root.items + (sym,) + (lib_sym,)
@@ -265,13 +265,15 @@ class TestMutateSchLintMode:
     def test_strict_mode_treats_warnings_as_errors(self, sch_file: Path) -> None:
         """strict=True must raise LintError for WARNING-severity issues."""
         # A schematic that has a symbol but empty lib_symbols → SCH008 WARNING.
-        sym = '(symbol (lib_id "Device:R") (at 50 76 0) (unit 1) (uuid "s1")\n' \
-              '  (property "Reference" "R1" (at 0 0 0))\n' \
-              '  (property "Value" "10k" (at 0 0 0))\n)'
+        sym = (
+            '(symbol (lib_id "Device:R") (at 50 76 0) (unit 1) (uuid "s1")\n'
+            '  (property "Reference" "R1" (at 0 0 0))\n'
+            '  (property "Value" "10k" (at 0 0 0))\n)'
+        )
         sch = (
-            '(kicad_sch (version 1) (generator t)\n'
-            '  (lib_symbols)\n'  # empty — triggers SCH008 warning
-            + f'  {sym}\n'
+            "(kicad_sch (version 1) (generator t)\n"
+            "  (lib_symbols)\n"  # empty — triggers SCH008 warning
+            + f"  {sym}\n"
             + '  (sheet_instances (path "/"))\n)'
         )
         sch_file.write_text(sch)
@@ -284,24 +286,23 @@ class TestMutateSchLintMode:
 
     def test_full_mode_implies_strict(self, sch_file: Path) -> None:
         """ValidationMode.FULL treats warnings as errors."""
-        sym = '(symbol (lib_id "Device:R") (at 50 76 0) (unit 1) (uuid "s1")\n' \
-              '  (property "Reference" "R1" (at 0 0 0))\n' \
-              '  (property "Value" "10k" (at 0 0 0))\n)'
+        sym = (
+            '(symbol (lib_id "Device:R") (at 50 76 0) (unit 1) (uuid "s1")\n'
+            '  (property "Reference" "R1" (at 0 0 0))\n'
+            '  (property "Value" "10k" (at 0 0 0))\n)'
+        )
         sch = (
-            '(kicad_sch (version 1) (generator t)\n'
-            '  (lib_symbols)\n'
-            + f'  {sym}\n'
-            + '  (sheet_instances (path "/"))\n)'
+            "(kicad_sch (version 1) (generator t)\n"
+            "  (lib_symbols)\n" + f"  {sym}\n" + '  (sheet_instances (path "/"))\n)'
         )
         sch_file.write_text(sch)
 
         with pytest.raises(LintError):
-            mutate_and_validate_sch(
-                sch_file, lambda doc: None, mode=ValidationMode.FULL
-            )
+            mutate_and_validate_sch(sch_file, lambda doc: None, mode=ValidationMode.FULL)
 
     def test_mode_syntax_skips_lint(self, sch_file: Path) -> None:
         """mode=SYNTAX must commit even when lint errors would fire."""
+
         # Add a duplicate uuid — in SYNTAX mode lint is never run.
         def _add_dup_uuids(doc: SchematicDoc) -> None:
             uuid_node = parse('(uuid "dup")')

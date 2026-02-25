@@ -17,6 +17,7 @@ Also covers:
 * Doctor output now includes discovery source
 * ``--symbols-dir`` CLI flag is parseable
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -45,9 +46,7 @@ def _make_sym_dir(tmp_path: Path, name: str = "symbols") -> Path:
     """Create a minimal fake symbol library directory with one .kicad_sym stub."""
     d = tmp_path / name
     d.mkdir(parents=True)
-    (d / "Device.kicad_sym").write_text(
-        "(kicad_symbol_lib (version 20211014))", encoding="utf-8"
-    )
+    (d / "Device.kicad_sym").write_text("(kicad_symbol_lib (version 20211014))", encoding="utf-8")
     return d
 
 
@@ -110,9 +109,7 @@ class TestDiscoverExplicit:
 
 
 class TestDiscoverEnvVar:
-    def test_env_var_valid_dir(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_valid_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         sym = _make_sym_dir(tmp_path)
         monkeypatch.setenv("KICAD_SYMBOLS_DIR", str(sym))
         monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
@@ -143,9 +140,7 @@ class TestDiscoverEnvVar:
         result = discover_symbols_dir()
         assert result is None
 
-    def test_env_var_unset(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_unset(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
         monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
         monkeypatch.setattr(cfg_module, "load_config", lambda: {})
@@ -185,9 +180,7 @@ class TestDiscoverConfig:
         result = discover_symbols_dir()
         assert result is None
 
-    def test_config_missing_key_falls_through(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_config_missing_key_falls_through(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
         monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
         monkeypatch.setattr(cfg_module, "load_config", lambda: {})
@@ -251,9 +244,7 @@ class TestDiscoverPlatformCandidates:
 
 
 class TestPriorityOrder:
-    def test_explicit_beats_env(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_explicit_beats_env(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         explicit_dir = _make_sym_dir(tmp_path, "explicit")
         env_dir = _make_sym_dir(tmp_path, "env")
         monkeypatch.setenv("KICAD_SYMBOLS_DIR", str(env_dir))
@@ -265,31 +256,23 @@ class TestPriorityOrder:
         assert result.source == "explicit"
         assert result.path == explicit_dir
 
-    def test_env_beats_config(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_beats_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         env_dir = _make_sym_dir(tmp_path, "env")
         cfg_dir = _make_sym_dir(tmp_path, "cfg")
         monkeypatch.setenv("KICAD_SYMBOLS_DIR", str(env_dir))
         monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
-        monkeypatch.setattr(
-            cfg_module, "load_config", lambda: {"symbols_dir": str(cfg_dir)}
-        )
+        monkeypatch.setattr(cfg_module, "load_config", lambda: {"symbols_dir": str(cfg_dir)})
 
         result = discover_symbols_dir()
         assert result is not None
         assert result.source == "env:KICAD_SYMBOLS_DIR"
 
-    def test_config_beats_platform(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_config_beats_platform(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         cfg_dir = _make_sym_dir(tmp_path, "cfg")
         platform_dir = _make_sym_dir(tmp_path, "plat")
         monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
         monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", (platform_dir,))
-        monkeypatch.setattr(
-            cfg_module, "load_config", lambda: {"symbols_dir": str(cfg_dir)}
-        )
+        monkeypatch.setattr(cfg_module, "load_config", lambda: {"symbols_dir": str(cfg_dir)})
 
         result = discover_symbols_dir()
         assert result is not None
@@ -359,12 +342,8 @@ class TestCmdAddComponentSymbolDir:
 
         sym_dir = _make_sym_dir(tmp_path)
 
-        monkeypatch.setattr(
-            "kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins
-        )
-        monkeypatch.setattr(
-            "kicad_pcb.commands.sch.read_lib_symbol_def", fake_read_def
-        )
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins)
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def", fake_read_def)
 
         # Stub out get_current_project and mutate_and_validate_sch.
         sch_file = tmp_path / "board.kicad_sch"
@@ -410,12 +389,8 @@ class TestCmdAddComponentSymbolDir:
         def fake_read_def(lib: str, sym: str, *, symbols_dir: Path):  # type: ignore[return]
             captured["def_dir"] = symbols_dir
 
-        monkeypatch.setattr(
-            "kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins
-        )
-        monkeypatch.setattr(
-            "kicad_pcb.commands.sch.read_lib_symbol_def", fake_read_def
-        )
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins)
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def", fake_read_def)
         # Make discover_symbols_dir return our tmp sym_dir.
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.discover_symbols_dir",
@@ -473,9 +448,7 @@ class TestDoctorSymbolLibraries:
         assert check.status == "ok"
         assert "env:KICAD_SYMBOLS_DIR" in (check.detail or "")
 
-    def test_not_found_gives_actionable_message(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_not_found_gives_actionable_message(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             "kicad_pcb.commands.doctor.discover_symbols_dir",
             lambda: None,
@@ -498,9 +471,7 @@ class TestDoctorSymbolLibraries:
 class TestCliSymbolsDirFlag:
     def test_symbols_dir_flag_is_accepted(self) -> None:
         parser = _build_parser()
-        args = parser.parse_args(
-            ["add-component", "Device:R", "R1", "--symbols-dir", "/tmp/syms"]
-        )
+        args = parser.parse_args(["add-component", "Device:R", "R1", "--symbols-dir", "/tmp/syms"])
         assert args.symbols_dir == "/tmp/syms"
 
     def test_symbols_dir_defaults_to_none(self) -> None:

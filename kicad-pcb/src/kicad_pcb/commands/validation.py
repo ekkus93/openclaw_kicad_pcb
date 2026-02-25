@@ -1,4 +1,5 @@
 """Design/electrical rules check commands: drc, erc."""
+
 from __future__ import annotations
 
 from ..adapters import KicadCliAdapter
@@ -32,9 +33,7 @@ def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> DrcResult:
     result, report = cli.drc(pcb_file, output_file)
 
     validation = (
-        ValidationResult.from_report(report, result.returncode)
-        if report is not None
-        else None
+        ValidationResult.from_report(report, result.returncode) if report is not None else None
     )
     return DrcResult(passed=result.returncode == 0, stderr=result.stderr, validation=validation)
 

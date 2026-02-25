@@ -4,6 +4,7 @@ These commands operate directly on existing KiCad files without requiring an
 active project context.  Each function accepts a plain ``argparse.Namespace``
 with a ``path`` attribute pointing to the target file.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

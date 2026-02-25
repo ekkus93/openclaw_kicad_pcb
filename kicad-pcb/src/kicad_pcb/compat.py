@@ -25,6 +25,7 @@ Usage::
     version = parse_version("9.0.7")
     require_capability(version, CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
 """
+
 from __future__ import annotations
 
 import re
@@ -86,10 +87,7 @@ def parse_version(version_string: str) -> KiCadVersion:
     """
     m = _VERSION_RE.search(version_string)
     if not m:
-        raise ValueError(
-            f"Cannot extract version from {version_string!r}; "
-            "expected X.Y.Z format"
-        )
+        raise ValueError(f"Cannot extract version from {version_string!r}; expected X.Y.Z format")
     return KiCadVersion(int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
 

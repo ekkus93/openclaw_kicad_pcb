@@ -7,6 +7,7 @@ Factory class-methods (``from_args``, ``from_dict``, etc.) centralise the
 argument-normalisation and string-parsing logic that was previously scattered
 across command functions.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

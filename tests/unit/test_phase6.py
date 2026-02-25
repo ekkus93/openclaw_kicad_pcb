@@ -9,6 +9,7 @@ Covers:
 - LintFileResult and ValidateFileResult formatters show suggestions
 - CLI exits non-zero when lint/validate finds errors
 """
+
 from __future__ import annotations
 
 import argparse

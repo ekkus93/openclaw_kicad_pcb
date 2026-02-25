@@ -3,6 +3,7 @@
 Tests use in-memory string fixtures and temporary directories; no system
 KiCad installation is required.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -148,8 +149,7 @@ class TestEnsureLibSymbolsSection:
         doc.ensure_lib_symbols_section()
         doc.ensure_lib_symbols_section()  # second call should be idempotent
         count = sum(
-            1 for item in doc.root.items
-            if hasattr(item, "key") and item.key == "lib_symbols"
+            1 for item in doc.root.items if hasattr(item, "key") and item.key == "lib_symbols"
         )
         assert count == 1
 
@@ -261,8 +261,16 @@ class TestAddSymbol:
     def test_symbol_added_to_root(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
         doc.add_symbol(
-            "Device:R", "R1", "10k", "",
-            50.8, 76.2, "sym-uuid", ["1", "2"], ["p1", "p2"], "test_proj",
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "sym-uuid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "test_proj",
         )
         syms = find_all(doc.root, "symbol")
         assert len(syms) == 1
@@ -271,13 +279,19 @@ class TestAddSymbol:
     def test_symbol_inserted_before_sheet_instances(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
         doc.add_symbol(
-            "Device:R", "R1", "10k", "",
-            50.8, 76.2, "sym-uuid", ["1", "2"], ["p1", "p2"], "proj",
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "sym-uuid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
         )
         items = doc.root.items
-        sym_idx = next(
-            i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "symbol"
-        )
+        sym_idx = next(i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "symbol")
         si_idx = next(
             i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "sheet_instances"
         )
@@ -285,8 +299,18 @@ class TestAddSymbol:
 
     def test_symbol_has_correct_lib_id(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
-        doc.add_symbol("Device:C", "C1", "100n", "Capacitor_SMD:C_0402",
-                       30.0, 50.0, "u1", ["1", "2"], ["p1", "p2"], "p")
+        doc.add_symbol(
+            "Device:C",
+            "C1",
+            "100n",
+            "Capacitor_SMD:C_0402",
+            30.0,
+            50.0,
+            "u1",
+            ["1", "2"],
+            ["p1", "p2"],
+            "p",
+        )
         syms = find_all(doc.root, "symbol")
         lib_id = find_first(syms[0], "lib_id")
         assert lib_id is not None
@@ -294,8 +318,7 @@ class TestAddSymbol:
 
     def test_symbol_has_reference_property(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
-        doc.add_symbol("Device:R", "R42", "1k", "",
-                       50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "p")
+        doc.add_symbol("Device:R", "R42", "1k", "", 50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "p")
         syms = find_all(doc.root, "symbol")
         props = find_all(syms[0], "property")
         refs = [p for p in props if p.items[1].value == "Reference"]  # type: ignore[union-attr]
@@ -303,16 +326,16 @@ class TestAddSymbol:
 
     def test_symbol_has_pins(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
-        doc.add_symbol("Device:R", "R1", "10k", "",
-                       50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "p")
+        doc.add_symbol("Device:R", "R1", "10k", "", 50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "p")
         syms = find_all(doc.root, "symbol")
         pins = find_all(syms[0], "pin")
         assert len(pins) == 2
 
     def test_symbol_serializable(self) -> None:
         doc = _doc_from(MINIMAL_SCH)
-        doc.add_symbol("Device:R", "R1", "10k", "",
-                       50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "proj")
+        doc.add_symbol(
+            "Device:R", "R1", "10k", "", 50.8, 76.2, "u1", ["1", "2"], ["p1", "p2"], "proj"
+        )
         text = serialize(doc.root)
         # Round-trip
         doc2 = SchematicDoc(parse(text))
@@ -335,9 +358,7 @@ class TestAddWire:
         doc = _doc_from(MINIMAL_SCH)
         doc.add_wire(50.8, 76.2, 76.2, 76.2, "w1")
         items = doc.root.items
-        w_idx = next(
-            i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "wire"
-        )
+        w_idx = next(i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "wire")
         si_idx = next(
             i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "sheet_instances"
         )
@@ -383,9 +404,7 @@ class TestAddLabel:
         doc = _doc_from(MINIMAL_SCH)
         doc.add_label("GND", 60.0, 50.0, "lbl1")
         items = doc.root.items
-        l_idx = next(
-            i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "label"
-        )
+        l_idx = next(i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "label")
         si_idx = next(
             i for i, it in enumerate(items) if hasattr(it, "key") and it.key == "sheet_instances"
         )
@@ -459,15 +478,31 @@ class TestSchematicDocSave:
 class TestMakeSymbolNode:
     def test_key_is_symbol(self) -> None:
         node = make_symbol_node(
-            "Device:R", "R1", "10k", "", 50.8, 76.2, "uid",
-            ["1", "2"], ["p1", "p2"], "proj",
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "uid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
         )
         assert node.key == "symbol"
 
     def test_contains_lib_id(self) -> None:
         node = make_symbol_node(
-            "Device:R", "R1", "10k", "", 50.8, 76.2, "uid",
-            ["1", "2"], ["p1", "p2"], "proj",
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "uid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
         )
         lib_id = find_first(node, "lib_id")
         assert lib_id is not None
@@ -475,8 +510,16 @@ class TestMakeSymbolNode:
 
     def test_contains_uuid(self) -> None:
         node = make_symbol_node(
-            "Device:R", "R1", "10k", "", 0.0, 0.0, "my-uuid-1",
-            ["1"], ["pu1"], "p",
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            0.0,
+            0.0,
+            "my-uuid-1",
+            ["1"],
+            ["pu1"],
+            "p",
         )
         uuid_node = find_first(node, "uuid")
         assert uuid_node is not None
@@ -484,8 +527,16 @@ class TestMakeSymbolNode:
 
     def test_contains_instances_section(self) -> None:
         node = make_symbol_node(
-            "Device:C", "C1", "100n", "", 0.0, 0.0, "u",
-            [], [], "myproject",
+            "Device:C",
+            "C1",
+            "100n",
+            "",
+            0.0,
+            0.0,
+            "u",
+            [],
+            [],
+            "myproject",
         )
         inst = find_first(node, "instances")
         assert inst is not None

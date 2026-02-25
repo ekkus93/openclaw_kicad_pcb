@@ -38,6 +38,7 @@ From :mod:`.utils`:
 From :mod:`.builder`:
     ``atom``, ``string``, ``L``, ``fnum``
 """
+
 from __future__ import annotations
 
 from .builder import L, atom, fnum, string

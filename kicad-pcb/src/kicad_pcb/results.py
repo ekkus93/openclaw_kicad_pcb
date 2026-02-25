@@ -4,6 +4,7 @@ Phase 2.4: command functions return structured results; the CLI layer
 (formatting.py / cli.py) is responsible for formatting and printing them.
 No ``print()`` calls belong in command modules.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -244,7 +245,7 @@ class LintFileResult:
     """Result of the ``lint-sch`` / ``lint-pcb`` command."""
 
     path: Path
-    issues: tuple[_LintFinding, ...]   # type: ignore[valid-type]
+    issues: tuple[_LintFinding, ...]  # type: ignore[valid-type]
     error_count: int
     warning_count: int
     ok: bool  # True when no ERROR-severity issues are present

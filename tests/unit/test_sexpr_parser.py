@@ -8,6 +8,7 @@ Phase 3.2 coverage:
 - comment tokens are silently discarded
 - convenience assertions: root.key, root.head, node positions
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -77,9 +78,7 @@ class TestParseNested:
         assert child.key == "version"
 
     def test_multiple_nested(self) -> None:
-        root = parse(
-            "(kicad_sch (version 20230121) (generator eeschema))"
-        )
+        root = parse("(kicad_sch (version 20230121) (generator eeschema))")
         assert len(root.items) == 3
         assert root.items[1].key == "version"  # type: ignore[union-attr]
         assert root.items[2].key == "generator"  # type: ignore[union-attr]

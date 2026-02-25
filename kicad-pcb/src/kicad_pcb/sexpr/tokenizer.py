@@ -21,6 +21,7 @@ KiCad's own loose escaping behaviour).
 
 Raises :class:`~kicad_pcb.errors.ParseError` on unterminated strings.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,8 +38,8 @@ class Token:
 
     kind: TokenKind
     value: str  # for "string": unescaped content; for others: raw text
-    line: int   # 1-based
-    col: int    # 1-based (start of token)
+    line: int  # 1-based
+    col: int  # 1-based (start of token)
 
     def __repr__(self) -> str:
         return f"Token({self.kind}, {self.value!r}, {self.line}:{self.col})"
@@ -131,9 +132,7 @@ def tokenize(src: str) -> list[Token]:  # noqa: PLR0912, PLR0915
                     chars.append(ch)
                     _step()
             if i >= n:
-                raise ParseError(
-                    f"{tok_line}:{tok_col}: unterminated string literal"
-                )
+                raise ParseError(f"{tok_line}:{tok_col}: unterminated string literal")
             _step()  # consume closing quote
             tokens.append(Token("string", "".join(chars), tok_line, tok_col))
             continue

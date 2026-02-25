@@ -1,4 +1,5 @@
 """External service commands: pcbway-quote."""
+
 from __future__ import annotations
 
 from ..config import get_current_project

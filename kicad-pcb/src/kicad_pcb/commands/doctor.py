@@ -1,4 +1,5 @@
 """System health check command: doctor."""
+
 from __future__ import annotations
 
 import shutil
@@ -184,9 +185,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         Path.home() / ".local/bin/freerouting.jar",
         Path("/opt/freerouting/freerouting.jar"),
     ]
-    freerouting_jar: Path | None = next(
-        (p for p in freerouting_candidates if p.exists()), None
-    )
+    freerouting_jar: Path | None = next((p for p in freerouting_candidates if p.exists()), None)
     if freerouting_jar:
         checks.append(
             DoctorCheckItem(status="ok", label="Freerouting JAR", message=str(freerouting_jar))
@@ -201,4 +200,3 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         )
 
     return DoctorResult(overall_ok=overall_ok, checks=tuple(checks))
-

@@ -8,6 +8,7 @@ No KiCad installation or symbol library files are required for the pure
 unit tests because ``check_symbol_accessible`` is tested with
 ``symbols_dir=None`` (skip) or ``symbols_dir=Path("/nonexistent")`` (fail-fast).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -70,11 +71,7 @@ def _doc_with_symbol(ref: str = "R1") -> SchematicDoc:
 
 def _ref_count(doc: SchematicDoc) -> int:
     """Count placed symbol nodes in the schematic root."""
-    return sum(
-        1
-        for item in doc.root.items
-        if hasattr(item, "key") and item.key == "symbol"
-    )
+    return sum(1 for item in doc.root.items if hasattr(item, "key") and item.key == "symbol")
 
 
 # ---------------------------------------------------------------------------
@@ -121,9 +118,14 @@ class TestCollectExistingNetNames:
     def test_labels_collected_after_pattern(self) -> None:
         doc = _make_doc()
         pattern_resistor_divider(
-            doc, 50.8, 76.2,
-            r1_ref="R1", r2_ref="R2",
-            vin_net="VIN", vout_net="VOUT", gnd_net="GND",
+            doc,
+            50.8,
+            76.2,
+            r1_ref="R1",
+            r2_ref="R2",
+            vin_net="VIN",
+            vout_net="VOUT",
+            gnd_net="GND",
         )
         names = collect_existing_net_names(doc)
         assert {"VIN", "VOUT", "GND"}.issubset(names)
@@ -316,9 +318,7 @@ class TestCheckSymbolAccessible:
         if not symbols_dir.exists():
             pytest.skip("KiCad symbol library not installed")
         with pytest.raises(UserError, match="not found"):
-            check_symbol_accessible(
-                "Device:ThisSymbolDoesNotExistXYZ123", symbols_dir=symbols_dir
-            )
+            check_symbol_accessible("Device:ThisSymbolDoesNotExistXYZ123", symbols_dir=symbols_dir)
 
     def test_real_symbol_accessible(self) -> None:
         symbols_dir = Path("/usr/share/kicad/symbols")
@@ -340,9 +340,7 @@ class TestCheckSymbolAccessible:
 class TestCheckFootprintsAssigned:
     def test_require_false_never_raises(self) -> None:
         # Even with empty footprints, require=False is a no-op
-        check_footprints_assigned(
-            [("R1", ""), ("R2", "")], require=False
-        )
+        check_footprints_assigned([("R1", ""), ("R2", "")], require=False)
 
     def test_require_false_is_default(self) -> None:
         check_footprints_assigned([("R1", ""), ("R2", "")])
@@ -355,9 +353,7 @@ class TestCheckFootprintsAssigned:
 
     def test_require_true_one_missing_raises(self) -> None:
         with pytest.raises(UserError, match="R1"):
-            check_footprints_assigned(
-                [("R1", ""), ("R2", "Resistor_SMD:R_0402")], require=True
-            )
+            check_footprints_assigned([("R1", ""), ("R2", "Resistor_SMD:R_0402")], require=True)
 
     def test_require_true_multiple_missing_all_named(self) -> None:
         with pytest.raises(UserError) as exc_info:
@@ -419,14 +415,14 @@ class TestPreflightIntegrationResistorDivider:
     def test_require_footprints_missing_raises(self) -> None:
         doc = _make_doc()
         with pytest.raises(UserError, match="(?i)footprint"):
-            pattern_resistor_divider(
-                doc, 0, 0, footprint="", require_footprints=True
-            )
+            pattern_resistor_divider(doc, 0, 0, footprint="", require_footprints=True)
 
     def test_require_footprints_present_passes(self) -> None:
         doc = _make_doc()
         outcome = pattern_resistor_divider(
-            doc, 0, 0,
+            doc,
+            0,
+            0,
             footprint="Resistor_SMD:R_0402_1005Metric",
             require_footprints=True,
         )
@@ -461,7 +457,9 @@ class TestPreflightIntegrationLedResistor:
         doc = _make_doc()
         with pytest.raises(UserError, match="(?i)footprint"):
             pattern_led_resistor(
-                doc, 0, 0,
+                doc,
+                0,
+                0,
                 r_footprint="Resistor_SMD:R_0402",
                 led_footprint="",
                 require_footprints=True,
@@ -495,9 +493,7 @@ class TestPreflightIntegrationConnectorBreakout:
     def test_require_footprints_connector_raises(self) -> None:
         doc = _make_doc()
         with pytest.raises(UserError, match="(?i)footprint"):
-            pattern_connector_breakout(
-                doc, 0, 0, footprint="", require_footprints=True
-            )
+            pattern_connector_breakout(doc, 0, 0, footprint="", require_footprints=True)
 
     def test_valid_call_succeeds(self) -> None:
         doc = _make_doc()
@@ -555,15 +551,13 @@ class TestNoMutationOnPreflightFailure:
         # Place R1 legitimately
         pattern_resistor_divider(doc, 50.8, 76.2, r1_ref="R1", r2_ref="R2")
         symbols_before = list(
-            item for item in doc.root.items
-            if hasattr(item, "key") and item.key == "symbol"
+            item for item in doc.root.items if hasattr(item, "key") and item.key == "symbol"
         )
         # Attempt to place R1 again — preflight should catch it
         with pytest.raises(UserError, match="R1"):
             pattern_resistor_divider(doc, 76.2, 76.2, r1_ref="R1", r2_ref="R3")
         symbols_after = list(
-            item for item in doc.root.items
-            if hasattr(item, "key") and item.key == "symbol"
+            item for item in doc.root.items if hasattr(item, "key") and item.key == "symbol"
         )
         assert len(symbols_before) == len(symbols_after)
 
