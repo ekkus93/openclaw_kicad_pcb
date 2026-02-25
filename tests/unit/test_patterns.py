@@ -545,13 +545,13 @@ class TestCmdApplyPattern:
 
     @pytest.fixture(autouse=True)  # noqa: F811
     def _no_sym_library(self, monkeypatch: pytest.MonkeyPatch) -> None:  # type: ignore[override]
-        """Override: cmd tests use the real KiCad library via discover_symbols_dir.
+        """Redirect symbol library to a nonexistent path for all cmd tests.
 
-        The real library is needed so that placed symbols can be embedded in
-        ``lib_symbols`` and pass the SCH009 lint check during validation.
+        When the library is unavailable, ``_place_component`` falls back to
+        pin list ``["1", "2"]`` and embeds a minimal stub symbol so that the
+        SCH009 lint check passes without a real KiCad installation.
         """
-        # Intentionally no-op: do NOT redirect _DEFAULT_SYMBOLS_DIR.
-        # discover_symbols_dir will find the real /usr/share/kicad/symbols.
+        monkeypatch.setattr("kicad_pcb.sch_doc._DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
 
     _MINIMAL_SCH = dedent("""\
         (kicad_sch (version 20230121) (generator test)
