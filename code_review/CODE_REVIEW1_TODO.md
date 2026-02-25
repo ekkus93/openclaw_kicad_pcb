@@ -346,9 +346,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Backup creation behavior works as configured — `test_backup_created_before_overwrite` and `test_no_backup_when_flag_false` added.
 
 ### 7.5 Unit tests for CLI parsing/dispatch
-- [ ] Command argument parsing matches documented signatures.
-- [ ] Invalid args produce useful messages and non-zero exit.
-- [x] `--json` output mode returns structured responses — `test_phase6.py` `TestFormatResultJson` covers JSON serialisation of all result types.
+- [x] Command argument parsing matches documented signatures — `test_cli.py` `TestArgParsing` (35 tests): all positional, optional, and default args verified against `_build_parser()` Namespace output — `new`, `add-component`, `add-net`, `connect`, `set-board-size`, `auto-place`, `auto-route`, `drc`, `lint-sch/pcb`, `validate-sch/pcb`, `format-sch/pcb`, `pcbway-quote`, `doctor`.
+- [x] Invalid args produce useful messages and non-zero exit — `TestInvalidArgs` (18 tests): missing required positionals and flags each produce `SystemExit(2)`; error text goes to stderr; non-numeric types for typed flags also caught.
+- [x] `--json` output mode returns structured responses — `test_phase6.py` `TestFormatResultJson` covers JSON serialisation of all result types; `test_cli.py` covers `--json` flag parsing (global, before and with commands).
 
 ### 7.6 Golden file tests (critical for regression prevention)
 - [x] Regression fixtures for known-bad cases added (`tests/fixtures/broken/`: bug1–bug4 `.kicad_sch` files).
@@ -437,7 +437,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Syntax + structural linting implemented and enabled by default — `kicad_pcb.lint` with 18 rules (SCH/PCB 001-009), `ValidationMode.LINT` default, `LintError` on failures (Phase 5).
 - [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — `KicadCliAdapter` exists and `ValidationMode.KICAD/FULL` is wired, but not the default mutation mode.
 - [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
-- [x] Unit tests cover parser/serializer and core mutations — 594 unit tests across 14 test files (tokenizer, parser, serializer, `SchematicDoc`, `PcbDoc`, lint, pipeline, Phase 6 commands).
+- [x] Unit tests cover parser/serializer and core mutations — 647 unit tests across 15 test files (tokenizer, parser, serializer, `SchematicDoc`, `PcbDoc`, lint, pipeline, Phase 6 commands, CLI dispatch).
 - [x] Regression fixtures for known-bad cases (`tests/fixtures/broken/` has bug1–bug4).
 
 ### “Rock solid” target
@@ -461,8 +461,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 8. [x] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 5) — `kicad_pcb.pipeline`, `ValidationMode`, `5e24bd7`.
 9. [x] Add CLI UX improvements: `--dry-run`, `--json`, lint/validate/format commands, structured error display, `LINT_SUGGESTIONS` (Phase 6) — `099266e`; 584 tests pass.
 10. [x] Add mocked kicad-cli tests for KICAD/FULL modes (`TestMutateSchKicadMode`, `TestMutatePcbKicadMode` using `_FakeCli` stub) — 594 tests pass; Phase 7.4 fully done.
-11. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 14 test files; golden file fixtures and full integration flow tests remain).
-12. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
+11. [x] Add CLI arg-parsing tests — extract `_build_parser()` from `cli.py`; `test_cli.py` `TestArgParsing` + `TestInvalidArgs` (53 tests); 647 tests pass; Phase 7.5 fully done.
+12. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 15 test files; golden file fixtures and full integration flow tests remain).
+13. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
 
 ---
 
