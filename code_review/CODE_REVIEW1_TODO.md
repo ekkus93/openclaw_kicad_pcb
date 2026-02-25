@@ -125,9 +125,13 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - Committed `TBD` — 150/150 tests, ruff 0, mypy 0 errors in 17 files.
 
 ### 2.4 Separate CLI presentation from business logic
-- [ ] Refactor command handlers so they return structured results instead of printing directly.
-- [ ] Move formatting/printing to CLI layer.
-- [ ] Ensure services raise typed exceptions rather than exiting.
+- [x] Refactor command handlers so they return structured results instead of printing directly.
+- [x] Move formatting/printing to CLI layer.
+- [x] Ensure services raise typed exceptions rather than exiting.
+- Committed `1ec2d8c` — 202/202 tests, ruff 0, mypy 0 errors in 19 files.
+  Added `results.py` (22 frozen dataclasses) + `formatting.py` (formatter registry, `format_result()`).
+  All 8 command modules return typed results; zero `print()` in command layer.
+  52 new tests in `tests/unit/test_presentation.py`.
 
 ---
 

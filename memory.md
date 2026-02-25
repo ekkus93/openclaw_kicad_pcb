@@ -1,6 +1,33 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T21:30:00Z_
+_Last updated: 2026-02-25T22:30:00Z_
+
+---
+
+## 2026-02-25T22:30:00Z — Phase 2.4: separate CLI presentation from business logic
+
+- Added `kicad-pcb/src/kicad_pcb/results.py` — 22 `@dataclass(frozen=True)` result types:
+  - project: `NewProjectResult`, `InfoResult`, `OpenResult`
+  - validation: `DrcResult`, `ErcResult`
+  - export: `ExportGerbersResult`, `ExportDrillResult`, `ExportBomResult`, `PackageFabResult`, `ExportPosResult`, `Export3dResult`
+  - preview: `PreviewSchematicResult`, `PreviewPcbResult`
+  - pcb: `SetBoardSizeResult`, `ImportNetlistResult`, `AutoPlaceResult`, `AutoRouteResult`
+  - sch: `AddComponentResult`, `AddNetResult`, `ConnectResult`
+  - doctor: `DoctorCheckItem`, `DoctorResult`
+  - external: `PcbwayQuoteResult`
+- Added `kicad-pcb/src/kicad_pcb/formatting.py` — formatter registry pattern:
+  - `_FORMATTERS: dict[type, callable]` + `@_register(cls)` decorator
+  - `format_result(result) -> list[str]` — dispatches by type; unknown types return `[repr(result)]`
+  - 22 `_fmt_*` functions, one per result type
+- Updated all 8 command modules: zero `print()` calls; all commands return typed results
+  - Silent print+return failure paths converted to `raise UserError/ToolError`
+  - `cmd_doctor` changed from `raise UserError` at end → returns `DoctorResult(overall_ok, checks=tuple)`
+- Updated `cli.py` dispatcher: `result = args.func(args); for line in format_result(result): print(line)`;
+  exit-code guard: `if isinstance(result, DoctorResult) and not result.overall_ok: sys.exit(1)`
+- Updated `__init__.py`: exports all 23 result types + `format_result`
+- Added 52 new tests in `tests/unit/test_presentation.py`
+- Updated existing `TestCmdDoctor` in `test_phase1_reliability.py` to check `DoctorResult` shape
+- Committed `1ec2d8c` — 202/202 tests pass; ruff 0; mypy 0 errors in 19 files
 
 ---
 
