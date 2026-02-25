@@ -96,10 +96,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
   - [x] `commands/external.py` (`cmd_pcbway_quote`)
   - [x] `commands/doctor.py` (`cmd_doctor`)
   - [x] `__init__.py` (re-exports all public symbols for backward compat)
-  - [ ] `models.py` (typed domain models — deferred to 2.2)
-  - [ ] `sexpr/*` (S-expression AST — deferred to Phase 3)
-  - [x] `sch_doc.py`, `pcb_doc.py` (deferred to Phase 4)
-  - [ ] `lint/*`, `validate/*`, `services/*` (deferred to later phases)
+  - [x] `models.py` (typed domain models — done in Phase 2.2)
+  - [x] `sexpr/*` (S-expression AST — done in Phase 3)
+  - [x] `sch_doc.py`, `pcb_doc.py` (done in Phase 4)
+  - [x] `commands/lint.py` (`cmd_lint_sch/pcb`, `cmd_validate_sch/pcb`, `cmd_format_sch/pcb` — done in Phase 6)
 - [x] Keep `scripts/kicad_pcb.py` as a thin 17-line entrypoint wrapper.
 - [x] pyproject.toml updated: pythonpath + coverage source pointing to `kicad-pcb/src`.
 - Committed `01809c6` — 49/49 tests, ruff 0, mypy 0 errors in 15 files.
@@ -278,22 +278,23 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ---
 
 ## Phase 6 — CLI and Skill UX Improvements (Reliability + Usability)
+<!-- Completed in commit 099266e — 584 tests pass -->
 
 ### 6.1 Command surface cleanup
-- [ ] Ensure command names and semantics are consistent and obvious.
-- [ ] Rename commands that over-promise (if needed) or improve docs to set expectations.
-- [ ] Add `--dry-run` for mutating commands (validate and show diff/summary without commit).
-- [ ] Add `--json` output mode for machine-friendly responses (useful for OpenClaw automation).
+- [x] Ensure command names and semantics are consistent and obvious.
+- [x] Rename commands that over-promise (if needed) or improve docs to set expectations.
+- [x] Add `--dry-run` for mutating commands (validate and show diff/summary without commit) — `add-component`, `add-net`, `connect`, `set-board-size`, `auto-place`; pipeline skips `_atomic_write`; result carries `dry_run=True`.
+- [x] Add `--json` output mode for machine-friendly responses (useful for OpenClaw automation) — global `--json` flag; all results serialised via `format_result_json()` using `dataclasses.asdict` + `_ResultEncoder` (Path→str, Enum→value).
 
 ### 6.2 Improve user-facing diagnostics
-- [ ] Print lint/validation errors in a clear, structured way.
-- [ ] Include file path, operation, and issue codes.
-- [ ] Suggest likely fixes for common failures (missing symbol library, duplicate refs, malformed coords).
+- [x] Print lint/validation errors in a clear, structured way — `LintError` caught in CLI and printed per-issue with code, severity, message.
+- [x] Include file path, operation, and issue codes — shown in both human-readable and `--json` modes.
+- [x] Suggest likely fixes for common failures (missing symbol library, duplicate refs, malformed coords) — `LINT_SUGGESTIONS: dict[str, str]` (19 entries, SCH001–SCH009, PCB001–PCB009) shown inline.
 
-### 6.3 Add “format/lint/validate” explicit commands
-- [ ] `lint-sch`, `lint-pcb` commands (or unified `lint`) for existing files.
-- [ ] `validate-sch`, `validate-pcb` (syntax + lint + optional KiCad CLI checks).
-- [ ] Optional formatter command for canonical S-expression formatting.
+### 6.3 Add "format/lint/validate" explicit commands
+- [x] `lint-sch`, `lint-pcb` commands for existing files — standalone in `commands/lint.py`; return `LintFileResult`.
+- [x] `validate-sch`, `validate-pcb` (syntax + lint + optional KiCad CLI checks) — return `ValidateFileResult`; CLI exits non-zero on failure.
+- [x] Optional formatter command for canonical S-expression formatting — `format-sch`, `format-pcb`; round-trip parse→serialize→atomic write if changed; return `FormatFileResult`.
 
 ---
 
@@ -308,46 +309,46 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Add markers (`integration`, `requires_kicad`, `unit` all configured in `pyproject.toml`).
 
 ### 7.2 Unit tests for S-expression core (highest priority)
-- [ ] Tokenizer tests
-  - [ ] atoms
-  - [ ] quoted strings
-  - [ ] escaped quotes
-  - [ ] nested parentheses
-  - [ ] comments (if supported)
-  - [ ] position tracking
-- [ ] Parser tests
-  - [ ] valid nested lists
-  - [ ] malformed input (unexpected EOF, bad string)
-  - [ ] precise error locations
-- [ ] Serializer tests
-  - [ ] round-trip parse/serialize/parse equivalence
-  - [ ] deterministic formatting
-  - [ ] escaping correctness
+- [x] Tokenizer tests (`test_sexpr_tokenizer.py`)
+  - [x] atoms
+  - [x] quoted strings
+  - [x] escaped quotes
+  - [x] nested parentheses
+  - [x] comments (if supported)
+  - [x] position tracking
+- [x] Parser tests (`test_sexpr_parser.py`)
+  - [x] valid nested lists
+  - [x] malformed input (unexpected EOF, bad string)
+  - [x] precise error locations
+- [x] Serializer tests (`test_sexpr_serializer.py`)
+  - [x] round-trip parse/serialize/parse equivalence
+  - [x] deterministic formatting
+  - [x] escaping correctness
 
 ### 7.3 Unit tests for KiCad document wrappers
-- [ ] `SchematicDoc` tests
-  - [ ] add symbol into empty/non-empty sections
-  - [ ] add wire/label without breaking existing content
-  - [ ] embed symbol once (no duplicate embed)
-  - [ ] duplicate ref detection lint
-  - [ ] malformed coordinates rejected
-- [ ] `PcbDoc` tests
-  - [ ] set rectangle outline creates expected geometry
-  - [ ] outline replacement only removes generated outline
-  - [ ] move footprint updates `at` and preserves rotation
-  - [ ] malformed footprint `at` linted/rejected
+- [x] `SchematicDoc` tests (`test_sch_doc.py`)
+  - [x] add symbol into empty/non-empty sections
+  - [x] add wire/label without breaking existing content
+  - [x] embed symbol once (no duplicate embed)
+  - [x] duplicate ref detection lint
+  - [x] malformed coordinates rejected
+- [x] `PcbDoc` tests (`test_pcb_doc.py`)
+  - [x] set rectangle outline creates expected geometry
+  - [x] outline replacement only removes generated outline
+  - [x] move footprint updates `at` and preserves rotation
+  - [x] malformed footprint `at` linted/rejected
 
 ### 7.4 Unit tests for validation pipeline
 - [x] Failed syntax validation prevents overwrite (`test_no_temp_file_left_on_parse_error`, `test_with_root_check_bad_content_no_clobber`).
-- [ ] Failed lint prevents overwrite — no lint framework yet.
-- [ ] Failed mocked `kicad-cli` validation prevents overwrite — not implemented.
+- [x] Failed lint prevents overwrite — `test_pipeline.py` covers lint-failure rollback; `mutate_and_validate_sch/pcb` raises `LintError` before `_atomic_write` (Phase 5).
+- [ ] Failed mocked `kicad-cli` validation prevents overwrite — not yet tested with mock.
 - [x] Successful validation commits atomically (`test_writes_content`, `test_with_root_check_valid`).
 - [x] Backup creation behavior works as configured — `test_backup_created_before_overwrite` and `test_no_backup_when_flag_false` added.
 
 ### 7.5 Unit tests for CLI parsing/dispatch
 - [ ] Command argument parsing matches documented signatures.
 - [ ] Invalid args produce useful messages and non-zero exit.
-- [ ] `--json` output mode returns structured responses.
+- [x] `--json` output mode returns structured responses — `test_phase6.py` `TestFormatResultJson` covers JSON serialisation of all result types.
 
 ### 7.6 Golden file tests (critical for regression prevention)
 - [x] Regression fixtures for known-bad cases added (`tests/fixtures/broken/`: bug1–bug4 `.kicad_sch` files).
@@ -431,20 +432,20 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ## Deliverables Checklist (Definition of Done)
 
 ### Must-have for “usable and not horrible”
-- [ ] No regex-based structural edits for `.kicad_sch` / `.kicad_pcb` mutation paths — current schematic mutations still use string/regex operations.
-- [x] All mutating commands use transactional write + validation pipeline — `mutate_and_validate_sch/pcb` in Phase 5 (`5e24bd7`).
-- [ ] Syntax + structural linting implemented and enabled by default — only basic sexp balance/root check exists; no structural lint framework.
-- [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — not integrated into mutation pipeline.
+- [x] No regex-based structural edits for `.kicad_sch` / `.kicad_pcb` mutation paths — all mutations use `SchematicDoc`/`PcbDoc` AST wrappers via the pipeline (Phase 4+5).
+- [x] All mutating commands use transactional write + validation pipeline — `mutate_and_validate_sch/pcb` in Phase 5 (`5e24bd7`); `--dry-run` added in Phase 6 (`099266e`).
+- [x] Syntax + structural linting implemented and enabled by default — `kicad_pcb.lint` with 18 rules (SCH/PCB 001-009), `ValidationMode.LINT` default, `LintError` on failures (Phase 5).
+- [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — `KicadCliAdapter` exists and `ValidationMode.KICAD/FULL` is wired, but not the default mutation mode.
 - [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
-- [ ] Unit tests cover parser/serializer and core mutations — no S-expr parser yet.
+- [x] Unit tests cover parser/serializer and core mutations — 584 unit tests across 14 test files (tokenizer, parser, serializer, `SchematicDoc`, `PcbDoc`, lint, pipeline, Phase 6 commands).
 - [x] Regression fixtures for known-bad cases (`tests/fixtures/broken/` has bug1–bug4).
 
 ### “Rock solid” target
-- [ ] AST-based editing for all mutation operations.
-- [ ] Strong lint rules with clear diagnostics.
+- [x] AST-based editing for all mutation operations — `SchematicDoc`/`PcbDoc` wrappers with full AST mutation; no regex-based structural edits remain.
+- [x] Strong lint rules with clear diagnostics — 18 rules (SCH/PCB 001-009), `LINT_SUGGESTIONS` for all codes, structured display in CLI.
 - [ ] Integration tests passing on supported KiCad versions.
-- [ ] Version compatibility handling and `doctor` diagnostics.
-- [ ] Canonical serializer/formatter for stable output and diffs.
+- [ ] Version compatibility handling and `doctor` diagnostics — `doctor` command done; version compatibility layer (Phase 8) not yet implemented.
+- [x] Canonical serializer/formatter for stable output and diffs — `kicad_pcb.sexpr.serializer` round-trip safe; `format-sch`/`format-pcb` commands added (Phase 6).
 
 ---
 
@@ -458,8 +459,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 6. [x] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
 7. [x] Add lint framework + key schematic/PCB lints (Phase 5) — `kicad_pcb.lint`, 18 rules, `5e24bd7`.
 8. [x] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 5) — `kicad_pcb.pipeline`, `ValidationMode`, `5e24bd7`.
-9. [ ] Add golden tests + integration tests (Phase 7).
-10. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 9).
+9. [x] Add CLI UX improvements: `--dry-run`, `--json`, lint/validate/format commands, structured error display, `LINT_SUGGESTIONS` (Phase 6) — `099266e`; 584 tests pass.
+10. [ ] Add golden tests + integration tests (Phase 7 — partially done; sexpr/doc/lint/pipeline unit tests complete across 14 test files; golden file fixtures and full integration flow tests remain).
+11. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
 
 ---
 
