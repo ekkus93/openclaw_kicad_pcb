@@ -10,9 +10,10 @@ from ..config import PROJECTS_DIR, get_current_project, load_config, set_current
 from ..errors import UserError
 from ..fs import _atomic_write
 from ..models import ProjectRef
+from ..results import InfoResult, NewProjectResult, OpenResult
 
 
-def cmd_new(args) -> None:
+def cmd_new(args) -> NewProjectResult:
     """Create new KiCad project."""
     name = args.name.replace(" ", "_")
     config = load_config()
@@ -95,40 +96,30 @@ def cmd_new(args) -> None:
     )
     set_current_project(project)
 
-    print(f"✅ Created project: {name}")
-    print(f"   Path: {project_dir}")
-    print("   Files:")
-    print(f"     - {name}.kicad_pro")
-    print(f"     - {name}.kicad_sch")
-    print(f"     - {name}.kicad_pcb")
-
-    if args.description:
-        print(f"   Description: {args.description}")
+    return NewProjectResult(
+        name=name,
+        path=project_dir,
+        description=args.description or "",
+        files=(f"{name}.kicad_pro", f"{name}.kicad_sch", f"{name}.kicad_pcb"),
+    )
 
 
-def cmd_info(args) -> None:
+def cmd_info(args) -> InfoResult:
     """Show current project info."""
     project = get_current_project()
 
     if not project:
         raise UserError("No project selected\n      Use: kicad_pcb.py new <name>")
 
-    print("╭─────────────────────────────────────╮")
-    print("│      🔧 KICAD PROJECT INFO          │")
-    print("├─────────────────────────────────────┤")
-    print(f"│  Name: {project.name:<27} │")
-    print(f"│  Path: {str(project.path)[:27]:<27} │")
-    print("╰─────────────────────────────────────╯")
-
-    # List files
+    files: tuple[tuple[str, int], ...] = ()
     if project.path.exists():
-        print("\nFiles:")
-        for f in sorted(project.path.iterdir()):
-            size = f.stat().st_size
-            print(f"  {f.name:<30} {size:>8} bytes")
+        files = tuple(
+            (f.name, f.stat().st_size) for f in sorted(project.path.iterdir())
+        )
+    return InfoResult(project=project, files=files)
 
 
-def cmd_open(args) -> None:
+def cmd_open(args) -> OpenResult:
     """Open existing project."""
     project_path = Path(args.path).resolve()
 
@@ -155,5 +146,4 @@ def cmd_open(args) -> None:
     )
     set_current_project(project)
 
-    print(f"✅ Opened project: {name}")
-    print(f"   Path: {project_dir}")
+    return OpenResult(name=name, path=project_dir)

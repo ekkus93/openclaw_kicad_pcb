@@ -2,17 +2,13 @@
 from __future__ import annotations
 
 from ..config import get_current_project
+from ..results import PcbwayQuoteResult
 
 
-def cmd_pcbway_quote(args) -> None:
+def cmd_pcbway_quote(args) -> PcbwayQuoteResult:
     """Get PCBWay instant quote."""
     project = get_current_project()
 
-    print("╭─────────────────────────────────────╮")
-    print("│       💰 PCBWAY QUOTE ESTIMATE      │")
-    print("├─────────────────────────────────────┤")
-
-    # Parse options
     quantity = args.quantity or 5
     layers = args.layers or 2
     thickness = args.thickness or 1.6
@@ -26,22 +22,18 @@ def cmd_pcbway_quote(args) -> None:
     board_cost = base_price * layer_mult * qty_mult
     shipping = 18.0  # DHL estimate
 
-    print(f"│  Quantity:    {quantity:>4} pcs              │")
-    print(f"│  Layers:      {layers:>4}                   │")
-    print(f"│  Thickness:   {thickness:>4} mm              │")
-    print("├─────────────────────────────────────┤")
-    print(f"│  Board cost:  ${board_cost:>7.2f}              │")
-    print(f"│  Shipping:    ${shipping:>7.2f} (DHL est.)   │")
-    print("│  ─────────────────────────          │")
-    print(f"│  TOTAL:       ${board_cost + shipping:>7.2f}              │")
-    print("╰─────────────────────────────────────╯")
-
-    print("\n⚠️  This is an estimate. Actual price may vary.")
-    print("📤 To order: Upload Gerbers at pcbway.com/orderonline.aspx")
-
+    gerber_zip = None
     if project:
-        gerber_zip = project.path / f"{project.name}_fab.zip"
-        if gerber_zip.exists():
-            print(f"\n✅ Gerber package ready: {gerber_zip}")
-        else:
-            print("\n💡 Run `package-for-fab` first to create Gerber ZIP")
+        candidate = project.path / f"{project.name}_fab.zip"
+        if candidate.exists():
+            gerber_zip = candidate
+
+    return PcbwayQuoteResult(
+        quantity=quantity,
+        layers=layers,
+        thickness=thickness,
+        board_cost=board_cost,
+        shipping=shipping,
+        total=board_cost + shipping,
+        gerber_zip=gerber_zip,
+    )

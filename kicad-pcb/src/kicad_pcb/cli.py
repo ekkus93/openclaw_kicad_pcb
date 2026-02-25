@@ -20,6 +20,8 @@ from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
+from .formatting import format_result
+from .results import DoctorResult
 
 
 def main() -> None:  # noqa: PLR0915
@@ -159,7 +161,12 @@ def main() -> None:  # noqa: PLR0915
         sys.exit(0)
 
     try:
-        args.func(args)
+        result = args.func(args)
+        for line in format_result(result):
+            print(line)
+        # Doctor exits non-zero when checks fail (but still prints its output)
+        if isinstance(result, DoctorResult) and not result.overall_ok:
+            sys.exit(1)
     except KiCadError as exc:
         print(f"❌ {exc}")
         sys.exit(1)

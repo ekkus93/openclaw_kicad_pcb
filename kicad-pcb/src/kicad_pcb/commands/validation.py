@@ -5,10 +5,11 @@ from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import UserError
 from ..models import ValidationResult
+from ..results import DrcResult, ErcResult
 from ..runner import KICAD_CLI, check_kicad
 
 
-def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> None:
+def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> DrcResult:
     """Run design rules check on PCB.
 
     *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`.
@@ -28,31 +29,17 @@ def cmd_drc(args, *, cli: KicadCliAdapter | None = None) -> None:
 
     output_file = project.path / "drc_report.json"
 
-    print(f"🔍 Running DRC on {pcb_file.name}...")
-
     result, report = cli.drc(pcb_file, output_file)
 
-    if result.returncode != 0:
-        print("⚠️  DRC completed with issues")
-        if result.stderr:
-            print(result.stderr)
-    else:
-        print("✅ DRC passed!")
-
-    # Display results using typed ValidationResult
-    if report is not None:
-        validation = ValidationResult.from_report(report, result.returncode)
-        if validation.issues:
-            print(f"\n📋 Found {len(validation.issues)} issues:")
-            for issue in validation.issues[:10]:
-                print(f"  [{issue.severity}] {issue.description}")
-            if len(validation.issues) > 10:
-                print(f"  ... and {len(validation.issues) - 10} more")
-        else:
-            print("\n✅ No violations found!")
+    validation = (
+        ValidationResult.from_report(report, result.returncode)
+        if report is not None
+        else None
+    )
+    return DrcResult(passed=result.returncode == 0, stderr=result.stderr, validation=validation)
 
 
-def cmd_erc(args, *, cli: KicadCliAdapter | None = None) -> None:
+def cmd_erc(args, *, cli: KicadCliAdapter | None = None) -> ErcResult:
     """Run electrical rules check on schematic.
 
     *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`.
@@ -72,11 +59,6 @@ def cmd_erc(args, *, cli: KicadCliAdapter | None = None) -> None:
 
     output_file = project.path / "erc_report.json"
 
-    print(f"🔍 Running ERC on {sch_file.name}...")
-
     result, _ = cli.erc(sch_file, output_file)
 
-    if result.returncode != 0:
-        print("⚠️  ERC completed with issues")
-    else:
-        print("✅ ERC passed!")
+    return ErcResult(passed=result.returncode == 0, stderr=result.stderr)
