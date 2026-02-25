@@ -83,7 +83,27 @@ python3 kicad_pcb.py export-bom  → 2 component lines: R1 (10k), C1 (100nF)
 
 ---
 
-## Refactor Plan (CODE_REVIEW1_TODO.md)
+## 2026-02-25 — Phase 0 Baseline Complete
+
+### Python environment
+- **Python**: 3.11.2 (system package)
+- **Venv**: `/home/ubo/work/openclaw_kicad_pcb/.venv` (Python 3.11)
+- Packages installed: kiutils 1.4.8, pydantic 2.12.5, pytest 9.0.2, pytest-cov 7.0.0, ruff 0.15.2
+- Latest available kiutils is **1.4.8** (not 1.5+ which doesn't exist yet)
+
+### Key discovery: kicad-cli is Flatpak
+- `/home/ubo/.local/bin/kicad-cli` is a Flatpak wrapper: `exec flatpak run --command=kicad-cli org.kicad.KiCad "$@"`
+- Flatpak sandbox: kicad-cli can **only access paths under `~`** (user's home)
+- pytest's `tmp_path` = `/tmp/pytest-*` is **outside Flatpak sandbox** → kicad-cli exits 3 "Schematic file does not exist or is not accessible"
+- Fix: `home_tmp` fixture creates temp dirs under `~/tmp/kicad-tests/{uuid}/` — accessible to Flatpak
+- Real `/usr/bin/kicad-cli` does NOT exist; only the Flatpak wrapper at `/home/ubo/.local/bin/kicad-cli`
+
+### Test results (Phase 0)
+- 23 tests: 15 unit + 8 integration — all pass
+- Commit: `b78e3a5` — "feat: Phase 0 baseline — Python 3.11 venv, pytest scaffold, regression fixtures"
+
+---
+
 
 High-priority next phases:
 1. **Phase 0 — Baseline fixtures** (captured in `tests/fixtures/`)
