@@ -29,6 +29,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from .compat import CliCapability, KiCadVersion, parse_version
+from .compat import require_capability as _check_capability
+
 # ---------------------------------------------------------------------------
 # RunResult — typed subprocess outcome
 # ---------------------------------------------------------------------------
@@ -290,10 +293,13 @@ class KicadCliAdapter:
         *,
         runner: RunnerProtocol | None = None,
         fs: FsProtocol | None = None,
+        version: KiCadVersion | None = None,
     ) -> None:
         self._cli = kicad_cli
         self._runner: RunnerProtocol = runner or SubprocessRunner()
         self._fs: FsProtocol = fs or RealFs()
+        # Optionally injected for tests; populated lazily on first access otherwise.
+        self._detected_version: KiCadVersion | None = version
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -323,6 +329,31 @@ class KicadCliAdapter:
     # ------------------------------------------------------------------
     # Version
     # ------------------------------------------------------------------
+
+    @property
+    def detected_version(self) -> KiCadVersion | None:
+        """Lazily detect and cache the installed kicad-cli version.
+
+        Returns ``None`` when the version cannot be parsed (e.g. kicad-cli is
+        not installed, or a :class:`FakeRunner` returns an empty string).  This
+        is intentional: callers that cannot determine the version do not fail.
+        """
+        if self._detected_version is None:
+            with contextlib.suppress(Exception):
+                r = self._run(["--version"])
+                raw = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
+                self._detected_version = parse_version(raw)
+        return self._detected_version
+
+    def require_capability(self, cap: CliCapability) -> None:
+        """Raise :class:`~kicad_pcb.errors.ToolError` if the installed
+        kicad-cli does not support *cap*.
+
+        Delegates to :func:`~kicad_pcb.compat.require_capability` with the
+        lazily-detected version.  When the version is unknown (``None``),
+        the check is skipped and the request proceeds.
+        """
+        _check_capability(self.detected_version, cap)
 
     def version(self) -> RunResult:
         """Return kicad-cli ``--version`` output."""
@@ -470,7 +501,10 @@ class KicadCliAdapter:
 
         Returns ``(RunResult, file_size_bytes)`` — *file_size_bytes* is 0
         when the file was not written.
+
+        Requires kicad-cli >= 8.0 (``--no-unspecified`` flag).
         """
+        self.require_capability(CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
         result = self._run([
             "pcb", "export", "step",
             "--output", str(output_file),
@@ -508,7 +542,11 @@ class KicadCliAdapter:
         ])
 
     def export_glb(self, pcb_file: Path, output_file: Path) -> RunResult:
-        """Export 3D GLB model."""
+        """Export 3D GLB model.
+
+        Requires kicad-cli >= 8.0.
+        """
+        self.require_capability(CliCapability.PCB_EXPORT_GLB)
         return self._run([
             "pcb", "export", "glb",
             "--output", str(output_file),
