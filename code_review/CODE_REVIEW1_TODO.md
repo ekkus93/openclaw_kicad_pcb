@@ -364,8 +364,8 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ### 7.7 Integration tests with real KiCad (skip if unavailable)
 - [x] Create project → schematic files created and loadable by kicad-cli (`test_schematic_loadable_by_kicad_cli`).
 - [x] Add component(s) → schematic remains loadable and exportable (netlist/BOM export tests).
-- [ ] Set board size → PCB DRC/export commands run — not covered.
-- [ ] Full mini flow (e.g., simple divider/LED + resistor) passes validation and exports package — not covered.
+- [x] Set board size → PCB DRC/export commands run — `test_set_board_size_pcb_drc_runs` + `test_set_board_size_pcb_gerbers_export`: `set-board-size 50x30` → `kicad-cli pcb drc` exits 0 and writes `drc_report.json`; `kicad-cli pcb export gerbers` exits 0 and produces `.g*` files.
+- [x] Full mini flow (resistor divider R1+R2) passes validation and exports — `test_full_mini_flow_resistor_divider`: `new` → `add-component` × 2 → `export-bom` (both refs present) → `set-board-size` → `kicad-cli sch export netlist` → `kicad-cli pcb drc` → `kicad-cli pcb export gerbers`; all exit 0.
 - [x] Ensure tests are skipped cleanly if `kicad-cli` is not installed (`requires_kicad` marker + `skipif`).
 
 ---
@@ -443,7 +443,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ### “Rock solid” target
 - [x] AST-based editing for all mutation operations — `SchematicDoc`/`PcbDoc` wrappers with full AST mutation; no regex-based structural edits remain.
 - [x] Strong lint rules with clear diagnostics — 18 rules (SCH/PCB 001-009), `LINT_SUGGESTIONS` for all codes, structured display in CLI.
-- [ ] Integration tests passing on supported KiCad versions.
+- [x] Integration tests passing on supported KiCad versions — all 11 integration tests pass with system kicad-cli (Flatpak, KiCad 9); Phase 7.7 fully done.
 - [ ] Version compatibility handling and `doctor` diagnostics — `doctor` command done; version compatibility layer (Phase 8) not yet implemented.
 - [x] Canonical serializer/formatter for stable output and diffs — `kicad_pcb.sexpr.serializer` round-trip safe; `format-sch`/`format-pcb` commands added (Phase 6).
 
@@ -462,8 +462,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 9. [x] Add CLI UX improvements: `--dry-run`, `--json`, lint/validate/format commands, structured error display, `LINT_SUGGESTIONS` (Phase 6) — `099266e`; 584 tests pass.
 10. [x] Add mocked kicad-cli tests for KICAD/FULL modes (`TestMutateSchKicadMode`, `TestMutatePcbKicadMode` using `_FakeCli` stub) — 594 tests pass; Phase 7.4 fully done.
 11. [x] Add CLI arg-parsing tests — extract `_build_parser()` from `cli.py`; `test_cli.py` `TestArgParsing` + `TestInvalidArgs` (53 tests); 647 tests pass; Phase 7.5 fully done.
-12. [x] Add golden file tests — 4 canonical fixture files in `tests/fixtures/golden/`; `test_golden.py` adds 14 tests (round-trip stability, lint cleanliness, 4 broken-fixture regressions); 661 tests pass; Phase 7.6 fully done. Integration flow tests remain (Phase 7.7).
-13. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
+12. [x] Add golden file tests — 4 canonical fixture files in `tests/fixtures/golden/`; `test_golden.py` adds 14 tests (round-trip stability, lint cleanliness, 4 broken-fixture regressions); 661 unit tests pass; Phase 7.6 fully done.
+13. [x] Add PCB integration tests — `test_set_board_size_pcb_drc_runs`, `test_set_board_size_pcb_gerbers_export`, `test_full_mini_flow_resistor_divider`; 11 integration tests pass; Phase 7.7 fully done.
+14. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
 
 ---
 
