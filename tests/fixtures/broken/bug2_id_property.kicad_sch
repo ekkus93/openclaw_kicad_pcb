@@ -1,0 +1,67 @@
+# Bug: properties contain old (id N) format from KiCad library version 20211014
+#
+# Root cause: _find_symbol_def copied raw symbol text from system libraries
+# which use the older format: (property "Name" "Val" (id 0) (at X Y angle))
+# kicad-cli 9 uses a newer format and rejects the (id N) token.
+#
+# Fix applied: re.sub(r'\s*\(id \d+\)', '', block) to strip all (id N) tokens
+# from the embedded symbol definition before writing to the schematic file.
+(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "bug2-id-property")
+  (paper "A4")
+  (lib_symbols
+    (symbol "Device:R" (pin_numbers hide) (pin_names (offset 0)) (in_bom yes) (on_board yes)
+        (property "Reference" "R" (id 0) (at 2.032 0 90)
+          (effects (font (size 1.27 1.27)))
+        )
+        (property "Value" "R" (id 1) (at 0 0 90)
+          (effects (font (size 1.27 1.27)))
+        )
+        (property "Footprint" "" (id 2) (at -1.778 0 90)
+          (effects (font (size 1.27 1.27)) hide)
+        )
+        (property "Datasheet" "~" (id 3) (at 0 0 0)
+          (effects (font (size 1.27 1.27)) hide)
+        )
+        (symbol "R_0_1"
+          (rectangle (start -1.016 -2.54) (end 1.016 2.54)
+            (stroke (width 0.254) (type default) (color 0 0 0 0))
+            (fill (type none))
+          )
+        )
+        (symbol "R_1_1"
+          (pin passive line (at 0 3.81 270) (length 1.27)
+            (name "~" (effects (font (size 1.27 1.27))))
+            (number "1" (effects (font (size 1.27 1.27))))
+          )
+          (pin passive line (at 0 -3.81 90) (length 1.27)
+            (name "~" (effects (font (size 1.27 1.27))))
+            (number "2" (effects (font (size 1.27 1.27))))
+          )
+        )
+      )
+  )
+  (symbol (lib_id "Device:R") (at 50.80 76.20 0) (unit 1)
+    (exclude_from_sim yes) (in_bom yes) (on_board yes)
+    (uuid "e1968e10-3b8b-4169-a3c9-8fcfdc50008d")
+    (property "Reference" "R1" (at 52.07 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10k" (at 52.07 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (pin "1" (uuid "4d320ae7-ae1c-4479-8eec-fad0f1983a7f"))
+    (pin "2" (uuid "1cd8526c-dd71-4892-8149-129d31bca9bc"))
+    (instances
+      (project "SmokeTest"
+        (path "/"
+          (reference "R1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
