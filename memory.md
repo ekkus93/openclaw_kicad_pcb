@@ -1,6 +1,38 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T19:31:56Z_
+_Last updated: 2026-02-25T20:25:00Z_
+
+---
+
+## 2026-02-25T20:25:00Z — Phase 8.1: KiCad CLI version compatibility layer (commit ca50af3)
+
+### Summary
+Implements runtime version detection and capability gating for kicad-cli.
+
+### New: `kicad-pcb/src/kicad_pcb/compat.py`
+- `KiCadVersion(major, minor, patch)` — frozen/ordered dataclass, free comparison ops
+- `MINIMUM_VERSION = KiCadVersion(7, 0, 0)` — kicad-cli 7.0 was the first with structured JSON DRC/ERC output
+- `parse_version(s)` — extracts first X.Y.Z triple via regex from any string; raises `ValueError` if not found
+- `CliCapability(StrEnum)` — 13 members documenting command/option availability
+- `CAPABILITY_MAP` — most capabilities at 7.0.0; `PCB_EXPORT_STEP_NO_UNSPECIFIED` + `PCB_EXPORT_GLB` at 8.0.0
+- `require_capability(version, cap)` — raises `ToolError` with download URL if version is too old
+
+### Modified: `adapters.py`
+- `KicadCliAdapter.__init__` gains `version: KiCadVersion | None = None` for test injection
+- `detected_version` lazy property (uses `contextlib.suppress` so FakeRunner → None → tests unchanged)
+- `require_capability(cap)` delegates to `require_capability` from compat
+- `export_step` and `export_glb` now gate on `PCB_EXPORT_STEP_NO_UNSPECIFIED` / `PCB_EXPORT_GLB` (min 8.0)
+
+### Modified: `doctor.py`
+- Shows `[supported (>= 7.0.0)]` or `[UNSUPPORTED — minimum required: 7.0.0]` in kicad-cli check
+- `overall_ok=False` if version below minimum
+
+### Modified: `__init__.py`
+- All new symbols exported in `__all__`
+
+### Tests
+- `tests/unit/test_compat.py` — 42 new tests covering all public API
+- Total: 703 unit tests passing
 
 ---
 
