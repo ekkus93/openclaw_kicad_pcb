@@ -1,8 +1,60 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T00:00:00Z_
+_Last updated: 2026-02-26T01:30:00Z_
 
 ---
+
+## 2026-02-26T01:30:00Z — Phase 9.2: Validated circuit pattern library (commit d59a980)
+
+### Summary
+Adds a small library of known-good KiCad schematic patterns that emit validated
+SchematicDoc mutations through the IR pipeline. Four patterns, one `apply-pattern`
+CLI command, 80 new unit tests. Total test count: 833 unit tests (753 + 80), 0 skipped.
+
+### Phase 9.1 skipped
+User explicitly requested 9.1 be skipped for now; jumped straight to 9.2.
+
+### New: `kicad-pcb/src/kicad_pcb/patterns.py`
+Four pattern functions, each taking a `SchematicDoc` + origin coords + keyword args:
+- `pattern_resistor_divider`: two `Device:R` in series, VIN/VOUT/GND labels
+- `pattern_led_resistor`: `Device:R` + `Device:LED`, VCC/GND labels
+- `pattern_connector_breakout`: `Connector_Generic:Conn_01x{n:02d}`, IO<n> labels
+  - **Important**: uses `Connector_Generic` library, NOT `Device` (connectors are not in Device.kicad_sym)
+- `pattern_decoupling_cap`: `Device:C`, VCC/GND labels
+- `PATTERNS` registry dict maps CLI names to callables
+- Private `_place_component` helper: calls `read_lib_symbol_pins`/`read_lib_symbol_def`;
+  falls back to `["1","2"]` pins when library unavailable; embeds lib def if found
+
+### New: `kicad-pcb/src/kicad_pcb/commands/patterns.py`
+- `cmd_apply_pattern(args)` — dispatches to pattern via PATTERNS registry
+- Calls `discover_symbols_dir(explicit=path)` then `mutate_and_validate_sch`
+- `_dispatch_pattern` private helper: passes all kwargs explicitly (not **kw spread,
+  which caused mypy to lose type precision on `symbols_dir: Path | None`)
+
+### Modified: results.py, formatting.py, __init__.py, cli.py
+- `ApplyPatternResult` frozen dataclass: pattern, components, nets, dry_run=False
+- `apply-pattern` subparser with --pattern, --r1/--r2/--r-value/--d/etc, --dry-run, --symbols-dir
+- PLR0913 noqa on pattern function defs (many kw-only args by design)
+
+### Tests: `tests/unit/test_patterns.py` (80 tests)
+Key design decisions:
+1. `_no_sym_library` autouse fixture: patches `_sch_doc._DEFAULT_SYMBOLS_DIR` to
+   `/nonexistent` for all tests, making pure pattern tests fast (fallback ["1","2"])
+2. `TestCmdApplyPattern` OVERRIDES `_no_sym_library` as a no-op: cmd tests need
+   `discover_symbols_dir` to find the real `/usr/share/kicad/symbols` so placed
+   symbols get embedded in lib_symbols and pass SCH009 lint validation
+3. `test_no_project_raises_user_error`: mocks `get_current_project` via monkeypatch
+   instead of calling `set_current_project(None)` (which doesn't accept None)
+
+### Performance insight
+`Device.kicad_sym` (2.2MB) and `Connector_Generic.kicad_sym` (3.7MB) take ~10-40s
+to parse per cmd test when real library is used. Pure pattern tests are fast (<0.1s)
+because the `/nonexistent` redirect returns [] immediately.
+
+### Lint/type status
+- ruff: clean (PLR0913 noqa on all pattern defs, noqa on _dispatch_pattern)
+- mypy: clean (explicit kwarg passing avoids dict[str, str|Path|None] spread issue)
+- pytest: 833 unit tests, 0 skipped
 
 ## 2026-02-26T00:00:00Z — Phase 8.3: Runtime environment resolution (commit b275e14)
 
