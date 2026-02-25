@@ -77,7 +77,8 @@ def cmd_add_component(args) -> AddComponentResult:
         _placed["x"] = x
         _placed["y"] = y
 
-    mutate_and_validate_sch(sch_file, _mutate, operation="add-component")
+    mutate_and_validate_sch(sch_file, _mutate, operation="add-component",
+                             dry_run=getattr(args, "dry_run", False))
 
     return AddComponentResult(
         ref=spec.ref,
@@ -87,6 +88,7 @@ def cmd_add_component(args) -> AddComponentResult:
         y=float(_placed["y"]),  # type: ignore[arg-type]
         pins=tuple(pin_nums),
         has_footprint=bool(spec.footprint),
+        dry_run=getattr(args, "dry_run", False),
     )
 
 
@@ -110,8 +112,10 @@ def cmd_add_net(args) -> AddNetResult:
     def _mutate(doc: SchematicDoc) -> None:
         doc.add_label(label.name, label.x, label.y, uuid)
 
-    mutate_and_validate_sch(sch_file, _mutate, operation="add-net")
-    return AddNetResult(name=label.name, x=label.x, y=label.y)
+    mutate_and_validate_sch(sch_file, _mutate, operation="add-net",
+                             dry_run=getattr(args, "dry_run", False))
+    return AddNetResult(name=label.name, x=label.x, y=label.y,
+                        dry_run=getattr(args, "dry_run", False))
 
 
 def cmd_connect(args) -> ConnectResult:
@@ -136,5 +140,7 @@ def cmd_connect(args) -> ConnectResult:
     def _mutate(doc: SchematicDoc) -> None:
         doc.add_wire(wire.x1, wire.y1, wire.x2, wire.y2, uuid)
 
-    mutate_and_validate_sch(sch_file, _mutate, operation="connect")
-    return ConnectResult(x1=wire.x1, y1=wire.y1, x2=wire.x2, y2=wire.y2)
+    mutate_and_validate_sch(sch_file, _mutate, operation="connect",
+                             dry_run=getattr(args, "dry_run", False))
+    return ConnectResult(x1=wire.x1, y1=wire.y1, x2=wire.x2, y2=wire.y2,
+                         dry_run=getattr(args, "dry_run", False))

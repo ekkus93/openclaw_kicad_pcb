@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 from .commands.doctor import cmd_doctor
@@ -14,22 +15,38 @@ from .commands.export import (
     cmd_package_for_fab,
 )
 from .commands.external import cmd_pcbway_quote
+from .commands.lint import (
+    cmd_format_pcb,
+    cmd_format_sch,
+    cmd_lint_pcb,
+    cmd_lint_sch,
+    cmd_validate_pcb,
+    cmd_validate_sch,
+)
 from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cmd_set_board_size
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
-from .formatting import format_result
-from .results import DoctorResult
+from .formatting import format_result, format_result_json
+from .lint import LINT_SUGGESTIONS, LintError, LintSeverity
+from .results import DoctorResult, LintFileResult, ValidateFileResult
 
 
-def main() -> None:  # noqa: PLR0915
+def main() -> None:  # noqa: PLR0912 PLR0915
     """Parse CLI arguments and dispatch to the appropriate command handler."""
     parser = argparse.ArgumentParser(
         prog="kicad_pcb",
         description="🔧 KiCad PCB Automation — Design to Manufacturing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="output_json",
+        default=False,
+        help="Output result as JSON",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command")
@@ -89,6 +106,9 @@ def main() -> None:  # noqa: PLR0915
     p_add.add_argument("ref", metavar="REF", help="Reference designator e.g. R1")
     p_add.add_argument("--value", help="Component value (e.g. 10k)")
     p_add.add_argument("--footprint", help="Footprint reference (e.g. Resistor_SMD:R_0402)")
+    p_add.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
+    )
     p_add.set_defaults(func=cmd_add_component)
 
     # add-net
@@ -96,6 +116,9 @@ def main() -> None:  # noqa: PLR0915
     p_net.add_argument("name", metavar="NAME", help="Net name e.g. VCC")
     p_net.add_argument("--x", type=float, help="X position in mm")
     p_net.add_argument("--y", type=float, help="Y position in mm")
+    p_net.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
+    )
     p_net.set_defaults(func=cmd_add_net)
 
     # connect
@@ -106,6 +129,9 @@ def main() -> None:  # noqa: PLR0915
     p_conn.add_argument(
         "--to", dest="to_pt", required=True, metavar="X,Y", help="End coord mm"
     )
+    p_conn.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
+    )
     p_conn.set_defaults(func=cmd_connect)
 
     # set-board-size
@@ -113,6 +139,9 @@ def main() -> None:  # noqa: PLR0915
         "set-board-size", help="Set board outline (Edge.Cuts rectangle)"
     )
     p_size.add_argument("size", metavar="WxH", help="Board dimensions in mm e.g. 50x30")
+    p_size.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
+    )
     p_size.set_defaults(func=cmd_set_board_size)
 
     # import-netlist
@@ -125,6 +154,9 @@ def main() -> None:  # noqa: PLR0915
     p_ap = subparsers.add_parser("auto-place", help="Grid-place footprints on PCB")
     p_ap.add_argument(
         "--spacing", type=float, default=10.0, help="Grid spacing in mm (default 10)"
+    )
+    p_ap.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
     p_ap.set_defaults(func=cmd_auto_place)
 
@@ -154,6 +186,36 @@ def main() -> None:  # noqa: PLR0915
     )
     p_doctor.set_defaults(func=cmd_doctor)
 
+    # lint-sch
+    p_ls = subparsers.add_parser("lint-sch", help="Lint a .kicad_sch file")
+    p_ls.add_argument("path", help="Path to .kicad_sch file")
+    p_ls.set_defaults(func=cmd_lint_sch)
+
+    # lint-pcb
+    p_lp = subparsers.add_parser("lint-pcb", help="Lint a .kicad_pcb file")
+    p_lp.add_argument("path", help="Path to .kicad_pcb file")
+    p_lp.set_defaults(func=cmd_lint_pcb)
+
+    # validate-sch
+    p_vs = subparsers.add_parser("validate-sch", help="Validate syntax + lint a .kicad_sch file")
+    p_vs.add_argument("path", help="Path to .kicad_sch file")
+    p_vs.set_defaults(func=cmd_validate_sch)
+
+    # validate-pcb
+    p_vp = subparsers.add_parser("validate-pcb", help="Validate syntax + lint a .kicad_pcb file")
+    p_vp.add_argument("path", help="Path to .kicad_pcb file")
+    p_vp.set_defaults(func=cmd_validate_pcb)
+
+    # format-sch
+    p_fs = subparsers.add_parser("format-sch", help="Canonicalise a .kicad_sch file in-place")
+    p_fs.add_argument("path", help="Path to .kicad_sch file")
+    p_fs.set_defaults(func=cmd_format_sch)
+
+    # format-pcb
+    p_fp = subparsers.add_parser("format-pcb", help="Canonicalise a .kicad_pcb file in-place")
+    p_fp.add_argument("path", help="Path to .kicad_pcb file")
+    p_fp.set_defaults(func=cmd_format_pcb)
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -162,11 +224,44 @@ def main() -> None:  # noqa: PLR0915
 
     try:
         result = args.func(args)
-        for line in format_result(result):
-            print(line)
-        # Doctor exits non-zero when checks fail (but still prints its output)
+        if getattr(args, "output_json", False):
+            print(format_result_json(result))
+        else:
+            for line in format_result(result):
+                print(line)
+        # Doctor exits non-zero when checks fail
         if isinstance(result, DoctorResult) and not result.overall_ok:
             sys.exit(1)
+        # Lint/validate exits non-zero when issues found
+        if isinstance(result, (LintFileResult, ValidateFileResult)) and not result.ok:
+            sys.exit(1)
+    except LintError as exc:
+        if getattr(args, "output_json", False):
+            print(json.dumps({
+                "error": "LintError",
+                "message": str(exc),
+                "issues": [
+                    {
+                        "code": i.code,
+                        "severity": i.severity.value,
+                        "message": i.message,
+                        "path": i.path,
+                        "suggestion": LINT_SUGGESTIONS.get(i.code),
+                    }
+                    for i in exc.issues
+                ],
+            }, indent=2))
+        else:
+            print(f"❌ Validation failed: {len(exc.issues)} issue(s)")
+            for issue in exc.issues:
+                icon = "❌" if issue.severity is LintSeverity.ERROR else "⚠️ "
+                print(f"  {icon} [{issue.code}] {issue.message}")
+                if issue.path:
+                    print(f"       path: {issue.path}")
+                suggestion = LINT_SUGGESTIONS.get(issue.code)
+                if suggestion:
+                    print(f"       💡 {suggestion}")
+        sys.exit(1)
     except KiCadError as exc:
         print(f"❌ {exc}")
         sys.exit(1)

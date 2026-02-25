@@ -32,6 +32,14 @@ from .commands.export import (
     cmd_package_for_fab,
 )
 from .commands.external import cmd_pcbway_quote
+from .commands.lint import (
+    cmd_format_pcb,
+    cmd_format_sch,
+    cmd_lint_pcb,
+    cmd_lint_sch,
+    cmd_validate_pcb,
+    cmd_validate_sch,
+)
 from .commands.pcb import (
     cmd_auto_place,
     cmd_auto_route,
@@ -66,11 +74,11 @@ from .config import (
 from .errors import KiCadError, ParseError, ToolError, UserError
 
 # CLI formatting
-from .formatting import format_result
+from .formatting import format_result, format_result_json
 
 # File-system utilities
 from .fs import _atomic_write, _check_sexp, _new_uuid
-from .lint import LintError, LintSeverity, lint_pcb, lint_schematic
+from .lint import LINT_SUGGESTIONS, LintError, LintSeverity, lint_pcb, lint_schematic
 
 # Typed domain models
 from .models import (
@@ -102,8 +110,10 @@ from .results import (
     ExportDrillResult,
     ExportGerbersResult,
     ExportPosResult,
+    FormatFileResult,
     ImportNetlistResult,
     InfoResult,
+    LintFileResult,
     NewProjectResult,
     OpenResult,
     PackageFabResult,
@@ -111,6 +121,7 @@ from .results import (
     PreviewPcbResult,
     PreviewSchematicResult,
     SetBoardSizeResult,
+    ValidateFileResult,
 )
 
 # CLI runner
@@ -232,6 +243,13 @@ __all__ = [
     "cmd_export_3d",
     "cmd_pcbway_quote",
     "cmd_doctor",
+    # lint/validate/format (Phase 6)
+    "cmd_lint_sch",
+    "cmd_lint_pcb",
+    "cmd_validate_sch",
+    "cmd_validate_pcb",
+    "cmd_format_sch",
+    "cmd_format_pcb",
     # cli
     "main",
     # results
@@ -258,11 +276,17 @@ __all__ = [
     "DoctorCheckItem",
     "DoctorResult",
     "PcbwayQuoteResult",
+    # Phase 6 result types
+    "LintFileResult",
+    "ValidateFileResult",
+    "FormatFileResult",
     # formatting
     "format_result",
+    "format_result_json",
     # lint (Phase 5)
     "LintError",
     "LintSeverity",
+    "LINT_SUGGESTIONS",
     "lint_schematic",
     "lint_pcb",
     # pipeline (Phase 5)

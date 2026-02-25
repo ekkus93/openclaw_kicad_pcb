@@ -98,6 +98,7 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     backup: bool = False,
     operation: str | None = None,
     strict: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Load *path*, apply *mutator*, validate, then commit atomically.
 
@@ -120,6 +121,9 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     strict:
         When ``True``, treat WARNING-level lint issues as errors regardless of *mode*.
         ``FULL`` mode implies *strict* automatically.
+    dry_run:
+        When ``True``, run all validation steps but **skip the final write**.
+        The file is left unchanged; useful for preflight checks.
 
     Raises
     ------
@@ -150,10 +154,11 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     if mode >= ValidationMode.KICAD and cli is not None:
         _kicad_validate_sch(content, path, cli, operation=operation)
 
-    # Commit to disk.
-    _atomic_write(
-        path, content, root="kicad_sch", backup=backup, operation=operation
-    )
+    # Commit to disk (skipped in dry-run mode).
+    if not dry_run:
+        _atomic_write(
+            path, content, root="kicad_sch", backup=backup, operation=operation
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -170,12 +175,15 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
     backup: bool = False,
     operation: str | None = None,
     strict: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Load *path*, apply *mutator*, validate, then commit atomically.
 
     Same contract as :func:`mutate_and_validate_sch` but for ``.kicad_pcb``
     files.  Uses :func:`~kicad_pcb.lint.lint_pcb` for structural checks and
     :meth:`~kicad_pcb.adapters.KicadCliAdapter.drc` for KiCad CLI validation.
+
+    When *dry_run* is ``True`` all validation runs but the file is not written.
     """
     doc = PcbDoc.load(path)
     mutator(doc)
@@ -194,9 +202,10 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
     if mode >= ValidationMode.KICAD and cli is not None:
         _kicad_validate_pcb(content, path, cli, operation=operation)
 
-    _atomic_write(
-        path, content, root="kicad_pcb", backup=backup, operation=operation
-    )
+    if not dry_run:
+        _atomic_write(
+            path, content, root="kicad_pcb", backup=backup, operation=operation
+        )
 
 
 # ---------------------------------------------------------------------------

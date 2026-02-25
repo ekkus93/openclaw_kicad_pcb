@@ -6,6 +6,12 @@ All formatting/rendering lives here so command modules stay pure
 """
 from __future__ import annotations
 
+import dataclasses
+import enum
+import json
+from pathlib import Path
+
+from .lint import LINT_SUGGESTIONS, LintSeverity
 from .results import (
     AddComponentResult,
     AddNetResult,
@@ -20,8 +26,10 @@ from .results import (
     ExportDrillResult,
     ExportGerbersResult,
     ExportPosResult,
+    FormatFileResult,
     ImportNetlistResult,
     InfoResult,
+    LintFileResult,
     NewProjectResult,
     OpenResult,
     PackageFabResult,
@@ -29,6 +37,7 @@ from .results import (
     PreviewPcbResult,
     PreviewSchematicResult,
     SetBoardSizeResult,
+    ValidateFileResult,
 )
 
 # ---------------------------------------------------------------------------
@@ -54,6 +63,31 @@ def format_result(result: object) -> list[str]:
     if fn is None:
         return [repr(result)]
     return fn(result)  # type: ignore[operator]
+
+
+# ---------------------------------------------------------------------------
+# JSON output
+# ---------------------------------------------------------------------------
+
+
+class _ResultEncoder(json.JSONEncoder):
+    """Encode types not handled by the default JSON encoder."""
+
+    def default(self, o: object) -> object:  # noqa: ANN001
+        if isinstance(o, Path):
+            return str(o)
+        if isinstance(o, enum.Enum):
+            return o.value
+        return super().default(o)
+
+
+def format_result_json(result: object) -> str:
+    """Serialise *result* as a JSON string.
+
+    The result must be a dataclass instance.  ``Path`` objects are converted to
+    strings; ``Enum`` values are stored as their ``.value``.
+    """
+    return json.dumps(dataclasses.asdict(result), cls=_ResultEncoder, indent=2)  # type: ignore[call-overload]
 
 
 # ---------------------------------------------------------------------------
@@ -219,8 +253,9 @@ def _fmt_preview_pcb(r: PreviewPcbResult) -> list[str]:
 
 @_register(SetBoardSizeResult)
 def _fmt_set_board_size(r: SetBoardSizeResult) -> list[str]:
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
     return [
-        f"✅ Board outline: {r.width} mm × {r.height} mm",
+        f"{prefix}✅ Board outline: {r.width} mm × {r.height} mm",
         f"   Edge.Cuts rectangle written to {r.pcb_file_name}",
     ]
 
@@ -242,7 +277,8 @@ def _fmt_import_netlist(r: ImportNetlistResult) -> list[str]:
 
 @_register(AutoPlaceResult)
 def _fmt_auto_place(r: AutoPlaceResult) -> list[str]:
-    lines = [f"✅ Placed {len(r.placed)} footprint(s) (spacing {r.spacing} mm):"]
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
+    lines = [f"{prefix}✅ Placed {len(r.placed)} footprint(s) (spacing {r.spacing} mm):"]
     for spec in r.placed:
         label = spec.ref.split(":")[-1] if ":" in spec.ref else spec.ref
         lines.append(f"   {label:<30} → ({spec.x:.1f}, {spec.y:.1f})")
@@ -269,8 +305,9 @@ def _fmt_auto_route(r: AutoRouteResult) -> list[str]:
 
 @_register(AddComponentResult)
 def _fmt_add_component(r: AddComponentResult) -> list[str]:
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
     lines = [
-        f"✅ Added {r.ref} ({r.lib_sym})  value={r.value}",
+        f"{prefix}✅ Added {r.ref} ({r.lib_sym})  value={r.value}",
         f"   Position: ({r.x:.1f}, {r.y:.1f}) mm  |  Pins: {', '.join(r.pins)}",
     ]
     if not r.has_footprint:
@@ -281,12 +318,73 @@ def _fmt_add_component(r: AddComponentResult) -> list[str]:
 
 @_register(AddNetResult)
 def _fmt_add_net(r: AddNetResult) -> list[str]:
-    return [f"✅ Net label '{r.name}' added at ({r.x}, {r.y})"]
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
+    return [f"{prefix}✅ Net label '{r.name}' added at ({r.x}, {r.y})"]
 
 
 @_register(ConnectResult)
 def _fmt_connect(r: ConnectResult) -> list[str]:
-    return [f"✅ Wire added: ({r.x1}, {r.y1}) → ({r.x2}, {r.y2})"]
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
+    return [f"{prefix}✅ Wire added: ({r.x1}, {r.y1}) → ({r.x2}, {r.y2})"]
+
+
+# ---------------------------------------------------------------------------
+# lint / validate / format (Phase 6)
+# ---------------------------------------------------------------------------
+
+
+def _fmt_issue_lines(issues: tuple) -> list[str]:  # type: ignore[type-arg]
+    """Return formatted lines for a sequence of :class:`~kicad_pcb.lint.LintIssue` objects."""
+    lines: list[str] = []
+    for issue in issues:
+        icon = "❌" if issue.severity is LintSeverity.ERROR else "⚠️ "
+        lines.append(f"  {icon} [{issue.code}] {issue.message}")
+        if issue.path:
+            lines.append(f"       path: {issue.path}")
+        suggestion = LINT_SUGGESTIONS.get(issue.code)
+        if suggestion:
+            lines.append(f"       💡 {suggestion}")
+    return lines
+
+
+@_register(LintFileResult)
+def _fmt_lint_file(r: LintFileResult) -> list[str]:
+    status = "✅" if r.ok else "❌"
+    lines = [
+        f"{status} {r.path}",
+        f"   {r.error_count} error(s), {r.warning_count} warning(s)",
+    ]
+    lines.extend(_fmt_issue_lines(r.issues))
+    return lines
+
+
+@_register(ValidateFileResult)
+def _fmt_validate_file(r: ValidateFileResult) -> list[str]:
+    overall = "✅" if r.ok else "❌"
+    syntax_icon = "✅" if r.syntax_ok else "❌"
+    lines = [
+        f"{overall} {r.path}",
+        (
+            f"   {syntax_icon} Syntax OK"
+            if r.syntax_ok
+            else "   \u274c Syntax error \u2014 file could not be parsed"
+        ),
+        f"   Lint: {r.lint_error_count} error(s), {r.lint_warning_count} warning(s)",
+    ]
+    lines.extend(_fmt_issue_lines(r.lint_issues))
+    if r.kicad_checked:
+        kicad_icon = "✅" if r.kicad_ok else "❌"
+        lines.append(f"   {kicad_icon} KiCad check {'passed' if r.kicad_ok else 'failed'}")
+    else:
+        lines.append("   ℹ️  KiCad DRC/ERC not run (use `drc`/`erc` for full check)")
+    return lines
+
+
+@_register(FormatFileResult)
+def _fmt_format_file(r: FormatFileResult) -> list[str]:
+    if r.changed:
+        return [f"✅ Reformatted {r.path} ({r.size_bytes} bytes)"]
+    return [f"✅ {r.path} already canonical ({r.size_bytes} bytes)"]
 
 
 # ---------------------------------------------------------------------------
