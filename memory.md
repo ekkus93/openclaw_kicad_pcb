@@ -1,10 +1,10 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T00:00:00Z_
+_Last updated: 2026-02-25T19:31:56Z_
 
 ---
 
-## 2026-02-28T00:00:00Z — Phase 6: CLI and Skill UX Improvements (commit 099266e)
+## 2026-02-25T17:50:37Z — Phase 6: CLI and Skill UX Improvements (commit 099266e)
 
 ### Summary
 Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new standalone file commands.
@@ -27,7 +27,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-27T00:00:00Z — Phase 5: Lint framework & validation pipeline (commit 5e24bd7)
+## 2026-02-25T17:29:28Z — Phase 5: Lint framework & validation pipeline (commit 5e24bd7)
 
 ### New modules
 - **`kicad_pcb.lint`** (614 lines): 18 structural rules — SCH001–SCH009 + PCB001–PCB009
@@ -65,7 +65,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-26T00:00:00Z — Phase 4: KiCad document wrappers (AST-based editing)
+## 2026-02-25T08:52:49Z — Phase 4: KiCad document wrappers (AST-based editing)
 
 - Added `kicad-pcb/src/kicad_pcb/sexpr/builder.py`:
   - `atom(value)→AtomNode`, `string(value)→StringNode`, `L(*items)→ListNode`, `fnum(f, decimals=3)→AtomNode`
@@ -94,7 +94,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-25T23:30:00Z — Phase 3: S-expression parsing/serialization
+## 2026-02-25T08:14:46Z — Phase 3: S-expression parsing/serialization
 
 - Added `kicad-pcb/src/kicad_pcb/sexpr/` sub-package (6 modules):
   - `nodes.py`: `Position`, `NO_POS`, `AtomNode`, `StringNode`, `ListNode`, `Node` — all `@dataclass(frozen=True)`; `ListNode.key` / `ListNode.head` convenience properties
@@ -109,7 +109,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-25T22:30:00Z — Phase 2.4: separate CLI presentation from business logic
+## 2026-02-25T07:55:42Z — Phase 2.4: separate CLI presentation from business logic
 
 - Added `kicad-pcb/src/kicad_pcb/results.py` — 22 `@dataclass(frozen=True)` result types:
   - project: `NewProjectResult`, `InfoResult`, `OpenResult`
@@ -136,7 +136,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-25T21:30:00Z — Phase 2.3: injectable adapters
+## 2026-02-25T07:03:36Z — Phase 2.3: injectable adapters
 
 - Added `kicad-pcb/src/kicad_pcb/adapters.py` with:
   - `RunResult(returncode, stdout, stderr)` — frozen dataclass replacing `CompletedProcess`; `.ok` property, `.output_text()` helper
@@ -160,7 +160,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-25T20:00:00Z — Phase 2.2: typed domain models
+## 2026-02-25T06:36:44Z — Phase 2.2: typed domain models
 
 - Added `kicad-pcb/src/kicad_pcb/models.py` with 8 frozen dataclasses:
   - `ProjectRef` — typed project reference (replaces raw dict); file-path properties `.sch_file`, `.pcb_file`, `.pro_file`; `from_dict`/`to_dict` for JSON compat
@@ -178,7 +178,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 - 31 new unit tests in `tests/unit/test_models.py`
 - Committed `44030f8` — 80/80 tests pass; ruff 0; mypy 0 errors in 16 files
 
-## 2026-02-25T18:30:00Z — Phase 2.1: module split (Tidy First)
+## 2026-02-25T06:05:33Z — Phase 2.1: module split (Tidy First)
 
 - Split the 1553-line monolithic `kicad-pcb/scripts/kicad_pcb.py` into a proper
   Python package at `kicad-pcb/src/kicad_pcb/` (src-layout).
@@ -197,7 +197,7 @@ Phase 6 adds `--dry-run`, `--json`, structured lint error display, and 6 new sta
 
 ---
 
-## 2026-02-25T16:45:00Z — Lint clean pass (ruff + mypy)
+## 2026-02-25T05:03:29Z — Lint clean pass (ruff + mypy)
 
 - ruff auto-fixed 53 violations (F401, F541, UP006, UP045, I001)
 - Manual fixed 33 remaining violations:
@@ -295,7 +295,7 @@ python3 kicad_pcb.py export-bom  → 2 component lines: R1 (10k), C1 (100nF)
 
 ---
 
-## 2026-02-25T04:27:38Z — Phase 0 Baseline Complete
+## 2026-02-25T04:24:21Z — Phase 0 Baseline Complete
 
 ### Python environment
 - **Python**: 3.11.2 (system package)
@@ -327,7 +327,7 @@ High-priority next phases:
 
 ---
 
-## 2026-02-25T — Phase 1 Complete (commit 3f09549)
+## 2026-02-25T04:48:28Z — Phase 1 Complete (commit 3f09549)
 
 ### Changes made to `kicad-pcb/scripts/kicad_pcb.py`
 
@@ -370,7 +370,7 @@ High-priority next phases:
 - 45 tests: 37 unit + 8 integration — all pass
 - New test file: `tests/unit/test_phase1_reliability.py` (22 tests)
 
-## 2025-01-01T00:00:00Z — Phase 7 test suite (7.1–7.6) complete
+## 2026-02-25T18:27:58Z — Phase 7 test suite (7.1–7.6) complete
 
 ### Phase 7 test files (16 total in tests/unit/):
 - 7.2: `test_sexpr_tokenizer.py`, `test_sexpr_parser.py`, `test_sexpr_serializer.py`, `test_sexpr_utils.py`
