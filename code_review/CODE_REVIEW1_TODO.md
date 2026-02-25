@@ -138,39 +138,41 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ## Phase 3 — Implement Proper S-expression Parsing/Serialization (Core Fix)
 
 ### 3.1 Build S-expression tokenizer
-- [ ] Implement tokenizer that handles:
-  - [ ] parentheses
-  - [ ] atoms
-  - [ ] quoted strings
-  - [ ] escape sequences in strings
-  - [ ] whitespace/newlines
-  - [ ] comments (if present in encountered inputs)
-- [ ] Produce tokens with position information (line/column) for precise parse errors.
+- [x] Implement tokenizer that handles:
+  - [x] parentheses
+  - [x] atoms
+  - [x] quoted strings
+  - [x] escape sequences in strings
+  - [x] whitespace/newlines
+  - [x] comments (if present in encountered inputs)
+- [x] Produce tokens with position information (line/column) for precise parse errors.
 
 ### 3.2 Build S-expression parser
-- [ ] Parse tokens into AST node types:
-  - [ ] `ListNode`
-  - [ ] `AtomNode`
-  - [ ] `StringNode`
-- [ ] Include parse errors with source location.
-- [ ] Validate end-of-input and balanced nesting.
-- [ ] Add convenience parse entrypoints for file/string.
+- [x] Parse tokens into AST node types:
+  - [x] `ListNode`
+  - [x] `AtomNode`
+  - [x] `StringNode`
+- [x] Include parse errors with source location.
+- [x] Validate end-of-input and balanced nesting.
+- [x] Add convenience parse entrypoints for file/string.
 
 ### 3.3 Build serializer (round-trip safe)
-- [ ] Implement serializer that outputs deterministic formatting.
-- [ ] Preserve string escaping correctly.
-- [ ] Ensure `parse -> serialize -> parse` stability.
-- [ ] Optionally support a “pretty” vs “compact” mode (pretty is enough initially).
+- [x] Implement serializer that outputs deterministic formatting.
+- [x] Preserve string escaping correctly.
+- [x] Ensure `parse -> serialize -> parse` stability.
+- [x] Optionally support a "pretty" vs "compact" mode (pretty is enough initially).
 
 ### 3.4 AST utility helpers
-- [ ] Implement helpers:
-  - [ ] `find_first(root, key)`
-  - [ ] `find_all(root, key)`
-  - [ ] `replace_section(root, key, new_section)`
-  - [ ] `append_to_section(root, key, item)`
-  - [ ] `walk(root)`
-- [ ] Add path-like utilities for debug/lint messages (node path reporting).
-
+- [x] Implement helpers:
+  - [x] `find_first(root, key)`
+  - [x] `find_all(root, key)`
+  - [x] `replace_section(root, key, new_section)`
+  - [x] `append_to_section(root, key, item)`
+  - [x] `walk(root)`
+- [x] Add path-like utilities for debug/lint messages (node path reporting).
+- Committed `f658eb2` — 361/361 tests, ruff 0, mypy 0 errors in 25 files.
+  New sub-package `kicad_pcb.sexpr`: 6 modules (`nodes`, `tokenizer`, `parser`,
+  `serializer`, `utils`, `__init__`). 159 new tests across 4 test files.
 ---
 
 ## Phase 4 — KiCad-Specific Document Wrappers (AST-Based Editing)
