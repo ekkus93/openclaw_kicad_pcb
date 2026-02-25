@@ -382,10 +382,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Support explicit CLI/config path for symbol libraries.
 - [x] Validate discovered paths and report in `doctor`.
 
-### 8.3 Runtime environment resolution
-- [ ] Avoid resolving critical paths/tool binaries at import time if it reduces flexibility/testability.
-- [ ] Move discovery into adapters/services with caching if needed.
-- [ ] Ensure deterministic behavior in tests through injected environment/config.
+### 8.3 Runtime environment resolution ✅ (commit b275e14)
+- [x] Avoid resolving critical paths/tool binaries at import time if it reduces flexibility/testability.
+- [x] Move discovery into adapters/services with caching if needed.
+- [x] Ensure deterministic behavior in tests through injected environment/config.
 
 ---
 
