@@ -23,6 +23,7 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
+from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cmd_set_board_size
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
@@ -120,6 +121,58 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
     p_add.set_defaults(func=cmd_add_component)
+
+    # apply-pattern
+    p_pat = subparsers.add_parser(
+        "apply-pattern",
+        help="Apply a known-good circuit pattern to the schematic",
+        description=(
+            "Available patterns: resistor-divider, led-resistor, "
+            "connector-breakout, decoupling-cap"
+        ),
+    )
+    p_pat.add_argument(
+        "--pattern", required=True,
+        choices=["resistor-divider", "led-resistor", "connector-breakout", "decoupling-cap"],
+        help="Pattern to apply",
+    )
+    # Shared optional args used by multiple patterns
+    p_pat.add_argument("--r1", default="R1", metavar="REF", help="R1 ref (resistor-divider)")
+    p_pat.add_argument("--r2", default="R2", metavar="REF", help="R2 ref (resistor-divider)")
+    p_pat.add_argument("--r1-value", default="10k", dest="r1_value", metavar="VAL",
+                       help="R1 value (resistor-divider, default 10k)")
+    p_pat.add_argument("--r2-value", default="10k", dest="r2_value", metavar="VAL",
+                       help="R2 value (resistor-divider, default 10k)")
+    p_pat.add_argument("--vin-net", default="VIN", dest="vin_net", metavar="NET",
+                       help="VIN net name (resistor-divider)")
+    p_pat.add_argument("--vout-net", default="VOUT", dest="vout_net", metavar="NET",
+                       help="VOUT net name (resistor-divider)")
+    p_pat.add_argument("--r", default="R1", metavar="REF", help="Resistor ref (led-resistor)")
+    p_pat.add_argument("--d", default="D1", metavar="REF", help="LED ref (led-resistor)")
+    p_pat.add_argument("--r-value", default="330", dest="r_value", metavar="VAL",
+                       help="Resistor value (led-resistor, default 330)")
+    p_pat.add_argument("--d-value", default="LED", dest="d_value", metavar="VAL",
+                       help="LED value label (led-resistor)")
+    p_pat.add_argument("--conn", default="J1", metavar="REF", help="Connector ref")
+    p_pat.add_argument("--n-pins", default=4, type=int, dest="n_pins", metavar="N",
+                       help="Pin count (connector-breakout, default 4)")
+    p_pat.add_argument("--net-prefix", default="IO", dest="net_prefix", metavar="PFX",
+                       help="Net prefix (connector-breakout, default IO)")
+    p_pat.add_argument("--c", default="C1", metavar="REF", help="Capacitor ref (decoupling-cap)")
+    p_pat.add_argument("--c-value", default="100nF", dest="c_value", metavar="VAL",
+                       help="Capacitor value (decoupling-cap, default 100nF)")
+    p_pat.add_argument("--vcc-net", default="VCC", dest="vcc_net", metavar="NET",
+                       help="VCC net name (led-resistor / decoupling-cap)")
+    p_pat.add_argument("--gnd-net", default="GND", dest="gnd_net", metavar="NET",
+                       help="GND net name (all patterns)")
+    p_pat.add_argument(
+        "--symbols-dir", dest="symbols_dir", metavar="PATH",
+        help="Path to KiCad symbol library directory",
+    )
+    p_pat.add_argument(
+        "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
+    )
+    p_pat.set_defaults(func=cmd_apply_pattern)
 
     # add-net
     p_net = subparsers.add_parser("add-net", help="Add a named net label to schematic")

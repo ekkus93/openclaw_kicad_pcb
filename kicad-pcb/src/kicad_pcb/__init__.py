@@ -40,6 +40,7 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
+from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import (
     cmd_auto_place,
     cmd_auto_route,
@@ -106,6 +107,17 @@ from .models import (
     ValidationResult,
     WireSegment,
 )
+
+# Circuit pattern library (Phase 9.2)
+from .patterns import (
+    PATTERNS,
+    PatternOutcome,
+    PlacedComponent,
+    pattern_connector_breakout,
+    pattern_decoupling_cap,
+    pattern_led_resistor,
+    pattern_resistor_divider,
+)
 from .pcb_doc import PcbDoc, make_gr_line_node
 from .pipeline import ValidationMode, mutate_and_validate_pcb, mutate_and_validate_sch
 
@@ -113,6 +125,7 @@ from .pipeline import ValidationMode, mutate_and_validate_pcb, mutate_and_valida
 from .results import (
     AddComponentResult,
     AddNetResult,
+    ApplyPatternResult,
     AutoPlaceResult,
     AutoRouteResult,
     ConnectResult,
@@ -264,6 +277,7 @@ __all__ = [
     "cmd_add_component",
     "cmd_add_net",
     "cmd_connect",
+    "cmd_apply_pattern",
     "cmd_set_board_size",
     "cmd_import_netlist",
     "cmd_auto_place",
@@ -302,6 +316,7 @@ __all__ = [
     "AddComponentResult",
     "AddNetResult",
     "ConnectResult",
+    "ApplyPatternResult",
     "DoctorCheckItem",
     "DoctorResult",
     "PcbwayQuoteResult",
@@ -322,6 +337,14 @@ __all__ = [
     "ValidationMode",
     "mutate_and_validate_sch",
     "mutate_and_validate_pcb",
+    # patterns (Phase 9.2)
+    "PATTERNS",
+    "PatternOutcome",
+    "PlacedComponent",
+    "pattern_resistor_divider",
+    "pattern_led_resistor",
+    "pattern_connector_breakout",
+    "pattern_decoupling_cap",
     # sexpr (Phase 3)
     "Position",
     "NO_POS",
