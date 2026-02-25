@@ -12,6 +12,8 @@ scratch directories under ~/tmp/kicad-tests/ to satisfy this constraint.
 """
 from __future__ import annotations
 
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,8 +29,6 @@ PYTHON = sys.executable
 
 
 def _run_script(args: list[str], env_home: str) -> subprocess.CompletedProcess[str]:
-    import os
-
     env = os.environ.copy()
     env["HOME"] = env_home
     return subprocess.run(
@@ -36,6 +36,7 @@ def _run_script(args: list[str], env_home: str) -> subprocess.CompletedProcess[s
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
 
 
@@ -95,6 +96,7 @@ class TestFullPipeline:
             ],
             capture_output=True,
             text=True,
+            check=False,
         )
         assert proc.returncode == 0, (
             f"kicad-cli failed (exit {proc.returncode}):\n{proc.stderr}"
@@ -156,8 +158,6 @@ class TestFullPipeline:
 
     def test_no_id_property_format(self) -> None:
         """Bug 2 regression: generated schematic must not contain (id N) property format."""
-        import re
-
         self._run("new", "TestProj")
         self._run("add-component", "Device:R", "R1", "--value", "10k")
 

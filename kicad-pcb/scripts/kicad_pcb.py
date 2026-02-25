@@ -17,6 +17,7 @@ Commands:
 """
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -28,7 +29,6 @@ import uuid as uuid_module
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
 # Configuration
 CONFIG_DIR = Path.home() / ".kicad-pcb"
@@ -81,7 +81,7 @@ def load_config() -> dict:
     ensure_dirs()
     if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_FILE) as f:
+            with CONFIG_FILE.open() as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
@@ -91,15 +91,15 @@ def load_config() -> dict:
 def save_config(config: dict):
     """Save configuration."""
     ensure_dirs()
-    with open(CONFIG_FILE, "w") as f:
+    with CONFIG_FILE.open("w") as f:
         json.dump(config, f, indent=2)
 
 
-def get_current_project() -> Optional[dict]:
+def get_current_project() -> dict | None:
     """Get current project info."""
     if CURRENT_PROJECT_FILE.exists():
         try:
-            with open(CURRENT_PROJECT_FILE) as f:
+            with CURRENT_PROJECT_FILE.open() as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError, KeyError):
             pass
@@ -109,7 +109,7 @@ def get_current_project() -> Optional[dict]:
 def set_current_project(project: dict):
     """Set current project."""
     ensure_dirs()
-    with open(CURRENT_PROJECT_FILE, "w") as f:
+    with CURRENT_PROJECT_FILE.open("w") as f:
         json.dump(project, f, indent=2)
 
 
@@ -124,13 +124,13 @@ def check_kicad() -> None:
         )
 
 
-def run_kicad_cli(args: List[str], capture=True) -> subprocess.CompletedProcess:
+def run_kicad_cli(args: list[str], capture=True) -> subprocess.CompletedProcess:
     """Run kicad-cli command."""
     cmd = [KICAD_CLI] + args
     if capture:
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, capture_output=True, text=True, check=False)
     else:
-        return subprocess.run(cmd)
+        return subprocess.run(cmd, check=False)
 
 
 # =============================================================================
@@ -157,7 +157,7 @@ def cmd_new(args):
         "schematic": {"drawing": {}},
         "sheets": [[f"{name}.kicad_sch", ""]]
     }
-    with open(pro_file, "w") as f:
+    with pro_file.open("w") as f:
         json.dump(pro_content, f, indent=2)
     
     # Create empty schematic
@@ -171,12 +171,12 @@ def cmd_new(args):
   )
 )
 '''
-    with open(sch_file, "w") as f:
+    with sch_file.open("w") as f:
         f.write(sch_content)
     
     # Create empty PCB
     pcb_file = project_dir / f"{name}.kicad_pcb"
-    pcb_content = f'''(kicad_pcb (version 20230121) (generator pcbnew)
+    pcb_content = '''(kicad_pcb (version 20230121) (generator pcbnew)
   (general
     (thickness 1.6)
   )
@@ -211,7 +211,7 @@ def cmd_new(args):
   (net 0 "")
 )
 '''
-    with open(pcb_file, "w") as f:
+    with pcb_file.open("w") as f:
         f.write(pcb_content)
     
     # Save as current project
@@ -225,7 +225,7 @@ def cmd_new(args):
     
     print(f"✅ Created project: {name}")
     print(f"   Path: {project_dir}")
-    print(f"   Files:")
+    print("   Files:")
     print(f"     - {name}.kicad_pro")
     print(f"     - {name}.kicad_sch")
     print(f"     - {name}.kicad_pcb")
@@ -243,16 +243,16 @@ def cmd_info(args):
     
     project_dir = Path(project["path"])
     
-    print(f"╭─────────────────────────────────────╮")
-    print(f"│      🔧 KICAD PROJECT INFO          │")
-    print(f"├─────────────────────────────────────┤")
+    print("╭─────────────────────────────────────╮")
+    print("│      🔧 KICAD PROJECT INFO          │")
+    print("├─────────────────────────────────────┤")
     print(f"│  Name: {project['name']:<27} │")
     print(f"│  Path: {str(project_dir)[:27]:<27} │")
-    print(f"╰─────────────────────────────────────╯")
+    print("╰─────────────────────────────────────╯")
     
     # List files
     if project_dir.exists():
-        print(f"\nFiles:")
+        print("\nFiles:")
         for f in sorted(project_dir.iterdir()):
             size = f.stat().st_size
             print(f"  {f.name:<30} {size:>8} bytes")
@@ -320,15 +320,15 @@ def cmd_drc(args):
     ])
     
     if result.returncode != 0:
-        print(f"⚠️  DRC completed with issues")
+        print("⚠️  DRC completed with issues")
         if result.stderr:
             print(result.stderr)
     else:
-        print(f"✅ DRC passed!")
+        print("✅ DRC passed!")
     
     # Parse and display results
     if output_file.exists():
-        with open(output_file) as f:
+        with output_file.open() as f:
             report = json.load(f)
         
         violations = report.get("violations", [])
@@ -371,9 +371,9 @@ def cmd_erc(args):
     ])
     
     if result.returncode != 0:
-        print(f"⚠️  ERC completed with issues")
+        print("⚠️  ERC completed with issues")
     else:
-        print(f"✅ ERC passed!")
+        print("✅ ERC passed!")
 
 
 # =============================================================================
@@ -397,7 +397,7 @@ def cmd_export_gerbers(args):
     output_dir = project_dir / "gerbers"
     output_dir.mkdir(exist_ok=True)
     
-    print(f"📤 Exporting Gerbers...")
+    print("📤 Exporting Gerbers...")
     
     result = run_kicad_cli([
         "pcb", "export", "gerbers",
@@ -432,7 +432,7 @@ def cmd_export_drill(args):
     output_dir = project_dir / "gerbers"
     output_dir.mkdir(exist_ok=True)
     
-    print(f"📤 Exporting drill files...")
+    print("📤 Exporting drill files...")
     
     result = run_kicad_cli([
         "pcb", "export", "drill",
@@ -447,7 +447,7 @@ def cmd_export_drill(args):
     if result.returncode == 0:
         print(f"✅ Drill files exported to {output_dir}")
     else:
-        print(f"❌ Drill export failed")
+        print("❌ Drill export failed")
 
 
 def cmd_export_bom(args):
@@ -465,7 +465,7 @@ def cmd_export_bom(args):
         raise UserError(f"Schematic not found: {sch_file}")
 
     output_file = project_dir / "bom.csv"
-    print(f"📤 Exporting BOM...")
+    print("📤 Exporting BOM...")
 
     result = run_kicad_cli([
         "sch", "export", "bom",
@@ -478,7 +478,7 @@ def cmd_export_bom(args):
     ])
 
     if result.returncode == 0 and output_file.exists():
-        with open(output_file) as f:
+        with output_file.open() as f:
             lines = f.readlines()
         print(f"✅ BOM exported: {output_file}")
         print(f"   {max(0, len(lines) - 1)} component line(s)")
@@ -507,7 +507,7 @@ def cmd_package_for_fab(args):
     output_name = args.output or f"{project['name']}_fab.zip"
     output_path = project_dir / output_name
     
-    print(f"📦 Creating fabrication package...")
+    print("📦 Creating fabrication package...")
     
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         if gerber_dir.exists():
@@ -517,7 +517,7 @@ def cmd_package_for_fab(args):
     size_kb = output_path.stat().st_size / 1024
     print(f"✅ Created: {output_path}")
     print(f"   Size: {size_kb:.1f} KB")
-    print(f"\n📤 Ready to upload to PCBWay!")
+    print("\n📤 Ready to upload to PCBWay!")
 
 
 # =============================================================================
@@ -540,7 +540,7 @@ def cmd_preview_schematic(args):
     
     output_file = project_dir / "schematic_preview.svg"
     
-    print(f"🖼️  Generating schematic preview...")
+    print("🖼️  Generating schematic preview...")
     
     result = run_kicad_cli([
         "sch", "export", "svg",
@@ -553,14 +553,14 @@ def cmd_preview_schematic(args):
         
         # Try to convert to PNG for easier viewing
         try:
-            import cairosvg
+            import cairosvg  # noqa: PLC0415
             png_file = project_dir / "schematic_preview.png"
             cairosvg.svg2png(url=str(output_file), write_to=str(png_file))
             print(f"   PNG: {png_file}")
         except ImportError:
             print("   (Install cairosvg for PNG conversion)")
     else:
-        print(f"❌ Preview generation failed")
+        print("❌ Preview generation failed")
 
 
 def cmd_preview_pcb(args):
@@ -577,7 +577,7 @@ def cmd_preview_pcb(args):
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
     
-    print(f"🖼️  Generating PCB previews...")
+    print("🖼️  Generating PCB previews...")
     
     # Export SVG for each major layer
     layers = ["F.Cu", "B.Cu", "F.Silkscreen", "Edge.Cuts"]
@@ -644,12 +644,10 @@ def _atomic_write(path: Path, content: str, root: str | None = None) -> None:
     try:
         os.write(fd, content.encode())
         os.close(fd)
-        os.replace(tmp, path)
+        Path(tmp).replace(path)
     except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        with contextlib.suppress(OSError):
+            Path(tmp).unlink()
         raise
 
 
@@ -684,7 +682,7 @@ def _extract_balanced(text: str, start: int) -> str:
     return text[start:]
 
 
-def _find_symbol_def(lib_name: str, sym_name: str) -> Optional[str]:
+def _find_symbol_def(lib_name: str, sym_name: str) -> str | None:
     """Extract the full symbol block from library and rename it to lib:sym."""
     lib_file = KICAD_SYMBOLS_DIR / f"{lib_name}.kicad_sym"
     if not lib_file.exists():
@@ -709,7 +707,7 @@ def _find_symbol_def(lib_name: str, sym_name: str) -> Optional[str]:
     return block
 
 
-def _find_symbol_pins(lib_name: str, sym_name: str) -> List[str]:
+def _find_symbol_pins(lib_name: str, sym_name: str) -> list[str]:
     """Return list of pin numbers for a symbol from KiCad symbol library."""
     lib_file = KICAD_SYMBOLS_DIR / f"{lib_name}.kicad_sym"
     if not lib_file.exists():
@@ -812,7 +810,7 @@ def cmd_add_component(args):
     pin_nums = _find_symbol_pins(lib_name, sym_name)
     if not pin_nums:
         print(f"⚠️  Symbol '{lib_sym}' not found in {KICAD_SYMBOLS_DIR}")
-        print(f"   Using default pins [1, 2]. Edit footprint assignment in KiCad.")
+        print("   Using default pins [1, 2]. Edit footprint assignment in KiCad.")
         pin_nums = ["1", "2"]
 
     x, y = _next_component_position(sch_file)
@@ -857,8 +855,8 @@ def cmd_add_component(args):
     print(f"✅ Added {ref} ({lib_sym})  value={value}")
     print(f"   Position: ({x:.1f}, {y:.1f}) mm  |  Pins: {', '.join(pin_nums)}")
     if not footprint:
-        print(f"   ⚠️  No footprint — assign in KiCad or use --footprint")
-    print(f"\n💡 Run `preview-schematic` to verify, then wire with `connect`.")
+        print("   ⚠️  No footprint — assign in KiCad or use --footprint")
+    print("\n💡 Run `preview-schematic` to verify, then wire with `connect`.")
 
 
 def cmd_add_net(args):
@@ -996,7 +994,7 @@ def cmd_import_netlist(args):
         raise UserError(f"Schematic not found: {sch_file}")
 
     output_file = project_dir / f"{project['name']}.net"
-    print(f"📋 Exporting netlist...")
+    print("📋 Exporting netlist...")
 
     result = run_kicad_cli([
         "sch", "export", "netlist",
@@ -1020,7 +1018,7 @@ def cmd_import_netlist(args):
             missing = [r for r, fp in zip(refs, footprints) if not fp]
             if missing:
                 print(f"\n⚠️  Assign footprints to: {', '.join(missing)}")
-        print(f"\n💡 Open PCB editor → Tools → Update PCB from Schematic to sync.")
+        print("\n💡 Open PCB editor → Tools → Update PCB from Schematic to sync.")
     else:
         msg = "Netlist export failed — populate the schematic first."
         if result.stderr:
@@ -1057,7 +1055,7 @@ def cmd_auto_place(args):
         print("   Add components to the schematic, then run import-netlist.")
         return
 
-    placed: List[tuple] = []
+    placed: list[tuple] = []
     col_size = 5
     col_width = spacing * 3
 
@@ -1077,10 +1075,10 @@ def cmd_auto_place(args):
     for fp_ref, nx, ny in placed:
         label = fp_ref.split(":")[-1] if ":" in fp_ref else fp_ref
         print(f"   {label:<30} → ({nx:.1f}, {ny:.1f})")
-    print(f"\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
+    print("\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
 
 
-def cmd_auto_route(args):
+def cmd_auto_route(args):  # noqa: PLR0912
     """Auto-route the PCB using Freerouting (requires Java + Freerouting JAR).
 
     Install Freerouting: https://github.com/freerouting/freerouting/releases
@@ -1099,7 +1097,7 @@ def cmd_auto_route(args):
 
     # Locate Freerouting JAR
     jar_arg = getattr(args, "jar", None)
-    freerouting_jar: Optional[str] = jar_arg
+    freerouting_jar: str | None = jar_arg
     if not freerouting_jar:
         for candidate in [
             Path.home() / "freerouting.jar",
@@ -1142,8 +1140,9 @@ def cmd_auto_route(args):
     print("🔀 Running Freerouting auto-router (this may take a minute)...")
     try:
         result = subprocess.run(
-            [java, "-jar", freerouting_jar, "-de", str(dsn_file), "-do", str(ses_file), "-mp", "100"],
-            capture_output=True, text=True, timeout=300,
+            [java, "-jar", freerouting_jar,
+             "-de", str(dsn_file), "-do", str(ses_file), "-mp", "100"],
+            capture_output=True, text=True, timeout=300, check=False,
         )
     except subprocess.TimeoutExpired:
         print("⚠️  Freerouting timed out after 5 minutes.")
@@ -1159,7 +1158,7 @@ def cmd_auto_route(args):
         if imp.returncode == 0:
             print(f"✅ Routes imported into {pcb_file.name}")
         else:
-            print(f"⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
+            print("⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
     else:
         print("❌ Freerouting failed.")
         if result.stderr:
@@ -1235,7 +1234,7 @@ def cmd_export_3d(args):
         size_kb = output_file.stat().st_size / 1024
         print(f"✅ STEP model: {output_file}")
         print(f"   Size: {size_kb:.1f} KB")
-        print(f"   Open with FreeCAD, Fusion 360, or any STEP viewer.")
+        print("   Open with FreeCAD, Fusion 360, or any STEP viewer.")
     else:
         msg = "STEP export failed"
         if result.stderr:
@@ -1251,9 +1250,9 @@ def cmd_pcbway_quote(args):
     """Get PCBWay instant quote."""
     project = get_current_project()
     
-    print(f"╭─────────────────────────────────────╮")
-    print(f"│       💰 PCBWAY QUOTE ESTIMATE      │")
-    print(f"├─────────────────────────────────────┤")
+    print("╭─────────────────────────────────────╮")
+    print("│       💰 PCBWAY QUOTE ESTIMATE      │")
+    print("├─────────────────────────────────────┤")
     
     # Parse options
     quantity = args.quantity or 5
@@ -1272,26 +1271,26 @@ def cmd_pcbway_quote(args):
     print(f"│  Quantity:    {quantity:>4} pcs              │")
     print(f"│  Layers:      {layers:>4}                   │")
     print(f"│  Thickness:   {thickness:>4} mm              │")
-    print(f"├─────────────────────────────────────┤")
+    print("├─────────────────────────────────────┤")
     print(f"│  Board cost:  ${board_cost:>7.2f}              │")
     print(f"│  Shipping:    ${shipping:>7.2f} (DHL est.)   │")
-    print(f"│  ─────────────────────────          │")
+    print("│  ─────────────────────────          │")
     print(f"│  TOTAL:       ${board_cost + shipping:>7.2f}              │")
-    print(f"╰─────────────────────────────────────╯")
+    print("╰─────────────────────────────────────╯")
     
-    print(f"\n⚠️  This is an estimate. Actual price may vary.")
-    print(f"📤 To order: Upload Gerbers at pcbway.com/orderonline.aspx")
+    print("\n⚠️  This is an estimate. Actual price may vary.")
+    print("📤 To order: Upload Gerbers at pcbway.com/orderonline.aspx")
     
     if project:
         gerber_zip = Path(project["path"]) / f"{project['name']}_fab.zip"
         if gerber_zip.exists():
             print(f"\n✅ Gerber package ready: {gerber_zip}")
         else:
-            print(f"\n💡 Run `package-for-fab` first to create Gerber ZIP")
+            print("\n💡 Run `package-for-fab` first to create Gerber ZIP")
 
 
 
-def cmd_doctor(args) -> None:
+def cmd_doctor(args) -> None:  # noqa: PLR0912
     """Check system configuration and diagnose common issues."""
     overall_ok = True
 
@@ -1302,7 +1301,7 @@ def cmd_doctor(args) -> None:
     if cli_path:
         try:
             r = subprocess.run(
-                [cli_path, "--version"], capture_output=True, text=True, timeout=5
+                [cli_path, "--version"], capture_output=True, text=True, timeout=5, check=False,
             )
             version = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
             print(f"  \u2705 kicad-cli: {cli_path}")
@@ -1311,7 +1310,7 @@ def cmd_doctor(args) -> None:
         except Exception as exc:
             print(f"  \u26a0\ufe0f  kicad-cli found but could not query version: {exc}")
     else:
-        print(f"  \u274c kicad-cli: not found in PATH")
+        print("  \u274c kicad-cli: not found in PATH")
         overall_ok = False
 
     # KiCad symbol libraries
@@ -1320,7 +1319,10 @@ def cmd_doctor(args) -> None:
         if n:
             print(f"  \u2705 Symbol libraries: {KICAD_SYMBOLS_DIR}  ({n} libs)")
         else:
-            print(f"  \u274c Symbol libraries: directory exists but no .kicad_sym files: {KICAD_SYMBOLS_DIR}")
+            print(
+                f"  \u274c Symbol libraries: directory exists"
+                f" but no .kicad_sym files: {KICAD_SYMBOLS_DIR}"
+            )
             overall_ok = False
     else:
         print(f"  \u274c Symbol libraries: not found at {KICAD_SYMBOLS_DIR}")
@@ -1361,7 +1363,7 @@ def cmd_doctor(args) -> None:
 # Main
 # =============================================================================
 
-def main():
+def main():  # noqa: PLR0915
     parser = argparse.ArgumentParser(
         prog="kicad_pcb",
         description="🔧 KiCad PCB Automation — Design to Manufacturing",
@@ -1436,7 +1438,9 @@ def main():
 
     # connect
     p_conn = subparsers.add_parser("connect", help="Add a wire between two coordinates")
-    p_conn.add_argument("--from", dest="from_pt", required=True, metavar="X,Y", help="Start coord mm")
+    p_conn.add_argument(
+        "--from", dest="from_pt", required=True, metavar="X,Y", help="Start coord mm"
+    )
     p_conn.add_argument("--to", dest="to_pt", required=True, metavar="X,Y", help="End coord mm")
     p_conn.set_defaults(func=cmd_connect)
 
@@ -1446,7 +1450,9 @@ def main():
     p_size.set_defaults(func=cmd_set_board_size)
 
     # import-netlist
-    p_nl = subparsers.add_parser("import-netlist", help="Export netlist and report components for PCB")
+    p_nl = subparsers.add_parser(
+        "import-netlist", help="Export netlist and report components for PCB"
+    )
     p_nl.set_defaults(func=cmd_import_netlist)
 
     # auto-place

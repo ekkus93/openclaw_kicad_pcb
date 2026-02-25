@@ -11,18 +11,16 @@ Covers:
 from __future__ import annotations
 
 import ast
-import importlib
-import sys
+import contextlib
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 # ---------------------------------------------------------------------------
 # Import the script module (kicad_pcb.py lives in kicad-pcb/scripts/).
 # pytest.ini adds that directory to pythonpath, so a plain import works.
 # ---------------------------------------------------------------------------
 import kicad_pcb  # noqa: E402
+import pytest
 
 pytestmark = pytest.mark.unit
 
@@ -169,9 +167,11 @@ class TestAtomicWrite:
 
 class TestCheckKicad:
     def test_raises_tool_error_when_not_on_path(self) -> None:
-        with patch("shutil.which", return_value=None):
-            with pytest.raises(kicad_pcb.ToolError, match="KiCad CLI not found"):
-                kicad_pcb.check_kicad()
+        with (
+            patch("shutil.which", return_value=None),
+            pytest.raises(kicad_pcb.ToolError, match="KiCad CLI not found"),
+        ):
+            kicad_pcb.check_kicad()
 
     def test_does_not_raise_when_cli_found(self) -> None:
         with patch("shutil.which", return_value="/usr/bin/kicad-cli"):
@@ -190,10 +190,9 @@ class TestCmdDoctor:
         class FakeArgs:
             pass
 
-        try:
+        # acceptable — kicad-cli or libs may be missing in CI
+        with contextlib.suppress(kicad_pcb.UserError):
             kicad_pcb.cmd_doctor(FakeArgs())
-        except kicad_pcb.UserError:
-            pass  # acceptable — kicad-cli or libs may be missing in CI
 
     def test_raises_user_error_when_cli_missing(self, tmp_path: Path, capsys) -> None:
         """If kicad-cli is absent, doctor raises UserError (not SystemExit)."""
@@ -201,9 +200,11 @@ class TestCmdDoctor:
         class FakeArgs:
             pass
 
-        with patch("shutil.which", return_value=None):
-            with pytest.raises(kicad_pcb.UserError, match="doctor"):
-                kicad_pcb.cmd_doctor(FakeArgs())
+        with (
+            patch("shutil.which", return_value=None),
+            pytest.raises(kicad_pcb.UserError, match="doctor"),
+        ):
+            kicad_pcb.cmd_doctor(FakeArgs())
 
 
 # ---------------------------------------------------------------------------
