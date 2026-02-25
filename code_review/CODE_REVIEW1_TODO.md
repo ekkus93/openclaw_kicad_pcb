@@ -59,9 +59,9 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 ### 1.3 Add safe writes for all mutating commands
 - [x] Introduce temp-write + atomic replace utility (`_atomic_write`).
-- [ ] Add optional backup creation (`.bak`) before overwriting original files — not implemented.
+- [x] Add optional backup creation (`.bak`) before overwriting original files — `_atomic_write` now accepts `backup=True`; copies original to `<path>.bak` before rename.
 - [x] Ensure partial writes never corrupt originals on crash/failure.
-- [ ] Use the safe write utility in every mutation command — `cmd_new` still creates `.kicad_sch`/`.kicad_pcb`/`.kicad_pro` via direct `Path.open("w")` instead of `_atomic_write`.
+- [x] Use the safe write utility in every mutation command — `cmd_new` now uses `_atomic_write` for `.kicad_sch` (root-validated) and `.kicad_pcb` (root-validated) and `.kicad_pro` (atomic write, no sexp needed).
 
 ### 1.4 Normalize error handling
 - [x] Define typed exceptions (`KiCadError`, `UserError`, `ToolError`, `ParseError`).
@@ -428,7 +428,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 ### Must-have for “usable and not horrible”
 - [ ] No regex-based structural edits for `.kicad_sch` / `.kicad_pcb` mutation paths — current schematic mutations still use string/regex operations.
-- [ ] All mutating commands use transactional write + validation pipeline — `cmd_new` still uses direct writes for new file creation.
+- [ ] All mutating commands use transactional write + validation pipeline — `cmd_new` now uses `_atomic_write` (done); full transactional pipeline (Phase 5) not yet implemented.
 - [ ] Syntax + structural linting implemented and enabled by default — only basic sexp balance/root check exists; no structural lint framework.
 - [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — not integrated into mutation pipeline.
 - [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
@@ -447,7 +447,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ## Suggested Implementation Order (Copilot-Friendly)
 
 1. [x] Fix docs mismatch (`SKILL.md`) and add `doctor` — fully done.
-2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — done; minor gaps: `.bak` backup, `cmd_new` not using `_atomic_write`.
+2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — fully done (`.bak` backup added, `cmd_new` uses `_atomic_write`).
 3. [ ] Split CLI from services and introduce `Runner` / `KicadCliAdapter`.
 4. [ ] Implement S-expression tokenizer/parser/serializer + tests.
 5. [ ] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops.
