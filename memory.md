@@ -1,6 +1,44 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T00:00:00Z_
+_Last updated: 2026-02-27T00:00:00Z_
+
+---
+
+## 2026-02-27T00:00:00Z — Phase 5: Lint framework & validation pipeline (commit 5e24bd7)
+
+### New modules
+- **`kicad_pcb.lint`** (614 lines): 18 structural rules — SCH001–SCH009 + PCB001–PCB009
+  - `LintSeverity(Enum)`: ERROR / WARNING
+  - `LintIssue(frozen dataclass)`: severity, code, message, path
+  - `LintError(KiCadError)`: carries `issues: list[LintIssue]`
+  - `lint_schematic(root: ListNode) → list[LintIssue]`
+  - `lint_pcb(root: ListNode) → list[LintIssue]`
+  - Key design: `lint.LintIssue` is NOT re-exported from `__init__.py` (name conflict with `models.LintIssue`)
+- **`kicad_pcb.pipeline`** (324 lines): transactional mutate-and-validate
+  - `ValidationMode(IntEnum)`: NONE=0 / SYNTAX=1 / LINT=2 / KICAD=3 / FULL=4 — IntEnum enables `>=` comparisons
+  - `ValidationMode.default()` → LINT
+  - `mutate_and_validate_sch(path, mutator, *, mode=LINT, cli=None, backup=False, operation=None, strict=False)`
+  - `mutate_and_validate_pcb(path, mutator, *, mode=LINT, cli=None, backup=False, operation=None, strict=False)`
+  - Pipeline: load doc → mutator(doc) → serialize → (SYNTAX) _syntax_check → (LINT) lint_xxx → (KICAD) CLI → _atomic_write
+  - `strict=True` or `mode >= FULL` treats warnings as errors
+
+### Commands wired
+- `commands/sch.py`: cmd_add_component, cmd_add_net, cmd_connect — all use `mutate_and_validate_sch`
+- `commands/pcb.py`: cmd_set_board_size, cmd_auto_place — use `mutate_and_validate_pcb`
+
+### Exports added to `kicad_pcb/__init__.py`
+- `LintError`, `LintSeverity`, `lint_schematic`, `lint_pcb`
+- `ValidationMode`, `mutate_and_validate_sch`, `mutate_and_validate_pcb`
+
+### Tests: 538 total (89 new)
+- `tests/unit/test_lint.py` — 14 test classes, all 18 rules tested
+- `tests/unit/test_pipeline.py` — ValidationMode ordering, backup, strict, mode gating, roundtrip
+
+### Key design decisions
+- `lint.LintIssue` NOT re-exported at top-level (name clash with models.LintIssue); use `from kicad_pcb.lint import LintIssue`
+- PCB005 (no Edge.Cuts) fires as WARNING, not ERROR: valid for mid-edit states
+- `_atomic_write` always checks root node regardless of ValidationMode; NONE mode skips pipeline's extra checks
+- `ValidationMode.FULL` implies `strict=True`; LINT is the safe default (no KiCad CLI required)
 
 ---
 

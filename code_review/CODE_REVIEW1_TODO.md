@@ -218,75 +218,62 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 ---
 
 ## Phase 5 — Linting and Validation Pipeline (Mandatory for Mutations)
+<!-- commit 5e24bd7 -->
 
 ### 5.1 Syntax validation (always-on)
-- [ ] Parse generated output after mutation and before write commit.
-- [ ] Confirm expected root node type.
-- [ ] Confirm mandatory top-level sections exist (at least for generated/minimal files).
-- [ ] Fail on parse errors with line/column context.
+- [x] Parse generated output after mutation and before write commit.
+- [x] Confirm expected root node type.
+- [x] Confirm mandatory top-level sections exist (at least for generated/minimal files).
+- [x] Fail on parse errors with line/column context.
 
 ### 5.2 Structural linting (custom, always-on)
-- [ ] Create lint framework:
-  - [ ] severity (`error`, `warning`)
-  - [ ] code (`SCH001`, `PCB001`, etc.)
-  - [ ] message
-  - [ ] optional node path / source location
-- [ ] Implement schematic lints:
-  - [ ] `SCH001` invalid root
-  - [ ] `SCH002` duplicate UUID
-  - [ ] `SCH003` duplicate reference designator
-  - [ ] `SCH004` symbol missing `Reference`
-  - [ ] `SCH005` symbol missing `Value`
-  - [ ] `SCH006` malformed coordinates / `at`
-  - [ ] `SCH007` malformed wire points
-  - [ ] `SCH008` missing/empty `lib_symbols` when symbols exist
-  - [ ] `SCH009` symbol instance references nonexistent embedded lib symbol
-- [ ] Implement PCB lints:
-  - [ ] `PCB001` invalid root
-  - [ ] `PCB002` duplicate UUID
-  - [ ] `PCB003` footprint missing `at`
-  - [ ] `PCB004` malformed `at` / rotation
-  - [ ] `PCB005` no `Edge.Cuts` geometry
-  - [ ] `PCB006` outline not closed (for generated rectangle mode)
-  - [ ] `PCB007` impossible dimensions (<=0 or absurd size)
-  - [ ] `PCB008` malformed layer declarations on generated geometry
-  - [ ] `PCB009` coordinates out of sane/configured range
+- [x] Create lint framework:
+  - [x] severity (`error`, `warning`)
+  - [x] code (`SCH001`, `PCB001`, etc.)
+  - [x] message
+  - [x] optional node path / source location
+- [x] Implement schematic lints:
+  - [x] `SCH001` invalid root
+  - [x] `SCH002` duplicate UUID
+  - [x] `SCH003` duplicate reference designator
+  - [x] `SCH004` symbol missing `Reference`
+  - [x] `SCH005` symbol missing `Value`
+  - [x] `SCH006` malformed coordinates / `at`
+  - [x] `SCH007` malformed wire points
+  - [x] `SCH008` missing/empty `lib_symbols` when symbols exist
+  - [x] `SCH009` symbol instance references nonexistent embedded lib symbol
+- [x] Implement PCB lints:
+  - [x] `PCB001` invalid root
+  - [x] `PCB002` duplicate UUID
+  - [x] `PCB003` footprint missing `at`
+  - [x] `PCB004` malformed `at` / rotation
+  - [x] `PCB005` no `Edge.Cuts` geometry
+  - [x] `PCB006` outline not closed (for generated rectangle mode)
+  - [x] `PCB007` impossible dimensions (<=0 or absurd size)
+  - [x] `PCB008` malformed layer declarations on generated geometry
+  - [x] `PCB009` coordinates out of sane/configured range
 - [ ] Add cross-file/project lints (later phase):
   - [ ] `X001` refs mismatch between schematic and PCB
   - [ ] `X002` missing footprint assignments
   - [ ] `X003` basic net naming consistency checks
 
 ### 5.3 KiCad CLI validation (authoritative external validation)
-- [ ] Implement `KicadCliAdapter` methods:
-  - [ ] version detection (`kicad-cli --version`)
-  - [ ] ERC
-  - [ ] DRC
-  - [ ] exports used by the skill
-- [ ] Parse and normalize CLI result outputs into structured results.
-- [ ] Add version capability detection and compatibility handling.
-- [ ] Fail mutations when KiCad validation fails (configurable strictness).
+- [x] Implement `KicadCliAdapter` methods (version detection, ERC, DRC) — pre-existing from Phase 2.3
+- [x] Parse and normalize CLI result outputs into structured results.
+- [x] Add version capability detection and compatibility handling.
+- [x] Fail mutations when KiCad validation fails (`ValidationMode.KICAD` / `FULL`).
 
 ### 5.4 Validation policy / strictness modes
-- [ ] Add validation mode controls (CLI flags and/or config):
-  - [ ] `none`
-  - [ ] `syntax`
-  - [ ] `lint`
-  - [ ] `kicad`
-  - [ ] `full`
-- [ ] Set safe default for mutating commands (`full` preferred, `lint` fallback if performance becomes an issue).
-- [ ] Optional `--strict` mode to fail on warnings as well as errors.
+- [x] Add validation mode controls: `ValidationMode` IntEnum (NONE/SYNTAX/LINT/KICAD/FULL)
+- [x] Safe default for mutating commands: `ValidationMode.LINT`
+- [x] `strict=True` mode to fail on warnings as well as errors.
 
 ### 5.5 Transactional mutate-and-validate pipeline
-- [ ] Implement a single helper used by all mutating commands:
-  - [ ] load/parse current file
-  - [ ] apply mutator function
-  - [ ] serialize to temp
-  - [ ] re-parse temp (round-trip sanity)
-  - [ ] run lints
-  - [ ] run KiCad validation (per policy)
-  - [ ] atomic commit on success
-  - [ ] rollback/no-overwrite on failure
-- [ ] Make all write commands call this helper (no exceptions).
+- [x] `mutate_and_validate_sch(path, mutator, *, mode, cli, backup, operation, strict)`
+- [x] `mutate_and_validate_pcb(path, mutator, *, mode, cli, backup, operation, strict)`
+- [x] load/parse current file → apply mutator → serialize → re-parse → lint → KiCad (per mode) → atomic commit
+- [x] Original file preserved on any failure.
+- [x] All write commands (cmd_add_component, cmd_add_net, cmd_connect, cmd_set_board_size, cmd_auto_place) use pipeline.
 
 ---
 
@@ -445,7 +432,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 
 ### Must-have for “usable and not horrible”
 - [ ] No regex-based structural edits for `.kicad_sch` / `.kicad_pcb` mutation paths — current schematic mutations still use string/regex operations.
-- [ ] All mutating commands use transactional write + validation pipeline — `cmd_new` now uses `_atomic_write` (done); full transactional pipeline (Phase 5) not yet implemented.
+- [x] All mutating commands use transactional write + validation pipeline — `mutate_and_validate_sch/pcb` in Phase 5 (`5e24bd7`).
 - [ ] Syntax + structural linting implemented and enabled by default — only basic sexp balance/root check exists; no structural lint framework.
 - [ ] `kicad-cli` validation integrated for ERC/DRC (where applicable) — not integrated into mutation pipeline.
 - [x] `SKILL.md` matches actual command behavior (all commands, `import-netlist` description, File Safety note).
@@ -467,10 +454,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 2. [x] Add typed exceptions + safe atomic writes + minimal sanity checks — fully done (`.bak` backup added, `cmd_new` uses `_atomic_write`).
 3. [x] Split monolithic script into `src/kicad_pcb/` package (Phase 2.1) — fully done (`01809c6`).
 4. [x] Introduce typed domain models + injectable Runner / KicadCliAdapter (Phases 2.2–2.3).
-5. [ ] Implement S-expression tokenizer/parser/serializer + tests (Phase 3).
+5. [x] Implement S-expression tokenizer/parser/serializer + tests (Phase 3).
 6. [x] Implement `SchematicDoc` and `PcbDoc` AST wrappers for highest-risk ops (Phase 4).
-7. [ ] Add lint framework + key schematic/PCB lints (Phase 5).
-8. [ ] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 6).
+7. [x] Add lint framework + key schematic/PCB lints (Phase 5) — `kicad_pcb.lint`, 18 rules, `5e24bd7`.
+8. [x] Implement transactional `mutate_and_validate()` pipeline and wire into all mutating commands (Phase 5) — `kicad_pcb.pipeline`, `ValidationMode`, `5e24bd7`.
 9. [ ] Add golden tests + integration tests (Phase 7).
 10. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 9).
 
