@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 
@@ -55,7 +56,6 @@ def home_tmp() -> Path:
 @pytest.fixture()
 def run_script(tmp_path: Path):
     """Return a helper that runs kicad_pcb.py with given args in a temp home."""
-    import sys
     python = sys.executable
 
     def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -66,6 +66,7 @@ def run_script(tmp_path: Path):
             text=True,
             cwd=str(cwd or tmp_path),
             env=env,
+            check=False,
         )
 
     return _run
