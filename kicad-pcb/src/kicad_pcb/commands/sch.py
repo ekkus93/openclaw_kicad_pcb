@@ -8,6 +8,7 @@ from ..config import get_current_project
 from ..errors import UserError
 from ..fs import _atomic_write, _new_uuid
 from ..models import ComponentSpec, NetLabelSpec, WireSegment
+from ..results import AddComponentResult, AddNetResult, ConnectResult
 
 # KiCad symbol library path (system default; override via KICAD_SYMBOLS_DIR env if needed).
 KICAD_SYMBOLS_DIR = Path("/usr/share/kicad/symbols")
@@ -144,7 +145,7 @@ def _append_to_schematic(sch_file: Path, s_expr: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def cmd_add_component(args) -> None:
+def cmd_add_component(args) -> AddComponentResult:
     """Add a component symbol to the schematic.
 
     Usage: add-component <LIB:SYM> <REF> [--value V] [--footprint FP]
@@ -203,14 +204,18 @@ def cmd_add_component(args) -> None:
     # sub-symbol names (e.g. "R_0_1" not "Device:R_0_1") for compatibility.
     _embed_lib_symbol(sch_file, spec.lib_name, spec.sym_name)
 
-    print(f"✅ Added {spec.ref} ({spec.lib_sym})  value={spec.value}")
-    print(f"   Position: ({x:.1f}, {y:.1f}) mm  |  Pins: {', '.join(pin_nums)}")
-    if not spec.footprint:
-        print("   ⚠️  No footprint — assign in KiCad or use --footprint")
-    print("\n💡 Run `preview-schematic` to verify, then wire with `connect`.")
+    return AddComponentResult(
+        ref=spec.ref,
+        lib_sym=spec.lib_sym,
+        value=spec.value,
+        x=x,
+        y=y,
+        pins=tuple(pin_nums),
+        has_footprint=bool(spec.footprint),
+    )
 
 
-def cmd_add_net(args) -> None:
+def cmd_add_net(args) -> AddNetResult:
     """Add a named net label to the schematic.
 
     Usage: add-net <NAME> [--x X] [--y Y]   (coordinates in mm)
@@ -235,10 +240,10 @@ def cmd_add_net(args) -> None:
         f"  )"
     )
     _append_to_schematic(sch_file, label_entry)
-    print(f"✅ Net label '{label.name}' added at ({label.x}, {label.y})")
+    return AddNetResult(name=label.name, x=label.x, y=label.y)
 
 
-def cmd_connect(args) -> None:
+def cmd_connect(args) -> ConnectResult:
     """Add a wire segment between two coordinates in the schematic.
 
     Usage: connect --from X1,Y1 --to X2,Y2   (coordinates in mm)
@@ -262,4 +267,4 @@ def cmd_connect(args) -> None:
         f"  )"
     )
     _append_to_schematic(sch_file, wire_entry)
-    print(f"✅ Wire added: ({wire.x1}, {wire.y1}) → ({wire.x2}, {wire.y2})")
+    return ConnectResult(x1=wire.x1, y1=wire.y1, x2=wire.x2, y2=wire.y2)

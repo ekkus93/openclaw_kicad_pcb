@@ -71,6 +71,9 @@ from .config import (
 # Errors
 from .errors import KiCadError, ParseError, ToolError, UserError
 
+# CLI formatting
+from .formatting import format_result
+
 # File-system utilities
 from .fs import _atomic_write, _check_sexp, _new_uuid
 
@@ -84,6 +87,33 @@ from .models import (
     ProjectRef,
     ValidationResult,
     WireSegment,
+)
+
+# Typed result objects (Phase 2.4)
+from .results import (
+    AddComponentResult,
+    AddNetResult,
+    AutoPlaceResult,
+    AutoRouteResult,
+    ConnectResult,
+    DoctorCheckItem,
+    DoctorResult,
+    DrcResult,
+    ErcResult,
+    Export3dResult,
+    ExportBomResult,
+    ExportDrillResult,
+    ExportGerbersResult,
+    ExportPosResult,
+    ImportNetlistResult,
+    InfoResult,
+    NewProjectResult,
+    OpenResult,
+    PackageFabResult,
+    PcbwayQuoteResult,
+    PreviewPcbResult,
+    PreviewSchematicResult,
+    SetBoardSizeResult,
 )
 
 # CLI runner
@@ -165,4 +195,30 @@ __all__ = [
     "cmd_doctor",
     # cli
     "main",
+    # results
+    "NewProjectResult",
+    "InfoResult",
+    "OpenResult",
+    "DrcResult",
+    "ErcResult",
+    "ExportGerbersResult",
+    "ExportDrillResult",
+    "ExportBomResult",
+    "PackageFabResult",
+    "ExportPosResult",
+    "Export3dResult",
+    "PreviewSchematicResult",
+    "PreviewPcbResult",
+    "SetBoardSizeResult",
+    "ImportNetlistResult",
+    "AutoPlaceResult",
+    "AutoRouteResult",
+    "AddComponentResult",
+    "AddNetResult",
+    "ConnectResult",
+    "DoctorCheckItem",
+    "DoctorResult",
+    "PcbwayQuoteResult",
+    # formatting
+    "format_result",
 ]

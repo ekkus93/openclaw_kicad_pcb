@@ -5,13 +5,12 @@ Covers:
 - _check_sexp: valid S-expression, wrong root, unbalanced parens
 - _atomic_write: happy path, rejects bad content (no clobber), no temp leftovers
 - check_kicad: raises ToolError when CLI not on PATH
-- cmd_doctor: smoke test (exits cleanly or raises UserError on missing deps)
+- cmd_doctor: smoke test (always returns DoctorResult; overall_ok=False when deps missing)
 - No bare `except:` in the module source
 """
 from __future__ import annotations
 
 import ast
-import contextlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -216,27 +215,32 @@ class TestCheckKicad:
 
 
 class TestCmdDoctor:
-    def test_smoke_no_crash(self, tmp_path: Path, capsys) -> None:
-        """doctor must not crash — it either passes or raises UserError."""
+    def test_smoke_returns_doctor_result(self, tmp_path: Path) -> None:
+        """doctor always returns a DoctorResult; never raises, even with missing deps."""
 
         class FakeArgs:
             pass
 
-        # acceptable — kicad-cli or libs may be missing in CI
-        with contextlib.suppress(kicad_pcb.UserError):
-            kicad_pcb.cmd_doctor(FakeArgs())
+        result = kicad_pcb.cmd_doctor(FakeArgs())
+        assert isinstance(result, kicad_pcb.DoctorResult)
+        assert isinstance(result.overall_ok, bool)
+        assert len(result.checks) > 0
 
-    def test_raises_user_error_when_cli_missing(self, tmp_path: Path, capsys) -> None:
-        """If kicad-cli is absent, doctor raises UserError (not SystemExit)."""
+    def test_overall_ok_false_when_cli_missing(self, tmp_path: Path) -> None:
+        """If kicad-cli is absent, overall_ok is False (no exception raised)."""
 
         class FakeArgs:
             pass
 
-        with (
-            patch("shutil.which", return_value=None),
-            pytest.raises(kicad_pcb.UserError, match="doctor"),
-        ):
-            kicad_pcb.cmd_doctor(FakeArgs())
+        with patch("shutil.which", return_value=None):
+            result = kicad_pcb.cmd_doctor(FakeArgs())
+
+        assert isinstance(result, kicad_pcb.DoctorResult)
+        assert result.overall_ok is False
+        labels = [c.label for c in result.checks]
+        assert "kicad-cli" in labels
+        cli_check = next(c for c in result.checks if c.label == "kicad-cli")
+        assert cli_check.status == "error"
 
 
 # ---------------------------------------------------------------------------

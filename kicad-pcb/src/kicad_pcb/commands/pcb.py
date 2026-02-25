@@ -11,10 +11,11 @@ from ..config import get_current_project
 from ..errors import ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..models import BoardOutlineRect, FootprintMoveSpec
+from ..results import AutoPlaceResult, AutoRouteResult, ImportNetlistResult, SetBoardSizeResult
 from ..runner import KICAD_CLI, check_kicad
 
 
-def cmd_set_board_size(args) -> None:
+def cmd_set_board_size(args) -> SetBoardSizeResult:
     """Set board outline by writing an Edge.Cuts rectangle.
 
     Usage: set-board-size WxH   (dimensions in mm)
@@ -46,11 +47,12 @@ def cmd_set_board_size(args) -> None:
     text = text[:last_paren] + "\n" + lines + "\n)\n"
     _atomic_write(pcb_file, text, "kicad_pcb", operation="set-board-size")
 
-    print(f"✅ Board outline: {outline.width} mm × {outline.height} mm")
-    print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
+    return SetBoardSizeResult(
+        width=outline.width, height=outline.height, pcb_file_name=pcb_file.name
+    )
 
 
-def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> None:
+def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> ImportNetlistResult:
     """Export netlist from schematic and report components for PCB placement.
 
     Note: KiCad 7+ links PCB and schematic via UUIDs — no separate netlist
@@ -72,33 +74,24 @@ def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> None:
         raise UserError(f"Schematic not found: {sch_file}")
 
     output_file = project.path / f"{project.name}.net"
-    print("📋 Exporting netlist...")
 
     result, xml_text = cli.export_netlist(sch_file, output_file)
 
-    if result.returncode == 0 and xml_text:
-        refs = re.findall(r"<ref>([^<]+)</ref>", xml_text)
-        values = re.findall(r"<value>([^<]+)</value>", xml_text)
-        footprints = re.findall(r"<footprint>([^<]*)</footprint>", xml_text)
-        footprints += [""] * (len(refs) - len(footprints))  # pad if missing
-        print(f"✅ Netlist: {output_file}")
-        if refs:
-            print(f"\n📦 Components ({len(refs)}):")
-            for r, v, fp in zip(refs, values, footprints):
-                tag = f"  [{fp}]" if fp else "  [NO FOOTPRINT ⚠️]"
-                print(f"  {r:<6} {v:<20}{tag}")
-            missing = [r for r, fp in zip(refs, footprints) if not fp]
-            if missing:
-                print(f"\n⚠️  Assign footprints to: {', '.join(missing)}")
-        print("\n💡 Open PCB editor → Tools → Update PCB from Schematic to sync.")
-    else:
+    if result.returncode != 0 or not xml_text:
         msg = "Netlist export failed — populate the schematic first."
         if result.stderr:
             msg += f"\n{result.stderr[:400]}"
         raise ToolError(msg)
 
+    refs = re.findall(r"<ref>([^<]+)</ref>", xml_text)
+    values = re.findall(r"<value>([^<]+)</value>", xml_text)
+    footprints_raw = re.findall(r"<footprint>([^<]*)</footprint>", xml_text)
+    footprints_raw += [""] * (len(refs) - len(footprints_raw))
+    components = tuple(zip(refs, values, footprints_raw))
+    return ImportNetlistResult(netlist_file=output_file, components=components)
 
-def cmd_auto_place(args) -> None:
+
+def cmd_auto_place(args) -> AutoPlaceResult:
     """Arrange all footprints on the PCB in a grid layout.
 
     Usage: auto-place [--spacing N]   (spacing in mm, default 10)
@@ -122,9 +115,10 @@ def cmd_auto_place(args) -> None:
     matches = list(fp_pattern.finditer(text))
 
     if not matches:
-        print("ℹ️  No footprints found in PCB file.")
-        print("   Add components to the schematic, then run import-netlist.")
-        return
+        raise UserError(
+            "No footprints found in PCB file.\n"
+            "   Add components to the schematic, then run import-netlist."
+        )
 
     placed: list[FootprintMoveSpec] = []
     col_size = 5
@@ -142,14 +136,10 @@ def cmd_auto_place(args) -> None:
     new_text = fp_pattern.sub(replacer, text)
     _atomic_write(pcb_file, new_text, "kicad_pcb", operation="auto-place")
 
-    print(f"✅ Placed {len(placed)} footprint(s) (spacing {spacing} mm):")
-    for spec in placed:
-        label = spec.ref.split(":")[-1] if ":" in spec.ref else spec.ref
-        print(f"   {label:<30} → ({spec.x:.1f}, {spec.y:.1f})")
-    print("\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
+    return AutoPlaceResult(placed=tuple(placed), spacing=spacing)
 
 
-def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> None:  # noqa: PLR0912
+def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> AutoRouteResult:  # noqa: PLR0912
     """Auto-route the PCB using Freerouting (requires Java + Freerouting JAR).
 
     Install Freerouting: https://github.com/freerouting/freerouting/releases
@@ -184,49 +174,43 @@ def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> None:  # noqa
                 break
 
     if not freerouting_jar:
-        print("❌ Freerouting JAR not found.")
-        print("\nInstall:")
-        print("  1. https://github.com/freerouting/freerouting/releases")
-        print("  2. Save as ~/freerouting.jar")
-        print("  3. Re-run: auto-route --jar ~/freerouting.jar")
-        print("\nAlternative: Route manually in KiCad PCB editor (Route menu).")
-        return
+        raise UserError(
+            "Freerouting JAR not found.\n\n"
+            "Install:\n"
+            "  1. https://github.com/freerouting/freerouting/releases\n"
+            "  2. Save as ~/freerouting.jar\n"
+            "  3. Re-run: auto-route --jar ~/freerouting.jar\n\n"
+            "Alternative: Route manually in KiCad PCB editor (Route menu)."
+        )
 
     java = shutil.which("java")
     if not java:
-        print("❌ Java not found. Install: sudo apt install openjdk-17-jre")
-        return
+        raise UserError("Java not found. Install: sudo apt install openjdk-17-jre")
 
     dsn_file = project.path / f"{project.name}.dsn"
     ses_file = project.path / f"{project.name}.ses"
 
-    print("📤 Exporting Specctra DSN...")
     dsn_result = cli.export_specctra_dsn(pcb_file, dsn_file)
     if dsn_result.returncode != 0:
-        print("❌ DSN export failed — ensure PCB has components placed and netlist set.")
+        msg = "DSN export failed — ensure PCB has components placed and netlist set."
         if dsn_result.stderr:
-            print(dsn_result.stderr[:300])
-        return
+            msg += f"\n{dsn_result.stderr[:300]}"
+        raise ToolError(msg)
 
-    print("🔀 Running Freerouting auto-router (this may take a minute)...")
     try:
         fr_result = subprocess.run(
             [java, "-jar", freerouting_jar,
              "-de", str(dsn_file), "-do", str(ses_file), "-mp", "100"],
             capture_output=True, text=True, timeout=300, check=False,
         )
-    except subprocess.TimeoutExpired:
-        print("⚠️  Freerouting timed out after 5 minutes.")
-        return
+    except subprocess.TimeoutExpired as exc:
+        raise ToolError("Freerouting timed out after 5 minutes.") from exc
 
-    if fr_result.returncode == 0 and ses_file.exists():
-        print(f"✅ Routes complete: {ses_file.name}")
-        imp = cli.import_specctra_ses(ses_file, pcb_file)
-        if imp.returncode == 0:
-            print(f"✅ Routes imported into {pcb_file.name}")
-        else:
-            print("⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
-    else:
-        print("❌ Freerouting failed.")
+    if fr_result.returncode != 0 or not ses_file.exists():
+        msg = "Freerouting failed."
         if fr_result.stderr:
-            print(fr_result.stderr[:300])
+            msg += f"\n{fr_result.stderr[:300]}"
+        raise ToolError(msg)
+
+    imp = cli.import_specctra_ses(ses_file, pcb_file)
+    return AutoRouteResult(ses_file_name=ses_file.name, routes_imported=imp.returncode == 0)
