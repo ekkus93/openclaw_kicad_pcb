@@ -15,6 +15,7 @@ from .lint import LINT_SUGGESTIONS, LintSeverity
 from .results import (
     AddComponentResult,
     AddNetResult,
+    ApplyPatternResult,
     AutoPlaceResult,
     AutoRouteResult,
     ConnectResult,
@@ -326,6 +327,19 @@ def _fmt_add_net(r: AddNetResult) -> list[str]:
 def _fmt_connect(r: ConnectResult) -> list[str]:
     prefix = "🔍 DRY RUN — " if r.dry_run else ""
     return [f"{prefix}✅ Wire added: ({r.x1}, {r.y1}) → ({r.x2}, {r.y2})"]
+
+
+@_register(ApplyPatternResult)
+def _fmt_apply_pattern(r: ApplyPatternResult) -> list[str]:
+    prefix = "🔍 DRY RUN — " if r.dry_run else ""
+    lines = [
+        f"{prefix}✅ Applied pattern '{r.pattern}'",
+        f"   Components: {', '.join(r.components)}",
+        f"   Nets:       {', '.join(r.nets)}",
+        "",
+        "💡 Run `preview-schematic` to verify, then assign footprints and run `erc`.",
+    ]
+    return lines
 
 
 # ---------------------------------------------------------------------------

@@ -222,6 +222,18 @@ class ConnectResult:
     dry_run: bool = False
 
 
+@dataclass(frozen=True)
+class ApplyPatternResult:
+    """Result of the ``apply-pattern`` command (Phase 9.2)."""
+
+    pattern: str
+    #: Reference designators for every component placed by the pattern.
+    components: tuple[str, ...]
+    #: Net names referenced by the pattern (labels placed on the schematic).
+    nets: tuple[str, ...]
+    dry_run: bool = False
+
+
 # ---------------------------------------------------------------------------
 # lint / validate / format  (Phase 6)
 # ---------------------------------------------------------------------------
