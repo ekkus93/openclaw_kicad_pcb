@@ -19,6 +19,10 @@ import re
 from pathlib import Path
 
 import pytest
+from kicad_pcb.lint import LintSeverity, lint_pcb, lint_schematic
+from kicad_pcb.sexpr import parse, serialize
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
+from kicad_pcb.sexpr.utils import find_first, walk
 
 # ---------------------------------------------------------------------------
 # Path constants
@@ -60,8 +64,6 @@ class TestGoldenRoundTrip:
         ["minimal.kicad_sch", "sch_with_resistor.kicad_sch"],
     )
     def test_sch_golden_is_idempotent(self, filename: str) -> None:
-        from kicad_pcb.sexpr import parse, serialize
-
         content = _read_golden(filename).rstrip("\n")
         assert serialize(parse(content)) == content
 
@@ -70,15 +72,11 @@ class TestGoldenRoundTrip:
         ["minimal.kicad_pcb", "pcb_with_footprint.kicad_pcb"],
     )
     def test_pcb_golden_is_idempotent(self, filename: str) -> None:
-        from kicad_pcb.sexpr import parse, serialize
-
         content = _read_golden(filename).rstrip("\n")
         assert serialize(parse(content)) == content
 
     def test_smoke_test_r1_double_round_trip_is_stable(self) -> None:
         """SmokeTest_R1 may not start in canonical form, but two round-trips must match."""
-        from kicad_pcb.sexpr import parse, serialize
-
         content = (WORKING / "SmokeTest_R1.kicad_sch").read_text()
         first = serialize(parse(content))
         second = serialize(parse(first))
@@ -98,9 +96,6 @@ class TestGoldenLintClean:
         ["minimal.kicad_sch", "sch_with_resistor.kicad_sch"],
     )
     def test_sch_golden_has_no_lint_errors(self, filename: str) -> None:
-        from kicad_pcb.lint import LintSeverity, lint_schematic
-        from kicad_pcb.sexpr import parse
-
         root = parse(_read_golden(filename).rstrip("\n"))
         errors = [i for i in lint_schematic(root) if i.severity == LintSeverity.ERROR]
         assert errors == [], f"{filename}: unexpected lint errors: {errors}"
@@ -110,17 +105,11 @@ class TestGoldenLintClean:
         ["minimal.kicad_pcb", "pcb_with_footprint.kicad_pcb"],
     )
     def test_pcb_golden_has_no_lint_errors(self, filename: str) -> None:
-        from kicad_pcb.lint import LintSeverity, lint_pcb
-        from kicad_pcb.sexpr import parse
-
         root = parse(_read_golden(filename).rstrip("\n"))
         errors = [i for i in lint_pcb(root) if i.severity == LintSeverity.ERROR]
         assert errors == [], f"{filename}: unexpected lint errors: {errors}"
 
     def test_smoke_test_r1_has_no_lint_errors(self) -> None:
-        from kicad_pcb.lint import LintSeverity, lint_schematic
-        from kicad_pcb.sexpr import parse, serialize
-
         # Parse round-tripped form to avoid any pre-existing formatting quirks
         content = serialize(parse((WORKING / "SmokeTest_R1.kicad_sch").read_text()))
         root = parse(content)
@@ -150,10 +139,6 @@ class TestBrokenFixtureRegressions:
         'Device:R_0_1'.  We verify this via AST traversal so the check is
         independent of indentation or whitespace.
         """
-        from kicad_pcb.sexpr import parse
-        from kicad_pcb.sexpr.nodes import ListNode, StringNode
-        from kicad_pcb.sexpr.utils import find_first, walk
-
         text = _strip_comments((BROKEN / "bug1_subname_rename.kicad_sch").read_text())
         root = parse(text)
         lib_syms = find_first(root, "lib_symbols")
@@ -170,8 +155,7 @@ class TestBrokenFixtureRegressions:
                 and isinstance(node.items[1], StringNode)
             )
         ]
-        buggy = [n for n in sub_names if ":" in n and not n.startswith("Device:R") or n in ("Device:R_0_1", "Device:R_1_1")]
-        assert any("Device:R_0_1" == n or "Device:R_1_1" == n for n in sub_names), (
+        assert any(n in {"Device:R_0_1", "Device:R_1_1"} for n in sub_names), (
             f"Bug1 fixture no longer contains bad sub-symbol names; found: {sub_names}"
         )
 
@@ -185,10 +169,6 @@ class TestBrokenFixtureRegressions:
         Once the (id N) tokens are stripped by the fix, re-running this check
         would fail, alerting us that the fixture was silently corrected.
         """
-        from kicad_pcb.sexpr import parse
-        from kicad_pcb.sexpr.nodes import AtomNode, ListNode
-        from kicad_pcb.sexpr.utils import walk
-
         text = _strip_comments((BROKEN / "bug2_id_property.kicad_sch").read_text())
         # Textual check: quick and readable
         assert re.search(r"\(id\s+\d+\)", text), (
@@ -237,10 +217,6 @@ class TestBrokenFixtureRegressions:
 
         Without (instances ...), kicad-cli exports an empty netlist.
         """
-        from kicad_pcb.sexpr import parse
-        from kicad_pcb.sexpr.nodes import ListNode
-        from kicad_pcb.sexpr.utils import find_first
-
         text = _strip_comments((BROKEN / "bug4_no_instances.kicad_sch").read_text())
         root = parse(text)
 

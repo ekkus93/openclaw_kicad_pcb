@@ -34,7 +34,7 @@ def cmd_preview_schematic(args, *, cli: KicadCliAdapter | None = None) -> Previe
     # Optional PNG conversion — cairosvg is an optional dependency.
     png_file = None
     try:
-        import cairosvg  # noqa: PLC0415
+        import cairosvg  # noqa: PLC0415  # optional dep; type stubs suppressed in pyproject.toml
 
         png_path = project.path / "schematic_preview.png"
         cairosvg.svg2png(url=str(output_file), write_to=str(png_path))
