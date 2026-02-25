@@ -34,8 +34,12 @@ from .lint import LINT_SUGGESTIONS, LintError, LintSeverity
 from .results import DoctorResult, LintFileResult, ValidateFileResult
 
 
-def main() -> None:  # noqa: PLR0912 PLR0915
-    """Parse CLI arguments and dispatch to the appropriate command handler."""
+def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
+    """Build and return the top-level argument parser.
+
+    Extracted from :func:`main` so the parser structure can be verified in
+    unit tests without spawning a subprocess or touching ``sys.argv``.
+    """
     parser = argparse.ArgumentParser(
         prog="kicad_pcb",
         description="🔧 KiCad PCB Automation — Design to Manufacturing",
@@ -216,6 +220,12 @@ def main() -> None:  # noqa: PLR0912 PLR0915
     p_fp.add_argument("path", help="Path to .kicad_pcb file")
     p_fp.set_defaults(func=cmd_format_pcb)
 
+    return parser
+
+
+def main() -> None:  # noqa: PLR0912 PLR0915
+    """Parse CLI arguments and dispatch to the appropriate command handler."""
+    parser = _build_parser()
     args = parser.parse_args()
 
     if args.command is None:
