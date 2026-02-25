@@ -421,11 +421,11 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Add linting (`ruff` — 0 violations, configured in `pyproject.toml`).
 - [x] Add type checking (`mypy` — clean pass, exit 0).
 
-### 10.2 Add CI test pipeline
-- [ ] Run unit tests on every PR.
-- [ ] Run integration tests in a KiCad-capable environment (or nightly if setup is heavy).
-- [ ] Enforce coverage threshold for parser/doc/lint modules.
-- [ ] Publish test artifacts/logs for failed KiCad validation runs.
+### 10.2 Add CI test pipeline ✅ (commits be210fe, 7ef713a)
+- [x] Run unit tests on every PR.
+- [x] Run integration tests in a KiCad-capable environment (or nightly if setup is heavy).
+- [x] Enforce coverage threshold for parser/doc/lint modules.
+- [x] Publish test artifacts/logs for failed KiCad validation runs.
 
 ---
 
@@ -444,7 +444,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] AST-based editing for all mutation operations — `SchematicDoc`/`PcbDoc` wrappers with full AST mutation; no regex-based structural edits remain.
 - [x] Strong lint rules with clear diagnostics — 18 rules (SCH/PCB 001-009), `LINT_SUGGESTIONS` for all codes, structured display in CLI.
 - [x] Integration tests passing on supported KiCad versions — all 11 integration tests pass with system kicad-cli (Flatpak, KiCad 9); Phase 7.7 fully done.
-- [ ] Version compatibility handling and `doctor` diagnostics — `doctor` command done; version compatibility layer (Phase 8) not yet implemented.
+- [x] Version compatibility handling and `doctor` diagnostics — `doctor` done (Phase 1.2); version compatibility layer fully done (Phase 8.1–8.3, commits ca50af3, 00c4689, b275e14).
 - [x] Canonical serializer/formatter for stable output and diffs — `kicad_pcb.sexpr.serializer` round-trip safe; `format-sch`/`format-pcb` commands added (Phase 6).
 
 ---
@@ -464,7 +464,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 11. [x] Add CLI arg-parsing tests — extract `_build_parser()` from `cli.py`; `test_cli.py` `TestArgParsing` + `TestInvalidArgs` (53 tests); 647 tests pass; Phase 7.5 fully done.
 12. [x] Add golden file tests — 4 canonical fixture files in `tests/fixtures/golden/`; `test_golden.py` adds 14 tests (round-trip stability, lint cleanliness, 4 broken-fixture regressions); 661 unit tests pass; Phase 7.6 fully done.
 13. [x] Add PCB integration tests — `test_set_board_size_pcb_drc_runs`, `test_set_board_size_pcb_gerbers_export`, `test_full_mini_flow_resistor_divider`; 11 integration tests pass; Phase 7.7 fully done.
-14. [ ] Add version compatibility layer + symbol library discovery improvements (Phase 8/9).
+14. [x] Add version compatibility layer + symbol library discovery improvements (Phase 8) — done (commits ca50af3, 00c4689, b275e14).
 
 ---
 
