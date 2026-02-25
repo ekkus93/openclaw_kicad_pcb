@@ -119,6 +119,29 @@ from .results import (
 # CLI runner
 from .runner import KICAD_CLI, check_kicad, run_kicad_cli
 
+# S-expression sub-package (Phase 3) — expose top-level symbols
+from .sexpr import (
+    NO_POS,
+    AtomNode,
+    ListNode,
+    Node,
+    Position,
+    StringNode,
+    Token,
+    TokenKind,
+    append_to_section,
+    find_all,
+    find_first,
+    node_path,
+    parse,
+    parse_file,
+    replace_section,
+    serialize,
+    serialize_file,
+    tokenize,
+    walk,
+)
+
 __all__ = [
     # errors
     "KiCadError",
@@ -221,4 +244,24 @@ __all__ = [
     "PcbwayQuoteResult",
     # formatting
     "format_result",
+    # sexpr (Phase 3)
+    "Position",
+    "NO_POS",
+    "AtomNode",
+    "StringNode",
+    "ListNode",
+    "Node",
+    "Token",
+    "TokenKind",
+    "tokenize",
+    "parse",
+    "parse_file",
+    "serialize",
+    "serialize_file",
+    "walk",
+    "find_first",
+    "find_all",
+    "replace_section",
+    "append_to_section",
+    "node_path",
 ]
