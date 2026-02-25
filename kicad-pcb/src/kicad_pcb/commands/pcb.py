@@ -6,11 +6,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from ..adapters import KicadCliAdapter
 from ..config import get_current_project
 from ..errors import ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..models import BoardOutlineRect, FootprintMoveSpec
-from ..runner import check_kicad, run_kicad_cli
+from ..runner import KICAD_CLI, check_kicad
 
 
 def cmd_set_board_size(args) -> None:
@@ -49,14 +50,18 @@ def cmd_set_board_size(args) -> None:
     print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
 
 
-def cmd_import_netlist(args) -> None:
+def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> None:
     """Export netlist from schematic and report components for PCB placement.
 
     Note: KiCad 7+ links PCB and schematic via UUIDs — no separate netlist
     import is required. Use Tools → Update PCB from Schematic inside KiCad's
     PCB editor for the full sync. This command exports the netlist for inspection.
+
+    *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`.
     """
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -69,15 +74,9 @@ def cmd_import_netlist(args) -> None:
     output_file = project.path / f"{project.name}.net"
     print("📋 Exporting netlist...")
 
-    result = run_kicad_cli([
-        "sch", "export", "netlist",
-        "--output", str(output_file),
-        "--format", "kicadxml",
-        str(sch_file),
-    ])
+    result, xml_text = cli.export_netlist(sch_file, output_file)
 
-    if result.returncode == 0 and output_file.exists():
-        xml_text = output_file.read_text()
+    if result.returncode == 0 and xml_text:
         refs = re.findall(r"<ref>([^<]+)</ref>", xml_text)
         values = re.findall(r"<value>([^<]+)</value>", xml_text)
         footprints = re.findall(r"<footprint>([^<]*)</footprint>", xml_text)
@@ -150,13 +149,18 @@ def cmd_auto_place(args) -> None:
     print("\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
 
 
-def cmd_auto_route(args) -> None:  # noqa: PLR0912
+def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> None:  # noqa: PLR0912
     """Auto-route the PCB using Freerouting (requires Java + Freerouting JAR).
 
     Install Freerouting: https://github.com/freerouting/freerouting/releases
     Save the JAR to ~/freerouting.jar, then re-run this command.
+
+    *cli* is an optional injectable :class:`~kicad_pcb.adapters.KicadCliAdapter`
+    used for the kicad-cli DSN export/import steps.
     """
-    check_kicad()
+    if cli is None:
+        check_kicad()
+        cli = KicadCliAdapter(kicad_cli=KICAD_CLI)
 
     project = get_current_project()
     if not project:
@@ -197,20 +201,16 @@ def cmd_auto_route(args) -> None:  # noqa: PLR0912
     ses_file = project.path / f"{project.name}.ses"
 
     print("📤 Exporting Specctra DSN...")
-    result = run_kicad_cli([
-        "pcb", "export", "specctra",
-        "--output", str(dsn_file),
-        str(pcb_file),
-    ])
-    if result.returncode != 0:
+    dsn_result = cli.export_specctra_dsn(pcb_file, dsn_file)
+    if dsn_result.returncode != 0:
         print("❌ DSN export failed — ensure PCB has components placed and netlist set.")
-        if result.stderr:
-            print(result.stderr[:300])
+        if dsn_result.stderr:
+            print(dsn_result.stderr[:300])
         return
 
     print("🔀 Running Freerouting auto-router (this may take a minute)...")
     try:
-        result = subprocess.run(
+        fr_result = subprocess.run(
             [java, "-jar", freerouting_jar,
              "-de", str(dsn_file), "-do", str(ses_file), "-mp", "100"],
             capture_output=True, text=True, timeout=300, check=False,
@@ -219,18 +219,14 @@ def cmd_auto_route(args) -> None:  # noqa: PLR0912
         print("⚠️  Freerouting timed out after 5 minutes.")
         return
 
-    if result.returncode == 0 and ses_file.exists():
+    if fr_result.returncode == 0 and ses_file.exists():
         print(f"✅ Routes complete: {ses_file.name}")
-        imp = run_kicad_cli([
-            "pcb", "import", "specctra",
-            "--output", str(pcb_file),
-            str(ses_file),
-        ])
+        imp = cli.import_specctra_ses(ses_file, pcb_file)
         if imp.returncode == 0:
             print(f"✅ Routes imported into {pcb_file.name}")
         else:
             print("⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
     else:
         print("❌ Freerouting failed.")
-        if result.stderr:
-            print(result.stderr[:300])
+        if fr_result.stderr:
+            print(fr_result.stderr[:300])
