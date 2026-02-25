@@ -377,10 +377,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Maintain capability map for commands/options by version.
 - [x] Gracefully degrade or error with clear guidance if unsupported options are requested.
 
-### 8.2 Symbol library path handling
-- [ ] Replace hardcoded `/usr/share/kicad/symbols` assumptions with discovery logic/config override.
-- [ ] Support explicit CLI/config path for symbol libraries.
-- [ ] Validate discovered paths and report in `doctor`.
+### 8.2 Symbol library path handling ✅ (commit 00c4689)
+- [x] Replace hardcoded `/usr/share/kicad/symbols` assumptions with discovery logic/config override.
+- [x] Support explicit CLI/config path for symbol libraries.
+- [x] Validate discovered paths and report in `doctor`.
 
 ### 8.3 Runtime environment resolution
 - [ ] Avoid resolving critical paths/tool binaries at import time if it reduces flexibility/testability.
