@@ -406,10 +406,10 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [ ] Use templates as “known good” building blocks for LLM-driven workflows.
 
 ### 9.3 Preflight semantic checks before generation
-- [ ] Detect duplicate references before emitting.
-- [ ] Require/validate footprints for PCB-targeted outputs.
-- [ ] Validate pin references and symbol existence before wiring.
-- [ ] Catch common net naming mistakes early.
+- [x] Detect duplicate references before emitting.
+- [x] Require/validate footprints for PCB-targeted outputs (`--require-footprints`).
+- [x] Validate pin references and symbol existence before wiring.
+- [x] Catch common net naming mistakes early.
 
 ---
 
