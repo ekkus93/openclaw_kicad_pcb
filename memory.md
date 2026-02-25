@@ -1,6 +1,45 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T21:15:00Z_
+_Last updated: 2026-02-26T00:00:00Z_
+
+---
+
+## 2026-02-26T00:00:00Z — Phase 8.3: Runtime environment resolution (commit b275e14)
+
+### Summary
+Eliminates the import-time `shutil.which("kicad-cli")` freeze. All path
+resolution now happens lazily at call time.
+
+### Changed: `runner.py`
+- Added `find_kicad_cli() -> str` — calls `shutil.which("kicad-cli")` at
+  invocation time; falls back to bare `"kicad-cli"` (OS resolves at
+  subprocess-spawn time) instead of the old hard-coded `/usr/bin/kicad-cli`
+- `run_kicad_cli()` now calls `find_kicad_cli()` on each invocation
+- Removed module-level `_runner = SubprocessRunner()` singleton (replaced with
+  local instantiation inside `run_kicad_cli()`)
+- `KICAD_CLI` retained as a backward-compat str (frozen at import time to
+  `find_kicad_cli()` result; new code should call `find_kicad_cli()` directly)
+
+### Changed: `commands/validation.py`, `commands/export.py`,
+  `commands/preview.py`, `commands/pcb.py`
+- Import changed from `from ..runner import KICAD_CLI, check_kicad` to
+  `from ..runner import check_kicad, find_kicad_cli`
+- All `KicadCliAdapter(kicad_cli=KICAD_CLI)` replaced with
+  `KicadCliAdapter(kicad_cli=find_kicad_cli())` — path resolved inside function
+  body at call time, not at module-import time
+
+### Changed: `__init__.py`
+- `find_kicad_cli` added to imports and `__all__`
+
+### Tests
+- `tests/unit/test_env_resolution.py` — 22 new tests covering:
+  - Core laziness (shutil.which patch after import, no freeze, no caching)
+  - Fallback to bare "kicad-cli" when not on PATH
+  - run_kicad_cli argv uses find_kicad_cli() at invocation time
+  - KICAD_CLI backward-compat constant is a str, not /usr/bin/kicad-cli
+  - Source-level assertions that command modules contain no KICAD_CLI freeze
+  - Adapter injection tests
+- Total: 752 unit tests passing, 1 skipped
 
 ---
 
