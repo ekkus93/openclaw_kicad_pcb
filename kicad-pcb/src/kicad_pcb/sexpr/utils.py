@@ -16,6 +16,7 @@ The terms *direct child* and *section* refer to a ``ListNode`` that is a
 direct element of another ``ListNode``'s ``items`` tuple and whose first item
 is an ``AtomNode`` with a specific ``value`` (the *keyword*).
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -65,11 +66,7 @@ def find_all(root: ListNode, key: str) -> list[ListNode]:
     Only the immediate children of *root* are searched (non-recursive).
     Returns an empty list if none match.
     """
-    return [
-        item
-        for item in root.items
-        if isinstance(item, ListNode) and item.key == key
-    ]
+    return [item for item in root.items if isinstance(item, ListNode) and item.key == key]
 
 
 # ---------------------------------------------------------------------------
@@ -118,9 +115,7 @@ def append_to_section(root: ListNode, key: str, item: Node) -> ListNode:
     appended = False
     for child in root.items:
         if not appended and isinstance(child, ListNode) and child.key == key:
-            new_root_items.append(
-                ListNode(items=(*child.items, item), pos=child.pos)
-            )
+            new_root_items.append(ListNode(items=(*child.items, item), pos=child.pos))
             appended = True
         else:
             new_root_items.append(child)

@@ -5,6 +5,7 @@
     should inject a :class:`~kicad_pcb.adapters.KicadCliAdapter` instead of
     calling this function directly.
 """
+
 from __future__ import annotations
 
 import shutil

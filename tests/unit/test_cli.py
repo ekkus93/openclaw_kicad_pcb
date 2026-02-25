@@ -8,6 +8,7 @@ Tests cover:
 All tests operate on the ArgumentParser returned by _build_parser() directly;
 no subprocesses or real filesystem access required.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -28,6 +29,7 @@ from kicad_pcb.commands.sch import cmd_add_component, cmd_add_net, cmd_connect
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 def _parse(*argv: str) -> object:
     """Parse *argv* via _build_parser() and return the resulting Namespace."""
@@ -74,8 +76,13 @@ class TestArgParsing:
 
     def test_add_component_optional_flags(self) -> None:
         args = _parse(
-            "add-component", "Device:C", "C1",
-            "--value", "100nF", "--footprint", "Cap_SMD:C_0402",
+            "add-component",
+            "Device:C",
+            "C1",
+            "--value",
+            "100nF",
+            "--footprint",
+            "Cap_SMD:C_0402",
         )
         assert args.value == "100nF"  # type: ignore[union-attr]
         assert args.footprint == "Cap_SMD:C_0402"  # type: ignore[union-attr]

@@ -3,6 +3,7 @@
 Tests use in-memory string fixtures and temporary directories; no system
 KiCad installation is required.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -12,6 +12,7 @@ AST emitters (IR → ListNode)
 -----------------------------
 :func:`make_gr_line_node` — a single ``(gr_line …)`` Edge.Cuts segment.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -113,9 +114,7 @@ def _update_footprint_at(fp: ListNode, new_x: float, new_y: float) -> ListNode:
         if isinstance(child, ListNode) and child.key == "at":
             # Preserve any rotation (items after "at", x, y).
             extra = child.items[3:]
-            new_at = ListNode(
-                (atom("at"), fnum(new_x, 3), fnum(new_y, 3)) + extra, NO_POS
-            )
+            new_at = ListNode((atom("at"), fnum(new_x, 3), fnum(new_y, 3)) + extra, NO_POS)
             new_fp_items.append(new_at)
         else:
             new_fp_items.append(child)
@@ -175,7 +174,8 @@ class PcbDoc:
     def clear_generated_outline(self) -> None:
         """Remove all ``(gr_line …)`` items on the ``Edge.Cuts`` layer."""
         new_items = [
-            item for item in self.root.items
+            item
+            for item in self.root.items
             if not (isinstance(item, ListNode) and _is_edge_cuts_gr_line(item))
         ]
         self.root = ListNode(tuple(new_items), self.root.pos)
@@ -193,8 +193,7 @@ class PcbDoc:
         outline = BoardOutlineRect(width=width, height=height)
         self.clear_generated_outline()
         new_lines = [
-            make_gr_line_node(s[0], s[1], e[0], e[1], _new_uuid())
-            for s, e in outline.corners
+            make_gr_line_node(s[0], s[1], e[0], e[1], _new_uuid()) for s, e in outline.corners
         ]
         self.root = ListNode(self.root.items + tuple(new_lines), self.root.pos)
 

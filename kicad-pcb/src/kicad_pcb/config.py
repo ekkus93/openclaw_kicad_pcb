@@ -8,6 +8,7 @@ priority chain so that users can override the default system path at any level:
 3. ``symbols_dir`` key in ``~/.kicad-pcb/config.json``.
 4. Well-known platform-specific paths (:data:`SYMBOLS_CANDIDATES`).
 """
+
 from __future__ import annotations
 
 import json
@@ -43,8 +44,8 @@ DEFAULT_PCB_OPTIONS: dict = {
 #: Platform-specific candidate paths for the KiCad symbol library directory,
 #: tried in order when no explicit path or env-var override is provided.
 SYMBOLS_CANDIDATES: tuple[Path, ...] = (
-    Path("/usr/share/kicad/symbols"),            # Linux system package
-    Path("/usr/local/share/kicad/symbols"),      # Linux local install
+    Path("/usr/share/kicad/symbols"),  # Linux system package
+    Path("/usr/local/share/kicad/symbols"),  # Linux local install
     Path.home() / ".local/share/kicad/symbols",  # Linux user install
     # Flatpak — check newest major version first
     Path.home() / ".var/app/org.kicad.KiCad/data/kicad/9.0/symbols",

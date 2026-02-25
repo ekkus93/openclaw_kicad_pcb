@@ -8,6 +8,7 @@ Phase 3.3 coverage:
 - deterministic output (same AST → same string)
 - serialize_file writes correct content
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -206,10 +207,12 @@ class TestRoundTrip:
 
 class TestDeterministic:
     def test_same_tree_same_output(self) -> None:
-        n = ListNode((
-            AtomNode("kicad_sch"),
-            ListNode((AtomNode("version"), AtomNode("1"))),
-        ))
+        n = ListNode(
+            (
+                AtomNode("kicad_sch"),
+                ListNode((AtomNode("version"), AtomNode("1"))),
+            )
+        )
         assert serialize(n) == serialize(n)
 
     def test_parse_same_source_twice(self) -> None:

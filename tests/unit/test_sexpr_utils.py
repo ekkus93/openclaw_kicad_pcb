@@ -9,6 +9,7 @@ Phase 3.4 coverage:
 - node_path(): builds dot-notation path strings
 - immutability: originals are never mutated by helpers
 """
+
 from __future__ import annotations
 
 import pytest
@@ -39,7 +40,7 @@ def _make_root() -> ListNode:
     return parse(
         "(kicad_sch"
         "  (version 20230121)"
-        '  (generator eeschema)'
+        "  (generator eeschema)"
         '  (symbol (lib_id "Device:R") (at 100 50))'
         '  (symbol (lib_id "Device:C") (at 200 50)))'
     )
@@ -135,10 +136,12 @@ class TestFindFirst:
 
     def test_atom_head_only(self) -> None:
         # A ListNode whose first item is a StringNode is not matched by key
-        root = ListNode((
-            ListNode((StringNode("not-an-atom"),)),
-            ListNode((AtomNode("real-key"),)),
-        ))
+        root = ListNode(
+            (
+                ListNode((StringNode("not-an-atom"),)),
+                ListNode((AtomNode("real-key"),)),
+            )
+        )
         assert find_first(root, "not-an-atom") is None
         assert find_first(root, "real-key") is not None
 

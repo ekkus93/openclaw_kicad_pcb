@@ -4,6 +4,7 @@ All formatting/rendering lives here so command modules stay pure
 (return structured data, no ``print()``).  The CLI entry-point calls
 :func:`format_result` and prints each returned line.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -293,9 +294,7 @@ def _fmt_auto_route(r: AutoRouteResult) -> list[str]:
     if r.routes_imported:
         lines.append("✅ Routes imported into PCB")
     else:
-        lines.append(
-            "⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor"
-        )
+        lines.append("⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
     return lines
 
 

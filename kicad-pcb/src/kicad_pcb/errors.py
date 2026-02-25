@@ -1,4 +1,5 @@
 """Typed exception hierarchy for the kicad-pcb skill."""
+
 from __future__ import annotations
 
 

@@ -5,6 +5,7 @@ in-memory schematic fixtures.  No KiCad installation or symbol library
 files are required — the tests rely on the graceful fallback in
 ``_place_component`` when ``read_lib_symbol_pins`` returns ``[]``.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -107,6 +108,7 @@ def _label_names_in_doc(doc: SchematicDoc) -> list[str]:
 # PATTERNS registry
 # ===========================================================================
 
+
 class TestPatternsRegistry:
     def test_all_four_patterns_registered(self) -> None:
         assert "resistor-divider" in PATTERNS
@@ -123,16 +125,19 @@ class TestPatternsRegistry:
 # PlacedComponent / PatternOutcome dataclasses
 # ===========================================================================
 
+
 class TestResultDataclasses:
     def test_placed_component_is_frozen(self) -> None:
-        pc = PlacedComponent(ref="R1", lib_sym="Device:R", value="10k",
-                             x=50.8, y=76.2, pins=("1", "2"))
+        pc = PlacedComponent(
+            ref="R1", lib_sym="Device:R", value="10k", x=50.8, y=76.2, pins=("1", "2")
+        )
         with pytest.raises((AttributeError, TypeError)):
             pc.ref = "R99"  # type: ignore[misc]
 
     def test_pattern_outcome_is_frozen(self) -> None:
-        pc = PlacedComponent(ref="C1", lib_sym="Device:C", value="100nF",
-                             x=0.0, y=0.0, pins=("1", "2"))
+        pc = PlacedComponent(
+            ref="C1", lib_sym="Device:C", value="100nF", x=0.0, y=0.0, pins=("1", "2")
+        )
         outcome = PatternOutcome(components=(pc,), nets=("VCC", "GND"))
         with pytest.raises((AttributeError, TypeError)):
             outcome.nets = ()  # type: ignore[misc]
@@ -154,6 +159,7 @@ class TestResultDataclasses:
 # ===========================================================================
 # pattern_resistor_divider
 # ===========================================================================
+
 
 class TestResistorDividerPattern:
     def test_returns_two_components(self) -> None:
@@ -198,8 +204,9 @@ class TestResistorDividerPattern:
 
     def test_custom_nets(self) -> None:
         doc = _make_doc()
-        outcome = pattern_resistor_divider(doc, 0.0, 0.0,
-                                           vin_net="PWR", vout_net="TAP", gnd_net="AGND")
+        outcome = pattern_resistor_divider(
+            doc, 0.0, 0.0, vin_net="PWR", vout_net="TAP", gnd_net="AGND"
+        )
         assert set(outcome.nets) == {"PWR", "TAP", "AGND"}
 
     def test_symbols_added_to_schematic(self) -> None:
@@ -258,6 +265,7 @@ class TestResistorDividerPattern:
 # ===========================================================================
 # pattern_led_resistor
 # ===========================================================================
+
 
 class TestLedResistorPattern:
     def test_returns_two_components(self) -> None:
@@ -322,8 +330,7 @@ class TestLedResistorPattern:
 
     def test_custom_values(self) -> None:
         doc = _make_doc()
-        outcome = pattern_led_resistor(doc, 0.0, 0.0,
-                                       r_value="470", led_value="LED_RED")
+        outcome = pattern_led_resistor(doc, 0.0, 0.0, r_value="470", led_value="LED_RED")
         assert outcome.components[0].value == "470"
         assert outcome.components[1].value == "LED_RED"
 
@@ -331,6 +338,7 @@ class TestLedResistorPattern:
 # ===========================================================================
 # pattern_connector_breakout
 # ===========================================================================
+
 
 class TestConnectorBreakoutPattern:
     def test_returns_one_component(self) -> None:
@@ -402,6 +410,7 @@ class TestConnectorBreakoutPattern:
 # pattern_decoupling_cap
 # ===========================================================================
 
+
 class TestDecouplingCapPattern:
     def test_returns_one_component(self) -> None:
         doc = _make_doc()
@@ -448,7 +457,8 @@ class TestDecouplingCapPattern:
         pattern_decoupling_cap(doc, 50.8, 76.2)
         # VCC label should be placed above the component centre
         vcc_labels = [
-            item for item in doc.root.items
+            item
+            for item in doc.root.items
             if isinstance(item, ListNode)
             and item.key == "label"
             and len(item.items) >= 2
@@ -465,7 +475,8 @@ class TestDecouplingCapPattern:
         doc = _make_doc()
         pattern_decoupling_cap(doc, 50.8, 76.2)
         gnd_labels = [
-            item for item in doc.root.items
+            item
+            for item in doc.root.items
             if isinstance(item, ListNode)
             and item.key == "label"
             and len(item.items) >= 2
@@ -488,7 +499,8 @@ class TestDecouplingCapPattern:
         outcome = pattern_decoupling_cap(doc, 50.8, 80.0)
         comp_y = outcome.components[0].y
         gnd_labels = [
-            item for item in doc.root.items
+            item
+            for item in doc.root.items
             if isinstance(item, ListNode)
             and item.key == "label"
             and len(item.items) >= 2
@@ -503,6 +515,7 @@ class TestDecouplingCapPattern:
 # ===========================================================================
 # ApplyPatternResult
 # ===========================================================================
+
 
 class TestApplyPatternResult:
     def test_fields_present(self) -> None:
@@ -525,6 +538,7 @@ class TestApplyPatternResult:
 # ===========================================================================
 # cmd_apply_pattern — integration via pipeline with temp file
 # ===========================================================================
+
 
 class TestCmdApplyPattern:
     """Tests that exercise the full command path using a real temp schematic."""
@@ -550,12 +564,23 @@ class TestCmdApplyPattern:
         """Build a minimal argparse-like namespace for cmd_apply_pattern."""
         defaults = dict(
             pattern="decoupling-cap",
-            r1="R1", r2="R2", r1_value="10k", r2_value="10k",
-            vin_net="VIN", vout_net="VOUT",
-            r="R1", d="D1", r_value="330", d_value="LED",
-            vcc_net="VCC", gnd_net="GND",
-            conn="J1", n_pins=4, net_prefix="IO",
-            c="C1", c_value="100nF",
+            r1="R1",
+            r2="R2",
+            r1_value="10k",
+            r2_value="10k",
+            vin_net="VIN",
+            vout_net="VOUT",
+            r="R1",
+            d="D1",
+            r_value="330",
+            d_value="LED",
+            vcc_net="VCC",
+            gnd_net="GND",
+            conn="J1",
+            n_pins=4,
+            net_prefix="IO",
+            c="C1",
+            c_value="100nF",
             symbols_dir=None,
             dry_run=True,  # always dry-run in unit tests
         )
@@ -610,15 +635,19 @@ class TestCmdApplyPattern:
         sch = tmp_path / "myproject.kicad_sch"
         sch.write_text(self._MINIMAL_SCH, encoding="utf-8")
         ProjectRef(
-            name="myproject", path=tmp_path,
-            created=datetime.datetime.now().isoformat(), description="",
+            name="myproject",
+            path=tmp_path,
+            created=datetime.datetime.now().isoformat(),
+            description="",
         )
         # re-register project
         pro = tmp_path / "myproject.kicad_pro"
         pro.write_text("{}", encoding="utf-8")
         ref = ProjectRef(
-            name="myproject", path=tmp_path,
-            created=datetime.datetime.now().isoformat(), description="",
+            name="myproject",
+            path=tmp_path,
+            created=datetime.datetime.now().isoformat(),
+            description="",
         )
         set_current_project(ref)
 
@@ -635,13 +664,16 @@ class TestCmdApplyPattern:
         pro = tmp_path / "myproject.kicad_pro"
         pro.write_text("{}", encoding="utf-8")
         ref = ProjectRef(
-            name="myproject", path=tmp_path,
-            created=datetime.datetime.now().isoformat(), description="",
+            name="myproject",
+            path=tmp_path,
+            created=datetime.datetime.now().isoformat(),
+            description="",
         )
         set_current_project(ref)
 
-        args = self._make_args(pattern="connector-breakout", conn="J2", n_pins=3,
-                               net_prefix="A", dry_run=True)
+        args = self._make_args(
+            pattern="connector-breakout", conn="J2", n_pins=3, net_prefix="A", dry_run=True
+        )
         result = cmd_apply_pattern(args)
 
         assert result.pattern == "connector-breakout"
@@ -654,8 +686,10 @@ class TestCmdApplyPattern:
         pro = tmp_path / "myproject.kicad_pro"
         pro.write_text("{}", encoding="utf-8")
         ref = ProjectRef(
-            name="myproject", path=tmp_path,
-            created=datetime.datetime.now().isoformat(), description="",
+            name="myproject",
+            path=tmp_path,
+            created=datetime.datetime.now().isoformat(),
+            description="",
         )
         set_current_project(ref)
 
@@ -674,6 +708,7 @@ class TestCmdApplyPattern:
 # CLI arg parsing for apply-pattern
 # ===========================================================================
 
+
 class TestCliArgParsing:
     def _parse(self, argv: list[str]) -> argparse.Namespace:
         return _build_parser().parse_args(argv)
@@ -691,12 +726,25 @@ class TestCliArgParsing:
         assert ns.gnd_net == "GND"
 
     def test_resistor_divider_custom_args(self) -> None:
-        ns = self._parse([
-            "apply-pattern", "--pattern", "resistor-divider",
-            "--r1", "RA1", "--r2", "RA2",
-            "--r1-value", "47k", "--r2-value", "22k",
-            "--vin-net", "PWR5V", "--vout-net", "TAP",
-        ])
+        ns = self._parse(
+            [
+                "apply-pattern",
+                "--pattern",
+                "resistor-divider",
+                "--r1",
+                "RA1",
+                "--r2",
+                "RA2",
+                "--r1-value",
+                "47k",
+                "--r2-value",
+                "22k",
+                "--vin-net",
+                "PWR5V",
+                "--vout-net",
+                "TAP",
+            ]
+        )
         assert ns.pattern == "resistor-divider"
         assert ns.r1 == "RA1"
         assert ns.r2 == "RA2"
@@ -706,12 +754,25 @@ class TestCliArgParsing:
         assert ns.vout_net == "TAP"
 
     def test_led_resistor_custom_args(self) -> None:
-        ns = self._parse([
-            "apply-pattern", "--pattern", "led-resistor",
-            "--r", "R10", "--d", "D10",
-            "--r-value", "470", "--d-value", "LED_GREEN",
-            "--vcc-net", "3V3", "--gnd-net", "DGND",
-        ])
+        ns = self._parse(
+            [
+                "apply-pattern",
+                "--pattern",
+                "led-resistor",
+                "--r",
+                "R10",
+                "--d",
+                "D10",
+                "--r-value",
+                "470",
+                "--d-value",
+                "LED_GREEN",
+                "--vcc-net",
+                "3V3",
+                "--gnd-net",
+                "DGND",
+            ]
+        )
         assert ns.r == "R10"
         assert ns.d == "D10"
         assert ns.r_value == "470"
@@ -719,10 +780,19 @@ class TestCliArgParsing:
         assert ns.vcc_net == "3V3"
 
     def test_connector_breakout_custom_args(self) -> None:
-        ns = self._parse([
-            "apply-pattern", "--pattern", "connector-breakout",
-            "--conn", "P2", "--n-pins", "8", "--net-prefix", "GPIO",
-        ])
+        ns = self._parse(
+            [
+                "apply-pattern",
+                "--pattern",
+                "connector-breakout",
+                "--conn",
+                "P2",
+                "--n-pins",
+                "8",
+                "--net-prefix",
+                "GPIO",
+            ]
+        )
         assert ns.conn == "P2"
         assert ns.n_pins == 8
         assert ns.net_prefix == "GPIO"
@@ -732,10 +802,15 @@ class TestCliArgParsing:
         assert ns.dry_run is True
 
     def test_symbols_dir_flag(self) -> None:
-        ns = self._parse([
-            "apply-pattern", "--pattern", "decoupling-cap",
-            "--symbols-dir", "/custom/kicad/symbols",
-        ])
+        ns = self._parse(
+            [
+                "apply-pattern",
+                "--pattern",
+                "decoupling-cap",
+                "--symbols-dir",
+                "/custom/kicad/symbols",
+            ]
+        )
         assert ns.symbols_dir == "/custom/kicad/symbols"
 
     def test_invalid_pattern_name_rejected(self) -> None:
@@ -750,6 +825,7 @@ class TestCliArgParsing:
 # ===========================================================================
 # Formatter
 # ===========================================================================
+
 
 class TestApplyPatternFormatter:
     def test_success_output_mentions_pattern_name(self) -> None:

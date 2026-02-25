@@ -1,4 +1,5 @@
 """Unit tests for kicad_pcb.compat — version detection and capability gating."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -111,11 +112,7 @@ class TestCapabilityMap:
 
     def test_all_min_versions_meet_minimum(self) -> None:
         """No capability should require a version older than MINIMUM_VERSION."""
-        below = [
-            (cap, ver)
-            for cap, ver in CAPABILITY_MAP.items()
-            if ver < MINIMUM_VERSION
-        ]
+        below = [(cap, ver) for cap, ver in CAPABILITY_MAP.items() if ver < MINIMUM_VERSION]
         assert below == [], f"Capabilities below MINIMUM_VERSION: {below}"
 
     def test_step_no_unspecified_requires_8(self) -> None:
@@ -154,9 +151,7 @@ class TestRequireCapability:
     def test_kicad7_blocks_step_no_unspecified(self) -> None:
         """KiCad 7 does not support --no-unspecified; must raise ToolError."""
         with pytest.raises(ToolError, match="8.0.0"):
-            require_capability(
-                KiCadVersion(7, 0, 0), CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED
-            )
+            require_capability(KiCadVersion(7, 0, 0), CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
 
     def test_kicad8_allows_step_no_unspecified(self) -> None:
         require_capability(KiCadVersion(8, 0, 0), CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
@@ -239,9 +234,7 @@ class TestKicadCliAdapterRequireCapability:
         """export_step must raise ToolError for kicad-cli < 8.0."""
         runner = FakeRunner({"pcb export step": RunResult(0, "", "")})
         fs = FakeFs(files={"/tmp/out.step": "binary"})
-        adapter = KicadCliAdapter(
-            runner=runner, fs=fs, version=KiCadVersion(7, 0, 0)
-        )
+        adapter = KicadCliAdapter(runner=runner, fs=fs, version=KiCadVersion(7, 0, 0))
         with pytest.raises(ToolError, match="--no-unspecified"):
             adapter.export_step(Path("/tmp/board.kicad_pcb"), Path("/tmp/out.step"))
 

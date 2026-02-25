@@ -9,6 +9,7 @@ Phase 3.1 coverage:
 - position tracking (line, col — 1-based)
 - error cases: unterminated strings
 """
+
 from __future__ import annotations
 
 import pytest

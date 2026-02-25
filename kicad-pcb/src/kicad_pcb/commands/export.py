@@ -1,4 +1,5 @@
 """Export commands: gerbers, drill, BOM, fab package, position file, 3D."""
+
 from __future__ import annotations
 
 import zipfile
@@ -136,9 +137,7 @@ def cmd_export_pos(args, *, cli: KicadCliAdapter | None = None) -> ExportPosResu
             msg += f"\n{result.stderr[:300]}"
         raise ToolError(msg)
 
-    return ExportPosResult(
-        output_file=output_file, component_count=max(0, len(lines) - 1)
-    )
+    return ExportPosResult(output_file=output_file, component_count=max(0, len(lines) - 1))
 
 
 def cmd_export_3d(args, *, cli: KicadCliAdapter | None = None) -> Export3dResult:

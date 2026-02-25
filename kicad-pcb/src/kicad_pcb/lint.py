@@ -24,6 +24,7 @@ PCB (PCB):
     PCB008  ``gr_line`` on ``Edge.Cuts`` has malformed ``layer`` or ``width``
     PCB009  Coordinates out of sane range (|value| > 10 000 mm)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -444,9 +445,7 @@ def lint_pcb(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
     ]
     for fp in footprints:
         fp_name = (
-            fp.items[1].value
-            if len(fp.items) >= 2 and isinstance(fp.items[1], StringNode)
-            else "?"
+            fp.items[1].value if len(fp.items) >= 2 and isinstance(fp.items[1], StringNode) else "?"
         )
         at_node = find_first(fp, "at")
         if at_node is None:
@@ -637,8 +636,7 @@ LINT_SUGGESTIONS: dict[str, str] = {
     "PCB003": "Ensure every footprint has an '(at x y)' placement node.",
     "PCB004": "Ensure the footprint '(at x y [rotation])' contains valid numbers.",
     "PCB005": (
-        "Add a board outline: run `set-board-size WxH` "
-        "or draw Edge.Cuts in KiCad's PCB editor."
+        "Add a board outline: run `set-board-size WxH` or draw Edge.Cuts in KiCad's PCB editor."
     ),
     "PCB006": "Close the board outline — all Edge.Cuts segments must connect end-to-end.",
     "PCB007": "Check that Edge.Cuts dimensions are non-zero and within a sane range.",
@@ -647,7 +645,6 @@ LINT_SUGGESTIONS: dict[str, str] = {
         "node and a numeric width."
     ),
     "PCB009": (
-        "Move footprints closer to the origin "
-        "(coordinates should be < 10 000 mm from origin)."
+        "Move footprints closer to the origin (coordinates should be < 10 000 mm from origin)."
     ),
 }

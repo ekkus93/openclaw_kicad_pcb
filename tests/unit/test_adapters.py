@@ -1,4 +1,5 @@
 """Unit tests for kicad_pcb.adapters — Phase 2.3."""
+
 from __future__ import annotations
 
 import json
@@ -210,11 +211,13 @@ class TestFakeFs:
             fs.read_text(Path("/tmp/absent.txt"))
 
     def test_glob_matches_pattern(self):
-        fs = FakeFs(files={
-            "/proj/gerbers/board.gbr": "",
-            "/proj/gerbers/board-B.Cu.gbr": "",
-            "/proj/other/file.txt": "",
-        })
+        fs = FakeFs(
+            files={
+                "/proj/gerbers/board.gbr": "",
+                "/proj/gerbers/board-B.Cu.gbr": "",
+                "/proj/other/file.txt": "",
+            }
+        )
         matches = fs.glob(Path("/proj/gerbers"), "*.gbr")
         assert len(matches) == 2
         assert all(str(p).endswith(".gbr") for p in matches)
@@ -224,11 +227,13 @@ class TestFakeFs:
         assert fs.glob(Path("/proj"), "*.gbr") == []
 
     def test_iterdir(self):
-        fs = FakeFs(files={
-            "/a/one.txt": "",
-            "/a/two.txt": "",
-            "/b/other.txt": "",
-        })
+        fs = FakeFs(
+            files={
+                "/a/one.txt": "",
+                "/a/two.txt": "",
+                "/b/other.txt": "",
+            }
+        )
         result = fs.iterdir(Path("/a"))
         assert len(result) == 2
         assert all(p.parent == Path("/a") for p in result)
@@ -513,10 +518,12 @@ class TestKicadCliAdapterReturnValues:
     def test_export_gerbers_returns_file_list(self):
         gerber_dir = PROJ / "gerbers"
         runner = FakeRunner({"pcb export": RunResult(0, "", "")})
-        fs = FakeFs(files={
-            str(gerber_dir / "board.gbr"): "",
-            str(gerber_dir / "board-B.Cu.gbr"): "",
-        })
+        fs = FakeFs(
+            files={
+                str(gerber_dir / "board.gbr"): "",
+                str(gerber_dir / "board-B.Cu.gbr"): "",
+            }
+        )
         cli = KicadCliAdapter(runner=runner, fs=fs)
         result, files = cli.export_gerbers(PCB, gerber_dir)
         assert result.ok

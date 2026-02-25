@@ -10,6 +10,7 @@ Note: kicad-cli on this system is a Flatpak wrapper and can only access paths
 under the user's home directory. The home_tmp fixture (see conftest.py) creates
 scratch directories under ~/tmp/kicad-tests/ to satisfy this constraint.
 """
+
 from __future__ import annotations
 
 import os
@@ -89,18 +90,21 @@ class TestFullPipeline:
         kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
         proc = subprocess.run(
             [
-                kicad_cli, "sch", "export", "netlist",
-                "--format", "kicadsexpr",
-                "--output", str(netlist_path),
+                kicad_cli,
+                "sch",
+                "export",
+                "netlist",
+                "--format",
+                "kicadsexpr",
+                "--output",
+                str(netlist_path),
                 str(sch_path),
             ],
             capture_output=True,
             text=True,
             check=False,
         )
-        assert proc.returncode == 0, (
-            f"kicad-cli failed (exit {proc.returncode}):\n{proc.stderr}"
-        )
+        assert proc.returncode == 0, f"kicad-cli failed (exit {proc.returncode}):\n{proc.stderr}"
 
     def test_netlist_contains_both_components(self) -> None:
         """Netlist must list R1 and C1 as components (Bug 4 regression)."""
@@ -113,20 +117,23 @@ class TestFullPipeline:
 
         kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
         subprocess.run(
-            [kicad_cli, "sch", "export", "netlist",
-             "--format", "kicadsexpr",
-             "--output", str(netlist_path),
-             str(sch_path)],
+            [
+                kicad_cli,
+                "sch",
+                "export",
+                "netlist",
+                "--format",
+                "kicadsexpr",
+                "--output",
+                str(netlist_path),
+                str(sch_path),
+            ],
             check=True,
         )
 
         netlist = netlist_path.read_text()
-        assert '(ref "R1")' in netlist or "(ref R1)" in netlist, (
-            "R1 not found in netlist"
-        )
-        assert '(ref "C1")' in netlist or "(ref C1)" in netlist, (
-            "C1 not found in netlist"
-        )
+        assert '(ref "R1")' in netlist or "(ref R1)" in netlist, "R1 not found in netlist"
+        assert '(ref "C1")' in netlist or "(ref C1)" in netlist, "C1 not found in netlist"
 
     def test_bom_export_shows_two_components(self) -> None:
         """BOM must list both components (Bug 4 regression — empty BOM fix)."""
@@ -138,9 +145,9 @@ class TestFullPipeline:
         assert result.returncode == 0, result.stderr
         # Script prints "N component line(s)" — assert at least 2
         output = result.stdout + result.stderr
-        assert "2 component" in output or (
-            "R1" in output and "C1" in output
-        ), f"Expected 2 components in BOM, got:\n{output}"
+        assert "2 component" in output or ("R1" in output and "C1" in output), (
+            f"Expected 2 components in BOM, got:\n{output}"
+        )
 
     def test_sub_symbol_names_not_prefixed(self) -> None:
         """Bug 1 regression: sub-symbol names inside lib_symbols must not get lib prefix."""
@@ -163,7 +170,7 @@ class TestFullPipeline:
 
         sch_path = self.projects_dir / "TestProj" / "TestProj.kicad_sch"
         raw = sch_path.read_text()
-        assert not re.search(r'\(id\s+\d+\)', raw), (
+        assert not re.search(r"\(id\s+\d+\)", raw), (
             "Bug 2 regression: schematic contains old (id N) property format"
         )
 
@@ -174,9 +181,7 @@ class TestFullPipeline:
 
         sch_path = self.projects_dir / "TestProj" / "TestProj.kicad_sch"
         raw = sch_path.read_text()
-        assert "(instances" in raw, (
-            "Bug 4 regression: placed symbol missing (instances ...) block"
-        )
+        assert "(instances" in raw, "Bug 4 regression: placed symbol missing (instances ...) block"
 
     def test_set_board_size_pcb_drc_runs(self) -> None:
         """set-board-size → kicad-cli pcb drc loads and runs without hard error."""
@@ -191,9 +196,13 @@ class TestFullPipeline:
         kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
         proc = subprocess.run(
             [
-                kicad_cli, "pcb", "drc",
-                "--output", str(drc_report),
-                "--format", "json",
+                kicad_cli,
+                "pcb",
+                "drc",
+                "--output",
+                str(drc_report),
+                "--format",
+                "json",
                 str(pcb_path),
             ],
             capture_output=True,
@@ -216,8 +225,12 @@ class TestFullPipeline:
         kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
         proc = subprocess.run(
             [
-                kicad_cli, "pcb", "export", "gerbers",
-                "--output", str(gerbers_dir),
+                kicad_cli,
+                "pcb",
+                "export",
+                "gerbers",
+                "--output",
+                str(gerbers_dir),
                 str(pcb_path),
             ],
             capture_output=True,
@@ -252,9 +265,7 @@ class TestFullPipeline:
         bom_result = self._run("export-bom")
         assert bom_result.returncode == 0, f"export-bom failed:\n{bom_result.stderr}"
         bom_output = bom_result.stdout + bom_result.stderr
-        assert "R1" in bom_output and "R2" in bom_output, (
-            f"BOM missing R1/R2:\n{bom_output}"
-        )
+        assert "R1" in bom_output and "R2" in bom_output, f"BOM missing R1/R2:\n{bom_output}"
 
         # --- PCB phase ---
         board_result = self._run("set-board-size", "50x30")
@@ -266,12 +277,19 @@ class TestFullPipeline:
         netlist_path = self.projects_dir / "TestProj" / "TestProj.xml"
         net_proc = subprocess.run(
             [
-                kicad_cli, "sch", "export", "netlist",
-                "--format", "kicadsexpr",
-                "--output", str(netlist_path),
+                kicad_cli,
+                "sch",
+                "export",
+                "netlist",
+                "--format",
+                "kicadsexpr",
+                "--output",
+                str(netlist_path),
                 str(sch_path),
             ],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         assert net_proc.returncode == 0, (
             f"Netlist export failed (exit {net_proc.returncode}):\n{net_proc.stderr}"
@@ -283,12 +301,18 @@ class TestFullPipeline:
         drc_path = self.projects_dir / "TestProj" / "drc_report.json"
         drc_proc = subprocess.run(
             [
-                kicad_cli, "pcb", "drc",
-                "--output", str(drc_path),
-                "--format", "json",
+                kicad_cli,
+                "pcb",
+                "drc",
+                "--output",
+                str(drc_path),
+                "--format",
+                "json",
                 str(pcb_path),
             ],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         assert drc_proc.returncode == 0, (
             f"kicad-cli pcb drc crashed (exit {drc_proc.returncode}):\n{drc_proc.stderr}"
@@ -299,11 +323,17 @@ class TestFullPipeline:
         gerbers_dir = self.projects_dir / "TestProj" / "gerbers"
         ger_proc = subprocess.run(
             [
-                kicad_cli, "pcb", "export", "gerbers",
-                "--output", str(gerbers_dir),
+                kicad_cli,
+                "pcb",
+                "export",
+                "gerbers",
+                "--output",
+                str(gerbers_dir),
                 str(pcb_path),
             ],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         assert ger_proc.returncode == 0, (
             f"Gerber export failed (exit {ger_proc.returncode}):\n{ger_proc.stderr}"

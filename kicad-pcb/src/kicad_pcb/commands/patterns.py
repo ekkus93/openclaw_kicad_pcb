@@ -8,6 +8,7 @@ Pattern functions each operate on a :class:`~kicad_pcb.sch_doc.SchematicDoc`
 directly, allowing multiple components, labels, and wires to be added in a
 single atomic transaction.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -81,8 +82,13 @@ def cmd_apply_pattern(args) -> ApplyPatternResult:  # noqa: ANN001 — argparse 
     def _mutate(doc: SchematicDoc) -> None:
         ox, oy = doc.next_component_position()
         outcome = _dispatch_pattern(
-            pattern_name, doc, ox, oy, args,
-            sym_dir=sym_dir, project_name=project.name,
+            pattern_name,
+            doc,
+            ox,
+            oy,
+            args,
+            sym_dir=sym_dir,
+            project_name=project.name,
             require_footprints=require_footprints,
         )
         _outcome["result"] = outcome
@@ -117,7 +123,9 @@ def _dispatch_pattern(  # noqa: PLR0913
     """Call the matching pattern function, pulling arguments from *args*."""
     if name == "resistor-divider":
         return pattern_resistor_divider(
-            doc, ox, oy,
+            doc,
+            ox,
+            oy,
             r1_ref=getattr(args, "r1", "R1"),
             r2_ref=getattr(args, "r2", "R2"),
             r1_value=getattr(args, "r1_value", "10k"),
@@ -132,7 +140,9 @@ def _dispatch_pattern(  # noqa: PLR0913
 
     if name == "led-resistor":
         return pattern_led_resistor(
-            doc, ox, oy,
+            doc,
+            ox,
+            oy,
             r_ref=getattr(args, "r", "R1"),
             d_ref=getattr(args, "d", "D1"),
             r_value=getattr(args, "r_value", "330"),
@@ -146,7 +156,9 @@ def _dispatch_pattern(  # noqa: PLR0913
 
     if name == "connector-breakout":
         return pattern_connector_breakout(
-            doc, ox, oy,
+            doc,
+            ox,
+            oy,
             conn_ref=getattr(args, "conn", "J1"),
             n_pins=int(getattr(args, "n_pins", 4)),
             net_prefix=getattr(args, "net_prefix", "IO"),
@@ -157,7 +169,9 @@ def _dispatch_pattern(  # noqa: PLR0913
 
     if name == "decoupling-cap":
         return pattern_decoupling_cap(
-            doc, ox, oy,
+            doc,
+            ox,
+            oy,
             c_ref=getattr(args, "c", "C1"),
             c_value=getattr(args, "c_value", "100nF"),
             vcc_net=getattr(args, "vcc_net", "VCC"),

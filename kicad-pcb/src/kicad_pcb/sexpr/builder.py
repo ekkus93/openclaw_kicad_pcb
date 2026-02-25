@@ -15,6 +15,7 @@ Public API
 :func:`L`      — list node from positional children
 :func:`fnum`   — decimal-number atom with fixed precision
 """
+
 from __future__ import annotations
 
 from .nodes import NO_POS, AtomNode, ListNode, Node, StringNode

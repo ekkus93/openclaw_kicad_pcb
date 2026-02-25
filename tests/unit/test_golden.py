@@ -13,6 +13,7 @@ These tests assert three properties:
    the ``kicad_pcb.sexpr`` module directly (no kiutils dependency) to make the
    checks orthogonal to the kiutils-based tests in ``test_fixtures.py``.
 """
+
 from __future__ import annotations
 
 import re

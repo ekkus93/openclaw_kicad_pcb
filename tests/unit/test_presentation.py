@@ -6,6 +6,7 @@ These tests verify:
 - format_result dispatches to the correct formatter and returns non-empty lines.
 - Key content appears in formatted output (smoke-level, not string-exact).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -344,8 +345,13 @@ class TestAutoRouteResult:
 class TestAddComponentResult:
     def test_format_with_footprint(self) -> None:
         r = AddComponentResult(
-            ref="R1", lib_sym="Device:R", value="10k",
-            x=50.0, y=50.0, pins=("1", "2"), has_footprint=True,
+            ref="R1",
+            lib_sym="Device:R",
+            value="10k",
+            x=50.0,
+            y=50.0,
+            pins=("1", "2"),
+            has_footprint=True,
         )
         text = joined(r)
         assert "R1" in text
@@ -355,8 +361,13 @@ class TestAddComponentResult:
 
     def test_format_no_footprint_shows_warning(self) -> None:
         r = AddComponentResult(
-            ref="U1", lib_sym="Device:MCU", value="",
-            x=0.0, y=0.0, pins=("1",), has_footprint=False,
+            ref="U1",
+            lib_sym="Device:MCU",
+            value="",
+            x=0.0,
+            y=0.0,
+            pins=("1",),
+            has_footprint=False,
         )
         assert "footprint" in joined(r).lower()
 
@@ -391,8 +402,10 @@ class TestDoctorResult:
     def _make_checks(self) -> tuple[DoctorCheckItem, ...]:
         return (
             DoctorCheckItem(
-                status="ok", label="kicad-cli",
-                message="/usr/bin/kicad-cli", detail="version: 9.0.7",
+                status="ok",
+                label="kicad-cli",
+                message="/usr/bin/kicad-cli",
+                detail="version: 9.0.7",
             ),
             DoctorCheckItem(status="error", label="Symbol libraries", message="not found"),
             DoctorCheckItem(status="info", label="java", message="not found"),
@@ -425,9 +438,9 @@ class TestDoctorResult:
     def test_status_icons(self) -> None:
         r = DoctorResult(overall_ok=False, checks=self._make_checks())
         text = joined(r)
-        assert "✅" in text   # ok item
-        assert "❌" in text   # error item
-        assert "ℹ️" in text   # info item
+        assert "✅" in text  # ok item
+        assert "❌" in text  # error item
+        assert "ℹ️" in text  # info item
 
 
 # ---------------------------------------------------------------------------
@@ -438,34 +451,50 @@ class TestDoctorResult:
 class TestPcbwayQuoteResult:
     def test_fields(self) -> None:
         r = PcbwayQuoteResult(
-            quantity=5, layers=2, thickness=1.6,
-            board_cost=5.0, shipping=18.0, total=23.0,
+            quantity=5,
+            layers=2,
+            thickness=1.6,
+            board_cost=5.0,
+            shipping=18.0,
+            total=23.0,
         )
         assert r.total == 23.0
         assert r.gerber_zip is None
 
     def test_format_shows_quantities_and_total(self) -> None:
         r = PcbwayQuoteResult(
-            quantity=10, layers=4, thickness=1.6,
-            board_cost=10.0, shipping=18.0, total=28.0,
+            quantity=10,
+            layers=4,
+            thickness=1.6,
+            board_cost=10.0,
+            shipping=18.0,
+            total=28.0,
         )
         text = joined(r)
-        assert "10" in text     # quantity
-        assert "4" in text      # layers
+        assert "10" in text  # quantity
+        assert "4" in text  # layers
         assert "28.00" in text  # total
 
     def test_format_with_gerber_zip(self, tmp_path: Path) -> None:
         r = PcbwayQuoteResult(
-            quantity=5, layers=2, thickness=1.6,
-            board_cost=5.0, shipping=18.0, total=23.0,
+            quantity=5,
+            layers=2,
+            thickness=1.6,
+            board_cost=5.0,
+            shipping=18.0,
+            total=23.0,
             gerber_zip=tmp_path / "fab.zip",
         )
         assert "fab.zip" in joined(r)
 
     def test_format_without_gerber_zip_shows_hint(self) -> None:
         r = PcbwayQuoteResult(
-            quantity=5, layers=2, thickness=1.6,
-            board_cost=5.0, shipping=18.0, total=23.0,
+            quantity=5,
+            layers=2,
+            thickness=1.6,
+            board_cost=5.0,
+            shipping=18.0,
+            total=23.0,
         )
         assert "package-for-fab" in joined(r)
 
@@ -510,13 +539,21 @@ class TestFormatResultDispatch:
             ImportNetlistResult(netlist_file=tmp_path / "board.net"),
             AutoPlaceResult(placed=(), spacing=10.0),
             AutoRouteResult(ses_file_name="board.ses", routes_imported=True),
-            AddComponentResult(ref="R1", lib_sym="Device:R", value="1k",
-                               x=0.0, y=0.0, pins=("1", "2"), has_footprint=True),
+            AddComponentResult(
+                ref="R1",
+                lib_sym="Device:R",
+                value="1k",
+                x=0.0,
+                y=0.0,
+                pins=("1", "2"),
+                has_footprint=True,
+            ),
             AddNetResult(name="VCC", x=0.0, y=0.0),
             ConnectResult(x1=0.0, y1=0.0, x2=10.0, y2=0.0),
             DoctorResult(overall_ok=True, checks=()),
-            PcbwayQuoteResult(quantity=5, layers=2, thickness=1.6,
-                              board_cost=5.0, shipping=18.0, total=23.0),
+            PcbwayQuoteResult(
+                quantity=5, layers=2, thickness=1.6, board_cost=5.0, shipping=18.0, total=23.0
+            ),
         ]
         for sample in samples:
             lines = format_result(sample)

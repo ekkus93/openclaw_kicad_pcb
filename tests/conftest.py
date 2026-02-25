@@ -1,4 +1,5 @@
 """Shared pytest fixtures for kicad-pcb skill tests."""
+
 from __future__ import annotations
 
 import shutil

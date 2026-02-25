@@ -24,6 +24,7 @@ Available checks
     Raise ``UserError`` (when *require* is ``True``) if any component is
     missing a footprint assignment.
 """
+
 from __future__ import annotations
 
 import re

@@ -1,4 +1,5 @@
 """Preview generation commands: preview-schematic, preview-pcb."""
+
 from __future__ import annotations
 
 from pathlib import Path

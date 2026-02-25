@@ -12,6 +12,7 @@ the top-level expression.
 Comment tokens (``kind == "comment"``) are silently discarded; they carry
 no semantic weight in KiCad files.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -53,9 +54,7 @@ def _parse_one(tokens: list[Token], idx: int) -> tuple[Node, int]:
         items: list[Node] = []
         while True:
             if idx >= len(tokens):
-                raise ParseError(
-                    f"{list_pos.line}:{list_pos.col}: unmatched '(' — missing ')'"
-                )
+                raise ParseError(f"{list_pos.line}:{list_pos.col}: unmatched '(' — missing ')'")
             if tokens[idx].kind == "rparen":
                 idx += 1  # consume ')'
                 return ListNode(tuple(items), list_pos), idx
@@ -103,8 +102,7 @@ def parse(src: str) -> ListNode:
     if trailing:
         t = trailing[0]
         raise ParseError(
-            f"{t.line}:{t.col}: unexpected content after top-level expression: "
-            f"{t.value!r}"
+            f"{t.line}:{t.col}: unexpected content after top-level expression: {t.value!r}"
         )
 
     if not isinstance(root, ListNode):  # pragma: no cover — always a ListNode here

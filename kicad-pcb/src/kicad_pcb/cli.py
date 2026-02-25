@@ -1,4 +1,5 @@
 """CLI entry-point: argument parsing and sub-command dispatch."""
+
 from __future__ import annotations
 
 import argparse
@@ -127,50 +128,110 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "apply-pattern",
         help="Apply a known-good circuit pattern to the schematic",
         description=(
-            "Available patterns: resistor-divider, led-resistor, "
-            "connector-breakout, decoupling-cap"
+            "Available patterns: resistor-divider, led-resistor, connector-breakout, decoupling-cap"
         ),
     )
     p_pat.add_argument(
-        "--pattern", required=True,
+        "--pattern",
+        required=True,
         choices=["resistor-divider", "led-resistor", "connector-breakout", "decoupling-cap"],
         help="Pattern to apply",
     )
     # Shared optional args used by multiple patterns
     p_pat.add_argument("--r1", default="R1", metavar="REF", help="R1 ref (resistor-divider)")
     p_pat.add_argument("--r2", default="R2", metavar="REF", help="R2 ref (resistor-divider)")
-    p_pat.add_argument("--r1-value", default="10k", dest="r1_value", metavar="VAL",
-                       help="R1 value (resistor-divider, default 10k)")
-    p_pat.add_argument("--r2-value", default="10k", dest="r2_value", metavar="VAL",
-                       help="R2 value (resistor-divider, default 10k)")
-    p_pat.add_argument("--vin-net", default="VIN", dest="vin_net", metavar="NET",
-                       help="VIN net name (resistor-divider)")
-    p_pat.add_argument("--vout-net", default="VOUT", dest="vout_net", metavar="NET",
-                       help="VOUT net name (resistor-divider)")
+    p_pat.add_argument(
+        "--r1-value",
+        default="10k",
+        dest="r1_value",
+        metavar="VAL",
+        help="R1 value (resistor-divider, default 10k)",
+    )
+    p_pat.add_argument(
+        "--r2-value",
+        default="10k",
+        dest="r2_value",
+        metavar="VAL",
+        help="R2 value (resistor-divider, default 10k)",
+    )
+    p_pat.add_argument(
+        "--vin-net",
+        default="VIN",
+        dest="vin_net",
+        metavar="NET",
+        help="VIN net name (resistor-divider)",
+    )
+    p_pat.add_argument(
+        "--vout-net",
+        default="VOUT",
+        dest="vout_net",
+        metavar="NET",
+        help="VOUT net name (resistor-divider)",
+    )
     p_pat.add_argument("--r", default="R1", metavar="REF", help="Resistor ref (led-resistor)")
     p_pat.add_argument("--d", default="D1", metavar="REF", help="LED ref (led-resistor)")
-    p_pat.add_argument("--r-value", default="330", dest="r_value", metavar="VAL",
-                       help="Resistor value (led-resistor, default 330)")
-    p_pat.add_argument("--d-value", default="LED", dest="d_value", metavar="VAL",
-                       help="LED value label (led-resistor)")
-    p_pat.add_argument("--conn", default="J1", metavar="REF", help="Connector ref")
-    p_pat.add_argument("--n-pins", default=4, type=int, dest="n_pins", metavar="N",
-                       help="Pin count (connector-breakout, default 4)")
-    p_pat.add_argument("--net-prefix", default="IO", dest="net_prefix", metavar="PFX",
-                       help="Net prefix (connector-breakout, default IO)")
-    p_pat.add_argument("--c", default="C1", metavar="REF", help="Capacitor ref (decoupling-cap)")
-    p_pat.add_argument("--c-value", default="100nF", dest="c_value", metavar="VAL",
-                       help="Capacitor value (decoupling-cap, default 100nF)")
-    p_pat.add_argument("--vcc-net", default="VCC", dest="vcc_net", metavar="NET",
-                       help="VCC net name (led-resistor / decoupling-cap)")
-    p_pat.add_argument("--gnd-net", default="GND", dest="gnd_net", metavar="NET",
-                       help="GND net name (all patterns)")
     p_pat.add_argument(
-        "--symbols-dir", dest="symbols_dir", metavar="PATH",
+        "--r-value",
+        default="330",
+        dest="r_value",
+        metavar="VAL",
+        help="Resistor value (led-resistor, default 330)",
+    )
+    p_pat.add_argument(
+        "--d-value",
+        default="LED",
+        dest="d_value",
+        metavar="VAL",
+        help="LED value label (led-resistor)",
+    )
+    p_pat.add_argument("--conn", default="J1", metavar="REF", help="Connector ref")
+    p_pat.add_argument(
+        "--n-pins",
+        default=4,
+        type=int,
+        dest="n_pins",
+        metavar="N",
+        help="Pin count (connector-breakout, default 4)",
+    )
+    p_pat.add_argument(
+        "--net-prefix",
+        default="IO",
+        dest="net_prefix",
+        metavar="PFX",
+        help="Net prefix (connector-breakout, default IO)",
+    )
+    p_pat.add_argument("--c", default="C1", metavar="REF", help="Capacitor ref (decoupling-cap)")
+    p_pat.add_argument(
+        "--c-value",
+        default="100nF",
+        dest="c_value",
+        metavar="VAL",
+        help="Capacitor value (decoupling-cap, default 100nF)",
+    )
+    p_pat.add_argument(
+        "--vcc-net",
+        default="VCC",
+        dest="vcc_net",
+        metavar="NET",
+        help="VCC net name (led-resistor / decoupling-cap)",
+    )
+    p_pat.add_argument(
+        "--gnd-net",
+        default="GND",
+        dest="gnd_net",
+        metavar="NET",
+        help="GND net name (all patterns)",
+    )
+    p_pat.add_argument(
+        "--symbols-dir",
+        dest="symbols_dir",
+        metavar="PATH",
         help="Path to KiCad symbol library directory",
     )
     p_pat.add_argument(
-        "--require-footprints", action="store_true", dest="require_footprints",
+        "--require-footprints",
+        action="store_true",
+        dest="require_footprints",
         help="Fail if any component has no footprint assigned (required for PCB layout)",
     )
     p_pat.add_argument(
@@ -193,18 +254,14 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_conn.add_argument(
         "--from", dest="from_pt", required=True, metavar="X,Y", help="Start coord mm"
     )
-    p_conn.add_argument(
-        "--to", dest="to_pt", required=True, metavar="X,Y", help="End coord mm"
-    )
+    p_conn.add_argument("--to", dest="to_pt", required=True, metavar="X,Y", help="End coord mm")
     p_conn.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
     p_conn.set_defaults(func=cmd_connect)
 
     # set-board-size
-    p_size = subparsers.add_parser(
-        "set-board-size", help="Set board outline (Edge.Cuts rectangle)"
-    )
+    p_size = subparsers.add_parser("set-board-size", help="Set board outline (Edge.Cuts rectangle)")
     p_size.add_argument("size", metavar="WxH", help="Board dimensions in mm e.g. 50x30")
     p_size.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
@@ -219,9 +276,7 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
 
     # auto-place
     p_ap = subparsers.add_parser("auto-place", help="Grid-place footprints on PCB")
-    p_ap.add_argument(
-        "--spacing", type=float, default=10.0, help="Grid spacing in mm (default 10)"
-    )
+    p_ap.add_argument("--spacing", type=float, default=10.0, help="Grid spacing in mm (default 10)")
     p_ap.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
@@ -248,9 +303,7 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_quote.set_defaults(func=cmd_pcbway_quote)
 
     # doctor
-    p_doctor = subparsers.add_parser(
-        "doctor", help="Check system config and diagnose issues"
-    )
+    p_doctor = subparsers.add_parser("doctor", help="Check system config and diagnose issues")
     p_doctor.set_defaults(func=cmd_doctor)
 
     # lint-sch
@@ -310,20 +363,25 @@ def main() -> None:  # noqa: PLR0912 PLR0915
             sys.exit(1)
     except LintError as exc:
         if getattr(args, "output_json", False):
-            print(json.dumps({
-                "error": "LintError",
-                "message": str(exc),
-                "issues": [
+            print(
+                json.dumps(
                     {
-                        "code": i.code,
-                        "severity": i.severity.value,
-                        "message": i.message,
-                        "path": i.path,
-                        "suggestion": LINT_SUGGESTIONS.get(i.code),
-                    }
-                    for i in exc.issues
-                ],
-            }, indent=2))
+                        "error": "LintError",
+                        "message": str(exc),
+                        "issues": [
+                            {
+                                "code": i.code,
+                                "severity": i.severity.value,
+                                "message": i.message,
+                                "path": i.path,
+                                "suggestion": LINT_SUGGESTIONS.get(i.code),
+                            }
+                            for i in exc.issues
+                        ],
+                    },
+                    indent=2,
+                )
+            )
         else:
             print(f"❌ Validation failed: {len(exc.issues)} issue(s)")
             for issue in exc.issues:

@@ -8,6 +8,7 @@ Covers:
 - cmd_doctor: smoke test (always returns DoctorResult; overall_ok=False when deps missing)
 - No bare `except:` in the module source
 """
+
 from __future__ import annotations
 
 import ast
@@ -28,9 +29,7 @@ pytestmark = pytest.mark.unit
 # Helpers
 # ---------------------------------------------------------------------------
 
-SCRIPT = (
-    Path(__file__).parent.parent.parent / "kicad-pcb" / "scripts" / "kicad_pcb.py"
-)
+SCRIPT = Path(__file__).parent.parent.parent / "kicad-pcb" / "scripts" / "kicad_pcb.py"
 
 VALID_SCH = """\
 (kicad_sch (version 20230121) (generator eeschema)
@@ -258,7 +257,6 @@ class TestNoBareExcept:
             for node in ast.walk(tree)
             if isinstance(node, ast.ExceptHandler) and node.type is None
         ]
-        assert bare == [], (
-            f"Found {len(bare)} bare `except:` at lines: "
-            + ", ".join(str(b.lineno) for b in bare)
+        assert bare == [], f"Found {len(bare)} bare `except:` at lines: " + ", ".join(
+            str(b.lineno) for b in bare
         )

@@ -23,6 +23,7 @@ Covered behaviours
   (at runtime) — import-time grepping for ``KICAD_CLI`` usage in those
   modules confirms there is no frozen constant.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -236,9 +237,7 @@ class TestCommandAdapterInjection:
         (proj_dir / "myproj.kicad_sch").write_text("(kicad_sch)", encoding="utf-8")
         set_current_project(ProjectRef(name="myproj", path=proj_dir))
 
-    def test_cmd_drc_with_injected_cli_avoids_shutil_which(
-        self, tmp_path: Path
-    ) -> None:
+    def test_cmd_drc_with_injected_cli_avoids_shutil_which(self, tmp_path: Path) -> None:
         """When cli is injected, cmd_drc never calls find_kicad_cli()."""
         self._make_fake_project(tmp_path)
 
@@ -264,9 +263,7 @@ class TestCommandAdapterInjection:
             "cmd_drc called find_kicad_cli() even though cli was already injected"
         )
 
-    def test_find_kicad_cli_called_when_no_cli_injected(
-        self, tmp_path: Path
-    ) -> None:
+    def test_find_kicad_cli_called_when_no_cli_injected(self, tmp_path: Path) -> None:
         """When cli is None, the command calls find_kicad_cli() to get the path."""
         self._make_fake_project(tmp_path)
         find_called: list[str] = []

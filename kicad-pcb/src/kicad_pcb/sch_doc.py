@@ -21,6 +21,7 @@ These create the ``ListNode`` trees for schematic elements:
 :func:`make_wire_node`    — wire segment.
 :func:`make_label_node`   — net label.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -58,9 +59,7 @@ def _effects_font() -> ListNode:
     return L(atom("font"), L(atom("size"), fnum(1.27, 2), fnum(1.27, 2)))
 
 
-def _make_property(
-    name: str, value: str, x: float, y: float, *, hide: bool = False
-) -> ListNode:
+def _make_property(name: str, value: str, x: float, y: float, *, hide: bool = False) -> ListNode:
     """Return a KiCad ``(property NAME VALUE (at X Y 0) (effects ...))`` node."""
     at = L(atom("at"), fnum(x, 2), fnum(y, 2), atom("0"))
     effects_items: list[Node] = [atom("effects"), _effects_font()]
@@ -189,11 +188,7 @@ def _symbol_id(node: ListNode) -> str | None:
 def _find_lib_symbol(lib_root: ListNode, sym_name: str) -> ListNode | None:
     """Find a direct-child ``(symbol "sym_name" …)`` node in *lib_root*."""
     for item in lib_root.items:
-        if (
-            isinstance(item, ListNode)
-            and item.key == "symbol"
-            and _symbol_id(item) == sym_name
-        ):
+        if isinstance(item, ListNode) and item.key == "symbol" and _symbol_id(item) == sym_name:
             return item
     return None
 
@@ -401,11 +396,7 @@ class SchematicDoc:
 
         # Check for existing embedding.
         for item in lib_symbols.items:
-            if (
-                isinstance(item, ListNode)
-                and item.key == "symbol"
-                and _symbol_id(item) == full_id
-            ):
+            if isinstance(item, ListNode) and item.key == "symbol" and _symbol_id(item) == full_id:
                 return True  # Already embedded.
 
         new_lib_symbols = ListNode(lib_symbols.items + (sym_def_node,), lib_symbols.pos)
@@ -434,8 +425,16 @@ class SchematicDoc:
         Parameters mirror :func:`make_symbol_node`.
         """
         node = make_symbol_node(
-            lib_sym, ref, value, footprint, x, y,
-            sym_uuid, pin_nums, pin_uuids, project_name,
+            lib_sym,
+            ref,
+            value,
+            footprint,
+            x,
+            y,
+            sym_uuid,
+            pin_nums,
+            pin_uuids,
+            project_name,
         )
         self._insert_before_sheet_instances(node)
 

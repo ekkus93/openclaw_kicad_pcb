@@ -29,6 +29,7 @@ Usage
         operation="add-net",
     )
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -156,9 +157,7 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
 
     # Commit to disk (skipped in dry-run mode).
     if not dry_run:
-        _atomic_write(
-            path, content, root="kicad_sch", backup=backup, operation=operation
-        )
+        _atomic_write(path, content, root="kicad_sch", backup=backup, operation=operation)
 
 
 # ---------------------------------------------------------------------------
@@ -203,9 +202,7 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
         _kicad_validate_pcb(content, path, cli, operation=operation)
 
     if not dry_run:
-        _atomic_write(
-            path, content, root="kicad_pcb", backup=backup, operation=operation
-        )
+        _atomic_write(path, content, root="kicad_pcb", backup=backup, operation=operation)
 
 
 # ---------------------------------------------------------------------------
@@ -226,9 +223,7 @@ def _syntax_check(content: str, expected_root: str, *, operation: str | None) ->
         raise ParseError(f"Round-trip parse failed{op}: {exc}") from exc
     if root.key != expected_root:
         op = f" [{operation}]" if operation else ""
-        raise ParseError(
-            f"Expected root node '{expected_root}', got '{root.key}'{op}"
-        )
+        raise ParseError(f"Expected root node '{expected_root}', got '{root.key}'{op}")
     return root
 
 
@@ -246,8 +241,7 @@ def _raise_if_errors(
     errors = [
         i
         for i in issues
-        if i.severity == LintSeverity.ERROR
-        or (strict and i.severity == LintSeverity.WARNING)
+        if i.severity == LintSeverity.ERROR or (strict and i.severity == LintSeverity.WARNING)
     ]
     if not errors:
         return
@@ -266,9 +260,7 @@ def _kicad_validate_sch(
     operation: str | None,
 ) -> None:
     """Write *content* to a temp file and run kicad-cli ERC against it."""
-    fd, tmp_sch = tempfile.mkstemp(
-        dir=original_path.parent, suffix=".kicad_sch.tmp"
-    )
+    fd, tmp_sch = tempfile.mkstemp(dir=original_path.parent, suffix=".kicad_sch.tmp")
     tmp_report = Path(tmp_sch).with_suffix(".erc.json")
     try:
         os.write(fd, content.encode())
@@ -290,9 +282,7 @@ def _kicad_validate_pcb(
     operation: str | None,
 ) -> None:
     """Write *content* to a temp file and run kicad-cli DRC against it."""
-    fd, tmp_pcb = tempfile.mkstemp(
-        dir=original_path.parent, suffix=".kicad_pcb.tmp"
-    )
+    fd, tmp_pcb = tempfile.mkstemp(dir=original_path.parent, suffix=".kicad_pcb.tmp")
     tmp_report = Path(tmp_pcb).with_suffix(".drc.json")
     try:
         os.write(fd, content.encode())
@@ -327,6 +317,4 @@ def _check_kicad_result(
 
     if report and report.get("violations"):
         count = len(report["violations"])
-        raise ToolError(
-            f"{prefix}KiCad {validation_name} found {count} violation(s)"
-        )
+        raise ToolError(f"{prefix}KiCad {validation_name} found {count} violation(s)")

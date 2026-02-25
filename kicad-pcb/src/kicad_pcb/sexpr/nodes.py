@@ -10,6 +10,7 @@ The ``Node`` union type covers every node kind:
 * ``StringNode`` — double-quoted string  (value is already unescaped)
 * ``ListNode``   — parenthesised list  ``(item …)``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

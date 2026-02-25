@@ -19,6 +19,7 @@ for unit testing without a real KiCad installation or real filesystem::
     )
     cli = KicadCliAdapter(runner=fake_runner, fs=fake_runner.fs)
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -149,9 +150,7 @@ class FsProtocol(Protocol):
         """Return ``True`` if *path* exists."""
         ...
 
-    def mkdir(
-        self, path: Path, *, parents: bool = False, exist_ok: bool = False
-    ) -> None:
+    def mkdir(self, path: Path, *, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory at *path*."""
         ...
 
@@ -184,9 +183,7 @@ class RealFs:
     def exists(self, path: Path) -> bool:
         return path.exists()
 
-    def mkdir(
-        self, path: Path, *, parents: bool = False, exist_ok: bool = False
-    ) -> None:
+    def mkdir(self, path: Path, *, parents: bool = False, exist_ok: bool = False) -> None:
         path.mkdir(parents=parents, exist_ok=exist_ok)
 
     def glob(self, path: Path, pattern: str) -> list[Path]:
@@ -224,9 +221,7 @@ class FakeFs:
         *,
         dirs: set[str | Path] | None = None,
     ) -> None:
-        self._files: dict[Path, str] = {
-            Path(k): v for k, v in (files or {}).items()
-        }
+        self._files: dict[Path, str] = {Path(k): v for k, v in (files or {}).items()}
         self._dirs: set[Path] = {Path(d) for d in (dirs or set())}
 
     # --- FsProtocol implementation ---
@@ -243,7 +238,11 @@ class FakeFs:
         return path in self._files or path in self._dirs
 
     def mkdir(
-        self, path: Path, *, parents: bool = False, exist_ok: bool = False  # noqa: ARG002
+        self,
+        path: Path,
+        *,
+        parents: bool = False,
+        exist_ok: bool = False,  # noqa: ARG002
     ) -> None:
         self._dirs.add(path)
 
@@ -363,89 +362,112 @@ class KicadCliAdapter:
     # Validation commands
     # ------------------------------------------------------------------
 
-    def drc(
-        self, pcb_file: Path, output_file: Path
-    ) -> tuple[RunResult, dict | None]:
+    def drc(self, pcb_file: Path, output_file: Path) -> tuple[RunResult, dict | None]:
         """Run PCB design rules check.
 
         Returns ``(RunResult, report_dict | None)``.  *report_dict* is the
         parsed JSON report if kicad-cli wrote it; ``None`` otherwise.
         """
-        result = self._run([
-            "pcb", "drc",
-            "--format", "json",
-            "--output", str(output_file),
-            "--severity-all",
-            str(pcb_file),
-        ])
+        result = self._run(
+            [
+                "pcb",
+                "drc",
+                "--format",
+                "json",
+                "--output",
+                str(output_file),
+                "--severity-all",
+                str(pcb_file),
+            ]
+        )
         return result, self._read_json(output_file)
 
-    def erc(
-        self, sch_file: Path, output_file: Path
-    ) -> tuple[RunResult, dict | None]:
+    def erc(self, sch_file: Path, output_file: Path) -> tuple[RunResult, dict | None]:
         """Run schematic electrical rules check.
 
         Returns ``(RunResult, report_dict | None)``.
         """
-        result = self._run([
-            "sch", "erc",
-            "--format", "json",
-            "--output", str(output_file),
-            "--severity-all",
-            str(sch_file),
-        ])
+        result = self._run(
+            [
+                "sch",
+                "erc",
+                "--format",
+                "json",
+                "--output",
+                str(output_file),
+                "--severity-all",
+                str(sch_file),
+            ]
+        )
         return result, self._read_json(output_file)
 
     # ------------------------------------------------------------------
     # Export commands
     # ------------------------------------------------------------------
 
-    def export_gerbers(
-        self, pcb_file: Path, output_dir: Path
-    ) -> tuple[RunResult, list[Path]]:
+    def export_gerbers(self, pcb_file: Path, output_dir: Path) -> tuple[RunResult, list[Path]]:
         """Export Gerber files.
 
         Returns ``(RunResult, [written_files])``.  File list is populated via
         the injected :attr:`_fs``, enabling tests to prepopulate fake files.
         """
         self._fs.mkdir(output_dir, exist_ok=True)
-        result = self._run([
-            "pcb", "export", "gerbers",
-            "--output", str(output_dir),
-            str(pcb_file),
-        ])
+        result = self._run(
+            [
+                "pcb",
+                "export",
+                "gerbers",
+                "--output",
+                str(output_dir),
+                str(pcb_file),
+            ]
+        )
         files = self._fs.glob(output_dir, "*") if result.ok else []
         return result, files
 
     def export_drill(self, pcb_file: Path, output_dir: Path) -> RunResult:
         """Export Excellon drill files."""
         self._fs.mkdir(output_dir, exist_ok=True)
-        return self._run([
-            "pcb", "export", "drill",
-            "--output", str(output_dir),
-            "--format", "excellon",
-            "--excellon-separate-th",
-            "--generate-map",
-            "--map-format", "pdf",
-            str(pcb_file),
-        ])
+        return self._run(
+            [
+                "pcb",
+                "export",
+                "drill",
+                "--output",
+                str(output_dir),
+                "--format",
+                "excellon",
+                "--excellon-separate-th",
+                "--generate-map",
+                "--map-format",
+                "pdf",
+                str(pcb_file),
+            ]
+        )
 
-    def export_bom(
-        self, sch_file: Path, output_file: Path
-    ) -> tuple[RunResult, list[str]]:
+    def export_bom(self, sch_file: Path, output_file: Path) -> tuple[RunResult, list[str]]:
         """Export bill of materials as CSV.
 
         Returns ``(RunResult, csv_lines)``.
         """
-        result = self._run([
-            "sch", "export", "bom",
-            "--output", str(output_file),
-            "--fields", "Reference,Value,Footprint,${QUANTITY},Datasheet",
-            "--labels", "Refs,Value,Footprint,Qty,Datasheet",
-            "--group-by", "Value,Footprint",
-            "--sort-field", "Reference",
-            str(sch_file),
-        ])
+        result = self._run(
+            [
+                "sch",
+                "export",
+                "bom",
+                "--output",
+                str(output_file),
+                "--fields",
+                "Reference,Value,Footprint,${QUANTITY},Datasheet",
+                "--labels",
+                "Refs,Value,Footprint,Qty,Datasheet",
+                "--group-by",
+                "Value,Footprint",
+                "--sort-field",
+                "Reference",
+                str(sch_file),
+            ]
+        )
         lines: list[str] = []
         if result.ok:
             content = self._read_text_safe(output_file)
@@ -453,40 +475,50 @@ class KicadCliAdapter:
                 lines = content.splitlines()
         return result, lines
 
-    def export_netlist(
-        self, sch_file: Path, output_file: Path
-    ) -> tuple[RunResult, str]:
+    def export_netlist(self, sch_file: Path, output_file: Path) -> tuple[RunResult, str]:
         """Export KiCad XML netlist.
 
         Returns ``(RunResult, xml_content)`` where *xml_content* is empty on
         failure or when the file was not written.
         """
-        result = self._run([
-            "sch", "export", "netlist",
-            "--output", str(output_file),
-            "--format", "kicadxml",
-            str(sch_file),
-        ])
+        result = self._run(
+            [
+                "sch",
+                "export",
+                "netlist",
+                "--output",
+                str(output_file),
+                "--format",
+                "kicadxml",
+                str(sch_file),
+            ]
+        )
         content = ""
         if result.ok:
             content = self._read_text_safe(output_file)
         return result, content
 
-    def export_pos(
-        self, pcb_file: Path, output_file: Path
-    ) -> tuple[RunResult, list[str]]:
+    def export_pos(self, pcb_file: Path, output_file: Path) -> tuple[RunResult, list[str]]:
         """Export pick-and-place CSV.
 
         Returns ``(RunResult, csv_lines)``.
         """
-        result = self._run([
-            "pcb", "export", "pos",
-            "--output", str(output_file),
-            "--format", "csv",
-            "--units", "mm",
-            "--side", "both",
-            str(pcb_file),
-        ])
+        result = self._run(
+            [
+                "pcb",
+                "export",
+                "pos",
+                "--output",
+                str(output_file),
+                "--format",
+                "csv",
+                "--units",
+                "mm",
+                "--side",
+                "both",
+                str(pcb_file),
+            ]
+        )
         lines: list[str] = []
         if result.ok:
             content = self._read_text_safe(output_file)
@@ -494,9 +526,7 @@ class KicadCliAdapter:
                 lines = content.splitlines()
         return result, lines
 
-    def export_step(
-        self, pcb_file: Path, output_file: Path
-    ) -> tuple[RunResult, int]:
+    def export_step(self, pcb_file: Path, output_file: Path) -> tuple[RunResult, int]:
         """Export STEP 3D model.
 
         Returns ``(RunResult, file_size_bytes)`` — *file_size_bytes* is 0
@@ -505,13 +535,18 @@ class KicadCliAdapter:
         Requires kicad-cli >= 8.0 (``--no-unspecified`` flag).
         """
         self.require_capability(CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
-        result = self._run([
-            "pcb", "export", "step",
-            "--output", str(output_file),
-            "--force",
-            "--no-unspecified",
-            str(pcb_file),
-        ])
+        result = self._run(
+            [
+                "pcb",
+                "export",
+                "step",
+                "--output",
+                str(output_file),
+                "--force",
+                "--no-unspecified",
+                str(pcb_file),
+            ]
+        )
         size = 0
         if result.ok and self._fs.exists(output_file):
             with contextlib.suppress(OSError):
@@ -524,22 +559,31 @@ class KicadCliAdapter:
 
     def export_svg_sch(self, sch_file: Path, output_file: Path) -> RunResult:
         """Export SVG preview of a schematic."""
-        return self._run([
-            "sch", "export", "svg",
-            "--output", str(output_file),
-            str(sch_file),
-        ])
+        return self._run(
+            [
+                "sch",
+                "export",
+                "svg",
+                "--output",
+                str(output_file),
+                str(sch_file),
+            ]
+        )
 
-    def export_svg_pcb(
-        self, pcb_file: Path, output_file: Path, layer: str
-    ) -> RunResult:
+    def export_svg_pcb(self, pcb_file: Path, output_file: Path, layer: str) -> RunResult:
         """Export SVG preview for a single PCB layer."""
-        return self._run([
-            "pcb", "export", "svg",
-            "--output", str(output_file),
-            "--layers", layer,
-            str(pcb_file),
-        ])
+        return self._run(
+            [
+                "pcb",
+                "export",
+                "svg",
+                "--output",
+                str(output_file),
+                "--layers",
+                layer,
+                str(pcb_file),
+            ]
+        )
 
     def export_glb(self, pcb_file: Path, output_file: Path) -> RunResult:
         """Export 3D GLB model.
@@ -547,11 +591,16 @@ class KicadCliAdapter:
         Requires kicad-cli >= 8.0.
         """
         self.require_capability(CliCapability.PCB_EXPORT_GLB)
-        return self._run([
-            "pcb", "export", "glb",
-            "--output", str(output_file),
-            str(pcb_file),
-        ])
+        return self._run(
+            [
+                "pcb",
+                "export",
+                "glb",
+                "--output",
+                str(output_file),
+                str(pcb_file),
+            ]
+        )
 
     # ------------------------------------------------------------------
     # Specctra (for Freerouting auto-route)
@@ -559,16 +608,26 @@ class KicadCliAdapter:
 
     def export_specctra_dsn(self, pcb_file: Path, output_file: Path) -> RunResult:
         """Export Specctra DSN file for Freerouting."""
-        return self._run([
-            "pcb", "export", "specctra",
-            "--output", str(output_file),
-            str(pcb_file),
-        ])
+        return self._run(
+            [
+                "pcb",
+                "export",
+                "specctra",
+                "--output",
+                str(output_file),
+                str(pcb_file),
+            ]
+        )
 
     def import_specctra_ses(self, ses_file: Path, output_pcb: Path) -> RunResult:
         """Import a Freerouting SES session file back into the PCB."""
-        return self._run([
-            "pcb", "import", "specctra",
-            "--output", str(output_pcb),
-            str(ses_file),
-        ])
+        return self._run(
+            [
+                "pcb",
+                "import",
+                "specctra",
+                "--output",
+                str(output_pcb),
+                str(ses_file),
+            ]
+        )
