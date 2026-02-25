@@ -116,9 +116,7 @@ class TestSchematicDocLoad:
             _doc_from(SCH_WRONG_ROOT)
 
     def test_load_fixture_file(self) -> None:
-        fixture = Path("tests/fixtures/working/SmokeTest_R1.kicad_sch")
-        if not fixture.exists():
-            pytest.skip("fixture not available")
+        fixture = Path(__file__).parent.parent / "fixtures" / "working" / "SmokeTest_R1.kicad_sch"
         doc = SchematicDoc.load(fixture)
         assert doc.root.key == "kicad_sch"
 
