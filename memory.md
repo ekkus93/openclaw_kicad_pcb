@@ -395,4 +395,4 @@ High-priority next phases:
 - bug4: find_first(sym, "instances") is None on placed symbols
 
 ### Total test count: 661 (up from 647 after 7.5)
-- Commit for 7.6: pending
+- Commit for 7.6: `c0d1768`
