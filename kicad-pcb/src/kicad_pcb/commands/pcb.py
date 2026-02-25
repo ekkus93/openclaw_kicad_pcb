@@ -1,0 +1,249 @@
+"""PCB layout commands: set-board-size, import-netlist, auto-place, auto-route."""
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+from ..config import get_current_project
+from ..errors import ToolError, UserError
+from ..fs import _atomic_write, _new_uuid
+from ..runner import check_kicad, run_kicad_cli
+
+
+def cmd_set_board_size(args) -> None:
+    """Set board outline by writing an Edge.Cuts rectangle.
+
+    Usage: set-board-size WxH   (dimensions in mm)
+    Example: set-board-size 50x30
+    """
+    project = get_current_project()
+    if not project:
+        raise UserError("No project selected")
+
+    project_dir = Path(project["path"])
+    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    if not pcb_file.exists():
+        raise UserError(f"PCB file not found: {pcb_file}")
+
+    try:
+        w, h = (float(v) for v in args.size.lower().split("x"))
+    except ValueError:
+        raise UserError("Size must be WxH in mm  e.g. 50x30")
+
+    corners = [
+        ((0, 0), (w, 0)),
+        ((w, 0), (w, h)),
+        ((w, h), (0, h)),
+        ((0, h), (0, 0)),
+    ]
+    lines = "\n".join(
+        f'  (gr_line (start {s[0]:.3f} {s[1]:.3f}) (end {e[0]:.3f} {e[1]:.3f})\n'
+        f'    (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "{_new_uuid()}"))'
+        for s, e in corners
+    )
+
+    text = pcb_file.read_text()
+    # Remove any previous Edge.Cuts gr_line entries
+    text = re.sub(
+        r'\s*\(gr_line[^\n]*\n[^\n]*"Edge\.Cuts"[^\n]*\n[^)]*\)',
+        "",
+        text,
+    )
+    last_paren = text.rfind(")")
+    text = text[:last_paren] + "\n" + lines + "\n)\n"
+    _atomic_write(pcb_file, text, "kicad_pcb", operation="set-board-size")
+
+    print(f"✅ Board outline: {w} mm × {h} mm")
+    print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
+
+
+def cmd_import_netlist(args) -> None:
+    """Export netlist from schematic and report components for PCB placement.
+
+    Note: KiCad 7+ links PCB and schematic via UUIDs — no separate netlist
+    import is required. Use Tools → Update PCB from Schematic inside KiCad's
+    PCB editor for the full sync. This command exports the netlist for inspection.
+    """
+    check_kicad()
+
+    project = get_current_project()
+    if not project:
+        raise UserError("No project selected")
+
+    project_dir = Path(project["path"])
+    sch_file = project_dir / f"{project['name']}.kicad_sch"
+    if not sch_file.exists():
+        raise UserError(f"Schematic not found: {sch_file}")
+
+    output_file = project_dir / f"{project['name']}.net"
+    print("📋 Exporting netlist...")
+
+    result = run_kicad_cli([
+        "sch", "export", "netlist",
+        "--output", str(output_file),
+        "--format", "kicadxml",
+        str(sch_file),
+    ])
+
+    if result.returncode == 0 and output_file.exists():
+        xml_text = output_file.read_text()
+        refs = re.findall(r"<ref>([^<]+)</ref>", xml_text)
+        values = re.findall(r"<value>([^<]+)</value>", xml_text)
+        footprints = re.findall(r"<footprint>([^<]*)</footprint>", xml_text)
+        footprints += [""] * (len(refs) - len(footprints))  # pad if missing
+        print(f"✅ Netlist: {output_file}")
+        if refs:
+            print(f"\n📦 Components ({len(refs)}):")
+            for r, v, fp in zip(refs, values, footprints):
+                tag = f"  [{fp}]" if fp else "  [NO FOOTPRINT ⚠️]"
+                print(f"  {r:<6} {v:<20}{tag}")
+            missing = [r for r, fp in zip(refs, footprints) if not fp]
+            if missing:
+                print(f"\n⚠️  Assign footprints to: {', '.join(missing)}")
+        print("\n💡 Open PCB editor → Tools → Update PCB from Schematic to sync.")
+    else:
+        msg = "Netlist export failed — populate the schematic first."
+        if result.stderr:
+            msg += f"\n{result.stderr[:400]}"
+        raise ToolError(msg)
+
+
+def cmd_auto_place(args) -> None:
+    """Arrange all footprints on the PCB in a grid layout.
+
+    Usage: auto-place [--spacing N]   (spacing in mm, default 10)
+    """
+    project = get_current_project()
+    if not project:
+        raise UserError("No project selected")
+
+    project_dir = Path(project["path"])
+    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    if not pcb_file.exists():
+        raise UserError(f"PCB file not found: {pcb_file}")
+
+    spacing: float = float(args.spacing) if args.spacing else 10.0
+    text = pcb_file.read_text()
+
+    # Match footprint blocks: (footprint "lib:name" ... (at X Y ...) ...)
+    fp_pattern = re.compile(
+        r'(\(footprint "([^"]*)"(?:.*?\n)*?\s*\(at )([\d.-]+) ([\d.-]+)([^)]*\))',
+        re.MULTILINE,
+    )
+    matches = list(fp_pattern.finditer(text))
+
+    if not matches:
+        print("ℹ️  No footprints found in PCB file.")
+        print("   Add components to the schematic, then run import-netlist.")
+        return
+
+    placed: list[tuple[str, float, float]] = []
+    col_size = 5
+    col_width = spacing * 3
+
+    def replacer(m: re.Match) -> str:
+        idx = len(placed)
+        col = idx // col_size
+        row = idx % col_size
+        nx = 10.0 + col * col_width
+        ny = 10.0 + row * spacing
+        placed.append((m.group(2), nx, ny))
+        return f"{m.group(1)}{nx:.3f} {ny:.3f}{m.group(5)}"
+
+    new_text = fp_pattern.sub(replacer, text)
+    _atomic_write(pcb_file, new_text, "kicad_pcb", operation="auto-place")
+
+    print(f"✅ Placed {len(placed)} footprint(s) (spacing {spacing} mm):")
+    for fp_ref, nx, ny in placed:
+        label = fp_ref.split(":")[-1] if ":" in fp_ref else fp_ref
+        print(f"   {label:<30} → ({nx:.1f}, {ny:.1f})")
+    print("\n💡 Run `drc` to check, then route with `auto-route` or KiCad PCB editor.")
+
+
+def cmd_auto_route(args) -> None:  # noqa: PLR0912
+    """Auto-route the PCB using Freerouting (requires Java + Freerouting JAR).
+
+    Install Freerouting: https://github.com/freerouting/freerouting/releases
+    Save the JAR to ~/freerouting.jar, then re-run this command.
+    """
+    check_kicad()
+
+    project = get_current_project()
+    if not project:
+        raise UserError("No project selected")
+
+    project_dir = Path(project["path"])
+    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
+    if not pcb_file.exists():
+        raise UserError(f"PCB file not found: {pcb_file}")
+
+    # Locate Freerouting JAR
+    jar_arg = getattr(args, "jar", None)
+    freerouting_jar: str | None = jar_arg
+    if not freerouting_jar:
+        for candidate in [
+            Path.home() / "freerouting.jar",
+            Path.home() / ".local/bin/freerouting.jar",
+            Path("/opt/freerouting/freerouting.jar"),
+        ]:
+            if candidate.exists():
+                freerouting_jar = str(candidate)
+                break
+
+    if not freerouting_jar:
+        print("❌ Freerouting JAR not found.")
+        print("\nInstall:")
+        print("  1. https://github.com/freerouting/freerouting/releases")
+        print("  2. Save as ~/freerouting.jar")
+        print("  3. Re-run: auto-route --jar ~/freerouting.jar")
+        print("\nAlternative: Route manually in KiCad PCB editor (Route menu).")
+        return
+
+    java = shutil.which("java")
+    if not java:
+        print("❌ Java not found. Install: sudo apt install openjdk-17-jre")
+        return
+
+    dsn_file = project_dir / f"{project['name']}.dsn"
+    ses_file = project_dir / f"{project['name']}.ses"
+
+    print("📤 Exporting Specctra DSN...")
+    result = run_kicad_cli([
+        "pcb", "export", "specctra",
+        "--output", str(dsn_file),
+        str(pcb_file),
+    ])
+    if result.returncode != 0:
+        print("❌ DSN export failed — ensure PCB has components placed and netlist set.")
+        if result.stderr:
+            print(result.stderr[:300])
+        return
+
+    print("🔀 Running Freerouting auto-router (this may take a minute)...")
+    try:
+        result = subprocess.run(
+            [java, "-jar", freerouting_jar,
+             "-de", str(dsn_file), "-do", str(ses_file), "-mp", "100"],
+            capture_output=True, text=True, timeout=300, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print("⚠️  Freerouting timed out after 5 minutes.")
+        return
+
+    if result.returncode == 0 and ses_file.exists():
+        print(f"✅ Routes complete: {ses_file.name}")
+        imp = run_kicad_cli([
+            "pcb", "import", "specctra",
+            "--output", str(pcb_file),
+            str(ses_file),
+        ])
+        if imp.returncode == 0:
+            print(f"✅ Routes imported into {pcb_file.name}")
+        else:
+            print("⚠️  Manual import: File → Import → Specctra Session in KiCad PCB editor")
+    else:
+        print("❌ Freerouting failed.")
+        if result.stderr:
+            print(result.stderr[:300])
