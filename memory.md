@@ -106,9 +106,54 @@ python3 kicad_pcb.py export-bom  → 2 component lines: R1 (10k), C1 (100nF)
 
 
 High-priority next phases:
-1. **Phase 0 — Baseline fixtures** (captured in `tests/fixtures/`)
-2. **Phase 1 — Reliability**: `doctor` command, atomic writes, typed exceptions
+1. **Phase 0 — Baseline fixtures** ✅ (captured in `tests/fixtures/`)
+2. **Phase 1 — Reliability** ✅ (see below)
 3. **Phase 2 — Testability**: module split, Pydantic models, injectable adapters  
 4. **Phase 3 — kiutils parser**: replace all regex/string S-expr manipulation
 5. **Phase 4 — Doc wrappers**: `SchematicDoc`/`PcbDoc` AST editing API
 6. **Phase 5 — Validation pipeline**: lint → validate → transactional write
+
+---
+
+## 2026-02-25T — Phase 1 Complete (commit 3f09549)
+
+### Changes made to `kicad-pcb/scripts/kicad_pcb.py`
+
+**1.1 SKILL.md doc fixes**
+- `connect` command: corrected syntax from `connect <ref1.pin> <ref2.pin>` → `connect --from X,Y --to X,Y`
+- `add-net` command: corrected syntax to `add-net NAME [--x X] [--y Y]`
+- Removed duplicate `pcbway-quote` table row
+- Removed `--layers` flag from `preview-pcb` example (not implemented)
+- Replaced non-existent template section with a "no built-in templates" note
+- Fixed Python deps: removed non-used `pillow`, marked `cairosvg` as optional
+- Added `doctor` to Project Management command table
+
+**1.2 Added `cmd_doctor()` command**
+- Checks: kicad-cli on PATH + version, symbol lib dir, config dir, projects dir writable
+- Raises `UserError` on failures (caught by main() handler)
+- Registered as `doctor` subparser
+
+**1.3 Atomic writes (`_atomic_write`)** 
+- `tempfile.mkstemp` → write → `os.replace` (POSIX atomic)
+- Temp file cleaned up if write fails
+- Called with `root` arg for sanity-checked writes
+
+**1.4 Typed exceptions**
+- `KiCadError(RuntimeError)` base
+- `UserError`, `ToolError`, `ParseError` subclasses
+- Fixed both `bare except:` → `except (json.JSONDecodeError, OSError)` etc.
+- `check_kicad()` now **raises** `ToolError` (was: return bool)
+- All `sys.exit(1)` in business logic replaced with `raise UserError/ToolError`
+- `main()` catches `KiCadError` → prints ❌ message → `sys.exit(1)`
+
+**1.5 Post-write sanity checks (`_check_sexp`)**
+- Balanced-paren counter (ignores parens in `"strings"`)
+- Root-node check (`kicad_sch` / `kicad_pcb`)
+- Called inside `_atomic_write` before `os.replace` — bad content never hits disk
+
+**1.6 Fixed fake UUID in `cmd_new`**
+- Was `datetime.now().strftime('%Y%m%d%H%M%S')` → now `str(uuid_module.uuid4())`
+
+### Test results (Phase 1)
+- 45 tests: 37 unit + 8 integration — all pass
+- New test file: `tests/unit/test_phase1_reliability.py` (22 tests)
