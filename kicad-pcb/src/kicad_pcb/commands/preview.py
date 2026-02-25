@@ -1,8 +1,6 @@
 """Preview generation commands: preview-schematic, preview-pcb."""
 from __future__ import annotations
 
-from pathlib import Path
-
 from ..config import get_current_project
 from ..errors import UserError
 from ..runner import check_kicad, run_kicad_cli
@@ -16,13 +14,11 @@ def cmd_preview_schematic(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
-
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic file not found: {sch_file}")
 
-    output_file = project_dir / "schematic_preview.svg"
+    output_file = project.path / "schematic_preview.svg"
 
     print("🖼️  Generating schematic preview...")
 
@@ -39,7 +35,7 @@ def cmd_preview_schematic(args) -> None:
         try:
             import cairosvg  # noqa: PLC0415
 
-            png_file = project_dir / "schematic_preview.png"
+            png_file = project.path / "schematic_preview.png"
             cairosvg.svg2png(url=str(output_file), write_to=str(png_file))
             print(f"   PNG: {png_file}")
         except ImportError:
@@ -56,9 +52,7 @@ def cmd_preview_pcb(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
-
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
@@ -68,7 +62,7 @@ def cmd_preview_pcb(args) -> None:
     layers = ["F.Cu", "B.Cu", "F.Silkscreen", "Edge.Cuts"]
 
     for layer in layers:
-        output_file = project_dir / f"pcb_preview_{layer.replace('.', '_')}.svg"
+        output_file = project.path / f"pcb_preview_{layer.replace('.', '_')}.svg"
         result = run_kicad_cli([
             "pcb", "export", "svg",
             "--output", str(output_file),
@@ -79,7 +73,7 @@ def cmd_preview_pcb(args) -> None:
             print(f"   ✅ {layer}: {output_file.name}")
 
     # Try 3D export
-    glb_file = project_dir / "pcb_3d.glb"
+    glb_file = project.path / "pcb_3d.glb"
     result = run_kicad_cli([
         "pcb", "export", "glb",
         "--output", str(glb_file),

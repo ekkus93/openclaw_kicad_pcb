@@ -1,8 +1,6 @@
 """External service commands: pcbway-quote."""
 from __future__ import annotations
 
-from pathlib import Path
-
 from ..config import get_current_project
 
 
@@ -42,7 +40,7 @@ def cmd_pcbway_quote(args) -> None:
     print("📤 To order: Upload Gerbers at pcbway.com/orderonline.aspx")
 
     if project:
-        gerber_zip = Path(project["path"]) / f"{project['name']}_fab.zip"
+        gerber_zip = project.path / f"{project.name}_fab.zip"
         if gerber_zip.exists():
             print(f"\n✅ Gerber package ready: {gerber_zip}")
         else:

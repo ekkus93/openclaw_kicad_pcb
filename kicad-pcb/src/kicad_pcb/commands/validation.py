@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from ..config import get_current_project
 from ..errors import UserError
+from ..models import ValidationResult
 from ..runner import check_kicad, run_kicad_cli
 
 
@@ -17,13 +17,11 @@ def cmd_drc(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    pcb_file = project_dir / f"{project['name']}.kicad_pcb"
-
+    pcb_file = project.pcb_file
     if not pcb_file.exists():
         raise UserError(f"PCB file not found: {pcb_file}")
 
-    output_file = project_dir / "drc_report.json"
+    output_file = project.path / "drc_report.json"
 
     print(f"🔍 Running DRC on {pcb_file.name}...")
 
@@ -42,20 +40,18 @@ def cmd_drc(args) -> None:
     else:
         print("✅ DRC passed!")
 
-    # Parse and display results
+    # Parse and display results using typed ValidationResult
     if output_file.exists():
         with output_file.open() as f:
             report = json.load(f)
 
-        violations = report.get("violations", [])
-        if violations:
-            print(f"\n📋 Found {len(violations)} issues:")
-            for v in violations[:10]:
-                severity = v.get("severity", "unknown")
-                desc = v.get("description", "No description")
-                print(f"  [{severity}] {desc}")
-            if len(violations) > 10:
-                print(f"  ... and {len(violations) - 10} more")
+        validation = ValidationResult.from_report(report, result.returncode)
+        if validation.issues:
+            print(f"\n📋 Found {len(validation.issues)} issues:")
+            for issue in validation.issues[:10]:
+                print(f"  [{issue.severity}] {issue.description}")
+            if len(validation.issues) > 10:
+                print(f"  ... and {len(validation.issues) - 10} more")
         else:
             print("\n✅ No violations found!")
 
@@ -68,13 +64,11 @@ def cmd_erc(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
-
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic file not found: {sch_file}")
 
-    output_file = project_dir / "erc_report.json"
+    output_file = project.path / "erc_report.json"
 
     print(f"🔍 Running ERC on {sch_file.name}...")
 

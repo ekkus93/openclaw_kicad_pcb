@@ -7,6 +7,7 @@ from pathlib import Path
 from ..config import get_current_project
 from ..errors import UserError
 from ..fs import _atomic_write, _new_uuid
+from ..models import ComponentSpec, NetLabelSpec, WireSegment
 
 # KiCad symbol library path (system default; override via KICAD_SYMBOLS_DIR env if needed).
 KICAD_SYMBOLS_DIR = Path("/usr/share/kicad/symbols")
@@ -153,22 +154,14 @@ def cmd_add_component(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic not found: {sch_file}")
 
-    lib_sym = args.lib_sym
-    if ":" not in lib_sym:
-        raise UserError("Format must be Library:Symbol  e.g. Device:R")
-    lib_name, sym_name = lib_sym.split(":", 1)
-    ref = args.ref
-    value = args.value or sym_name
-    footprint = args.footprint or ""
-
-    pin_nums = _find_symbol_pins(lib_name, sym_name)
+    spec = ComponentSpec.from_args(args)
+    pin_nums = _find_symbol_pins(spec.lib_name, spec.sym_name)
     if not pin_nums:
-        print(f"⚠️  Symbol '{lib_sym}' not found in {KICAD_SYMBOLS_DIR}")
+        print(f"⚠️  Symbol '{spec.lib_sym}' not found in {KICAD_SYMBOLS_DIR}")
         print("   Using default pins [1, 2]. Edit footprint assignment in KiCad.")
         pin_nums = ["1", "2"]
 
@@ -177,18 +170,17 @@ def cmd_add_component(args) -> None:
     pin_entries = "\n".join(
         f'    (pin "{p}" (uuid "{_new_uuid()}"))' for p in pin_nums
     )
-    project_name = project["name"]
     sym_entry = (
-        f'  (symbol (lib_id "{lib_sym}") (at {x:.2f} {y:.2f} 0) (unit 1)\n'
+        f'  (symbol (lib_id "{spec.lib_sym}") (at {x:.2f} {y:.2f} 0) (unit 1)\n'
         f'    (exclude_from_sim yes) (in_bom yes) (on_board yes)\n'
         f'    (uuid "{sym_uuid}")\n'
-        f'    (property "Reference" "{ref}" (at {x + 1.27:.2f} {y - 1.27:.2f} 0)\n'
+        f'    (property "Reference" "{spec.ref}" (at {x + 1.27:.2f} {y - 1.27:.2f} 0)\n'
         f"      (effects (font (size 1.27 1.27)))\n"
         f"    )\n"
-        f'    (property "Value" "{value}" (at {x + 1.27:.2f} {y + 1.27:.2f} 0)\n'
+        f'    (property "Value" "{spec.value}" (at {x + 1.27:.2f} {y + 1.27:.2f} 0)\n'
         f"      (effects (font (size 1.27 1.27)))\n"
         f"    )\n"
-        f'    (property "Footprint" "{footprint}" (at {x:.2f} {y:.2f} 0)\n'
+        f'    (property "Footprint" "{spec.footprint}" (at {x:.2f} {y:.2f} 0)\n'
         f"      (effects (font (size 1.27 1.27)) hide)\n"
         f"    )\n"
         f'    (property "Datasheet" "~" (at {x:.2f} {y:.2f} 0)\n'
@@ -196,9 +188,9 @@ def cmd_add_component(args) -> None:
         f"    )\n"
         f"{pin_entries}\n"
         f'    (instances\n'
-        f'      (project "{project_name}"\n'
+        f'      (project "{project.name}"\n'
         f'        (path "/"\n'
-        f'          (reference "{ref}")\n'
+        f'          (reference "{spec.ref}")\n'
         f"          (unit 1)\n"
         f"        )\n"
         f"      )\n"
@@ -209,11 +201,11 @@ def cmd_add_component(args) -> None:
     # Embed the symbol definition so kicad-cli can generate library part info
     # for netlist/BOM export.  _embed_lib_symbol strips (id N) and uses short
     # sub-symbol names (e.g. "R_0_1" not "Device:R_0_1") for compatibility.
-    _embed_lib_symbol(sch_file, lib_name, sym_name)
+    _embed_lib_symbol(sch_file, spec.lib_name, spec.sym_name)
 
-    print(f"✅ Added {ref} ({lib_sym})  value={value}")
+    print(f"✅ Added {spec.ref} ({spec.lib_sym})  value={spec.value}")
     print(f"   Position: ({x:.1f}, {y:.1f}) mm  |  Pins: {', '.join(pin_nums)}")
-    if not footprint:
+    if not spec.footprint:
         print("   ⚠️  No footprint — assign in KiCad or use --footprint")
     print("\n💡 Run `preview-schematic` to verify, then wire with `connect`.")
 
@@ -228,17 +220,13 @@ def cmd_add_net(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic not found: {sch_file}")
 
-    name = args.name
-    x = args.x or 50.8
-    y = args.y or 50.8
-
+    label = NetLabelSpec.from_args(args)
     label_entry = (
-        f'  (label "{name}" (at {x:.2f} {y:.2f} 0) (fields_autoplaced yes)\n'
+        f'  (label "{label.name}" (at {label.x:.2f} {label.y:.2f} 0) (fields_autoplaced yes)\n'
         f"    (effects (font (size 1.27 1.27)) (justify left bottom))\n"
         f'    (uuid "{_new_uuid()}")\n'
         f'    (property "Intersheet References" "${{INTERSHEET_REFS}}" (at 0 0 0)\n'
@@ -247,7 +235,7 @@ def cmd_add_net(args) -> None:
         f"  )"
     )
     _append_to_schematic(sch_file, label_entry)
-    print(f"✅ Net label '{name}' added at ({x}, {y})")
+    print(f"✅ Net label '{label.name}' added at ({label.x}, {label.y})")
 
 
 def cmd_connect(args) -> None:
@@ -262,22 +250,16 @@ def cmd_connect(args) -> None:
     if not project:
         raise UserError("No project selected")
 
-    project_dir = Path(project["path"])
-    sch_file = project_dir / f"{project['name']}.kicad_sch"
+    sch_file = project.sch_file
     if not sch_file.exists():
         raise UserError(f"Schematic not found: {sch_file}")
 
-    try:
-        x1, y1 = (float(v) for v in args.from_pt.split(","))
-        x2, y2 = (float(v) for v in args.to_pt.split(","))
-    except ValueError:
-        raise UserError("Coordinates must be x,y  e.g. --from 50.8,76.2")
-
+    wire = WireSegment.from_args(args)
     wire_entry = (
-        f"  (wire (pts (xy {x1:.2f} {y1:.2f}) (xy {x2:.2f} {y2:.2f}))\n"
+        f"  (wire (pts (xy {wire.x1:.2f} {wire.y1:.2f}) (xy {wire.x2:.2f} {wire.y2:.2f}))\n"
         f"    (stroke (width 0) (type default))\n"
         f'    (uuid "{_new_uuid()}")\n'
         f"  )"
     )
     _append_to_schematic(sch_file, wire_entry)
-    print(f"✅ Wire added: ({x1}, {y1}) → ({x2}, {y2})")
+    print(f"✅ Wire added: ({wire.x1}, {wire.y1}) → ({wire.x2}, {wire.y2})")
