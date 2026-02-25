@@ -1,10 +1,10 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T01:30:00Z_
+_Last updated: 2026-02-25T21:48:19Z_
 
 ---
 
-## 2026-02-26T01:30:00Z — Phase 9.2: Validated circuit pattern library (commit d59a980)
+## 2026-02-25T21:47:08Z — Phase 9.2: Validated circuit pattern library (commit d59a980)
 
 ### Summary
 Adds a small library of known-good KiCad schematic patterns that emit validated
@@ -56,7 +56,7 @@ because the `/nonexistent` redirect returns [] immediately.
 - mypy: clean (explicit kwarg passing avoids dict[str, str|Path|None] spread issue)
 - pytest: 833 unit tests, 0 skipped
 
-## 2026-02-26T00:00:00Z — Phase 8.3: Runtime environment resolution (commit b275e14)
+## 2026-02-25T20:29:42Z — Phase 8.3: Runtime environment resolution (commit b275e14)
 
 ### Summary
 Eliminates the import-time `shutil.which("kicad-cli")` freeze. All path
@@ -95,7 +95,7 @@ resolution now happens lazily at call time.
 
 ---
 
-## 2026-02-25T21:15:00Z — Phase 8.2: Symbol library path discovery (commit 00c4689)
+## 2026-02-25T20:02:31Z — Phase 8.2: Symbol library path discovery (commit 00c4689)
 
 ### Summary
 Replaces hardcoded `/usr/share/kicad/symbols` with a runtime discovery chain.
@@ -124,7 +124,7 @@ Replaces hardcoded `/usr/share/kicad/symbols` with a runtime discovery chain.
 
 ---
 
-## 2026-02-25T20:25:00Z — Phase 8.1: KiCad CLI version compatibility layer (commit ca50af3)
+## 2026-02-25T19:48:06Z — Phase 8.1: KiCad CLI version compatibility layer (commit ca50af3)
 
 ### Summary
 Implements runtime version detection and capability gating for kicad-cli.
