@@ -1,0 +1,227 @@
+"""Phase 1 reliability tests.
+
+Covers:
+- Typed exception hierarchy
+- _check_sexp: valid S-expression, wrong root, unbalanced parens
+- _atomic_write: happy path, rejects bad content (no clobber), no temp leftovers
+- check_kicad: raises ToolError when CLI not on PATH
+- cmd_doctor: smoke test (exits cleanly or raises UserError on missing deps)
+- No bare `except:` in the module source
+"""
+from __future__ import annotations
+
+import ast
+import importlib
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+# ---------------------------------------------------------------------------
+# Import the script module (kicad_pcb.py lives in kicad-pcb/scripts/).
+# pytest.ini adds that directory to pythonpath, so a plain import works.
+# ---------------------------------------------------------------------------
+import kicad_pcb  # noqa: E402
+
+pytestmark = pytest.mark.unit
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+SCRIPT = (
+    Path(__file__).parent.parent.parent / "kicad-pcb" / "scripts" / "kicad_pcb.py"
+)
+
+VALID_SCH = """\
+(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "test-uuid")
+  (paper "A4")
+  (lib_symbols)
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
+"""
+
+VALID_PCB = """\
+(kicad_pcb (version 20230121) (generator pcbnew)
+  (general
+    (thickness 1.6)
+  )
+  (net 0 "")
+)
+"""
+
+
+# ---------------------------------------------------------------------------
+# 1. Exception hierarchy
+# ---------------------------------------------------------------------------
+
+
+class TestExceptionHierarchy:
+    def test_kicad_error_is_runtime_error(self) -> None:
+        assert issubclass(kicad_pcb.KiCadError, RuntimeError)
+
+    def test_user_error_is_kicad_error(self) -> None:
+        assert issubclass(kicad_pcb.UserError, kicad_pcb.KiCadError)
+
+    def test_tool_error_is_kicad_error(self) -> None:
+        assert issubclass(kicad_pcb.ToolError, kicad_pcb.KiCadError)
+
+    def test_parse_error_is_kicad_error(self) -> None:
+        assert issubclass(kicad_pcb.ParseError, kicad_pcb.KiCadError)
+
+    def test_each_exception_carries_message(self) -> None:
+        for cls in (kicad_pcb.UserError, kicad_pcb.ToolError, kicad_pcb.ParseError):
+            exc = cls("boom")
+            assert str(exc) == "boom"
+
+
+# ---------------------------------------------------------------------------
+# 2. _check_sexp
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSexp:
+    def test_valid_kicad_sch_passes(self) -> None:
+        kicad_pcb._check_sexp(VALID_SCH, "kicad_sch")  # must not raise
+
+    def test_valid_kicad_pcb_passes(self) -> None:
+        kicad_pcb._check_sexp(VALID_PCB, "kicad_pcb")  # must not raise
+
+    def test_unbalanced_open_raises(self) -> None:
+        bad = "(kicad_sch (missing-close)\n"
+        with pytest.raises(kicad_pcb.ParseError, match="Unbalanced"):
+            kicad_pcb._check_sexp(bad, "kicad_sch")
+
+    def test_unbalanced_close_raises(self) -> None:
+        bad = "(kicad_sch)\n)\n"
+        with pytest.raises(kicad_pcb.ParseError, match="Unbalanced"):
+            kicad_pcb._check_sexp(bad, "kicad_sch")
+
+    def test_wrong_root_raises(self) -> None:
+        with pytest.raises(kicad_pcb.ParseError, match="Expected root node"):
+            kicad_pcb._check_sexp(VALID_SCH, "kicad_pcb")
+
+    def test_parens_inside_strings_ignored(self) -> None:
+        # Parens inside quoted strings should not affect depth count.
+        content = '(kicad_sch (property "Test(((" "val"))\n'
+        kicad_pcb._check_sexp(content, "kicad_sch")  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# 3. _atomic_write
+# ---------------------------------------------------------------------------
+
+
+class TestAtomicWrite:
+    def test_writes_content(self, tmp_path: Path) -> None:
+        target = tmp_path / "test.kicad_sch"
+        kicad_pcb._atomic_write(target, VALID_SCH)
+        assert target.read_text() == VALID_SCH
+
+    def test_overwrites_existing(self, tmp_path: Path) -> None:
+        target = tmp_path / "test.kicad_sch"
+        target.write_text("old content")
+        kicad_pcb._atomic_write(target, VALID_SCH)
+        assert target.read_text() == VALID_SCH
+
+    def test_with_root_check_valid(self, tmp_path: Path) -> None:
+        target = tmp_path / "test.kicad_sch"
+        kicad_pcb._atomic_write(target, VALID_SCH, "kicad_sch")
+        assert target.read_text() == VALID_SCH
+
+    def test_with_root_check_bad_content_no_clobber(self, tmp_path: Path) -> None:
+        """Original file must remain untouched when sanity check fails."""
+        target = tmp_path / "test.kicad_sch"
+        target.write_text(VALID_SCH)  # original
+        bad_content = "(kicad_sch (oops"  # unbalanced
+
+        with pytest.raises(kicad_pcb.ParseError):
+            kicad_pcb._atomic_write(target, bad_content, "kicad_sch")
+
+        # Original preserved
+        assert target.read_text() == VALID_SCH
+
+    def test_no_temp_file_left_on_parse_error(self, tmp_path: Path) -> None:
+        """Temp .tmp artefact must be cleaned up after a failed write."""
+        target = tmp_path / "test.kicad_sch"
+        with pytest.raises(kicad_pcb.ParseError):
+            kicad_pcb._atomic_write(target, "(broken", "kicad_sch")
+
+        tmp_files = list(tmp_path.glob("*.tmp"))
+        assert tmp_files == [], f"Temp files left behind: {tmp_files}"
+
+    def test_creates_parent_dirs_not_required(self, tmp_path: Path) -> None:
+        """Parent directory must already exist (os.replace requirement)."""
+        target = tmp_path / "out.kicad_sch"
+        kicad_pcb._atomic_write(target, VALID_SCH, "kicad_sch")
+        assert target.exists()
+
+
+# ---------------------------------------------------------------------------
+# 4. check_kicad raises ToolError when CLI not found
+# ---------------------------------------------------------------------------
+
+
+class TestCheckKicad:
+    def test_raises_tool_error_when_not_on_path(self) -> None:
+        with patch("shutil.which", return_value=None):
+            with pytest.raises(kicad_pcb.ToolError, match="KiCad CLI not found"):
+                kicad_pcb.check_kicad()
+
+    def test_does_not_raise_when_cli_found(self) -> None:
+        with patch("shutil.which", return_value="/usr/bin/kicad-cli"):
+            kicad_pcb.check_kicad()  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# 5. cmd_doctor smoke test
+# ---------------------------------------------------------------------------
+
+
+class TestCmdDoctor:
+    def test_smoke_no_crash(self, tmp_path: Path, capsys) -> None:
+        """doctor must not crash — it either passes or raises UserError."""
+
+        class FakeArgs:
+            pass
+
+        try:
+            kicad_pcb.cmd_doctor(FakeArgs())
+        except kicad_pcb.UserError:
+            pass  # acceptable — kicad-cli or libs may be missing in CI
+
+    def test_raises_user_error_when_cli_missing(self, tmp_path: Path, capsys) -> None:
+        """If kicad-cli is absent, doctor raises UserError (not SystemExit)."""
+
+        class FakeArgs:
+            pass
+
+        with patch("shutil.which", return_value=None):
+            with pytest.raises(kicad_pcb.UserError, match="doctor"):
+                kicad_pcb.cmd_doctor(FakeArgs())
+
+
+# ---------------------------------------------------------------------------
+# 6. No bare `except:` in the module source
+# ---------------------------------------------------------------------------
+
+
+class TestNoBareExcept:
+    def test_no_bare_except_in_source(self) -> None:
+        """Parse the AST and assert there are no bare ExceptHandler nodes."""
+        source = SCRIPT.read_text()
+        tree = ast.parse(source)
+        bare = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ExceptHandler) and node.type is None
+        ]
+        assert bare == [], (
+            f"Found {len(bare)} bare `except:` at lines: "
+            + ", ".join(str(b.lineno) for b in bare)
+        )

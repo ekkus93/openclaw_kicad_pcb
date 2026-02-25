@@ -39,7 +39,7 @@ kicad-cli --version
 ### Python Dependencies
 
 ```bash
-pip install pillow cairosvg
+pip install cairosvg  # optional — enables PNG schematic preview
 ```
 
 ## Quick Start
@@ -75,6 +75,7 @@ python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote -
 | `new <name>` | Create new KiCad project |
 | `open <path>` | Open existing project |
 | `info` | Show current project info |
+| `doctor` | Check system config and diagnose issues |
 
 
 ### Schematic Design
@@ -82,8 +83,8 @@ python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote -
 | Command | Description |
 |---------|-------------|
 | `add-component <LIB:SYM> <REF>` | Add component to schematic |
-| `connect <ref1.pin> <ref2.pin>` | Wire components together |
-| `add-net <name> <refs...>` | Create named net |
+| `connect --from X,Y --to X,Y` | Wire two coordinates together |
+| `add-net NAME [--x X] [--y Y]` | Create named net label at position |
 | `preview-schematic` | Generate schematic image |
 | `erc` | Run electrical rules check |
 
@@ -113,7 +114,6 @@ python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote -
 
 | Command | Description |
 |---------|-------------|
-| `pcbway-quote` | Get instant quote |
 | `pcbway-quote` | Get instant cost estimate |
 
 > PCBWay upload/order requires manual web upload at pcbway.com — no API available.
@@ -162,7 +162,7 @@ You confirm or request changes.
 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py set-board-size 50x30
 
 # Preview
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py preview-pcb --layers F.Cu,B.Cu,F.Silkscreen
+/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py preview-pcb
 ```
 
 ### Step 5: Manufacturing
@@ -180,23 +180,8 @@ You confirm or request changes.
 
 ## Common Circuit Templates
 
-### templates/555_astable.kicad_sch
-Classic 555 timer in astable mode. Parameters:
-- R1, R2: Timing resistors
-- C1: Timing capacitor
-- Freq ≈ 1.44 / ((R1 + 2*R2) * C1)
-
-### templates/arduino_shield.kicad_pcb
-Arduino Uno shield template with:
-- Header footprints
-- Mounting holes
-- Power rails
-
-### templates/usb_c_power.kicad_sch
-USB-C power delivery (5V):
-- USB-C connector
-- CC resistors
-- ESD protection
+> No built-in templates are included in v1.0.0. Build circuits using
+> `add-component` and `connect` commands as shown in the workflow above.
 
 ## Configuration
 

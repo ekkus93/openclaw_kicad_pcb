@@ -1,6 +1,6 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25_
+_Last updated: 2026-02-25T04:27:38Z_
 
 ---
 
@@ -16,7 +16,7 @@ _Last updated: 2026-02-25_
 
 ---
 
-## Architecture Decisions (2026-02-25)
+## 2026-02-25T03:15:00Z — Architecture Decisions
 
 ### 1. KiCad file parser
 - **Choice**: `kiutils` (KiCad-specific parser, PyPI: `kiutils`)
@@ -83,7 +83,7 @@ python3 kicad_pcb.py export-bom  → 2 component lines: R1 (10k), C1 (100nF)
 
 ---
 
-## 2026-02-25 — Phase 0 Baseline Complete
+## 2026-02-25T04:27:38Z — Phase 0 Baseline Complete
 
 ### Python environment
 - **Python**: 3.11.2 (system package)

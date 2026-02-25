@@ -50,6 +50,25 @@ DEFAULT_PCB_OPTIONS = {
     "min_trace": 0.15
 }
 
+# ---------------------------------------------------------------------------
+# Typed exceptions
+# ---------------------------------------------------------------------------
+
+class KiCadError(RuntimeError):
+    """Base exception for all kicad-pcb errors."""
+
+
+class UserError(KiCadError):
+    """User input or state error (missing project, bad args, etc.)."""
+
+
+class ToolError(KiCadError):
+    """kicad-cli or external tool failure."""
+
+
+class ParseError(KiCadError):
+    """File parse or sanity-check failure."""
+
 
 def ensure_dirs():
     """Create necessary directories."""
@@ -64,7 +83,7 @@ def load_config() -> dict:
         try:
             with open(CONFIG_FILE) as f:
                 return json.load(f)
-        except:
+        except (json.JSONDecodeError, OSError):
             pass
     return {"projects_dir": str(PROJECTS_DIR)}
 
@@ -82,7 +101,7 @@ def get_current_project() -> Optional[dict]:
         try:
             with open(CURRENT_PROJECT_FILE) as f:
                 return json.load(f)
-        except:
+        except (json.JSONDecodeError, OSError, KeyError):
             pass
     return None
 
@@ -94,15 +113,15 @@ def set_current_project(project: dict):
         json.dump(project, f, indent=2)
 
 
-def check_kicad():
-    """Check if KiCad CLI is available."""
+def check_kicad() -> None:
+    """Raise ToolError if kicad-cli is not available."""
     if not shutil.which("kicad-cli"):
-        print("❌ KiCad CLI not found!")
-        print("\nInstall KiCad:")
-        print("  Ubuntu: sudo apt install kicad")
-        print("  Or: https://www.kicad.org/download/")
-        return False
-    return True
+        raise ToolError(
+            "KiCad CLI not found!\n"
+            "\nInstall KiCad:\n"
+            "  Ubuntu: sudo apt install kicad\n"
+            "  Or: https://www.kicad.org/download/"
+        )
 
 
 def run_kicad_cli(args: List[str], capture=True) -> subprocess.CompletedProcess:
@@ -126,8 +145,7 @@ def cmd_new(args):
     
     project_dir = projects_dir / name
     if project_dir.exists():
-        print(f"❌ Project already exists: {project_dir}")
-        sys.exit(1)
+        raise UserError(f"Project already exists: {project_dir}")
     
     project_dir.mkdir(parents=True)
     
@@ -145,7 +163,7 @@ def cmd_new(args):
     # Create empty schematic
     sch_file = project_dir / f"{name}.kicad_sch"
     sch_content = f'''(kicad_sch (version 20230121) (generator eeschema)
-  (uuid "{datetime.now().strftime('%Y%m%d%H%M%S')}")
+  (uuid "{str(uuid_module.uuid4())}")
   (paper "A4")
   (lib_symbols)
   (sheet_instances
@@ -221,9 +239,7 @@ def cmd_info(args):
     project = get_current_project()
     
     if not project:
-        print("❌ No project selected")
-        print("   Use: kicad_pcb.py new <name>")
-        sys.exit(1)
+        raise UserError("No project selected\n      Use: kicad_pcb.py new <name>")
     
     project_dir = Path(project["path"])
     
@@ -247,8 +263,7 @@ def cmd_open(args):
     project_path = Path(args.path).resolve()
     
     if not project_path.exists():
-        print(f"❌ Path not found: {project_path}")
-        sys.exit(1)
+        raise UserError(f"Path not found: {project_path}")
     
     # Find project file
     if project_path.is_file() and project_path.suffix == ".kicad_pro":
@@ -258,8 +273,7 @@ def cmd_open(args):
         project_dir = project_path
         pro_files = list(project_dir.glob("*.kicad_pro"))
         if not pro_files:
-            print(f"❌ No .kicad_pro file found in {project_dir}")
-            sys.exit(1)
+            raise UserError(f"No .kicad_pro file found in {project_dir}")
         pro_file = pro_files[0]
     
     name = pro_file.stem
@@ -281,20 +295,17 @@ def cmd_open(args):
 
 def cmd_drc(args):
     """Run design rules check on PCB."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
     
     output_file = project_dir / "drc_report.json"
     
@@ -335,20 +346,17 @@ def cmd_drc(args):
 
 def cmd_erc(args):
     """Run electrical rules check on schematic."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     
     if not sch_file.exists():
-        print(f"❌ Schematic file not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic file not found: {sch_file}")
     
     output_file = project_dir / "erc_report.json"
     
@@ -374,20 +382,17 @@ def cmd_erc(args):
 
 def cmd_export_gerbers(args):
     """Export Gerber files for manufacturing."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
     
     output_dir = project_dir / "gerbers"
     output_dir.mkdir(exist_ok=True)
@@ -401,10 +406,10 @@ def cmd_export_gerbers(args):
     ])
     
     if result.returncode != 0:
-        print(f"❌ Gerber export failed")
+        msg = "Gerber export failed"
         if result.stderr:
-            print(result.stderr)
-        sys.exit(1)
+            msg += f"\n{result.stderr}"
+        raise ToolError(msg)
     
     # Count exported files
     gerber_files = list(output_dir.glob("*"))
@@ -415,13 +420,11 @@ def cmd_export_gerbers(args):
 
 def cmd_export_drill(args):
     """Export drill files."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
@@ -449,20 +452,17 @@ def cmd_export_drill(args):
 
 def cmd_export_bom(args):
     """Export bill of materials using kicad-cli."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
 
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
 
     if not sch_file.exists():
-        print(f"❌ Schematic not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic not found: {sch_file}")
 
     output_file = project_dir / "bom.csv"
     print(f"📤 Exporting BOM...")
@@ -485,18 +485,17 @@ def cmd_export_bom(args):
         for line in lines[:20]:
             print(f"  {line.rstrip()}")
     else:
-        print(f"❌ BOM export failed — is the schematic populated?")
+        msg = "BOM export failed — is the schematic populated?"
         if result.stderr:
-            print(result.stderr[:400])
-        sys.exit(1)
+            msg += f"\n{result.stderr[:400]}"
+        raise ToolError(msg)
 
 
 def cmd_package_for_fab(args):
     """Create ZIP with all fabrication files."""
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     gerber_dir = project_dir / "gerbers"
@@ -527,20 +526,17 @@ def cmd_package_for_fab(args):
 
 def cmd_preview_schematic(args):
     """Generate schematic preview image."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     
     if not sch_file.exists():
-        print(f"❌ Schematic file not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic file not found: {sch_file}")
     
     output_file = project_dir / "schematic_preview.svg"
     
@@ -569,20 +565,17 @@ def cmd_preview_schematic(args):
 
 def cmd_preview_pcb(args):
     """Generate PCB preview images."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
     
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
     
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
     
     print(f"🖼️  Generating PCB previews...")
     
@@ -609,6 +602,55 @@ def cmd_preview_pcb(args):
     ])
     if result.returncode == 0 and glb_file.exists():
         print(f"   ✅ 3D: {glb_file.name}")
+
+
+# =============================================================================
+# File Utilities
+# =============================================================================
+
+
+def _check_sexp(content: str, root: str) -> None:
+    """Raise ParseError if *content* has unbalanced parens or wrong root node."""
+    depth = 0
+    in_string = False
+    for i, ch in enumerate(content):
+        if ch == '"' and (i == 0 or content[i - 1] != "\\"):
+            in_string = not in_string
+        elif not in_string:
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+    if depth != 0:
+        raise ParseError(
+            f"Unbalanced parentheses (depth={depth}) — file may be corrupted"
+        )
+    stripped = content.lstrip()
+    if not stripped.startswith(f"({root}"):
+        raise ParseError(
+            f"Expected root node ({root} ...) but got: {stripped[:40]!r}"
+        )
+
+
+def _atomic_write(path: Path, content: str, root: str | None = None) -> None:
+    """Write *content* to *path* atomically via a sibling temp file.
+
+    If *root* is given, runs _check_sexp() on *content* before the replace so
+    a corrupted KiCad S-expression file is never written to disk.
+    """
+    if root is not None:
+        _check_sexp(content, root)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        os.write(fd, content.encode())
+        os.close(fd)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 # =============================================================================
@@ -718,7 +760,7 @@ def _embed_lib_symbol(sch_file: Path, lib_name: str, sym_name: str) -> bool:
     else:
         return False
 
-    sch_file.write_text(text)
+    _atomic_write(sch_file, text, "kicad_sch")
     return True
 
 
@@ -741,7 +783,7 @@ def _append_to_schematic(sch_file: Path, s_expr: str) -> None:
     else:
         last = text.rfind(")")
         text = text[:last] + s_expr + "\n)\n"
-    sch_file.write_text(text)
+    _atomic_write(sch_file, text, "kicad_sch")
 
 
 def cmd_add_component(args):
@@ -752,19 +794,16 @@ def cmd_add_component(args):
     """
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     if not sch_file.exists():
-        print(f"❌ Schematic not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic not found: {sch_file}")
 
     lib_sym = args.lib_sym
     if ":" not in lib_sym:
-        print("❌ Format must be Library:Symbol  e.g. Device:R")
-        sys.exit(1)
+        raise UserError("Format must be Library:Symbol  e.g. Device:R")
     lib_name, sym_name = lib_sym.split(":", 1)
     ref = args.ref
     value = args.value or sym_name
@@ -830,14 +869,12 @@ def cmd_add_net(args):
     """
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     if not sch_file.exists():
-        print(f"❌ Schematic not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic not found: {sch_file}")
 
     name = args.name
     x = args.x or 50.8
@@ -866,21 +903,18 @@ def cmd_connect(args):
     """
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     if not sch_file.exists():
-        print(f"❌ Schematic not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic not found: {sch_file}")
 
     try:
         x1, y1 = (float(v) for v in args.from_pt.split(","))
         x2, y2 = (float(v) for v in args.to_pt.split(","))
     except ValueError:
-        print("❌ Coordinates must be x,y  e.g. --from 50.8,76.2")
-        sys.exit(1)
+        raise UserError("Coordinates must be x,y  e.g. --from 50.8,76.2")
 
     wire_entry = (
         f'  (wire (pts (xy {x1:.2f} {y1:.2f}) (xy {x2:.2f} {y2:.2f}))\n'
@@ -904,20 +938,17 @@ def cmd_set_board_size(args):
     """
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
 
     try:
         w, h = (float(v) for v in args.size.lower().split("x"))
     except ValueError:
-        print("❌ Size must be WxH in mm  e.g. 50x30")
-        sys.exit(1)
+        raise UserError("Size must be WxH in mm  e.g. 50x30")
 
     corners = [
         ((0, 0), (w, 0)),
@@ -940,7 +971,7 @@ def cmd_set_board_size(args):
     )
     last_paren = text.rfind(")")
     text = text[:last_paren] + "\n" + lines + "\n)\n"
-    pcb_file.write_text(text)
+    _atomic_write(pcb_file, text, "kicad_pcb")
 
     print(f"✅ Board outline: {w} mm × {h} mm")
     print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
@@ -953,19 +984,16 @@ def cmd_import_netlist(args):
     import is required. Use Tools → Update PCB from Schematic inside KiCad's
     PCB editor for the full sync. This command exports the netlist for inspection.
     """
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
 
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     sch_file = project_dir / f"{project['name']}.kicad_sch"
     if not sch_file.exists():
-        print(f"❌ Schematic not found: {sch_file}")
-        sys.exit(1)
+        raise UserError(f"Schematic not found: {sch_file}")
 
     output_file = project_dir / f"{project['name']}.net"
     print(f"📋 Exporting netlist...")
@@ -994,10 +1022,10 @@ def cmd_import_netlist(args):
                 print(f"\n⚠️  Assign footprints to: {', '.join(missing)}")
         print(f"\n💡 Open PCB editor → Tools → Update PCB from Schematic to sync.")
     else:
-        print(f"❌ Netlist export failed — populate the schematic first.")
+        msg = "Netlist export failed — populate the schematic first."
         if result.stderr:
-            print(result.stderr[:400])
-        sys.exit(1)
+            msg += f"\n{result.stderr[:400]}"
+        raise ToolError(msg)
 
 
 def cmd_auto_place(args):
@@ -1007,14 +1035,12 @@ def cmd_auto_place(args):
     """
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
 
     spacing: float = float(args.spacing) if args.spacing else 10.0
     text = pcb_file.read_text()
@@ -1045,7 +1071,7 @@ def cmd_auto_place(args):
         return f"{m.group(1)}{nx:.3f} {ny:.3f}{m.group(5)}"
 
     new_text = fp_pattern.sub(replacer, text)
-    pcb_file.write_text(new_text)
+    _atomic_write(pcb_file, new_text, "kicad_pcb")
 
     print(f"✅ Placed {len(placed)} footprint(s) (spacing {spacing} mm):")
     for fp_ref, nx, ny in placed:
@@ -1060,19 +1086,16 @@ def cmd_auto_route(args):
     Install Freerouting: https://github.com/freerouting/freerouting/releases
     Save the JAR to ~/freerouting.jar, then re-run this command.
     """
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
 
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
 
     # Locate Freerouting JAR
     jar_arg = getattr(args, "jar", None)
@@ -1149,19 +1172,16 @@ def cmd_auto_route(args):
 
 def cmd_export_pos(args):
     """Export component position (pick-and-place) file."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
 
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
 
     output_file = project_dir / f"{project['name']}-pos.csv"
     print("📤 Exporting position file...")
@@ -1181,27 +1201,24 @@ def cmd_export_pos(args):
             lines = output_file.read_text().splitlines()
             print(f"   {max(0, len(lines) - 1)} component(s)")
     else:
-        print("❌ Position export failed")
+        msg = "Position export failed"
         if result.stderr:
-            print(result.stderr[:300])
-        sys.exit(1)
+            msg += f"\n{result.stderr[:300]}"
+        raise ToolError(msg)
 
 
 def cmd_export_3d(args):
     """Export PCB as STEP 3D model."""
-    if not check_kicad():
-        sys.exit(1)
+    check_kicad()
 
     project = get_current_project()
     if not project:
-        print("❌ No project selected")
-        sys.exit(1)
+        raise UserError("No project selected")
 
     project_dir = Path(project["path"])
     pcb_file = project_dir / f"{project['name']}.kicad_pcb"
     if not pcb_file.exists():
-        print(f"❌ PCB file not found: {pcb_file}")
-        sys.exit(1)
+        raise UserError(f"PCB file not found: {pcb_file}")
 
     output_file = project_dir / f"{project['name']}.step"
     print("📤 Exporting STEP 3D model...")
@@ -1220,10 +1237,10 @@ def cmd_export_3d(args):
         print(f"   Size: {size_kb:.1f} KB")
         print(f"   Open with FreeCAD, Fusion 360, or any STEP viewer.")
     else:
-        print("❌ STEP export failed")
+        msg = "STEP export failed"
         if result.stderr:
-            print(result.stderr[:300])
-        sys.exit(1)
+            msg += f"\n{result.stderr[:300]}"
+        raise ToolError(msg)
 
 
 # =============================================================================
@@ -1271,6 +1288,73 @@ def cmd_pcbway_quote(args):
             print(f"\n✅ Gerber package ready: {gerber_zip}")
         else:
             print(f"\n💡 Run `package-for-fab` first to create Gerber ZIP")
+
+
+
+def cmd_doctor(args) -> None:
+    """Check system configuration and diagnose common issues."""
+    overall_ok = True
+
+    print("\U0001fa7a kicad-pcb doctor\n")
+
+    # kicad-cli
+    cli_path = shutil.which("kicad-cli")
+    if cli_path:
+        try:
+            r = subprocess.run(
+                [cli_path, "--version"], capture_output=True, text=True, timeout=5
+            )
+            version = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
+            print(f"  \u2705 kicad-cli: {cli_path}")
+            if version:
+                print(f"     version: {version}")
+        except Exception as exc:
+            print(f"  \u26a0\ufe0f  kicad-cli found but could not query version: {exc}")
+    else:
+        print(f"  \u274c kicad-cli: not found in PATH")
+        overall_ok = False
+
+    # KiCad symbol libraries
+    if KICAD_SYMBOLS_DIR.exists():
+        n = sum(1 for _ in KICAD_SYMBOLS_DIR.glob("*.kicad_sym"))
+        if n:
+            print(f"  \u2705 Symbol libraries: {KICAD_SYMBOLS_DIR}  ({n} libs)")
+        else:
+            print(f"  \u274c Symbol libraries: directory exists but no .kicad_sym files: {KICAD_SYMBOLS_DIR}")
+            overall_ok = False
+    else:
+        print(f"  \u274c Symbol libraries: not found at {KICAD_SYMBOLS_DIR}")
+        overall_ok = False
+
+    # Config dir
+    cfg_mark = "\u2705" if CONFIG_DIR.exists() else "\u26a0\ufe0f "
+    print(f"  {cfg_mark} Config dir: {CONFIG_DIR}")
+
+    # Current project
+    project = get_current_project()
+    if project:
+        pdir = Path(project["path"])
+        pmark = "\u2705" if pdir.exists() else "\u26a0\ufe0f "
+        print(f"  {pmark} Current project: {project['name']}  ({pdir})")
+    else:
+        print("  \u2139\ufe0f  No current project selected  (run: new <name>  or  open <path>)")
+
+    # Projects dir writable
+    try:
+        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+        probe = PROJECTS_DIR / ".write_probe"
+        probe.write_text("probe")
+        probe.unlink()
+        print(f"  \u2705 Projects dir writable: {PROJECTS_DIR}")
+    except OSError as exc:
+        print(f"  \u274c Projects dir not writable: {PROJECTS_DIR}  ({exc})")
+        overall_ok = False
+
+    print()
+    if overall_ok:
+        print("\u2705 All checks passed")
+    else:
+        raise UserError("doctor: one or more checks failed (see above)")
 
 
 # =============================================================================
@@ -1390,13 +1474,21 @@ def main():
     p_quote.add_argument("-t", "--thickness", type=float, default=1.6, help="Thickness mm")
     p_quote.set_defaults(func=cmd_pcbway_quote)
 
+    # doctor
+    p_doctor = subparsers.add_parser("doctor", help="Check system config and diagnose issues")
+    p_doctor.set_defaults(func=cmd_doctor)
+
     args = parser.parse_args()
     
     if args.command is None:
         parser.print_help()
         sys.exit(0)
-    
-    args.func(args)
+
+    try:
+        args.func(args)
+    except KiCadError as exc:
+        print(f"❌ {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

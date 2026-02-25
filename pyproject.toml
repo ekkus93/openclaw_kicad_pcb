@@ -21,6 +21,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["kicad-pcb/scripts"]
 addopts = "-q --strict-markers"
 markers = [
     "integration: marks tests as integration tests (may require external tools)",
