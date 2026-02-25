@@ -111,6 +111,12 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_add.add_argument("--value", help="Component value (e.g. 10k)")
     p_add.add_argument("--footprint", help="Footprint reference (e.g. Resistor_SMD:R_0402)")
     p_add.add_argument(
+        "--symbols-dir",
+        dest="symbols_dir",
+        metavar="PATH",
+        help="Path to KiCad symbol library directory (overrides env/config discovery)",
+    )
+    p_add.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
     p_add.set_defaults(func=cmd_add_component)
