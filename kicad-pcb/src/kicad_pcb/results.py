@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from .lint import LintIssue as _LintFinding
     from .models import FootprintMoveSpec, ProjectRef, ValidationResult
 
 
@@ -152,6 +153,7 @@ class SetBoardSizeResult:
     width: float
     height: float
     pcb_file_name: str
+    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -169,6 +171,7 @@ class AutoPlaceResult:
 
     placed: tuple[FootprintMoveSpec, ...]
     spacing: float
+    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -195,6 +198,7 @@ class AddComponentResult:
     y: float
     pins: tuple[str, ...]
     has_footprint: bool
+    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -204,6 +208,7 @@ class AddNetResult:
     name: str
     x: float
     y: float
+    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -214,6 +219,46 @@ class ConnectResult:
     y1: float
     x2: float
     y2: float
+    dry_run: bool = False
+
+
+# ---------------------------------------------------------------------------
+# lint / validate / format  (Phase 6)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LintFileResult:
+    """Result of the ``lint-sch`` / ``lint-pcb`` command."""
+
+    path: Path
+    issues: tuple[_LintFinding, ...]   # type: ignore[valid-type]
+    error_count: int
+    warning_count: int
+    ok: bool  # True when no ERROR-severity issues are present
+
+
+@dataclass(frozen=True)
+class ValidateFileResult:
+    """Result of the ``validate-sch`` / ``validate-pcb`` command."""
+
+    path: Path
+    syntax_ok: bool
+    lint_issues: tuple[_LintFinding, ...]  # type: ignore[valid-type]
+    lint_error_count: int
+    lint_warning_count: int
+    kicad_checked: bool
+    kicad_ok: bool
+    ok: bool  # overall: syntax + no lint errors (+ kicad when checked)
+
+
+@dataclass(frozen=True)
+class FormatFileResult:
+    """Result of the ``format-sch`` / ``format-pcb`` command."""
+
+    path: Path
+    changed: bool
+    size_bytes: int
 
 
 # ---------------------------------------------------------------------------

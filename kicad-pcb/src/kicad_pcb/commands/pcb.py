@@ -35,9 +35,11 @@ def cmd_set_board_size(args) -> SetBoardSizeResult:
     def _mutate(doc: PcbDoc) -> None:
         doc.set_rect_outline(outline.width, outline.height)
 
-    mutate_and_validate_pcb(pcb_file, _mutate, operation="set-board-size")
+    mutate_and_validate_pcb(pcb_file, _mutate, operation="set-board-size",
+                             dry_run=getattr(args, "dry_run", False))
     return SetBoardSizeResult(
-        width=outline.width, height=outline.height, pcb_file_name=pcb_file.name
+        width=outline.width, height=outline.height, pcb_file_name=pcb_file.name,
+        dry_run=getattr(args, "dry_run", False),
     )
 
 
@@ -117,8 +119,10 @@ def cmd_auto_place(args) -> AutoPlaceResult:
         for spec in placements:
             doc.move_footprint(spec.ref, spec.x, spec.y)
 
-    mutate_and_validate_pcb(pcb_file, _mutate, operation="auto-place")
-    return AutoPlaceResult(placed=tuple(placements), spacing=spacing)
+    mutate_and_validate_pcb(pcb_file, _mutate, operation="auto-place",
+                             dry_run=getattr(args, "dry_run", False))
+    return AutoPlaceResult(placed=tuple(placements), spacing=spacing,
+                           dry_run=getattr(args, "dry_run", False))
 
 
 def cmd_auto_route(args, *, cli: KicadCliAdapter | None = None) -> AutoRouteResult:  # noqa: PLR0912

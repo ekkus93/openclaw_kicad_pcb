@@ -616,3 +616,38 @@ def lint_pcb(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
                 break  # one warning per node is enough
 
     return issues
+
+
+# ---------------------------------------------------------------------------
+# Fix suggestions (presented by the CLI diagnostics layer)
+# ---------------------------------------------------------------------------
+
+LINT_SUGGESTIONS: dict[str, str] = {
+    "SCH001": "Check that the file is a KiCad schematic (.kicad_sch).",
+    "SCH002": "Re-save the schematic in KiCad to regenerate unique UUIDs.",
+    "SCH003": "Rename duplicate reference designators (e.g. change second R1 to R2).",
+    "SCH004": "Add a 'Reference' property to the symbol in KiCad's symbol editor.",
+    "SCH005": "Add a 'Value' property to the symbol in KiCad's symbol editor.",
+    "SCH006": "Ensure the '(at x y)' coordinates contain valid numbers.",
+    "SCH007": "Ensure wire '(pts (xy …) (xy …))' contains valid numeric coordinates.",
+    "SCH008": "Embed the symbol definition via 'Save Symbol Copy' in KiCad.",
+    "SCH009": "Embed the missing library symbol or check that the lib_id matches.",
+    "PCB001": "Check that the file is a KiCad PCB layout (.kicad_pcb).",
+    "PCB002": "Re-save the PCB in KiCad to regenerate unique UUIDs.",
+    "PCB003": "Ensure every footprint has an '(at x y)' placement node.",
+    "PCB004": "Ensure the footprint '(at x y [rotation])' contains valid numbers.",
+    "PCB005": (
+        "Add a board outline: run `set-board-size WxH` "
+        "or draw Edge.Cuts in KiCad's PCB editor."
+    ),
+    "PCB006": "Close the board outline — all Edge.Cuts segments must connect end-to-end.",
+    "PCB007": "Check that Edge.Cuts dimensions are non-zero and within a sane range.",
+    "PCB008": (
+        "Ensure all Edge.Cuts gr_lines have a valid '(layer \"Edge.Cuts\")' "
+        "node and a numeric width."
+    ),
+    "PCB009": (
+        "Move footprints closer to the origin "
+        "(coordinates should be < 10 000 mm from origin)."
+    ),
+}
