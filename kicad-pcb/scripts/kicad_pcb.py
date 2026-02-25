@@ -149,7 +149,7 @@ def cmd_new(args):
     
     project_dir.mkdir(parents=True)
     
-    # Create project file
+    # Create project file (JSON — atomic write, no sexp validation needed)
     pro_file = project_dir / f"{name}.kicad_pro"
     pro_content = {
         "board": {"design_settings": {}},
@@ -157,10 +157,9 @@ def cmd_new(args):
         "schematic": {"drawing": {}},
         "sheets": [[f"{name}.kicad_sch", ""]]
     }
-    with pro_file.open("w") as f:
-        json.dump(pro_content, f, indent=2)
-    
-    # Create empty schematic
+    _atomic_write(pro_file, json.dumps(pro_content, indent=2))
+
+    # Create empty schematic (validated via _atomic_write)
     sch_file = project_dir / f"{name}.kicad_sch"
     sch_content = f'''(kicad_sch (version 20230121) (generator eeschema)
   (uuid "{str(uuid_module.uuid4())}")
@@ -171,8 +170,7 @@ def cmd_new(args):
   )
 )
 '''
-    with sch_file.open("w") as f:
-        f.write(sch_content)
+    _atomic_write(sch_file, sch_content, "kicad_sch")
     
     # Create empty PCB
     pcb_file = project_dir / f"{name}.kicad_pcb"
@@ -211,9 +209,8 @@ def cmd_new(args):
   (net 0 "")
 )
 '''
-    with pcb_file.open("w") as f:
-        f.write(pcb_content)
-    
+    _atomic_write(pcb_file, pcb_content, "kicad_pcb")
+
     # Save as current project
     project = {
         "name": name,
@@ -632,14 +629,25 @@ def _check_sexp(content: str, root: str) -> None:
         )
 
 
-def _atomic_write(path: Path, content: str, root: str | None = None) -> None:
+def _atomic_write(
+    path: Path,
+    content: str,
+    root: str | None = None,
+    *,
+    backup: bool = False,
+) -> None:
     """Write *content* to *path* atomically via a sibling temp file.
 
     If *root* is given, runs _check_sexp() on *content* before the replace so
     a corrupted KiCad S-expression file is never written to disk.
+
+    If *backup* is True and *path* already exists, the original is copied to
+    ``<path>.bak`` before being overwritten.
     """
     if root is not None:
         _check_sexp(content, root)
+    if backup and path.exists():
+        shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
     try:
         os.write(fd, content.encode())
