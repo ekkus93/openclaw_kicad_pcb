@@ -74,7 +74,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Add a minimal balanced-parentheses check for generated KiCad files (`_check_sexp`).
 - [x] Add root-node sanity checks (`kicad_sch` / `kicad_pcb`) via `_check_sexp` root parameter.
 - [x] Fail and rollback if sanity checks fail (integrated into `_atomic_write`).
-- [ ] Log validation failure details with file path and operation name — `ParseError` is raised but does not include operation context or file path.
+- [x] Log validation failure details with file path and operation name — `_atomic_write` now catches `ParseError` from `_check_sexp` and re-raises with `<path> [<operation>]: <original message>`; all call sites pass `operation=` labels.
 
 ---
 
@@ -338,7 +338,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [ ] Failed lint prevents overwrite — no lint framework yet.
 - [ ] Failed mocked `kicad-cli` validation prevents overwrite — not implemented.
 - [x] Successful validation commits atomically (`test_writes_content`, `test_with_root_check_valid`).
-- [ ] Backup creation behavior works as configured — not implemented.
+- [x] Backup creation behavior works as configured — `test_backup_created_before_overwrite` and `test_no_backup_when_flag_false` added.
 
 ### 7.5 Unit tests for CLI parsing/dispatch
 - [ ] Command argument parsing matches documented signatures.

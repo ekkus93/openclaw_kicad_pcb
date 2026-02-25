@@ -157,7 +157,7 @@ def cmd_new(args):
         "schematic": {"drawing": {}},
         "sheets": [[f"{name}.kicad_sch", ""]]
     }
-    _atomic_write(pro_file, json.dumps(pro_content, indent=2))
+    _atomic_write(pro_file, json.dumps(pro_content, indent=2), operation="new")
 
     # Create empty schematic (validated via _atomic_write)
     sch_file = project_dir / f"{name}.kicad_sch"
@@ -170,7 +170,7 @@ def cmd_new(args):
   )
 )
 '''
-    _atomic_write(sch_file, sch_content, "kicad_sch")
+    _atomic_write(sch_file, sch_content, "kicad_sch", operation="new")
     
     # Create empty PCB
     pcb_file = project_dir / f"{name}.kicad_pcb"
@@ -209,7 +209,7 @@ def cmd_new(args):
   (net 0 "")
 )
 '''
-    _atomic_write(pcb_file, pcb_content, "kicad_pcb")
+    _atomic_write(pcb_file, pcb_content, "kicad_pcb", operation="new")
 
     # Save as current project
     project = {
@@ -635,6 +635,7 @@ def _atomic_write(
     root: str | None = None,
     *,
     backup: bool = False,
+    operation: str | None = None,
 ) -> None:
     """Write *content* to *path* atomically via a sibling temp file.
 
@@ -643,9 +644,19 @@ def _atomic_write(
 
     If *backup* is True and *path* already exists, the original is copied to
     ``<path>.bak`` before being overwritten.
+
+    *operation* is an optional human-readable label (e.g. ``"add-component"``)
+    included in the ``ParseError`` message when validation fails, so callers
+    can identify which command produced malformed output.
     """
     if root is not None:
-        _check_sexp(content, root)
+        try:
+            _check_sexp(content, root)
+        except ParseError as exc:
+            op_label = f" [{operation}]" if operation else ""
+            raise ParseError(
+                f"{path}{op_label}: {exc}"
+            ) from exc
     if backup and path.exists():
         shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
@@ -766,7 +777,7 @@ def _embed_lib_symbol(sch_file: Path, lib_name: str, sym_name: str) -> bool:
     else:
         return False
 
-    _atomic_write(sch_file, text, "kicad_sch")
+    _atomic_write(sch_file, text, "kicad_sch", operation="embed-lib-symbol")
     return True
 
 
@@ -789,7 +800,7 @@ def _append_to_schematic(sch_file: Path, s_expr: str) -> None:
     else:
         last = text.rfind(")")
         text = text[:last] + s_expr + "\n)\n"
-    _atomic_write(sch_file, text, "kicad_sch")
+    _atomic_write(sch_file, text, "kicad_sch", operation="append-to-schematic")
 
 
 def cmd_add_component(args):
@@ -977,7 +988,7 @@ def cmd_set_board_size(args):
     )
     last_paren = text.rfind(")")
     text = text[:last_paren] + "\n" + lines + "\n)\n"
-    _atomic_write(pcb_file, text, "kicad_pcb")
+    _atomic_write(pcb_file, text, "kicad_pcb", operation="set-board-size")
 
     print(f"✅ Board outline: {w} mm × {h} mm")
     print(f"   Edge.Cuts rectangle written to {pcb_file.name}")
@@ -1077,7 +1088,7 @@ def cmd_auto_place(args):
         return f"{m.group(1)}{nx:.3f} {ny:.3f}{m.group(5)}"
 
     new_text = fp_pattern.sub(replacer, text)
-    _atomic_write(pcb_file, new_text, "kicad_pcb")
+    _atomic_write(pcb_file, new_text, "kicad_pcb", operation="auto-place")
 
     print(f"✅ Placed {len(placed)} footprint(s) (spacing {spacing} mm):")
     for fp_ref, nx, ny in placed:

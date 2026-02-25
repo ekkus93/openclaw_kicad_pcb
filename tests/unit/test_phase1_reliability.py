@@ -159,6 +159,38 @@ class TestAtomicWrite:
         kicad_pcb._atomic_write(target, VALID_SCH, "kicad_sch")
         assert target.exists()
 
+    def test_parse_error_includes_file_path(self, tmp_path: Path) -> None:
+        """ParseError message must include the target file path."""
+        target = tmp_path / "broken.kicad_sch"
+        with pytest.raises(kicad_pcb.ParseError, match=str(target)):
+            kicad_pcb._atomic_write(target, "(kicad_sch (oops", "kicad_sch")
+
+    def test_parse_error_includes_operation_name(self, tmp_path: Path) -> None:
+        """ParseError message must include the operation label when supplied."""
+        target = tmp_path / "broken.kicad_sch"
+        with pytest.raises(kicad_pcb.ParseError, match=r"\[add-component\]"):
+            kicad_pcb._atomic_write(
+                target, "(kicad_sch (oops", "kicad_sch", operation="add-component"
+            )
+
+    def test_backup_created_before_overwrite(self, tmp_path: Path) -> None:
+        """With backup=True, a .bak file must appear alongside the overwritten file."""
+        target = tmp_path / "test.kicad_sch"
+        target.write_text(VALID_SCH)
+        new_content = VALID_SCH.replace("20230121", "20231231")
+        kicad_pcb._atomic_write(target, new_content, "kicad_sch", backup=True)
+        bak = tmp_path / "test.kicad_sch.bak"
+        assert bak.exists(), "backup file must be created"
+        assert bak.read_text() == VALID_SCH, "backup must contain original content"
+        assert target.read_text() == new_content, "target must hold new content"
+
+    def test_no_backup_when_flag_false(self, tmp_path: Path) -> None:
+        """Default backup=False must not create any .bak artefact."""
+        target = tmp_path / "test.kicad_sch"
+        target.write_text(VALID_SCH)
+        kicad_pcb._atomic_write(target, VALID_SCH, "kicad_sch")
+        assert not (tmp_path / "test.kicad_sch.bak").exists()
+
 
 # ---------------------------------------------------------------------------
 # 4. check_kicad raises ToolError when CLI not found
