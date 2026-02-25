@@ -52,7 +52,7 @@ Refactor and harden the `kicad-pcb` OpenClaw skill so it generates valid, reliab
 - [x] Implement `doctor` command to print environment checks:
   - [x] `kicad-cli` availability/version
   - [x] symbol library directory discovery status
-  - [ ] optional tools (e.g., Java/freerouting if relevant) — not yet checked in `doctor`
+  - [x] optional tools (e.g., Java/freerouting if relevant) — added Java + Freerouting JAR checks (informational, not hard failures)
   - [x] current project path validity
   - [x] writable output directories (projects dir write probe)
 - [x] Return non-zero exit code if critical dependencies are missing (raises `UserError`).
