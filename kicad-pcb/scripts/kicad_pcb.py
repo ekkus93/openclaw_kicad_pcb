@@ -1290,7 +1290,7 @@ def cmd_pcbway_quote(args):
 
 
 
-def cmd_doctor(args) -> None:  # noqa: PLR0912
+def cmd_doctor(args) -> None:  # noqa: PLR0912, PLR0915
     """Check system configuration and diagnose common issues."""
     overall_ok = True
 
@@ -1351,6 +1351,38 @@ def cmd_doctor(args) -> None:  # noqa: PLR0912
     except OSError as exc:
         print(f"  \u274c Projects dir not writable: {PROJECTS_DIR}  ({exc})")
         overall_ok = False
+
+    # Optional tools: Java + Freerouting JAR (required for auto-route)
+    java_path = shutil.which("java")
+    if java_path:
+        try:
+            r = subprocess.run(
+                [java_path, "-version"], capture_output=True, text=True, timeout=5, check=False,
+            )
+            version_line = (r.stderr.strip() or r.stdout.strip()).splitlines()[0]
+            print(f"  \u2705 java: {java_path}")
+            if version_line:
+                print(f"     {version_line}")
+        except Exception as exc:
+            print(f"  \u26a0\ufe0f  java found but could not query version: {exc}")
+    else:
+        print("  \u2139\ufe0f  java: not found  (auto-route command will not work)")
+
+    freerouting_candidates = [
+        Path.home() / "freerouting.jar",
+        Path.home() / ".local/bin/freerouting.jar",
+        Path("/opt/freerouting/freerouting.jar"),
+    ]
+    freerouting_jar: Path | None = next(
+        (p for p in freerouting_candidates if p.exists()), None
+    )
+    if freerouting_jar:
+        print(f"  \u2705 Freerouting JAR: {freerouting_jar}")
+    else:
+        print(
+            "  \u2139\ufe0f  Freerouting JAR: not found  "
+            "(auto-route will not work; save JAR to ~/freerouting.jar)"
+        )
 
     print()
     if overall_ok:
