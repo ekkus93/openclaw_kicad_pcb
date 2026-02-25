@@ -1,6 +1,67 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T21:48:19Z_
+_Last updated: 2026-02-25T22:27:33Z_
+
+---
+
+## 2026-02-25T22:27:33Z — Phase 9.3: Preflight semantic checks (commit 9958042)
+
+### Summary
+Adds `kicad_pcb.preflight` module with 7 public functions that run before any
+document mutation to surface common mistakes early. Wired into all 4 pattern
+functions. 78 new unit tests. Total: 912 unit tests, 0 skipped.
+
+### New: `kicad-pcb/src/kicad_pcb/preflight.py`
+- `collect_existing_refs(doc)` → `frozenset[str]`: scan placed symbols for refs
+- `collect_existing_net_names(doc)` → `frozenset[str]`: scan labels for net names
+- `check_no_duplicate_refs(requested, existing)`: raise UserError on ref collision
+- `check_refs_unique_in_request(requested)`: raise UserError on duplicate within call
+- `check_net_names_valid(net_names)`: raise UserError for empty or
+  forbidden-char names. **Digit-start names (3V3, +5V, 1V8) are ALLOWED.**
+- `check_symbol_accessible(lib_sym, *, symbols_dir)`: raise UserError when
+  library is available but symbol is not found. Skipped when `symbols_dir=None`.
+- `check_footprints_assigned(refs_and_footprints, *, require=False)`: raise
+  UserError when `require=True` and any footprint is empty.
+
+### Modified: `patterns.py`
+- All 4 pattern functions call preflight checks at the top (before mutation)
+- Added `require_footprints: bool = False` kwarg to each pattern function
+- `pattern_connector_breakout` also validates `net_prefix` is not empty
+  (separate from net-name validation since empty prefix generates digit-only names)
+- Added `from .errors import UserError` import
+
+### Modified: `commands/patterns.py`
+- `_dispatch_pattern` gains `require_footprints: bool = False` kwarg
+- Each pattern branch passes `require_footprints=require_footprints`
+- `cmd_apply_pattern` extracts `require_footprints` from args
+
+### Modified: `cli.py`
+- `--require-footprints` flag added to `apply-pattern` subparser
+
+### Modified: `__init__.py`
+- All 7 preflight symbols exported in both imports and `__all__`
+
+### Tests: `tests/unit/test_preflight.py` (78 tests)
+- `TestCollectExistingRefs` / `TestCollectExistingNetNames`: introspection
+- `TestCheckNoDuplicateRefs` / `TestCheckRefsUniqueInRequest`: ref checks
+- `TestCheckNetNamesValid`: covers valid cases, empty, whitespace, comma,
+  semicolon, quote, paren, and the digit-start-ALLOWED case
+- `TestCheckSymbolAccessible`: None skips, /nonexistent raises, real lib tests
+  (skipped if KiCad not installed)
+- `TestCheckFootprintsAssigned`: require=False noop, require=True fail/pass
+- `TestPreflightIntegration*`: 4 pattern classes testing early-error before mutation
+- `TestNoMutationOnPreflightFailure`: doc untouched when preflight fails
+
+### Updated: `tests/unit/test_patterns.py`
+- `test_fallback_pins_when_no_library`: now calls pattern with `symbols_dir=None`
+  (the correct offline mode). Explicit invalid path now raises UserError (correct).
+
+### Key design decisions
+- Net names starting with digits are ALLOWED (3V3, +5V are real KiCad nets)
+- `check_symbol_accessible` is only run if `symbols_dir` is not None, preserving
+  offline/test usage via `symbols_dir=None` default
+- Empty `net_prefix` in connector_breakout is caught separately with a clear
+  UserError message (not via check_net_names_valid)
 
 ---
 
