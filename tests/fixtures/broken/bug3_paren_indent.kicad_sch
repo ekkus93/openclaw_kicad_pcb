@@ -1,0 +1,70 @@
+# Bug: lib_symbols closing paren was at column 0 with wrong indentation,
+# causing structural corruption of the kicad_sch document.
+#
+# Root cause: _embed_lib_symbol generated:
+#   text.replace("(lib_symbols)", f"(lib_symbols\n{indented}\n)", 1)
+# where indented = "  " + sym_def.replace("\n", "\n  ")
+#
+# The sym_def extracted from the library already had a leading 2-space indent.
+# Adding 2 more spaces produced 4-space content, but the CLOSING ")" for
+# lib_symbols was emitted as "\n)" (column 0) instead of "\n  )" (column 2).
+# This produced a `)` at the wrong nesting level that — when combined with
+# the sym_def's own balanced parens — resulted in an extra `)` that closed
+# the parent (kicad_sch) node prematurely before the placed symbols were written.
+#
+# The schematic below reproduces the structural result: (lib_symbols ...) is
+# closed correctly but the remaining content falls outside (kicad_sch ...).
+# Fix applied: changed close to "  )" (2-space indent) and content to "    " (4-space indent).
+(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "bug3-paren-indent")
+  (paper "A4")
+  (lib_symbols
+    (symbol "Device:R" (pin_numbers hide) (pin_names (offset 0)) (in_bom yes) (on_board yes)
+        (property "Reference" "R" (at 2.032 0 90)
+          (effects (font (size 1.27 1.27)))
+        )
+        (property "Value" "R" (at 0 0 90)
+          (effects (font (size 1.27 1.27)))
+        )
+        (symbol "R_0_1"
+          (rectangle (start -1.016 -2.54) (end 1.016 2.54)
+            (stroke (width 0.254) (type default) (color 0 0 0 0))
+            (fill (type none))
+          )
+        )
+        (symbol "R_1_1"
+          (pin passive line (at 0 3.81 270) (length 1.27)
+            (name "~" (effects (font (size 1.27 1.27))))
+            (number "1" (effects (font (size 1.27 1.27))))
+          )
+          (pin passive line (at 0 -3.81 90) (length 1.27)
+            (name "~" (effects (font (size 1.27 1.27))))
+            (number "2" (effects (font (size 1.27 1.27))))
+          )
+        )
+      )
+)
+  (symbol (lib_id "Device:R") (at 50.80 76.20 0) (unit 1)
+    (exclude_from_sim yes) (in_bom yes) (on_board yes)
+    (uuid "e1968e10-3b8b-4169-a3c9-8fcfdc50008d")
+    (property "Reference" "R1" (at 52.07 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10k" (at 52.07 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (pin "1" (uuid "4d320ae7-ae1c-4479-8eec-fad0f1983a7f"))
+    (pin "2" (uuid "1cd8526c-dd71-4892-8149-129d31bca9bc"))
+    (instances
+      (project "SmokeTest"
+        (path "/"
+          (reference "R1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
