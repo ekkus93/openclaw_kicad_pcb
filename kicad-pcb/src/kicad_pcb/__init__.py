@@ -70,6 +70,7 @@ from .formatting import format_result
 
 # File-system utilities
 from .fs import _atomic_write, _check_sexp, _new_uuid
+from .lint import LintError, LintSeverity, lint_pcb, lint_schematic
 
 # Typed domain models
 from .models import (
@@ -83,6 +84,7 @@ from .models import (
     WireSegment,
 )
 from .pcb_doc import PcbDoc, make_gr_line_node
+from .pipeline import ValidationMode, mutate_and_validate_pcb, mutate_and_validate_sch
 
 # Typed result objects (Phase 2.4)
 from .results import (
@@ -258,6 +260,15 @@ __all__ = [
     "PcbwayQuoteResult",
     # formatting
     "format_result",
+    # lint (Phase 5)
+    "LintError",
+    "LintSeverity",
+    "lint_schematic",
+    "lint_pcb",
+    # pipeline (Phase 5)
+    "ValidationMode",
+    "mutate_and_validate_sch",
+    "mutate_and_validate_pcb",
     # sexpr (Phase 3)
     "Position",
     "NO_POS",
