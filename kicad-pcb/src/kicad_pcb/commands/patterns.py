@@ -73,14 +73,18 @@ def cmd_apply_pattern(args) -> ApplyPatternResult:  # noqa: ANN001 — argparse 
     sym_dir: Path | None = sym_dir_result.path if sym_dir_result is not None else None
 
     dry_run: bool = getattr(args, "dry_run", False)
+    require_footprints: bool = getattr(args, "require_footprints", False)
 
     # This dict captures the pattern outcome from inside the mutator closure.
     _outcome: dict[str, PatternOutcome] = {}
 
     def _mutate(doc: SchematicDoc) -> None:
         ox, oy = doc.next_component_position()
-        outcome = _dispatch_pattern(pattern_name, doc, ox, oy, args,
-                                    sym_dir=sym_dir, project_name=project.name)
+        outcome = _dispatch_pattern(
+            pattern_name, doc, ox, oy, args,
+            sym_dir=sym_dir, project_name=project.name,
+            require_footprints=require_footprints,
+        )
         _outcome["result"] = outcome
 
     mutate_and_validate_sch(sch_file, _mutate, operation="apply-pattern", dry_run=dry_run)
@@ -108,6 +112,7 @@ def _dispatch_pattern(  # noqa: PLR0913
     *,
     sym_dir: Path | None,
     project_name: str,
+    require_footprints: bool = False,
 ) -> PatternOutcome:
     """Call the matching pattern function, pulling arguments from *args*."""
     if name == "resistor-divider":
@@ -122,6 +127,7 @@ def _dispatch_pattern(  # noqa: PLR0913
             gnd_net=getattr(args, "gnd_net", "GND"),
             symbols_dir=sym_dir,
             project_name=project_name,
+            require_footprints=require_footprints,
         )
 
     if name == "led-resistor":
@@ -135,6 +141,7 @@ def _dispatch_pattern(  # noqa: PLR0913
             gnd_net=getattr(args, "gnd_net", "GND"),
             symbols_dir=sym_dir,
             project_name=project_name,
+            require_footprints=require_footprints,
         )
 
     if name == "connector-breakout":
@@ -145,6 +152,7 @@ def _dispatch_pattern(  # noqa: PLR0913
             net_prefix=getattr(args, "net_prefix", "IO"),
             symbols_dir=sym_dir,
             project_name=project_name,
+            require_footprints=require_footprints,
         )
 
     if name == "decoupling-cap":
@@ -156,6 +164,7 @@ def _dispatch_pattern(  # noqa: PLR0913
             gnd_net=getattr(args, "gnd_net", "GND"),
             symbols_dir=sym_dir,
             project_name=project_name,
+            require_footprints=require_footprints,
         )
 
     # Should never reach here because cmd_apply_pattern checks the registry.

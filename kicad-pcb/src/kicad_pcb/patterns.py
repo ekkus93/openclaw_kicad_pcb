@@ -37,6 +37,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from .errors import UserError
+from .preflight import (
+    check_footprints_assigned,
+    check_net_names_valid,
+    check_no_duplicate_refs,
+    check_refs_unique_in_request,
+    check_symbol_accessible,
+    collect_existing_refs,
+)
 from .sch_doc import SchematicDoc, read_lib_symbol_def, read_lib_symbol_pins
 
 # ---------------------------------------------------------------------------
@@ -168,6 +177,7 @@ def pattern_resistor_divider(  # noqa: PLR0913
     footprint: str = "",
     symbols_dir: Path | None = None,
     project_name: str = "project",
+    require_footprints: bool = False,
 ) -> PatternOutcome:
     """Place a voltage-divider sub-circuit on *doc*.
 
@@ -201,7 +211,19 @@ def pattern_resistor_divider(  # noqa: PLR0913
         Override KiCad symbol library search path.
     project_name:
         KiCad project name (embedded in symbol instances section).
+    require_footprints:
+        When ``True``, raise :class:`~kicad_pcb.errors.UserError` if either
+        resistor has no footprint assigned.
     """
+    # --- Preflight checks ---
+    check_refs_unique_in_request([r1_ref, r2_ref])
+    check_no_duplicate_refs([r1_ref, r2_ref], collect_existing_refs(doc))
+    check_net_names_valid([vin_net, vout_net, gnd_net])
+    check_symbol_accessible("Device:R", symbols_dir=symbols_dir)
+    check_footprints_assigned(
+        [(r1_ref, footprint), (r2_ref, footprint)], require=require_footprints
+    )
+    # --- Placement ---
     x = origin_x
     y0 = origin_y
     y_mid = y0 + PIN_OFFSET         # shared connection point: R1-pin2 / R2-pin1
@@ -243,6 +265,7 @@ def pattern_led_resistor(  # noqa: PLR0913
     led_footprint: str = "",
     symbols_dir: Path | None = None,
     project_name: str = "project",
+    require_footprints: bool = False,
 ) -> PatternOutcome:
     """Place an LED + current-limiting resistor sub-circuit on *doc*.
 
@@ -273,7 +296,20 @@ def pattern_led_resistor(  # noqa: PLR0913
         Override KiCad symbol library path.
     project_name:
         KiCad project name.
+    require_footprints:
+        When ``True``, raise :class:`~kicad_pcb.errors.UserError` if the
+        resistor or LED has no footprint assigned.
     """
+    # --- Preflight checks ---
+    check_refs_unique_in_request([r_ref, d_ref])
+    check_no_duplicate_refs([r_ref, d_ref], collect_existing_refs(doc))
+    check_net_names_valid([vcc_net, gnd_net])
+    check_symbol_accessible("Device:R", symbols_dir=symbols_dir)
+    check_symbol_accessible("Device:LED", symbols_dir=symbols_dir)
+    check_footprints_assigned(
+        [(r_ref, r_footprint), (d_ref, led_footprint)], require=require_footprints
+    )
+    # --- Placement ---
     x = origin_x
     y0 = origin_y
     y_d = y0 + V_SPACING
@@ -309,6 +345,7 @@ def pattern_connector_breakout(  # noqa: PLR0913
     footprint: str = "",
     symbols_dir: Path | None = None,
     project_name: str = "project",
+    require_footprints: bool = False,
 ) -> PatternOutcome:
     """Place an N-pin connector with individually labelled nets.
 
@@ -336,11 +373,27 @@ def pattern_connector_breakout(  # noqa: PLR0913
         Override KiCad symbol library path.
     project_name:
         KiCad project name.
+    require_footprints:
+        When ``True``, raise :class:`~kicad_pcb.errors.UserError` if the
+        connector has no footprint assigned.
     """
     if n_pins < 1:
-        raise ValueError(f"n_pins must be ≥ 1, got {n_pins}")
-
+        raise ValueError(f"n_pins must be \u2265 1, got {n_pins}")
+    if not net_prefix:
+        raise UserError(
+            "net_prefix must not be empty. "
+            "Provide a non-empty prefix (e.g. --net-prefix IO) so generated "
+            "net names are meaningful (IO1, IO2, …)."
+        )
     lib_sym = f"Connector_Generic:Conn_01x{n_pins:02d}"
+
+    # --- Preflight checks ---
+    check_refs_unique_in_request([conn_ref])
+    check_no_duplicate_refs([conn_ref], collect_existing_refs(doc))
+    check_net_names_valid([f"{net_prefix}{i + 1}" for i in range(n_pins)])
+    check_symbol_accessible(lib_sym, symbols_dir=symbols_dir)
+    check_footprints_assigned([(conn_ref, footprint)], require=require_footprints)
+    # --- Placement ---
     x = origin_x
     y_center = origin_y
 
@@ -382,6 +435,7 @@ def pattern_decoupling_cap(  # noqa: PLR0913
     footprint: str = "",
     symbols_dir: Path | None = None,
     project_name: str = "project",
+    require_footprints: bool = False,
 ) -> PatternOutcome:
     """Place a bypass / decoupling capacitor between a supply rail and GND.
 
@@ -409,7 +463,17 @@ def pattern_decoupling_cap(  # noqa: PLR0913
         Override KiCad symbol library path.
     project_name:
         KiCad project name.
+    require_footprints:
+        When ``True``, raise :class:`~kicad_pcb.errors.UserError` if the
+        capacitor has no footprint assigned.
     """
+    # --- Preflight checks ---
+    check_refs_unique_in_request([c_ref])
+    check_no_duplicate_refs([c_ref], collect_existing_refs(doc))
+    check_net_names_valid([vcc_net, gnd_net])
+    check_symbol_accessible("Device:C", symbols_dir=symbols_dir)
+    check_footprints_assigned([(c_ref, footprint)], require=require_footprints)
+    # --- Placement ---
     x = origin_x
     y0 = origin_y
 
