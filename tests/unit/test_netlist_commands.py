@@ -904,3 +904,92 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
     assert "Amplifier_Operational:NE5532" in embedded_ids, (
         f"Derived symbol NE5532 missing from lib_symbols. Embedded: {embedded_ids}"
     )
+
+
+# ---------------------------------------------------------------------------
+# search-symbols tests
+# ---------------------------------------------------------------------------
+
+from kicad_pcb.commands.search import cmd_search_symbols  # noqa: E402
+from kicad_pcb.results import SearchSymbolsResult  # noqa: E402
+
+_TESTLIB_SYMBOLS_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+
+def test_search_symbols_finds_exact_match() -> None:
+    """Exact symbol name in query returns that symbol."""
+    args = Namespace(query="OpAmp", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    assert isinstance(result, SearchSymbolsResult)
+    ids = [m.symbol_id for m in result.matches]
+    assert "TestLib:OpAmp" in ids
+
+
+def test_search_symbols_finds_derived_symbol() -> None:
+    """Searching 'DerivedOpAmp' finds both derived and possibly base symbol."""
+    args = Namespace(query="DerivedOpAmp", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    ids = [m.symbol_id for m in result.matches]
+    assert "TestLib:DerivedOpAmp" in ids
+
+
+def test_search_symbols_no_match_returns_empty() -> None:
+    """Query with no matches returns an empty matches tuple."""
+    args = Namespace(query="zzz_no_such_thing_xyz", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    assert result.matches == ()
+
+
+def test_search_symbols_empty_query_returns_empty() -> None:
+    """Blank query returns empty results without error."""
+    args = Namespace(query="   ", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    assert result.matches == ()
+
+
+def test_search_symbols_result_fields() -> None:
+    """SymbolMatch fields are correctly populated."""
+    args = Namespace(query="R", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    r_match = next((m for m in result.matches if m.symbol_id == "TestLib:R"), None)
+    assert r_match is not None, "TestLib:R not found in results"
+    assert isinstance(r_match.pin_count, int)
+    assert r_match.pin_count >= 0
+    assert isinstance(r_match.description, str)
+
+
+def test_search_symbols_limit_respected() -> None:
+    """--limit caps the number of results returned."""
+    args = Namespace(query="Op", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=1)
+    result = cmd_search_symbols(args)
+    assert len(result.matches) <= 1
+
+
+def test_search_symbols_searched_dirs_reported() -> None:
+    """symbols_dirs field reflects the directory that was searched."""
+    args = Namespace(query="R", symbols_dir=str(_TESTLIB_SYMBOLS_DIR), limit=20)
+    result = cmd_search_symbols(args)
+    assert any(str(_TESTLIB_SYMBOLS_DIR) in d for d in result.symbols_dirs)
+
+
+@_skip_no_system_symbols
+def test_search_symbols_kicad9_renamed_symbols() -> None:
+    """Verify KiCad 9 renames: C_Polarized and R_Potentiometer exist; legacy names do not."""
+    args_cp = Namespace(
+        query="polarized capacitor",
+        symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+        limit=20,
+    )
+    result_cp = cmd_search_symbols(args_cp)
+    ids_cp = [m.symbol_id for m in result_cp.matches]
+    assert "Device:C_Polarized" in ids_cp, f"C_Polarized missing; got {ids_cp}"
+    assert "Device:CP" not in ids_cp, "KiCad-8 legacy Device:CP should not appear in KiCad 9"
+
+    args_pot = Namespace(
+        query="potentiometer",
+        symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+        limit=5,
+    )
+    result_pot = cmd_search_symbols(args_pot)
+    ids_pot = [m.symbol_id for m in result_pot.matches]
+    assert "Device:R_Potentiometer" in ids_pot, f"R_Potentiometer missing; got {ids_pot}"

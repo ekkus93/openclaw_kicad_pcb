@@ -152,10 +152,37 @@ python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 | `erc` | Run electrical rules check |
 | `info-sch [--json]` | Inspect current schematic (symbols, ownership, pin→net bindings) |
 
+### Symbol Discovery (ALWAYS do this before writing Circuit IR JSON)
+
+Symbol names differ between KiCad versions (e.g. `Device:CP` in KiCad 8 became
+`Device:C_Polarized` in KiCad 9). **Before writing any Circuit IR JSON**, use
+`search-symbols` to find the exact symbol ID for the installed version:
+
+```bash
+# Find the correct symbol for a polarized capacitor
+{baseDir}/scripts/kicad_pcb.py search-symbols "polarized capacitor"
+# → Device:C_Polarized  (4 pins)  — Polarized capacitor
+
+# Find the correct symbol for a potentiometer
+{baseDir}/scripts/kicad_pcb.py search-symbols "potentiometer"
+# → Device:R_Potentiometer  (3 pins)  — Potentiometer
+
+# Find op-amp symbols
+{baseDir}/scripts/kicad_pcb.py search-symbols "operational amplifier NE5532"
+# → Amplifier_Operational:NE5532  (8 pins)
+
+# Search within an explicit library directory
+{baseDir}/scripts/kicad_pcb.py search-symbols "audio jack" --symbols-dir /usr/share/kicad/symbols
+```
+
+The output lists `Lib:SymbolName  (N pins)  — description`.  Copy the
+`Lib:SymbolName` exactly into your Circuit IR JSON `"symbol"` field.
+
 ### Circuit IR Pipeline (preferred for LLM-driven generation)
 
 | Command | Description |
 |---------|-------------|
+| `search-symbols <keywords>` | **Search installed libraries for symbol IDs** (use before writing IR JSON) |
 | `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
