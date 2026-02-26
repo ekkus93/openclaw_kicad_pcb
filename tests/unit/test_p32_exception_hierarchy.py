@@ -281,7 +281,7 @@ class TestTokenizerRaisesSExprTokenizeError:
         assert exc.col >= 5  # somewhere after the opening quote
 
     def test_unterminated_string_on_line_3(self) -> None:
-        src = "(foo\n  (bar\n  \"bad string))"
+        src = '(foo\n  (bar\n  "bad string))'
         with pytest.raises(SExprTokenizeError) as exc_info:
             tokenize(src)
         exc = exc_info.value

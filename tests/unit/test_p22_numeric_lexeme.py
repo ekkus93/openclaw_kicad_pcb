@@ -171,7 +171,7 @@ class TestRoundTripPreservesLexeme:
             "(at 10.0000 200.0000)",
             "(foo 3.14159265 2.71828182)",
             "(version 20230121)",
-            "(uuid \"abc-def\")",
+            '(uuid "abc-def")',
             "(at 0 0 90)",
         ],
     )

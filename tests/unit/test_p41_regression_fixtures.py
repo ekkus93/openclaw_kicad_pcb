@@ -50,9 +50,7 @@ def _args(path: Path) -> SimpleNamespace:
 
 def _strip_comments(text: str) -> str:
     """Remove leading-``#`` comment lines (used in broken fixture files)."""
-    return "\n".join(
-        line for line in text.splitlines() if not line.strip().startswith("#")
-    )
+    return "\n".join(line for line in text.splitlines() if not line.strip().startswith("#"))
 
 
 # ---------------------------------------------------------------------------
@@ -240,26 +238,20 @@ class TestBrokenFixtureBugPatterns:
         )
 
     def test_bug2_contains_old_id_property(self) -> None:
-        text = _strip_comments(
-            (BROKEN / "bug2_id_property.kicad_sch").read_text(encoding="utf-8")
-        )
+        text = _strip_comments((BROKEN / "bug2_id_property.kicad_sch").read_text(encoding="utf-8"))
         assert re.search(r"\(id\s+\d+\)", text), (
             "Bug2 fixture no longer contains old (id N) property format"
         )
 
     def test_bug3_has_bare_close_paren_at_column_zero(self) -> None:
-        text = _strip_comments(
-            (BROKEN / "bug3_paren_indent.kicad_sch").read_text(encoding="utf-8")
-        )
+        text = _strip_comments((BROKEN / "bug3_paren_indent.kicad_sch").read_text(encoding="utf-8"))
         bare = [ln for ln in text.splitlines() if ln == ")"]
         assert len(bare) >= 2, (
             f"Bug3: expected ≥2 bare ')' lines (root + lib_symbols), got {len(bare)}"
         )
 
     def test_bug4_placed_symbol_missing_instances_block(self) -> None:
-        text = _strip_comments(
-            (BROKEN / "bug4_no_instances.kicad_sch").read_text(encoding="utf-8")
-        )
+        text = _strip_comments((BROKEN / "bug4_no_instances.kicad_sch").read_text(encoding="utf-8"))
         assert "(instances" not in text, (
             "Bug4 fixture unexpectedly contains an (instances ...) block"
         )
@@ -273,9 +265,7 @@ class TestBrokenFixtureBugPatterns:
 class TestErrorMessageContext:
     """When a file is syntactically broken, errors must mention the file path."""
 
-    def test_cmd_lint_sch_parse_error_includes_file_path(
-        self, tmp_path: Path
-    ) -> None:
+    def test_cmd_lint_sch_parse_error_includes_file_path(self, tmp_path: Path) -> None:
         """ParseError raised by cmd_lint_sch must include the target file path."""
         bad = tmp_path / "malformed.kicad_sch"
         bad.write_text("(kicad_sch (unclosed\n", encoding="utf-8")
@@ -285,9 +275,7 @@ class TestErrorMessageContext:
             f"ParseError message should mention the file path; got: {exc_info.value}"
         )
 
-    def test_cmd_validate_sch_wrong_root_gives_syntax_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_cmd_validate_sch_wrong_root_gives_syntax_error(self, tmp_path: Path) -> None:
         """A .kicad_sch file with wrong root node reports syntax_ok=False."""
         wrong = tmp_path / "wrong_root.kicad_sch"
         wrong.write_text("(kicad_pcb (version 1))\n", encoding="utf-8")
