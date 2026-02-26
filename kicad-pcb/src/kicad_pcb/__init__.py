@@ -94,7 +94,7 @@ from .errors import KiCadError, ParseError, ToolError, UserError
 from .formatting import format_result, format_result_json
 
 # File-system utilities
-from .fs import _atomic_write, _check_sexp, _new_uuid
+from .fs import SUPPORTED_ROOTS, _atomic_write, _check_sexp, _new_uuid, _write_temp_text
 from .lint import LINT_SUGGESTIONS, LintError, LintSeverity, lint_pcb, lint_schematic
 
 # Typed domain models
@@ -255,9 +255,11 @@ __all__ = [
     "find_kicad_cli",
     "run_kicad_cli",
     # fs
+    "SUPPORTED_ROOTS",
     "_check_sexp",
     "_atomic_write",
     "_new_uuid",
+    "_write_temp_text",
     # sch helpers
     "KICAD_SYMBOLS_DIR",
     # document wrappers (Phase 4)

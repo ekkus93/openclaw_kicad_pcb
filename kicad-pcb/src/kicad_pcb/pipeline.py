@@ -33,15 +33,13 @@ Usage
 from __future__ import annotations
 
 import contextlib
-import os
-import tempfile
 from collections.abc import Callable
 from enum import IntEnum
 from pathlib import Path
 
 from .adapters import KicadCliAdapter
 from .errors import ParseError, ToolError
-from .fs import _atomic_write
+from .fs import _atomic_write, _write_temp_text
 from .lint import LintError, LintIssue, LintSeverity, lint_pcb, lint_schematic
 from .pcb_doc import PcbDoc
 from .sch_doc import SchematicDoc
@@ -260,16 +258,15 @@ def _kicad_validate_sch(
     operation: str | None,
 ) -> None:
     """Write *content* to a temp file and run kicad-cli ERC against it."""
-    fd, tmp_sch = tempfile.mkstemp(dir=original_path.parent, suffix=".kicad_sch.tmp")
-    tmp_report = Path(tmp_sch).with_suffix(".erc.json")
+    tmp_report_suffix = ".erc.json"
+    tmp_sch = _write_temp_text(original_path.parent, ".kicad_sch.tmp", content)
+    tmp_report = tmp_sch.with_suffix(tmp_report_suffix)
     try:
-        os.write(fd, content.encode())
-        os.close(fd)
-        result, report = cli.erc(Path(tmp_sch), tmp_report)
+        result, report = cli.erc(tmp_sch, tmp_report)
         _check_kicad_result(result, report, validation_name="ERC", operation=operation)
     finally:
         with contextlib.suppress(OSError):
-            Path(tmp_sch).unlink()
+            tmp_sch.unlink()
         with contextlib.suppress(OSError):
             tmp_report.unlink()
 
@@ -282,16 +279,15 @@ def _kicad_validate_pcb(
     operation: str | None,
 ) -> None:
     """Write *content* to a temp file and run kicad-cli DRC against it."""
-    fd, tmp_pcb = tempfile.mkstemp(dir=original_path.parent, suffix=".kicad_pcb.tmp")
-    tmp_report = Path(tmp_pcb).with_suffix(".drc.json")
+    tmp_report_suffix = ".drc.json"
+    tmp_pcb = _write_temp_text(original_path.parent, ".kicad_pcb.tmp", content)
+    tmp_report = tmp_pcb.with_suffix(tmp_report_suffix)
     try:
-        os.write(fd, content.encode())
-        os.close(fd)
-        result, report = cli.drc(Path(tmp_pcb), tmp_report)
+        result, report = cli.drc(tmp_pcb, tmp_report)
         _check_kicad_result(result, report, validation_name="DRC", operation=operation)
     finally:
         with contextlib.suppress(OSError):
-            Path(tmp_pcb).unlink()
+            tmp_pcb.unlink()
         with contextlib.suppress(OSError):
             tmp_report.unlink()
 
