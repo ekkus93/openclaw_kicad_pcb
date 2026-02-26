@@ -1,6 +1,15 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T17:34:13Z_
+_Last updated: 2026-02-27T00:00:00Z_
+
+---
+
+## 2026-02-27T00:00:00Z - Circuit fidelity tests + NE5532 system-lib fidelity test (e802455)
+- **Added `_check_circuit_fidelity(ir_data, managed_doc)` helper**: reusable assertion function that verifies (1) every component ref in the IR is placed as a schematic instance, and (2) every (ref, pin) → net_name triple in the IR has its correct `OpenClaw:bind=` marker in the generated KiCad schematic.
+- **Added `test_circuit_fidelity_multi_component_testlib`**: 3-component (OpAmp + 2×R), 4-net circuit against TestLib — CI-safe, no system libs required.
+- **Added `test_ne5532_full_circuit_fidelity_with_system_libraries`**: full NE5532 dual op-amp headphone-amp topology (5 components, 8 nets) against real `/usr/share/kicad/symbols/` libraries. Exercises the `(extends ...)` chain end-to-end: `NE5532 → LM2904 → LM2904_0_1/LM2904_1_1` confirming all 8 pins get correct net bindings. Auto-skipped when system libs absent.
+- **KiCad 9 symbol name renames discovered**: `Device:CP` → `Device:C_Polarized`; `Device:R_POT` doesn't exist (use `Device:R_Potentiometer`). `ne5532_headphone_amp.json` uses KiCad-8 names and **currently fails** with `Symbol not found: Device:CP` — separate issue to fix in the JSON.
+- Commit: `e802455` on master, pushed to GitHub.
 
 ---
 
