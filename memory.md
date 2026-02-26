@@ -737,3 +737,35 @@ High-priority next phases:
 - `code_review/CODE_REVIEW2.md` — first committed
 - `code_review/CODE_REVIEW2_TODO.md` — 37 items marked [x]
 
+
+---
+
+## 2025-01-01T00:00:00Z — P3.2 richer exception hierarchy complete
+
+### Completed: P3.2 — Richer Exception Hierarchy
+- Commit to be made: `feat(p3.2): richer exception hierarchy`
+- All 3 P3.2 checkboxes marked [x] in CODE_REVIEW2_TODO.md
+
+### 5 new exception types (kicad-pcb/src/kicad_pcb/errors.py):
+- `SExprTokenizeError(ParseError)` — `line: int`, `col: int`, hint, `__str__` → `"line:col: msg"`
+- `SExprParseError(ParseError)` — `line: int | None`, `col: int | None`, hint
+- `DocSyntaxError(ParseError)` — `path: Path | None`, hint
+- `DocLintError(KiCadError)` — `path: Path | None`, `issue_count: int`, dynamic hint property
+- `KicadCliValidationError(ToolError)` — `path: Path | None`, `issue_count: int`, hint
+
+### Raise site migrations:
+- `tokenizer.py`: 2 sites → `SExprTokenizeError(msg, line=..., col=...)`
+- `parser.py`: 6 structural sites → `SExprParseError`; `parse_file` I/O → `DocSyntaxError`
+- `fs.py`: `_check_sexp` 2 sites + `_atomic_write` re-raise → `DocSyntaxError`
+- `__init__.py`: all 5 new types exported in `__all__`
+
+### Tests: `tests/unit/test_p32_exception_hierarchy.py` — 59 tests, all passing
+- Backward compat preserved: all new subtypes caught by existing `except ParseError`
+
+### Test counts after P3.2:
+- test_p32_exception_hierarchy.py: 59
+- Cumulative: 133 existing affected tests still pass (no regressions)
+
+### Remaining CODE_REVIEW2 items:
+- P5.1: Structured logging
+- P5.2: Dry-run diff output

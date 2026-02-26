@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..errors import ParseError
+from ..errors import DocSyntaxError, ParseError, SExprParseError
 from .nodes import AtomNode, ListNode, Node, Position, StringNode
 from .tokenizer import Token, tokenize
 
@@ -35,12 +35,16 @@ def _parse_one(tokens: list[Token], idx: int) -> tuple[Node, int]:
     Raises :class:`ParseError` on malformed input.
     """
     if idx >= len(tokens):
-        raise ParseError("unexpected end of input while parsing")
+        raise SExprParseError("unexpected end of input while parsing")
 
     tok = tokens[idx]
 
     if tok.kind == "rparen":
-        raise ParseError(f"{tok.line}:{tok.col}: unexpected ')'")
+        raise SExprParseError(
+            f"{tok.line}:{tok.col}: unexpected ')'",
+            line=tok.line,
+            col=tok.col,
+        )
 
     if tok.kind == "atom":
         return AtomNode(tok.value, Position(tok.line, tok.col), lexeme=tok.value), idx + 1
@@ -54,7 +58,11 @@ def _parse_one(tokens: list[Token], idx: int) -> tuple[Node, int]:
         items: list[Node] = []
         while True:
             if idx >= len(tokens):
-                raise ParseError(f"{list_pos.line}:{list_pos.col}: unmatched '(' — missing ')'")
+                raise SExprParseError(
+                    f"{list_pos.line}:{list_pos.col}: unmatched '(' \u2014 missing ')'",
+                    line=list_pos.line,
+                    col=list_pos.col,
+                )
             if tokens[idx].kind == "rparen":
                 idx += 1  # consume ')'
                 return ListNode(tuple(items), list_pos), idx
@@ -87,12 +95,14 @@ def parse(src: str) -> ListNode:
     tokens = [t for t in all_tokens if t.kind != "comment"]
 
     if not tokens:
-        raise ParseError("empty input — no S-expression found")
+        raise SExprParseError("empty input \u2014 no S-expression found")
 
     if tokens[0].kind != "lparen":
-        raise ParseError(
+        raise SExprParseError(
             f"{tokens[0].line}:{tokens[0].col}: "
-            f"expected '(' at start of expression, got {tokens[0].value!r}"
+            f"expected '(' at start of expression, got {tokens[0].value!r}",
+            line=tokens[0].line,
+            col=tokens[0].col,
         )
 
     root, next_idx = _parse_one(tokens, 0)
@@ -101,8 +111,10 @@ def parse(src: str) -> ListNode:
     trailing = tokens[next_idx:]
     if trailing:
         t = trailing[0]
-        raise ParseError(
-            f"{t.line}:{t.col}: unexpected content after top-level expression: {t.value!r}"
+        raise SExprParseError(
+            f"{t.line}:{t.col}: unexpected content after top-level expression: {t.value!r}",
+            line=t.line,
+            col=t.col,
         )
 
     if not isinstance(root, ListNode):  # pragma: no cover — always a ListNode here
@@ -120,5 +132,5 @@ def parse_file(path: Path) -> ListNode:
     try:
         src = path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise ParseError(f"cannot read {path}: {exc}") from exc
+        raise DocSyntaxError(f"cannot read {path}: {exc}", path=path) from exc
     return parse(src)

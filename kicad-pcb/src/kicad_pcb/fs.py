@@ -9,7 +9,7 @@ import tempfile
 import uuid as _uuid_module
 from pathlib import Path
 
-from .errors import ParseError
+from .errors import DocSyntaxError, ParseError
 
 # ---------------------------------------------------------------------------
 # Root-node allow-list (shared by validator and document loaders)
@@ -80,11 +80,15 @@ def _check_sexp(content: str, root: str) -> None:
 
     depth = sum(1 if t == "(" else -1 if t == ")" else 0 for t in tokens)
     if depth != 0:
-        raise ParseError(f"Unbalanced parentheses (depth={depth}) — file may be corrupted")
+        raise DocSyntaxError(
+            f"Unbalanced parentheses (depth={depth}) \u2014 file may be corrupted"
+        )
 
     if len(tokens) < 2 or tokens[0] != "(" or tokens[1] != root:
         stripped = content.lstrip()
-        raise ParseError(f"Expected root node ({root} ...) but got: {stripped[:40]!r}")
+        raise DocSyntaxError(
+            f"Expected root node ({root} ...) but got: {stripped[:40]!r}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +148,7 @@ def _atomic_write(
             _check_sexp(content, root)
         except ParseError as exc:
             op_label = f" [{operation}]" if operation else ""
-            raise ParseError(f"{path}{op_label}: {exc}") from exc
+            raise DocSyntaxError(f"{path}{op_label}: {exc}", path=path) from exc
     if backup and path.exists():
         shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
     tmp = _write_temp_text(path.parent, ".tmp", content)
