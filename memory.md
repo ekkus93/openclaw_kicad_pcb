@@ -1,6 +1,6 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T00:00:00Z_
+_Last updated: 2026-03-01T19:10:00Z_
 
 ---
 
@@ -15,11 +15,23 @@ _Last updated: 2026-03-01T00:00:00Z_
 - **SKILL.md** updated: "Symbol Discovery (ALWAYS do this before writing Circuit IR JSON)" section added with examples for capacitors, potentiometers, and op-amps.
 - Commit: `2c77a30` on master, pushed to GitHub.
 
-**Pending follow-up**: Fix `ne5532_headphone_amp.json`:
-1. Replace `Device:CP` (×6) → `Device:C_Polarized`
-2. Replace `Device:R_POT` (×2) → `Device:R_Potentiometer`  
-3. Add `U2: Amplifier_Operational:NE5532` for right channel
-4. Wire right-channel nets (RINPUT+, RINPUT-, ROUTPUT_L, ROUTPUT_R) to U2 pins
+**Pending follow-up**: ~~Fix `ne5532_headphone_amp.json`~~ — DONE (see 2026-03-01 entry below)
+
+---
+
+## 2026-03-01T19:10:00Z - Fix ne5532_headphone_amp.json (KiCad 8→9 renames + add U2)
+- **Fixes applied to `/home/ubo/.openclaw/workspace/ne5532_headphone_amp.json`:**
+  1. `Device:CP` → `Device:C_Polarized` (×6: C3, C4, C6L, C7L, C6R, C7R)
+  2. `Device:R_POT` → `Device:R_Potentiometer` (×2: RV1L, RV1R)
+  3. Added `U2: Amplifier_Operational:NE5532` (right channel op-amp was missing)
+  4. Wired right-channel nets to U2: VPLUS15/VMINUS15 (shared power), VOL_R_OUT→U2 pin 3, OUT_R_STAGE1→U2 pin 1, BUF_R_IN→U2 pin 5, OUT_R_STAGE2_RAW→U2 pins 7+6
+  5. Added new net `U2A_NEG_R` with U2 pin 2, R2R pin 2, R3R pin 1 (stage-1 feedback)
+  6. `Connector:AudioJack3` pins: renumbered 1/2/3 → T/R/S (Tip/Ring/Sleeve) — KiCad 9 naming
+- **Verified**: `new-from-netlist --mode internal --symbols-dir /usr/share/kicad/symbols` → EXIT:0, 30 symbols, 21 nets, 76 OpenClaw:bind= markers. Zero legacy symbol names in output.
+- **Note**: `--mode kicad` ERC fails with `"Failed to load schematic"` when running in a temp HOME dir (no KiCad user config); this is a `kicad-cli` env limitation, not a circuit error.
+- **Connector:AudioJack3 pin map** (KiCad 9): T=Tip(L/mono), R=Ring(R channel), S=Sleeve(GND)
+
+**All known issues in ne5532_headphone_amp.json resolved.**
 
 ---
 
