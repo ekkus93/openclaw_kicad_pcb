@@ -1,6 +1,18 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T10:39:20Z_
+_Last updated: 2026-02-26T16:57:28Z_
+
+---
+
+## 2026-02-26T16:57:28Z - Fix KiCad (extends) inheritance chain in symbol embedding and pin lookup
+- Root cause: `read_lib_symbol_def` only fetched the single derived symbol node.  Symbols using `(extends "BaseName")` carry no graphics/pins — those live on the base.  Result: blank box in KiCad, only 2 fallback pins.
+- Three bugs fixed:
+  1. **Missing base node in lib_symbols**: `read_lib_symbol_def_chain()` now resolves the full ancestor chain and returns nodes base-first for embedding.
+  2. **Wrong pin count**: `read_lib_symbol_pins()` now walks the extends chain so inherited pins (e.g. NE5532 inheriting LM2904's 8 pins) are returned.
+  3. **Unqualified `extends` reference**: `_qualify_extends()` updates `(extends "BaseName")` → `(extends "lib:BaseName")` in the derived node as KiCad schematics require.
+- All callers updated: `commands/sch.py`, `commands/netlist.py`, `patterns.py`.
+- 13 new tests added (`TestReadLibSymbolDefChain` + `TestReadLibSymbolPinsExtendsChain`).
+- Committed `a392123`, pushed.
 
 ---
 
