@@ -140,7 +140,14 @@ def _fmt_info_sch(r: InfoSchResult) -> list[str]:
         f"   Project: {r.project_path}",
         f"   Schematic: {r.schematic_path}",
         f"   Owned by OpenClaw: {'yes' if r.owned_by_openclaw else 'no'}",
-        f"   Symbols: {len(r.symbols)}",
+        f"   Root symbols: {r.symbol_count}  labels: {r.label_count}",
+    ]
+    if r.managed_schematic_path is not None:
+        lines.append(f"   Managed schematic: {r.managed_schematic_path}")
+        managed_counts = f"{r.managed_symbol_count} symbols  {r.managed_label_count} labels"
+        lines.append(f"   Managed AST nodes: {managed_counts}")
+    lines += [
+        f"   Total symbols (all sheets): {len(r.symbols)}",
         f"   Pin→net bindings: {len(r.pin_net_bindings)}",
     ]
     for warning in r.warnings:
@@ -161,6 +168,10 @@ def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
         f"   Managed items written: {r.managed_items_written}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
+    if r.symbols_dirs_used:
+        lines.append("   Symbol dirs used:")
+        for d in r.symbols_dirs_used:
+            lines.append(f"     • {d}")
     if r.dry_run:
         lines.insert(0, "🔍 DRY RUN")
     for warning in r.warnings:
@@ -179,6 +190,10 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
         f"   Nets applied: {r.nets_applied}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
+    if r.symbols_dirs_used:
+        lines.append("   Symbol dirs used:")
+        for d in r.symbols_dirs_used:
+            lines.append(f"     • {d}")
     for warning in r.warnings:
         lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
     return lines

@@ -41,6 +41,8 @@ class ErrorCode(StrEnum):
     USER_ERROR = "USER_ERROR"
     TOOL_ERROR = "TOOL_ERROR"
     PARSE_ERROR = "PARSE_ERROR"
+    EMPTY_GENERATION = "EMPTY_GENERATION"
+    SYMBOL_DIR_MISSING = "SYMBOL_DIR_MISSING"
 
 
 class KiCadError(RuntimeError):

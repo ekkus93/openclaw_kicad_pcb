@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import kicad_pcb.symbol_index as si_mod
 import pytest
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.symbol_index import SymbolIndex, resolve_symbol_dirs
@@ -35,3 +36,18 @@ def test_resolve_symbol_dirs_prefers_explicit(fixture_symbols_dir: Path) -> None
 
     assert resolved.dirs
     assert resolved.dirs[0] == fixture_symbols_dir.resolve()
+
+
+def test_symbol_index_raises_symbol_dir_missing_when_no_dirs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SymbolIndex must raise SYMBOL_DIR_MISSING when no symbol directories resolve."""
+    monkeypatch.setattr(si_mod, "REPO_LOCAL_SYMBOLS_DIR", Path("/nonexistent_repo_local"))
+    monkeypatch.setattr(si_mod, "SYMBOLS_CANDIDATES", ())
+
+    with pytest.raises(UserError) as exc_info:
+        SymbolIndex()
+
+    assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+    assert "searched_candidates" in exc_info.value.details
+    assert "hint" in exc_info.value.details

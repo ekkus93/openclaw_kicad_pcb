@@ -57,6 +57,11 @@ class InfoSchResult:
     symbols: tuple[dict[str, object], ...] = field(default_factory=tuple)
     pin_net_bindings: tuple[dict[str, str], ...] = field(default_factory=tuple)
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    managed_schematic_path: Path | None = None
+    symbol_count: int = 0
+    label_count: int = 0
+    managed_symbol_count: int = 0
+    managed_label_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -72,6 +77,7 @@ class ApplyNetlistResult:
     kicad_cli_used: bool
     dry_run: bool = False
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -86,6 +92,7 @@ class NewFromNetlistResult:
     nets_applied: int
     kicad_cli_used: bool
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
 
 
 # ---------------------------------------------------------------------------

@@ -5,7 +5,9 @@ from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
 
+import pytest
 from kicad_pcb.commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc
 
@@ -63,6 +65,7 @@ def test_cmd_apply_netlist_creates_managed_schematic(
     assert result.symbols_added == 1
     assert result.nets_applied == 1
     assert result.managed_schematic_path.exists()
+    assert result.symbols_dirs_used  # non-empty tuple of resolved dirs
 
     root_doc = SchematicDoc.load(sch_path)
     assert root_doc.has_openclaw_marker() is True
@@ -171,6 +174,11 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
     assert info.symbols[0]["ref"] == "R1"
     assert info.pin_net_bindings == ({"ref": "R1", "pin": "1", "net_name": "N1"},)
     assert info.schematic_path == result.schematic_path
+    # P5/P7 new fields
+    assert info.managed_schematic_path is not None
+    assert info.managed_symbol_count >= 1
+    assert info.managed_label_count >= 1
+    assert info.symbol_count == 0  # root is thin (no placed symbols)
 
 
 # ---------------------------------------------------------------------------
@@ -256,3 +264,51 @@ def test_new_from_netlist_idempotency_via_two_projects(tmp_path: Path) -> None:
     model_b = _extract_managed_model(result_b.managed_schematic_path)
 
     assert model_a == model_b
+
+
+# ---------------------------------------------------------------------------
+# P6.4 — Regression: empty generation triggers EMPTY_GENERATION error
+# ---------------------------------------------------------------------------
+
+
+def test_empty_generation_invariant_raises_coded_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """P6.4: if the IR is non-empty but no symbols are placed, EMPTY_GENERATION is raised.
+
+    Simulates the bug path: _write_symbols runs without error (symbol found in
+    fixture lib) but add_symbol is a no-op, leaving the managed AST empty.
+    The post-mutation invariant must then raise UserError(EMPTY_GENERATION).
+    """
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    # Patch add_symbol to a no-op so the AST stays empty while the rest of the
+    # pipeline (pin resolution, position tracking, wire/label writing) still runs.
+    monkeypatch.setattr(SchematicDoc, "add_symbol", lambda *args, **kwargs: None)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.EMPTY_GENERATION
+    assert "expected_components" in exc_info.value.details
+    assert "found_symbols" in exc_info.value.details
+    assert exc_info.value.details["found_symbols"] == 0
