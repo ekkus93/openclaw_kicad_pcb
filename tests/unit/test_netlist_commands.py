@@ -335,3 +335,56 @@ def test_empty_generation_invariant_raises_coded_error(
     assert "expected_components" in exc_info.value.details
     assert "found_symbols" in exc_info.value.details
     assert exc_info.value.details["found_symbols"] == 0
+
+
+# ---------------------------------------------------------------------------
+# P1.2 — DRY_RUN_NO_WRITE warning
+# ---------------------------------------------------------------------------
+
+
+def test_apply_netlist_dry_run_emits_no_write_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """P1.2: dry-run must include DRY_RUN_NO_WRITE warning; managed schematic unchanged."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+
+    # Pre-create the managed schematic so _ensure_managed_file_exists doesn't
+    # raise when called with dry_run=True (it only creates the file non-dry-run).
+    managed_sch_path = project_dir / "OpenClaw_Managed.kicad_sch"
+    _write_minimal_sch(managed_sch_path)
+    content_before = managed_sch_path.read_text(encoding="utf-8")
+
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=True,
+        )
+    )
+
+    assert result.dry_run is True
+
+    warning_codes = [w["code"] for w in result.warnings]
+    assert "DRY_RUN_NO_WRITE" in warning_codes, f"Expected DRY_RUN_NO_WRITE in {warning_codes}"
+
+    no_write_w = next(w for w in result.warnings if w["code"] == "DRY_RUN_NO_WRITE")
+    assert "symbols_validated" in no_write_w["details"]
+    assert no_write_w["details"]["symbols_validated"] == 1
+    assert "nets_validated" in no_write_w["details"]
+
+    # Pipeline must NOT have modified the managed schematic file in dry-run mode.
+    assert managed_sch_path.read_text(encoding="utf-8") == content_before

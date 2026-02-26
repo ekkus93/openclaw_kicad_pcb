@@ -60,7 +60,7 @@ If any invariant fails, raise `UserError(code="EMPTY_GENERATION", ...)` with det
 
 ### P1.2 Ensure dry-run cannot be mistaken for success
 - [x] Ensure every command result includes `dry_run: bool`.
-- [ ] If `dry_run=True`, do not claim “written”; include warning `DRY_RUN_NO_WRITE`.
+- [x] If `dry_run=True`, do not claim "written"; include warning `DRY_RUN_NO_WRITE`.
 
 **Acceptance**
 - In JSON output, dry-run is explicit and includes a warning.
