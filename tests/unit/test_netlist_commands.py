@@ -15,6 +15,8 @@ from kicad_pcb.commands.netlist import (
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc
+from kicad_pcb.sexpr.nodes import ListNode, StringNode
+from kicad_pcb.sexpr.utils import find_first
 
 
 def _write_minimal_sch(path: Path) -> None:
@@ -444,3 +446,259 @@ def test_apply_netlist_requires_at_least_80_percent_components_placed(
     assert exc_info.value.details["found_symbols"] == 3
     assert exc_info.value.details["min_component_placement_ratio"] == 0.8
     assert exc_info.value.details["min_required_symbols"] == 4
+
+
+# ---------------------------------------------------------------------------
+# Extends chain — lib_symbols embedding, pin correctness, net binding
+#
+# These tests guard against the NE5532 regression where (extends "BaseName")
+# caused three failures:
+#   1. Only the derived node was embedded — base absent → KiCad blank box.
+#   2. read_lib_symbol_pins returned [] → fallback to ["1","2"] → wrong wiring.
+#   3. validate_ir_symbols raised SYMBOL_NOT_FOUND for all derived symbols.
+# ---------------------------------------------------------------------------
+
+
+def _get_lib_symbol_ids(doc: SchematicDoc) -> list[str]:
+    """Return sorted list of symbol IDs embedded in (lib_symbols)."""
+    lib_syms = find_first(doc.root, "lib_symbols")
+    if lib_syms is None:
+        return []
+    ids: list[str] = []
+    for item in lib_syms.items:
+        if (
+            isinstance(item, ListNode)
+            and item.key == "symbol"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+        ):
+            ids.append(item.items[1].value)
+    return sorted(ids)
+
+
+def _get_instance_pin_numbers(doc: SchematicDoc, ref: str) -> list[str]:
+    """Return sorted pin numbers declared on the placed symbol instance for *ref*."""
+    pins: list[str] = []
+    for item in doc.root.items:
+        if not (isinstance(item, ListNode) and item.key == "symbol"):
+            continue
+        # Match instance by Reference property value.
+        instance_ref: str | None = None
+        for child in item.items:
+            if (
+                isinstance(child, ListNode)
+                and child.key == "property"
+                and len(child.items) >= 3
+                and isinstance(child.items[1], StringNode)
+                and child.items[1].value == "Reference"
+                and isinstance(child.items[2], StringNode)
+            ):
+                instance_ref = child.items[2].value
+        if instance_ref != ref:
+            continue
+        for child in item.items:
+            if (
+                isinstance(child, ListNode)
+                and child.key == "pin"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+            ):
+                pins.append(child.items[1].value)
+    return sorted(pins)
+
+
+def test_extends_symbol_embeds_base_and_derived_in_lib_symbols(tmp_path: Path) -> None:
+    """Extends chain: both base (OpAmp) and derived (DerivedOpAmp) must be in lib_symbols.
+
+    Regression guard for the NE5532 bug: the old code embedded only the derived
+    node.  Without the base symbol in lib_symbols KiCad renders a blank box with
+    no pins — the schematic is visually empty and electrically disconnected.
+    """
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "version": "1",
+                "components": [
+                    {"ref": "U1", "symbol": "TestLib:DerivedOpAmp", "value": "DerivedOpAmp"},
+                ],
+                "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="ExtendsEmbed",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    embedded_ids = _get_lib_symbol_ids(managed_doc)
+
+    # KiCad needs both the base and derived nodes to render the symbol.
+    assert "TestLib:OpAmp" in embedded_ids, (
+        f"Base 'TestLib:OpAmp' missing from lib_symbols; got: {embedded_ids}"
+    )
+    assert "TestLib:DerivedOpAmp" in embedded_ids, (
+        f"Derived 'TestLib:DerivedOpAmp' missing from lib_symbols; got: {embedded_ids}"
+    )
+
+
+def test_extends_symbol_instance_carries_all_inherited_pins(tmp_path: Path) -> None:
+    """Extends chain: the placed instance must declare all pins inherited from the base.
+
+    With the old code, read_lib_symbol_pins returned [] for a derived symbol,
+    causing the placed instance to record no pins (or a wrong two-pin fallback).
+    The result was a schematic where U1 had no net connections and was
+    electrically wrong even though it opened without errors in KiCad.
+    """
+    # DerivedOpAmp inherits pins 1, 2, 3, 6 from OpAmp in TestLib.kicad_sym.
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "version": "1",
+                "components": [
+                    {"ref": "U1", "symbol": "TestLib:DerivedOpAmp", "value": "DerivedOpAmp"},
+                ],
+                "nets": [{"name": "IN_P", "pins": [{"ref": "U1", "pin": "1"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="ExtendsPins",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    pin_numbers = _get_instance_pin_numbers(managed_doc, "U1")
+
+    # Old broken code produced [] or ["1", "2"]; correct code gives all four.
+    assert pin_numbers == ["1", "2", "3", "6"], (
+        f"Expected inherited pins ['1','2','3','6']; got {pin_numbers}"
+    )
+
+
+def test_extends_symbol_nets_on_inherited_pins_validate_and_bind(tmp_path: Path) -> None:
+    """Extends chain: nets on inherited pins must pass validation and produce bindings.
+
+    Pin '6' exists only on the base OpAmp — not declared on DerivedOpAmp directly.
+    The old code raised SYMBOL_NOT_FOUND before writing anything because pin
+    resolution returned [] for the derived symbol.  The fixed code must:
+    1) accept pin '6' as valid for DerivedOpAmp during IR validation,
+    2) record an OpenClaw:bind= marker for each net connection.
+    """
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "version": "1",
+                "components": [
+                    {"ref": "U1", "symbol": "TestLib:DerivedOpAmp", "value": "DerivedOpAmp"},
+                ],
+                "nets": [
+                    {"name": "IN_P", "pins": [{"ref": "U1", "pin": "1"}]},
+                    {"name": "IN_N", "pins": [{"ref": "U1", "pin": "2"}]},
+                    {"name": "OUT", "pins": [{"ref": "U1", "pin": "6"}]},  # only on base OpAmp
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="ExtendsNets",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    assert result.nets_applied == 3
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    bindings = managed_doc.extract_pin_label_bindings()
+    bound_pins = {b["pin"] for b in bindings if b["ref"] == "U1"}
+    net_by_pin = {b["pin"]: b["net_name"] for b in bindings if b["ref"] == "U1"}
+
+    # All three nets must be bound; inherited pin '6' is the critical one.
+    assert "1" in bound_pins, f"Pin '1' not bound; bindings: {bindings}"
+    assert "2" in bound_pins, f"Pin '2' not bound; bindings: {bindings}"
+    assert "6" in bound_pins, (
+        f"Pin '6' (inherited from base OpAmp) not bound; bound_pins: {bound_pins}"
+    )
+    assert net_by_pin["6"] == "OUT", f"Pin '6' bound to wrong net: {net_by_pin}"
+
+
+def test_broken_extends_chain_raises_symbol_not_found(tmp_path: Path) -> None:
+    """Broken extends chain must abort with SYMBOL_NOT_FOUND before writing anything.
+
+    A symbol whose base does not exist in the library file must fail at
+    validate_ir_symbols time, not silently produce an empty or partial schematic.
+    """
+    # Library with a derived symbol whose base is intentionally absent.
+    broken_lib = tmp_path / "BrokenLib.kicad_sym"
+    broken_lib.write_text(
+        """\
+(kicad_symbol_lib (version 20230121) (generator test)
+  (symbol "Orphan" (extends "NonExistentBase")
+    (property "Reference" "U" (at 0 5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Orphan" (at 0 -5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+)
+""",
+        encoding="utf-8",
+    )
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "version": "1",
+                "components": [{"ref": "U1", "symbol": "BrokenLib:Orphan", "value": "Orphan"}],
+                "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_new_from_netlist(
+            Namespace(
+                name="BrokenChainProj",
+                out_dir=str(tmp_path),
+                description="",
+                netlist=str(ir_path),
+                symbols_dir=str(tmp_path),
+                mode="internal",
+            )
+        )
+
+    # Broken chain → no pins → validate_ir_symbols raises SYMBOL_NOT_FOUND.
+    assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
+    # Error details must identify the offending symbol.
+    assert "BrokenLib:Orphan" in str(exc_info.value)
