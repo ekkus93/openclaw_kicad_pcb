@@ -30,6 +30,7 @@ from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cm
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
+from .commands.search import cmd_search_symbols
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
 from .formatting import format_result, format_result_json
@@ -132,6 +133,27 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Validation mode (default: kicad)",
     )
     p_new_netlist.set_defaults(func=cmd_new_from_netlist)
+
+    # search-symbols
+    p_search = subparsers.add_parser(
+        "search-symbols",
+        help="Search installed KiCad symbol libraries by keyword",
+        description=(
+            "Search all .kicad_sym files in the resolved symbol directories for symbols "
+            "whose name or description contains the given keywords. "
+            "Use this before writing Circuit IR JSON to find the correct symbol IDs for "
+            "the installed KiCad version."
+        ),
+    )
+    p_search.add_argument("query", help="Space-separated keywords (e.g. 'polarized capacitor')")
+    p_search.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_search.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum number of results (default: 20)",
+    )
+    p_search.set_defaults(func=cmd_search_symbols)
 
     # compile-netlist (alias for new-from-netlist)
     p_compile = subparsers.add_parser(

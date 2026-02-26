@@ -41,6 +41,7 @@ from .results import (
     PcbwayQuoteResult,
     PreviewPcbResult,
     PreviewSchematicResult,
+    SearchSymbolsResult,
     SetBoardSizeResult,
     ValidateFileResult,
 )
@@ -496,6 +497,30 @@ def _fmt_doctor(r: DoctorResult) -> list[str]:
     lines.append("")
     if r.overall_ok:
         lines.append("✅ All checks passed")
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# search-symbols
+# ---------------------------------------------------------------------------
+
+
+@_register(SearchSymbolsResult)
+def _fmt_search_symbols(r: SearchSymbolsResult) -> list[str]:
+    lines: list[str] = []
+    dirs_str = ", ".join(r.symbols_dirs) if r.symbols_dirs else "(none)"
+    lines.append(f"🔍 search-symbols: {r.query!r}  (searched: {dirs_str})")
+    if not r.matches:
+        lines.append("  No symbols found matching query.")
+        lines.append("  Tip: use broader keywords, e.g. 'capacitor' instead of 'electrolytic'.")
+        return lines
+    lines.append(f"  Found {len(r.matches)} match(es):")
+    lines.append("")
+    for m in r.matches:
+        desc = f"  — {m.description}" if m.description else ""
+        lines.append(f"  {m.symbol_id}  ({m.pin_count} pins){desc}")
+    lines.append("")
+    lines.append('Use these symbol IDs directly in Circuit IR JSON  ("symbol": "Lib:Name").')
     return lines
 
 

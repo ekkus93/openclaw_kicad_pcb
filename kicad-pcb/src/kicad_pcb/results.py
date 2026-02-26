@@ -361,3 +361,26 @@ class PcbwayQuoteResult:
     shipping: float
     total: float
     gerber_zip: Path | None = None
+
+
+# ---------------------------------------------------------------------------
+# search-symbols
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SymbolMatch:
+    """A single symbol that matched a ``search-symbols`` query."""
+
+    symbol_id: str  # e.g. "Device:C_Polarized"
+    description: str  # value of ki_description property, or ""
+    pin_count: int
+
+
+@dataclass(frozen=True)
+class SearchSymbolsResult:
+    """Result of the ``search-symbols`` command."""
+
+    query: str
+    matches: tuple[SymbolMatch, ...]
+    symbols_dirs: tuple[str, ...]  # directories that were searched
