@@ -12,6 +12,7 @@ Covers:
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -106,6 +107,102 @@ class TestCheckSexp:
         # Parens inside quoted strings should not affect depth count.
         content = '(kicad_sch (property "Test(((" "val"))\n'
         kicad_pcb._check_sexp(content, "kicad_sch")  # must not raise
+
+    def test_escaped_backslash_before_quote_not_in_string(self) -> None:
+        # String "abc\\" ends at the second backslash; the following " closes,
+        # then the outer parens are balanced.  The old char-scanner mis-read
+        # this as a continued string, causing a false "Unbalanced" error.
+        content = '(kicad_sch (property "abc\\\\" "val"))\n'
+        kicad_pcb._check_sexp(content, "kicad_sch")  # must not raise
+
+    def test_escaped_quote_inside_string_doesnt_end_it(self) -> None:
+        # String "say \"hi\"" contains two escaped quotes; depth stays correct.
+        content = '(kicad_sch (property "say \\"hi\\"" "ok"))\n'
+        kicad_pcb._check_sexp(content, "kicad_sch")  # must not raise
+
+    def test_parens_in_escaped_string_not_counted(self) -> None:
+        # Two opening parens inside a string value must not affect depth.
+        content = '(kicad_sch (net "name with (parens)") (dummy))\n'
+        kicad_pcb._check_sexp(content, "kicad_sch")  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# 2b. SUPPORTED_ROOTS constant
+# ---------------------------------------------------------------------------
+
+
+class TestSupportedRoots:
+    def test_is_frozenset(self) -> None:
+        assert isinstance(kicad_pcb.SUPPORTED_ROOTS, frozenset)
+
+    def test_contains_expected_roots(self) -> None:
+        assert "kicad_sch" in kicad_pcb.SUPPORTED_ROOTS
+        assert "kicad_pcb" in kicad_pcb.SUPPORTED_ROOTS
+
+    def test_no_unknown_roots(self) -> None:
+        assert frozenset({"kicad_sch", "kicad_pcb"}) == kicad_pcb.SUPPORTED_ROOTS
+
+
+# ---------------------------------------------------------------------------
+# 2c. _write_temp_text
+# ---------------------------------------------------------------------------
+
+
+class TestWriteTempText:
+    def test_creates_file_with_content(self, tmp_path: Path) -> None:
+        tmp = kicad_pcb._write_temp_text(tmp_path, ".tmp", "hello\n")
+        assert tmp.exists()
+        assert tmp.read_text(encoding="utf-8") == "hello\n"
+
+    def test_file_is_in_specified_directory(self, tmp_path: Path) -> None:
+        tmp = kicad_pcb._write_temp_text(tmp_path, ".tmp", "x")
+        assert tmp.parent == tmp_path
+
+    def test_suffix_applied(self, tmp_path: Path) -> None:
+        tmp = kicad_pcb._write_temp_text(tmp_path, ".kicad_sch.tmp", "x")
+        assert tmp.name.endswith(".kicad_sch.tmp")
+
+    def test_large_content_fully_written(self, tmp_path: Path) -> None:
+        # 2 MiB of unicode content — verifies no partial-write truncation.
+        large = "x" * (2 * 1024 * 1024)
+        tmp = kicad_pcb._write_temp_text(tmp_path, ".tmp", large)
+        assert tmp.read_text(encoding="utf-8") == large
+
+    def test_unicode_content_roundtrip(self, tmp_path: Path) -> None:
+        content = "(kicad_sch (property \"\u6d4b\u8bd5\" \"\u4e2d\u6587\"))\n"
+        tmp = kicad_pcb._write_temp_text(tmp_path, ".tmp", content)
+        assert tmp.read_text(encoding="utf-8") == content
+
+    def test_no_temp_file_left_on_write_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """If the write itself fails the temp file must be cleaned up."""
+        real_fdopen = os.fdopen
+
+        def failing_fdopen(fd: int, mode: str = "r", **kwargs: object) -> object:
+            fobj = real_fdopen(fd, mode, **kwargs)
+
+            class _FailOnWrite:
+                def write(self, data: str) -> int:
+                    raise OSError("simulated write failure")
+
+                def flush(self) -> None: ...  # pragma: no cover
+
+                def fileno(self) -> int:
+                    return fobj.fileno()  # type: ignore[union-attr]
+
+                def __enter__(self) -> _FailOnWrite:
+                    return self
+
+                def __exit__(self, *args: object) -> None:
+                    fobj.__exit__(*args)  # type: ignore[union-attr]
+
+            return _FailOnWrite()
+
+        monkeypatch.setattr("kicad_pcb.fs.os.fdopen", failing_fdopen)
+        with pytest.raises(OSError, match="simulated write failure"):
+            kicad_pcb._write_temp_text(tmp_path, ".tmp", "data")
+        assert list(tmp_path.glob("*.tmp")) == []
 
 
 # ---------------------------------------------------------------------------
