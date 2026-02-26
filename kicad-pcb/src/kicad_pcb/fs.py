@@ -80,15 +80,11 @@ def _check_sexp(content: str, root: str) -> None:
 
     depth = sum(1 if t == "(" else -1 if t == ")" else 0 for t in tokens)
     if depth != 0:
-        raise DocSyntaxError(
-            f"Unbalanced parentheses (depth={depth}) \u2014 file may be corrupted"
-        )
+        raise DocSyntaxError(f"Unbalanced parentheses (depth={depth}) \u2014 file may be corrupted")
 
     if len(tokens) < 2 or tokens[0] != "(" or tokens[1] != root:
         stripped = content.lstrip()
-        raise DocSyntaxError(
-            f"Expected root node ({root} ...) but got: {stripped[:40]!r}"
-        )
+        raise DocSyntaxError(f"Expected root node ({root} ...) but got: {stripped[:40]!r}")
 
 
 # ---------------------------------------------------------------------------

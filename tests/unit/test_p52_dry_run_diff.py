@@ -180,7 +180,8 @@ class TestDryRunDiffSch:
         diff = buf.getvalue()
         # If a diff is emitted, it must be trivial (trailing-newline only).
         meaningful = [
-            ln for ln in diff.splitlines()
+            ln
+            for ln in diff.splitlines()
             if ln.startswith(("+", "-"))
             and not ln.startswith(("++", "--"))
             and ln.strip() not in ("+)", "-)", "+", "-")
@@ -193,7 +194,8 @@ class TestDryRunDiffSch:
         buf = _buf()
         mutate_and_validate_sch(path, _noop_sch, dry_run=True, diff_output=buf)
         meaningful = [
-            ln for ln in buf.getvalue().splitlines()
+            ln
+            for ln in buf.getvalue().splitlines()
             if ln.startswith(("+", "-"))
             and not ln.startswith(("++", "--"))
             and ln.strip() not in ("+)", "-)", "+", "-")
@@ -289,7 +291,8 @@ class TestDryRunDiffPcb:
         buf = _buf()
         mutate_and_validate_pcb(path, _noop_pcb, diff_output=buf)
         meaningful = [
-            ln for ln in buf.getvalue().splitlines()
+            ln
+            for ln in buf.getvalue().splitlines()
             if ln.startswith(("+", "-"))
             and not ln.startswith(("++", "--"))
             and ln.strip() not in ("+)", "-)", "+", "-")

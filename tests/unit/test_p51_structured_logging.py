@@ -236,9 +236,7 @@ class TestMutateValidateSchLogging:
         assert write_recs, "write stage record expected"
         assert write_recs[0].kicad["elapsed_ms"] >= 0.0
 
-    def test_no_records_below_debug(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_no_records_below_debug(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
         """Pipeline logs nothing when the effective log level is INFO or higher."""
         path = _sch_copy(tmp_path)
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):

@@ -169,7 +169,7 @@ class TestWriteTempText:
         assert tmp.read_text(encoding="utf-8") == large
 
     def test_unicode_content_roundtrip(self, tmp_path: Path) -> None:
-        content = "(kicad_sch (property \"\u6d4b\u8bd5\" \"\u4e2d\u6587\"))\n"
+        content = '(kicad_sch (property "\u6d4b\u8bd5" "\u4e2d\u6587"))\n'
         tmp = kicad_pcb._write_temp_text(tmp_path, ".tmp", content)
         assert tmp.read_text(encoding="utf-8") == content
 
