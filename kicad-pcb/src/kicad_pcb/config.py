@@ -147,7 +147,7 @@ def load_config() -> dict:
     ensure_dirs()
     if CONFIG_FILE.exists():
         try:
-            with CONFIG_FILE.open() as f:
+            with CONFIG_FILE.open(encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
@@ -157,7 +157,7 @@ def load_config() -> dict:
 def save_config(config: dict) -> None:
     """Persist configuration to disk."""
     ensure_dirs()
-    with CONFIG_FILE.open("w") as f:
+    with CONFIG_FILE.open("w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
 
 
@@ -165,7 +165,7 @@ def get_current_project() -> ProjectRef | None:
     """Return the currently-selected project as a :class:`.ProjectRef`, or None."""
     if CURRENT_PROJECT_FILE.exists():
         try:
-            with CURRENT_PROJECT_FILE.open() as f:
+            with CURRENT_PROJECT_FILE.open(encoding="utf-8") as f:
                 data = json.load(f)
             return ProjectRef.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError):
@@ -176,5 +176,5 @@ def get_current_project() -> ProjectRef | None:
 def set_current_project(project: ProjectRef) -> None:
     """Persist *project* to ``current_project.json``."""
     ensure_dirs()
-    with CURRENT_PROJECT_FILE.open("w") as f:
+    with CURRENT_PROJECT_FILE.open("w", encoding="utf-8") as f:
         json.dump(project.to_dict(), f, indent=2)

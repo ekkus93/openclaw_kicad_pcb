@@ -134,7 +134,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
     try:
         PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
         probe = PROJECTS_DIR / ".write_probe"
-        probe.write_text("probe")
+        probe.write_text("probe", encoding="utf-8")
         probe.unlink()
         checks.append(
             DoctorCheckItem(status="ok", label="Projects dir writable", message=str(PROJECTS_DIR))
