@@ -171,12 +171,21 @@ def cmd_search_symbols(args) -> SearchSymbolsResult:
             symbols_dirs=(),
         )
 
-    resolution = resolve_symbol_dirs(symbols_dir=symbols_dir)
-    searched_dirs: list[str] = [str(d) for d in resolution.dirs]
+    # When the caller provides an explicit --symbols-dir, scope the search to
+    # that directory only — do not append system/repo-local directories behind
+    # it.  The explicit flag means "search HERE", not "search here then fall
+    # through to system libs".  Without an explicit dir we use the full
+    # resolution chain (env var → repo-local → system KiCad candidates).
+    if symbols_dir is not None:
+        dirs: tuple[Path, ...] = (symbols_dir,)
+    else:
+        dirs = resolve_symbol_dirs(symbols_dir=None).dirs
+
+    searched_dirs: list[str] = [str(d) for d in dirs]
 
     scored: list[tuple[int, SymbolMatch]] = []
 
-    for sym_dir in resolution.dirs:
+    for sym_dir in dirs:
         candidate_files = _grep_matching_files(sym_dir, match_kws)
         for lib_file in sorted(candidate_files):
             lib_name = lib_file.stem
