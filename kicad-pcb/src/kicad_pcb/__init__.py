@@ -88,7 +88,17 @@ from .config import (
 )
 
 # Errors
-from .errors import KiCadError, ParseError, ToolError, UserError
+from .errors import (
+    DocLintError,
+    DocSyntaxError,
+    KicadCliValidationError,
+    KiCadError,
+    ParseError,
+    SExprParseError,
+    SExprTokenizeError,
+    ToolError,
+    UserError,
+)
 
 # CLI formatting
 from .formatting import format_result, format_result_json
@@ -207,6 +217,11 @@ __all__ = [
     "UserError",
     "ToolError",
     "ParseError",
+    "SExprTokenizeError",
+    "SExprParseError",
+    "DocSyntaxError",
+    "DocLintError",
+    "KicadCliValidationError",
     # compat (Phase 8.1)
     "KiCadVersion",
     "MINIMUM_VERSION",

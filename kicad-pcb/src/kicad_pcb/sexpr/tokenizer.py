@@ -27,7 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ..errors import ParseError
+from ..errors import ParseError, SExprTokenizeError
 
 TokenKind = Literal["lparen", "rparen", "atom", "string", "comment"]
 
@@ -105,8 +105,10 @@ def tokenize(src: str) -> list[Token]:  # noqa: PLR0912, PLR0915
                 if ch == "\\":
                     _step()  # consume backslash
                     if i >= n:
-                        raise ParseError(
-                            f"{tok_line}:{tok_col}: unterminated string (ends with backslash)"
+                        raise SExprTokenizeError(
+                            "unterminated string (ends with backslash)",
+                            line=tok_line,
+                            col=tok_col,
                         )
                     esc = src[i]
                     _step()  # consume escape char
@@ -132,7 +134,11 @@ def tokenize(src: str) -> list[Token]:  # noqa: PLR0912, PLR0915
                     chars.append(ch)
                     _step()
             if i >= n:
-                raise ParseError(f"{tok_line}:{tok_col}: unterminated string literal")
+                raise SExprTokenizeError(
+                    "unterminated string literal",
+                    line=tok_line,
+                    col=tok_col,
+                )
             _step()  # consume closing quote
             tokens.append(Token("string", "".join(chars), tok_line, tok_col))
             continue

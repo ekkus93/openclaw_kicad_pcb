@@ -155,14 +155,14 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 
 ### P3.2 Improve error messages and exception types for parse/validate failures
 **Tasks**
-- [ ] Define a small exception hierarchy:
+- [x] Define a small exception hierarchy:
   - `SExprTokenizeError`, `SExprParseError`
   - `DocSyntaxError`, `DocLintError`, `KicadCliValidationError`
-- [ ] Ensure exceptions include:
+- [x] Ensure exceptions include:
   - file path
   - line/column where available
-  - a short “what to do next” hint (e.g., run validation command)
-- [ ] Add tests verifying error message contains line/col for malformed input.
+  - a short "what to do next" hint (e.g., run validation command)
+- [x] Add tests verifying error message contains line/col for malformed input.
 
 **Acceptance criteria**
 - Failures are actionable and pinpoint locations.
