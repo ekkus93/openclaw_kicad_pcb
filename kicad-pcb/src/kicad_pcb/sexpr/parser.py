@@ -43,7 +43,7 @@ def _parse_one(tokens: list[Token], idx: int) -> tuple[Node, int]:
         raise ParseError(f"{tok.line}:{tok.col}: unexpected ')'")
 
     if tok.kind == "atom":
-        return AtomNode(tok.value, Position(tok.line, tok.col)), idx + 1
+        return AtomNode(tok.value, Position(tok.line, tok.col), lexeme=tok.value), idx + 1
 
     if tok.kind == "string":
         return StringNode(tok.value, Position(tok.line, tok.col)), idx + 1

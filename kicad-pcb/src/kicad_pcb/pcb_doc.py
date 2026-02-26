@@ -20,8 +20,8 @@ from pathlib import Path
 from .errors import ParseError
 from .fs import _atomic_write, _new_uuid
 from .models import BoardOutlineRect
-from .sexpr.builder import L, atom, fnum, string
-from .sexpr.nodes import NO_POS, ListNode, Node, StringNode
+from .sexpr.builder import L, atom, fnum, fnum_or_keep, string
+from .sexpr.nodes import NO_POS, AtomNode, ListNode, Node, StringNode
 from .sexpr.parser import parse_file
 from .sexpr.serializer import serialize
 from .sexpr.utils import find_first
@@ -108,13 +108,24 @@ def _update_footprint_at(fp: ListNode, new_x: float, new_y: float) -> ListNode:
     """Return a copy of *fp* with its ``(at …)`` coordinates updated.
 
     Any rotation / angle already present in the ``at`` node is preserved.
+    Coordinate atoms whose float values are unchanged are kept verbatim so
+    that the original lexeme (e.g. ``"75.0000"``) survives serialisation.
     """
     new_fp_items: list[Node] = []
     for child in fp.items:
         if isinstance(child, ListNode) and child.key == "at":
             # Preserve any rotation (items after "at", x, y).
             extra = child.items[3:]
-            new_at = ListNode((atom("at"), fnum(new_x, 3), fnum(new_y, 3)) + extra, NO_POS)
+            at_items = child.items
+            orig_x = (
+                at_items[1] if len(at_items) > 1 and isinstance(at_items[1], AtomNode) else None
+            )
+            orig_y = (
+                at_items[2] if len(at_items) > 2 and isinstance(at_items[2], AtomNode) else None
+            )
+            new_x_atom = fnum_or_keep(new_x, orig_x, 3) if orig_x is not None else fnum(new_x, 3)
+            new_y_atom = fnum_or_keep(new_y, orig_y, 3) if orig_y is not None else fnum(new_y, 3)
+            new_at = ListNode((atom("at"), new_x_atom, new_y_atom) + extra, NO_POS)
             new_fp_items.append(new_at)
         else:
             new_fp_items.append(child)
