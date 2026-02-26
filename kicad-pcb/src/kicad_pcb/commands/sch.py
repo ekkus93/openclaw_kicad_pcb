@@ -20,7 +20,7 @@ from ..fs import _new_uuid
 from ..models import ComponentSpec, NetLabelSpec, WireSegment
 from ..pipeline import mutate_and_validate_sch
 from ..results import AddComponentResult, AddNetResult, ConnectResult
-from ..sch_doc import SchematicDoc, read_lib_symbol_def, read_lib_symbol_pins
+from ..sch_doc import SchematicDoc, read_lib_symbol_def_chain, read_lib_symbol_pins
 
 # Default fallback symbol library path kept for backward compatibility.
 # Callers should use :func:`~kicad_pcb.config.discover_symbols_dir` to obtain
@@ -64,7 +64,7 @@ def cmd_add_component(args) -> AddComponentResult:
     # Load the symbol definition before the pipeline so we can embed it.
     # read_lib_symbol_def uses AST-based extraction, stripping (id N) and
     # using short sub-symbol names (e.g. "R_0_1") for KiCad compatibility.
-    sym_def = read_lib_symbol_def(spec.lib_name, spec.sym_name, symbols_dir=sym_dir)
+    sym_defs = read_lib_symbol_def_chain(spec.lib_name, spec.sym_name, symbols_dir=sym_dir)
 
     # Capture placement coordinates from inside the closure.
     _placed: dict[str, object] = {}
@@ -85,7 +85,7 @@ def cmd_add_component(args) -> AddComponentResult:
             pin_uuids,
             project.name,
         )
-        if sym_def is not None:
+        for sym_def in sym_defs:
             doc.embed_lib_symbol(sym_def)
         _placed["x"] = x
         _placed["y"] = y

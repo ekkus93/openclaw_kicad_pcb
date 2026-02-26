@@ -50,6 +50,7 @@ __all__ = [
     "make_symbol_node",
     "make_wire_node",
     "read_lib_symbol_def",
+    "read_lib_symbol_def_chain",
     "read_lib_symbol_pins",
 ]
 
@@ -242,6 +243,44 @@ def _find_lib_symbol(lib_root: ListNode, sym_name: str) -> ListNode | None:
     return None
 
 
+def _get_extends_name(sym_node: ListNode) -> str | None:
+    """Return the bare base name from ``(extends "BaseName")`` if present."""
+    for item in sym_node.items:
+        if (
+            isinstance(item, ListNode)
+            and item.key == "extends"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+        ):
+            return item.items[1].value
+    return None
+
+
+def _qualify_extends(sym_node: ListNode, lib_name: str) -> ListNode:
+    """Qualify ``(extends "BaseName")`` to ``(extends "lib_name:BaseName")``.
+
+    KiCad schematics require fully-qualified symbol ids in ``extends``
+    references.  Does nothing when the value already contains ``":"``.
+    Returns a modified copy; the original node is unchanged.
+    """
+    new_items: list[Node] = []
+    for item in sym_node.items:
+        out_item: Node = item
+        if (
+            isinstance(item, ListNode)
+            and item.key == "extends"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+        ):
+            base_name = item.items[1].value
+            if ":" not in base_name:
+                new_sub = list(item.items)
+                new_sub[1] = string(f"{lib_name}:{base_name}")
+                out_item = ListNode(tuple(new_sub), item.pos)
+        new_items.append(out_item)
+    return ListNode(tuple(new_items), sym_node.pos)
+
+
 def _collect_pin_numbers(sym_node: ListNode) -> list[str]:
     """Walk *sym_node* and return deduplicated pin number strings in order."""
     seen: set[str] = set()
@@ -312,6 +351,79 @@ def read_lib_symbol_def(
     return _strip_id_nodes(ListNode(tuple(new_items), NO_POS))
 
 
+def read_lib_symbol_def_chain(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> list[ListNode]:
+    """Load a symbol and its full ``extends`` ancestor chain for embedding.
+
+    KiCad symbols that use ``(extends "BaseName")`` carry no graphics or
+    pins of their own — those are inherited from the base symbol.  A
+    schematic's ``lib_symbols`` section must contain *all* nodes in the
+    inheritance chain for KiCad to render the symbol correctly.
+
+    Returns nodes in dependency order (**base first**, derived last) so
+    callers can embed them with :meth:`~SchematicDoc.embed_lib_symbol` in
+    order.  Each node has its id qualified to ``lib_name:name`` and
+    ``(id N)`` children stripped.  ``(extends "BaseName")`` attributes in
+    derived nodes are updated to the fully-qualified
+    ``"lib_name:BaseName"`` form required by KiCad schematics.
+
+    Returns an empty list when the library file or root symbol cannot be
+    found or the extends chain is broken.
+
+    Parameters
+    ----------
+    lib_name:    Library name (e.g. ``"Amplifier_Operational"``).
+    sym_name:    Symbol name within the library (e.g. ``"NE5532"``).
+    symbols_dir: Directory containing ``.kicad_sym`` files.
+    """
+    if symbols_dir is None:
+        symbols_dir = _DEFAULT_SYMBOLS_DIR
+
+    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
+    if not lib_file.exists():
+        return []
+    try:
+        lib_root = parse_file(lib_file)
+    except (ParseError, OSError):
+        return []
+
+    # Walk extends chain: collect sym_names in derived-first order.
+    chain: list[str] = []
+    visited: set[str] = set()
+    current: str | None = sym_name
+    while current is not None and current not in visited:
+        node = _find_lib_symbol(lib_root, current)
+        if node is None:
+            return []  # broken chain — refuse to emit a partial result
+        visited.add(current)
+        chain.append(current)
+        current = _get_extends_name(node)
+
+    chain.reverse()  # base-first so KiCad can resolve references in order
+
+    result: list[ListNode] = []
+    for name in chain:
+        node = _find_lib_symbol(lib_root, name)
+        if node is None:
+            return []  # shouldn't happen — already verified above
+
+        # Qualify root-level id: "NE5532" → "Amplifier_Operational:NE5532".
+        new_items_chain: list[Node] = list(node.items)
+        new_items_chain[1] = string(f"{lib_name}:{name}")
+        renamed = ListNode(tuple(new_items_chain), NO_POS)
+
+        # Qualify extends reference if present: "LM2904" → "lib:LM2904".
+        renamed = _qualify_extends(renamed, lib_name)
+
+        result.append(_strip_id_nodes(renamed))
+
+    return result
+
+
 def _strip_id_nodes(node: ListNode) -> ListNode:
     """Return a copy of *node* with every ``(id N)`` descendant removed."""
     new_children: list[Node] = []
@@ -354,10 +466,32 @@ def read_lib_symbol_pins(
     except (ParseError, OSError):
         return []
 
-    sym_node = _find_lib_symbol(lib_root, sym_name)
-    if sym_node is None:
-        return []
-    return _collect_pin_numbers(sym_node)
+    # Build extends chain (derived first) so we can collect pins from all
+    # ancestor symbols.  For non-extends symbols the chain has one entry.
+    chain: list[str] = []
+    visited: set[str] = set()
+    current: str | None = sym_name
+    while current is not None and current not in visited:
+        node = _find_lib_symbol(lib_root, current)
+        if node is None:
+            break
+        visited.add(current)
+        chain.append(current)
+        current = _get_extends_name(node)
+
+    # Collect pins base-first.  Derived symbols may redefine pins from the
+    # base; ``seen`` deduplicates by pin number so each appears only once.
+    seen: set[str] = set()
+    result: list[str] = []
+    for name in reversed(chain):  # reversed = base first
+        node = _find_lib_symbol(lib_root, name)
+        if node is None:
+            continue
+        for pin_num in _collect_pin_numbers(node):
+            if pin_num not in seen:
+                seen.add(pin_num)
+                result.append(pin_num)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -375,8 +509,7 @@ class SchematicDoc:
     Typical usage::
 
         doc = SchematicDoc.load(path)
-        sym_def = read_lib_symbol_def("Device", "R")
-        if sym_def:
+        for sym_def in read_lib_symbol_def_chain("Device", "R"):
             doc.embed_lib_symbol(sym_def)
         pins = read_lib_symbol_pins("Device", "R") or ["1", "2"]
         pin_uuids = [new_uuid() for _ in pins]

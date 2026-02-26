@@ -18,7 +18,7 @@ from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult, InfoSchResult, NewFromNetlistResult
 from ..runner import find_kicad_cli
-from ..sch_doc import SchematicDoc, read_lib_symbol_def
+from ..sch_doc import SchematicDoc, read_lib_symbol_def_chain
 from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
@@ -385,9 +385,10 @@ def _write_symbols(
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:
     lib_name, sym_name = symbol.split(":", 1)
     for directory in symbol_index.directories:
-        sym_def = read_lib_symbol_def(lib_name, sym_name, symbols_dir=directory)
-        if sym_def is not None:
-            doc.embed_lib_symbol(sym_def)
+        sym_defs = read_lib_symbol_def_chain(lib_name, sym_name, symbols_dir=directory)
+        if sym_defs:
+            for sym_def in sym_defs:
+                doc.embed_lib_symbol(sym_def)
             return True
     return False
 
