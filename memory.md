@@ -1,6 +1,25 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-27T00:00:00Z_
+_Last updated: 2026-03-01T00:00:00Z_
+
+---
+
+## 2026-03-01T00:00:00Z - Add search-symbols command (2c77a30)
+- **Problem solved**: AI was guessing wrong KiCad symbol names (e.g. KiCad-8 `Device:CP` doesn't exist in KiCad 9; correct name is `Device:C_Polarized`). Solution: give the AI a pre-query tool to discover valid symbol IDs before writing Circuit IR JSON.
+- **New command**: `search-symbols <query> [--symbols-dir DIR] [--limit N]`
+  - Two-phase performance strategy: `grep -ril -E "<kw1>|<kw2>"` pre-screens which library files to read, then a paren-depth block extractor pulls individual symbol entries without full s-expression parse. ~7.6s against all KiCad 9 system libraries.
+  - Returns `SearchSymbolsResult(query, matches, symbols_dirs)` with `SymbolMatch(symbol_id, description, pin_count)` per result.
+  - Smoke-tested: `search-symbols "polarized capacitor"` → `Device:C_Polarized (2 pins)`; `search-symbols "potentiometer"` → `Device:R_Potentiometer (3 pins)`.
+- **Files added/modified**: `kicad-pcb/src/kicad_pcb/commands/search.py` (new), `results.py` (SymbolMatch, SearchSymbolsResult), `formatting.py` (_fmt_search_symbols), `cli.py` (search-symbols subparser), `__init__.py` (exports), `SKILL.md` (Symbol Discovery section + ALWAYS-do-this guidance).
+- **Unit tests added** (8 new tests in `test_netlist_commands.py`): exact match, derived symbol, no match, blank query, result fields, limit, searched dirs, KiCad-9 renames (skipped if no system library).
+- **SKILL.md** updated: "Symbol Discovery (ALWAYS do this before writing Circuit IR JSON)" section added with examples for capacitors, potentiometers, and op-amps.
+- Commit: `2c77a30` on master, pushed to GitHub.
+
+**Pending follow-up**: Fix `ne5532_headphone_amp.json`:
+1. Replace `Device:CP` (×6) → `Device:C_Polarized`
+2. Replace `Device:R_POT` (×2) → `Device:R_Potentiometer`  
+3. Add `U2: Amplifier_Operational:NE5532` for right channel
+4. Wire right-channel nets (RINPUT+, RINPUT-, ROUTPUT_L, ROUTPUT_R) to U2 pins
 
 ---
 
