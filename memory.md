@@ -1,6 +1,33 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-25T23:00:00Z_
+_Last updated: 2026-02-26T00:00:00Z_
+
+---
+
+## 2026-02-26T00:00:00Z — CODE_REVIEW2 P3.1 + P4.1 (commits 8513253, next)
+
+### P3.1 — Explicit UTF-8 encoding (commit `8513253`)
+- Fixed 8 bare `open()`/`read_text()`/`write_text()` calls across `adapters.py`, `config.py`, `commands/doctor.py`
+- `grep` for bare encoding calls now clean
+
+### P4.1 — Regression fixture infra
+- Created `tests/fixtures/valid/minimal.kicad_sch` and `tests/fixtures/valid/minimal.kicad_pcb`
+- Created `tests/unit/test_p41_regression_fixtures.py` (43 tests, 6 classes):
+  - `TestValidFixtureDirectory` — valid/ dir + both files exist (3 tests)
+  - `TestValidSchematicParseLint` — parse/lint/validate on valid+golden+working fixtures (9 tests)
+  - `TestValidPcbParseLint` — PCB equivalents (5 tests)
+  - `TestBrokenFixturesParsing` — all 4 broken fixtures parse OK (semantic bugs, not syntactic) (16 tests)
+  - `TestBrokenFixtureBugPatterns` — text-level regression anchors (4 tests)
+  - `TestErrorMessageContext` — ParseError carries path, wrong root → syntax_ok=False, etc. (5 tests)
+- Key finding: all 4 broken fixtures (`bug1`–`bug4`) are syntactically valid S-expressions; bugs are semantic (sub-symbol names, old `id` format, paren indentation, missing `instances` block), only kicad-cli would flag them
+- Tests confirmed: `syntax_ok=True` for broken fixtures; regression anchors use text matching
+- All tests pass (43 passed); lint clean after moving `cmd_validate_pcb` to top-level import
+
+### Pending CODE_REVIEW2 items:
+- P2.2: Preserve numeric lexemes (optional)
+- P3.2: Richer exception hierarchy
+- P5.1: Structured logging
+- P5.2: Dry-run diff output
 
 ---
 
