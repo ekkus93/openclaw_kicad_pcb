@@ -36,10 +36,24 @@ NO_POS: Position = Position(0, 0)
 
 @dataclass(frozen=True)
 class AtomNode:
-    """Unquoted atom — a keyword, number, boolean, or bare identifier."""
+    """Unquoted atom — a keyword, number, boolean, or bare identifier.
+
+    ``lexeme`` holds the original source text when this node was produced by
+    the parser.  It is ``None`` for programmatically-constructed nodes (e.g.
+    those created by :func:`~kicad_pcb.sexpr.builder.atom` or
+    :func:`~kicad_pcb.sexpr.builder.fnum`).  The serializer emits ``lexeme``
+    when it is present, guaranteeing that unchanged numeric tokens (such as
+    ``10.000``) survive a parse / serialize round-trip without any precision
+    normalisation.
+
+    The ``lexeme`` field is excluded from ``__eq__`` and ``__hash__`` so that
+    parser-produced nodes compare equal to builder-produced nodes with the
+    same ``value``.
+    """
 
     value: str
     pos: Position = field(default=NO_POS)
+    lexeme: str | None = field(default=None, compare=False, hash=False)
 
     def __repr__(self) -> str:
         return f"AtomNode({self.value!r})"

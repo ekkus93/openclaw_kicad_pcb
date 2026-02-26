@@ -1,6 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T00:00:00Z_
+_Last updated: 2026-02-26T01:00:00Z_
+
+---
+
+## 2026-02-26T01:00:00Z — CODE_REVIEW2 P2.2 (numeric lexeme preservation)
+
+### Changes
+- **`sexpr/nodes.py`**: Added `lexeme: str | None = field(default=None, compare=False, hash=False)` to `AtomNode`. Excluded from `__eq__`/`__hash__` so existing code unaffected.
+- **`sexpr/parser.py`**: Parser sets `lexeme=tok.value` for every atom token.
+- **`sexpr/serializer.py`**: `_inline()` and `serialize()` emit `node.lexeme` when present, else `node.value`. Pure round-trip already preserved; this guarantees precision even across mutation paths.
+- **`sexpr/builder.py`**: Added `fnum_or_keep(f, original, decimals)` helper. Returns `original` unchanged when `float(original.lexeme) == f`; otherwise calls `fnum()`. Exported from `sexpr/__init__.py`.
+- **`pcb_doc.py`**: `_update_footprint_at` uses `fnum_or_keep` so unmoved footprints produce zero diff even with 4-decimal source coordinates.
+- **`tests/unit/test_p22_numeric_lexeme.py`**: 35 tests covering all 5 layers of the contract.
+
+### Key design decision
+`lexeme` is `compare=False, hash=False` — completely transparent to equality/hash. For parsed atoms, `value == lexeme` (both are the raw token text). For synthesized atoms (`fnum`, `atom`), `lexeme=None` → serializer uses `value`.
+
+### Pending CODE_REVIEW2 items:
+- P3.2: Richer exception hierarchy
+- P5.1: Structured logging
+- P5.2: Dry-run diff output
 
 ---
 

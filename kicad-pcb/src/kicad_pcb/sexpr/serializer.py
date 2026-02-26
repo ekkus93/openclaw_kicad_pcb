@@ -49,7 +49,7 @@ def _inline(node: Node) -> str:
     deciding to fall back to block-indented formatting.
     """
     if isinstance(node, AtomNode):
-        return node.value
+        return node.lexeme if node.lexeme is not None else node.value
     if isinstance(node, StringNode):
         return '"' + _escape_string(node.value) + '"'
     # ListNode
@@ -80,7 +80,7 @@ def serialize(node: Node, indent: int = 0) -> str:
     and the indentation is handled recursively.
     """
     if isinstance(node, AtomNode):
-        return node.value
+        return node.lexeme if node.lexeme is not None else node.value
     if isinstance(node, StringNode):
         return '"' + _escape_string(node.value) + '"'
 

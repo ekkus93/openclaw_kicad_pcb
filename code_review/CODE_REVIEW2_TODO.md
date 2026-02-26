@@ -130,12 +130,12 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 **Problem:** Normalizing floats (e.g., `10.000` -> `10.0`) increases diffs.
 
 **Tasks**
-- [ ] If round-trip is desired, store numeric tokens as:
+- [x] If round-trip is desired, store numeric tokens as:
   - parsed numeric value + original lexeme string
-- [ ] Serializer uses original lexeme unless value changed.
+- [x] Serializer uses original lexeme unless value changed.
 
 **Acceptance criteria**
-- Unchanged numbers remain text-identical after round-trip.
+- Unchanged numbers remain text-identical after round-trip. ✅ 35 tests in `tests/unit/test_p22_numeric_lexeme.py`
 
 ---
 

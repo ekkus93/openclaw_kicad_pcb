@@ -36,12 +36,12 @@ From :mod:`.utils`:
     ``replace_section``, ``append_to_section``, ``node_path``
 
 From :mod:`.builder`:
-    ``atom``, ``string``, ``L``, ``fnum``
+    ``atom``, ``string``, ``L``, ``fnum``, ``fnum_or_keep``
 """
 
 from __future__ import annotations
 
-from .builder import L, atom, fnum, string
+from .builder import L, atom, fnum, fnum_or_keep, string
 from .nodes import NO_POS, AtomNode, ListNode, Node, Position, StringNode
 from .parser import parse, parse_file
 from .serializer import serialize, serialize_file
@@ -85,4 +85,5 @@ __all__ = [
     "string",
     "L",
     "fnum",
+    "fnum_or_keep",
 ]
