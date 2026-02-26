@@ -1,6 +1,12 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T10:23:39Z_
+_Last updated: 2026-02-26T10:28:47Z_
+
+---
+
+## 2026-02-26T10:28:47Z - Fix CI: correct KiCad PPA name
+- `ppa:kicad/kicad-9-releases` does not exist; correct name is `ppa:kicad/kicad-9.0-releases` (requires minor version in the PPA slug).
+- Fixed in `.github/workflows/ci.yml`. Committed `860e4f0`, pushed.
 
 ---
 
