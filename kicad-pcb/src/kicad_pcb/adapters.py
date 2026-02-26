@@ -175,10 +175,10 @@ class RealFs:
     """Real filesystem implementation — thin delegate to ``pathlib.Path``."""
 
     def read_text(self, path: Path) -> str:
-        return path.read_text()
+        return path.read_text(encoding="utf-8")
 
     def write_text(self, path: Path, content: str) -> None:
-        path.write_text(content)
+        path.write_text(content, encoding="utf-8")
 
     def exists(self, path: Path) -> bool:
         return path.exists()
@@ -261,7 +261,7 @@ class FakeFs:
     def stat_size(self, path: Path) -> int:
         if path not in self._files:
             raise FileNotFoundError(f"FakeFs: no file at {path!r}")
-        return len(self._files[path].encode())
+        return len(self._files[path].encode("utf-8"))
 
 
 # ---------------------------------------------------------------------------

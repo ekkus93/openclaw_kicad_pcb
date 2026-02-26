@@ -143,9 +143,9 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 
 ### P3.1 Make UTF-8 encoding explicit everywhere
 **Tasks**
-- [ ] Replace implicit `.encode()` calls with `.encode("utf-8")`
-- [ ] Replace `open(path, "w")` with `open(path, "w", encoding="utf-8", newline="\n")` where appropriate
-- [ ] Ensure consistent newline policy (prefer `\n`) for deterministic diffs.
+- [x] Replace implicit `.encode()` calls with `.encode("utf-8")`
+- [x] Replace `open(path, "w")` with `open(path, "w", encoding="utf-8", newline="\n")` where appropriate
+- [x] Ensure consistent newline policy (prefer `\n`) for deterministic diffs.
 
 **Acceptance criteria**
 - Grep for `.encode()` without args returns none (or justified exceptions).
