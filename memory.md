@@ -4,6 +4,17 @@ _Last updated: 2026-02-27T00:00:00Z_
 
 ---
 
+## 2026-02-27T01:00:00Z - EMPTY_SCHEMATIC_FIX_TODO round 2: P5 warning + P6.4 test
+- Added `MANAGED_SHEET_EMPTY` warning in `cmd_info_sch` when managed sheet exists but has 0 placed symbols (after computing `managed_symbol_count`).
+- Added P6.4 regression test `test_empty_generation_invariant_raises_coded_error` in `tests/unit/test_netlist_commands.py`:
+  - Monkeypatches `SchematicDoc.add_symbol` to no-op so AST stays empty while pipeline runs normally.
+  - Asserts `UserError.code == EMPTY_GENERATION` and details contain `expected_components` + `found_symbols == 0`.
+- Added assertions for new P5/P7 fields in `test_new_from_netlist_info_sch_returns_owned_and_symbols`: `managed_schematic_path is not None`, `managed_symbol_count >= 1`, `managed_label_count >= 1`, `symbol_count == 0` (root is thin).
+- Added `assert result.symbols_dirs_used` in `test_cmd_apply_netlist_creates_managed_schematic`.
+- Committed as `0b4f960` and pushed to origin/master.
+
+---
+
 ## 2026-02-27T00:00:00Z - EMPTY_SCHEMATIC_FIX_TODO items P1.1/P2.1/P5/P6.4/P7 implemented
 - Implemented all 5 items from `EMPTY_SCHEMATIC_FIX_TODO.md` per user/ChatGPT direction.
 - **P6.4 (`errors.py`)**: Added `EMPTY_GENERATION = "EMPTY_GENERATION"` and `SYMBOL_DIR_MISSING = "SYMBOL_DIR_MISSING"` to `ErrorCode` StrEnum.
