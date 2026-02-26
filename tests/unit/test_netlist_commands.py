@@ -6,7 +6,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from kicad_pcb.commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
+from kicad_pcb.commands.netlist import (
+    cmd_apply_netlist,
+    cmd_info_sch,
+    cmd_new_from_netlist,
+    resolve_schematic_paths,
+)
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc
@@ -34,6 +39,24 @@ def _write_ir(path: Path) -> None:
         "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]}],
     }
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# P0 — resolve_schematic_paths helper
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_schematic_paths_returns_both_paths(tmp_path: Path) -> None:
+    """P0: resolve_schematic_paths returns root and managed paths for a project."""
+    project = ProjectRef(name="myproj", path=tmp_path, created=datetime.now().isoformat())
+
+    root_sch, managed_sch = resolve_schematic_paths(project)
+
+    assert root_sch == project.sch_file
+    assert managed_sch == tmp_path / "OpenClaw_Managed.kicad_sch"
+    # Paths are deterministic and do not need to exist on disk
+    assert root_sch.name == "myproj.kicad_sch"
+    assert managed_sch.name == "OpenClaw_Managed.kicad_sch"
 
 
 def test_cmd_apply_netlist_creates_managed_schematic(

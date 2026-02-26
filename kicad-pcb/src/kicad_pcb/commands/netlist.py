@@ -27,6 +27,20 @@ MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
 
 
+def resolve_schematic_paths(project: ProjectRef) -> tuple[Path, Path]:
+    """Return ``(root_sch_path, managed_sch_path)`` for *project*.
+
+    The root schematic (``<name>.kicad_sch``) is intentionally **thin** — it
+    contains only the project header and a ``(sheet ...)`` reference to the
+    managed sheet.  All generated content (symbols, wires, net labels) lives
+    in the managed sheet (``OpenClaw_Managed.kicad_sch``).
+
+    Neither path is guaranteed to exist on disk; callers should check with
+    ``Path.exists()`` before loading.
+    """
+    return project.sch_file, project.path / MANAGED_SHEET_FILE
+
+
 @dataclass(frozen=True)
 class _ApplyNetlistRequest:
     netlist_path: Path

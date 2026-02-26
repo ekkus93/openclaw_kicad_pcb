@@ -76,7 +76,13 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     # info-sch
     p_info_sch = subparsers.add_parser(
         "info-sch",
-        help="Show current schematic introspection data",
+        help="Show schematic introspection data (root + managed sheet)",
+        description=(
+            "Introspect the current project schematic. "
+            "The root schematic (<name>.kicad_sch) is intentionally thin and contains "
+            "only a sheet reference; all generated symbols, wires, and net labels live "
+            "in OpenClaw_Managed.kicad_sch. Both paths and their AST counts are returned."
+        ),
     )
     p_info_sch.set_defaults(func=cmd_info_sch)
 
@@ -84,6 +90,12 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_apply = subparsers.add_parser(
         "apply-netlist",
         help="Apply Circuit IR JSON to OpenClaw managed schematic",
+        description=(
+            "Apply a Circuit IR JSON netlist to the current project. "
+            "Generated content is written to OpenClaw_Managed.kicad_sch (the managed sheet); "
+            "the root schematic (<name>.kicad_sch) stays thin and references the managed sheet. "
+            "Use --dry-run to validate without writing."
+        ),
     )
     p_apply.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
     p_apply.add_argument("--symbols-dir", help="Optional symbol libraries directory")
@@ -101,6 +113,12 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_new_netlist = subparsers.add_parser(
         "new-from-netlist",
         help="Create a project and compile Circuit IR deterministically",
+        description=(
+            "Create a new KiCad project and compile a Circuit IR JSON netlist into it. "
+            "The root schematic (<name>.kicad_sch) is thin and contains a sheet reference; "
+            "all generated symbols, wires, and net labels are written to "
+            "OpenClaw_Managed.kicad_sch (the managed sheet)."
+        ),
     )
     p_new_netlist.add_argument("--name", required=True, help="Project name")
     p_new_netlist.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
@@ -119,6 +137,13 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_compile = subparsers.add_parser(
         "compile-netlist",
         help="Alias for new-from-netlist: create project from Circuit IR (same args)",
+        description=(
+            "Alias for new-from-netlist. "
+            "Creates a new KiCad project and compiles a Circuit IR JSON netlist into it. "
+            "The root schematic (<name>.kicad_sch) is thin and contains a sheet reference; "
+            "all generated symbols, wires, and net labels are written to "
+            "OpenClaw_Managed.kicad_sch (the managed sheet)."
+        ),
     )
     p_compile.add_argument("--name", required=True, help="Project name")
     p_compile.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
