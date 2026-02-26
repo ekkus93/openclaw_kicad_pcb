@@ -388,3 +388,59 @@ def test_apply_netlist_dry_run_emits_no_write_warning(
 
     # Pipeline must NOT have modified the managed schematic file in dry-run mode.
     assert managed_sch_path.read_text(encoding="utf-8") == content_before
+
+
+def test_apply_netlist_requires_at_least_80_percent_components_placed(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Fail when fewer than 80% of IR components are placed into the managed sheet."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "R1", "symbol": "TestLib:R", "value": "1k"},
+            {"ref": "R2", "symbol": "TestLib:R", "value": "2k"},
+            {"ref": "R3", "symbol": "TestLib:R", "value": "3k"},
+            {"ref": "R4", "symbol": "TestLib:R", "value": "4k"},
+            {"ref": "R5", "symbol": "TestLib:R", "value": "5k"},
+        ],
+        "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]}],
+    }
+    ir_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    original_add_symbol = SchematicDoc.add_symbol
+
+    def _add_symbol_with_drops(self, symbol, ref, *args, **kwargs):
+        if ref in {"R4", "R5"}:
+            return None
+        return original_add_symbol(self, symbol, ref, *args, **kwargs)
+
+    monkeypatch.setattr(SchematicDoc, "add_symbol", _add_symbol_with_drops)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.EMPTY_GENERATION
+    assert exc_info.value.details["expected_components"] == 5
+    assert exc_info.value.details["found_symbols"] == 3
+    assert exc_info.value.details["min_component_placement_ratio"] == 0.8
+    assert exc_info.value.details["min_required_symbols"] == 4

@@ -25,6 +25,7 @@ from ..symbol_index import SymbolIndex
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
+MIN_COMPONENT_PLACEMENT_RATIO = 0.8
 
 
 def resolve_schematic_paths(project: ProjectRef) -> tuple[Path, Path]:
@@ -245,17 +246,19 @@ def _apply_netlist_to_project(
         )
         _write_nets(doc=doc, ir=ir, symbol_positions=symbol_positions, stats=stats)
 
-        # Post-mutation AST invariant: a non-empty IR must produce at least one
-        # placed symbol node. Check the live AST, not the stats counters.
+        # Post-mutation AST invariants: a non-empty IR must produce symbols in
+        # the managed sheet. Check the live AST, not the stats counters.
         found_symbols = len(doc.list_symbols())
-        if ir.components and found_symbols == 0:
+        expected_components = len(ir.components)
+
+        if expected_components and found_symbols == 0:
             if not request.dry_run:
                 raise UserError(
                     "Generation produced an empty managed schematic for a non-empty IR",
                     code=ErrorCode.EMPTY_GENERATION,
                     details={
                         "managed_schematic_path": str(managed_sch_path),
-                        "expected_components": len(ir.components),
+                        "expected_components": expected_components,
                         "found_symbols": 0,
                     },
                 )
@@ -265,14 +268,33 @@ def _apply_netlist_to_project(
                         "code": ErrorCode.EMPTY_GENERATION,
                         "message": (
                             "Dry-run: managed schematic would be empty despite non-empty IR"
-                            f" ({len(ir.components)} component(s) expected)."
+                            f" ({expected_components} component(s) expected)."
                         ),
                         "details": {
-                            "expected_components": len(ir.components),
+                            "expected_components": expected_components,
                             "found_symbols": 0,
                             "dry_run": True,
                         },
                     }
+                )
+
+        if expected_components:
+            placement_ratio = found_symbols / expected_components
+            if placement_ratio < MIN_COMPONENT_PLACEMENT_RATIO:
+                min_required = int(expected_components * MIN_COMPONENT_PLACEMENT_RATIO)
+                if min_required * 1.0 / expected_components < MIN_COMPONENT_PLACEMENT_RATIO:
+                    min_required += 1
+                raise UserError(
+                    "Generated schematic contains fewer placed symbols than required",
+                    code=ErrorCode.EMPTY_GENERATION,
+                    details={
+                        "managed_schematic_path": str(managed_sch_path),
+                        "expected_components": expected_components,
+                        "found_symbols": found_symbols,
+                        "min_component_placement_ratio": MIN_COMPONENT_PLACEMENT_RATIO,
+                        "min_required_symbols": min_required,
+                        "placement_ratio": round(placement_ratio, 4),
+                    },
                 )
 
         if symbol_defs_missing:
