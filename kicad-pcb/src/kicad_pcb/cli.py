@@ -24,6 +24,7 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
+from .commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
 from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cmd_set_board_size
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
@@ -71,6 +72,66 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_open = subparsers.add_parser("open", help="Open existing project")
     p_open.add_argument("path", help="Project path")
     p_open.set_defaults(func=cmd_open)
+
+    # info-sch
+    p_info_sch = subparsers.add_parser(
+        "info-sch",
+        help="Show current schematic introspection data",
+    )
+    p_info_sch.set_defaults(func=cmd_info_sch)
+
+    # apply-netlist
+    p_apply = subparsers.add_parser(
+        "apply-netlist",
+        help="Apply Circuit IR JSON to OpenClaw managed schematic",
+    )
+    p_apply.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
+    p_apply.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_apply.add_argument(
+        "--mode",
+        choices=["internal", "kicad"],
+        default="internal",
+        help="Validation mode (default: internal)",
+    )
+    p_apply.add_argument("--force", action="store_true", help="Adopt non-owned schematic")
+    p_apply.add_argument("--dry-run", action="store_true", help="Validate without writing")
+    p_apply.set_defaults(func=cmd_apply_netlist)
+
+    # new-from-netlist
+    p_new_netlist = subparsers.add_parser(
+        "new-from-netlist",
+        help="Create a project and compile Circuit IR deterministically",
+    )
+    p_new_netlist.add_argument("--name", required=True, help="Project name")
+    p_new_netlist.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
+    p_new_netlist.add_argument("--out-dir", help="Project output base directory")
+    p_new_netlist.add_argument("--description", help="Optional project description")
+    p_new_netlist.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_new_netlist.add_argument(
+        "--mode",
+        choices=["internal", "kicad"],
+        default="kicad",
+        help="Validation mode (default: kicad)",
+    )
+    p_new_netlist.set_defaults(func=cmd_new_from_netlist)
+
+    # compile-netlist (alias for new-from-netlist)
+    p_compile = subparsers.add_parser(
+        "compile-netlist",
+        help="Alias for new-from-netlist: create project from Circuit IR (same args)",
+    )
+    p_compile.add_argument("--name", required=True, help="Project name")
+    p_compile.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
+    p_compile.add_argument("--out-dir", help="Project output base directory")
+    p_compile.add_argument("--description", help="Optional project description")
+    p_compile.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_compile.add_argument(
+        "--mode",
+        choices=["internal", "kicad"],
+        default="kicad",
+        help="Validation mode (default: kicad)",
+    )
+    p_compile.set_defaults(func=cmd_new_from_netlist)
 
     # drc
     p_drc = subparsers.add_parser("drc", help="Run design rules check")
@@ -351,7 +412,8 @@ def main() -> None:  # noqa: PLR0912 PLR0915
     try:
         result = args.func(args)
         if getattr(args, "output_json", False):
-            print(format_result_json(result))
+            result_payload = json.loads(format_result_json(result))
+            print(json.dumps({"ok": True, "result": result_payload, "warnings": []}, indent=2))
         else:
             for line in format_result(result):
                 print(line)
@@ -366,18 +428,23 @@ def main() -> None:  # noqa: PLR0912 PLR0915
             print(
                 json.dumps(
                     {
-                        "error": "LintError",
-                        "message": str(exc),
-                        "issues": [
-                            {
-                                "code": i.code,
-                                "severity": i.severity.value,
-                                "message": i.message,
-                                "path": i.path,
-                                "suggestion": LINT_SUGGESTIONS.get(i.code),
-                            }
-                            for i in exc.issues
-                        ],
+                        "ok": False,
+                        "error": {
+                            "code": "VALIDATION_FAILED",
+                            "message": str(exc),
+                            "details": {
+                                "issues": [
+                                    {
+                                        "code": i.code,
+                                        "severity": i.severity.value,
+                                        "message": i.message,
+                                        "path": i.path,
+                                        "suggestion": LINT_SUGGESTIONS.get(i.code),
+                                    }
+                                    for i in exc.issues
+                                ]
+                            },
+                        },
                     },
                     indent=2,
                 )
@@ -394,5 +461,8 @@ def main() -> None:  # noqa: PLR0912 PLR0915
                     print(f"       💡 {suggestion}")
         sys.exit(1)
     except KiCadError as exc:
-        print(f"❌ {exc}")
+        if getattr(args, "output_json", False):
+            print(json.dumps({"ok": False, "error": exc.as_dict()}, indent=2))
+        else:
+            print(f"❌ {exc}")
         sys.exit(1)

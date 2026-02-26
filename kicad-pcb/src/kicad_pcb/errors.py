@@ -20,23 +20,74 @@ None — all names in this module are stable public API.
 
 from __future__ import annotations
 
+import json
+from enum import StrEnum
 from pathlib import Path
+
+
+class ErrorCode(StrEnum):
+    """Stable machine-readable error codes for JSON output."""
+
+    IR_SCHEMA_INVALID = "IR_SCHEMA_INVALID"
+    IR_SEMANTIC_INVALID = "IR_SEMANTIC_INVALID"
+    SYMBOL_NOT_FOUND = "SYMBOL_NOT_FOUND"
+    PIN_INVALID = "PIN_INVALID"
+    MULTI_UNIT_UNSUPPORTED = "MULTI_UNIT_UNSUPPORTED"
+    KICAD_CLI_MISSING = "KICAD_CLI_MISSING"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
+    NOT_OWNED = "NOT_OWNED"
+    PROJECT_NOT_OPEN = "PROJECT_NOT_OPEN"
+    IO_ERROR = "IO_ERROR"
+    USER_ERROR = "USER_ERROR"
+    TOOL_ERROR = "TOOL_ERROR"
+    PARSE_ERROR = "PARSE_ERROR"
 
 
 class KiCadError(RuntimeError):
     """Base class for all kicad-pcb errors."""
 
+    code: str = ErrorCode.IO_ERROR
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | ErrorCode | None = None,
+        details: dict[str, object] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = str(code or self.code)
+        self.details: dict[str, object] = details or {}
+
+    def as_dict(self) -> dict[str, object]:
+        """Return stable JSON-serialisable error payload."""
+        return {
+            "code": self.code,
+            "message": str(self),
+            "details": self.details,
+        }
+
+    def to_json(self) -> str:
+        """Return a JSON string for ``--json`` failure output."""
+        return json.dumps(self.as_dict(), indent=2)
+
 
 class UserError(KiCadError):
     """Invalid user input or missing project."""
+
+    code: str = ErrorCode.USER_ERROR
 
 
 class ToolError(KiCadError):
     """External tool (kicad-cli, Java, …) failed or is unavailable."""
 
+    code: str = ErrorCode.TOOL_ERROR
+
 
 class ParseError(KiCadError):
     """KiCad S-expression file is malformed."""
+
+    code: str = ErrorCode.PARSE_ERROR
 
 
 # ---------------------------------------------------------------------------

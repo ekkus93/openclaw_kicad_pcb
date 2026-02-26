@@ -25,6 +25,8 @@ These create the ``ListNode`` trees for schematic elements:
 from __future__ import annotations
 
 import contextlib
+import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from .errors import ParseError
@@ -43,6 +45,8 @@ _DEFAULT_SYMBOLS_DIR: Path = Path("/usr/share/kicad/symbols")
 __all__ = [
     "SchematicDoc",
     "make_label_node",
+    "make_managed_sheet_node",
+    "make_text_node",
     "make_symbol_node",
     "make_wire_node",
     "read_lib_symbol_def",
@@ -170,6 +174,51 @@ def make_label_node(name: str, x: float, y: float, label_uuid: str) -> ListNode:
         effects,
         L(atom("uuid"), string(label_uuid)),
         intersheet_prop,
+    )
+
+
+def make_text_node(text: str, x: float, y: float, *, hidden: bool = False) -> ListNode:
+    """Build a schematic ``(text ...)`` node.
+
+    This is used for lightweight metadata markers (for example, OpenClaw
+    ownership markers) and optional helper annotations.
+    """
+    effects_items: list[Node] = [atom("effects"), _effects_font(), L(atom("justify"), atom("left"))]
+    if hidden:
+        effects_items.append(atom("hide"))
+    effects = ListNode(tuple(effects_items), NO_POS)
+    return L(
+        atom("text"),
+        string(text),
+        L(atom("at"), fnum(x, 2), fnum(y, 2), atom("0")),
+        effects,
+    )
+
+
+@dataclass(frozen=True)
+class ManagedSheetSpec:
+    sheet_name: str
+    sheet_file: str
+    sheet_uuid: str
+    x: float = 20.0
+    y: float = 20.0
+    w: float = 80.0
+    h: float = 60.0
+
+
+def make_managed_sheet_node(
+    spec: ManagedSheetSpec,
+) -> ListNode:
+    """Build a top-level ``(sheet ...)`` node for the OpenClaw managed sheet."""
+    return L(
+        atom("sheet"),
+        L(atom("at"), fnum(spec.x, 2), fnum(spec.y, 2)),
+        L(atom("size"), fnum(spec.w, 2), fnum(spec.h, 2)),
+        L(atom("stroke"), L(atom("width"), atom("0")), L(atom("type"), atom("default"))),
+        L(atom("fill"), L(atom("color"), atom("0"), atom("0"), atom("0"), atom("0"))),
+        L(atom("uuid"), string(spec.sheet_uuid)),
+        _make_property("Sheetname", spec.sheet_name, spec.x + 1.0, spec.y - 1.5),
+        _make_property("Sheetfile", spec.sheet_file, spec.x + 1.0, spec.y + spec.h + 1.5),
     )
 
 
@@ -446,6 +495,10 @@ class SchematicDoc:
         """Append a net label to the schematic."""
         self._insert_before_sheet_instances(make_label_node(name, x, y, label_uuid))
 
+    def add_text(self, text: str, x: float, y: float, *, hidden: bool = False) -> None:
+        """Append a text node to the schematic."""
+        self._insert_before_sheet_instances(make_text_node(text, x, y, hidden=hidden))
+
     # ------------------------------------------------------------------
     # Layout query
     # ------------------------------------------------------------------
@@ -475,6 +528,129 @@ class SchematicDoc:
         return (base_x, 76.2)
 
     # ------------------------------------------------------------------
+    # Introspection helpers (CODE_REVIEW3)
+    # ------------------------------------------------------------------
+
+    def has_openclaw_marker(self) -> bool:
+        """Return ``True`` when an OpenClaw ownership marker text exists."""
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "text"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+                and item.items[1].value.startswith("OpenClaw:generated=")
+            ):
+                return True
+        return False
+
+    def ensure_openclaw_marker(self) -> bool:
+        """Ensure off-canvas OpenClaw marker text nodes are present.
+
+        Returns ``True`` when at least one marker is inserted, ``False`` when
+        markers already exist.
+        """
+        has_generated = False
+        has_region = False
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "text"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+            ):
+                value = item.items[1].value
+                if value == "OpenClaw:generated=v1":
+                    has_generated = True
+                elif value == "OpenClaw:region=managed":
+                    has_region = True
+
+        inserted = False
+        if not has_generated:
+            self._insert_before_sheet_instances(
+                make_text_node("OpenClaw:generated=v1", -1000.0, -1000.0, hidden=True)
+            )
+            inserted = True
+        if not has_region:
+            self._insert_before_sheet_instances(
+                make_text_node("OpenClaw:region=managed", -1000.0, -1010.0, hidden=True)
+            )
+            inserted = True
+        return inserted
+
+    def list_symbols(self) -> list[dict[str, object]]:
+        """Return a deterministic list of placed symbol metadata."""
+        symbols: list[dict[str, object]] = []
+        for item in self.root.items:
+            if not (isinstance(item, ListNode) and item.key == "symbol"):
+                continue
+            symbols.append(_symbol_metadata(item))
+
+        return sorted(symbols, key=lambda entry: str(entry.get("ref", "")))
+
+    def extract_pin_label_bindings(self) -> list[dict[str, str]]:
+        """Return pin→net bindings for generated schematics.
+
+        The writer records deterministic hidden marker text nodes with the
+        prefix ``OpenClaw:bind=`` and a JSON payload containing
+        ``{"ref": ..., "pin": ..., "net_name": ...}``.
+        """
+        bindings: list[dict[str, str]] = []
+        for item in self.root.items:
+            if not (
+                isinstance(item, ListNode)
+                and item.key == "text"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+            ):
+                continue
+
+            marker = item.items[1].value
+            if not marker.startswith("OpenClaw:bind="):
+                continue
+
+            parsed = _parse_binding_marker(marker)
+            if parsed is not None:
+                bindings.append(parsed)
+
+        return sorted(bindings, key=lambda entry: (entry["ref"], entry["pin"], entry["net_name"]))
+
+    def has_managed_sheet(self, *, sheet_name: str = "OpenClaw_Managed") -> bool:
+        """Return ``True`` if a sheet with ``Sheetname=<sheet_name>`` exists."""
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "sheet"
+                and _sheet_property_value(item, "Sheetname") == sheet_name
+            ):
+                return True
+        return False
+
+    def ensure_managed_sheet(
+        self,
+        *,
+        sheet_name: str = "OpenClaw_Managed",
+        sheet_file: str = "OpenClaw_Managed.kicad_sch",
+        sheet_uuid: str,
+    ) -> bool:
+        """Ensure a top-level managed sheet exists; return ``True`` when inserted."""
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "sheet"
+                and _sheet_property_value(item, "Sheetname") == sheet_name
+            ):
+                return False
+        self._insert_before_sheet_instances(
+            make_managed_sheet_node(ManagedSheetSpec(
+                sheet_name=sheet_name,
+                sheet_file=sheet_file,
+                sheet_uuid=sheet_uuid,
+            ))
+        )
+        return True
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
@@ -488,3 +664,110 @@ class SchematicDoc:
                 break
         items.insert(insertion_idx, node)
         self.root = ListNode(tuple(items), self.root.pos)
+
+
+def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
+    """Return property value for a schematic ``(sheet ...)`` property name."""
+    for child in sheet_node.items:
+        if not isinstance(child, ListNode) or child.key != "property":
+            continue
+        if len(child.items) < 3:
+            continue
+        name_node = child.items[1]
+        value_node = child.items[2]
+        if (
+            isinstance(name_node, StringNode)
+            and isinstance(value_node, StringNode)
+            and name_node.value == prop_name
+        ):
+            return value_node.value
+    return None
+
+
+def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
+    symbol_id = ""
+    ref = ""
+    value = ""
+    sym_uuid = ""
+    unit = ""
+    x = 0.0
+    y = 0.0
+
+    for child in symbol_node.items:
+        if not isinstance(child, ListNode):
+            continue
+        if (
+            child.key == "lib_id"
+            and len(child.items) >= 2
+            and isinstance(child.items[1], StringNode)
+        ):
+            symbol_id = child.items[1].value
+        elif (
+            child.key == "uuid"
+            and len(child.items) >= 2
+            and isinstance(child.items[1], StringNode)
+        ):
+            sym_uuid = child.items[1].value
+        elif (
+            child.key == "unit"
+            and len(child.items) >= 2
+            and isinstance(child.items[1], AtomNode)
+        ):
+            unit = child.items[1].value
+        elif child.key == "at" and len(child.items) >= 3:
+            x = _parse_float_atom(child.items[1], default=x)
+            y = _parse_float_atom(child.items[2], default=y)
+        elif child.key == "property" and len(child.items) >= 3:
+            name_node = child.items[1]
+            value_node = child.items[2]
+            if isinstance(name_node, StringNode) and isinstance(value_node, StringNode):
+                if name_node.value == "Reference":
+                    ref = value_node.value
+                elif name_node.value == "Value":
+                    value = value_node.value
+
+    return {
+        "ref": ref,
+        "symbol_id": symbol_id,
+        "value": value,
+        "uuid": sym_uuid,
+        "x": x,
+        "y": y,
+        "unit": unit,
+    }
+
+
+def _parse_float_atom(node: Node, *, default: float) -> float:
+    if not isinstance(node, AtomNode):
+        return default
+    with contextlib.suppress(ValueError):
+        return float(node.value)
+    return default
+
+
+def _parse_binding_marker(marker: str) -> dict[str, str] | None:
+    payload = marker.removeprefix("OpenClaw:bind=")
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    ref = data.get("ref")
+    pin = data.get("pin")
+    net_name = data.get("net_name")
+    # Check each field individually so mypy can narrow the types to `str`.
+    if not isinstance(ref, str) or not ref:
+        return None
+    if not isinstance(pin, str) or not pin:
+        return None
+    if not isinstance(net_name, str) or not net_name:
+        return None
+
+    return {
+        "ref": ref,
+        "pin": pin,
+        "net_name": net_name,
+    }

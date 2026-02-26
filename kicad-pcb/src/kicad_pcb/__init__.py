@@ -19,6 +19,9 @@ from .adapters import (
     SubprocessRunner,
 )
 
+# Circuit IR + semantic validation
+from .circuit_ir import CircuitIR, ComponentIR, NetIR, OptionsIR, PinRefIR
+
 # CLI entry-point
 from .cli import main
 
@@ -41,6 +44,7 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
+from .commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
 from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import (
     cmd_auto_place,
@@ -91,6 +95,7 @@ from .config import (
 from .errors import (
     DocLintError,
     DocSyntaxError,
+    ErrorCode,
     KicadCliValidationError,
     KiCadError,
     ParseError,
@@ -105,6 +110,7 @@ from .formatting import format_result, format_result_json
 
 # File-system utilities
 from .fs import SUPPORTED_ROOTS, _atomic_write, _check_sexp, _new_uuid, _write_temp_text
+from .ir_validate import validate_circuit_ir, validate_ir_symbols
 from .lint import LINT_SUGGESTIONS, LintError, LintSeverity, lint_pcb, lint_schematic
 
 # Typed domain models
@@ -147,6 +153,7 @@ from .preflight import (
 from .results import (
     AddComponentResult,
     AddNetResult,
+    ApplyNetlistResult,
     ApplyPatternResult,
     AutoPlaceResult,
     AutoRouteResult,
@@ -163,7 +170,9 @@ from .results import (
     FormatFileResult,
     ImportNetlistResult,
     InfoResult,
+    InfoSchResult,
     LintFileResult,
+    NewFromNetlistResult,
     NewProjectResult,
     OpenResult,
     PackageFabResult,
@@ -211,9 +220,18 @@ from .sexpr import (
 )
 from .sexpr.builder import L, atom, fnum, string
 
+# Symbol metadata index
+from .symbol_index import (
+    REPO_LOCAL_SYMBOLS_DIR,
+    SymbolIndex,
+    SymbolsResolution,
+    resolve_symbol_dirs,
+)
+
 __all__ = [
     # errors
     "KiCadError",
+    "ErrorCode",
     "UserError",
     "ToolError",
     "ParseError",
@@ -238,6 +256,19 @@ __all__ = [
     "FootprintMoveSpec",
     "LintIssue",
     "ValidationResult",
+    # circuit IR
+    "CircuitIR",
+    "ComponentIR",
+    "NetIR",
+    "PinRefIR",
+    "OptionsIR",
+    "validate_circuit_ir",
+    "validate_ir_symbols",
+    # symbol index
+    "SymbolIndex",
+    "SymbolsResolution",
+    "resolve_symbol_dirs",
+    "REPO_LOCAL_SYMBOLS_DIR",
     # adapters
     "RunResult",
     "RunnerProtocol",
@@ -295,6 +326,9 @@ __all__ = [
     "cmd_new",
     "cmd_info",
     "cmd_open",
+    "cmd_apply_netlist",
+    "cmd_info_sch",
+    "cmd_new_from_netlist",
     "cmd_drc",
     "cmd_erc",
     "cmd_export_gerbers",
@@ -327,6 +361,7 @@ __all__ = [
     # results
     "NewProjectResult",
     "InfoResult",
+    "InfoSchResult",
     "OpenResult",
     "DrcResult",
     "ErcResult",
@@ -345,6 +380,7 @@ __all__ = [
     "AddComponentResult",
     "AddNetResult",
     "ConnectResult",
+    "ApplyNetlistResult",
     "ApplyPatternResult",
     "DoctorCheckItem",
     "DoctorResult",
@@ -353,6 +389,7 @@ __all__ = [
     "LintFileResult",
     "ValidateFileResult",
     "FormatFileResult",
+    "NewFromNetlistResult",
     # formatting
     "format_result",
     "format_result_json",

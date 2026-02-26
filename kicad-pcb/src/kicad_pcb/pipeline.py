@@ -379,7 +379,9 @@ def _kicad_validate_sch(
 ) -> None:
     """Write *content* to a temp file and run kicad-cli ERC against it."""
     tmp_report_suffix = ".erc.json"
-    tmp_sch = _write_temp_text(original_path.parent, ".kicad_sch.tmp", content)
+    # kicad-cli requires the .kicad_sch extension to load the file correctly;
+    # a .tmp extension causes "Failed to load schematic".
+    tmp_sch = _write_temp_text(original_path.parent, ".kicad_sch", content)
     tmp_report = tmp_sch.with_suffix(tmp_report_suffix)
     try:
         result, report = cli.erc(tmp_sch, tmp_report)
@@ -400,7 +402,8 @@ def _kicad_validate_pcb(
 ) -> None:
     """Write *content* to a temp file and run kicad-cli DRC against it."""
     tmp_report_suffix = ".drc.json"
-    tmp_pcb = _write_temp_text(original_path.parent, ".kicad_pcb.tmp", content)
+    # kicad-cli requires the .kicad_pcb extension to load the file correctly.
+    tmp_pcb = _write_temp_text(original_path.parent, ".kicad_pcb", content)
     tmp_report = tmp_pcb.with_suffix(tmp_report_suffix)
     try:
         result, report = cli.drc(tmp_pcb, tmp_report)
