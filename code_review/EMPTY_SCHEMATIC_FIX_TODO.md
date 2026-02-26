@@ -19,10 +19,10 @@ We need to:
 
 ## P0 — Reproduce + confirm which file is empty (root vs managed)
 
-- [ ] Add a short debug helper function used by commands:
+- [x] Add a short debug helper function used by commands:
   - `resolve_schematic_paths(project) -> (root_sch_path, managed_sch_path)`
 - [x] In `new-from-netlist` and `apply-netlist`, log/return both paths.
-- [ ] Update docs/help text: root schematic may be “thin” (sheet only); managed sheet contains content.
+- [x] Update docs/help text: root schematic may be "thin" (sheet only); managed sheet contains content.
 
 **Acceptance**
 - CLI JSON output includes `root_schematic_path` and `managed_schematic_path`.
