@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Pre-commit hook: format check + lint.
+# Install once with: bash git-hooks/install.sh
+set -euo pipefail
+
+VENV=".venv/bin"
+
+if [[ ! -x "$VENV/ruff" ]]; then
+    echo "pre-commit: ruff not found in $VENV — skipping lint (run: python -m venv .venv && pip install ruff)"
+    exit 0
+fi
+
+echo "pre-commit: ruff format --check ..."
+"$VENV/ruff" format --check .
+
+echo "pre-commit: ruff check ..."
+"$VENV/ruff" check .
+
+echo "pre-commit: all checks passed."
