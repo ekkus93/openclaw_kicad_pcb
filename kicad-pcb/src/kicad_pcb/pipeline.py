@@ -33,11 +33,13 @@ Usage
 from __future__ import annotations
 
 import contextlib
+import difflib
 import logging
 import time
 from collections.abc import Callable
 from enum import IntEnum
 from pathlib import Path
+from typing import IO
 
 from .adapters import KicadCliAdapter
 from .errors import ParseError, ToolError
@@ -102,6 +104,7 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     operation: str | None = None,
     strict: bool = False,
     dry_run: bool = False,
+    diff_output: IO[str] | None = None,
 ) -> None:
     """Load *path*, apply *mutator*, validate, then commit atomically.
 
@@ -127,6 +130,12 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     dry_run:
         When ``True``, run all validation steps but **skip the final write**.
         The file is left unchanged; useful for preflight checks.
+    diff_output:
+        When not ``None``, a unified diff of the original file content versus
+        the serialised result is written to this stream after validation
+        completes successfully.  Pass ``sys.stdout`` for console output or a
+        :class:`io.StringIO` for programmatic access.  Works whether
+        *dry_run* is ``True`` or ``False``.
 
     Raises
     ------
@@ -137,6 +146,8 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     :exc:`~kicad_pcb.errors.ToolError`
         On KiCad CLI validation failure (``KICAD`` / ``FULL`` modes).
     """
+    original_text = path.read_text(encoding="utf-8") if diff_output is not None else ""
+
     t0 = time.perf_counter()
     doc = SchematicDoc.load(path)
     _log_stage("read", path=path, mode=mode, operation=operation, t0=t0)
@@ -171,6 +182,10 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
         _kicad_validate_sch(content, path, cli, operation=operation)
         _log_stage("validate.kicad", path=path, mode=mode, operation=operation, t0=t5)
 
+    # Unified diff output (before commit, so visible even in dry-run).
+    if diff_output is not None:
+        _show_diff(original_text, content, path, diff_output)
+
     # Commit to disk (skipped in dry-run mode).
     if not dry_run:
         t6 = time.perf_counter()
@@ -193,6 +208,7 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
     operation: str | None = None,
     strict: bool = False,
     dry_run: bool = False,
+    diff_output: IO[str] | None = None,
 ) -> None:
     """Load *path*, apply *mutator*, validate, then commit atomically.
 
@@ -201,7 +217,10 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
     :meth:`~kicad_pcb.adapters.KicadCliAdapter.drc` for KiCad CLI validation.
 
     When *dry_run* is ``True`` all validation runs but the file is not written.
+    Accepts the same *diff_output* parameter as :func:`mutate_and_validate_sch`.
     """
+    original_text = path.read_text(encoding="utf-8") if diff_output is not None else ""
+
     t0 = time.perf_counter()
     doc = PcbDoc.load(path)
     _log_stage("read", path=path, mode=mode, operation=operation, t0=t0)
@@ -233,6 +252,10 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
         _kicad_validate_pcb(content, path, cli, operation=operation)
         _log_stage("validate.kicad", path=path, mode=mode, operation=operation, t0=t5)
 
+    # Unified diff output (before commit, so visible even in dry-run).
+    if diff_output is not None:
+        _show_diff(original_text, content, path, diff_output)
+
     if not dry_run:
         t6 = time.perf_counter()
         _atomic_write(path, content, root="kicad_pcb", backup=backup, operation=operation)
@@ -242,6 +265,29 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _show_diff(
+    original: str,
+    updated: str,
+    path: Path,
+    out: IO[str],
+) -> None:
+    """Write a unified diff of *original* → *updated* to *out*.
+
+    Uses :func:`difflib.unified_diff` with ``fromfile`` / ``tofile`` labels
+    derived from *path*.  When *original* and *updated* are identical, nothing
+    is written.
+    """
+    lines_a = original.splitlines(keepends=True)
+    lines_b = updated.splitlines(keepends=True)
+    diff = difflib.unified_diff(
+        lines_a,
+        lines_b,
+        fromfile=f"{path.name} (before)",
+        tofile=f"{path.name} (after)",
+    )
+    out.writelines(diff)
 
 
 def _log_stage(
