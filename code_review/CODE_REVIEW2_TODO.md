@@ -188,18 +188,18 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 
 ### P4.1 Add regression fixtures for real broken files encountered
 **Tasks**
-- [ ] Create `tests/fixtures/broken/` and `tests/fixtures/valid/`.
-- [ ] Add fixtures for the known issues mentioned:
-  - [ ] `(id N)` formatting issue
-  - [ ] sub-symbol naming issue
-  - [ ] indentation/formatting issue (if relevant)
-- [ ] For each fixture, add a test:
-  - [ ] parsing result (pass/fail expectation)
-  - [ ] validator expectation (syntax/lint/kicad-cli)
-  - [ ] error message contains helpful context
+- [x] Create `tests/fixtures/broken/` and `tests/fixtures/valid/`.
+- [x] Add fixtures for the known issues mentioned:
+  - [x] `(id N)` formatting issue
+  - [x] sub-symbol naming issue
+  - [x] indentation/formatting issue (if relevant)
+- [x] For each fixture, add a test:
+  - [x] parsing result (pass/fail expectation)
+  - [x] validator expectation (syntax/lint/kicad-cli)
+  - [x] error message contains helpful context
 
 **Acceptance criteria**
-- Fixtures are committed and tests cover them.
+- Fixtures are committed and tests cover them. ✅ 43 tests in `tests/unit/test_p41_regression_fixtures.py`
 
 ---
 
