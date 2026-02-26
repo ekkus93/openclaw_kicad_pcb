@@ -1,6 +1,18 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T16:57:28Z_
+_Last updated: 2026-02-26T17:34:13Z_
+
+---
+
+## 2026-02-26T17:34:13Z - Add pipeline-level tests for extends chain (test_netlist_commands.py)
+- Gap identified: all pipeline tests in `test_netlist_commands.py` used only flat `TestLib:R`. The full `cmd_new_from_netlist` pipeline had never been run with an `(extends)` symbol.
+- Added two helper functions and four pipeline tests:
+  1. `test_extends_symbol_embeds_base_and_derived_in_lib_symbols` — verifies both `TestLib:OpAmp` and `TestLib:DerivedOpAmp` appear in `lib_symbols` of the generated schematic.
+  2. `test_extends_symbol_instance_carries_all_inherited_pins` — verifies the placed `U1` instance has pins `["1","2","3","6"]` not the old fallback `["1","2"]`.
+  3. `test_extends_symbol_nets_on_inherited_pins_validate_and_bind` — runs nets on pin "6" (only on base OpAmp), verifies validation passes and `OpenClaw:bind=` markers are written.
+  4. `test_broken_extends_chain_raises_symbol_not_found` — broken extends (base absent) must raise `SYMBOL_NOT_FOUND` at `validate_ir_symbols` time, not silently produce a wrong schematic.
+- 14 tests now in `test_netlist_commands.py`, 87 total in the two affected files, all passing.
+- Committed `e3d4476`, pushed.
 
 ---
 
