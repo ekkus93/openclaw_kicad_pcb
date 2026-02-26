@@ -33,6 +33,8 @@ Usage
 from __future__ import annotations
 
 import contextlib
+import logging
+import time
 from collections.abc import Callable
 from enum import IntEnum
 from pathlib import Path
@@ -52,6 +54,8 @@ __all__ = [
     "mutate_and_validate_pcb",
     "mutate_and_validate_sch",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -133,29 +137,45 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
     :exc:`~kicad_pcb.errors.ToolError`
         On KiCad CLI validation failure (``KICAD`` / ``FULL`` modes).
     """
+    t0 = time.perf_counter()
     doc = SchematicDoc.load(path)
+    _log_stage("read", path=path, mode=mode, operation=operation, t0=t0)
+
+    t1 = time.perf_counter()
     mutator(doc)
+    _log_stage("mutate", path=path, mode=mode, operation=operation, t0=t1)
+
+    t2 = time.perf_counter()
     content = serialize(doc.root)
+    _log_stage("serialize", path=path, mode=mode, operation=operation, t0=t2)
 
     # SYNTAX: round-trip parse + root-node check.
     parsed_root = None
     if mode >= ValidationMode.SYNTAX:
+        t3 = time.perf_counter()
         parsed_root = _syntax_check(content, "kicad_sch", operation=operation)
+        _log_stage("parse", path=path, mode=mode, operation=operation, t0=t3)
 
     # LINT: structural rules on the round-tripped AST.
     if mode >= ValidationMode.LINT:
+        t4 = time.perf_counter()
         lint_root = parsed_root if parsed_root is not None else parse(content)
         effective_strict = strict or mode >= ValidationMode.FULL
         issues = lint_schematic(lint_root)
         _raise_if_errors(issues, strict=effective_strict, operation=operation)
+        _log_stage("validate.lint", path=path, mode=mode, operation=operation, t0=t4)
 
     # KICAD: run ERC on the (as-yet uncommitted) new content.
     if mode >= ValidationMode.KICAD and cli is not None:
+        t5 = time.perf_counter()
         _kicad_validate_sch(content, path, cli, operation=operation)
+        _log_stage("validate.kicad", path=path, mode=mode, operation=operation, t0=t5)
 
     # Commit to disk (skipped in dry-run mode).
     if not dry_run:
+        t6 = time.perf_counter()
         _atomic_write(path, content, root="kicad_sch", backup=backup, operation=operation)
+        _log_stage("write", path=path, mode=mode, operation=operation, t0=t6)
 
 
 # ---------------------------------------------------------------------------
@@ -182,30 +202,84 @@ def mutate_and_validate_pcb(  # noqa: PLR0913 — keyword-only args make call si
 
     When *dry_run* is ``True`` all validation runs but the file is not written.
     """
+    t0 = time.perf_counter()
     doc = PcbDoc.load(path)
+    _log_stage("read", path=path, mode=mode, operation=operation, t0=t0)
+
+    t1 = time.perf_counter()
     mutator(doc)
+    _log_stage("mutate", path=path, mode=mode, operation=operation, t0=t1)
+
+    t2 = time.perf_counter()
     content = serialize(doc.root)
+    _log_stage("serialize", path=path, mode=mode, operation=operation, t0=t2)
 
     parsed_root = None
     if mode >= ValidationMode.SYNTAX:
+        t3 = time.perf_counter()
         parsed_root = _syntax_check(content, "kicad_pcb", operation=operation)
+        _log_stage("parse", path=path, mode=mode, operation=operation, t0=t3)
 
     if mode >= ValidationMode.LINT:
+        t4 = time.perf_counter()
         lint_root = parsed_root if parsed_root is not None else parse(content)
         effective_strict = strict or mode >= ValidationMode.FULL
         issues = lint_pcb(lint_root)
         _raise_if_errors(issues, strict=effective_strict, operation=operation)
+        _log_stage("validate.lint", path=path, mode=mode, operation=operation, t0=t4)
 
     if mode >= ValidationMode.KICAD and cli is not None:
+        t5 = time.perf_counter()
         _kicad_validate_pcb(content, path, cli, operation=operation)
+        _log_stage("validate.kicad", path=path, mode=mode, operation=operation, t0=t5)
 
     if not dry_run:
+        t6 = time.perf_counter()
         _atomic_write(path, content, root="kicad_pcb", backup=backup, operation=operation)
+        _log_stage("write", path=path, mode=mode, operation=operation, t0=t6)
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _log_stage(
+    stage: str,
+    *,
+    path: Path,
+    mode: ValidationMode,
+    operation: str | None,
+    t0: float,
+) -> None:
+    """Emit a DEBUG log record for one pipeline stage.
+
+    The *kicad* key in ``extra`` carries the structured context dict so that
+    log handlers (e.g. JSON formatters) can surface it machine-readably:
+
+    .. code-block:: json
+
+        {"stage": "read", "path": "/…/proj.kicad_sch",
+         "mode": "LINT", "operation": "add-net", "elapsed_ms": 3.14}
+    """
+    elapsed_ms = round((time.perf_counter() - t0) * 1000, 3)
+    logger.debug(
+        "[%s] %s  mode=%s  op=%s  elapsed_ms=%.3f",
+        stage,
+        path.name,
+        mode.name,
+        operation or "-",
+        elapsed_ms,
+        extra={
+            "kicad": {
+                "stage": stage,
+                "path": str(path),
+                "mode": mode.name,
+                "operation": operation,
+                "elapsed_ms": elapsed_ms,
+            }
+        },
+    )
 
 
 def _syntax_check(content: str, expected_root: str, *, operation: str | None) -> ListNode:

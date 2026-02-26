@@ -207,14 +207,14 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 
 ### P5.1 Add structured logging hooks for pipeline operations
 **Tasks**
-- [ ] Emit structured logs at:
+- [x] Emit structured logs at:
   - read
   - parse
   - mutate
   - serialize
   - validate
   - write/replace
-- [ ] Include task context: file path, validation mode, elapsed time.
+- [x] Include task context: file path, validation mode, elapsed time.
 
 ### P5.2 Add “dry-run diff” output option
 **Tasks**
