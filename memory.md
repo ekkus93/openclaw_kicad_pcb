@@ -769,3 +769,37 @@ High-priority next phases:
 ### Remaining CODE_REVIEW2 items:
 - P5.1: Structured logging
 - P5.2: Dry-run diff output
+
+---
+
+## 2026-02-26T00:00:00Z — P5.1 structured logging complete
+
+### Completed: P5.1 — Structured Logging Hooks for Pipeline Operations
+
+**kicad-pcb/src/kicad_pcb/pipeline.py — MODIFIED**
+- Added `import logging`, `import time` at top
+- Added `logger = logging.getLogger(__name__)` module-level logger
+- Added `_log_stage(stage, *, path, mode, operation, t0)` helper
+  - Emits `logger.debug(...)` with `extra={"kicad": {...}}`
+  - Formats message as `[stage] filename  mode=NAME  op=OP  elapsed_ms=X.XXX`
+- Instrumented both pipeline functions:
+  - `read`, `mutate`, `serialize` — always logged
+  - `parse` — logged when `mode >= SYNTAX`
+  - `validate.lint` — logged when `mode >= LINT`
+  - `validate.kicad` — logged when `mode >= KICAD` and cli provided
+  - `write` — logged when not `dry_run`
+
+**Structured context in `record.kicad`:**
+```json
+{"stage": "read", "path": "/path/to/file.kicad_sch",
+ "mode": "LINT", "operation": "add-net", "elapsed_ms": 3.14}
+```
+
+**tests/unit/test_p51_structured_logging.py — NEW (28 tests)**
+- TestLogStageHelper (8 tests) — direct unit tests of _log_stage
+- TestMutateValidateSchLogging (10 tests) — sch pipeline stages
+- TestMutateValidatePcbLogging (5 tests) — pcb pipeline stages
+- TestStructuredContextCompleteness (5 tests) — required keys / types
+
+### Remaining CODE_REVIEW2 items:
+- P5.2: Dry-run diff output
