@@ -62,7 +62,7 @@ jobs:
       # ── Install KiCad ────────────────────────────────────────────────────────
       - name: Add KiCad PPA and install
         run: |
-          sudo add-apt-repository --yes ppa:kicad/kicad-9-releases
+          sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends kicad
           kicad-cli version
