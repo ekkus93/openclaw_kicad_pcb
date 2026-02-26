@@ -643,3 +643,50 @@ High-priority next phases:
 
 ### Total test count: 661 (up from 647 after 7.5)
 - Commit for 7.6: `c0d1768`
+
+## 2026-02-25T20:30:00Z — CODE_REVIEW2 implementation complete (commit e054ecc)
+
+### Issues addressed (P0, P1, P2.1, P3.3 from code_review/CODE_REVIEW2_TODO.md):
+
+**P0.1 + P0.2 — Atomic write hardening:**
+- Added `_write_temp_text(directory, suffix, content) -> Path` to `fs.py`
+  - Uses `os.fdopen()` context manager: FD always closed, even on exception
+  - `f.flush()` + `os.fsync()` before `os.replace()` (directory fsync skipped by design)
+- Updated `_atomic_write()` to delegate to `_write_temp_text()`
+- Fixed `pipeline._kicad_validate_sch` and `pipeline._kicad_validate_pcb` (same bug)
+- Removed unused `import os` and `import tempfile` from `pipeline.py`
+
+**P1.1 — Tokenizer-based `_check_sexp`:**
+- Split into `_tokenize_sexp(content)` + `_check_sexp(content, root)`
+- `_tokenize_sexp` correctly handles `\\"` (escaped backslash before quote) and `\"` (escaped quote inside string) — old char-scanner was broken on `\\"` sequences
+- Balance check now `sum(1 if t=="(" else -1 if t==")" else 0 for t in tokens)`
+- Extracted helper reduces `_check_sexp` branch count below ruff PLR0912 limit of 12
+
+**P1.2 — `SUPPORTED_ROOTS` constant:**
+- `SUPPORTED_ROOTS: frozenset[str] = frozenset({"kicad_sch", "kicad_pcb"})` in `fs.py`
+- Exported via `__init__.py`
+
+**P2.1 — "Basic AST" design decision documented in README:**
+- New "## Design notes → Serializer and round-trip formatting" section
+- Clear statement: comments dropped, key order/whitespace may change; formatting diffs expected
+- Notes future CST path if lossless round-trip needed
+
+**P3.3 — `scripts/validate.sh`:**
+- Runs ruff check, ruff format --check, mypy, pytest (with optional --fast flag for no coverage)
+- Executable; mentioned in README Development section
+
+### New tests (+12, total now 381 in test_phase1_reliability.py cluster):
+- `TestCheckSexpEscapes`: 5 new escape-sequence edge case tests
+- `TestSupportedRoots`: 3 tests for the new constant
+- `TestWriteTempText`: 6 tests (content, directory, suffix, 2 MiB large content, unicode, FD-leak cleanup)
+
+### Files changed in `e054ecc`:
+- `kicad-pcb/src/kicad_pcb/fs.py` — SUPPORTED_ROOTS, _tokenize_sexp, _check_sexp, _write_temp_text, _atomic_write
+- `kicad-pcb/src/kicad_pcb/pipeline.py` — both validate functions use _write_temp_text
+- `kicad-pcb/src/kicad_pcb/__init__.py` — exports SUPPORTED_ROOTS, _write_temp_text
+- `tests/unit/test_phase1_reliability.py` — +12 tests
+- `scripts/validate.sh` — new
+- `README.md` — design notes + validate.sh mention
+- `code_review/CODE_REVIEW2.md` — first committed
+- `code_review/CODE_REVIEW2_TODO.md` — 37 items marked [x]
+
