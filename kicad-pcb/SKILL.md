@@ -2,7 +2,7 @@
 name: kicad-pcb
 version: 1.0.0
 description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline. Based on kicad-pcb by PaxSwarm.
-author: Phillip Chin
+author: PaxSwarm
 license: MIT
 keywords: [pcb, kicad, electronics, gerber, schematic, circuit, pcbway, manufacturing, hardware]
 triggers: ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbway", "electronics project"]
@@ -42,28 +42,79 @@ kicad-cli --version
 pip install cairosvg  # optional — enables PNG schematic preview
 ```
 
+## Installation
+
+Install from [ClawHub](https://clawhub.com) using the `clawhub` CLI:
+
+```bash
+# Install clawhub CLI (if not already installed)
+npm i -g clawhub
+
+# Install this skill into your current workspace
+clawhub install kicad-pcb
+
+# Start a new OpenClaw session to pick up the skill
+```
+
+The skill is installed into `./skills/kicad-pcb/` under your working directory.
+OpenClaw loads it as a workspace skill on the next session.
+
+To install as a shared skill (available to all agents on this machine), run
+`clawhub install kicad-pcb` from `~/.openclaw/skills/` as the working directory,
+or copy the folder there manually.
+
+> **Note:** The `{baseDir}` placeholder in the commands below is automatically
+> expanded by OpenClaw to the skill's installed folder path. You do not need to
+> type it literally — it is provided to the agent at runtime.
+
+## Verifying Installation
+
+Run the following after starting a new OpenClaw session:
+
+```bash
+# 1. Confirm the skill's entrypoint is reachable
+python3 {baseDir}/scripts/kicad_pcb.py --help
+
+# 2. Check system prerequisites
+python3 {baseDir}/scripts/kicad_pcb.py doctor
+
+# 3. Confirm kicad-cli is on PATH
+kicad-cli --version
+```
+
+Expected output for step 1: usage listing with all subcommands (`new`, `info`,
+`drc`, `export-gerbers`, etc.).
+
+Expected output for step 2: a green check (or a clear list of what is missing)
+for `kicad-cli`, Python version, and optional packages (`cairosvg`, `pillow`).
+
+If `kicad-cli` is missing, follow the [KiCad Installation](#requirements) steps
+below. If `python3 {baseDir}/scripts/kicad_pcb.py` fails with `No such file or
+directory`, the skill path was not resolved — check that the skill is loaded
+with `clawhub list` and that you started a fresh OpenClaw session.
+
 ## Quick Start
 
 ```bash
 # 1. Create a new project
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py new "LED Blinker" --description "555 timer LED blinker circuit"
+python3 {baseDir}/scripts/kicad_pcb.py new "LED Blinker" --description "555 timer LED blinker circuit"
 
 # 2. Add components to schematic
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Timer:NE555 U1
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:LED D1 --footprint LED_THT:LED_D3.0mm
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:R R1 --value 1k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
+python3 {baseDir}/scripts/kicad_pcb.py add-component Timer:NE555 U1
+python3 {baseDir}/scripts/kicad_pcb.py add-component Device:LED D1 --footprint LED_THT:LED_D3.0mm
+python3 {baseDir}/scripts/kicad_pcb.py add-component Device:R R1 --value 1k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
 
 # 3. Generate schematic preview (for review)
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py preview-schematic
+python3 {baseDir}/scripts/kicad_pcb.py preview-schematic
 
 # 4. Run design rule check
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py drc
+python3 {baseDir}/scripts/kicad_pcb.py drc
 
 # 5. Export manufacturing files
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py export-gerbers
+python3 {baseDir}/scripts/kicad_pcb.py export-gerbers
 
 # 6. Prepare PCBWay order
-python3 /home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote --quantity 5
+python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 ```
 
 ## Commands
@@ -131,15 +182,15 @@ Tell me what you want to build:
 
 ```bash
 # Create project
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py new "LED_Blinker_555"
+{baseDir}/scripts/kicad_pcb.py new "LED_Blinker_555"
 
 # Add components based on description
 # Describe the circuit, then add components manually:
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Timer:NE555 U1 --value NE555 --footprint Package_DIP:DIP-8_W7.62mm
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:LED D1 --value LED --footprint LED_THT:LED_D3.0mm
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:R R1 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:R R2 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py add-component Device:C C1 --value 10uF --footprint Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm
+{baseDir}/scripts/kicad_pcb.py add-component Timer:NE555 U1 --value NE555 --footprint Package_DIP:DIP-8_W7.62mm
+{baseDir}/scripts/kicad_pcb.py add-component Device:LED D1 --value LED --footprint LED_THT:LED_D3.0mm
+{baseDir}/scripts/kicad_pcb.py add-component Device:R R1 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
+{baseDir}/scripts/kicad_pcb.py add-component Device:R R2 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
+{baseDir}/scripts/kicad_pcb.py add-component Device:C C1 --value 10uF --footprint Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm
 ```
 
 ### Step 3: Review & Confirm
@@ -155,27 +206,27 @@ You confirm or request changes.
 
 ```bash
 # Import to PCB
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py import-netlist
+{baseDir}/scripts/kicad_pcb.py import-netlist
 
 # Auto-layout (or manual guidance)
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py auto-place --spacing 15
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py set-board-size 50x30
+{baseDir}/scripts/kicad_pcb.py auto-place --spacing 15
+{baseDir}/scripts/kicad_pcb.py set-board-size 50x30
 
 # Preview
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py preview-pcb
+{baseDir}/scripts/kicad_pcb.py preview-pcb
 ```
 
 ### Step 5: Manufacturing
 
 ```bash
 # Run final checks
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py drc --strict
+{baseDir}/scripts/kicad_pcb.py drc --strict
 
 # Export everything
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py package-for-fab --output LED_Blinker_fab.zip
+{baseDir}/scripts/kicad_pcb.py package-for-fab --output LED_Blinker_fab.zip
 
 # Get quote
-/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py pcbway-quote --quantity 10 --layers 2 --thickness 1.6
+{baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 10 --layers 2 --thickness 1.6
 ```
 
 ## Common Circuit Templates
@@ -199,7 +250,7 @@ Create `~/.kicad-pcb/config.json`:
       "surface_finish": "hasl"
     }
   },
-  "kicad_path": "/home/ubo/.local/bin/kicad-cli",
+  "kicad_path": "/usr/bin/kicad-cli",
   "projects_dir": "~/kicad-projects",
   "auto_backup": true
 }
