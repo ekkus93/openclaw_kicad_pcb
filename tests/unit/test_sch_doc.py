@@ -434,6 +434,42 @@ class TestAddLabel:
 
 
 # ---------------------------------------------------------------------------
+# extract_pin_label_bindings
+# ---------------------------------------------------------------------------
+
+
+class TestExtractPinLabelBindings:
+    def test_returns_bindings_from_deterministic_markers(self) -> None:
+        doc = _doc_from(MINIMAL_SCH)
+        doc.add_text(
+            'OpenClaw:bind={"ref":"R1","pin":"1","net_name":"N1"}',
+            -1200.0,
+            -1500.0,
+            hidden=True,
+        )
+        doc.add_text(
+            'OpenClaw:bind={"ref":"R2","pin":"2","net_name":"N2"}',
+            -1200.0,
+            -1510.0,
+            hidden=True,
+        )
+
+        bindings = doc.extract_pin_label_bindings()
+
+        assert bindings == [
+            {"ref": "R1", "pin": "1", "net_name": "N1"},
+            {"ref": "R2", "pin": "2", "net_name": "N2"},
+        ]
+
+    def test_ignores_malformed_markers(self) -> None:
+        doc = _doc_from(MINIMAL_SCH)
+        doc.add_text("OpenClaw:bind=not-json", -1200.0, -1500.0, hidden=True)
+        doc.add_text('OpenClaw:bind={"ref":"R1"}', -1200.0, -1510.0, hidden=True)
+
+        assert doc.extract_pin_label_bindings() == []
+
+
+# ---------------------------------------------------------------------------
 # save / round-trip
 # ---------------------------------------------------------------------------
 

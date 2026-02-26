@@ -13,6 +13,7 @@ scratch directories under ~/tmp/kicad-tests/ to satisfy this constraint.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -21,6 +22,8 @@ import sys
 from pathlib import Path
 
 import pytest
+from kicad_pcb.commands.netlist import MANAGED_SHEET_FILE
+from kicad_pcb.sch_doc import SchematicDoc
 
 pytestmark = pytest.mark.integration
 
@@ -339,3 +342,171 @@ class TestFullPipeline:
             f"Gerber export failed (exit {ger_proc.returncode}):\n{ger_proc.stderr}"
         )
         assert list(gerbers_dir.glob("*.g*")), "No Gerber files produced"
+
+
+# ---------------------------------------------------------------------------
+# P7.3 helpers
+# ---------------------------------------------------------------------------
+
+_SYMBOLS_DIR = Path(__file__).parent.parent / "fixtures" / "symbols"
+
+_MINIMAL_IR: dict = {
+    "version": "1",
+    "components": [{"ref": "R1", "symbol": "TestLib:R", "value": "10k"}],
+    "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]}],
+}
+
+
+def _extract_bindings_from_sch(path: Path) -> list[dict[str, str]]:
+    """Parse OpenClaw:bind= markers from a managed schematic file.
+
+    Returns a sorted list of dicts so two runs can be compared for equality.
+    """
+    doc = SchematicDoc.load(path)
+    return sorted(doc.extract_pin_label_bindings(), key=lambda b: (b["ref"], b["pin"]))
+
+
+# ---------------------------------------------------------------------------
+# P7.3: strict-mode new-from-netlist + compile-netlist integration tests
+# ---------------------------------------------------------------------------
+
+
+@requires_kicad
+class TestNewFromNetlistKicadMode:
+    """P7.3: strict-mode new-from-netlist and compile-netlist with kicad-cli.
+
+    Verifies that:
+    - new-from-netlist --mode kicad completes successfully
+    - kicad-cli can load the generated main schematic
+    - compile-netlist (alias) is wired to the same function and also succeeds
+    - Both commands produce identical pin→net binding markers in the managed
+      schematic, confirming deterministic output
+    """
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, home_tmp: Path) -> None:
+        self.home = str(home_tmp)
+        self.projects_dir = home_tmp / "kicad-projects"
+        # IR JSON must live under home_tmp so kicad-cli Flatpak sandbox can
+        # reach it if the script ever passes it to kicad-cli (it does not
+        # currently, but keep the constraint for defensive correctness).
+        self.ir_path = home_tmp / "ir.json"
+        self.ir_path.write_text(json.dumps(_MINIMAL_IR), encoding="utf-8")
+
+    def _run(self, *args: str) -> subprocess.CompletedProcess[str]:
+        return _run_script(list(args), self.home)
+
+    # ------------------------------------------------------------------
+    # Test 1: new-from-netlist --mode kicad exits 0 and creates files
+    # ------------------------------------------------------------------
+
+    def test_new_from_netlist_kicad_mode_succeeds(self) -> None:
+        """new-from-netlist --mode kicad must exit 0 and create all project files."""
+        result = self._run(
+            "new-from-netlist",
+            "--name", "TestNetlist",
+            "--netlist", str(self.ir_path),
+            "--symbols-dir", str(_SYMBOLS_DIR),
+            "--mode", "kicad",
+        )
+        assert result.returncode == 0, (
+            f"new-from-netlist --mode kicad failed (exit {result.returncode}):\n{result.stderr}"
+        )
+        project_dir = self.projects_dir / "TestNetlist"
+        assert (project_dir / "TestNetlist.kicad_sch").exists(), "Main schematic not created"
+        assert (project_dir / MANAGED_SHEET_FILE).exists(), "Managed schematic not created"
+
+    # ------------------------------------------------------------------
+    # Test 2: kicad-cli must be able to load the generated main schematic
+    # ------------------------------------------------------------------
+
+    def test_new_from_netlist_kicad_mode_main_sch_loadable(self) -> None:
+        """kicad-cli sch export netlist must succeed on the generated main schematic."""
+        result = self._run(
+            "new-from-netlist",
+            "--name", "TestNetlist",
+            "--netlist", str(self.ir_path),
+            "--symbols-dir", str(_SYMBOLS_DIR),
+            "--mode", "kicad",
+        )
+        assert result.returncode == 0, (
+            f"new-from-netlist --mode kicad failed:\n{result.stderr}"
+        )
+
+        sch_path = self.projects_dir / "TestNetlist" / "TestNetlist.kicad_sch"
+        netlist_out = self.projects_dir / "TestNetlist" / "TestNetlist.xml"
+
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli,
+                "sch",
+                "export",
+                "netlist",
+                "--format",
+                "kicadsexpr",
+                "--output",
+                str(netlist_out),
+                str(sch_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli sch export netlist failed (exit {proc.returncode}):\n{proc.stderr}"
+        )
+
+    # ------------------------------------------------------------------
+    # Test 3: compile-netlist alias is wired and succeeds
+    # ------------------------------------------------------------------
+
+    def test_compile_netlist_alias_succeeds(self) -> None:
+        """compile-netlist (alias for new-from-netlist) must exit 0 and create project files."""
+        result = self._run(
+            "compile-netlist",
+            "--name", "TestCompile",
+            "--netlist", str(self.ir_path),
+            "--symbols-dir", str(_SYMBOLS_DIR),
+            "--mode", "kicad",
+        )
+        assert result.returncode == 0, (
+            f"compile-netlist --mode kicad failed (exit {result.returncode}):\n{result.stderr}"
+        )
+        project_dir = self.projects_dir / "TestCompile"
+        assert (project_dir / "TestCompile.kicad_sch").exists(), "Main schematic not created"
+        assert (project_dir / MANAGED_SHEET_FILE).exists(), "Managed schematic not created"
+
+    # ------------------------------------------------------------------
+    # Test 4: both commands produce identical pin→net binding markers
+    # ------------------------------------------------------------------
+
+    def test_both_commands_produce_equivalent_bindings(self) -> None:
+        """new-from-netlist and compile-netlist must write identical pin→net bindings.
+
+        This confirms the alias shares the same underlying function and that
+        generation is deterministic at the managed-schematic level.
+        """
+        for cmd, name in (("new-from-netlist", "ProjA"), ("compile-netlist", "ProjB")):
+            res = self._run(
+                cmd,
+                "--name", name,
+                "--netlist", str(self.ir_path),
+                "--symbols-dir", str(_SYMBOLS_DIR),
+                "--mode", "kicad",
+            )
+            assert res.returncode == 0, f"{cmd} failed (exit {res.returncode}):\n{res.stderr}"
+
+        bindings_a = _extract_bindings_from_sch(
+            self.projects_dir / "ProjA" / MANAGED_SHEET_FILE
+        )
+        bindings_b = _extract_bindings_from_sch(
+            self.projects_dir / "ProjB" / MANAGED_SHEET_FILE
+        )
+        assert bindings_a == bindings_b, (
+            f"Binding mismatch between new-from-netlist and compile-netlist:\n"
+            f"  ProjA: {bindings_a}\n  ProjB: {bindings_b}"
+        )
+        assert {"ref": "R1", "pin": "1", "net_name": "N1"} in bindings_a, (
+            f"Expected R1 pin 1 → N1 binding not found in: {bindings_a}"
+        )

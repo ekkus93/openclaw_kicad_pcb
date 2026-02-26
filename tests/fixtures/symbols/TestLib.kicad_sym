@@ -1,0 +1,38 @@
+(kicad_symbol_lib
+  (version 20230121)
+  (generator "test")
+  (symbol "R"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "A" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 5.08 0 180)
+      (length 2.54)
+      (name "B" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
+  (symbol "OpAmp"
+    (pin input line
+      (at 0 0 0)
+      (length 2.54)
+      (name "IN+" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin input line
+      (at 0 -2.54 0)
+      (length 2.54)
+      (name "IN-" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+    (pin output line
+      (at 10 0 180)
+      (length 2.54)
+      (name "OUT" (effects (font (size 1.27 1.27))))
+      (number "3" (effects (font (size 1.27 1.27))))
+    )
+  )
+)
