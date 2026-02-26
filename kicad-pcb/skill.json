@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay.",
   "author": "PaxSwarm",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "keywords": ["pcb", "kicad", "electronics", "gerber", "schematic", "circuit", "pcbway", "manufacturing", "hardware", "eda"],
   "triggers": ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbway", "electronics project"],
   "requires": {
