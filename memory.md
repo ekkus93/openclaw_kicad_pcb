@@ -1,6 +1,14 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T10:28:47Z_
+_Last updated: 2026-02-26T10:39:20Z_
+
+---
+
+## 2026-02-26T10:39:20Z - Fix CI: install kicad WITH recommended packages
+- Root cause of 5 integration test failures: `--no-install-recommends` prevented installation of the `kicad-symbols` apt package (a *recommended* dep of `kicad`, not required).
+- Without `kicad-symbols`, `/usr/share/kicad/symbols/` is absent on the runner. `discover_symbols_dir()` returns `None`, `Device:R` cannot be embedded, SCH009 lint fires, and every `add-component` call exits 1.
+- Fix: removed `--no-install-recommends` from `sudo apt-get install -y kicad` in `integration-tests` job.
+- Committed `7e5128d`, pushed.
 
 ---
 
