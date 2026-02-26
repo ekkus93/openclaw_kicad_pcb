@@ -47,6 +47,47 @@ class OpenResult:
     path: Path
 
 
+@dataclass(frozen=True)
+class InfoSchResult:
+    """Result of the ``info-sch`` command."""
+
+    project_path: Path
+    schematic_path: Path
+    owned_by_openclaw: bool
+    symbols: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    pin_net_bindings: tuple[dict[str, str], ...] = field(default_factory=tuple)
+    warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ApplyNetlistResult:
+    """Result of the ``apply-netlist`` command."""
+
+    schematic_path: Path
+    managed_schematic_path: Path
+    symbols_added: int
+    symbols_updated: int
+    managed_items_written: int
+    nets_applied: int
+    kicad_cli_used: bool
+    dry_run: bool = False
+    warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class NewFromNetlistResult:
+    """Result of the ``new-from-netlist`` command."""
+
+    name: str
+    path: Path
+    schematic_path: Path
+    managed_schematic_path: Path
+    symbols_added: int
+    nets_applied: int
+    kicad_cli_used: bool
+    warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+
+
 # ---------------------------------------------------------------------------
 # validation
 # ---------------------------------------------------------------------------

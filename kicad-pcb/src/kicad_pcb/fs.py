@@ -154,3 +154,10 @@ def _atomic_write(
         with contextlib.suppress(OSError):
             tmp.unlink()
         raise
+    # Best-effort directory fsync for POSIX durability of the directory entry.
+    with contextlib.suppress(OSError, AttributeError):
+        dir_fd = os.open(str(path.parent), os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)

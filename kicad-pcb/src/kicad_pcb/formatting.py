@@ -16,6 +16,7 @@ from .lint import LINT_SUGGESTIONS, LintSeverity
 from .results import (
     AddComponentResult,
     AddNetResult,
+    ApplyNetlistResult,
     ApplyPatternResult,
     AutoPlaceResult,
     AutoRouteResult,
@@ -31,7 +32,9 @@ from .results import (
     FormatFileResult,
     ImportNetlistResult,
     InfoResult,
+    InfoSchResult,
     LintFileResult,
+    NewFromNetlistResult,
     NewProjectResult,
     OpenResult,
     PackageFabResult,
@@ -128,6 +131,57 @@ def _fmt_info(r: InfoResult) -> list[str]:
 @_register(OpenResult)
 def _fmt_open(r: OpenResult) -> list[str]:
     return [f"✅ Opened project: {r.name}", f"   Path: {r.path}"]
+
+
+@_register(InfoSchResult)
+def _fmt_info_sch(r: InfoSchResult) -> list[str]:
+    lines = [
+        "📐 Schematic introspection",
+        f"   Project: {r.project_path}",
+        f"   Schematic: {r.schematic_path}",
+        f"   Owned by OpenClaw: {'yes' if r.owned_by_openclaw else 'no'}",
+        f"   Symbols: {len(r.symbols)}",
+        f"   Pin→net bindings: {len(r.pin_net_bindings)}",
+    ]
+    for warning in r.warnings:
+        code = warning.get("code", "WARN")
+        msg = warning.get("message", "")
+        lines.append(f"   ⚠️  [{code}] {msg}")
+    return lines
+
+
+@_register(ApplyNetlistResult)
+def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
+    lines = [
+        "✅ Netlist applied",
+        f"   Root schematic: {r.schematic_path}",
+        f"   Managed schematic: {r.managed_schematic_path}",
+        f"   Symbols added: {r.symbols_added}",
+        f"   Nets applied: {r.nets_applied}",
+        f"   Managed items written: {r.managed_items_written}",
+        f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
+    ]
+    if r.dry_run:
+        lines.insert(0, "🔍 DRY RUN")
+    for warning in r.warnings:
+        lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
+    return lines
+
+
+@_register(NewFromNetlistResult)
+def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
+    lines = [
+        f"✅ Created project from netlist: {r.name}",
+        f"   Project path: {r.path}",
+        f"   Root schematic: {r.schematic_path}",
+        f"   Managed schematic: {r.managed_schematic_path}",
+        f"   Symbols added: {r.symbols_added}",
+        f"   Nets applied: {r.nets_applied}",
+        f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
+    ]
+    for warning in r.warnings:
+        lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
+    return lines
 
 
 # ---------------------------------------------------------------------------
