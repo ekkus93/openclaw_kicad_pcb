@@ -1,10 +1,215 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T01:00:00Z_
+_Last updated: 2026-02-26T05:45:53Z_
 
 ---
 
-## 2026-02-26T01:00:00Z — CODE_REVIEW2 P2.2 (numeric lexeme preservation)
+## 2026-02-26T05:45:53Z - CODE_REVIEW3 P7.3 complete (all items done)
+- Implemented `TestNewFromNetlistKicadMode` class in `tests/integration/test_phase0_smoke.py` with 4 tests:
+  1. `test_new_from_netlist_kicad_mode_succeeds` — exit 0, files created.
+  2. `test_new_from_netlist_kicad_mode_main_sch_loadable` — kicad-cli sch export netlist succeeds.
+  3. `test_compile_netlist_alias_succeeds` — alias wired correctly.
+  4. `test_both_commands_produce_equivalent_bindings` — both produce identical `OpenClaw:bind=` markers.
+- Fixed two pre-existing bugs found during P7.3 implementation:
+  1. **`kicad-pcb/scripts/kicad_pcb.py`**: with editable install, `kicad-pcb/src` is already in sys.path via `.pth` file, so the old `if str(_src) not in sys.path: insert(0, ...)` guard was a no-op, leaving `kicad-pcb/scripts/` at sys.path[0] and shadowing the `kicad_pcb` package. Fix: remove+reinsert at 0 unconditionally using `contextlib.suppress(ValueError)` + `sys.path.insert(0, _src_str)`.
+  2. **`kicad-pcb/src/kicad_pcb/pipeline.py`**: temp files for kicad-cli validation used `.kicad_sch.tmp` / `.kicad_pcb.tmp` extensions. kicad-cli refuses to load files without `.kicad_sch` / `.kicad_pcb` extension (`Failed to load schematic`, exit 3). Fix: use `.kicad_sch` / `.kicad_pcb` as the mkstemp suffix.
+- All 4 P7.3 tests pass; 43 related unit tests pass; ruff clean on all modified files.
+- CODE_REVIEW3 is now fully complete — no remaining unchecked items.
+
+---
+
+## 2026-02-26T04:57:14Z - CODE_REVIEW3 P3.2 verified complete in existing .venv
+- Confirmed the repo already contains a real deterministic pin→net extractor:
+  - writer emits hidden `OpenClaw:bind=<json>` markers in `commands/netlist.py`.
+  - `SchematicDoc.extract_pin_label_bindings()` parses/sorts those markers in `sch_doc.py`.
+- Verified with existing environment (`.venv`):
+  - `.venv/bin/pytest -q tests/unit/test_sch_doc.py::TestExtractPinLabelBindings tests/unit/test_netlist_commands.py::test_new_from_netlist_info_sch_returns_owned_and_symbols` passed.
+  - `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/sch_doc.py kicad-pcb/src/kicad_pcb/commands/netlist.py tests/unit/test_sch_doc.py tests/unit/test_netlist_commands.py` passed.
+- Updated `CODE_REVIEW3_TODO.md` to mark P3.2 and the P7.2 pin→net assertion complete.
+
+---
+
+## 2026-02-26T04:44:20Z - Clarified Python environment status
+- Confirmed the "Python 3.11 venv" note in Phase 0 is historical (initial bootstrap context).
+- Current and recent sessions reuse the existing `.venv` / existing Python environment; no new environment creation is required.
+
+---
+
+## 2026-02-26T04:11:14Z - CODE_REVIEW3 Phase 2 completion
+Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor, deferred as complex):
+
+### P0 — atomic write hardening
+- Added best-effort directory `fsync` (POSIX only, wrapped in `contextlib.suppress`) to `_atomic_write` in `fs.py`.
+- Verified no bare `os.write()` anywhere in source.
+
+### P5.2 — compile-netlist alias
+- Added `compile-netlist` subparser to `cli.py` pointing to `cmd_new_from_netlist`.
+- Same args as `new-from-netlist`, default mode `kicad`.
+
+### P7.2 — Integration tests for new-from-netlist
+- `test_new_from_netlist_schematic_parses_and_ownership_marker_present`: verifies schema parses, marker present, managed sheet exists, R1 in symbols.
+- `test_new_from_netlist_info_sch_returns_owned_and_symbols`: verifies `info-sch` reports `owned_by_openclaw=True` for a freshly generated project.
+
+### P7.4 — Idempotency tests
+- `test_apply_netlist_idempotent_apply_twice`: apply same IR twice → same normalized (refs, symbol_ids) + no duplicates.
+- `test_new_from_netlist_idempotency_via_two_projects`: two independent `new-from-netlist` calls → equivalent managed regions.
+
+### P8 — Docs
+- `README.md`: added "Circuit IR Pipeline" section with IR example, command descriptions, ownership model, and validation mode table.
+- `SKILL.md`: updated Commands table (added `info-sch`, circuit IR commands), added new "Circuit IR Pipeline Workflow" section with JSON example, usage instructions, and mode table.
+- `scripts/validate.sh` already existed and is up to date.
+
+### Lint sweeps
+- Fixed import ordering in `test_circuit_ir.py`, `test_info_sch.py`, `test_symbol_index.py`.
+- Fixed line-length issue in `symbol_index.py` (`__init__` signature wrapped).
+- `ruff check kicad-pcb/src/ tests/unit/` now reports: All checks passed.
+
+### Deferred
+- P3.2 (`extract_pin_label_bindings` real implementation): placeholder still returns `[]` with a warning in `info-sch`. Deferred for post-MVP; full graph extraction requires wire-stub-matching logic.
+
+---
+
+## 2026-02-26T04:32:51Z - memory.md timestamp audit against git history
+- Audited `memory.md` heading timestamps against `git show --format=%cI` for referenced commits.
+- Corrected mismatched commit-linked headings (including future-dated and placeholder dates).
+- For non-committed local notes (no git object yet), retained session-derived times.
+
+---
+
+## 2026-02-26T03:25:00Z - CODE_REVIEW3 netlist/schematic lint-hardening refactor
+- Continued implementation on managed-sheet and netlist command slice, then resolved Ruff findings without changing behavior.
+- `commands/netlist.py`:
+  - Introduced `_ApplyNetlistRequest` dataclass to reduce parameter count and simplify command handoff.
+  - Split `_apply_netlist_to_project` internals into focused helpers:
+    - `_write_symbols(...)`
+    - `_write_nets(...)`
+    - `_embed_symbol_if_found(...)`
+    - `_symbol_position(...)`
+  - Wrapped long `_atomic_write(...)` calls for style compliance.
+- `sch_doc.py`:
+  - Introduced `ManagedSheetSpec` dataclass and changed `make_managed_sheet_node(...)` to accept it.
+  - Reduced `list_symbols()` complexity by extracting `_symbol_metadata(...)` and `_parse_float_atom(...)` helpers.
+  - Simplified nested conditionals in managed-sheet/property helpers to satisfy SIM102.
+- `formatting.py`:
+  - Applied import-order fix (`ruff --fix`) for I001.
+- Validation status after refactor:
+  - Ruff on touched files: clean.
+  - Focused tests passing:
+    - `tests/unit/test_netlist_commands.py`
+    - `tests/unit/test_info_sch.py`
+    - `tests/unit/test_circuit_ir.py`
+
+---
+
+## 2026-02-26T03:10:00Z - CODE_REVIEW3 implementation started (slice 1)
+- Confirmed existing Python 3.11 environment at `.venv`; no new env created.
+- Extended IR validation foundation:
+  - `ir_validate.py`: improved duplicate detection via `Counter`.
+  - Added `validate_ir_symbols(ir, symbol_index)` enforcing:
+    - symbol existence,
+    - valid pin membership,
+    - `PinRefIR.unit is None` (MVP, else `MULTI_UNIT_UNSUPPORTED`).
+  - Exported `validate_ir_symbols` via package `__init__.py`.
+- Added/updated fixtures + tests:
+  - Added `tests/fixtures/symbols/TestLib.kicad_sym` fixture.
+  - Expanded `tests/unit/test_circuit_ir.py` to cover unknown refs, invalid pin, unsupported unit.
+  - Existing `tests/unit/test_symbol_index.py` now passes with fixture.
+- Added first new command slice from CODE_REVIEW3:
+  - New `commands/netlist.py` with `cmd_info_sch`.
+  - New result type `InfoSchResult` in `results.py`.
+  - Wired CLI subcommand `info-sch` in `cli.py`.
+  - Added formatter for `InfoSchResult` in `formatting.py`.
+  - Exported command/result via `__init__.py`.
+- Added SchematicDoc introspection helpers in `sch_doc.py`:
+  - `has_openclaw_marker()`, `ensure_openclaw_marker()`.
+  - `list_symbols()`.
+  - `extract_pin_label_bindings()` placeholder currently returns `[]` (full mapping deferred).
+  - Added `make_text_node()` helper for off-canvas markers.
+- Added tests:
+  - `tests/unit/test_info_sch.py` (project-required behavior + symbol/marker introspection).
+- Validation run:
+  - `pytest -q tests/unit/test_info_sch.py tests/unit/test_cli.py tests/unit/test_presentation.py tests/unit/test_circuit_ir.py tests/unit/test_symbol_index.py`
+  - Result: all passed.
+
+---
+
+## 2026-02-26T02:40:00Z - Finalized CODE_REVIEW3 implementation choices applied to docs
+- Updated `code_review/CODE_REVIEW3.md` and `code_review/CODE_REVIEW3_TODO.md` with locked choices from user decision set:
+  - Managed region = dedicated top-level sheet `OpenClaw_Managed`.
+  - Keep off-canvas ownership marker `OpenClaw:generated=v1`.
+  - Repo-local symbol fallback path = `kicad_pcb/resources/symbols`.
+  - Mode defaults: `apply-netlist` => `internal`, `new-from-netlist` => `kicad`.
+  - Error architecture: extend existing exceptions; do not replace hierarchy.
+- TODO file now removes alternative managed-region strategies and points to the single sheet-based approach.
+
+---
+
+## 2026-02-26T02:25:00Z - Reviewed revised CODE_REVIEW3_TODO.md
+- User provided an updated TODO that includes explicit decisions D1-D8.
+- Assessment: plan is now largely implementation-ready.
+- Remaining clarifications before coding:
+  - choose one exact managed-region mechanism (node tag/property vs reserved coordinate box), currently options are listed but not locked.
+  - define exact repo-local symbol directory path for D7 precedence.
+  - confirm whether `apply-netlist` default mode should be internal (as noted in P4.1) or explicit required argument.
+  - confirm how new error-code enum integrates with existing `errors.py` exception hierarchy (extend vs replace).
+
+---
+
+## 2026-02-26T02:15:00Z - Reviewed CODE_REVIEW3 design docs (no code changes)
+- Reviewed code review docs for compiler-style pipeline:
+  - `code_review/CODE_REVIEW3.md`
+  - `code_review/CODE_REVIEW3_TODO.md`
+- User requested analysis only, explicitly no code modifications yet.
+- Key clarifications to request before implementation: command naming (`compile-netlist` vs `new-from-netlist`), ownership/update policy for existing schematics, deletion behavior for removed IR items, strictness policy when `kicad-cli` unavailable, and idempotency assertion mode (byte-identical vs structural).
+
+---
+
+## 2026-02-26T02:05:00Z - Clarified private skill install/runtime environment checks
+- Verified script execution works with host `python3`: `python3 kicad-pcb/scripts/kicad_pcb.py --help`.
+- Verified environment health check works: `python3 kicad-pcb/scripts/kicad_pcb.py doctor` (all core checks passed on this machine).
+- Verified optional Python modules import in same interpreter: `python3 -c "import cairosvg, PIL"`.
+- Updated `kicad-pcb/SKILL.md`:
+  - Python deps command now uses explicit interpreter: `python3 -m pip install --user cairosvg pillow`.
+  - Added note that OpenClaw runs skill commands in the gateway host environment, so deps must be installed in that same `python3`.
+  - Added explicit verification step for Python module imports.
+
+---
+
+## 2026-02-26T01:50:00Z - Switched project + skill to GPL v3
+- Created root `LICENSE` file with official GNU GPL v3 text (`https://www.gnu.org/licenses/gpl-3.0.txt`).
+- Updated `kicad-pcb/SKILL.md` frontmatter license: `MIT` -> `GPL-3.0-or-later`.
+- Updated `kicad-pcb/skill.json` license: `MIT` -> `GPL-3.0-or-later`.
+- Updated `pyproject.toml` project metadata with `license = { text = "GPL-3.0-or-later" }`.
+- Verification: `LICENSE` exists at repo root (`/home/ubo/work/openclaw_kicad_pcb/LICENSE`).
+
+---
+
+## 2026-02-26T01:35:24Z — SKILL.md review and corrections (commit `7a5dd7e`)
+
+### Problem
+`kicad-pcb/SKILL.md` had several correctness issues that would prevent users and agents from successfully installing and using the skill.
+
+### Changes
+- **`author`**: Changed `Phillip Chin` → `PaxSwarm` to match `skill.json` and the footer.
+- **Hardcoded paths**: Replaced all 21 occurrences of `/home/ubo/.openclaw/skills/kicad-pcb/scripts/kicad_pcb.py` with `{baseDir}/scripts/kicad_pcb.py` (the OpenClaw `{baseDir}` placeholder is expanded at runtime to the installed skill folder).
+- **Config example**: Changed hardcoded `"kicad_path": "/home/ubo/.local/bin/kicad-cli"` to the generic `/usr/bin/kicad-cli`.
+- **New `## Installation` section**: Added `clawhub install kicad-pcb` workflow (correct install CLI is `clawhub`, not `openclaw skill install`). Also noted that `clawhub` installs into `./skills/<slug>/` under the working directory by default.
+- **New `## Verifying Installation` section**: Added `python3 {baseDir}/scripts/kicad_pcb.py --help`, `doctor`, and `kicad-cli --version` checks with expected output descriptions.
+
+### Key facts about OpenClaw skill system
+- Install CLI: `clawhub install <slug>` (not `openclaw skill install`)
+- `clawhub` installs into `./skills/<slug>/` relative to working directory
+- Shared skills (all agents): copy to `~/.openclaw/skills/` or change working dir
+- `{baseDir}` is the correct OpenClaw placeholder for the skill folder path (see `docs.openclaw.ai/tools/skills`)
+- SKILL.md format: frontmatter requires `name:` and `description:` at minimum
+- Skills are picked up on the next new session after install
+
+### HEAD after commit
+`7a5dd7e` — docs: fix SKILL.md installation instructions and hardcoded paths
+
+---
+
+## 2026-02-26T00:45:35Z — CODE_REVIEW2 P2.2 (numeric lexeme preservation)
 
 ### Changes
 - **`sexpr/nodes.py`**: Added `lexeme: str | None = field(default=None, compare=False, hash=False)` to `AtomNode`. Excluded from `__eq__`/`__hash__` so existing code unaffected.
@@ -24,7 +229,7 @@ _Last updated: 2026-02-26T01:00:00Z_
 
 ---
 
-## 2026-02-26T00:00:00Z — CODE_REVIEW2 P3.1 + P4.1 (commits 8513253, next)
+## 2026-02-26T00:27:50Z — CODE_REVIEW2 P3.1 + P4.1 (commits 8513253, next)
 
 ### P3.1 — Explicit UTF-8 encoding (commit `8513253`)
 - Fixed 8 bare `open()`/`read_text()`/`write_text()` calls across `adapters.py`, `config.py`, `commands/doctor.py`
@@ -51,7 +256,7 @@ _Last updated: 2026-02-26T01:00:00Z_
 
 ---
 
-## 2026-02-25T23:00:00Z — Phase 10.2: CI test pipeline (commits be210fe, 7ef713a)
+## 2026-02-25T22:46:30Z — Phase 10.2: CI test pipeline (commits be210fe, 7ef713a)
 
 ### Summary
 Added GitHub Actions CI. Tidy commit first (ruff format applied to 58 files,
@@ -594,6 +799,7 @@ python3 kicad_pcb.py export-bom  → 2 component lines: R1 (10k), C1 (100nF)
 ### Python environment
 - **Python**: 3.11.2 (system package)
 - **Venv**: `/home/ubo/work/openclaw_kicad_pcb/.venv` (Python 3.11)
+- Historical note: this reflects initial Phase 0 setup; later sessions reuse the existing environment.
 - Packages installed: kiutils 1.4.8, pydantic 2.12.5, pytest 9.0.2, pytest-cov 7.0.0, ruff 0.15.2
 - Latest available kiutils is **1.4.8** (not 1.5+ which doesn't exist yet)
 
@@ -691,7 +897,7 @@ High-priority next phases:
 ### Total test count: 661 (up from 647 after 7.5)
 - Commit for 7.6: `c0d1768`
 
-## 2026-02-25T20:30:00Z — CODE_REVIEW2 implementation complete (commit e054ecc)
+## 2026-02-26T00:11:37Z — CODE_REVIEW2 implementation complete (commit e054ecc)
 
 ### Issues addressed (P0, P1, P2.1, P3.3 from code_review/CODE_REVIEW2_TODO.md):
 
@@ -740,7 +946,7 @@ High-priority next phases:
 
 ---
 
-## 2025-01-01T00:00:00Z — P3.2 richer exception hierarchy complete
+## 2026-02-26T00:56:24Z — P3.2 richer exception hierarchy complete
 
 ### Completed: P3.2 — Richer Exception Hierarchy
 - Commit to be made: `feat(p3.2): richer exception hierarchy`
@@ -772,7 +978,7 @@ High-priority next phases:
 
 ---
 
-## 2026-02-26T00:00:00Z — P5.1 structured logging complete
+## 2026-02-26T01:12:56Z — P5.1 structured logging complete
 
 ### Completed: P5.1 — Structured Logging Hooks for Pipeline Operations
 
@@ -806,7 +1012,7 @@ High-priority next phases:
 
 ---
 
-## 2026-02-26T01:00:00Z — P5.2 dry-run diff output complete
+## 2026-02-26T01:23:22Z — P5.2 dry-run diff output complete
 
 ### Completed: P5.2 — Dry-run diff output
 

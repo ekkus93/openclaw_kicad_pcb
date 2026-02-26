@@ -16,6 +16,7 @@ unit/integration test suite.
 - **Circuit pattern library** — resistor divider, LED+resistor, connector breakout, decoupling cap
 - **Preflight checks** — duplicate refs, net name validation, symbol accessibility, footprint requirements
 - **KiCad CLI integration** — ERC/DRC/export via `kicad-cli` with version compatibility layer
+- **Circuit IR pipeline** — deterministic Spec → IR → KiCad schematic generation (`new-from-netlist`, `apply-netlist`)
 - **JSON output** — all commands support `--json` for machine-friendly automation
 - **Dry-run mode** — validate without committing (`--dry-run`)
 
@@ -38,6 +39,85 @@ python scripts/kicad_pcb.py lint-sch MyProject/MyProject.kicad_sch
 # Check environment
 python scripts/kicad_pcb.py doctor
 ```
+
+## Circuit IR pipeline
+
+The skill supports a **compiler-style pipeline** for LLM-driven circuit generation:
+
+```
+LLM output (Spec) → Circuit IR JSON → KiCad .kicad_sch
+```
+
+An LLM never draws wires by XY coordinates — it outputs a **Circuit IR JSON** file describing
+components and net connections. The tool compiles this into a deterministic KiCad schematic.
+
+### Minimal Circuit IR example
+
+```json
+{
+  "version": "1",
+  "components": [
+    { "ref": "R1", "symbol": "Device:R", "value": "10k", "footprint": "Resistor_SMD:R_0402" },
+    { "ref": "C1", "symbol": "Device:C", "value": "100n" }
+  ],
+  "nets": [
+    { "name": "VCC",  "pins": [{ "ref": "R1", "pin": "1" }] },
+    { "name": "NODE", "pins": [{ "ref": "R1", "pin": "2" }, { "ref": "C1", "pin": "1" }] },
+    { "name": "GND",  "pins": [{ "ref": "C1", "pin": "2" }] }
+  ]
+}
+```
+
+### Commands
+
+**Create a new project from Circuit IR** (strict validation by default):
+```bash
+python scripts/kicad_pcb.py new-from-netlist \
+    --name MyProject \
+    --netlist circuit.json \
+    --symbols-dir /path/to/symbols \
+    --mode kicad          # default; requires kicad-cli
+    # --mode internal     # internal syntax+lint only; no kicad-cli required
+```
+
+`compile-netlist` is an alias for `new-from-netlist` with identical arguments.
+
+**Apply Circuit IR to the current/open project** (updates managed region):
+```bash
+python scripts/kicad_pcb.py open MyProject/
+python scripts/kicad_pcb.py apply-netlist \
+    --netlist circuit.json \
+    --symbols-dir /path/to/symbols \
+    --force               # adopt schematic if not already OpenClaw-managed
+    --dry-run             # validate without writing
+```
+
+**Inspect the current schematic**:
+```bash
+python scripts/kicad_pcb.py info-sch
+python scripts/kicad_pcb.py info-sch --json   # machine-readable
+```
+
+### Ownership model
+
+The tool uses a durable **ownership marker** (`OpenClaw:generated=v1`) stored as
+an off-canvas text item in the root schematic. This lets the tool distinguish its
+own generated content from user-authored content.
+
+- If the marker is absent, `apply-netlist` **refuses** to modify the schematic
+  (prevents accidental rewrites of manually authored files).
+- Pass `--force` to adopt an existing schematic and insert the marker.
+- Generated components live in a dedicated embedded sheet (`OpenClaw_Managed`),
+  leaving the rest of the schematic untouched.
+
+### Validation modes
+
+| Mode       | Behaviour |
+|------------|-----------|
+| `internal` | Syntax check + 18 built-in lint rules; no `kicad-cli` required |
+| `kicad`    | All internal checks **plus** `kicad-cli sch validate`; fails hard if `kicad-cli` is missing |
+
+Default: `new-from-netlist` and `compile-netlist` use **`kicad`** (strict); `apply-netlist` uses **`internal`**.
 
 ## Development
 

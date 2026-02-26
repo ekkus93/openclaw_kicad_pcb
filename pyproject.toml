@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "kicad-pcb-skill"
 version = "0.1.0"
 description = "KiCad PCB automation skill for OpenClaw"
+license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "kiutils>=1.4",

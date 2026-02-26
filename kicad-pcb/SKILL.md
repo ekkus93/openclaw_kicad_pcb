@@ -2,7 +2,7 @@
 name: kicad-pcb
 version: 1.0.0
 description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline.
-license: MIT
+license: GPL-3.0-or-later
 keywords: [pcb, kicad, electronics, gerber, schematic, circuit, pcbway, manufacturing, hardware]
 triggers: ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbway", "electronics project"]
 ---
@@ -38,7 +38,7 @@ kicad-cli --version
 ### Python Dependencies
 
 ```bash
-pip install cairosvg  # optional — enables PNG schematic preview
+python3 -m pip install --user cairosvg pillow  # optional — enables PNG schematic preview
 ```
 
 ## Installation
@@ -70,6 +70,10 @@ Start a new OpenClaw session to pick up the skill.
 > **Note:** The `{baseDir}` placeholder in the commands below is automatically
 > expanded by OpenClaw to the skill's installed folder path. You do not need to
 > type it literally — it is provided to the agent at runtime.
+>
+> OpenClaw executes skill commands in the same host environment as the gateway
+> process. Install Python dependencies into that same `python3` environment
+> (avoid venv-only installs unless OpenClaw itself is started from that venv).
 
 ## Verifying Installation
 
@@ -84,6 +88,9 @@ python3 {baseDir}/scripts/kicad_pcb.py doctor
 
 # 3. Confirm kicad-cli is on PATH
 kicad-cli --version
+
+# 4. Confirm optional Python modules are importable by this python3
+python3 -c "import cairosvg, PIL; print('python deps ok')"
 ```
 
 Expected output for step 1: usage listing with all subcommands (`new`, `info`,
@@ -143,6 +150,17 @@ python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 | `add-net NAME [--x X] [--y Y]` | Create named net label at position |
 | `preview-schematic` | Generate schematic image |
 | `erc` | Run electrical rules check |
+| `info-sch [--json]` | Inspect current schematic (symbols, ownership, pin→net bindings) |
+
+### Circuit IR Pipeline (preferred for LLM-driven generation)
+
+| Command | Description |
+|---------|-------------|
+| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
+| `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
+| `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
+
+**Common flags** (all three commands): `--symbols-dir`, `--mode internal\|kicad`, `--dry-run`.
 
 ### PCB Layout
 
@@ -300,6 +318,77 @@ basic S-expression syntax check before committing to disk. If the generated
 output fails the balanced-parentheses or root-node check, the write is aborted
 and the original file is left untouched. A `ParseError` is raised describing
 the failure.
+
+## Circuit IR Pipeline Workflow
+
+The preferred way for an LLM to generate circuits is via **Circuit IR** — a
+structured JSON that the tool compiles deterministically into a KiCad schematic.
+
+### Circuit IR format (minimal)
+
+```json
+{
+  "version": "1",
+  "components": [
+    { "ref": "R1", "symbol": "Device:R", "value": "10k", "footprint": "Resistor_SMD:R_0402" },
+    { "ref": "C1", "symbol": "Device:C", "value": "100n" }
+  ],
+  "nets": [
+    { "name": "VCC",  "pins": [{ "ref": "R1", "pin": "1" }] },
+    { "name": "NODE", "pins": [{ "ref": "R1", "pin": "2" }, { "ref": "C1", "pin": "1" }] },
+    { "name": "GND",  "pins": [{ "ref": "C1", "pin": "2" }] }
+  ]
+}
+```
+
+### Create a new project from IR
+
+```bash
+# Requires kicad-cli (strict validation); use --mode internal to skip
+{baseDir}/scripts/kicad_pcb.py new-from-netlist \
+    --name MyProject \
+    --netlist circuit.json \
+    --symbols-dir /usr/share/kicad/symbols \
+    --mode kicad
+```
+
+### Update a project's schematic in-place
+
+```bash
+{baseDir}/scripts/kicad_pcb.py open MyProject/
+
+# First time on a non-owned schematic: use --force to adopt it
+{baseDir}/scripts/kicad_pcb.py apply-netlist \
+    --netlist updated_circuit.json \
+    --force
+
+# Subsequent updates: marker is already present, --force not needed
+{baseDir}/scripts/kicad_pcb.py apply-netlist --netlist updated_circuit.json
+```
+
+### Inspect generated schematic
+
+```bash
+{baseDir}/scripts/kicad_pcb.py info-sch --json
+```
+
+Returns: `owned_by_openclaw`, `symbols[]`, `pin_net_bindings[]`, `warnings[]`.
+
+### Ownership and `--force`
+
+Generated schematics carry `OpenClaw:generated=v1` as an off-canvas text marker.
+`apply-netlist` refuses to modify a schematic that lacks this marker (safety
+guard against overwriting hand-authored files). Use `--force` once to adopt a
+schematic and insert the marker; subsequent updates work without `--force`.
+
+### Validation modes
+
+| Mode | Requirement | Used by default for |
+|------|-------------|---------------------|
+| `internal` | None (built-in lint) | `apply-netlist` |
+| `kicad` | `kicad-cli` installed | `new-from-netlist`, `compile-netlist` |
+
+Pass `--mode internal` to any command to skip the `kicad-cli` requirement.
 
 ---
 

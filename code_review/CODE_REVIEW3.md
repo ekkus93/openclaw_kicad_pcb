@@ -1,0 +1,183 @@
+# CODE_REVIEW3.md
+
+Context for implementing the **compiler-style KiCad generation pipeline** in `openclaw_kicad_pcb`.
+
+---
+
+## What we want (high-level)
+
+You want the workflow to be:
+
+1. User provides a circuit specification in natural language (or lightly structured text).
+2. An LLM converts the spec into a **generic Circuit IR** (a machine-checkable netlist representation).
+3. The kicad-pcb skill performs deterministic compilation:
+   - open/create KiCad project
+   - write `.kicad_sch` from IR using deterministic rules
+   - validate with:
+     - internal S-expression parse/root checks
+     - structural lints
+     - `kicad-cli sch validate` (and ERC) when available
+4. If validation fails, the tool returns structured errors.
+5. The LLM revises **only the IR**, never hand-edits `.kicad_sch`.
+
+Key principle:
+- **LLM handles ambiguity and interpretation (Spec → IR).**
+- **Python tool handles correctness and determinism (IR → KiCad + validation).**
+
+This avoids brittle “LLM draws wires by XY coordinates” and avoids “LLM emits KiCad S-expressions directly”.
+
+---
+
+## Why a Circuit IR exists (and why the user shouldn’t write it)
+
+A netlist/circuit IR is an internal “compiler IR”:
+- it is generic (works for any circuit)
+- it is far simpler and safer for an LLM to generate than KiCad S-expression files
+- it allows deterministic code to handle:
+  - symbol selection policies
+  - footprint policies
+  - pin validation
+  - placement conventions
+  - wiring conventions
+  - schema enforcement
+
+The user does **not** manually write the IR in the desired UX.
+Instead, OpenClaw uses the IR as an intermediate artifact:
+- LLM produces IR from the user’s textual spec
+- tool compiles IR into KiCad files
+
+This is exactly analogous to:
+- writing Python → compiler emits IR → assembler emits machine code
+
+---
+
+## What the repo already has (good foundations)
+
+The current repo already provides strong deterministic pieces:
+
+- S-expression tokenizer/parser/serializer (`kicad_pcb/sexpr/`)
+- Document wrapper for schematics (`SchematicDoc`) that edits AST nodes
+- Transactional pipeline (`mutate_and_validate_sch`) that:
+  - loads
+  - applies mutation closure
+  - round-trip parses
+  - lints
+  - optionally runs KiCad CLI validation
+  - writes atomically
+- CLI command framework (`cli.py`, `commands/`)
+- Symbol directory discovery (`config.py`)
+- Helpers to read symbol pin data from KiCad libraries (`read_lib_symbol_pins`)
+
+What is missing is **netlist-level authoring** and **introspection**.
+
+---
+
+## What we need to add
+
+### Finalized implementation choices (locked)
+- **Managed region mechanism:** dedicated top-level sheet named exactly `OpenClaw_Managed`.
+  - `apply-netlist` is authoritative by clearing/rebuilding only this sheet.
+  - User-authored content outside this sheet must remain untouched.
+- **Ownership marker:** keep off-canvas marker text `OpenClaw:generated=v1`.
+  - Marker indicates ownership/adoption status.
+  - Managed content boundary is the `OpenClaw_Managed` sheet.
+- **Symbol resolution precedence:**
+  1. `--symbols-dir` (explicit)
+  2. repo-local `kicad_pcb/resources/symbols` (if present and contains `.kicad_sym`)
+  3. system KiCad symbol directories
+- **Validation mode defaults:**
+  - `apply-netlist` default: `internal` (syntax + lint)
+  - `new-from-netlist` default: `kicad` (strict; hard-fail if `kicad-cli` missing)
+- **Errors architecture:** extend existing exception hierarchy; do not replace it.
+  - Existing exception types remain valid API surface.
+  - Add stable `.code`, `.details`, and JSON serialization helpers.
+
+### 1) Circuit IR schema + validation
+Define a strict JSON schema (implemented with Pydantic v2) for:
+- components (ref, symbol id, value, footprint optional)
+- nets (name + list of pin refs)
+- structured pin refs (ref/pin/unit)
+
+Also implement semantic validation:
+- unique refs
+- unique net names
+- all pins reference existing components
+- no pin appears in multiple nets
+
+### 2) Symbol metadata index
+To make deterministic compilation safe, the tool must validate:
+- symbol exists in libraries
+- referenced pins exist for that symbol
+
+A `SymbolIndex` wrapper should memoize calls to `read_lib_symbol_pins` and provide clear errors.
+
+### 3) Deterministic schematic writer from IR
+Implement `apply-netlist`:
+- add missing symbols
+- place symbols on a grid deterministically
+- connect nets deterministically using a stable convention
+- write generated content only inside `OpenClaw_Managed`
+- on re-apply, clear and rebuild the managed sheet authoritatively
+
+MVP wiring convention recommendation:
+- for each pin, draw a short stub wire
+- place a net label at the stub end
+This avoids having to solve full net connectivity graphs and makes introspection easy.
+
+### 4) Introspection command: `info-sch --json`
+Implement a command that emits:
+- symbols present (refs, symbol ids, values, positions)
+- for schematics generated by this tool, a reliable mapping of pin→net label based on the stub+label convention
+
+This is required to “close the loop”: OpenClaw must be able to verify what exists in the schematic after generation.
+
+### 5) Compile command: `new-from-netlist`
+A deterministic end-to-end command:
+- create new project
+- open/set current project
+- apply-netlist
+- validate
+- return resulting file paths and structured summary
+
+Mode defaults:
+- `new-from-netlist`: `kicad` by default
+- `apply-netlist`: `internal` by default
+
+### 6) Tests and fixtures
+Add:
+- schema/semantic tests for IR
+- a small local test symbol library in `tests/fixtures/symbols/` (so tests don’t depend on system KiCad libs)
+- integration tests that:
+  - generate a schematic from IR
+  - ensure it is parseable and lint-clean
+  - optionally run `kicad-cli` validation when available
+
+---
+
+## MVP vs future enhancements
+
+### MVP (do now)
+- Flat schematic generation
+- Deterministic grid placement
+- Net label stub wiring
+- Symbol + pin validation
+- `apply-netlist`, `info-sch --json`, `new-from-netlist`
+
+### Later (optional)
+- Hierarchical sheets
+- Smart block placement and nicer layout
+- Pattern library (e.g. op-amp stages) built on top of IR, not replacing it
+- Footprint inference and BOM enrichment
+- Stronger graph-based net connectivity inference for arbitrary imported schematics
+
+---
+
+## Operational guidance for Copilot implementation
+
+- Prefer adding new modules (`circuit_ir.py`, `symbol_index.py`, `ir_validate.py`) rather than overloading existing `models.py` dataclasses.
+- Keep deterministic writer logic in `SchematicDoc` and `pipeline.py` (mutation closure approach).
+- Implement managed content boundary with a top-level sheet `OpenClaw_Managed`.
+- Ensure all new commands support `--json` output via existing formatting layer.
+- Validation must fail hard: do not write files that do not pass validation.
+- Keep the LLM out of KiCad file generation; it only produces IR.
+
