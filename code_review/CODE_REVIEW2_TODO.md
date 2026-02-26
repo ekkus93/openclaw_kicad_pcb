@@ -218,8 +218,8 @@ This TODO list is based on the latest code review feedback for the OpenClaw KiCa
 
 ### P5.2 Add “dry-run diff” output option
 **Tasks**
-- [ ] Add option to print unified diff (before/after) in dry-run mode.
-- [ ] Useful for review and debugging formatting churn.
+- [x] Add option to print unified diff (before/after) in dry-run mode.
+- [x] Useful for review and debugging formatting churn.
 
 ---
 

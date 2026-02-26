@@ -803,3 +803,33 @@ High-priority next phases:
 
 ### Remaining CODE_REVIEW2 items:
 - P5.2: Dry-run diff output
+
+---
+
+## 2026-02-26T01:00:00Z — P5.2 dry-run diff output complete
+
+### Completed: P5.2 — Dry-run diff output
+
+**kicad-pcb/src/kicad_pcb/pipeline.py — MODIFIED**
+- Added `import difflib` and `from typing import IO`
+- `diff_output: IO[str] | None = None` parameter on both pipeline functions
+- Original file text captured at start when `diff_output is not None`
+- After all validation: calls `_show_diff(original_text, content, path, diff_output)`
+- Added `_show_diff(original, updated, path, out)` helper using `difflib.unified_diff`
+  - Uses `fromfile="{name} (before)"` / `tofile="{name} (after)"` labels
+  - No-op when before==after (empty diff)
+  - Works for both `dry_run=True` and `dry_run=False`
+
+**Usage:**
+```python
+import sys
+mutate_and_validate_sch(path, mutator, dry_run=True, diff_output=sys.stdout)
+```
+
+**tests/unit/test_p52_dry_run_diff.py — NEW (23 tests)**
+- TestShowDiff (8 tests) — unit tests for _show_diff helper
+- TestDryRunDiffSch (8 tests) — sch pipeline diff_output integration
+- TestDryRunDiffPcb (5 tests) — pcb pipeline diff_output integration
+
+### All CODE_REVIEW2 items now complete:
+- P0.1, P0.2, P1.1, P1.2, P2.1, P2.2, P3.1, P3.2, P3.3, P4.1, P5.1, P5.2 all done
