@@ -159,21 +159,25 @@ def _fmt_info_sch(r: InfoSchResult) -> list[str]:
 
 @_register(ApplyNetlistResult)
 def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
+    if r.dry_run:
+        header = "🔍 DRY RUN — Netlist validated (nothing written)"
+        items_label = "Managed items validated"
+    else:
+        header = "✅ Netlist applied"
+        items_label = "Managed items written"
     lines = [
-        "✅ Netlist applied",
+        header,
         f"   Root schematic: {r.schematic_path}",
         f"   Managed schematic: {r.managed_schematic_path}",
         f"   Symbols added: {r.symbols_added}",
         f"   Nets applied: {r.nets_applied}",
-        f"   Managed items written: {r.managed_items_written}",
+        f"   {items_label}: {r.managed_items_written}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
     if r.symbols_dirs_used:
         lines.append("   Symbol dirs used:")
         for d in r.symbols_dirs_used:
             lines.append(f"     • {d}")
-    if r.dry_run:
-        lines.insert(0, "🔍 DRY RUN")
     for warning in r.warnings:
         lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
     return lines

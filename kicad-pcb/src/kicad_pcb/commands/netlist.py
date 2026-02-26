@@ -291,6 +291,22 @@ def _apply_netlist_to_project(
         dry_run=request.dry_run,
     )
 
+    if request.dry_run:
+        warnings.append(
+            {
+                "code": "DRY_RUN_NO_WRITE",
+                "message": (
+                    "Dry-run mode: validation passed but no changes were written to disk."
+                ),
+                "details": {
+                    "root_schematic_path": str(project.sch_file),
+                    "managed_schematic_path": str(managed_sch_path),
+                    "symbols_validated": stats["symbols"],
+                    "nets_validated": len(ir.nets),
+                },
+            }
+        )
+
     return ApplyNetlistResult(
         schematic_path=project.sch_file,
         managed_schematic_path=managed_sch_path,
