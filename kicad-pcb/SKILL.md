@@ -1,8 +1,7 @@
 ---
 name: kicad-pcb
 version: 1.0.0
-description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline. Based on kicad-pcb by PaxSwarm.
-author: PaxSwarm
+description: Automate PCB design with KiCad. Create schematics, design boards, export Gerbers, order from PCBWay. Full design-to-manufacturing pipeline.
 license: MIT
 keywords: [pcb, kicad, electronics, gerber, schematic, circuit, pcbway, manufacturing, hardware]
 triggers: ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbway", "electronics project"]
@@ -44,24 +43,29 @@ pip install cairosvg  # optional — enables PNG schematic preview
 
 ## Installation
 
-Install from [ClawHub](https://clawhub.com) using the `clawhub` CLI:
+This is a private skill — install it by copying this folder into an OpenClaw
+skills directory.
+
+**Workspace skill** (available to agents in this workspace only):
 
 ```bash
-# Install clawhub CLI (if not already installed)
-npm i -g clawhub
-
-# Install this skill into your current workspace
-clawhub install kicad-pcb
-
-# Start a new OpenClaw session to pick up the skill
+cp -r kicad-pcb/ <path-to-openclaw-workspace>/skills/kicad-pcb/
 ```
 
-The skill is installed into `./skills/kicad-pcb/` under your working directory.
-OpenClaw loads it as a workspace skill on the next session.
+**Shared skill** (available to all agents on this machine):
 
-To install as a shared skill (available to all agents on this machine), run
-`clawhub install kicad-pcb` from `~/.openclaw/skills/` as the working directory,
-or copy the folder there manually.
+```bash
+cp -r kicad-pcb/ ~/.openclaw/skills/kicad-pcb/
+```
+
+Or, if you're working from the repo, symlink instead of copying so changes take
+effect without re-copying:
+
+```bash
+ln -s "$(pwd)/kicad-pcb" ~/.openclaw/skills/kicad-pcb
+```
+
+Start a new OpenClaw session to pick up the skill.
 
 > **Note:** The `{baseDir}` placeholder in the commands below is automatically
 > expanded by OpenClaw to the skill's installed folder path. You do not need to
@@ -90,8 +94,9 @@ for `kicad-cli`, Python version, and optional packages (`cairosvg`, `pillow`).
 
 If `kicad-cli` is missing, follow the [KiCad Installation](#requirements) steps
 below. If `python3 {baseDir}/scripts/kicad_pcb.py` fails with `No such file or
-directory`, the skill path was not resolved — check that the skill is loaded
-with `clawhub list` and that you started a fresh OpenClaw session.
+directory`, the skill folder is not in the right place — confirm the
+`kicad-pcb/` directory exists under `~/.openclaw/skills/` (or your workspace
+`skills/` folder) and that you started a fresh OpenClaw session.
 
 ## Quick Start
 
@@ -309,5 +314,3 @@ the failure.
 - Template system
 
 ---
-
-*Built by [PaxSwarm](https://moltbook.com/agent/PaxSwarm)*
