@@ -404,10 +404,14 @@ class TestNewFromNetlistKicadMode:
         """new-from-netlist --mode kicad must exit 0 and create all project files."""
         result = self._run(
             "new-from-netlist",
-            "--name", "TestNetlist",
-            "--netlist", str(self.ir_path),
-            "--symbols-dir", str(_SYMBOLS_DIR),
-            "--mode", "kicad",
+            "--name",
+            "TestNetlist",
+            "--netlist",
+            str(self.ir_path),
+            "--symbols-dir",
+            str(_SYMBOLS_DIR),
+            "--mode",
+            "kicad",
         )
         assert result.returncode == 0, (
             f"new-from-netlist --mode kicad failed (exit {result.returncode}):\n{result.stderr}"
@@ -424,14 +428,16 @@ class TestNewFromNetlistKicadMode:
         """kicad-cli sch export netlist must succeed on the generated main schematic."""
         result = self._run(
             "new-from-netlist",
-            "--name", "TestNetlist",
-            "--netlist", str(self.ir_path),
-            "--symbols-dir", str(_SYMBOLS_DIR),
-            "--mode", "kicad",
+            "--name",
+            "TestNetlist",
+            "--netlist",
+            str(self.ir_path),
+            "--symbols-dir",
+            str(_SYMBOLS_DIR),
+            "--mode",
+            "kicad",
         )
-        assert result.returncode == 0, (
-            f"new-from-netlist --mode kicad failed:\n{result.stderr}"
-        )
+        assert result.returncode == 0, f"new-from-netlist --mode kicad failed:\n{result.stderr}"
 
         sch_path = self.projects_dir / "TestNetlist" / "TestNetlist.kicad_sch"
         netlist_out = self.projects_dir / "TestNetlist" / "TestNetlist.xml"
@@ -465,10 +471,14 @@ class TestNewFromNetlistKicadMode:
         """compile-netlist (alias for new-from-netlist) must exit 0 and create project files."""
         result = self._run(
             "compile-netlist",
-            "--name", "TestCompile",
-            "--netlist", str(self.ir_path),
-            "--symbols-dir", str(_SYMBOLS_DIR),
-            "--mode", "kicad",
+            "--name",
+            "TestCompile",
+            "--netlist",
+            str(self.ir_path),
+            "--symbols-dir",
+            str(_SYMBOLS_DIR),
+            "--mode",
+            "kicad",
         )
         assert result.returncode == 0, (
             f"compile-netlist --mode kicad failed (exit {result.returncode}):\n{result.stderr}"
@@ -490,19 +500,19 @@ class TestNewFromNetlistKicadMode:
         for cmd, name in (("new-from-netlist", "ProjA"), ("compile-netlist", "ProjB")):
             res = self._run(
                 cmd,
-                "--name", name,
-                "--netlist", str(self.ir_path),
-                "--symbols-dir", str(_SYMBOLS_DIR),
-                "--mode", "kicad",
+                "--name",
+                name,
+                "--netlist",
+                str(self.ir_path),
+                "--symbols-dir",
+                str(_SYMBOLS_DIR),
+                "--mode",
+                "kicad",
             )
             assert res.returncode == 0, f"{cmd} failed (exit {res.returncode}):\n{res.stderr}"
 
-        bindings_a = _extract_bindings_from_sch(
-            self.projects_dir / "ProjA" / MANAGED_SHEET_FILE
-        )
-        bindings_b = _extract_bindings_from_sch(
-            self.projects_dir / "ProjB" / MANAGED_SHEET_FILE
-        )
+        bindings_a = _extract_bindings_from_sch(self.projects_dir / "ProjA" / MANAGED_SHEET_FILE)
+        bindings_b = _extract_bindings_from_sch(self.projects_dir / "ProjB" / MANAGED_SHEET_FILE)
         assert bindings_a == bindings_b, (
             f"Binding mismatch between new-from-netlist and compile-netlist:\n"
             f"  ProjA: {bindings_a}\n  ProjB: {bindings_b}"

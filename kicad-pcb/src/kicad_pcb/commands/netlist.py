@@ -260,18 +260,20 @@ def _apply_netlist_to_project(
                     },
                 )
             else:
-                warnings.append({
-                    "code": ErrorCode.EMPTY_GENERATION,
-                    "message": (
-                        "Dry-run: managed schematic would be empty despite non-empty IR"
-                        f" ({len(ir.components)} component(s) expected)."
-                    ),
-                    "details": {
-                        "expected_components": len(ir.components),
-                        "found_symbols": 0,
-                        "dry_run": True,
-                    },
-                })
+                warnings.append(
+                    {
+                        "code": ErrorCode.EMPTY_GENERATION,
+                        "message": (
+                            "Dry-run: managed schematic would be empty despite non-empty IR"
+                            f" ({len(ir.components)} component(s) expected)."
+                        ),
+                        "details": {
+                            "expected_components": len(ir.components),
+                            "found_symbols": 0,
+                            "dry_run": True,
+                        },
+                    }
+                )
 
         if symbol_defs_missing:
             warnings.append(
@@ -295,9 +297,7 @@ def _apply_netlist_to_project(
         warnings.append(
             {
                 "code": "DRY_RUN_NO_WRITE",
-                "message": (
-                    "Dry-run mode: validation passed but no changes were written to disk."
-                ),
+                "message": ("Dry-run mode: validation passed but no changes were written to disk."),
                 "details": {
                     "root_schematic_path": str(project.sch_file),
                     "managed_schematic_path": str(managed_sch_path),
@@ -431,7 +431,7 @@ def _resolve_mode(mode_name: str | None, *, default: ValidationMode) -> Validati
 
 
 def _minimal_schematic_text() -> str:
-        return f'''(kicad_sch (version 20230121) (generator eeschema)
+    return f'''(kicad_sch (version 20230121) (generator eeschema)
     (uuid "{_new_uuid()}")
     (paper "A4")
     (lib_symbols)

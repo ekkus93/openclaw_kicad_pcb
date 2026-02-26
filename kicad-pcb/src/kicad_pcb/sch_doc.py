@@ -594,11 +594,7 @@ class SchematicDoc:
         Useful for post-mutation invariant checks querying the live AST
         (e.g. ``count_nodes("symbol")`` or ``count_nodes("label")``).
         """
-        return sum(
-            1
-            for item in self.root.items
-            if isinstance(item, ListNode) and item.key == key
-        )
+        return sum(1 for item in self.root.items if isinstance(item, ListNode) and item.key == key)
 
     def extract_pin_label_bindings(self) -> list[dict[str, str]]:
         """Return pin→net bindings for generated schematics.
@@ -654,11 +650,13 @@ class SchematicDoc:
             ):
                 return False
         self._insert_before_sheet_instances(
-            make_managed_sheet_node(ManagedSheetSpec(
-                sheet_name=sheet_name,
-                sheet_file=sheet_file,
-                sheet_uuid=sheet_uuid,
-            ))
+            make_managed_sheet_node(
+                ManagedSheetSpec(
+                    sheet_name=sheet_name,
+                    sheet_file=sheet_file,
+                    sheet_uuid=sheet_uuid,
+                )
+            )
         )
         return True
 
@@ -715,16 +713,10 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
         ):
             symbol_id = child.items[1].value
         elif (
-            child.key == "uuid"
-            and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
+            child.key == "uuid" and len(child.items) >= 2 and isinstance(child.items[1], StringNode)
         ):
             sym_uuid = child.items[1].value
-        elif (
-            child.key == "unit"
-            and len(child.items) >= 2
-            and isinstance(child.items[1], AtomNode)
-        ):
+        elif child.key == "unit" and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
             unit = child.items[1].value
         elif child.key == "at" and len(child.items) >= 3:
             x = _parse_float_atom(child.items[1], default=x)
