@@ -1,10 +1,38 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-27T00:00:00Z_
+_Last updated: 2026-02-26T10:23:39Z_
 
 ---
 
-## 2026-02-27T01:00:00Z - EMPTY_SCHEMATIC_FIX_TODO round 2: P5 warning + P6.4 test
+## STANDING RULE — memory.md timestamp discipline
+**ALWAYS use the actual UTC time (to the second) when adding an entry.**
+- For committed work: use `git show --format=%cI <hash>` to get the exact commit timestamp.
+- For in-session notes (no commit yet): run `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing.
+- NEVER fabricate or round timestamps (e.g. `T00:00:00Z`, `T01:00:00Z`, `T03:25:00Z`).
+- The "Last updated" header must also use the real current time from `date -u`.
+
+---
+
+## 2026-02-26T10:13:06Z - CI workflow consolidated
+- Deleted `.github/workflows/integration.yml` (nightly cron removed per user request).
+- Updated `.github/workflows/ci.yml` to add a second job `integration-tests` that `needs: unit-tests`.
+  - Installs KiCad from `ppa:kicad/kicad-9-releases` before running tests.
+  - Runs `pytest tests/integration/ -v --tb=long --junit-xml=integration-results.xml`.
+  - No `-m requires_kicad` filter — KiCad is always present in this job.
+  - Uploads artifacts on failure (7-day retention).
+- Committed as `a5681cc`, pushed to master.
+
+---
+
+## 2026-02-26T10:23:39Z - Explicit .venv usage for checks
+- User requested explicit `.venv` usage for all Python commands.
+- Ran `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` — both clean.
+- Ran `.venv/bin/mypy kicad-pcb/src` — success, no issues found.
+- Attempted `.venv/bin/pytest -q tests/unit` multiple times; runs were interrupted by external `KeyboardInterrupt`/`^C` before completion in this session.
+
+---
+
+## 2026-02-26T08:09:42Z - EMPTY_SCHEMATIC_FIX_TODO round 2: P5 warning + P6.4 test
 - Added `MANAGED_SHEET_EMPTY` warning in `cmd_info_sch` when managed sheet exists but has 0 placed symbols (after computing `managed_symbol_count`).
 - Added P6.4 regression test `test_empty_generation_invariant_raises_coded_error` in `tests/unit/test_netlist_commands.py`:
   - Monkeypatches `SchematicDoc.add_symbol` to no-op so AST stays empty while pipeline runs normally.
@@ -15,7 +43,7 @@ _Last updated: 2026-02-27T00:00:00Z_
 
 ---
 
-## 2026-02-27T00:00:00Z - EMPTY_SCHEMATIC_FIX_TODO items P1.1/P2.1/P5/P6.4/P7 implemented
+## 2026-02-26T08:08:52Z - EMPTY_SCHEMATIC_FIX_TODO items P1.1/P2.1/P5/P6.4/P7 implemented
 - Implemented all 5 items from `EMPTY_SCHEMATIC_FIX_TODO.md` per user/ChatGPT direction.
 - **P6.4 (`errors.py`)**: Added `EMPTY_GENERATION = "EMPTY_GENERATION"` and `SYMBOL_DIR_MISSING = "SYMBOL_DIR_MISSING"` to `ErrorCode` StrEnum.
 - **P5 (`sch_doc.py`)**: Added `count_nodes(key: str) -> int` helper on `SchematicDoc` — counts direct-children of root with given S-expression key. Used for symbol/label AST counting without going through public `list_symbols()` list.
@@ -100,7 +128,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T03:25:00Z - CODE_REVIEW3 netlist/schematic lint-hardening refactor
+## 2026-02-26T06:25:34Z - CODE_REVIEW3 netlist/schematic lint-hardening refactor
 - Continued implementation on managed-sheet and netlist command slice, then resolved Ruff findings without changing behavior.
 - `commands/netlist.py`:
   - Introduced `_ApplyNetlistRequest` dataclass to reduce parameter count and simplify command handoff.
@@ -125,7 +153,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T03:10:00Z - CODE_REVIEW3 implementation started (slice 1)
+## 2026-02-26T06:25:07Z - CODE_REVIEW3 implementation started (slice 1)
 - Confirmed existing Python 3.11 environment at `.venv`; no new env created.
 - Extended IR validation foundation:
   - `ir_validate.py`: improved duplicate detection via `Counter`.
@@ -157,7 +185,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T02:40:00Z - Finalized CODE_REVIEW3 implementation choices applied to docs
+## 2026-02-26T06:25:34Z - Finalized CODE_REVIEW3 implementation choices applied to docs
 - Updated `code_review/CODE_REVIEW3.md` and `code_review/CODE_REVIEW3_TODO.md` with locked choices from user decision set:
   - Managed region = dedicated top-level sheet `OpenClaw_Managed`.
   - Keep off-canvas ownership marker `OpenClaw:generated=v1`.
@@ -168,7 +196,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T02:25:00Z - Reviewed revised CODE_REVIEW3_TODO.md
+## 2026-02-26T06:25:34Z - Reviewed revised CODE_REVIEW3_TODO.md
 - User provided an updated TODO that includes explicit decisions D1-D8.
 - Assessment: plan is now largely implementation-ready.
 - Remaining clarifications before coding:
@@ -179,7 +207,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T02:15:00Z - Reviewed CODE_REVIEW3 design docs (no code changes)
+## 2026-02-26T06:25:34Z - Reviewed CODE_REVIEW3 design docs (no code changes)
 - Reviewed code review docs for compiler-style pipeline:
   - `code_review/CODE_REVIEW3.md`
   - `code_review/CODE_REVIEW3_TODO.md`
@@ -188,7 +216,7 @@ Completed all remaining CODE_REVIEW3 TODO items except P3.2 (pin→net extractor
 
 ---
 
-## 2026-02-26T02:05:00Z - Clarified private skill install/runtime environment checks
+## 2026-02-26T01:38:13Z - Clarified private skill install/runtime environment checks
 - Verified script execution works with host `python3`: `python3 kicad-pcb/scripts/kicad_pcb.py --help`.
 - Verified environment health check works: `python3 kicad-pcb/scripts/kicad_pcb.py doctor` (all core checks passed on this machine).
 - Verified optional Python modules import in same interpreter: `python3 -c "import cairosvg, PIL"`.
