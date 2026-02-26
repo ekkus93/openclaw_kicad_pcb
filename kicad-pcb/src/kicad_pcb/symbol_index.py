@@ -63,6 +63,16 @@ class SymbolIndex:
         if fallback_dirs:
             resolved = resolved + tuple(path.resolve() for path in fallback_dirs if path.is_dir())
         self._dirs: tuple[Path, ...] = resolved
+        if not self._dirs:
+            raise UserError(
+                "No KiCad symbol libraries found. Cannot resolve symbol pins.",
+                code=ErrorCode.SYMBOL_DIR_MISSING,
+                details={
+                    "searched_candidates": [str(p) for p in SYMBOLS_CANDIDATES],
+                    "repo_local_dir": str(REPO_LOCAL_SYMBOLS_DIR),
+                    "hint": "Pass --symbols-dir <path> or install KiCad symbol libraries.",
+                },
+            )
         self._cache: dict[str, set[str]] = {}
 
     @property

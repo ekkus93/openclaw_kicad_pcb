@@ -588,6 +588,18 @@ class SchematicDoc:
 
         return sorted(symbols, key=lambda entry: str(entry.get("ref", "")))
 
+    def count_nodes(self, key: str) -> int:
+        """Count direct children of root with the given S-expression key.
+
+        Useful for post-mutation invariant checks querying the live AST
+        (e.g. ``count_nodes("symbol")`` or ``count_nodes("label")``).
+        """
+        return sum(
+            1
+            for item in self.root.items
+            if isinstance(item, ListNode) and item.key == key
+        )
+
     def extract_pin_label_bindings(self) -> list[dict[str, str]]:
         """Return pin→net bindings for generated schematics.
 

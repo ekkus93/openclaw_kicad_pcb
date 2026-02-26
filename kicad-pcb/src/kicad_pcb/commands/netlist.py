@@ -53,18 +53,41 @@ def cmd_info_sch(args) -> InfoSchResult:
 
     symbols = list(doc.list_symbols())
     pin_net_bindings = list(doc.extract_pin_label_bindings())
+    root_symbol_count = doc.count_nodes("symbol")
+    root_label_count = doc.count_nodes("label")
 
     managed_sch_path = project.path / MANAGED_SHEET_FILE
+    managed_sch_path_result: Path | None = None
+    managed_symbol_count = 0
+    managed_label_count = 0
     if managed_sch_path.exists():
+        managed_sch_path_result = managed_sch_path
         managed_doc = SchematicDoc.load(managed_sch_path)
         symbols.extend(managed_doc.list_symbols())
         pin_net_bindings.extend(managed_doc.extract_pin_label_bindings())
+        managed_symbol_count = managed_doc.count_nodes("symbol")
+        managed_label_count = managed_doc.count_nodes("label")
 
     symbols_sorted = tuple(sorted(symbols, key=lambda entry: str(entry.get("ref", ""))))
     bindings_sorted = tuple(
         sorted(pin_net_bindings, key=lambda entry: (entry["ref"], entry["pin"], entry["net_name"]))
     )
     warnings: list[dict[str, object]] = []
+
+    if managed_sch_path_result is not None and managed_symbol_count == 0:
+        warnings.append(
+            {
+                "code": "MANAGED_SHEET_EMPTY",
+                "message": (
+                    "Managed sheet exists but contains no placed symbols. "
+                    "The schematic may not have been generated yet."
+                ),
+                "details": {
+                    "managed_schematic_path": str(managed_sch_path_result),
+                    "managed_symbol_count": 0,
+                },
+            }
+        )
 
     if not bindings_sorted:
         warnings.append(
@@ -84,6 +107,11 @@ def cmd_info_sch(args) -> InfoSchResult:
         symbols=symbols_sorted,
         pin_net_bindings=bindings_sorted,
         warnings=tuple(warnings),
+        managed_schematic_path=managed_sch_path_result,
+        symbol_count=root_symbol_count,
+        label_count=root_label_count,
+        managed_symbol_count=managed_symbol_count,
+        managed_label_count=managed_label_count,
     )
 
 
@@ -137,6 +165,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         nets_applied=apply_result.nets_applied,
         kicad_cli_used=apply_result.kicad_cli_used,
         warnings=apply_result.warnings,
+        symbols_dirs_used=apply_result.symbols_dirs_used,
     )
 
 
@@ -202,6 +231,34 @@ def _apply_netlist_to_project(
         )
         _write_nets(doc=doc, ir=ir, symbol_positions=symbol_positions, stats=stats)
 
+        # Post-mutation AST invariant: a non-empty IR must produce at least one
+        # placed symbol node. Check the live AST, not the stats counters.
+        found_symbols = len(doc.list_symbols())
+        if ir.components and found_symbols == 0:
+            if not request.dry_run:
+                raise UserError(
+                    "Generation produced an empty managed schematic for a non-empty IR",
+                    code=ErrorCode.EMPTY_GENERATION,
+                    details={
+                        "managed_schematic_path": str(managed_sch_path),
+                        "expected_components": len(ir.components),
+                        "found_symbols": 0,
+                    },
+                )
+            else:
+                warnings.append({
+                    "code": ErrorCode.EMPTY_GENERATION,
+                    "message": (
+                        "Dry-run: managed schematic would be empty despite non-empty IR"
+                        f" ({len(ir.components)} component(s) expected)."
+                    ),
+                    "details": {
+                        "expected_components": len(ir.components),
+                        "found_symbols": 0,
+                        "dry_run": True,
+                    },
+                })
+
         if symbol_defs_missing:
             warnings.append(
                 {
@@ -232,6 +289,7 @@ def _apply_netlist_to_project(
         kicad_cli_used=cli is not None,
         dry_run=request.dry_run,
         warnings=tuple(warnings),
+        symbols_dirs_used=tuple(str(d) for d in symbol_index.directories),
     )
 
 

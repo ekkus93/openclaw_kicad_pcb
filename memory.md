@@ -1,6 +1,19 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-26T05:45:53Z_
+_Last updated: 2026-02-27T00:00:00Z_
+
+---
+
+## 2026-02-27T00:00:00Z - EMPTY_SCHEMATIC_FIX_TODO items P1.1/P2.1/P5/P6.4/P7 implemented
+- Implemented all 5 items from `EMPTY_SCHEMATIC_FIX_TODO.md` per user/ChatGPT direction.
+- **P6.4 (`errors.py`)**: Added `EMPTY_GENERATION = "EMPTY_GENERATION"` and `SYMBOL_DIR_MISSING = "SYMBOL_DIR_MISSING"` to `ErrorCode` StrEnum.
+- **P5 (`sch_doc.py`)**: Added `count_nodes(key: str) -> int` helper on `SchematicDoc` — counts direct-children of root with given S-expression key. Used for symbol/label AST counting without going through public `list_symbols()` list.
+- **P2.1 (`symbol_index.py`)**: Added guard in `SymbolIndex.__init__` — if `self._dirs` is empty after resolution, raises `UserError(code=SYMBOL_DIR_MISSING, details={searched_candidates, repo_local_dir, hint})`.
+- **P7 (`results.py`)**: Added `symbols_dirs_used: tuple[str, ...]` to `ApplyNetlistResult` and `NewFromNetlistResult`; added `managed_schematic_path: Path | None`, `symbol_count`, `label_count`, `managed_symbol_count`, `managed_label_count` to `InfoSchResult`.
+- **P1.1 (`commands/netlist.py`)**: Added post-mutation AST invariant in `_mutate_managed` closure (after `_write_nets`): queries `len(doc.list_symbols())` — if `ir.components and found_symbols == 0 and not dry_run`, raises `UserError(EMPTY_GENERATION)`; if dry_run, appends warning. Threaded `symbols_dirs_used` into `ApplyNetlistResult` and `NewFromNetlistResult`. Enhanced `cmd_info_sch` to compute and return AST counts plus `managed_schematic_path`.
+- **Formatting (`formatting.py`)**: Updated `_fmt_info_sch` (shows root/managed counts separately), `_fmt_apply_netlist` and `_fmt_new_from_netlist` (show `symbols_dirs_used` bullets).
+- **Test (`tests/unit/test_symbol_index.py`)**: Added `test_symbol_index_raises_symbol_dir_missing_when_no_dirs` using monkeypatch on `si_mod.REPO_LOCAL_SYMBOLS_DIR` and `si_mod.SYMBOLS_CANDIDATES`.
+- All unit tests pass (52 presentation, 83 golden+phase6+dry_run_diff, 9 netlist+symbol_index, 2 info_sch, 42 compat). Ruff clean on all modified files.
 
 ---
 
