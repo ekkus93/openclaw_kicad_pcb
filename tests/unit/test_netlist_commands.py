@@ -702,3 +702,205 @@ def test_broken_extends_chain_raises_symbol_not_found(tmp_path: Path) -> None:
     assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
     # Error details must identify the offending symbol.
     assert "BrokenLib:Orphan" in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# Circuit fidelity — general helper + tests
+#
+# These tests answer the core question: "Given a Circuit IR, does the
+# generated schematic actually represent that circuit?"
+#
+# Checks performed by _check_circuit_fidelity:
+#   1. Every component ref in the IR is present as a placed symbol instance.
+#   2. Every (ref, pin, net_name) triple in the IR has a matching
+#      OpenClaw:bind= marker in the managed schematic — meaning the tool
+#      recorded the net connection for that specific pin.
+#
+# This is stricter than the EMPTY_GENERATION guard: a schematic could have
+# the right number of symbols but wire them to wrong nets, or omit a pin.
+# ---------------------------------------------------------------------------
+
+# Path to the system KiCad symbol libraries (installed by kicad package).
+_KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
+
+_skip_no_system_symbols = pytest.mark.skipif(
+    not (_KICAD_SYSTEM_SYMBOLS / "Amplifier_Operational.kicad_sym").exists(),
+    reason="KiCad system symbol libraries not installed at /usr/share/kicad/symbols",
+)
+
+
+def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:
+    """Assert that *managed_doc* faithfully represents *ir_data*.
+
+    Raises ``AssertionError`` with a descriptive message on the first mismatch.
+
+    Parameters
+    ----------
+    ir_data:
+        Parsed Circuit IR dict (``version``, ``components``, ``nets`` keys).
+    managed_doc:
+        The generated managed schematic loaded as a :class:`SchematicDoc`.
+    """
+    # --- component placement check ---
+    placed_refs = {str(s["ref"]) for s in managed_doc.list_symbols()}
+    for component in ir_data["components"]:
+        ref = component["ref"]
+        assert ref in placed_refs, (
+            f"Component {ref!r} (symbol {component['symbol']!r}) "
+            f"is missing from the generated schematic. "
+            f"Placed refs: {sorted(placed_refs)}"
+        )
+
+    # --- net binding check ---
+    # Build a lookup: (ref, pin) → net_name from the generated binding markers.
+    binding_index: dict[tuple[str, str], str] = {
+        (b["ref"], b["pin"]): b["net_name"] for b in managed_doc.extract_pin_label_bindings()
+    }
+    for net in ir_data["nets"]:
+        net_name = net["name"]
+        for pin_ref in net["pins"]:
+            key = (pin_ref["ref"], pin_ref["pin"])
+            assert key in binding_index, (
+                f"No OpenClaw:bind= marker found for {pin_ref['ref']} pin {pin_ref['pin']!r} "
+                f"(expected net {net_name!r}). "
+                f"Bindings present: {sorted(binding_index.keys())}"
+            )
+            actual_net = binding_index[key]
+            assert actual_net == net_name, (
+                f"{pin_ref['ref']} pin {pin_ref['pin']!r}: "
+                f"expected net {net_name!r} but schematic records {actual_net!r}"
+            )
+
+
+def test_circuit_fidelity_multi_component_testlib(tmp_path: Path) -> None:
+    """Circuit fidelity: a 3-component, 4-net circuit with TestLib symbols.
+
+    Uses R, OpAmp (flat), and DerivedOpAmp (extends OpAmp) together.
+    Verifies that every component is placed and every net/pin binding is
+    recorded correctly — including pins inherited by DerivedOpAmp.
+
+    This test runs without system KiCad libraries and is always executed in CI.
+    """
+    ir_data = {
+        "version": "1",
+        "components": [
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+            {"ref": "R2", "symbol": "TestLib:R", "value": "22k"},
+            {"ref": "U1", "symbol": "TestLib:DerivedOpAmp", "value": "DerivedOpAmp"},
+        ],
+        "nets": [
+            # IN+ (pin 1 of DerivedOpAmp, inherited from OpAmp) through R1
+            {"name": "IN_P", "pins": [{"ref": "U1", "pin": "1"}, {"ref": "R1", "pin": "1"}]},
+            # IN- (pin 2, inherited) through R2
+            {"name": "IN_N", "pins": [{"ref": "U1", "pin": "2"}, {"ref": "R2", "pin": "1"}]},
+            # Feedback: OUT (pin 6, inherited) back to IN- via R2
+            {"name": "OUT", "pins": [{"ref": "U1", "pin": "6"}, {"ref": "R2", "pin": "2"}]},
+            # Input bias
+            {"name": "GND", "pins": [{"ref": "R1", "pin": "2"}]},
+        ],
+    }
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(json.dumps(ir_data), encoding="utf-8")
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="FidelityTestLib",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    assert result.symbols_added == 3
+    assert result.nets_applied == 4
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    _check_circuit_fidelity(ir_data, managed_doc)
+
+
+@_skip_no_system_symbols
+def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> None:
+    """Circuit fidelity: NE5532 op-amp circuit using real KiCad system libraries.
+
+    NE5532 uses (extends "LM2904") in the KiCad library.  This test verifies
+    the complete pipeline on a realistic circuit:
+
+    - U1 NE5532 (dual op-amp, 8 pins, all inherited from LM2904)
+    - R1-R4 Device:R
+
+    The circuit exercises BOTH op-amp units inside U1:
+      Unit A: pins 3 (IN+), 2 (IN-), 1 (OUT)
+      Unit B: pins 5 (IN+), 6 (IN-), 7 (OUT)
+      Power:  pins 8 (V+), 4 (V-)
+
+    Fidelity assertions:
+    1. All 5 components present as placed symbol instances.
+    2. All 8 nets have correct OpenClaw:bind= markers.
+    3. Both LM2904 (base) and NE5532 (derived) are embedded in lib_symbols —
+       without LM2904, KiCad renders U1 as a blank box.
+    """
+    ir_data = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "Amplifier_Operational:NE5532", "value": "NE5532"},
+            {"ref": "R1", "symbol": "Device:R", "value": "10k"},
+            {"ref": "R2", "symbol": "Device:R", "value": "100k"},
+            {"ref": "R3", "symbol": "Device:R", "value": "10k"},
+            {"ref": "R4", "symbol": "Device:R", "value": "100k"},
+        ],
+        "nets": [
+            # Power rails
+            {"name": "VCC", "pins": [{"ref": "U1", "pin": "8"}]},
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "U1", "pin": "4"},
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "R3", "pin": "2"},
+                ],
+            },
+            # Unit A: inverting amplifier (pins 1, 2, 3)
+            {"name": "IN_A", "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R1", "pin": "1"}]},
+            {"name": "IN_N_A", "pins": [{"ref": "U1", "pin": "2"}, {"ref": "R2", "pin": "1"}]},
+            {"name": "OUT_A", "pins": [{"ref": "U1", "pin": "1"}, {"ref": "R2", "pin": "2"}]},
+            # Unit B: inverting amplifier (pins 5, 6, 7)
+            {"name": "IN_B", "pins": [{"ref": "U1", "pin": "5"}, {"ref": "R3", "pin": "1"}]},
+            {"name": "IN_N_B", "pins": [{"ref": "U1", "pin": "6"}, {"ref": "R4", "pin": "1"}]},
+            {"name": "OUT_B", "pins": [{"ref": "U1", "pin": "7"}, {"ref": "R4", "pin": "2"}]},
+        ],
+    }
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(json.dumps(ir_data), encoding="utf-8")
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="NE5532Circuit",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    assert result.symbols_added == 5
+    assert result.nets_applied == 8
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+
+    # Core fidelity: all components placed and all net bindings recorded correctly.
+    _check_circuit_fidelity(ir_data, managed_doc)
+
+    # Extends-chain specific: both LM2904 (base) and NE5532 must be in lib_symbols.
+    # Without LM2904, KiCad cannot render U1 (it would show as a blank box).
+    embedded_ids = _get_lib_symbol_ids(managed_doc)
+    assert "Amplifier_Operational:LM2904" in embedded_ids, (
+        f"Base symbol LM2904 missing from lib_symbols; "
+        f"KiCad will render NE5532 as a blank box. Embedded: {embedded_ids}"
+    )
+    assert "Amplifier_Operational:NE5532" in embedded_ids, (
+        f"Derived symbol NE5532 missing from lib_symbols. Embedded: {embedded_ids}"
+    )
