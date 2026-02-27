@@ -319,3 +319,74 @@ class TestCmdSearchSymbolsCacheIntegration:
         # other_dir is empty, so no matches
         assert result.matches == ()
         assert result.symbols_dirs == (str(other_dir),)
+
+
+# ---------------------------------------------------------------------------
+# Extends-symbol pin-count (P0-A regression tests)
+# ---------------------------------------------------------------------------
+
+# The TestLib fixture contains:
+#   - OpAmp         – 4 pins (in-body pin declarations)
+#   - DerivedOpAmp  – 0 own pins; inherits from OpAmp via (extends "OpAmp")
+# Before the fix, _count_pins_in_block returned 0 for DerivedOpAmp because its
+# block has no "(pin " entries.  After the fix, read_lib_symbol_pins walks the
+# extends chain and produces the correct count.
+_FIXTURE_SYMBOLS_DIR = Path(__file__).parent.parent / "fixtures" / "symbols"
+_FIXTURE_LIB = _FIXTURE_SYMBOLS_DIR / "TestLib.kicad_sym"
+
+
+class TestExtendsSymbolPinCount:
+    def test_parse_extends_symbol_reports_parent_pin_count(self) -> None:
+        """_parse_file_to_cached must follow (extends ...) and count parent pins."""
+        symbols = _parse_file_to_cached(_FIXTURE_LIB)
+        by_name = {s.sym_name: s for s in symbols}
+        assert "DerivedOpAmp" in by_name, "fixture is missing DerivedOpAmp"
+        assert by_name["DerivedOpAmp"].pin_count == 4, (
+            f"expected 4 (inherited from OpAmp), got {by_name['DerivedOpAmp'].pin_count}"
+        )
+
+    def test_search_symbols_extends_pin_count(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """cmd_search_symbols must return a non-zero pin_count for an extends symbol."""
+        monkeypatch.setenv("KICAD_PCB_CACHE_DIR", str(tmp_path / "cache"))
+
+        args = SimpleNamespace(
+            query="derivedopamp",
+            symbols_dir=str(_FIXTURE_SYMBOLS_DIR),
+            limit=20,
+        )
+        result = cmd_search_symbols(args)
+
+        matches = {m.symbol_id: m for m in result.matches}
+        assert any("DerivedOpAmp" in sid for sid in matches), (
+            f"DerivedOpAmp not found in results: {list(matches)}"
+        )
+        derived = next(m for sid, m in matches.items() if "DerivedOpAmp" in sid)
+        assert derived.pin_count == 4, f"expected pin_count=4 (inherited), got {derived.pin_count}"
+
+    def test_build_index_then_search_extends_pin_count(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Full pipeline: build-symbol-index followed by search must yield correct pin count."""
+        monkeypatch.setenv("KICAD_PCB_CACHE_DIR", str(tmp_path / "cache"))
+
+        build_args = SimpleNamespace(symbols_dir=str(_FIXTURE_SYMBOLS_DIR))
+        build_result = cmd_build_symbol_index(build_args)
+        assert build_result.files_updated >= 1, "expected at least one file indexed"
+
+        search_args = SimpleNamespace(
+            query="derivedopamp",
+            symbols_dir=str(_FIXTURE_SYMBOLS_DIR),
+            limit=20,
+        )
+        result = cmd_search_symbols(search_args)
+
+        matches = {m.symbol_id: m for m in result.matches}
+        assert any("DerivedOpAmp" in sid for sid in matches), (
+            f"DerivedOpAmp not found after index build: {list(matches)}"
+        )
+        derived = next(m for sid, m in matches.items() if "DerivedOpAmp" in sid)
+        assert derived.pin_count == 4, (
+            f"expected pin_count=4 after warm cache, got {derived.pin_count}"
+        )

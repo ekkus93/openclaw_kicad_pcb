@@ -18,6 +18,11 @@ from pathlib import Path
 _DEFAULT_CACHE_DIR = Path.home() / ".openclaw" / "kicad-pcb"
 _DB_FILENAME = "symbol_index.db"
 
+# Increment this whenever the cached data semantics change (e.g. a new
+# derivation strategy) so existing DBs are transparently invalidated on
+# first open rather than silently serving stale pin counts.
+CACHE_VERSION = 2
+
 # WAL mode + NORMAL synchronous gives good write throughput while
 # remaining crash-safe (no full fsync on every commit).
 _PRAGMAS = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;"
@@ -37,6 +42,10 @@ CREATE INDEX IF NOT EXISTS idx_sym_cache_file
 CREATE TABLE IF NOT EXISTS indexed_files (
     lib_file  TEXT PRIMARY KEY NOT NULL,
     lib_mtime REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL
 );
 """
 
@@ -83,6 +92,17 @@ class SymbolCache:
         if self._connection is None:
             self._connection = sqlite3.connect(str(self._db))
             self._connection.executescript(_PRAGMAS + _SCHEMA)
+            # Evict stale entries when the cache semantics have changed.
+            conn = self._connection
+            row = conn.execute("SELECT value FROM meta WHERE key='version'").fetchone()
+            if row is None or int(row[0]) != CACHE_VERSION:
+                conn.execute("DELETE FROM symbol_cache")
+                conn.execute("DELETE FROM indexed_files")
+                conn.execute(
+                    "INSERT OR REPLACE INTO meta (key, value) VALUES ('version', ?)",
+                    (str(CACHE_VERSION),),
+                )
+                conn.commit()
         return self._connection
 
     def close(self) -> None:

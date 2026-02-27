@@ -36,6 +36,9 @@ _TOP_SYM_HEADER_RE = re.compile(r'^\s{0,2}\(symbol\s+"([^"]+)"', re.MULTILINE)
 # Sub-unit suffix: "R_0_1", "C_Polarized_1_2", etc.
 _SUB_UNIT_RE = re.compile(r"_\d+_\d+$")
 
+# Matches  (extends "BaseSymbolName")  inside a symbol block.
+_EXTENDS_NAME_RE = re.compile(r'\(extends\s+"([^"]+)"')
+
 
 def _extract_symbol_blocks(raw_text: str) -> list[tuple[str, str]]:
     """Return ``[(sym_name, block_text), ...]`` for all top-level symbols.
@@ -90,6 +93,33 @@ def _get_ki_description_from_block(block_text: str) -> str:
 def _count_pins_in_block(block_text: str) -> int:
     """Count all ``(pin ...`` entries in a symbol block string."""
     return len(re.findall(r"\(pin\s+", block_text))
+
+
+def _resolve_pin_count(
+    block_text: str,
+    sym_blocks: dict[str, str],
+    max_depth: int = 8,
+) -> int:
+    """Return the pin count for a symbol, walking ``(extends ...)`` chains.
+
+    For symbols that declare ``(extends "Base")``, the own block has no
+    ``(pin ...`` entries.  This function follows the extends chain using the
+    already-extracted *sym_blocks* mapping (built from the same file), so no
+    extra I/O or re-parsing is needed.
+    """
+    current = block_text
+    for _ in range(max_depth):
+        count = _count_pins_in_block(current)
+        if count > 0:
+            return count
+        m = _EXTENDS_NAME_RE.search(current)
+        if m is None:
+            return 0
+        base_name = m.group(1)
+        current = sym_blocks.get(base_name, "")
+        if not current:
+            return 0
+    return 0
 
 
 def _keywords(text: str) -> list[str]:
@@ -165,13 +195,16 @@ def _parse_file_to_cached(lib_file: Path) -> list[CachedSymbol]:
         return []
 
     symbols: list[CachedSymbol] = []
-    for sym_name, block_text in _extract_symbol_blocks(raw_text):
+    blocks = _extract_symbol_blocks(raw_text)
+    # Build a name→block map so extends-chain lookups stay in-memory.
+    sym_blocks: dict[str, str] = {name: text for name, text in blocks}
+    for sym_name, block_text in blocks:
         symbols.append(
             CachedSymbol(
                 lib_file=lib_file,
                 sym_name=sym_name,
                 description=_get_ki_description_from_block(block_text),
-                pin_count=_count_pins_in_block(block_text),
+                pin_count=_resolve_pin_count(block_text, sym_blocks),
             )
         )
     return symbols
