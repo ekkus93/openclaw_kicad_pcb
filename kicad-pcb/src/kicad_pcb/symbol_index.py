@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -83,7 +84,12 @@ class SymbolIndex:
     def get_pins(self, symbol_id: str) -> set[str]:
         """Return the set of valid pin numbers for *symbol_id*.
 
-        Raises ``UserError(SYMBOL_NOT_FOUND)`` if the symbol cannot be found.
+        Raises ``UserError(SYMBOL_NOT_FOUND)`` if the symbol is not present in
+        any searched library file.
+
+        Raises ``UserError(SYMBOL_HAS_NO_PINS)`` if the symbol is declared in a
+        library file but resolves to 0 pins (e.g. a broken ``extends`` chain
+        where the base symbol does not exist).
         """
         if symbol_id in self._cache:
             return self._cache[symbol_id]
@@ -102,6 +108,34 @@ class SymbolIndex:
                 pin_set = set(pins)
                 self._cache[symbol_id] = pin_set
                 return pin_set
+
+        # Distinguish "declared in file but 0 pins" (broken extends chain, or
+        # genuinely pin-free symbol) from "name not in any library file at all".
+        # A regex text scan avoids a second full s-expression parse.
+        _sym_header = re.compile(r'\(symbol\s+"' + re.escape(sym_name) + r'"')
+        for directory in self._dirs:
+            lib_file = directory / f"{lib_name}.kicad_sym"
+            if lib_file.exists():
+                try:
+                    text = lib_file.read_text(encoding="utf-8", errors="replace")
+                    if _sym_header.search(text):
+                        raise UserError(
+                            f"Symbol '{symbol_id}' is declared in library "
+                            f"'{lib_name}' but resolves to 0 pins "
+                            f"(possible broken extends chain or pin-free symbol)",
+                            code=ErrorCode.SYMBOL_HAS_NO_PINS,
+                            details={
+                                "symbol": symbol_id,
+                                "lib_file": str(lib_file),
+                                "hint": (
+                                    "Check the (extends ...) chain in the "
+                                    "library file — the base symbol may be "
+                                    "missing or misspelled."
+                                ),
+                            },
+                        )
+                except OSError:
+                    pass
 
         raise UserError(
             f"Symbol not found in libraries: {symbol_id}",

@@ -68,44 +68,45 @@ Circuit IR resolves to a non-empty pin list and that every referenced pin exists
 
 ### Tasks
 
-- [ ] **P0-B-1** Add error types for pin validation failures
-  - In `kicad-pcb/src/kicad_pcb/errors.py` (or wherever domain errors live),
-    add:
-    - `SymbolHasNoPinsError(symbol_id: str)` — raised when a symbol resolves
-      to 0 pins.
-    - `PinNotFoundError(ref: str, pin: str, symbol_id: str)` — raised when an
-      IR net references a pin name/number that does not exist on the symbol.
+- [x] **P0-B-1** Add error types for pin validation failures
+  - Added `SYMBOL_HAS_NO_PINS = "SYMBOL_HAS_NO_PINS"` to `ErrorCode` in
+    `errors.py`. No separate exception classes were needed — the codebase
+    uniformly uses `UserError(code=ErrorCode.X)`; a new error code gives
+    callers machine-readable discrimination between "not in file" vs
+    "in file but 0 pins" without adding new exception hierarchy.
 
-- [ ] **P0-B-2** Add `_validate_ir_pins` helper function in `netlist.py`
-  - Signature: `_validate_ir_pins(ir: CircuitIR, symbol_index: SymbolIndex) -> None`
-  - For each unique `symbol` in `ir.components`:
-    - Split into `lib_name`, `sym_name`.
-    - Iterate over `symbol_index.directories` to find the first dir where
-      `read_lib_symbol_pins(lib_name, sym_name, symbols_dir=d)` returns a
-      non-empty list.
-    - If no dir yields pins, raise `SymbolHasNoPinsError(symbol_id)`.
-  - For each `pin_ref` in each `net` of `ir.nets`:
-    - Look up the component's symbol, get its resolved pin list.
-    - If `pin_ref.pin` is not in that list, raise
-      `PinNotFoundError(pin_ref.ref, pin_ref.pin, symbol_id)`.
+- [x] **P0-B-2** Add `_validate_ir_pins` helper function in `netlist.py`
+  - The proposed `_validate_ir_pins` was not needed as a new function.
+    `validate_ir_symbols(ir, symbol_index)` in `ir_validate.py` already
+    performs both checks: (1) calls `symbol_index.get_pins()` which raises
+    on empty pin sets, and (2) validates every pin reference in `ir.nets`
+    against the resolved pin set, raising `PIN_INVALID` on mismatch.
+  - `SymbolIndex.get_pins()` in `symbol_index.py` was enhanced: after the
+    empty-result fall-through, a fast regex scan checks whether the symbol
+    name IS present in the library file; if so, raises
+    `UserError(SYMBOL_HAS_NO_PINS)` (broken extends chain); otherwise raises
+    `UserError(SYMBOL_NOT_FOUND)` (name absent from all dirs).
 
-- [ ] **P0-B-3** Call `_validate_ir_pins` from `cmd_apply_netlist` / `cmd_new_from_netlist`
-  - Call it after the IR is loaded and `symbol_index` is resolved, before any
-    file writes.
-  - Errors from `SymbolHasNoPinsError` and `PinNotFoundError` should propagate
-    as user-facing failures (non-zero exit, JSON error field if `--json` mode).
+- [x] **P0-B-3** Call `_validate_ir_pins` from `cmd_apply_netlist` / `cmd_new_from_netlist`
+  - The call site already existed: `_apply_netlist_to_project` calls
+    `validate_ir_symbols(ir, symbol_index)` before any file writes. No code
+    change was needed here — errors raised by `validate_ir_symbols` (and by
+    `get_pins()` within it) propagate as `UserError` with structured `code`
+    fields, surfacing as non-zero exit / JSON error field via the CLI layer.
 
-- [ ] **P0-B-4** Unit test: `apply-netlist` aborts on 0-pin symbol
-  - Use the `extends` fixture. Create an IR referencing `DerivedOpAmp` but
-    run it **before** the P0-A fix is applied (or mock `read_lib_symbol_pins`
-    to return `[]`) to confirm the error surfaces.
-  - After the P0-A fix is applied, run the same IR and confirm it no longer
-    aborts and instead succeeds.
+- [x] **P0-B-4** Unit test: `apply-netlist` aborts on 0-pin symbol
+  - `test_broken_extends_chain_raises_symbol_not_found` (from P0-A) was
+    renamed to `test_broken_extends_chain_raises_symbol_has_no_pins` and its
+    assertion updated from `SYMBOL_NOT_FOUND` to `SYMBOL_HAS_NO_PINS`.
+    The fixture uses a patched `read_lib_symbol_pins` that returns `[]` for
+    `TestLib:DerivedOpAmp` (simulating the broken-chain case); the test
+    verifies the new, more specific error code is raised.
 
-- [ ] **P0-B-5** Unit test: `apply-netlist` aborts on unknown pin reference
-  - Create a minimal IR that references `pin="99"` on a `Device:R` (which only
-    has pins `1` and `2`). Assert the error message includes `PIN_NOT_FOUND`
-    or equivalent.
+- [x] **P0-B-5** Unit test: `apply-netlist` aborts on unknown pin reference
+  - `test_apply_netlist_aborts_on_invalid_pin_ref` added to
+    `tests/unit/test_netlist_commands.py`. Uses `TestLib:R` with pin `"99"`
+    (non-existent); asserts `UserError` with `code == ErrorCode.PIN_INVALID`
+    is raised and that the managed schematic file was **not** written to disk.
 
 ---
 

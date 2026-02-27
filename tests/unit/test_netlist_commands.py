@@ -651,11 +651,13 @@ def test_extends_symbol_nets_on_inherited_pins_validate_and_bind(tmp_path: Path)
     assert net_by_pin["6"] == "OUT", f"Pin '6' bound to wrong net: {net_by_pin}"
 
 
-def test_broken_extends_chain_raises_symbol_not_found(tmp_path: Path) -> None:
-    """Broken extends chain must abort with SYMBOL_NOT_FOUND before writing anything.
+def test_broken_extends_chain_raises_symbol_has_no_pins(tmp_path: Path) -> None:
+    """Broken extends chain must abort with SYMBOL_HAS_NO_PINS before writing anything.
 
-    A symbol whose base does not exist in the library file must fail at
-    validate_ir_symbols time, not silently produce an empty or partial schematic.
+    A symbol that IS declared in the library file but whose extends base does
+    not exist resolves to 0 pins.  The error must be SYMBOL_HAS_NO_PINS (not
+    SYMBOL_NOT_FOUND) to distinguish "symbol present but broken" from "symbol
+    absent entirely".
     """
     # Library with a derived symbol whose base is intentionally absent.
     broken_lib = tmp_path / "BrokenLib.kicad_sym"
@@ -698,10 +700,52 @@ def test_broken_extends_chain_raises_symbol_not_found(tmp_path: Path) -> None:
             )
         )
 
-    # Broken chain → no pins → validate_ir_symbols raises SYMBOL_NOT_FOUND.
-    assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
+    # Broken chain → symbol in file but 0 pins → SYMBOL_HAS_NO_PINS.
+    assert exc_info.value.code == ErrorCode.SYMBOL_HAS_NO_PINS
     # Error details must identify the offending symbol.
     assert "BrokenLib:Orphan" in str(exc_info.value)
+
+
+def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
+    """Invalid pin reference must abort with PIN_INVALID before writing anything.
+
+    `TestLib:R` only has pins '1' and '2'.  Referencing non-existent pin '99'
+    must raise at `validate_ir_symbols` time — before the managed schematic is
+    created or mutated — so partial / corrupt output is never written to disk.
+    """
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "version": "1",
+                "components": [{"ref": "R1", "symbol": "TestLib:R", "value": "10k"}],
+                "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "99"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    managed_sch = tmp_path / "InvalidPinProj" / "OpenClaw_Managed.kicad_sch"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_new_from_netlist(
+            Namespace(
+                name="InvalidPinProj",
+                out_dir=str(tmp_path),
+                description="",
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.PIN_INVALID
+    assert "99" in str(exc_info.value)
+    assert "TestLib:R" in str(exc_info.value)
+    # Confirm the managed schematic was NOT written (preflight fired pre-write).
+    assert not managed_sch.exists(), (
+        "Managed schematic must not be created when preflight validation fails"
+    )
 
 
 # ---------------------------------------------------------------------------
