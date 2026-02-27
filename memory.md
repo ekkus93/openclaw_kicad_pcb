@@ -1169,3 +1169,64 @@ mutate_and_validate_sch(path, mutator, dry_run=True, diff_output=sys.stdout)
 
 ### All CODE_REVIEW2 items now complete:
 - P0.1, P0.2, P1.1, P1.2, P2.1, P2.2, P3.1, P3.2, P3.3, P4.1, P5.1, P5.2 all done
+
+## 2025-07-30 — SQLite symbol cache (commit e8205c8)
+
+### Feature: build-symbol-index + SymbolCache
+
+**Problem:** `search-symbols` was slow because every query re-parsed all 209 `.kicad_sym` files (103 MB total; `Device.kicad_sym` alone is 75k lines) via a character-by-character Python paren-depth loop.
+
+**Solution:** Persistent SQLite cache at `~/.openclaw/kicad-pcb/symbol_index.db` (override with `KICAD_PCB_CACHE_DIR` env var).
+
+**New files:**
+- `kicad-pcb/src/kicad_pcb/symbol_cache.py` — `SymbolCache` class + `CachedSymbol` dataclass
+  - Two tables: `symbol_cache` (symbols) + `indexed_files` (sentinel for empty libs)
+  - Cache keyed by `(lib_file, mtime)`; stale entries auto-evicted
+  - WAL + NORMAL sync mode for performance
+  - `db_path: Path | None = None` constructor; uses `KICAD_PCB_CACHE_DIR` env var
+- `tests/unit/test_symbol_cache.py` — 20 tests (cache miss/hit/evict, empty libs, persistence, parse, scan, build-index, search integration)
+
+**Modified files:**
+- `commands/search.py`: added `_parse_file_to_cached`, `_scan_dir_with_cache`, `cmd_build_symbol_index`; `cmd_search_symbols` now uses cache; also fixed a bug from prior session where `def cmd_search_symbols(args):` was dropped, making the function body unreachable dead code inside `_scan_dir_with_cache`
+- `results.py`: added `BuildSymbolIndexResult` dataclass
+- `__init__.py` / `cli.py`: new exports + `build-symbol-index` subparser
+- `SKILL.md`: speed tip block + `build-symbol-index` in command table
+
+**Key API:**
+```python
+SymbolCache(db_path=None)  # db_path defaults to ~/.openclaw/kicad-pcb/symbol_index.db
+cache.get_symbols(lib_file)   # -> list[CachedSymbol] | None
+cache.store_symbols(lib_file, symbols)
+cache.evict(lib_file)
+cache.stats()  # {"indexed_files": N, "indexed_symbols": N}
+```
+
+**CLI usage:**
+```bash
+kicad_pcb build-symbol-index          # pre-populate (run once after KiCad install)
+kicad_pcb search-symbols "op amp"     # instant after cache is warm
+```
+
+## 2025-01-30T00:00:00Z - P0-A: Fixed extends-symbol pin count in search cache
+
+### Root Cause
+`_count_pins_in_block` returned 0 for symbols using `(extends "BaseName")`
+(e.g. NE5532 extends LM2904) because the block has no `(pin ...)` entries —
+all pins live in the parent's nested sub-unit blocks.
+
+### Fix (commit f4b828a)
+- Added `_EXTENDS_NAME_RE` + `_resolve_pin_count(block_text, sym_blocks)` in
+  `commands/search.py`. Walks the extends chain using the already-extracted
+  `sym_blocks` dict — zero extra I/O, pure in-memory O(depth).
+- `_parse_file_to_cached` now builds `sym_blocks` dict and calls
+  `_resolve_pin_count` instead of `_count_pins_in_block`.
+- Bumped `CACHE_VERSION = 2` in `symbol_cache.py`; added `meta` table; 
+  `_get_conn` wipes stale cache data when version mismatches.
+- Added `TestExtendsSymbolPinCount` (3 tests): parse, search, full pipeline.
+- Verified: `Amplifier_Operational:NE5532` now shows 8 pins (was 0).
+
+### Key design note
+`read_lib_symbol_pins` (sch_doc.py) was tried first but caused O(N²) re-parsing
+of the entire file per symbol. The in-memory `sym_blocks` dict approach is
+correct because KiCad's `(extends ...)` always refers to a symbol in the SAME
+library file.

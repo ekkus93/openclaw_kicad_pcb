@@ -1,0 +1,219 @@
+# CODE_REVIEW4 TODO
+
+Comprehensive task list derived from [CODE_REVIEW4.md](CODE_REVIEW4.md).
+Tasks are ordered by priority: P0 must land before P1; P2 can be done any time.
+
+---
+
+## P0-A — Fix `_parse_file_to_cached` to use `read_lib_symbol_pins` for `extends` symbols
+
+**File:** `kicad-pcb/src/kicad_pcb/commands/search.py`
+
+The `_count_pins_in_block` regex returns 0 for any symbol that inherits all its
+pins via `(extends "BaseName")`. Replace it with `read_lib_symbol_pins`, which
+already walks the extends chain correctly.
+
+### Tasks
+
+- [x] **P0-A-1** Import `read_lib_symbol_pins` in `search.py`
+  - Superseded by the in-memory approach: instead of calling `read_lib_symbol_pins`
+    (which re-parses the file via the s-expression parser — O(N²) on large libs),
+    `_resolve_pin_count(block_text, sym_blocks)` was added. It walks the extends
+    chain using the already-extracted `sym_blocks` dict and `_EXTENDS_NAME_RE`.
+    No external import needed; goal fully achieved.
+
+- [x] **P0-A-2** Modify `_parse_file_to_cached` to call `read_lib_symbol_pins`
+  - `_parse_file_to_cached` now builds a `sym_blocks: dict[str, str]` from all
+    extracted blocks and calls `_resolve_pin_count(block_text, sym_blocks)` which
+    follows `(extends ...)` chains in-memory. `_count_pins_in_block` is retained
+    as the leaf-level counter used by `_resolve_pin_count`.
+
+- [x] **P0-A-3** Bump the SQLite cache schema version to force eviction of stale entries
+  - `CACHE_VERSION = 2` added to `symbol_cache.py`.
+  - New `meta` table with a `version` row added to `_SCHEMA`.
+  - `_get_conn` checks the stored version; on mismatch it `DELETE`s all rows in
+    `symbol_cache` and `indexed_files`, then inserts the new version. Stale
+    0-pin cached entries are evicted transparently on first open.
+
+- [x] **P0-A-4** Add an `extends`-based fixture symbol to the test fixtures
+  - `tests/fixtures/symbols/TestLib.kicad_sym` already contained `OpAmp` (4 pins:
+    1, 2, 3, 6) and `DerivedOpAmp (extends "OpAmp")` with no own pins. The
+    fixture was already suitable; no changes needed. Tests assert `pin_count == 4`.
+
+- [x] **P0-A-5** Unit test: `_parse_file_to_cached` reports correct pin count for `extends` symbol
+  - `test_parse_extends_symbol_reports_parent_pin_count` added to
+    `TestExtendsSymbolPinCount` in `tests/unit/test_symbol_cache.py`.
+  - Asserts `DerivedOpAmp.pin_count == 4` (fixture base `OpAmp` has 4 pins).
+
+- [x] **P0-A-6** Unit test: `search-symbols` returns non-zero pin count for an `extends` symbol
+  - `test_search_symbols_extends_pin_count` added to `TestExtendsSymbolPinCount`.
+  - Queries `"derivedopamp"` against the fixture dir; asserts `pin_count == 4`.
+
+- [x] **P0-A-7** Unit test: `build-symbol-index` correctly indexes an `extends` symbol
+  - `test_build_index_then_search_extends_pin_count` added to `TestExtendsSymbolPinCount`.
+  - Asserts `files_updated >= 1` after build, then `pin_count == 4` on warm search.
+
+- [x] **P0-A-8** Verify against the real KiCad libraries
+  - `Amplifier_Operational:NE5532  (8 pins)` confirmed after fix.
+  - Full extends-chain resolution is general (any depth up to `max_depth=8`).
+
+---
+
+## P0-B — Add 0-pin / invalid-pin preflight guard to `apply-netlist`
+
+**File:** `kicad-pcb/src/kicad_pcb/commands/netlist.py`
+
+Before writing `OpenClaw_Managed.kicad_sch`, validate that every symbol in the
+Circuit IR resolves to a non-empty pin list and that every referenced pin exists.
+
+### Tasks
+
+- [ ] **P0-B-1** Add error types for pin validation failures
+  - In `kicad-pcb/src/kicad_pcb/errors.py` (or wherever domain errors live),
+    add:
+    - `SymbolHasNoPinsError(symbol_id: str)` — raised when a symbol resolves
+      to 0 pins.
+    - `PinNotFoundError(ref: str, pin: str, symbol_id: str)` — raised when an
+      IR net references a pin name/number that does not exist on the symbol.
+
+- [ ] **P0-B-2** Add `_validate_ir_pins` helper function in `netlist.py`
+  - Signature: `_validate_ir_pins(ir: CircuitIR, symbol_index: SymbolIndex) -> None`
+  - For each unique `symbol` in `ir.components`:
+    - Split into `lib_name`, `sym_name`.
+    - Iterate over `symbol_index.directories` to find the first dir where
+      `read_lib_symbol_pins(lib_name, sym_name, symbols_dir=d)` returns a
+      non-empty list.
+    - If no dir yields pins, raise `SymbolHasNoPinsError(symbol_id)`.
+  - For each `pin_ref` in each `net` of `ir.nets`:
+    - Look up the component's symbol, get its resolved pin list.
+    - If `pin_ref.pin` is not in that list, raise
+      `PinNotFoundError(pin_ref.ref, pin_ref.pin, symbol_id)`.
+
+- [ ] **P0-B-3** Call `_validate_ir_pins` from `cmd_apply_netlist` / `cmd_new_from_netlist`
+  - Call it after the IR is loaded and `symbol_index` is resolved, before any
+    file writes.
+  - Errors from `SymbolHasNoPinsError` and `PinNotFoundError` should propagate
+    as user-facing failures (non-zero exit, JSON error field if `--json` mode).
+
+- [ ] **P0-B-4** Unit test: `apply-netlist` aborts on 0-pin symbol
+  - Use the `extends` fixture. Create an IR referencing `DerivedOpAmp` but
+    run it **before** the P0-A fix is applied (or mock `read_lib_symbol_pins`
+    to return `[]`) to confirm the error surfaces.
+  - After the P0-A fix is applied, run the same IR and confirm it no longer
+    aborts and instead succeeds.
+
+- [ ] **P0-B-5** Unit test: `apply-netlist` aborts on unknown pin reference
+  - Create a minimal IR that references `pin="99"` on a `Device:R` (which only
+    has pins `1` and `2`). Assert the error message includes `PIN_NOT_FOUND`
+    or equivalent.
+
+---
+
+## P1 — Investigate and fix blank SVG output from `apply-netlist`
+
+**File:** `kicad-pcb/src/kicad_pcb/commands/netlist.py`
+
+The `_write_nets` function currently stores binding markers as hidden text rather
+than as real KiCad wire connections. This is the likely cause of the blank SVG
+preview. This needs investigation before a fix can be scoped.
+
+### Investigation tasks
+
+- [ ] **P1-1** Run `apply-netlist` on a minimal 2-component, 1-net test circuit
+  - Use a simple `Device:R` and `Device:C` connected on one net.
+  - Inspect the resulting `OpenClaw_Managed.kicad_sch` in a text editor:
+    - Are component symbols present (`add_symbol` nodes)?
+    - Are there any `(wire ...)` nodes?
+    - Are there any `(net_label ...)` or `(label ...)` nodes visible to KiCad?
+  - Open the file in KiCad and see what it renders.
+
+- [ ] **P1-2** Determine the correct KiCad schematic data model for net connections
+  - Read the KiCad schematic format docs / existing `.kicad_sch` examples to
+    determine how nets are correctly expressed: wire segments, net labels, or
+    `(global_label ...)` nodes attached to pin endpoints.
+  - Check whether `doc.add_symbol` writes pin endpoints into the file and
+    whether those endpoints are referenced by wire segments.
+
+- [ ] **P1-3** Based on investigation output, fix `_write_nets` (or equivalent)
+  - Replace hidden-text binding markers with real KiCad wiring constructs
+    that connect to the placed component pin endpoints.
+  - Scope and implementation details depend on P1-1 and P1-2 findings.
+
+- [ ] **P1-4** Add or update integration test for `apply-netlist` + `preview-schematic`
+  - A test that verifies the SVG output is non-empty (has visible symbol
+    content) after applying a minimal Circuit IR.
+
+---
+
+## P2 — Add `debug-symbol` command
+
+**Files:** `kicad-pcb/src/kicad_pcb/commands/search.py`,
+`kicad-pcb/src/kicad_pcb/results.py`,
+`kicad-pcb/src/kicad_pcb/__init__.py`,
+`kicad-pcb/src/kicad_pcb/cli.py`
+
+### Tasks
+
+- [ ] **P2-1** Add `DebugSymbolResult` dataclass to `results.py`
+  ```python
+  @dataclass(frozen=True)
+  class DebugSymbolResult:
+      symbol_id: str          # "Lib:Name"
+      extends_base: str | None  # "Lib:BaseName" if it uses extends, else None
+      pin_numbers: tuple[str, ...]
+      pin_count: int
+  ```
+
+- [ ] **P2-2** Add `cmd_debug_symbol(args) -> DebugSymbolResult` in `commands/search.py`
+  - Parse `args.symbol` as `"lib_name:sym_name"`.
+  - Resolve `symbols_dir` from `args.symbols_dir` or discovery chain.
+  - Call `read_lib_symbol_pins(lib_name, sym_name, symbols_dir=...)` for pin list.
+  - For the `extends_base` field: read the raw symbol block and call
+    `_get_extends_name` (already in `sch_doc.py`) to extract the base name,
+    qualifying it as `lib_name:base_name`.
+  - Return `DebugSymbolResult`.
+
+- [ ] **P2-3** Export `DebugSymbolResult` and `cmd_debug_symbol` from `__init__.py`
+
+- [ ] **P2-4** Add `debug-symbol` subparser to `cli.py`
+  ```
+  kicad_pcb debug-symbol <lib:name> [--symbols-dir DIR]
+  ```
+  - Set `func=cmd_debug_symbol`.
+
+- [ ] **P2-5** Add human-readable formatting for `DebugSymbolResult` in `formatting.py`
+  - When `--json` is not set, print something like:
+    ```
+    Symbol:  Amplifier_Operational:NE5532
+    Extends: Amplifier_Operational:LM2904
+    Pins (8): 1  2  3  4  5  6  7  8
+    ```
+
+- [ ] **P2-6** Unit tests for `cmd_debug_symbol`
+  - `test_debug_symbol_standalone` — a symbol with its own pins, no extends.
+  - `test_debug_symbol_extends` — an `extends` symbol; assert `extends_base`
+    is populated and `pin_count` equals the parent's pin count.
+  - `test_debug_symbol_not_found` — non-existent symbol; assert graceful error.
+
+---
+
+## Cross-cutting / wrap-up
+
+- [ ] **CC-1** Update `SKILL.md`
+  - Note that `extends`-based symbols (common for op-amp families) now report
+    correct pin counts.
+  - Add `debug-symbol` to the command reference table once P2 is done.
+
+- [ ] **CC-2** Run full test suite: `pytest tests/unit/`
+  - All existing tests must continue to pass.
+
+- [ ] **CC-3** Run lint: `ruff check` + `ruff format --check`
+
+- [ ] **CC-4** Run mypy on touched files
+
+- [ ] **CC-5** Commit and push
+  - Suggested commit messages:
+    - `fix: use read_lib_symbol_pins for extends symbols in search cache (P0-A)`
+    - `fix: add 0-pin preflight guard to apply-netlist (P0-B)`
+    - `fix: write real KiCad wiring in _write_nets (P1)` — after investigation
+    - `feat: add debug-symbol command (P2)`
