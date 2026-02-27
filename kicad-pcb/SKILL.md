@@ -13,6 +13,26 @@ triggers: ["pcb design", "kicad", "circuit board", "schematic", "gerber", "pcbwa
 
 Automate PCB design workflows using KiCad. From natural language circuit descriptions to manufacturing-ready Gerber files.
 
+## ⛔ ABSOLUTE RULES — READ FIRST
+
+1. **NEVER write `.kicad_sch` or `.kicad_pcb` files by hand.** Do not generate
+   KiCad s-expression syntax directly. Always use `new-from-netlist` or
+   `apply-netlist` to compile Circuit IR JSON into schematics. Hand-written
+   KiCad files will have broken symbol inheritance (`extends` with no base),
+   missing pin geometry, wrong pin counts, unconnected nets, and no ownership
+   marker — they will fail DRC and cannot be reliably edited in KiCad.
+
+2. **ALWAYS run `search-symbols` before writing any Circuit IR JSON.** Symbol
+   names differ between KiCad versions. Use the exact `Lib:SymbolName` returned
+   by `search-symbols` — never guess or invent symbol IDs.
+
+3. **Use the Circuit IR pipeline for all schematic generation.** Write the
+   complete Circuit IR JSON first (all components + all nets), then compile it
+   with `new-from-netlist`. Do not use `add-component` in a loop as a
+   substitute — it bypasses ownership, managed-sheet isolation, and net wiring.
+
+---
+
 ## What This Skill Does
 
 1. **Design** — Create schematics from circuit descriptions
@@ -108,24 +128,31 @@ directory`, the skill folder is not in the right place — confirm the
 ## Quick Start
 
 ```bash
-# 1. Create a new project
-python3 {baseDir}/scripts/kicad_pcb.py new "LED Blinker" --description "555 timer LED blinker circuit"
+# 1. Discover correct symbol IDs for your KiCad version
+python3 {baseDir}/scripts/kicad_pcb.py search-symbols "555 timer"
+python3 {baseDir}/scripts/kicad_pcb.py search-symbols "resistor"
+python3 {baseDir}/scripts/kicad_pcb.py search-symbols "LED"
 
-# 2. Add components to schematic
-python3 {baseDir}/scripts/kicad_pcb.py add-component Timer:NE555 U1
-python3 {baseDir}/scripts/kicad_pcb.py add-component Device:LED D1 --footprint LED_THT:LED_D3.0mm
-python3 {baseDir}/scripts/kicad_pcb.py add-component Device:R R1 --value 1k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
+# 2. Write circuit.json (Circuit IR) using the exact symbol IDs from step 1
+#    See "Circuit IR Pipeline Workflow" section below for the JSON format.
 
-# 3. Generate schematic preview (for review)
+# 3. Create project from Circuit IR (all components + nets in one shot)
+python3 {baseDir}/scripts/kicad_pcb.py new-from-netlist \
+    --name LED_Blinker \
+    --netlist circuit.json \
+    --symbols-dir /usr/share/kicad/symbols \
+    --mode internal
+
+# 4. Generate schematic preview (for review)
 python3 {baseDir}/scripts/kicad_pcb.py preview-schematic
 
-# 4. Run design rule check
+# 5. Run design rule check
 python3 {baseDir}/scripts/kicad_pcb.py drc
 
-# 5. Export manufacturing files
+# 6. Export manufacturing files
 python3 {baseDir}/scripts/kicad_pcb.py export-gerbers
 
-# 6. Prepare PCBWay order
+# 7. Prepare PCBWay order
 python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 ```
 
@@ -161,7 +188,7 @@ Symbol names differ between KiCad versions (e.g. `Device:CP` in KiCad 8 became
 ```bash
 # Find the correct symbol for a polarized capacitor
 {baseDir}/scripts/kicad_pcb.py search-symbols "polarized capacitor"
-# → Device:C_Polarized  (4 pins)  — Polarized capacitor
+# → Device:C_Polarized  (2 pins)  — Polarized capacitor
 
 # Find the correct symbol for a potentiometer
 {baseDir}/scripts/kicad_pcb.py search-symbols "potentiometer"
@@ -177,6 +204,25 @@ Symbol names differ between KiCad versions (e.g. `Device:CP` in KiCad 8 became
 
 The output lists `Lib:SymbolName  (N pins)  — description`.  Copy the
 `Lib:SymbolName` exactly into your Circuit IR JSON `"symbol"` field.
+
+### Pin Name Reference for Common Symbols
+
+Pin names must match the KiCad library exactly. Common footguns:
+
+| Symbol | Pin names | Notes |
+|--------|-----------|-------|
+| `Device:R` | `1`, `2` | |
+| `Device:C` | `1`, `2` | |
+| `Device:C_Polarized` | `+`, `-` | **Not** `1`/`2` |
+| `Device:R_Potentiometer` | `1`, `2`, `3` | 1 & 3 = outer lugs, 2 = wiper |
+| `Connector:AudioJack3` | `T`, `R`, `S` | Tip, Ring, Sleeve — **not** `1`/`2`/`3` |
+| `Amplifier_Operational:NE5532` | `1`–`8` | 3=+A, 2=−A, 1=outA, 5=+B, 6=−B, 7=outB, 4=V−, 8=V+ |
+| `Device:LED` | `A`, `K` | Anode, Kathode |
+| `power:VCC` / `power:GND` | `1` | Single-pin power symbols |
+
+When in doubt, run `search-symbols` — the pin count shown is the authoritative
+count. If your IR uses a pin name not in the library the tool will reject the
+netlist with a `SYMBOL_NOT_FOUND` or pin-validation error.
 
 ### Circuit IR Pipeline (preferred for LLM-driven generation)
 
@@ -231,16 +277,43 @@ Tell me what you want to build:
 ### Step 2: I'll Generate the Design
 
 ```bash
-# Create project
-{baseDir}/scripts/kicad_pcb.py new "LED_Blinker_555"
+# First: discover the exact symbol IDs for the installed KiCad version
+{baseDir}/scripts/kicad_pcb.py search-symbols "555 timer"
+{baseDir}/scripts/kicad_pcb.py search-symbols "LED"
+{baseDir}/scripts/kicad_pcb.py search-symbols "resistor"
+{baseDir}/scripts/kicad_pcb.py search-symbols "capacitor"
+```
 
-# Add components based on description
-# Describe the circuit, then add components manually:
-{baseDir}/scripts/kicad_pcb.py add-component Timer:NE555 U1 --value NE555 --footprint Package_DIP:DIP-8_W7.62mm
-{baseDir}/scripts/kicad_pcb.py add-component Device:LED D1 --value LED --footprint LED_THT:LED_D3.0mm
-{baseDir}/scripts/kicad_pcb.py add-component Device:R R1 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
-{baseDir}/scripts/kicad_pcb.py add-component Device:R R2 --value 47k --footprint Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal
-{baseDir}/scripts/kicad_pcb.py add-component Device:C C1 --value 10uF --footprint Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm
+Then write the complete Circuit IR JSON (all components + all nets at once;
+**do not** write `.kicad_sch` by hand):
+
+```json
+{
+  "version": "1",
+  "components": [
+    {"ref": "U1", "symbol": "Timer:NE555", "value": "NE555", "footprint": "Package_DIP:DIP-8_W7.62mm"},
+    {"ref": "R1", "symbol": "Device:R",   "value": "47k",  "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"},
+    {"ref": "R2", "symbol": "Device:R",   "value": "47k",  "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"},
+    {"ref": "C1", "symbol": "Device:C",   "value": "10uF", "footprint": "Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm"},
+    {"ref": "D1", "symbol": "Device:LED", "value": "LED",  "footprint": "LED_THT:LED_D3.0mm"}
+  ],
+  "nets": [
+    {"name": "VCC",  "pins": [{"ref": "U1", "pin": "8"}, {"ref": "R1", "pin": "1"}]},
+    {"name": "GND",  "pins": [{"ref": "U1", "pin": "1"}, {"ref": "C1", "pin": "2"}]},
+    {"name": "OUT",  "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R2", "pin": "1"}, {"ref": "D1", "pin": "A"}]}
+  ]
+}
+```
+
+Then compile it:
+
+```bash
+# Compile Circuit IR → KiCad schematic (never write .kicad_sch directly)
+{baseDir}/scripts/kicad_pcb.py new-from-netlist \
+    --name LED_Blinker_555 \
+    --netlist circuit.json \
+    --symbols-dir /usr/share/kicad/symbols \
+    --mode internal
 ```
 
 ### Step 3: Review & Confirm
@@ -346,7 +419,13 @@ output fails the balanced-parentheses or root-node check, the write is aborted
 and the original file is left untouched. A `ParseError` is raised describing
 the failure.
 
-## Circuit IR Pipeline Workflow
+## Circuit IR Pipeline Workflow ← USE THIS FOR ALL SCHEMATIC GENERATION
+
+**This is the only correct way to generate schematics.** Never write
+`.kicad_sch` files directly. Write Circuit IR JSON → compile with
+`new-from-netlist`. The tool reads real symbol definitions from the installed
+KiCad libraries, embeds them correctly, wires all nets, and produces a
+validated, KiCad-openable schematic in one step.
 
 The preferred way for an LLM to generate circuits is via **Circuit IR** — a
 structured JSON that the tool compiles deterministically into a KiCad schematic.
