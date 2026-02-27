@@ -60,7 +60,7 @@ from .commands.sch import (
     cmd_add_net,
     cmd_connect,
 )
-from .commands.search import cmd_search_symbols
+from .commands.search import cmd_build_symbol_index, cmd_search_symbols
 from .commands.validation import cmd_drc, cmd_erc
 
 # Version compatibility (Phase 8.1)
@@ -158,6 +158,7 @@ from .results import (
     ApplyPatternResult,
     AutoPlaceResult,
     AutoRouteResult,
+    BuildSymbolIndexResult,
     ConnectResult,
     DoctorCheckItem,
     DoctorResult,
@@ -222,6 +223,7 @@ from .sexpr import (
     walk,
 )
 from .sexpr.builder import L, atom, fnum, string
+from .symbol_cache import CachedSymbol, SymbolCache
 
 # Symbol metadata index
 from .symbol_index import (
@@ -394,7 +396,11 @@ __all__ = [
     "ValidateFileResult",
     "FormatFileResult",
     "NewFromNetlistResult",
+    "BuildSymbolIndexResult",
+    "CachedSymbol",
+    "cmd_build_symbol_index",
     "SearchSymbolsResult",
+    "SymbolCache",
     "SymbolMatch",
     # formatting
     "format_result",

@@ -1,4 +1,19 @@
-"""search-symbols command: discover available KiCad library symbols by keyword."""
+"""search-symbols and build-symbol-index commands.
+
+Symbol search uses a two-phase approach:
+
+1. **grep pre-screen** — skip library files whose raw text contains none of
+   the query keywords (fast, O(file bytes) but done by grep).
+2. **Cache lookup** — for pre-screened files, read metadata from a persistent
+   SQLite cache (``~/.openclaw/kicad-pcb/symbol_index.db``) instead of
+   reparsing the file.  A cache miss causes the file to be parsed once and
+   the result stored; subsequent queries for any keyword in the same file are
+   instant.
+
+The ``build-symbol-index`` command pre-populates the cache for all symbol
+files in the resolved directories so the first ``search-symbols`` call is
+also fast.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +21,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from ..results import SearchSymbolsResult, SymbolMatch
+from ..results import BuildSymbolIndexResult, SearchSymbolsResult, SymbolMatch
+from ..symbol_cache import CachedSymbol, SymbolCache
 from ..symbol_index import resolve_symbol_dirs
 
 # ---------------------------------------------------------------------------
@@ -136,20 +152,73 @@ def _grep_matching_files(sym_dir: Path, match_kws: list[str]) -> list[Path]:
     return matched
 
 
+def _parse_file_to_cached(lib_file: Path) -> list[CachedSymbol]:
+    """Parse *lib_file* and return one :class:`CachedSymbol` per top-level symbol.
+
+    This is the slow path — O(file size) Python parsing.  Results are stored
+    in the :class:`~kicad_pcb.symbol_cache.SymbolCache` so this is only called
+    once per file per install (or when the file changes).
+    """
+    try:
+        raw_text = lib_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    symbols: list[CachedSymbol] = []
+    for sym_name, block_text in _extract_symbol_blocks(raw_text):
+        symbols.append(
+            CachedSymbol(
+                lib_file=lib_file,
+                sym_name=sym_name,
+                description=_get_ki_description_from_block(block_text),
+                pin_count=_count_pins_in_block(block_text),
+            )
+        )
+    return symbols
+
+
+def _scan_dir_with_cache(
+    sym_dir: Path,
+    match_kws: list[str],
+    cache: SymbolCache,
+) -> list[CachedSymbol]:
+    """Return all :class:`CachedSymbol` entries from *sym_dir* whose file
+    text contains at least one of *match_kws*.
+
+    grep pre-screens which ``.kicad_sym`` files are candidates; the cache is
+    then consulted for each candidate.  Files absent from or stale in the
+    cache are parsed and stored before the result is returned.
+    """
+    candidate_files = _grep_matching_files(sym_dir, match_kws)
+    results: list[CachedSymbol] = []
+    for lib_file in sorted(candidate_files):
+        cached = cache.get_symbols(lib_file)
+        if cached is None:
+            # Cache miss — parse and populate.
+            cached = _parse_file_to_cached(lib_file)
+            cache.store_symbols(lib_file, cached)
+        results.extend(cached)
+    return results
+
+
 def cmd_search_symbols(args) -> SearchSymbolsResult:
     """Search installed KiCad symbol libraries for symbols matching a keyword query.
 
-    Scans all ``.kicad_sym`` files in the resolved symbol directories.  Uses a
-    fast two-phase approach:
+    Uses a two-phase approach for speed:
 
-    1. **Pre-screen** each library file with a regex scan — skip files whose
-       raw text contains none of the keywords.
-    2. **Block extraction** — extract individual top-level symbol blocks from
-       the raw text without parsing the whole library file.
+    1. **grep pre-screen** — only consider library files whose raw text
+       contains at least one keyword.
+    2. **Cache lookup** — reads symbol metadata from
+       ``~/.openclaw/kicad-pcb/symbol_index.db`` instead of reparsing the
+       file.  A cache miss triggers a one-time file parse that populates the
+       cache for future queries.
 
     Returns every symbol whose ``Lib:Name`` or ``ki_description`` property
-    contains all of the query keywords (case-insensitive), sorted by relevance
-    then alphabetically.
+    contains *all* query keywords (case-insensitive), sorted by relevance then
+    alphabetically.
+
+    Run ``build-symbol-index`` once after installing KiCad to pre-populate the
+    cache so the very first search is also fast.
 
     Args:
         args: Parsed CLI namespace.  Expected attributes:
@@ -182,32 +251,70 @@ def cmd_search_symbols(args) -> SearchSymbolsResult:
         dirs = resolve_symbol_dirs(symbols_dir=None).dirs
 
     searched_dirs: list[str] = [str(d) for d in dirs]
-
+    cache = SymbolCache()
     scored: list[tuple[int, SymbolMatch]] = []
 
     for sym_dir in dirs:
-        candidate_files = _grep_matching_files(sym_dir, match_kws)
-        for lib_file in sorted(candidate_files):
-            lib_name = lib_file.stem
-            try:
-                raw_text = lib_file.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            for sym_name, block_text in _extract_symbol_blocks(raw_text):
-                sym_id = f"{lib_name}:{sym_name}"
-                description = _get_ki_description_from_block(block_text)
-                score = _score(match_kws, sym_id, description)
-                if score > 0:
-                    pin_count = _count_pins_in_block(block_text)
-                    scored.append((score, SymbolMatch(sym_id, description, pin_count)))
+        for cached_sym in _scan_dir_with_cache(sym_dir, match_kws, cache):
+            lib_name = cached_sym.lib_file.stem
+            sym_id = f"{lib_name}:{cached_sym.sym_name}"
+            score = _score(match_kws, sym_id, cached_sym.description)
+            if score > 0:
+                scored.append(
+                    (score, SymbolMatch(sym_id, cached_sym.description, cached_sym.pin_count))
+                )
 
     # Sort: descending score, then ascending symbol_id for determinism
     scored.sort(key=lambda t: (-t[0], t[1].symbol_id))
-
     matches = tuple(m for _, m in scored[:limit])
 
     return SearchSymbolsResult(
         query=raw_query,
         matches=matches,
         symbols_dirs=tuple(searched_dirs),
+    )
+
+
+def cmd_build_symbol_index(args) -> BuildSymbolIndexResult:
+    """Pre-populate the symbol cache for all ``.kicad_sym`` files.
+
+    Scans all library files in the resolved symbol directories and parses any
+    that are absent from or stale in the cache.  Run this once after
+    installing or upgrading KiCad so that subsequent ``search-symbols`` calls
+    are instant.
+
+    Already-fresh cache entries are skipped, so re-running is cheap.
+
+    Args:
+        args: Parsed CLI namespace.  Expected attributes:
+
+            * ``symbols_dir`` — optional path to an explicit library dir
+    """
+    symbols_dir_raw = getattr(args, "symbols_dir", None)
+    symbols_dir: Path | None = Path(symbols_dir_raw) if symbols_dir_raw else None
+
+    if symbols_dir is not None:
+        dirs: tuple[Path, ...] = (symbols_dir,)
+    else:
+        dirs = resolve_symbol_dirs(symbols_dir=None).dirs
+
+    cache = SymbolCache()
+    total_files = 0
+    updated_files = 0
+
+    for sym_dir in dirs:
+        for lib_file in sorted(sym_dir.glob("*.kicad_sym")):
+            total_files += 1
+            if cache.get_symbols(lib_file) is not None:
+                continue  # already fresh
+            symbols = _parse_file_to_cached(lib_file)
+            cache.store_symbols(lib_file, symbols)
+            updated_files += 1
+
+    stats = cache.stats()
+    return BuildSymbolIndexResult(
+        dirs_scanned=tuple(str(d) for d in dirs),
+        files_scanned=total_files,
+        files_updated=updated_files,
+        total_indexed_symbols=stats["indexed_symbols"],
     )

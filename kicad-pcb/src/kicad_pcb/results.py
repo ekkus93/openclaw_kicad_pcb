@@ -384,3 +384,13 @@ class SearchSymbolsResult:
     query: str
     matches: tuple[SymbolMatch, ...]
     symbols_dirs: tuple[str, ...]  # directories that were searched
+
+
+@dataclass(frozen=True)
+class BuildSymbolIndexResult:
+    """Result of the ``build-symbol-index`` command."""
+
+    dirs_scanned: tuple[str, ...]
+    files_scanned: int
+    files_updated: int
+    total_indexed_symbols: int
