@@ -1,6 +1,33 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T19:10:00Z_
+_Last updated: 2026-03-02T01:00:00Z_
+
+---
+
+## 2026-03-02T01:00:00Z - P2: Add debug-symbol command (faef33a)
+- **New command**: `kicad_pcb debug-symbol <LibName:SymName> [--symbols-dir DIR]`
+- **Purpose**: Show fully-resolved pin list and extends-chain info for a single symbol.  Useful for diagnosing broken extends chains or verifying pin numbers before writing Circuit IR JSON.
+- **`DebugSymbolResult`** fields: `symbol_id`, `extends_base` (qualified `"Lib:Base"` or `None`), `pin_numbers` (tuple), `pin_count`.
+- **`cmd_debug_symbol`** in `commands/search.py`: uses `_extract_symbol_blocks` + `_EXTENDS_NAME_RE` (already in search.py) for extends detection; uses `read_lib_symbol_pins` for full pin resolution; raises `UserError(SYMBOL_NOT_FOUND)` for missing library or symbol.
+- **Formatter** `_fmt_debug_symbol` in `formatting.py`: prints emoji header, extends line, and numerically-sorted pin list.
+- **Tests**: `test_debug_symbol_standalone`, `test_debug_symbol_extends`, `test_debug_symbol_not_found` — all in `tests/unit/test_netlist_commands.py`.
+- **1114 unit tests** pass; ruff + mypy clean.
+- **Next TODO items**: CC-1 (update SKILL.md), CC-2–CC-5 (final cross-cutting checks).
+
+---
+
+## 2026-03-02T00:00:00Z - P1: Fix wire stubs to connect at actual pin endpoints (a54026f)
+- **Problem solved**: `cmd_new_from_netlist` / `cmd_apply_netlist` produced a blank SVG because `_write_nets` placed wires from `(sym_x+5.08, sym_y+2.54*pin_index)` — hardcoded offsets unrelated to actual pin endpoint positions. No wires were electrically connected to any pin.
+- **Root cause**: KiCad requires a wire to start *exactly* at the pin connection endpoint (the `(at X Y angle)` coord in the library `(pin ...)` node). The old code used symbol-origin-relative guesses that never matched.
+- **KiCad pin convention** (important): `(pin ... (at X Y angle))` — `(X,Y)` is the *endpoint* in library space; `angle` points FROM the endpoint TOWARD the body. Wire stubs extend in the *opposite* direction (`angle+180°`). Labels placed at the stub far-end with `label_angle = (angle+180)%360`.
+- **Fix summary**:
+  1. `sch_doc.py`: Added `_collect_pin_at(sym_node)` helper (`{pin_num: (x,y,angle)}`); added `read_lib_symbol_pin_at(lib_name, sym_name, *, symbols_dir)` that follows `(extends ...)` chains; updated `make_label_node` / `add_label` to accept `angle: int = 0`.
+  2. `commands/netlist.py`: `_write_symbols` now also returns `pin_endpoints: dict[tuple[str,str], tuple[float,float,float]]`; `_write_nets` rewrites to use exact pin positions + outward wire direction via `math.cos/sin`.
+  3. `tests/unit/test_netlist_commands.py`: Added `test_wires_connect_at_pin_endpoints` — extracts wire starts from managed schematic AST, compares to `read_lib_symbol_pin_at` ground truth.
+- **Wire math**: `angle_rad = math.radians(wa); ex = wx - cos(angle_rad)*5.08; ey = wy - sin(angle_rad)*5.08; label_angle = (wa+180)%360`
+- **Commit**: `a54026f` on master, pushed to GitHub.
+- **CODE_REVIEW4_TODO.md**: P1-1 through P1-4 marked `[x]`.
+- **Next TODO**: P2 — add `debug-symbol` command.
 
 ---
 
