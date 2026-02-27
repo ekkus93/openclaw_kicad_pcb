@@ -1,8 +1,19 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-27T00:00:00Z_
+_Last updated: 2026-03-03T00:00:00Z_
 
 ---
+
+## 2026-03-03T00:00:00Z - Perf: Fix infinite hang on large KiCad symbol libraries (db4e03d)
+- **Problem**: `new-from-netlist` against real KiCad system libraries (`/usr/share/kicad/symbols`) hung indefinitely. Symptom reported as "agent refuses to generate schematics / tells user to run command manually."
+- **Root cause 1 (recursion)**: `_parse_iterative` was actually still the old recursive `_parse_one`. Python's ~1000-frame call stack was silently exhausted on `Connector.kicad_sym` (94k lines) / `Device.kicad_sym` (75k lines).
+- **Root cause 2 (performance)**: Even after making the parser iterative, the command still hung because `read_lib_symbol_def_chain`, `read_lib_symbol_def`, `read_lib_symbol_pins`, and `read_lib_symbol_pin_at` each called `parse_file(lib_file)` independently, re-parsing the same 94k-line library file 10+ times per run.
+- **Fix**:
+  - `parser.py`: Removed recursive `_parse_one`; replaced with `_parse_iterative()` using an explicit `list[tuple[Position, list[Node]]]` stack. Added `# noqa: PLR0912` (parser dispatch genuinely needs multiple branches).
+  - `sch_doc.py`: Added `_parse_lib_file(path: Path) -> ListNode` with `@lru_cache(maxsize=64)`. All four library-reading functions now call `_parse_lib_file(lib_file)` instead of `parse_file(lib_file)`. Schema files (`.kicad_sch`) continue to use uncached `parse_file` so in-process writes are never shadowed by stale cache entries.
+- **Key insight on cache scope**: Initially tried `@lru_cache` on `parse_file` itself — broke 11 tests because `cmd_apply_netlist` writes a schematic then the test re-reads it via `parse_file`, getting the stale cached pre-write AST. Lesson: cache only the read-only `.kicad_sym` library files.
+- **Result**: `new-from-netlist` with real `/usr/share/kicad/symbols` completes in **1.6 seconds** (previously infinite hang). 18 symbols placed, 14 nets, hierarchy paths properly qualified. All 1117 tests pass.
+- **Commit**: `db4e03d`
 
 ## 2026-02-27T00:00:00Z - P3: Fix hierarchy paths in managed schematic (8653da6)
 - **Problem**: KiCad showed "hierarchy errors" after opening generated projects; reference designator annotations were broken.
