@@ -1,0 +1,152 @@
+Op-Amp Audio Headphone Amplifier – NE5532, ±15 V Rails
+
+Goal: Line-level audio in → headphone driver / small-load preamp out, using NE5532 on ±15 V.
+Designed for typical headphones (32–300 Ω) and as a preamp stage before a power amp for small speakers.
+
+IC:
+- U1 = NE5532 (dual low-noise audio op amp)
+- Pins (standard NE5532 pinout):
+  - 1: OUT A
+  - 2: -IN A
+  - 3: +IN A
+  - 4: V-
+  - 5: +IN B
+  - 6: -IN B
+  - 7: OUT B
+  - 8: V+
+
+Power & Ground:
+- V+ (node: VPLUS15) = +15 V supply
+- V- (node: VMINUS15) = -15 V supply
+- GND (node: 0V) = audio/signal ground
+
+Connect supply pins:
+- U1 pin 8 → VPLUS15
+- U1 pin 4 → VMINUS15
+
+Local decoupling (place physically close to U1):
+- C1: 100 nF ceramic between VPLUS15 and 0V (one pad to VPLUS15, one pad to 0V)
+- C2: 100 nF ceramic between VMINUS15 and 0V (one pad to VMINUS15, one pad to 0V)
+- C3: 10 µF electrolytic between VPLUS15 and 0V (observe polarity: + to VPLUS15, - to 0V)
+- C4: 10 µF electrolytic between VMINUS15 and 0V (polarity: - to VMINUS15, + to 0V)
+
+Input side (single stereo channel – do one per channel):
+- Use a 3.5 mm stereo input jack J1. For now, describe LEFT channel only.
+- J1 pins (simplified):
+  - Tip = LEFT_IN
+  - Ring = RIGHT_IN (ignore for now or duplicate this design)
+  - Sleeve = 0V
+
+Left input coupling and volume control (Stage A – first op-amp in NE5532):
+- R1: 100 kΩ from node LEFT_IN to node IN_L_AC (sets input impedance together with volume pot)
+- C5: 1.0 µF film (or non-polar electrolytic) in series between LEFT_IN and IN_L_AC
+  - LEFT_IN → C5 → IN_L_AC
+- Volume pot RV1 = 10 kΩ log (audio-taper) pot, used as attenuator:
+  - RV1-1 (one outer lug) → IN_L_AC
+  - RV1-2 (wiper) → node VOL_L_OUT
+  - RV1-3 (other outer lug) → 0V
+
+Non-inverting gain stage (U1A – first half of NE5532):
+- U1A + input (pin 3) → VOL_L_OUT (node VOL_L_OUT)
+- Feedback network to set gain ≈ 3 (≈ 9.5 dB):
+  - R2: 20 kΩ from U1A output (pin 1, node OUT_L_STAGE1) to U1A - input (pin 2)
+  - R3: 10 kΩ from U1A - input (pin 2) to 0V
+  - Gain = 1 + (R2/R3) = 1 + (20k/10k) = 3
+- DC stability / input biasing (optional but recommended):
+  - R4: 100 kΩ from U1A + input (pin 3, VOL_L_OUT) to 0V (provides DC reference if input is disconnected)
+
+Inter-stage coupling (between stage 1 and headphone buffer):
+- C6: 22 µF electrolytic in series between OUT_L_STAGE1 and node BUF_L_IN
+  - OUT_L_STAGE1 (U1A pin 1) → C6 → BUF_L_IN
+  - C6 polarity: + toward OUT_L_STAGE1, - toward BUF_L_IN (audio typically near 0 V but biased, this orientation is fine on ±15 V rails)
+- R5: 100 kΩ from BUF_L_IN to 0V (provides ground reference for next stage input)
+
+Headphone buffer / output stage (U1B – second half of NE5532):
+- U1B configured as unity-gain voltage follower with small output resistor for headphones.
+
+Connections:
+- U1B + input (pin 5) → BUF_L_IN
+- U1B output (pin 7, node OUT_L_STAGE2_RAW) → U1B - input (pin 6) (direct wire for unity gain)
+
+Output shaping / protection:
+- R6: 47 Ω from OUT_L_STAGE2_RAW to node HP_L_OUT
+  - OUT_L_STAGE2_RAW → R6 → HP_L_OUT
+  - Provides output impedance ~47 Ω, helps stability and isolates op-amp from headphone cable/speaker load.
+- C7: 220 µF electrolytic in series to isolate any DC from headphones/speakers (if you prefer fully AC-coupled output):
+  - OUT_L_STAGE2_RAW → C7 → HP_L_OUT
+  - C7 polarity: + toward OUT_L_STAGE2_RAW, - toward HP_L_OUT
+  - If you use C7, then R6 can be placed either before or after C7 (pick one scheme and stick to it). For clarity, do:
+    - OUT_L_STAGE2_RAW → R6 → node AFTER_R6 → C7 → HP_L_OUT
+    - Where HP_L_OUT goes to the output jack tip.
+- R7: 100 kΩ from HP_L_OUT to 0V (provides reference and bleed for output cap C7).
+
+Output jack (J2 – 3.5 mm headphone out, LEFT channel only for now):
+- J2 Tip → HP_L_OUT
+- J2 Ring → (RIGHT channel, mirror this design)
+- J2 Sleeve → 0V
+
+Summary of all components and nodes (LEFT channel):
+
+Nodes:
+- VPLUS15: +15 V rail
+- VMINUS15: -15 V rail
+- 0V: Signal ground
+- LEFT_IN: Left tip of input jack J1
+- IN_L_AC: After input coupling, before volume pot
+- VOL_L_OUT: Wiper of volume pot (goes to U1A + input)
+- OUT_L_STAGE1: Output of U1A (pin 1)
+- BUF_L_IN: Input to buffer stage (U1B + input, pin 5)
+- OUT_L_STAGE2_RAW: Output of U1B (pin 7)
+- AFTER_R6: Node between R6 and C7 (if using both)
+- HP_L_OUT: Final left headphone/speaker output node
+
+Components (LEFT channel + supply):
+- U1: NE5532
+  - Pin 8 → VPLUS15
+  - Pin 4 → VMINUS15
+  - Pin 3 (+A) → VOL_L_OUT
+  - Pin 2 (-A) → junction of R2 and R3
+  - Pin 1 (OUT A) → OUT_L_STAGE1 → C6 → BUF_L_IN
+  - Pin 5 (+B) → BUF_L_IN
+  - Pin 6 (-B) → OUT_L_STAGE2_RAW
+  - Pin 7 (OUT B) → OUT_L_STAGE2_RAW
+
+- C1: 100 nF from VPLUS15 to 0V (close to U1)
+- C2: 100 nF from VMINUS15 to 0V (close to U1)
+- C3: 10 µF from VPLUS15 to 0V (+ to VPLUS15)
+- C4: 10 µF from VMINUS15 to 0V (- to VMINUS15)
+
+- J1: 3.5 mm stereo input jack
+  - Tip (L) → LEFT_IN
+  - Sleeve → 0V
+
+- C5: 1.0 µF between LEFT_IN and IN_L_AC (series)
+- R1: 100 kΩ from LEFT_IN to IN_L_AC (optional; sets input impedance; can omit if using pot directly)
+- RV1: 10 kΩ audio-taper pot
+  - RV1-1 → IN_L_AC
+  - RV1-2 → VOL_L_OUT
+  - RV1-3 → 0V
+
+- R2: 20 kΩ from OUT_L_STAGE1 (U1 pin 1) to U1A - input (pin 2)
+- R3: 10 kΩ from U1A - input (pin 2) to 0V
+- R4: 100 kΩ from VOL_L_OUT (U1A + input) to 0V
+
+- C6: 22 µF from OUT_L_STAGE1 to BUF_L_IN (series, + toward OUT_L_STAGE1)
+- R5: 100 kΩ from BUF_L_IN to 0V
+
+- U1B follower:
+  - Pin 5 (+) → BUF_L_IN
+  - Pin 6 (-) → OUT_L_STAGE2_RAW
+  - Pin 7 (OUT) → OUT_L_STAGE2_RAW
+
+- R6: 47 Ω from OUT_L_STAGE2_RAW to AFTER_R6
+- C7: 220 µF from AFTER_R6 to HP_L_OUT (+ toward AFTER_R6)
+- R7: 100 kΩ from HP_L_OUT to 0V
+
+- J2: 3.5 mm headphone output jack
+  - Tip (L) → HP_L_OUT
+  - Sleeve → 0V
+
+Notes:
+- For a full stereo amp, duplicate the entire left-channel signal path for the right channel using the other half of the NE5532 (or a second NE5532) and a second set of jacks/nodes.
+- NE5532 can drive headphones and 600 Ω loads reasonably; for true small-speaker power (e.g., 8 Ω), add a dedicated power amp IC after HP_L_OUT.

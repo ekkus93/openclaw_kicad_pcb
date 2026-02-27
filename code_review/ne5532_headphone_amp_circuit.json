@@ -1,0 +1,92 @@
+{
+  "version": "1",
+  "components": [
+    {"ref": "U1", "symbol": "Amplifier_Operational:NE5532", "value": "NE5532"},
+    {"ref": "C1", "symbol": "Device:C", "value": "100n"},
+    {"ref": "C2", "symbol": "Device:C", "value": "100n"},
+    {"ref": "C3", "symbol": "Device:C_Polarized", "value": "10uF"},
+    {"ref": "C4", "symbol": "Device:C_Polarized", "value": "10uF"},
+    {"ref": "C5", "symbol": "Device:C", "value": "1uF"},
+    {"ref": "C6", "symbol": "Device:C_Polarized", "value": "22uF"},
+    {"ref": "C7", "symbol": "Device:C_Polarized", "value": "220uF"},
+    {"ref": "R1", "symbol": "Device:R", "value": "100k"},
+    {"ref": "R2", "symbol": "Device:R", "value": "20k"},
+    {"ref": "R3", "symbol": "Device:R", "value": "10k"},
+    {"ref": "R4", "symbol": "Device:R", "value": "100k"},
+    {"ref": "R5", "symbol": "Device:R", "value": "100k"},
+    {"ref": "R6", "symbol": "Device:R", "value": "47"},
+    {"ref": "R7", "symbol": "Device:R", "value": "100k"},
+    {"ref": "RV1", "symbol": "Device:R_Potentiometer", "value": "10k"},
+    {"ref": "J1", "symbol": "Connector:AudioJack3", "value": "IN_L"},
+    {"ref": "J2", "symbol": "Connector:AudioJack3", "value": "HP_OUT_L"}
+  ],
+  "nets": [
+    {"name": "VPLUS15", "pins": [
+      {"ref": "U1", "pin": "8"},
+      {"ref": "C1", "pin": "1"},
+      {"ref": "C3", "pin": "+"}
+    ]},
+    {"name": "VMINUS15", "pins": [
+      {"ref": "U1", "pin": "4"},
+      {"ref": "C2", "pin": "1"},
+      {"ref": "C4", "pin": "-"}
+    ]},
+    {"name": "0V", "pins": [
+      {"ref": "C1", "pin": "2"},
+      {"ref": "C2", "pin": "2"},
+      {"ref": "C3", "pin": "-"},
+      {"ref": "C4", "pin": "+"},
+      {"ref": "R3", "pin": "2"},
+      {"ref": "R4", "pin": "2"},
+      {"ref": "R5", "pin": "2"},
+      {"ref": "R7", "pin": "2"},
+      {"ref": "RV1", "pin": "3"},
+      {"ref": "J1", "pin": "3"},
+      {"ref": "J2", "pin": "3"}
+    ]},
+    {"name": "LEFT_IN", "pins": [
+      {"ref": "J1", "pin": "1"},
+      {"ref": "R1", "pin": "1"},
+      {"ref": "C5", "pin": "1"}
+    ]},
+    {"name": "IN_L_AC", "pins": [
+      {"ref": "R1", "pin": "2"},
+      {"ref": "C5", "pin": "2"},
+      {"ref": "RV1", "pin": "1"}
+    ]},
+    {"name": "VOL_L_OUT", "pins": [
+      {"ref": "RV1", "pin": "2"},
+      {"ref": "U1", "pin": "3"},
+      {"ref": "R4", "pin": "1"}
+    ]},
+    {"name": "OUT_L_STAGE1", "pins": [
+      {"ref": "U1", "pin": "1"},
+      {"ref": "R2", "pin": "1"},
+      {"ref": "C6", "pin": "+"}
+    ]},
+    {"name": "U1A_NEG", "pins": [
+      {"ref": "U1", "pin": "2"},
+      {"ref": "R2", "pin": "2"},
+      {"ref": "R3", "pin": "1"}
+    ]},
+    {"name": "BUF_L_IN", "pins": [
+      {"ref": "C6", "pin": "-"},
+      {"ref": "R5", "pin": "1"},
+      {"ref": "U1", "pin": "5"}
+    ]},
+    {"name": "OUT_L_STAGE2_RAW", "pins": [
+      {"ref": "U1", "pin": "7"},
+      {"ref": "U1", "pin": "6"},
+      {"ref": "R6", "pin": "1"}
+    ]},
+    {"name": "AFTER_R6", "pins": [
+      {"ref": "R6", "pin": "2"},
+      {"ref": "C7", "pin": "+"}
+    ]},
+    {"name": "HP_L_OUT", "pins": [
+      {"ref": "C7", "pin": "-"},
+      {"ref": "R7", "pin": "1"},
+      {"ref": "J2", "pin": "1"}
+    ]}
+  ]
+}
