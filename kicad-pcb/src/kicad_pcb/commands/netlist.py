@@ -198,7 +198,7 @@ def _apply_netlist_to_project(
     symbol_index = SymbolIndex(symbols_dir=request.symbols_dir)
     validate_ir_symbols(ir, symbol_index)
 
-    _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
+    sheet_uuid = _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
 
     managed_sch_path = project.path / MANAGED_SHEET_FILE
     _ensure_managed_file_exists(managed_sch_path, dry_run=request.dry_run)
@@ -306,6 +306,10 @@ def _apply_netlist_to_project(
                     "details": {"symbols": sorted(symbol_defs_missing)},
                 }
             )
+
+        # Qualify all bare (path "/" …) entries so KiCad can resolve the
+        # sub-sheet hierarchy and assign correct reference annotations.
+        doc.update_managed_path(sheet_uuid)
 
     mutate_and_validate_sch(
         managed_sch_path,
@@ -546,7 +550,10 @@ def _ensure_managed_file_exists(path: Path, *, dry_run: bool) -> None:
     )
 
 
-def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: bool) -> None:
+def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: bool) -> str:
+    """Prepare the root schematic for managed-sheet use; return the managed sheet UUID."""
+    _captured_uuid: list[str] = []
+
     def _mutate(doc: SchematicDoc) -> None:
         if not doc.has_openclaw_marker() and not force:
             raise UserError(
@@ -555,11 +562,12 @@ def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: boo
                 details={"path": str(project.sch_file)},
             )
         doc.ensure_openclaw_marker()
-        doc.ensure_managed_sheet(
+        uuid = doc.ensure_managed_sheet(
             sheet_name=MANAGED_SHEET_NAME,
             sheet_file=MANAGED_SHEET_FILE,
             sheet_uuid=_new_uuid(),
         )
+        _captured_uuid.append(uuid)
 
     mutate_and_validate_sch(
         project.sch_file,
@@ -568,6 +576,9 @@ def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: boo
         operation="prepare-managed-sheet",
         dry_run=dry_run,
     )
+    # _mutate is always called exactly once by mutate_and_validate_sch
+    # (dry_run skips the write but still calls the mutator for validation).
+    return _captured_uuid[0] if _captured_uuid else _new_uuid()
 
 
 def _create_project(*, name: str, out_dir: Path | None, description: str) -> ProjectRef:

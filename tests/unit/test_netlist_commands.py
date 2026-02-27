@@ -1161,3 +1161,141 @@ def test_debug_symbol_not_found() -> None:
     with pytest.raises(UserError) as exc_info:
         cmd_debug_symbol(args)
     assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
+
+
+# ---------------------------------------------------------------------------
+# Hierarchy path tests (fix: sheet_instances and symbol instances use parent UUID)
+# ---------------------------------------------------------------------------
+
+
+def test_update_managed_path_qualifies_sheet_instances(tmp_path: Path) -> None:
+    """update_managed_path replaces '/' with '/{uuid}/' in sheet_instances."""
+    sch_path = tmp_path / "managed.kicad_sch"
+    sch_path.write_text(
+        """(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "aaaa-bbbb-cccc")
+  (paper "A4")
+  (lib_symbols)
+  (sheet_instances
+    (path "/" (page "2"))
+  )
+)
+""",
+        encoding="utf-8",
+    )
+    doc = SchematicDoc.load(sch_path)
+    test_uuid = "11111111-2222-3333-4444-555555555555"
+    doc.update_managed_path(test_uuid)
+
+    si = find_first(doc.root, "sheet_instances")
+    assert si is not None
+    path_node = find_first(si, "path")
+    assert path_node is not None
+    assert isinstance(path_node.items[1], StringNode)
+    assert path_node.items[1].value == f"/{test_uuid}/"
+
+
+def test_update_managed_path_qualifies_symbol_instances(tmp_path: Path) -> None:
+    """update_managed_path replaces '/' with '/{uuid}/' in symbol instance paths."""
+    sch_path = tmp_path / "managed.kicad_sch"
+    sch_path.write_text(
+        """(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "aaaa")
+  (paper "A4")
+  (lib_symbols)
+  (symbol (lib_id "Device:R") (at 50.80 76.20 0) (unit 1)
+    (uuid "sym-uuid-1")
+    (instances
+      (project "myproj" (path "/" (reference "R1") (unit 1)))
+    )
+  )
+  (sheet_instances (path "/" (page "1")))
+)
+""",
+        encoding="utf-8",
+    )
+    doc = SchematicDoc.load(sch_path)
+    test_uuid = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+    doc.update_managed_path(test_uuid)
+
+    # All (path ...) nodes in the document must be qualified — none may remain "/".
+    for node in walk(doc.root):
+        if (
+            isinstance(node, ListNode)
+            and node.key == "path"
+            and len(node.items) >= 2
+            and isinstance(node.items[1], StringNode)
+        ):
+            assert node.items[1].value != "/", (
+                "Found unqualified '/' path after update_managed_path"
+            )
+            assert node.items[1].value == f"/{test_uuid}/", (
+                f"Expected /{test_uuid}/, got {node.items[1].value!r}"
+            )
+
+
+def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Path) -> None:
+    """Integration: managed schematic sheet_instances and symbol instances
+    carry the UUID of the (sheet ...) entry in the parent root schematic.
+    """
+    ir_data = {
+        "version": "1",
+        "components": [{"ref": "R1", "symbol": "TestLib:R", "value": "10k"}],
+        "nets": [{"name": "VCC", "pins": [{"ref": "R1", "pin": "1"}]}],
+    }
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(json.dumps(ir_data), encoding="utf-8")
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="HierTest",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    # Extract the managed-sheet UUID from the parent (root) schematic.
+    parent_doc = SchematicDoc.load(result.schematic_path)
+    sheet_uuid: str | None = None
+    for item in parent_doc.root.items:
+        if not (isinstance(item, ListNode) and item.key == "sheet"):
+            continue
+        for sub in item.items:
+            if (
+                isinstance(sub, ListNode)
+                and sub.key == "uuid"
+                and len(sub.items) >= 2
+                and isinstance(sub.items[1], StringNode)
+            ):
+                sheet_uuid = sub.items[1].value
+                break
+        if sheet_uuid:
+            break
+    assert sheet_uuid is not None, "Parent schematic has no (sheet (uuid ...)) node"
+
+    expected_path = f"/{sheet_uuid}/"
+
+    # Check the managed schematic: all (path ...) nodes must be qualified.
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    unqualified: list[str] = []
+    wrong_uuid: list[str] = []
+    for node in walk(managed_doc.root):
+        if not (
+            isinstance(node, ListNode)
+            and node.key == "path"
+            and len(node.items) >= 2
+            and isinstance(node.items[1], StringNode)
+        ):
+            continue
+        val = node.items[1].value
+        if val == "/":
+            unqualified.append(repr(node))
+        elif val != expected_path:
+            wrong_uuid.append(f"{val!r} (expected {expected_path!r})")
+
+    assert not unqualified, f"Unqualified '/' paths remain: {unqualified}"
+    assert not wrong_uuid, f"Paths with wrong UUID: {wrong_uuid}"

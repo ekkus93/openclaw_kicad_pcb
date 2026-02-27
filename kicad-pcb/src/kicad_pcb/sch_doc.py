@@ -894,15 +894,20 @@ class SchematicDoc:
         sheet_name: str = "OpenClaw_Managed",
         sheet_file: str = "OpenClaw_Managed.kicad_sch",
         sheet_uuid: str,
-    ) -> bool:
-        """Ensure a top-level managed sheet exists; return ``True`` when inserted."""
+    ) -> str:
+        """Ensure a top-level managed sheet exists; return its UUID.
+
+        When the sheet already exists, returns its actual UUID from the AST.
+        When a new sheet is inserted, returns *sheet_uuid*.
+        """
         for item in self.root.items:
             if (
                 isinstance(item, ListNode)
                 and item.key == "sheet"
                 and _sheet_property_value(item, "Sheetname") == sheet_name
             ):
-                return False
+                existing = _get_sheet_uuid(item)
+                return existing if existing is not None else sheet_uuid
         self._insert_before_sheet_instances(
             make_managed_sheet_node(
                 ManagedSheetSpec(
@@ -912,7 +917,41 @@ class SchematicDoc:
                 )
             )
         )
-        return True
+        return sheet_uuid
+
+    def update_managed_path(self, sheet_uuid: str) -> None:
+        """Qualify all bare ``(path "/" …)`` entries to ``(path "/{uuid}/" …)``.
+
+        KiCad requires sub-schematic ``(sheet_instances ...)`` and symbol
+        ``(instances ...)`` paths to reference the parent sheet's UUID so that
+        KiCad can resolve the hierarchy and assign correct reference
+        annotations.  This method walks the entire AST and replaces every
+        remaining unqualified root path ``"/"`` with ``"/{sheet_uuid}/"``.
+
+        Call this on the managed ``SchematicDoc`` after writing all symbols and
+        nets, before saving.
+        """
+
+        def _fix(node: Node) -> Node:  # noqa: PLR0911 — recursive walk helper
+            if not isinstance(node, ListNode):
+                return node
+            if (
+                node.key == "path"
+                and len(node.items) >= 2
+                and isinstance(node.items[1], StringNode)
+                and node.items[1].value == "/"
+            ):
+                new_items = list(node.items)
+                new_items[1] = string(f"/{sheet_uuid}/")
+                return ListNode(tuple(new_items), node.pos)
+            new_children = tuple(_fix(child) for child in node.items)
+            if new_children == node.items:
+                return node
+            return ListNode(new_children, node.pos)
+
+        result = _fix(self.root)
+        assert isinstance(result, ListNode)
+        self.root = result
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -928,6 +967,19 @@ class SchematicDoc:
                 break
         items.insert(insertion_idx, node)
         self.root = ListNode(tuple(items), self.root.pos)
+
+
+def _get_sheet_uuid(sheet_node: ListNode) -> str | None:
+    """Extract ``(uuid "value")`` from a ``(sheet ...)`` node."""
+    for item in sheet_node.items:
+        if (
+            isinstance(item, ListNode)
+            and item.key == "uuid"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+        ):
+            return item.items[1].value
+    return None
 
 
 def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
