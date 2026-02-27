@@ -1040,11 +1040,11 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
 
 
 # ---------------------------------------------------------------------------
-# search-symbols tests
+# search-symbols / debug-symbol tests
 # ---------------------------------------------------------------------------
 
-from kicad_pcb.commands.search import cmd_search_symbols  # noqa: E402
-from kicad_pcb.results import SearchSymbolsResult  # noqa: E402
+from kicad_pcb.commands.search import cmd_debug_symbol, cmd_search_symbols  # noqa: E402
+from kicad_pcb.results import DebugSymbolResult, SearchSymbolsResult  # noqa: E402
 
 _TESTLIB_SYMBOLS_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
 
@@ -1126,3 +1126,38 @@ def test_search_symbols_kicad9_renamed_symbols() -> None:
     result_pot = cmd_search_symbols(args_pot)
     ids_pot = [m.symbol_id for m in result_pot.matches]
     assert "Device:R_Potentiometer" in ids_pot, f"R_Potentiometer missing; got {ids_pot}"
+
+
+# ---------------------------------------------------------------------------
+# debug-symbol tests (P2)
+# ---------------------------------------------------------------------------
+
+
+def test_debug_symbol_standalone() -> None:
+    """A symbol with its own pins reports correct list and no extends_base."""
+    args = Namespace(symbol="TestLib:R", symbols_dir=str(_TESTLIB_SYMBOLS_DIR))
+    result = cmd_debug_symbol(args)
+    assert isinstance(result, DebugSymbolResult)
+    assert result.symbol_id == "TestLib:R"
+    assert result.extends_base is None
+    assert result.pin_count == 2
+    assert set(result.pin_numbers) == {"1", "2"}
+
+
+def test_debug_symbol_extends() -> None:
+    """An extends symbol reports extends_base and inherits parent pin count."""
+    args = Namespace(symbol="TestLib:DerivedOpAmp", symbols_dir=str(_TESTLIB_SYMBOLS_DIR))
+    result = cmd_debug_symbol(args)
+    assert isinstance(result, DebugSymbolResult)
+    assert result.symbol_id == "TestLib:DerivedOpAmp"
+    assert result.extends_base == "TestLib:OpAmp"
+    assert result.pin_count == 4  # inherited from OpAmp
+    assert set(result.pin_numbers) == {"1", "2", "3", "6"}
+
+
+def test_debug_symbol_not_found() -> None:
+    """A non-existent symbol raises UserError with SYMBOL_NOT_FOUND code."""
+    args = Namespace(symbol="TestLib:NoSuchSymbol", symbols_dir=str(_TESTLIB_SYMBOLS_DIR))
+    with pytest.raises(UserError) as exc_info:
+        cmd_debug_symbol(args)
+    assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND

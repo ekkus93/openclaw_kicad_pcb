@@ -21,7 +21,9 @@ import re
 import subprocess
 from pathlib import Path
 
-from ..results import BuildSymbolIndexResult, SearchSymbolsResult, SymbolMatch
+from ..errors import ErrorCode, UserError
+from ..results import BuildSymbolIndexResult, DebugSymbolResult, SearchSymbolsResult, SymbolMatch
+from ..sch_doc import read_lib_symbol_pins
 from ..symbol_cache import CachedSymbol, SymbolCache
 from ..symbol_index import resolve_symbol_dirs
 
@@ -305,6 +307,81 @@ def cmd_search_symbols(args) -> SearchSymbolsResult:
         query=raw_query,
         matches=matches,
         symbols_dirs=tuple(searched_dirs),
+    )
+
+
+def cmd_debug_symbol(args) -> DebugSymbolResult:
+    """Resolve and display full pin list and extends chain for a single symbol.
+
+    Parses the named ``.kicad_sym`` library file, follows any ``(extends ...)``
+    chain, and returns the complete set of inherited pin numbers together with
+    metadata about the extends relationship.
+
+    Useful for diagnosing broken extends chains or verifying pin numbers before
+    writing Circuit IR JSON.
+
+    Args:
+        args: Parsed CLI namespace.  Expected attributes:
+
+            * ``symbol`` — ``"LibName:SymName"`` string (required)
+            * ``symbols_dir`` — optional path to an explicit library dir
+    """
+    symbol: str = getattr(args, "symbol", "").strip()
+    symbols_dir_raw = getattr(args, "symbols_dir", None)
+    symbols_dir: Path | None = Path(symbols_dir_raw) if symbols_dir_raw else None
+
+    if ":" not in symbol:
+        raise UserError(
+            f"Symbol must be in 'LibName:SymName' format, got: {symbol!r}",
+            code=ErrorCode.USER_ERROR,
+        )
+    lib_name, sym_name = symbol.split(":", 1)
+
+    if symbols_dir is not None:
+        dirs: tuple[Path, ...] = (symbols_dir,)
+    else:
+        dirs = resolve_symbol_dirs(symbols_dir=None).dirs
+
+    # Locate the library file in the first matching directory.
+    lib_file: Path | None = None
+    resolved_dir: Path | None = None
+    for sym_dir in dirs:
+        candidate = sym_dir / f"{lib_name}.kicad_sym"
+        if candidate.exists():
+            lib_file = candidate
+            resolved_dir = sym_dir
+            break
+
+    if lib_file is None or resolved_dir is None:
+        raise UserError(
+            f"Library '{lib_name}' not found in any symbols directory.",
+            code=ErrorCode.SYMBOL_NOT_FOUND,
+        )
+
+    # Check symbol exists before trying pin resolution (pins list is empty
+    # for both "not found" and "broken extends chain"; we must distinguish).
+    raw_text = lib_file.read_text(encoding="utf-8")
+    sym_blocks = dict(_extract_symbol_blocks(raw_text))
+    if sym_name not in sym_blocks:
+        raise UserError(
+            f"Symbol '{sym_name}' not found in library '{lib_name}'.",
+            code=ErrorCode.SYMBOL_NOT_FOUND,
+        )
+
+    # Resolve pin list through the full extends chain.
+    pins = read_lib_symbol_pins(lib_name, sym_name, symbols_dir=resolved_dir)
+
+    # Derive extends_base from the raw block text.
+    extends_base: str | None = None
+    m = _EXTENDS_NAME_RE.search(sym_blocks[sym_name])
+    if m:
+        extends_base = f"{lib_name}:{m.group(1)}"
+
+    return DebugSymbolResult(
+        symbol_id=symbol,
+        extends_base=extends_base,
+        pin_numbers=tuple(pins),
+        pin_count=len(pins),
     )
 
 
