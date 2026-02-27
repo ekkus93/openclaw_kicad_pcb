@@ -1,10 +1,19 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T00:00:00Z_
+_Last updated: 2026-02-27T00:00:00Z_
 
 ---
 
-## 2026-03-03T00:00:00Z - cairosvg + pillow installed in .venv
+## 2026-02-27T00:00:00Z - P3: Fix hierarchy paths in managed schematic (8653da6)
+- **Problem**: KiCad showed "hierarchy errors" after opening generated projects; reference designator annotations were broken.
+- **Root cause**: `OpenClaw_Managed.kicad_sch` had `(sheet_instances (path "/" ...))` and all symbol instances had `(instances (project ... (path "/" ...)))`. KiCad requires these paths to use `"/{parent_sheet_uuid}/"` to locate the sub-sheet in the hierarchy.
+- **Fix**:
+  - `sch_doc.py`: Added `_get_sheet_uuid()` helper; changed `ensure_managed_sheet()` to return `str` UUID (existing or new); added `SchematicDoc.update_managed_path(sheet_uuid)` to walk the AST and replace bare `"/"` with `"/{uuid}/"` in all path nodes.
+  - `commands/netlist.py`: Changed `_ensure_project_root_owned()` to return the sheet UUID; injected `doc.update_managed_path(sheet_uuid)` at end of `_mutate_managed` before save.
+- **Tests**: 3 new tests (unit + integration); 1117 total pass.
+- **Note**: The `code_review/NE5532_Headphone_Amp.kicad_sch` is a stale test artifact from Feb 26 — it shows pre-fix breakage (unqualified extends, missing base symbol, only 2 pins). Current code generates correct schematics; the OpenClaw agent's complaint was about files from a pre-fix session.
+
+## 2026-02-27T00:00:00Z - cairosvg + pillow installed in .venv
 - **Problem reported**: `preview-schematic` SVG → PNG conversion failing because `cairosvg` not installed.
 - **Environment confirmed**: Gateway `python3` = `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2); that `.venv` is the correct install target (shell has `.venv` active).
 - **Fix**: Ran `.venv/bin/pip install cairosvg pillow` (no `--user` flag — packages go into the venv directly).
