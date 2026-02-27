@@ -14,9 +14,9 @@ from kicad_pcb.commands.netlist import (
 )
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
-from kicad_pcb.sch_doc import SchematicDoc
+from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
-from kicad_pcb.sexpr.utils import find_first
+from kicad_pcb.sexpr.utils import find_first, walk
 
 
 def _write_minimal_sch(path: Path) -> None:
@@ -863,6 +863,95 @@ def test_circuit_fidelity_multi_component_testlib(tmp_path: Path) -> None:
 
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
     _check_circuit_fidelity(ir_data, managed_doc)
+
+
+def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
+    """P1: wires in the managed schematic start at the actual library pin endpoints.
+
+    Before the P1 fix, _write_nets used arbitrary symbol-relative offsets
+    (sym_x + 5.08, sym_y + 2.54*index) regardless of which pin was being
+    wired.  After the fix, each wire must start at the exact (x, y) derived
+    from the pin's ``(at X Y angle)`` in the library, translated by the
+    symbol placement position.
+
+    Circuit: R1 and R2 in series (VCC→R1→MID→R2→GND).
+    TestLib:R pin positions:
+      pin 1 at (at 0 0 0)   → endpoint at symbol_origin + (0, 0)
+      pin 2 at (at 5.08 0 180) → endpoint at symbol_origin + (5.08, 0)
+    """
+    ir_data = {
+        "version": "1",
+        "components": [
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+            {"ref": "R2", "symbol": "TestLib:R", "value": "4.7k"},
+        ],
+        "nets": [
+            {"name": "VCC", "pins": [{"ref": "R1", "pin": "1"}]},
+            {"name": "MID", "pins": [{"ref": "R1", "pin": "2"}, {"ref": "R2", "pin": "1"}]},
+            {"name": "GND", "pins": [{"ref": "R2", "pin": "2"}]},
+        ],
+    }
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    ir_path = tmp_path / "ir.json"
+    ir_path.write_text(json.dumps(ir_data), encoding="utf-8")
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="WireTest",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+
+    # Collect all wire start points from the AST.
+    wire_starts: set[tuple[float, float]] = set()
+    for node in walk(managed_doc.root):
+        if not (isinstance(node, ListNode) and node.key == "wire"):
+            continue
+        pts = find_first(node, "pts")
+        if pts is None:
+            continue
+        # items: [atom("pts"), ListNode("xy", x1, y1), ListNode("xy", x2, y2)]
+        xy1 = pts.items[1]
+        if isinstance(xy1, ListNode) and xy1.key == "xy" and len(xy1.items) >= 3:
+            try:
+                x = round(float(xy1.items[1].value), 2)  # type: ignore[union-attr]
+                y = round(float(xy1.items[2].value), 2)  # type: ignore[union-attr]
+                wire_starts.add((x, y))
+            except (ValueError, AttributeError):
+                pass
+
+    # Compute expected pin endpoints in schematic space.
+    # Components are sorted by ref: R1 → index 0, R2 → index 1.
+    # _symbol_position(0) = (50.80, 76.20); _symbol_position(1) = (81.28, 76.20)
+    pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
+    assert pin_at, "TestLib:R pin positions not found in fixture library"
+
+    expected_endpoints: dict[tuple[str, str], tuple[float, float]] = {}
+    for ref, sym_idx in [("R1", 0), ("R2", 1)]:
+        col = sym_idx % 6
+        row = sym_idx // 6
+        sx = round(50.8 + col * 30.48, 2)
+        sy = round(76.2 + row * 30.48, 2)
+        for pin_num, (px, py, _pa) in pin_at.items():
+            expected_endpoints[(ref, pin_num)] = (round(sx + px, 2), round(sy + py, 2))
+
+    # Verify every expected pin endpoint has a wire starting there.
+    missing: list[str] = []
+    for (ref, pin), (ex, ey) in sorted(expected_endpoints.items()):
+        if (ex, ey) not in wire_starts:
+            missing.append(f"{ref} pin {pin}: expected wire start at ({ex}, {ey})")
+
+    assert not missing, (
+        "Wire(s) do not start at pin endpoints — wiring is disconnected:\n"
+        + "\n".join(f"  {m}" for m in missing)
+        + f"\nActual wire starts: {sorted(wire_starts)}"
+    )
 
 
 @_skip_no_system_symbols
