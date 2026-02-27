@@ -51,6 +51,7 @@ __all__ = [
     "make_wire_node",
     "read_lib_symbol_def",
     "read_lib_symbol_def_chain",
+    "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
 ]
 
@@ -148,8 +149,17 @@ def make_wire_node(x1: float, y1: float, x2: float, y2: float, wire_uuid: str) -
     )
 
 
-def make_label_node(name: str, x: float, y: float, label_uuid: str) -> ListNode:
-    """Build a ``(label …)`` net-label node for a schematic."""
+def make_label_node(name: str, x: float, y: float, label_uuid: str, *, angle: int = 0) -> ListNode:
+    """Build a ``(label …)`` net-label node for a schematic.
+
+    Parameters
+    ----------
+    angle:
+        Label orientation in degrees (KiCad convention: 0=right, 90=down,
+        180=left, 270=up).  Controls which direction the label's connection
+        stub points — use the outward direction of the pin the label attaches
+        to.  Defaults to 0 (right).
+    """
     effects = L(
         atom("effects"),
         _effects_font(),
@@ -170,7 +180,7 @@ def make_label_node(name: str, x: float, y: float, label_uuid: str) -> ListNode:
     return L(
         atom("label"),
         string(name),
-        L(atom("at"), fnum(x, 2), fnum(y, 2), atom("0")),
+        L(atom("at"), fnum(x, 2), fnum(y, 2), atom(str(angle))),
         L(atom("fields_autoplaced"), atom("yes")),
         effects,
         L(atom("uuid"), string(label_uuid)),
@@ -298,6 +308,48 @@ def _collect_pin_numbers(sym_node: ListNode) -> list[str]:
                     if p not in seen:
                         seen.add(p)
                         result.append(p)
+    return result
+
+
+def _collect_pin_at(
+    sym_node: ListNode,
+) -> dict[str, tuple[float, float, float]]:
+    """Walk *sym_node* and return ``{pin_number: (x, y, angle)}`` for all pins.
+
+    *(x, y)* is the pin connection endpoint in library-local coordinates.
+    *angle* is in degrees using KiCad's convention (0=right, 90=down,
+    180=left, 270=up).
+
+    Only the first occurrence of each pin number is kept (base-symbol wins
+    when results from multiple levels in an extends chain are merged by the
+    caller).
+    """
+    result: dict[str, tuple[float, float, float]] = {}
+    for node in walk(sym_node):
+        if not (isinstance(node, ListNode) and node.key == "pin"):
+            continue
+        pin_num: str | None = None
+        for child in node.items:
+            if (
+                isinstance(child, ListNode)
+                and child.key == "number"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+            ):
+                pin_num = child.items[1].value
+                break
+        if pin_num is None or pin_num in result:
+            continue
+        at_node = find_first(node, "at")
+        if at_node is None or len(at_node.items) < 4:
+            continue
+        try:
+            x = float(at_node.items[1].value)  # type: ignore[union-attr]
+            y = float(at_node.items[2].value)  # type: ignore[union-attr]
+            a = float(at_node.items[3].value)  # type: ignore[union-attr]
+        except (ValueError, AttributeError):
+            continue
+        result[pin_num] = (x, y, a)
     return result
 
 
@@ -494,6 +546,67 @@ def read_lib_symbol_pins(
     return result
 
 
+def read_lib_symbol_pin_at(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> dict[str, tuple[float, float, float]]:
+    """Return pin connection-point coordinates for *lib_name:sym_name*.
+
+    Follows ``(extends ...)`` chains so inherited pin positions are included.
+    Base-symbol positions take priority when a derived symbol redefines a pin.
+
+    Returns a dict of ``{pin_number: (x, y, angle)}`` where:
+
+    * *(x, y)* — pin endpoint in library-local coordinates (mm).
+    * *angle* — KiCad pin direction in degrees: 0=right, 90=down, 180=left,
+      270=up.  This is the direction **from** the endpoint **toward** the
+      symbol body; wire extensions should point in the **opposite** direction.
+
+    Returns an empty dict when the library file or symbol cannot be found.
+
+    Parameters
+    ----------
+    lib_name:    Library name (e.g. ``"Device"``).
+    sym_name:    Symbol name within the library (e.g. ``"R"``).
+    symbols_dir: Directory containing ``.kicad_sym`` files.
+    """
+    if symbols_dir is None:
+        symbols_dir = _DEFAULT_SYMBOLS_DIR
+
+    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
+    if not lib_file.exists():
+        return {}
+    try:
+        lib_root = parse_file(lib_file)
+    except (ParseError, OSError):
+        return {}
+
+    # Build extends chain (derived first) so we can collect from base symbols.
+    chain: list[str] = []
+    visited: set[str] = set()
+    current: str | None = sym_name
+    while current is not None and current not in visited:
+        node = _find_lib_symbol(lib_root, current)
+        if node is None:
+            break
+        visited.add(current)
+        chain.append(current)
+        current = _get_extends_name(node)
+
+    # Collect pin positions base-first; first occurrence wins (same as pins).
+    result: dict[str, tuple[float, float, float]] = {}
+    for name in reversed(chain):  # reversed = base first
+        node = _find_lib_symbol(lib_root, name)
+        if node is None:
+            continue
+        for pin_num, coords in _collect_pin_at(node).items():
+            if pin_num not in result:
+                result[pin_num] = coords
+    return result
+
+
 # ---------------------------------------------------------------------------
 # SchematicDoc
 # ---------------------------------------------------------------------------
@@ -624,9 +737,17 @@ class SchematicDoc:
         """Append a wire segment to the schematic."""
         self._insert_before_sheet_instances(make_wire_node(x1, y1, x2, y2, wire_uuid))
 
-    def add_label(self, name: str, x: float, y: float, label_uuid: str) -> None:
-        """Append a net label to the schematic."""
-        self._insert_before_sheet_instances(make_label_node(name, x, y, label_uuid))
+    def add_label(self, name: str, x: float, y: float, label_uuid: str, *, angle: int = 0) -> None:
+        """Append a net label to the schematic.
+
+        Parameters
+        ----------
+        angle:
+            Label orientation in degrees (0=right, 90=down, 180=left, 270=up).
+            Pass the outward direction of the pin the label will attach to so
+            the label visually extends away from the symbol body.
+        """
+        self._insert_before_sheet_instances(make_label_node(name, x, y, label_uuid, angle=angle))
 
     def add_text(self, text: str, x: float, y: float, *, hidden: bool = False) -> None:
         """Append a text node to the schematic."""

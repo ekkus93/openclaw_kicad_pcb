@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
@@ -18,7 +19,7 @@ from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult, InfoSchResult, NewFromNetlistResult
 from ..runner import find_kicad_cli
-from ..sch_doc import SchematicDoc, read_lib_symbol_def_chain
+from ..sch_doc import SchematicDoc, read_lib_symbol_def_chain, read_lib_symbol_pin_at
 from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
@@ -237,14 +238,14 @@ def _apply_netlist_to_project(
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
 
-        symbol_positions, symbol_defs_missing = _write_symbols(
+        symbol_positions, pin_endpoints, symbol_defs_missing = _write_symbols(
             doc=doc,
             ir=ir,
             symbol_index=symbol_index,
             project_name=project.name,
             stats=stats,
         )
-        _write_nets(doc=doc, ir=ir, symbol_positions=symbol_positions, stats=stats)
+        _write_nets(doc=doc, ir=ir, pin_endpoints=pin_endpoints, stats=stats)
 
         # Post-mutation AST invariants: a non-empty IR must produce symbols in
         # the managed sheet. Check the live AST, not the stats counters.
@@ -352,8 +353,27 @@ def _write_symbols(
     symbol_index: SymbolIndex,
     project_name: str,
     stats: dict[str, int],
-) -> tuple[dict[str, tuple[float, float]], set[str]]:
+) -> tuple[
+    dict[str, tuple[float, float]],
+    dict[tuple[str, str], tuple[float, float, float]],
+    set[str],
+]:
+    """Place all symbols from *ir* into *doc*.
+
+    Returns a triple of:
+    * ``symbol_positions``  — ``{ref: (x, y)}`` placed-symbol origins.
+    * ``pin_endpoints``     — ``{(ref, pin_num): (x, y, angle)}`` actual
+      pin connection-point coordinates in schematic space, derived from the
+      library symbol’s ``(pin ... (at x y angle) ...)`` data translated by
+      the symbol placement position.  *angle* is the KiCad pin direction
+      (0=right, 90=down, 180=left, 270=up) pointing **from the endpoint
+      toward the symbol body** — wire stubs extend in the opposite direction.
+    * ``symbol_defs_missing`` — set of symbol ids whose library def was
+      not found (embedded as best-effort empty stubs).
+    """
     symbol_positions: dict[str, tuple[float, float]] = {}
+    # (ref, pin_number) -> (schematic_x, schematic_y, pin_angle)
+    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
     symbol_defs_missing: set[str] = set()
 
     for index, component in enumerate(sorted(ir.components, key=lambda c: c.ref)):
@@ -377,9 +397,21 @@ def _write_symbols(
             project_name,
         )
         symbol_positions[component.ref] = (x, y)
+
+        # Compute pin endpoint positions in schematic space.
+        # Pin (at px py angle) in library space translates to (x+px, y+py)
+        # in schematic space when the symbol is placed at (x, y) at angle=0.
+        lib_name, sym_name = component.symbol.split(":", 1)
+        for directory in symbol_index.directories:
+            pin_at = read_lib_symbol_pin_at(lib_name, sym_name, symbols_dir=directory)
+            if pin_at:
+                for pin_num, (px, py, pa) in pin_at.items():
+                    pin_endpoints[(component.ref, pin_num)] = (x + px, y + py, pa)
+                break  # use first directory that has the symbol
+
         stats["symbols"] += 1
 
-    return symbol_positions, symbol_defs_missing
+    return symbol_positions, pin_endpoints, symbol_defs_missing
 
 
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:
@@ -397,18 +429,47 @@ def _write_nets(
     *,
     doc: SchematicDoc,
     ir: CircuitIR,
-    symbol_positions: dict[str, tuple[float, float]],
+    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
     stats: dict[str, int],
 ) -> None:
-    marker_y = -1500.0
+    """Write net labels wired to the actual pin connection-point positions.
+
+    For each pin reference in each net a short wire stub is emitted starting
+    exactly at the pin endpoint (so KiCad recognises the electrical
+    connection), extending 5.08 mm outward (away from the symbol body).  A
+    net label with the net name is placed at the far end of the stub.
+
+    If the pin endpoint is unknown (e.g. the library symbol could not be
+    resolved — caught earlier by ``validate_ir_symbols``) the wire coords
+    fall back to a floating off-canvas position so the schematic at least
+    records the binding metadata.
+    """
+    WIRE_EXTEND_MM = 5.08  # one standard 200-mil grid unit
+    fallback_y = -1500.0  # off-canvas fallback — should never be reached
+    marker_idx = 0
+
     for net in sorted(ir.nets, key=lambda n: n.name):
-        for pin_index, pin_ref in enumerate(sorted(net.pins, key=lambda p: (p.ref, p.pin))):
-            x0, y0 = symbol_positions[pin_ref.ref]
-            offset = 2.54 * (pin_index + 1)
-            x1, y1 = (x0 + 5.08, y0 + offset)
-            x2, y2 = (x1 + 7.62, y1)
-            doc.add_wire(x1, y1, x2, y2, _new_uuid())
-            doc.add_label(net.name, x2, y2, _new_uuid())
+        for pin_ref in sorted(net.pins, key=lambda p: (p.ref, p.pin)):
+            key = (pin_ref.ref, pin_ref.pin)
+            if key in pin_endpoints:
+                wx, wy, wa = pin_endpoints[key]
+                # outward direction: opposite of pin angle (which points
+                # from endpoint toward the symbol body).
+                angle_rad = math.radians(wa)
+                ex = wx - math.cos(angle_rad) * WIRE_EXTEND_MM
+                ey = wy - math.sin(angle_rad) * WIRE_EXTEND_MM
+                # Label angle = outward direction so the stub and label align.
+                label_angle = int((wa + 180) % 360)
+            else:
+                # Fallback: floating off-canvas stub (should not occur after
+                # validate_ir_symbols has passed).
+                wx, wy = -1200.0, fallback_y
+                ex, ey = wx + WIRE_EXTEND_MM, wy
+                label_angle = 0
+                fallback_y -= 10.0
+
+            doc.add_wire(wx, wy, ex, ey, _new_uuid())
+            doc.add_label(net.name, ex, ey, _new_uuid(), angle=label_angle)
             binding_marker = "OpenClaw:bind=" + json.dumps(
                 {
                     "ref": pin_ref.ref,
@@ -421,10 +482,10 @@ def _write_nets(
             doc.add_text(
                 binding_marker,
                 -1200.0,
-                marker_y,
+                -1500.0 - 10.0 * marker_idx,
                 hidden=True,
             )
-            marker_y -= 10.0
+            marker_idx += 1
             stats["wires"] += 1
             stats["labels"] += 1
             stats["binding_markers"] += 1

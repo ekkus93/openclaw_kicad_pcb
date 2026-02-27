@@ -120,29 +120,59 @@ preview. This needs investigation before a fix can be scoped.
 
 ### Investigation tasks
 
-- [ ] **P1-1** Run `apply-netlist` on a minimal 2-component, 1-net test circuit
-  - Use a simple `Device:R` and `Device:C` connected on one net.
-  - Inspect the resulting `OpenClaw_Managed.kicad_sch` in a text editor:
-    - Are component symbols present (`add_symbol` nodes)?
-    - Are there any `(wire ...)` nodes?
-    - Are there any `(net_label ...)` or `(label ...)` nodes visible to KiCad?
-  - Open the file in KiCad and see what it renders.
+- [x] **P1-1** Run `apply-netlist` on a minimal 2-component, 1-net test circuit
+  - Ran Python-based investigation with a 2-resistor (R1, R2) series circuit
+    using `TestLib:R` from the fixture library.
+  - Component symbols ARE present and correctly embedded in `lib_symbols`.
+  - `(wire ...)` and `(label ...)` nodes ARE present — the TODO's claim that
+    only hidden text markers were written was describing an earlier code state.
+  - **Root cause identified**: wires start at `(sym_x + 5.08, sym_y + 2.54*idx)`
+    — a hardcoded offset that is only a coincidence for one pin of one symbol.
+    For `TestLib:R` at (50.80, 76.20), pin 1 should start at (50.80, 76.20)
+    and pin 2 at (55.88, 76.20); the old code placed them at
+    (55.88, 78.74) and (55.88, 81.28) respectively — wrong for all cases.
 
-- [ ] **P1-2** Determine the correct KiCad schematic data model for net connections
-  - Read the KiCad schematic format docs / existing `.kicad_sch` examples to
-    determine how nets are correctly expressed: wire segments, net labels, or
-    `(global_label ...)` nodes attached to pin endpoints.
-  - Check whether `doc.add_symbol` writes pin endpoints into the file and
-    whether those endpoints are referenced by wire segments.
+- [x] **P1-2** Determine the correct KiCad schematic data model for net connections
+  - KiCad requires wires to start **exactly** at the pin connection endpoint
+    for DRC to recognise an electrical connection.
+  - Each `(pin ... (at X Y angle) ...)` in a `.kicad_sym` file specifies the
+    endpoint in library-local coordinates; `angle` points **from** the endpoint
+    **toward** the symbol body.  Wire stubs should extend in the opposite
+    direction (angle + 180°).
+  - Using `(wire ...)` + `(label ...)` at the wire far-end is the correct
+    KiCad pattern for associating a net name with a pin; two labels with the
+    same name on different wires are electrically equivalent across the sheet.
+  - `doc.add_symbol` already writes `(pin N (uuid ...))` children correctly;
+    no change needed there.
 
-- [ ] **P1-3** Based on investigation output, fix `_write_nets` (or equivalent)
-  - Replace hidden-text binding markers with real KiCad wiring constructs
-    that connect to the placed component pin endpoints.
-  - Scope and implementation details depend on P1-1 and P1-2 findings.
+- [x] **P1-3** Based on investigation output, fix `_write_nets` (or equivalent)
+  - Added `_collect_pin_at(sym_node)` helper in `sch_doc.py` — walks a symbol
+    AST and returns `{pin_num: (x, y, angle)}` for all pins.
+  - Added `read_lib_symbol_pin_at(lib_name, sym_name, *, symbols_dir)` in
+    `sch_doc.py` — follows `(extends ...)` chains (base-first); returns
+    `{pin_num: (x, y, angle)}` in library-local coordinates.
+  - Updated `make_label_node` and `SchematicDoc.add_label` to accept an
+    `angle: int = 0` parameter so labels are oriented to match the wire
+    direction.
+  - Modified `_write_symbols` in `netlist.py` to also compute and return
+    `pin_endpoints: dict[tuple[str,str], tuple[float,float,float]]` — actual
+    pin connection coordinates in schematic space (library coords translated
+    by symbol placement position).
+  - Rewrote `_write_nets` to:
+    - Start each wire from `pin_endpoints[(ref, pin)]` (exact endpoint).
+    - Extend the wire 5.08 mm outward (direction = pin_angle + 180°).
+    - Place the net label at the wire's far end with matching label angle.
+    - Graceful off-canvas fallback if a pin endpoint is missing (should not
+      happen after `validate_ir_symbols` passes).
 
-- [ ] **P1-4** Add or update integration test for `apply-netlist` + `preview-schematic`
-  - A test that verifies the SVG output is non-empty (has visible symbol
-    content) after applying a minimal Circuit IR.
+- [x] **P1-4** Add or update integration test for `apply-netlist` + `preview-schematic`
+  - `test_wires_connect_at_pin_endpoints` added to
+    `tests/unit/test_netlist_commands.py`.
+  - Uses a 2-resistor series circuit with `TestLib:R`; calls
+    `read_lib_symbol_pin_at` to get the ground-truth pin positions; extracts
+    all wire start points from the managed schematic AST; asserts every
+    expected pin endpoint has a wire starting there.
+  - No `kicad-cli` required — the test validates the `.kicad_sch` AST directly.
 
 ---
 
