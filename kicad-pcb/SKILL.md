@@ -58,7 +58,7 @@ kicad-cli --version
 ### Python Dependencies
 
 ```bash
-python3 -m pip install --user cairosvg pillow  # optional — enables PNG schematic preview
+python3 -m pip install cairosvg pillow  # optional — enables PNG schematic preview
 ```
 
 ## Installation
