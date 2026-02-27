@@ -27,6 +27,7 @@ from __future__ import annotations
 import contextlib
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from .errors import ParseError
@@ -41,6 +42,23 @@ from .sexpr.utils import find_first, replace_section, walk
 # ``symbols_dir`` parameter on :func:`read_lib_symbol_def` /
 # :func:`read_lib_symbol_pins` to point at a custom location.
 _DEFAULT_SYMBOLS_DIR: Path = Path("/usr/share/kicad/symbols")
+
+
+@lru_cache(maxsize=64)
+def _parse_lib_file(path: Path) -> ListNode:
+    """Parse a ``.kicad_sym`` library file, caching the result for the lifetime
+    of the process.
+
+    KiCad system symbol libraries can exceed 94 k lines
+    (``Connector.kicad_sym``).  Without caching, every symbol look-up in the
+    same library re-parses the entire file, causing the tool to hang.
+
+    Only ``.kicad_sym`` files are passed here; schematic (``.kicad_sch``) files
+    are always read fresh via :func:`parse_file` so in-process edits and test
+    round-trips are never shadowed by a stale cache entry.
+    """
+    return parse_file(path)
+
 
 __all__ = [
     "SchematicDoc",
@@ -383,7 +401,7 @@ def read_lib_symbol_def(
     if not lib_file.exists():
         return None
     try:
-        lib_root = parse_file(lib_file)
+        lib_root = _parse_lib_file(lib_file)
     except (ParseError, OSError):
         return None
 
@@ -439,7 +457,7 @@ def read_lib_symbol_def_chain(
     if not lib_file.exists():
         return []
     try:
-        lib_root = parse_file(lib_file)
+        lib_root = _parse_lib_file(lib_file)
     except (ParseError, OSError):
         return []
 
@@ -514,7 +532,7 @@ def read_lib_symbol_pins(
     if not lib_file.exists():
         return []
     try:
-        lib_root = parse_file(lib_file)
+        lib_root = _parse_lib_file(lib_file)
     except (ParseError, OSError):
         return []
 
@@ -579,7 +597,7 @@ def read_lib_symbol_pin_at(
     if not lib_file.exists():
         return {}
     try:
-        lib_root = parse_file(lib_file)
+        lib_root = _parse_lib_file(lib_file)
     except (ParseError, OSError):
         return {}
 
