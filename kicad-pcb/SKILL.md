@@ -202,6 +202,15 @@ Symbol names differ between KiCad versions (e.g. `Device:CP` in KiCad 8 became
 {baseDir}/scripts/kicad_pcb.py search-symbols "audio jack" --symbols-dir /usr/share/kicad/symbols
 ```
 
+> **Speed tip:** Symbol search parses `.kicad_sym` files on first use and
+> caches results in `~/.openclaw/kicad-pcb/symbol_index.db`. The very first
+> query may take a few seconds; all subsequent queries are near-instant. To
+> pre-populate the cache after installing or upgrading KiCad, run:
+> ```bash
+> {baseDir}/scripts/kicad_pcb.py build-symbol-index
+> # (use --symbols-dir /usr/share/kicad/symbols to target a specific dir)
+> ```
+
 The output lists `Lib:SymbolName  (N pins)  — description`.  Copy the
 `Lib:SymbolName` exactly into your Circuit IR JSON `"symbol"` field.
 
@@ -229,6 +238,7 @@ netlist with a `SYMBOL_NOT_FOUND` or pin-validation error.
 | Command | Description |
 |---------|-------------|
 | `search-symbols <keywords>` | **Search installed libraries for symbol IDs** (use before writing IR JSON) |
+| `build-symbol-index [--symbols-dir DIR]` | Pre-populate symbol search cache (run once after installing KiCad) |
 | `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |

@@ -30,7 +30,7 @@ from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cm
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
-from .commands.search import cmd_search_symbols
+from .commands.search import cmd_build_symbol_index, cmd_search_symbols
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
 from .formatting import format_result, format_result_json
@@ -154,6 +154,21 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Maximum number of results (default: 20)",
     )
     p_search.set_defaults(func=cmd_search_symbols)
+
+    # build-symbol-index
+    p_build_idx = subparsers.add_parser(
+        "build-symbol-index",
+        help="Pre-populate the symbol search cache for faster search-symbols queries",
+        description=(
+            "Scan all .kicad_sym files in the resolved symbol directories and store "
+            "parsed symbol metadata in a local SQLite cache. "
+            "Run this once after installing KiCad to make search-symbols near-instant. "
+            "The cache is stored in ~/.openclaw/kicad-pcb/symbol_index.db (or "
+            "$KICAD_PCB_CACHE_DIR/symbol_index.db)."
+        ),
+    )
+    p_build_idx.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_build_idx.set_defaults(func=cmd_build_symbol_index)
 
     # compile-netlist (alias for new-from-netlist)
     p_compile = subparsers.add_parser(
