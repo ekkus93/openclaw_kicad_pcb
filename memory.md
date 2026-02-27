@@ -1,6 +1,16 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T01:00:00Z_
+_Last updated: 2026-03-02T02:00:00Z_
+
+---
+
+## 2026-03-02T02:00:00Z - CC: Cross-cutting wrap-up complete (a6de62b)
+- **CC-1 SKILL.md updates**:
+  - Added "Extends-chain symbols" callout in Symbol Discovery section: explains fully-resolved pin counts + `debug-symbol` usage example.
+  - Added `debug-symbol <Lib:Name> [--symbols-dir DIR]` row to the Circuit IR Pipeline command table.
+  - Updated Pin Name Reference footnote to cite all three error codes (`SYMBOL_NOT_FOUND`, `SYMBOL_HAS_NO_PINS`, `PIN_INVALID`) and point to `debug-symbol`.
+- **CC-2/3/4**: 1114 tests pass; ruff clean; mypy clean on 5 touched source files.
+- **CODE_REVIEW4 is now fully complete** — all P0-A, P0-B, P1, P2, and CC tasks marked `[x]`.
 
 ---
 
