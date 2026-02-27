@@ -1,6 +1,16 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T02:00:00Z_
+_Last updated: 2026-03-03T00:00:00Z_
+
+---
+
+## 2026-03-03T00:00:00Z - cairosvg + pillow installed in .venv
+- **Problem reported**: `preview-schematic` SVG → PNG conversion failing because `cairosvg` not installed.
+- **Environment confirmed**: Gateway `python3` = `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2); that `.venv` is the correct install target (shell has `.venv` active).
+- **Fix**: Ran `.venv/bin/pip install cairosvg pillow` (no `--user` flag — packages go into the venv directly).
+- **Versions installed**: `cairosvg 2.8.2`, `pillow 12.1.1` (+ transitive deps: cairocffi, cffi, cssselect2, defusedxml, tinycss2, webencodings, pycparser).
+- **Verified**: `.venv/bin/python3 -c "import cairosvg, PIL"` imports cleanly.
+- **No code changes** needed — purely a missing-package issue.
 
 ---
 
