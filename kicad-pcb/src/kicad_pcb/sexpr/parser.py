@@ -22,57 +22,95 @@ from .nodes import AtomNode, ListNode, Node, Position, StringNode
 from .tokenizer import Token, tokenize
 
 # ---------------------------------------------------------------------------
-# Internal recursive parser
+# Iterative parser (avoids Python's ~1 000-frame recursion limit on large
+# KiCad library files such as Device.kicad_sym / Connector.kicad_sym which
+# can exceed 90 000 lines of deeply-nested s-expressions).
 # ---------------------------------------------------------------------------
 
 
-def _parse_one(tokens: list[Token], idx: int) -> tuple[Node, int]:
-    """Parse a single node starting at ``tokens[idx]``.
+def _parse_iterative(tokens: list[Token]) -> ListNode:  # noqa: PLR0912 — iterative dispatch over token kinds; branches count is fixed by the grammar
+    """Parse a pre-filtered token list into a single root :class:`ListNode`.
 
-    Returns ``(node, next_idx)`` where *next_idx* is the index of the first
-    token that was *not* consumed.
+    Uses an explicit stack instead of call-stack recursion so that arbitrarily
+    deep KiCad s-expression files parse without hitting Python's recursion
+    limit.
 
-    Raises :class:`ParseError` on malformed input.
+    *tokens* must have ``comment`` tokens already removed.  The function
+    expects the first token to be ``lparen`` (caller is responsible for that
+    check) and raises :class:`SExprParseError` on any structural error.
     """
-    if idx >= len(tokens):
-        raise SExprParseError("unexpected end of input while parsing")
+    # stack entries: (list_position, child_items_so_far)
+    stack: list[tuple[Position, list[Node]]] = []
+    root: ListNode | None = None
 
-    tok = tokens[idx]
+    for i, tok in enumerate(tokens):
+        if tok.kind == "lparen":
+            stack.append((Position(tok.line, tok.col), []))
 
-    if tok.kind == "rparen":
+        elif tok.kind == "rparen":
+            if not stack:
+                raise SExprParseError(
+                    f"{tok.line}:{tok.col}: unexpected ')'",
+                    line=tok.line,
+                    col=tok.col,
+                )
+            pos, items = stack.pop()
+            node: ListNode = ListNode(tuple(items), pos)
+            if stack:
+                stack[-1][1].append(node)
+            else:
+                # Top-level list closed — check for trailing tokens.
+                remaining = tokens[i + 1 :]
+                if remaining:
+                    t = remaining[0]
+                    raise SExprParseError(
+                        f"{t.line}:{t.col}: unexpected content after "
+                        f"top-level expression: {t.value!r}",
+                        line=t.line,
+                        col=t.col,
+                    )
+                root = node
+                break
+
+        elif tok.kind == "atom":
+            leaf: Node = AtomNode(tok.value, Position(tok.line, tok.col), lexeme=tok.value)
+            if not stack:
+                raise SExprParseError(
+                    f"{tok.line}:{tok.col}: unexpected atom at top level: {tok.value!r}",
+                    line=tok.line,
+                    col=tok.col,
+                )
+            stack[-1][1].append(leaf)
+
+        elif tok.kind == "string":
+            str_leaf: Node = StringNode(tok.value, Position(tok.line, tok.col))
+            if not stack:
+                raise SExprParseError(
+                    f"{tok.line}:{tok.col}: unexpected string at top level: {tok.value!r}",
+                    line=tok.line,
+                    col=tok.col,
+                )
+            stack[-1][1].append(str_leaf)
+
+        # "comment" tokens must be pre-filtered — guard against bugs.
+        # pragma: no cover — tokenizer never emits unknown kinds
+        else:
+            raise ParseError(
+                f"{tok.line}:{tok.col}: unexpected token kind {tok.kind!r}"
+            )  # pragma: no cover
+
+    if stack:
+        pos = stack[0][0]
         raise SExprParseError(
-            f"{tok.line}:{tok.col}: unexpected ')'",
-            line=tok.line,
-            col=tok.col,
+            f"{pos.line}:{pos.col}: unmatched '(' \u2014 missing ')'",
+            line=pos.line,
+            col=pos.col,
         )
 
-    if tok.kind == "atom":
-        return AtomNode(tok.value, Position(tok.line, tok.col), lexeme=tok.value), idx + 1
+    if root is None:  # pragma: no cover — caught by empty-input check in parse()
+        raise SExprParseError("internal error: no root node produced")
 
-    if tok.kind == "string":
-        return StringNode(tok.value, Position(tok.line, tok.col)), idx + 1
-
-    if tok.kind == "lparen":
-        list_pos = Position(tok.line, tok.col)
-        idx += 1  # consume '('
-        items: list[Node] = []
-        while True:
-            if idx >= len(tokens):
-                raise SExprParseError(
-                    f"{list_pos.line}:{list_pos.col}: unmatched '(' \u2014 missing ')'",
-                    line=list_pos.line,
-                    col=list_pos.col,
-                )
-            if tokens[idx].kind == "rparen":
-                idx += 1  # consume ')'
-                return ListNode(tuple(items), list_pos), idx
-            node, idx = _parse_one(tokens, idx)
-            items.append(node)
-
-    # "comment" tokens must be pre-filtered; guard against programming errors.
-    raise ParseError(  # pragma: no cover
-        f"{tok.line}:{tok.col}: unexpected token kind {tok.kind!r}"
-    )
+    return root
 
 
 # ---------------------------------------------------------------------------
@@ -105,22 +143,7 @@ def parse(src: str) -> ListNode:
             col=tokens[0].col,
         )
 
-    root, next_idx = _parse_one(tokens, 0)
-
-    # Any remaining meaningful tokens indicate unexpected trailing content.
-    trailing = tokens[next_idx:]
-    if trailing:
-        t = trailing[0]
-        raise SExprParseError(
-            f"{t.line}:{t.col}: unexpected content after top-level expression: {t.value!r}",
-            line=t.line,
-            col=t.col,
-        )
-
-    if not isinstance(root, ListNode):  # pragma: no cover — always a ListNode here
-        raise ParseError("top-level expression is not a list")
-
-    return root
+    return _parse_iterative(tokens)
 
 
 def parse_file(path: Path) -> ListNode:
