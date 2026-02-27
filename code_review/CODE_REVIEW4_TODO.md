@@ -249,21 +249,32 @@ preview. This needs investigation before a fix can be scoped.
 
 ## Cross-cutting / wrap-up
 
-- [ ] **CC-1** Update `SKILL.md`
-  - Note that `extends`-based symbols (common for op-amp families) now report
-    correct pin counts.
-  - Add `debug-symbol` to the command reference table once P2 is done.
+- [x] **CC-1** Update `SKILL.md`
+  - Added an "Extends-chain symbols" callout in the Symbol Discovery section:
+    explains that `search-symbols` pin counts are always fully resolved (extends
+    chains followed automatically), and shows how to use `debug-symbol` to
+    inspect a symbol's full pin list and inheritance relationship.
+  - Added `debug-symbol <Lib:Name> [--symbols-dir DIR]` row to the
+    "Circuit IR Pipeline" command reference table.
+  - Updated the Pin Name Reference footnote: now lists all three relevant error
+    codes (`SYMBOL_NOT_FOUND`, `SYMBOL_HAS_NO_PINS`, `PIN_INVALID`) and
+    mentions `debug-symbol` as the diagnostic tool when pin counts look wrong.
 
-- [ ] **CC-2** Run full test suite: `pytest tests/unit/`
-  - All existing tests must continue to pass.
+- [x] **CC-2** Run full test suite: `pytest tests/unit/`
+  - 1114 tests passed, 1 deselected (system_libraries skip marker), 0 failed.
+  - `test_patterns.py` excluded (requires system KiCad libraries, slow).
 
-- [ ] **CC-3** Run lint: `ruff check` + `ruff format --check`
+- [x] **CC-3** Run lint: `ruff check` + `ruff format --check`
+  - `ruff check kicad-pcb/src/kicad_pcb/` — All checks passed.
+  - `ruff format --check kicad-pcb/src/kicad_pcb/` — 41 files already formatted.
 
-- [ ] **CC-4** Run mypy on touched files
+- [x] **CC-4** Run mypy on touched files
+  - `mypy` on `commands/search.py`, `results.py`, `formatting.py`, `sch_doc.py`,
+    `commands/netlist.py` — Success: no issues found in 5 source files.
 
-- [ ] **CC-5** Commit and push
-  - Suggested commit messages:
-    - `fix: use read_lib_symbol_pins for extends symbols in search cache (P0-A)`
-    - `fix: add 0-pin preflight guard to apply-netlist (P0-B)`
-    - `fix: write real KiCad wiring in _write_nets (P1)` — after investigation
-    - `feat: add debug-symbol command (P2)`
+- [x] **CC-5** Commit and push
+  - P0-A: `f4b828a` — fix extends pin count in search cache
+  - P0-B: `12d0c69` — distinguish SYMBOL_HAS_NO_PINS from SYMBOL_NOT_FOUND
+  - P1:   `a54026f` — fix wire stubs from actual pin endpoints
+  - P2:   `faef33a` — add debug-symbol command
+  - CC:   committed below — update SKILL.md + mark wrap-up tasks done

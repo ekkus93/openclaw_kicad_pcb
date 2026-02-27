@@ -211,6 +211,19 @@ Symbol names differ between KiCad versions (e.g. `Device:CP` in KiCad 8 became
 > # (use --symbols-dir /usr/share/kicad/symbols to target a specific dir)
 > ```
 
+> **Extends-chain symbols:** Many KiCad library symbols (especially op-amp
+> families such as `Amplifier_Operational:NE5532`) inherit all their pins from
+> a base symbol via `(extends ...)`. The search cache and pin validator both
+> follow these chains automatically, so the pin count shown by `search-symbols`
+> is always the full resolved count. If you suspect a broken chain, use
+> `debug-symbol` to inspect the full pin list and extends relationship:
+> ```bash
+> {baseDir}/scripts/kicad_pcb.py debug-symbol Amplifier_Operational:NE5532
+> # 🔬 debug-symbol: Amplifier_Operational:NE5532
+> #   Extends: Amplifier_Operational:LM2904
+> #   Pins (8): 1  2  3  4  5  6  7  8
+> ```
+
 The output lists `Lib:SymbolName  (N pins)  — description`.  Copy the
 `Lib:SymbolName` exactly into your Circuit IR JSON `"symbol"` field.
 
@@ -230,8 +243,10 @@ Pin names must match the KiCad library exactly. Common footguns:
 | `power:VCC` / `power:GND` | `1` | Single-pin power symbols |
 
 When in doubt, run `search-symbols` — the pin count shown is the authoritative
-count. If your IR uses a pin name not in the library the tool will reject the
-netlist with a `SYMBOL_NOT_FOUND` or pin-validation error.
+count (extends chains are resolved automatically). If your IR uses a pin name
+not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
+`SYMBOL_HAS_NO_PINS` (broken extends chain), or `PIN_INVALID`. Use
+`debug-symbol <Lib:Name>` to inspect the exact pin list before writing IR JSON.
 
 ### Circuit IR Pipeline (preferred for LLM-driven generation)
 
@@ -239,6 +254,7 @@ netlist with a `SYMBOL_NOT_FOUND` or pin-validation error.
 |---------|-------------|
 | `search-symbols <keywords>` | **Search installed libraries for symbol IDs** (use before writing IR JSON) |
 | `build-symbol-index [--symbols-dir DIR]` | Pre-populate symbol search cache (run once after installing KiCad) |
+| `debug-symbol <Lib:Name> [--symbols-dir DIR]` | Show resolved pin list and extends chain for one symbol (use to diagnose pin count issues) |
 | `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
