@@ -30,7 +30,7 @@ from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cm
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
-from .commands.search import cmd_build_symbol_index, cmd_search_symbols
+from .commands.search import cmd_build_symbol_index, cmd_debug_symbol, cmd_search_symbols
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
 from .formatting import format_result, format_result_json
@@ -169,6 +169,24 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     p_build_idx.add_argument("--symbols-dir", help="Optional symbol libraries directory")
     p_build_idx.set_defaults(func=cmd_build_symbol_index)
+
+    # debug-symbol
+    p_debug_sym = subparsers.add_parser(
+        "debug-symbol",
+        help="Show resolved pin list and extends chain for a single symbol",
+        description=(
+            "Display the fully-resolved pin numbers and extends-chain information for a "
+            "single KiCad symbol.  Follows (extends ...) chains so inherited pins are "
+            "shown.  Useful for diagnosing broken extends chains or verifying pin numbers "
+            "before writing Circuit IR JSON."
+        ),
+    )
+    p_debug_sym.add_argument(
+        "symbol",
+        help="Symbol to inspect in 'LibName:SymName' format (e.g. 'Device:R')",
+    )
+    p_debug_sym.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_debug_sym.set_defaults(func=cmd_debug_symbol)
 
     # compile-netlist (alias for new-from-netlist)
     p_compile = subparsers.add_parser(

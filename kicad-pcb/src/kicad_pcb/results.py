@@ -394,3 +394,13 @@ class BuildSymbolIndexResult:
     files_scanned: int
     files_updated: int
     total_indexed_symbols: int
+
+
+@dataclass(frozen=True)
+class DebugSymbolResult:
+    """Result of the ``debug-symbol`` command."""
+
+    symbol_id: str  # "Lib:Name"
+    extends_base: str | None  # "Lib:BaseName" if symbol uses (extends ...), else None
+    pin_numbers: tuple[str, ...]  # resolved pin numbers, including inherited ones
+    pin_count: int

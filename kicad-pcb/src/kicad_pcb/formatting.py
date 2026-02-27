@@ -21,6 +21,7 @@ from .results import (
     AutoPlaceResult,
     AutoRouteResult,
     ConnectResult,
+    DebugSymbolResult,
     DoctorResult,
     DrcResult,
     ErcResult,
@@ -501,7 +502,7 @@ def _fmt_doctor(r: DoctorResult) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# search-symbols
+# search-symbols / debug-symbol
 # ---------------------------------------------------------------------------
 
 
@@ -521,6 +522,20 @@ def _fmt_search_symbols(r: SearchSymbolsResult) -> list[str]:
         lines.append(f"  {m.symbol_id}  ({m.pin_count} pins){desc}")
     lines.append("")
     lines.append('Use these symbol IDs directly in Circuit IR JSON  ("symbol": "Lib:Name").')
+    return lines
+
+
+@_register(DebugSymbolResult)
+def _fmt_debug_symbol(r: DebugSymbolResult) -> list[str]:
+    lines: list[str] = [f"🔬 debug-symbol: {r.symbol_id}"]
+    if r.extends_base:
+        lines.append(f"  Extends: {r.extends_base}")
+    else:
+        lines.append("  Extends: (none — standalone symbol)")
+    pin_str = "  ".join(
+        sorted(r.pin_numbers, key=lambda p: (int(p) if p.isdigit() else float("inf"), p))
+    )
+    lines.append(f"  Pins ({r.pin_count}): {pin_str}")
     return lines
 
 

@@ -60,7 +60,7 @@ from .commands.sch import (
     cmd_add_net,
     cmd_connect,
 )
-from .commands.search import cmd_build_symbol_index, cmd_search_symbols
+from .commands.search import cmd_build_symbol_index, cmd_debug_symbol, cmd_search_symbols
 from .commands.validation import cmd_drc, cmd_erc
 
 # Version compatibility (Phase 8.1)
@@ -160,6 +160,7 @@ from .results import (
     AutoRouteResult,
     BuildSymbolIndexResult,
     ConnectResult,
+    DebugSymbolResult,
     DoctorCheckItem,
     DoctorResult,
     DrcResult,
@@ -334,6 +335,7 @@ __all__ = [
     "cmd_apply_netlist",
     "cmd_info_sch",
     "cmd_new_from_netlist",
+    "cmd_debug_symbol",
     "cmd_search_symbols",
     "cmd_drc",
     "cmd_erc",
@@ -399,6 +401,7 @@ __all__ = [
     "BuildSymbolIndexResult",
     "CachedSymbol",
     "cmd_build_symbol_index",
+    "DebugSymbolResult",
     "SearchSymbolsResult",
     "SymbolCache",
     "SymbolMatch",

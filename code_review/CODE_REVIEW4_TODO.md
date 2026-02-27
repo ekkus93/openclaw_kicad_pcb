@@ -185,7 +185,7 @@ preview. This needs investigation before a fix can be scoped.
 
 ### Tasks
 
-- [ ] **P2-1** Add `DebugSymbolResult` dataclass to `results.py`
+- [x] **P2-1** Add `DebugSymbolResult` dataclass to `results.py`
   ```python
   @dataclass(frozen=True)
   class DebugSymbolResult:
@@ -195,36 +195,55 @@ preview. This needs investigation before a fix can be scoped.
       pin_count: int
   ```
 
-- [ ] **P2-2** Add `cmd_debug_symbol(args) -> DebugSymbolResult` in `commands/search.py`
-  - Parse `args.symbol` as `"lib_name:sym_name"`.
-  - Resolve `symbols_dir` from `args.symbols_dir` or discovery chain.
-  - Call `read_lib_symbol_pins(lib_name, sym_name, symbols_dir=...)` for pin list.
-  - For the `extends_base` field: read the raw symbol block and call
-    `_get_extends_name` (already in `sch_doc.py`) to extract the base name,
-    qualifying it as `lib_name:base_name`.
-  - Return `DebugSymbolResult`.
+- [x] **P2-2** Add `cmd_debug_symbol(args) -> DebugSymbolResult` in `commands/search.py`
+  - Parses `lib_name:sym_name` from `args.symbol`; raises `UserError(USER_ERROR)` if
+    the colon separator is absent.
+  - Resolves `symbols_dir` from `args.symbols_dir` or the full `resolve_symbol_dirs()`
+    chain; raises `UserError(SYMBOL_NOT_FOUND)` if the library file is not found in
+    any directory.
+  - Validates the symbol name exists in the raw block index before attempting pin
+    resolution — distinguishes "library found but symbol absent" from "0-pin + broken
+    extends chain"; both surface as `UserError(SYMBOL_NOT_FOUND)` for the "absent"
+    case.
+  - Calls `read_lib_symbol_pins(lib_name, sym_name, symbols_dir=...)` for the full
+    extends-resolved pin list.
+  - Derives `extends_base` via the existing `_EXTENDS_NAME_RE` regex on the raw
+    symbol block (no re-parse needed); qualifies it as `"lib_name:base_name"`.
+  - Returns `DebugSymbolResult`.
 
-- [ ] **P2-3** Export `DebugSymbolResult` and `cmd_debug_symbol` from `__init__.py`
+- [x] **P2-3** Export `DebugSymbolResult` and `cmd_debug_symbol` from `__init__.py`
+  - Added `DebugSymbolResult` to the `from .results import (...)` block.
+  - Added `cmd_debug_symbol` to the `from .commands.search import ...` line.
+  - Both names added to `__all__`.
 
-- [ ] **P2-4** Add `debug-symbol` subparser to `cli.py`
+- [x] **P2-4** Add `debug-symbol` subparser to `cli.py`
   ```
   kicad_pcb debug-symbol <lib:name> [--symbols-dir DIR]
   ```
-  - Set `func=cmd_debug_symbol`.
+  - Positional argument `symbol` takes `"LibName:SymName"` format.
+  - `--symbols-dir` optional override (same pattern as `search-symbols`).
+  - `set_defaults(func=cmd_debug_symbol)`.
 
-- [ ] **P2-5** Add human-readable formatting for `DebugSymbolResult` in `formatting.py`
-  - When `--json` is not set, print something like:
+- [x] **P2-5** Add human-readable formatting for `DebugSymbolResult` in `formatting.py`
+  - `DebugSymbolResult` added to the `from .results import (...)` block.
+  - `@_register(DebugSymbolResult)` formatter added in the
+    `search-symbols / debug-symbol` section:
     ```
-    Symbol:  Amplifier_Operational:NE5532
-    Extends: Amplifier_Operational:LM2904
-    Pins (8): 1  2  3  4  5  6  7  8
+    🔬 debug-symbol: Amplifier_Operational:NE5532
+      Extends: Amplifier_Operational:LM2904
+      Pins (8): 1  2  3  4  5  6  7  8
     ```
+    Pin numbers are sorted numerically; standalone symbols show "(none — standalone symbol)".
 
-- [ ] **P2-6** Unit tests for `cmd_debug_symbol`
-  - `test_debug_symbol_standalone` — a symbol with its own pins, no extends.
-  - `test_debug_symbol_extends` — an `extends` symbol; assert `extends_base`
-    is populated and `pin_count` equals the parent's pin count.
-  - `test_debug_symbol_not_found` — non-existent symbol; assert graceful error.
+- [x] **P2-6** Unit tests for `cmd_debug_symbol`
+  - `test_debug_symbol_standalone` — `TestLib:R` has 2 own pins, no extends; asserts
+    `extends_base is None`, `pin_count == 2`, `pin_numbers == {"1", "2"}`.
+  - `test_debug_symbol_extends` — `TestLib:DerivedOpAmp` extends `OpAmp`; asserts
+    `extends_base == "TestLib:OpAmp"`, `pin_count == 4`,
+    `pin_numbers == {"1", "2", "3", "6"}`.
+  - `test_debug_symbol_not_found` — `TestLib:NoSuchSymbol`; asserts `UserError` with
+    `code == ErrorCode.SYMBOL_NOT_FOUND`.
+  - All 3 tests pass; full unit suite (1114 tests) unaffected.
 
 ---
 
