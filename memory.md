@@ -1,6 +1,17 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T13:00:00Z_
+_Last updated: 2026-02-28T14:00:00Z_
+
+---
+
+## 2026-02-28T14:00:00Z - 5th wrong format: SPICE/EDA logical-netlist style
+- **Format variant**: `{"meta": {...}, "nets": [{"name": ..., "nodes": [...]}], "components": [{"type": ...}]}`
+- **Specific failures**: `"meta"` instead of `"version": "1"`, `"nodes"` instead of `"pins"`, pin
+  numbers as integers not strings, `"+"/"−"` pin names for C_Polarized (should be `"1"/"2"`),
+  `"TIP"/"SLEEVE"` for AudioJack3 (should be `"T"/"S"`), `"type"` field on components, missing `"symbol"`.
+- **Added to SKILL.md**: 5th ❌ WRONG format example showing annotated SPICE/EDA-style JSON.
+- **File fixed**: `code_review/ne5532_headphone_amp_netlist.json` overwritten with valid Circuit IR
+  (18 components, 12 nets, footprints preserved). Tool confirmed: Symbols added: 18, Nets applied: 12.
 
 ---
 
