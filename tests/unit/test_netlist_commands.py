@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
     cmd_info_sch,
@@ -13,6 +14,7 @@ from kicad_pcb.commands.netlist import (
     resolve_schematic_paths,
 )
 from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.layout import compute_signal_flow_layout
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
@@ -955,18 +957,15 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
             except (ValueError, AttributeError):
                 pass
 
-    # Compute expected pin endpoints in schematic space.
-    # Components are sorted by ref: R1 → index 0, R2 → index 1.
-    # _symbol_position(0) = (50.80, 76.20); _symbol_position(1) = (81.28, 76.20)
+    # Compute expected pin endpoints in schematic space using the same
+    # signal-flow layout algorithm the pipeline uses.
     pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
     assert pin_at, "TestLib:R pin positions not found in fixture library"
 
+    ir = CircuitIR.model_validate(ir_data)
+    layout = compute_signal_flow_layout(ir)
     expected_endpoints: dict[tuple[str, str], tuple[float, float]] = {}
-    for ref, sym_idx in [("R1", 0), ("R2", 1)]:
-        col = sym_idx % 6
-        row = sym_idx // 6
-        sx = round(50.8 + col * 30.48, 2)
-        sy = round(76.2 + row * 30.48, 2)
+    for ref, (sx, sy) in layout.items():
         for pin_num, (px, py, _pa) in pin_at.items():
             expected_endpoints[(ref, pin_num)] = (round(sx + px, 2), round(sy + py, 2))
 
