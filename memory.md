@@ -4,13 +4,13 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-02-28T00:00:00Z - Confirmed: Python environment already exists
+## 2026-02-28T00:29:53Z - Confirmed: Python environment already exists
 - **Note**: Searched memory.md and confirmed the Python venv entry from `2026-02-27T00:00:00Z`.
 - **Venv path**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2)
 - **Key packages installed**: `cairosvg 2.8.2`, `pillow 12.1.1`, plus all transitive deps.
 - **Reminder for agent**: Always invoke the skill via `.venv/bin/python3` (NOT system `python3` or conda base `python3`). The conda base `python3` is `/home/ubo/miniforge3/bin/python3` and does NOT have pydantic or the skill's dependencies. Using the wrong interpreter is why the gateway bot says it "can't" generate schematics — it errors out silently on import.
 
-## 2026-03-03T00:00:00Z - Perf: Fix infinite hang on large KiCad symbol libraries (db4e03d)
+## 2026-02-27T18:32:10Z - Perf: Fix infinite hang on large KiCad symbol libraries (db4e03d)
 - **Problem**: `new-from-netlist` against real KiCad system libraries (`/usr/share/kicad/symbols`) hung indefinitely. Symptom reported as "agent refuses to generate schematics / tells user to run command manually."
 - **Root cause 1 (recursion)**: `_parse_iterative` was actually still the old recursive `_parse_one`. Python's ~1000-frame call stack was silently exhausted on `Connector.kicad_sym` (94k lines) / `Device.kicad_sym` (75k lines).
 - **Root cause 2 (performance)**: Even after making the parser iterative, the command still hung because `read_lib_symbol_def_chain`, `read_lib_symbol_def`, `read_lib_symbol_pins`, and `read_lib_symbol_pin_at` each called `parse_file(lib_file)` independently, re-parsing the same 94k-line library file 10+ times per run.
@@ -21,7 +21,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 - **Result**: `new-from-netlist` with real `/usr/share/kicad/symbols` completes in **1.6 seconds** (previously infinite hang). 18 symbols placed, 14 nets, hierarchy paths properly qualified. All 1117 tests pass.
 - **Commit**: `db4e03d`
 
-## 2026-02-27T00:00:00Z - P3: Fix hierarchy paths in managed schematic (8653da6)
+## 2026-02-27T17:19:01Z - P3: Fix hierarchy paths in managed schematic (8653da6)
 - **Problem**: KiCad showed "hierarchy errors" after opening generated projects; reference designator annotations were broken.
 - **Root cause**: `OpenClaw_Managed.kicad_sch` had `(sheet_instances (path "/" ...))` and all symbol instances had `(instances (project ... (path "/" ...)))`. KiCad requires these paths to use `"/{parent_sheet_uuid}/"` to locate the sub-sheet in the hierarchy.
 - **Fix**:
@@ -30,7 +30,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 - **Tests**: 3 new tests (unit + integration); 1117 total pass.
 - **Note**: The `code_review/NE5532_Headphone_Amp.kicad_sch` is a stale test artifact from Feb 26 — it shows pre-fix breakage (unqualified extends, missing base symbol, only 2 pins). Current code generates correct schematics; the OpenClaw agent's complaint was about files from a pre-fix session.
 
-## 2026-02-27T00:00:00Z - cairosvg + pillow installed in .venv
+## 2026-02-27T16:58:53Z - cairosvg + pillow installed in .venv
 - **Problem reported**: `preview-schematic` SVG → PNG conversion failing because `cairosvg` not installed.
 - **Environment confirmed**: Gateway `python3` = `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2); that `.venv` is the correct install target (shell has `.venv` active).
 - **Fix**: Ran `.venv/bin/pip install cairosvg pillow` (no `--user` flag — packages go into the venv directly).
@@ -40,7 +40,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-03-02T02:00:00Z - CC: Cross-cutting wrap-up complete (a6de62b)
+## 2026-02-27T15:45:38Z - CC: Cross-cutting wrap-up complete (a6de62b)
 - **CC-1 SKILL.md updates**:
   - Added "Extends-chain symbols" callout in Symbol Discovery section: explains fully-resolved pin counts + `debug-symbol` usage example.
   - Added `debug-symbol <Lib:Name> [--symbols-dir DIR]` row to the Circuit IR Pipeline command table.
@@ -50,7 +50,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-03-02T01:00:00Z - P2: Add debug-symbol command (faef33a)
+## 2026-02-27T15:27:30Z - P2: Add debug-symbol command (faef33a)
 - **New command**: `kicad_pcb debug-symbol <LibName:SymName> [--symbols-dir DIR]`
 - **Purpose**: Show fully-resolved pin list and extends-chain info for a single symbol.  Useful for diagnosing broken extends chains or verifying pin numbers before writing Circuit IR JSON.
 - **`DebugSymbolResult`** fields: `symbol_id`, `extends_base` (qualified `"Lib:Base"` or `None`), `pin_numbers` (tuple), `pin_count`.
@@ -62,7 +62,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-03-02T00:00:00Z - P1: Fix wire stubs to connect at actual pin endpoints (a54026f)
+## 2026-02-27T15:01:45Z - P1: Fix wire stubs to connect at actual pin endpoints (a54026f)
 - **Problem solved**: `cmd_new_from_netlist` / `cmd_apply_netlist` produced a blank SVG because `_write_nets` placed wires from `(sym_x+5.08, sym_y+2.54*pin_index)` — hardcoded offsets unrelated to actual pin endpoint positions. No wires were electrically connected to any pin.
 - **Root cause**: KiCad requires a wire to start *exactly* at the pin connection endpoint (the `(at X Y angle)` coord in the library `(pin ...)` node). The old code used symbol-origin-relative guesses that never matched.
 - **KiCad pin convention** (important): `(pin ... (at X Y angle))` — `(X,Y)` is the *endpoint* in library space; `angle` points FROM the endpoint TOWARD the body. Wire stubs extend in the *opposite* direction (`angle+180°`). Labels placed at the stub far-end with `label_angle = (angle+180)%360`.
@@ -77,7 +77,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-03-01T00:00:00Z - Add search-symbols command (2c77a30)
+## 2026-02-26T18:46:05Z - Add search-symbols command (2c77a30)
 - **Problem solved**: AI was guessing wrong KiCad symbol names (e.g. KiCad-8 `Device:CP` doesn't exist in KiCad 9; correct name is `Device:C_Polarized`). Solution: give the AI a pre-query tool to discover valid symbol IDs before writing Circuit IR JSON.
 - **New command**: `search-symbols <query> [--symbols-dir DIR] [--limit N]`
   - Two-phase performance strategy: `grep -ril -E "<kw1>|<kw2>"` pre-screens which library files to read, then a paren-depth block extractor pulls individual symbol entries without full s-expression parse. ~7.6s against all KiCad 9 system libraries.
@@ -88,11 +88,11 @@ _Last updated: 2026-02-28T00:00:00Z_
 - **SKILL.md** updated: "Symbol Discovery (ALWAYS do this before writing Circuit IR JSON)" section added with examples for capacitors, potentiometers, and op-amps.
 - Commit: `2c77a30` on master, pushed to GitHub.
 
-**Pending follow-up**: ~~Fix `ne5532_headphone_amp.json`~~ — DONE (see 2026-03-01 entry below)
+**Pending follow-up**: ~~Fix `ne5532_headphone_amp.json`~~ — DONE (see 2026-02-26T19:23:32Z entry below)
 
 ---
 
-## 2026-03-01T19:10:00Z - Fix ne5532_headphone_amp.json (KiCad 8→9 renames + add U2)
+## 2026-02-26T19:23:32Z - Fix ne5532_headphone_amp.json (KiCad 8→9 renames + add U2)
 - **Fixes applied to `/home/ubo/.openclaw/workspace/ne5532_headphone_amp.json`:**
   1. `Device:CP` → `Device:C_Polarized` (×6: C3, C4, C6L, C7L, C6R, C7R)
   2. `Device:R_POT` → `Device:R_Potentiometer` (×2: RV1L, RV1R)
@@ -108,7 +108,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-02-27T00:00:00Z - Circuit fidelity tests + NE5532 system-lib fidelity test (e802455)
+## 2026-02-26T17:54:49Z - Circuit fidelity tests + NE5532 system-lib fidelity test (e802455)
 - **Added `_check_circuit_fidelity(ir_data, managed_doc)` helper**: reusable assertion function that verifies (1) every component ref in the IR is placed as a schematic instance, and (2) every (ref, pin) → net_name triple in the IR has its correct `OpenClaw:bind=` marker in the generated KiCad schematic.
 - **Added `test_circuit_fidelity_multi_component_testlib`**: 3-component (OpAmp + 2×R), 4-net circuit against TestLib — CI-safe, no system libs required.
 - **Added `test_ne5532_full_circuit_fidelity_with_system_libraries`**: full NE5532 dual op-amp headphone-amp topology (5 components, 8 nets) against real `/usr/share/kicad/symbols/` libraries. Exercises the `(extends ...)` chain end-to-end: `NE5532 → LM2904 → LM2904_0_1/LM2904_1_1` confirming all 8 pins get correct net bindings. Auto-skipped when system libs absent.
@@ -117,7 +117,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-02-26T17:34:13Z - Add pipeline-level tests for extends chain (test_netlist_commands.py)
+## 2026-02-26T17:34:58Z - Add pipeline-level tests for extends chain (test_netlist_commands.py)
 - Gap identified: all pipeline tests in `test_netlist_commands.py` used only flat `TestLib:R`. The full `cmd_new_from_netlist` pipeline had never been run with an `(extends)` symbol.
 - Added two helper functions and four pipeline tests:
   1. `test_extends_symbol_embeds_base_and_derived_in_lib_symbols` — verifies both `TestLib:OpAmp` and `TestLib:DerivedOpAmp` appear in `lib_symbols` of the generated schematic.
@@ -129,7 +129,7 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ---
 
-## 2026-02-26T16:57:28Z - Fix KiCad (extends) inheritance chain in symbol embedding and pin lookup
+## 2026-02-26T16:58:36Z - Fix KiCad (extends) inheritance chain in symbol embedding and pin lookup
 - Root cause: `read_lib_symbol_def` only fetched the single derived symbol node.  Symbols using `(extends "BaseName")` carry no graphics/pins — those live on the base.  Result: blank box in KiCad, only 2 fallback pins.
 - Three bugs fixed:
   1. **Missing base node in lib_symbols**: `read_lib_symbol_def_chain()` now resolves the full ancestor chain and returns nodes base-first for embedding.
@@ -157,10 +157,11 @@ _Last updated: 2026-02-28T00:00:00Z_
 
 ## STANDING RULE — memory.md timestamp discipline
 **ALWAYS use the actual UTC time (to the second) when adding an entry.**
-- For committed work: use `git show --format=%cI <hash>` to get the exact commit timestamp.
+- For committed work: use `git show -s --format=%ai <hash>` to get the exact commit timestamp.
 - For in-session notes (no commit yet): run `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing.
-- NEVER fabricate or round timestamps (e.g. `T00:00:00Z`, `T01:00:00Z`, `T03:25:00Z`).
+- NEVER fabricate or round timestamps (e.g. `T00:00:00Z`, `T01:00:00Z`, `T03:25:00Z`, future dates, or year-2025 dates).
 - The "Last updated" header must also use the real current time from `date -u`.
+- **This rule has been violated repeatedly** (March 2026 dates for February commits, 2025 dates for 2026 commits). Every new entry MUST start with `git show` or `date -u` — never guess or invent a timestamp.
 
 ---
 
@@ -1243,7 +1244,7 @@ mutate_and_validate_sch(path, mutator, dry_run=True, diff_output=sys.stdout)
 ### All CODE_REVIEW2 items now complete:
 - P0.1, P0.2, P1.1, P1.2, P2.1, P2.2, P3.1, P3.2, P3.3, P4.1, P5.1, P5.2 all done
 
-## 2025-07-30 — SQLite symbol cache (commit e8205c8)
+## 2026-02-27T04:28:36Z — SQLite symbol cache (commit e8205c8)
 
 ### Feature: build-symbol-index + SymbolCache
 
@@ -1280,7 +1281,7 @@ kicad_pcb build-symbol-index          # pre-populate (run once after KiCad insta
 kicad_pcb search-symbols "op amp"     # instant after cache is warm
 ```
 
-## 2025-01-30T00:00:00Z - P0-A: Fixed extends-symbol pin count in search cache
+## 2026-02-27T06:57:58Z - P0-A: Fixed extends-symbol pin count in search cache
 
 ### Root Cause
 `_count_pins_in_block` returned 0 for symbols using `(extends "BaseName")`
