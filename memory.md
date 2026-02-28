@@ -1,8 +1,22 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T01:30:00Z_
+_Last updated: 2026-02-28T02:30:00Z_
 
 ---
+
+## 2026-02-28T02:30:00Z - Bot still generating wrong netlists; added WRONG FORMAT anti-patterns (974af21)
+- **Pattern**: Bot keeps inventing netlist formats that fail CircuitIR schema validation.
+  Seen formats so far:
+  - `{"title": ..., "components": [...pins inline...], "nets": {"NET": ["R1-1", ...]}}`
+  - `{"metadata": {"version": 1}, "components": [...type/pins inline...], ...}`
+  Both fail `❌ Circuit IR schema validation failed`. Bot then falls back to hand-writing `.kicad_sch`.
+- **Hand-written .kicad_sch problems**: uses old KiCad 6 version (20211014), generator "OpenAI-GPT",
+  semicolon comments (invalid), wrong symbol IDs (Device:C_Small, Device:R_POT, Connector:AudioJack2_Switch),
+  no wires at all, literally says "wiring should be completed in KiCad".
+- **Fix**: Added `❌ WRONG Circuit IR formats` section to SKILL.md showing all three known bad formats
+  with annotations. Added explicit rule: if schema validation fails, discard netlist and rewrite it;
+  never write .kicad_sch by hand.
+- **Commit**: `974af21` pushed to `master`.
 
 ## 2026-02-28T01:30:00Z - Fix: Circuit IR netlist schema errors + C_Polarized pin names (7a27270)
 - **Root cause of bad schematics**: Bot was generating netlists with a completely wrong schema.
