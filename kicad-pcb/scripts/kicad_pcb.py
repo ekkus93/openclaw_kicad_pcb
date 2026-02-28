@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3
 """Thin entry-point wrapper — logic lives in the kicad_pcb package (kicad-pcb/src/).
 
 When run directly as a script (e.g. ``python kicad_pcb.py new myproject``),

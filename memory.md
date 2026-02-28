@@ -1,8 +1,14 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T00:00:00Z_
+_Last updated: 2026-02-28T00:00:00Z_
 
 ---
+
+## 2026-02-28T00:00:00Z - Confirmed: Python environment already exists
+- **Note**: Searched memory.md and confirmed the Python venv entry from `2026-02-27T00:00:00Z`.
+- **Venv path**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2)
+- **Key packages installed**: `cairosvg 2.8.2`, `pillow 12.1.1`, plus all transitive deps.
+- **Reminder for agent**: Always invoke the skill via `.venv/bin/python3` (NOT system `python3` or conda base `python3`). The conda base `python3` is `/home/ubo/miniforge3/bin/python3` and does NOT have pydantic or the skill's dependencies. Using the wrong interpreter is why the gateway bot says it "can't" generate schematics — it errors out silently on import.
 
 ## 2026-03-03T00:00:00Z - Perf: Fix infinite hang on large KiCad symbol libraries (db4e03d)
 - **Problem**: `new-from-netlist` against real KiCad system libraries (`/usr/share/kicad/symbols`) hung indefinitely. Symptom reported as "agent refuses to generate schematics / tells user to run command manually."
