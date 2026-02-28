@@ -507,12 +507,18 @@ def _get_instance_pin_numbers(doc: SchematicDoc, ref: str) -> list[str]:
     return sorted(pins)
 
 
-def test_extends_symbol_embeds_base_and_derived_in_lib_symbols(tmp_path: Path) -> None:
-    """Extends chain: both base (OpAmp) and derived (DerivedOpAmp) must be in lib_symbols.
+def test_extends_symbol_embeds_flat_derived_in_lib_symbols(tmp_path: Path) -> None:
+    """Extends chain: only the derived symbol is embedded, as a fully flat node.
+
+    The flattening fix (read_lib_symbol_def_flat) merges the parent's geometry
+    sub-symbols into the derived node, renames them, and removes the
+    (extends ...) attribute.  Only the derived node is written to lib_symbols —
+    KiCad can render it without needing the base symbol separately.
 
     Regression guard for the NE5532 bug: the old code embedded only the derived
-    node.  Without the base symbol in lib_symbols KiCad renders a blank box with
-    no pins — the schematic is visually empty and electrically disconnected.
+    node WITHOUT parent geometry → KiCad renders a blank box with no pins.
+    The current code merges parent geometry in so KiCad sees a complete symbol
+    with no unresolved extends reference.
     """
     ir_path = tmp_path / "ir.json"
     ir_path.write_text(
@@ -543,12 +549,35 @@ def test_extends_symbol_embeds_base_and_derived_in_lib_symbols(tmp_path: Path) -
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
     embedded_ids = _get_lib_symbol_ids(managed_doc)
 
-    # KiCad needs both the base and derived nodes to render the symbol.
-    assert "TestLib:OpAmp" in embedded_ids, (
-        f"Base 'TestLib:OpAmp' missing from lib_symbols; got: {embedded_ids}"
-    )
+    # Only the derived symbol is embedded — the base was merged in, not kept separately.
     assert "TestLib:DerivedOpAmp" in embedded_ids, (
         f"Derived 'TestLib:DerivedOpAmp' missing from lib_symbols; got: {embedded_ids}"
+    )
+    assert "TestLib:OpAmp" not in embedded_ids, (
+        f"Base 'TestLib:OpAmp' should not be embedded separately (geometry was merged "
+        f"into DerivedOpAmp by read_lib_symbol_def_flat); got: {embedded_ids}"
+    )
+
+    # The embedded derived symbol must be flat — no (extends ...) attribute.
+    lib_syms = find_first(managed_doc.root, "lib_symbols")
+    assert lib_syms is not None
+    derived_node = next(
+        (
+            item
+            for item in lib_syms.items
+            if isinstance(item, ListNode)
+            and item.key == "symbol"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+            and item.items[1].value == "TestLib:DerivedOpAmp"
+        ),
+        None,
+    )
+    assert derived_node is not None
+    extends_found = any(isinstance(c, ListNode) and c.key == "extends" for c in derived_node.items)
+    assert not extends_found, (
+        "Flattened derived symbol still contains (extends ...) — "
+        "read_lib_symbol_def_flat should have removed it"
     )
 
 
@@ -972,8 +1001,9 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
     Fidelity assertions:
     1. All 5 components present as placed symbol instances.
     2. All 8 nets have correct OpenClaw:bind= markers.
-    3. Both LM2904 (base) and NE5532 (derived) are embedded in lib_symbols —
-       without LM2904, KiCad renders U1 as a blank box.
+    3. NE5532 is embedded as a flat (non-extends) symbol — read_lib_symbol_def_flat
+       merges LM2904's geometry into the NE5532 node so KiCad renders it correctly
+       without needing a separate LM2904 entry in lib_symbols.
     """
     ir_data = {
         "version": "1",
@@ -1027,15 +1057,37 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
     # Core fidelity: all components placed and all net bindings recorded correctly.
     _check_circuit_fidelity(ir_data, managed_doc)
 
-    # Extends-chain specific: both LM2904 (base) and NE5532 must be in lib_symbols.
-    # Without LM2904, KiCad cannot render U1 (it would show as a blank box).
+    # Extends-chain specific: NE5532 is embedded as a flat symbol; LM2904 is NOT
+    # embedded separately — its geometry was merged into the NE5532 node.
     embedded_ids = _get_lib_symbol_ids(managed_doc)
-    assert "Amplifier_Operational:LM2904" in embedded_ids, (
-        f"Base symbol LM2904 missing from lib_symbols; "
-        f"KiCad will render NE5532 as a blank box. Embedded: {embedded_ids}"
-    )
     assert "Amplifier_Operational:NE5532" in embedded_ids, (
         f"Derived symbol NE5532 missing from lib_symbols. Embedded: {embedded_ids}"
+    )
+    assert "Amplifier_Operational:LM2904" not in embedded_ids, (
+        f"Base symbol LM2904 should not be embedded separately (geometry was merged "
+        f"into NE5532 by read_lib_symbol_def_flat); got: {embedded_ids}"
+    )
+
+    # The embedded NE5532 node must be flat — no (extends ...) attribute.
+    lib_syms = find_first(managed_doc.root, "lib_symbols")
+    assert lib_syms is not None
+    ne5532_node = next(
+        (
+            item
+            for item in lib_syms.items
+            if isinstance(item, ListNode)
+            and item.key == "symbol"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+            and item.items[1].value == "Amplifier_Operational:NE5532"
+        ),
+        None,
+    )
+    assert ne5532_node is not None
+    extends_found = any(isinstance(c, ListNode) and c.key == "extends" for c in ne5532_node.items)
+    assert not extends_found, (
+        "NE5532 lib_symbols entry still contains (extends ...) — "
+        "read_lib_symbol_def_flat should have removed it"
     )
 
 

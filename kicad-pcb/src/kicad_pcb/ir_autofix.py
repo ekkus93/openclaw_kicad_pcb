@@ -217,11 +217,11 @@ def _fix_pin_aliases(
 
     # Cache valid pins per symbol
     pin_cache: dict[str, set[str]] = {}
-    for sym_id in set(sym_by_ref.values()):
+    for _sid in set(sym_by_ref.values()):
         try:
-            pin_cache[sym_id] = symbol_index.get_pins(sym_id)
+            pin_cache[_sid] = symbol_index.get_pins(_sid)
         except Exception:
-            pin_cache[sym_id] = set()  # unknown symbol; skip alias fix for it
+            pin_cache[_sid] = set()  # unknown symbol; skip alias fix for it
 
     # Walk nets and fix wrong pins in-place
     for net in result.get("nets", []):
