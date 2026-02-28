@@ -1,7 +1,7 @@
 (kicad_sch
   (version 20230121)
   (generator eeschema)
-  (uuid "f2e6b788-89a0-41a5-a2bf-3f746d7f746c")
+  (uuid "6b734b28-398f-4a67-b270-7685d00d2c12")
   (paper "A4")
   (lib_symbols
     (symbol
@@ -641,7 +641,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "c91834c9-c19d-4e60-a58b-15e9bc862422")
+    (uuid "71ae8b7d-f2ca-4804-a5d4-6654db4f2bf7")
     (property
       "Reference"
       "C1"
@@ -666,17 +666,10 @@
       (at 50.80 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "f7209898-2afa-43eb-93f5-0778fd65cf25"))
-    (pin "2" (uuid "de8eb2b4-048e-451e-af29-04483cca0418"))
+    (pin "1" (uuid "7c5554d8-bb1d-43a8-a80d-e467c3e66006"))
+    (pin "2" (uuid "adce952b-2562-40f6-9b38-31a7d29ae0e7"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C1")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C1") (unit 1)))
     )
   )
   (symbol
@@ -686,7 +679,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "d8f31f52-25a3-4e18-9df9-a0914fff7aad")
+    (uuid "897c275a-37b8-47cf-886f-2a516c8fb461")
     (property
       "Reference"
       "C2"
@@ -711,17 +704,10 @@
       (at 81.28 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "44fd76de-a0d2-4a9a-87b9-bbe23edfae2d"))
-    (pin "2" (uuid "9321011f-ae08-4ec6-9140-42adb15ccbf5"))
+    (pin "1" (uuid "ad28edf5-9459-41ae-8f46-82edc10dc6b6"))
+    (pin "2" (uuid "55fdafa9-7cd3-46b8-9a0a-39c48faf6a3c"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C2")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C2") (unit 1)))
     )
   )
   (symbol
@@ -731,7 +717,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "e03c4600-3e31-4856-9940-77f8aff534b3")
+    (uuid "64673df7-48a9-422f-bc09-fa24b982a129")
     (property
       "Reference"
       "C3"
@@ -756,17 +742,10 @@
       (at 111.76 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "70963d87-265b-4430-8134-19e8fc88c28f"))
-    (pin "2" (uuid "cfca207a-3aee-4acf-838b-62625004ce41"))
+    (pin "1" (uuid "e0cfad5e-200d-4d47-b949-c68fd3ad376f"))
+    (pin "2" (uuid "4deb060a-b016-44d0-a06d-34fd56f9a8aa"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C3")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C3") (unit 1)))
     )
   )
   (symbol
@@ -776,7 +755,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "ba37d3f9-d5c7-443f-a563-688f5fd12931")
+    (uuid "b76d3eea-4981-4635-bb77-bcc01e9a319c")
     (property
       "Reference"
       "C4"
@@ -801,17 +780,10 @@
       (at 142.24 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "d236e40f-be9c-46dc-a0e2-5ccea216a32f"))
-    (pin "2" (uuid "4de9fbbd-489f-43ee-8ee7-dd258f38e4c1"))
+    (pin "1" (uuid "30ace7b0-05b7-4ea2-b1dc-f28b60b86ee7"))
+    (pin "2" (uuid "1e5e1ed4-3911-4011-bb0d-5e1480118d5c"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C4")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C4") (unit 1)))
     )
   )
   (symbol
@@ -821,7 +793,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "bf677628-efdc-4770-ab50-5eacd6cb9559")
+    (uuid "301418b6-a06f-4364-a881-de332ea08a11")
     (property
       "Reference"
       "C5"
@@ -846,17 +818,10 @@
       (at 172.72 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "a84901a2-c90c-4b04-bb8c-d880f27d700b"))
-    (pin "2" (uuid "c9e8b06c-5425-409f-906b-fa16eb26625c"))
+    (pin "1" (uuid "ca6ca7c6-0557-4eae-8801-19af70242cdd"))
+    (pin "2" (uuid "ab3095aa-34bc-4f2c-8a49-08894d8d6290"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C5")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C5") (unit 1)))
     )
   )
   (symbol
@@ -866,7 +831,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "c27f45bb-95ed-463d-9bb2-4fb6c03a5f60")
+    (uuid "57c8125d-8a4a-47eb-aec9-bc8efb6a21f4")
     (property
       "Reference"
       "C6"
@@ -891,17 +856,10 @@
       (at 203.20 76.20 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "d8dd9615-c74b-4c34-930b-9979d13a6a73"))
-    (pin "2" (uuid "6945df81-cf40-4ef0-9f67-bfc109b90bc0"))
+    (pin "1" (uuid "554e40db-7e67-4787-8295-efad9be8a515"))
+    (pin "2" (uuid "2fac94f6-668d-4c91-983b-7d32f60493ed"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C6")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C6") (unit 1)))
     )
   )
   (symbol
@@ -911,7 +869,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "c8d19661-1921-4285-b116-3b639f406b67")
+    (uuid "d344932f-203e-4d07-8801-de4580514965")
     (property
       "Reference"
       "C7"
@@ -936,17 +894,10 @@
       (at 50.80 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "2c2b4c63-5b36-4b01-b668-61689a5fc8c2"))
-    (pin "2" (uuid "1f595387-fe07-455c-b2cb-f65350140120"))
+    (pin "1" (uuid "99e928b8-0e71-4a0a-b6a7-74945854590f"))
+    (pin "2" (uuid "d57eb6e4-5e47-4b10-a41e-630bce7a02ab"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "C7")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "C7") (unit 1)))
     )
   )
   (symbol
@@ -956,7 +907,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "df49ada4-d6c5-47a6-b585-92256059d91f")
+    (uuid "35dad1ec-7c09-410b-96df-a80238140a31")
     (property
       "Reference"
       "J1"
@@ -965,7 +916,7 @@
     )
     (property
       "Value"
-      "3.5mm_IN"
+      "AUDIO_IN"
       (at 82.55 107.95 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -981,18 +932,11 @@
       (at 81.28 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "R" (uuid "76ff917d-943c-4de4-aafc-f544ef6d4c2e"))
-    (pin "S" (uuid "49a52b0b-82b6-4657-8ee1-12da819ad6db"))
-    (pin "T" (uuid "e8c6d142-c9dc-4732-8bdf-fcb275140e3b"))
+    (pin "R" (uuid "1b6644d4-1896-46b0-9184-73b0e3eaca4e"))
+    (pin "S" (uuid "17247f12-b8a0-4756-826b-0deb041b0e90"))
+    (pin "T" (uuid "3df3f345-281f-40f7-89c0-9fdc54fdf96a"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "J1")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "J1") (unit 1)))
     )
   )
   (symbol
@@ -1002,7 +946,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "6b4a4021-2bb0-449a-a9a7-a23ebc824e01")
+    (uuid "5263d765-9a72-4d60-9a41-ded6857c81d2")
     (property
       "Reference"
       "J2"
@@ -1011,7 +955,7 @@
     )
     (property
       "Value"
-      "3.5mm_OUT"
+      "AUDIO_OUT"
       (at 113.03 107.95 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -1027,18 +971,11 @@
       (at 111.76 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "R" (uuid "96aa89ef-4211-40ca-8b9f-d6dc62f0e68d"))
-    (pin "S" (uuid "fd0d2f0f-9952-44ca-bb84-16072ef24caa"))
-    (pin "T" (uuid "8c884388-a66a-4456-9140-8403240af0c3"))
+    (pin "R" (uuid "fd69ebeb-b8bb-422b-bc26-a4327027fade"))
+    (pin "S" (uuid "8f041c78-eddf-46d4-898c-d399957b0154"))
+    (pin "T" (uuid "4daf61dd-5763-4c1f-b259-6ab78eac9a38"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "J2")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "J2") (unit 1)))
     )
   )
   (symbol
@@ -1048,7 +985,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "ae0c510c-d3ec-47b6-be31-c552a70f23e3")
+    (uuid "1fdc556a-ae5c-4f5f-9369-281971f024c7")
     (property
       "Reference"
       "R1"
@@ -1073,17 +1010,10 @@
       (at 142.24 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "f5a1a821-7b50-4580-8ba8-ea8330df77e1"))
-    (pin "2" (uuid "2d968c19-5b2d-4a51-bc81-37cb18413d00"))
+    (pin "1" (uuid "31ee6d3b-f21f-4a76-87a7-49feb36b0af3"))
+    (pin "2" (uuid "751abca7-4a3f-410e-aca9-99b42d808896"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R1")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R1") (unit 1)))
     )
   )
   (symbol
@@ -1093,7 +1023,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "d860243c-46f9-489d-9539-818afb9589f4")
+    (uuid "b4e6ccc9-f0f1-45d9-a027-7db5099dedc2")
     (property
       "Reference"
       "R2"
@@ -1118,17 +1048,10 @@
       (at 172.72 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "782e90f3-85bd-42ed-a983-115f16e1b406"))
-    (pin "2" (uuid "b9dbc672-3c73-41f4-aa58-a5eb7a7649d7"))
+    (pin "1" (uuid "b3c34ed2-b16d-4113-8340-2ce167900857"))
+    (pin "2" (uuid "146c30de-794e-4656-80c1-9b822887744d"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R2")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R2") (unit 1)))
     )
   )
   (symbol
@@ -1138,7 +1061,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "ffaabbd4-e746-4b2a-a277-04913f57ff64")
+    (uuid "8f727ef9-bef3-49d9-989c-d815fdecacb1")
     (property
       "Reference"
       "R3"
@@ -1163,17 +1086,10 @@
       (at 203.20 106.68 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "3f1c5d4c-4e17-42f3-b20d-fbff2530aabd"))
-    (pin "2" (uuid "52286996-4dda-481b-aeb6-eac37864656d"))
+    (pin "1" (uuid "3c2021a0-1de8-4672-a6ed-c30b50f97bef"))
+    (pin "2" (uuid "2e3cfc99-6190-413a-b5a6-60ce954cba6c"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R3")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R3") (unit 1)))
     )
   )
   (symbol
@@ -1183,7 +1099,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "23594dc3-e6fc-40aa-bc0e-1a187bb68320")
+    (uuid "34ce6f61-90d2-4d46-a688-5b74bc6c206c")
     (property
       "Reference"
       "R4"
@@ -1208,17 +1124,10 @@
       (at 50.80 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "36743f86-e561-4c59-817f-2c966ed41d28"))
-    (pin "2" (uuid "410a8df2-6113-4f38-ba80-a57cf4fe30a0"))
+    (pin "1" (uuid "6d5e13d3-3478-4648-b326-9b187c5bac33"))
+    (pin "2" (uuid "88318f75-3dd6-4929-af45-68f990745f34"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R4")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R4") (unit 1)))
     )
   )
   (symbol
@@ -1228,7 +1137,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "267857c1-f6be-49ef-bb86-5e3068c3d6c0")
+    (uuid "752a062a-8169-45c4-9944-a12c09be0971")
     (property
       "Reference"
       "R5"
@@ -1253,17 +1162,10 @@
       (at 81.28 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "28140e83-ff67-409a-8fbd-078a3d72abf5"))
-    (pin "2" (uuid "6fca6fa6-539c-4b27-b416-8e5b980d8fba"))
+    (pin "1" (uuid "0e17dd90-4063-4de0-ba1f-04c59f9f807c"))
+    (pin "2" (uuid "6f288885-ccb4-42c8-ad23-309af66f4b6f"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R5")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R5") (unit 1)))
     )
   )
   (symbol
@@ -1273,7 +1175,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "267ef4c9-ba87-4535-b5c0-caccb1aac904")
+    (uuid "2b7e2ea8-8a9f-4434-a9c3-1502b62b73e2")
     (property
       "Reference"
       "R6"
@@ -1298,17 +1200,10 @@
       (at 111.76 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "4697d02b-1d2e-4a4b-8bd8-e0662ac60a7e"))
-    (pin "2" (uuid "059c617a-1efd-4da7-a065-333539baa7ef"))
+    (pin "1" (uuid "5c2368b8-e7e0-4459-be90-56cf4e0d6743"))
+    (pin "2" (uuid "a16124ba-01a5-4b0d-ba76-1d896e8723d1"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R6")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R6") (unit 1)))
     )
   )
   (symbol
@@ -1318,7 +1213,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "18a1f25a-de91-4603-806d-df699d26f14c")
+    (uuid "ac4a20b3-d73e-46db-82a4-922004702207")
     (property
       "Reference"
       "R7"
@@ -1343,17 +1238,10 @@
       (at 142.24 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "1cbd7fae-e534-4288-9835-a40aea2a2fdf"))
-    (pin "2" (uuid "528caf12-3d8c-4d33-a9f9-74e66695b2fa"))
+    (pin "1" (uuid "bafbf01f-af45-42ec-9edd-08814c9967aa"))
+    (pin "2" (uuid "9d723f09-a439-45d7-8fd5-c0244cae8763"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "R7")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "R7") (unit 1)))
     )
   )
   (symbol
@@ -1363,7 +1251,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "46ceaf49-bc24-4d58-8b9c-0cbe1017a65b")
+    (uuid "f4ed3445-3974-4524-ae5c-ba9821dda319")
     (property
       "Reference"
       "RV1"
@@ -1388,18 +1276,11 @@
       (at 172.72 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "82d7ec12-cead-4661-8476-ce5d0c01b6c6"))
-    (pin "2" (uuid "995f69d0-1dde-4b8a-93ea-98b29dd13e8d"))
-    (pin "3" (uuid "bfed77b0-8a96-4e90-b9c5-082c5f52702e"))
+    (pin "1" (uuid "7a21d569-b3c1-448a-8f6c-f0e1729e0f31"))
+    (pin "2" (uuid "e7a2e349-a09b-4e17-9759-5966c20bc231"))
+    (pin "3" (uuid "cb5f26c1-a64d-4584-a1b5-67882c21d6ab"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "RV1")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "RV1") (unit 1)))
     )
   )
   (symbol
@@ -1409,7 +1290,7 @@
     (exclude_from_sim yes)
     (in_bom yes)
     (on_board yes)
-    (uuid "1bf01216-ccaa-4b84-a025-9244c567cb89")
+    (uuid "042bb938-0562-48b8-8ea9-fca87bbbc8bc")
     (property
       "Reference"
       "U1"
@@ -1434,36 +1315,29 @@
       (at 203.20 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid "9f985cec-7d92-4ffc-9126-e629c6cb671b"))
-    (pin "2" (uuid "d2d603f9-377f-4ffc-9201-114e0f53a22e"))
-    (pin "3" (uuid "abc4e04b-e695-4b9b-a9d9-fb8fce45f84c"))
-    (pin "4" (uuid "de04659a-4b8e-47f1-b768-2c0606824761"))
-    (pin "5" (uuid "405962b1-87a9-42bf-8a75-6ab0e1049de2"))
-    (pin "6" (uuid "da22092d-05b2-4799-adfe-d79ea8ac6b2e"))
-    (pin "7" (uuid "50cba524-b325-4b26-a75a-b931cecdac27"))
-    (pin "8" (uuid "991f4683-d122-4f82-936c-b8b7aea4fdae"))
+    (pin "1" (uuid "f2c49eb5-5450-41d7-929d-9357a24d3092"))
+    (pin "2" (uuid "8860615a-cc36-41ca-be06-6c0849af5f3d"))
+    (pin "3" (uuid "7e1d83e0-2def-43e2-bdbf-d29d20cfd8b9"))
+    (pin "4" (uuid "51494426-c6cf-48f4-9c6c-7086facd32da"))
+    (pin "5" (uuid "5359d2bd-ae7d-4114-af50-1630ebd8f4df"))
+    (pin "6" (uuid "4e39cab0-db5d-43e1-bcd0-17713467e38b"))
+    (pin "7" (uuid "75625667-dba7-4049-85f1-c8cd569d5f63"))
+    (pin "8" (uuid "bce1ac11-cb40-4187-ba87-195505a187b5"))
     (instances
-      (project
-        "NE5532_Headphone_Amp_Left"
-        (path
-          "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/"
-          (reference "U1")
-          (unit 1)
-        )
-      )
+      (project "OpAmp_Headphone_Amp_v3" (path "/" (reference "U1") (unit 1)))
     )
   )
   (wire
     (pts (xy 50.80 72.39) (xy 50.80 67.31))
     (stroke (width 0) (type default))
-    (uuid "8ad06cbb-0d35-4c6e-9cf4-c648408e8d15")
+    (uuid "9a27b548-777a-45dd-9825-de99e3dbd4b5")
   )
   (label
     "0V"
     (at 50.80 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "5923ed97-e9d5-410b-99ed-f8865ca681a1")
+    (uuid "c2af8272-e795-4afa-9658-205cc677e3ed")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1479,14 +1353,14 @@
   (wire
     (pts (xy 81.28 72.39) (xy 81.28 67.31))
     (stroke (width 0) (type default))
-    (uuid "51f9e9cc-39a9-42eb-ad4d-8c98393d06ae")
+    (uuid "46f62d58-4fe5-46ce-9ffb-d8300cff40c9")
   )
   (label
     "0V"
     (at 81.28 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "0f8b156d-5d29-4e10-92de-a699f49797a3")
+    (uuid "fa5a393c-de7f-499b-bbb2-e6cb55e2c095")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1502,14 +1376,14 @@
   (wire
     (pts (xy 111.76 72.39) (xy 111.76 67.31))
     (stroke (width 0) (type default))
-    (uuid "7290818a-21eb-426f-96d1-c85b42b439b5")
+    (uuid "9cb30298-a6b8-4874-a8ed-977bd9bcf00f")
   )
   (label
     "0V"
     (at 111.76 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "425c1550-4e59-4057-a44b-7fdf234738dc")
+    (uuid "4eddda8e-deb2-46ed-9078-2b4d16b4421b")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1525,14 +1399,14 @@
   (wire
     (pts (xy 142.24 80.01) (xy 142.24 85.09))
     (stroke (width 0) (type default))
-    (uuid "964f98b6-8070-4e45-827b-da958698155f")
+    (uuid "9d38248a-19c1-42e1-b7c0-ff9687d25083")
   )
   (label
     "0V"
     (at 142.24 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "778e0540-1d8c-4a01-b683-f996981d74e2")
+    (uuid "e438abd9-ec7b-40ae-8abb-ffc68181efcd")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1548,14 +1422,14 @@
   (wire
     (pts (xy 86.36 109.22) (xy 91.44 109.22))
     (stroke (width 0) (type default))
-    (uuid "9dd5a3e1-714c-4430-b1a2-9e0be6f2272e")
+    (uuid "2000bbd1-4912-4423-8ad7-3c6701ead7e9")
   )
   (label
     "0V"
     (at 91.44 109.22 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "4dde30ca-9d64-44d2-8e1d-8d4848648c98")
+    (uuid "7f4a8a33-41f3-4872-bbde-a16ffff5d2dd")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1571,14 +1445,14 @@
   (wire
     (pts (xy 116.84 109.22) (xy 121.92 109.22))
     (stroke (width 0) (type default))
-    (uuid "711277b1-1547-47bf-8842-2b71b93aa69a")
+    (uuid "bb56c928-d357-469a-b428-4be0707b3e11")
   )
   (label
     "0V"
     (at 121.92 109.22 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "e3c5b90b-5612-408d-ba0e-228d2dd58690")
+    (uuid "46f0a77e-3bb4-43f0-ba2c-20643c32dfde")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1594,14 +1468,14 @@
   (wire
     (pts (xy 203.20 102.87) (xy 203.20 97.79))
     (stroke (width 0) (type default))
-    (uuid "c63c0d61-b760-431e-8726-ee1949f08643")
+    (uuid "005c4822-c41a-4a55-b9d5-c946c28d45b4")
   )
   (label
     "0V"
     (at 203.20 97.79 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "29d6d8c9-e071-4943-8956-84186afb5916")
+    (uuid "c106b7e4-e9a7-4afe-a642-16884c8c0b9c")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1617,14 +1491,14 @@
   (wire
     (pts (xy 50.80 133.35) (xy 50.80 128.27))
     (stroke (width 0) (type default))
-    (uuid "258155bb-b7ff-4361-83db-d2e56a67b3ff")
+    (uuid "2bbf1972-8f00-4642-9fe4-78e8bd2a40c4")
   )
   (label
     "0V"
     (at 50.80 128.27 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "c41809b4-cae9-466f-9295-60c69a426628")
+    (uuid "0f7191b5-077b-4594-8853-351a17f54d98")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1640,14 +1514,14 @@
   (wire
     (pts (xy 81.28 133.35) (xy 81.28 128.27))
     (stroke (width 0) (type default))
-    (uuid "a0c2592c-a97e-41c2-ba31-f6932d62456a")
+    (uuid "7a2583af-59d8-4dc0-a685-a4d0cc70c830")
   )
   (label
     "0V"
     (at 81.28 128.27 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "fd6918bc-64da-44dc-ac08-666222195f7a")
+    (uuid "ce69837a-7193-401c-b39b-a2abfb6a5f38")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1663,14 +1537,14 @@
   (wire
     (pts (xy 142.24 133.35) (xy 142.24 128.27))
     (stroke (width 0) (type default))
-    (uuid "3c469087-94e6-4495-94f4-833d5a6cd081")
+    (uuid "ae608b61-5062-4921-899a-4bdb4d662325")
   )
   (label
     "0V"
     (at 142.24 128.27 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "2003c3cd-b607-4a45-826d-12c88d552c5b")
+    (uuid "c3790ab3-5ab3-4634-a401-751a7a0d3754")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1686,14 +1560,14 @@
   (wire
     (pts (xy 172.72 133.35) (xy 172.72 128.27))
     (stroke (width 0) (type default))
-    (uuid "1116d522-a5aa-4215-862f-f2d7929a04e4")
+    (uuid "98659637-812a-4501-83c3-023e9e3dc379")
   )
   (label
     "0V"
     (at 172.72 128.27 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "811d7402-9c1b-4504-a12a-41c67e845dfa")
+    (uuid "b6e58a44-9b33-4a5d-a780-89f69c8b3bc0")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1709,14 +1583,14 @@
   (wire
     (pts (xy 50.80 110.49) (xy 50.80 115.57))
     (stroke (width 0) (type default))
-    (uuid "8134e339-4046-425c-8a78-4bc5e96ec0aa")
+    (uuid "64006cb9-5d98-40c1-b4bc-097051117270")
   )
   (label
     "AFTER_R6"
     (at 50.80 115.57 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "8ab56138-e7b8-4316-beba-679e734eb4a3")
+    (uuid "4ca7d037-edb1-4882-8330-a148b1fb125f")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1732,14 +1606,14 @@
   (wire
     (pts (xy 111.76 133.35) (xy 111.76 128.27))
     (stroke (width 0) (type default))
-    (uuid "adabb8a8-71f0-42ef-bdef-c1f527f83cc3")
+    (uuid "53ba6323-f4f3-4349-8d63-31622f4fc2d4")
   )
   (label
     "AFTER_R6"
     (at 111.76 128.27 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "542d3298-7fee-4f6f-87c7-04e179cffcaa")
+    (uuid "4f1b307a-0797-44dd-88bc-7c49c189b453")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1755,14 +1629,14 @@
   (wire
     (pts (xy 203.20 72.39) (xy 203.20 67.31))
     (stroke (width 0) (type default))
-    (uuid "e8d2adae-632a-43d4-9756-eabd1970fc76")
+    (uuid "a585f159-2913-4d3b-82c0-747043b0a480")
   )
   (label
     "BUF_L_IN"
     (at 203.20 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "9819fe5a-d75c-48d9-862d-404065710d1d")
+    (uuid "7d0e6b44-abce-48f2-8f32-123378d81bef")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1778,14 +1652,14 @@
   (wire
     (pts (xy 81.28 140.97) (xy 81.28 146.05))
     (stroke (width 0) (type default))
-    (uuid "90ab69ca-a656-4ab4-85f6-d946a97897d2")
+    (uuid "4e8ec488-27dd-4397-912d-747c2abcbeb5")
   )
   (label
     "BUF_L_IN"
     (at 81.28 146.05 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "1eb7e419-176c-435f-a14f-e5ad0d109d05")
+    (uuid "0bfcfd02-d4e2-4162-b472-f8401c405fbc")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1801,14 +1675,14 @@
   (wire
     (pts (xy 195.58 139.70) (xy 190.50 139.70))
     (stroke (width 0) (type default))
-    (uuid "69d6927c-2f8e-44c8-88fd-8db8c579fa3c")
+    (uuid "f7a421bf-507b-4774-b930-45d1a3539827")
   )
   (label
     "BUF_L_IN"
     (at 190.50 139.70 180)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "1b233e2e-a656-40e8-9e81-320629488ba3")
+    (uuid "31df82bc-709a-48c9-8e78-2d27cba692d2")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1824,14 +1698,14 @@
   (wire
     (pts (xy 50.80 102.87) (xy 50.80 97.79))
     (stroke (width 0) (type default))
-    (uuid "48da7971-84d1-45b1-8933-20b48498eaf0")
+    (uuid "052ab97b-b1ec-4a44-af15-df42d157cbb0")
   )
   (label
     "HP_L_OUT"
     (at 50.80 97.79 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "5d3dace2-8838-49da-9372-c19d070f7e08")
+    (uuid "cfb8ac84-539c-4458-97e0-80650adad257")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1847,14 +1721,14 @@
   (wire
     (pts (xy 116.84 104.14) (xy 121.92 104.14))
     (stroke (width 0) (type default))
-    (uuid "491b733f-6f39-47e0-939d-54ca44197b7a")
+    (uuid "144e9c92-9d3f-4c0d-a678-be49e76a113b")
   )
   (label
     "HP_L_OUT"
     (at 121.92 104.14 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "9a8b31db-745f-47d6-aa4d-8a9cc9fd2ab3")
+    (uuid "d964e192-3276-43f5-9f65-420c934f2e2a")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1870,14 +1744,14 @@
   (wire
     (pts (xy 142.24 140.97) (xy 142.24 146.05))
     (stroke (width 0) (type default))
-    (uuid "35e41a29-e590-403f-8292-c5d6029116f6")
+    (uuid "69c634de-3bfd-4875-9997-da7ccb9ab792")
   )
   (label
     "HP_L_OUT"
     (at 142.24 146.05 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "17b920aa-a35f-4599-94aa-29e8da287863")
+    (uuid "3b291209-ed55-4543-8020-1e8ca223535a")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1891,16 +1765,39 @@
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
+    (pts (xy 116.84 106.68) (xy 121.92 106.68))
+    (stroke (width 0) (type default))
+    (uuid "453a88e4-f938-4040-b4a2-8ad055f502a0")
+  )
+  (label
+    "HP_R_OUT"
+    (at 121.92 106.68 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "02c5f3d1-7277-448f-aebb-8e3ac8236e17")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"HP_R_OUT\",\"pin\":\"R\",\"ref\":\"J2\"}"
+    (at -1200.00 -1690.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
     (pts (xy 172.72 72.39) (xy 172.72 67.31))
     (stroke (width 0) (type default))
-    (uuid "d16aca56-2886-4613-af2a-31fdcf164075")
+    (uuid "3462dbcf-9ac5-4f0d-8b08-dcd4e4fa714d")
   )
   (label
     "IN_L_AC"
     (at 172.72 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "21822012-385f-4b5f-90f5-b195d1040829")
+    (uuid "9f64f330-0d43-4a4f-bfd5-5f3388a2acf4")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1910,20 +1807,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"2\",\"ref\":\"C5\"}"
-    (at -1200.00 -1690.00 0)
+    (at -1200.00 -1700.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 142.24 102.87) (xy 142.24 97.79))
     (stroke (width 0) (type default))
-    (uuid "4c511612-956d-4a76-954c-744762a73ad1")
+    (uuid "a35065db-ddc5-4150-b8ca-b920cdf9ebdf")
   )
   (label
     "IN_L_AC"
     (at 142.24 97.79 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "4c1664c2-8d83-4004-89d2-1c256b100e7b")
+    (uuid "3d06f2b5-dcd2-42e4-a898-df1effa10a75")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1933,20 +1830,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"2\",\"ref\":\"R1\"}"
-    (at -1200.00 -1700.00 0)
+    (at -1200.00 -1710.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 172.72 140.97) (xy 172.72 146.05))
     (stroke (width 0) (type default))
-    (uuid "5597a8be-143d-4688-99fc-4972ce18c80b")
+    (uuid "d796b428-8839-431a-8107-d6d5c0b126a2")
   )
   (label
     "IN_L_AC"
     (at 172.72 146.05 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "78b02684-d23a-44a4-a565-8f48d77a2f13")
+    (uuid "c754a9a7-a1ba-4a00-9613-e94a3645292e")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1956,20 +1853,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"1\",\"ref\":\"RV1\"}"
-    (at -1200.00 -1710.00 0)
+    (at -1200.00 -1720.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 172.72 80.01) (xy 172.72 85.09))
     (stroke (width 0) (type default))
-    (uuid "c8a0f7f2-5a89-4225-a8af-d5a5fb848763")
+    (uuid "e8ac7d93-52b3-48b9-8546-3beeecba64af")
   )
   (label
     "LEFT_IN"
     (at 172.72 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "a342cacc-35d4-499b-9ab1-84bcc62386fc")
+    (uuid "4f9b9979-4927-48cf-b766-5c06f6dcd7ca")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -1979,20 +1876,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"1\",\"ref\":\"C5\"}"
-    (at -1200.00 -1720.00 0)
+    (at -1200.00 -1730.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 86.36 104.14) (xy 91.44 104.14))
     (stroke (width 0) (type default))
-    (uuid "c85c880c-5d08-42e6-a5f9-3a94f57b5a67")
+    (uuid "3690d180-3f31-41c3-aad8-bb3e3c0eb1c5")
   )
   (label
     "LEFT_IN"
     (at 91.44 104.14 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "df76bf3f-0eac-4e03-b7c3-7912b436d2ea")
+    (uuid "0e493862-eebf-4518-9a6b-1796cd0ec347")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2002,20 +1899,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"T\",\"ref\":\"J1\"}"
-    (at -1200.00 -1730.00 0)
+    (at -1200.00 -1740.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 142.24 110.49) (xy 142.24 115.57))
     (stroke (width 0) (type default))
-    (uuid "24291714-da1f-4435-b47b-6b4f020c2b3a")
+    (uuid "b428b4ff-5f79-4c5a-b4ef-06ebfea0bbff")
   )
   (label
     "LEFT_IN"
     (at 142.24 115.57 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "d0dba3c5-d9de-4f16-b14c-7c18c68a970c")
+    (uuid "99f1275b-d09a-41a9-b9d8-0ce3abe2fa6d")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2025,20 +1922,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"1\",\"ref\":\"R1\"}"
-    (at -1200.00 -1740.00 0)
+    (at -1200.00 -1750.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 203.20 80.01) (xy 203.20 85.09))
     (stroke (width 0) (type default))
-    (uuid "cf13d61b-63fb-46ed-9752-9584c22cc83f")
+    (uuid "0fb3f5e0-253b-4639-b944-5d74308e29e5")
   )
   (label
     "OUT_L_STAGE1"
     (at 203.20 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "cb85b490-8a52-4528-a44c-33f2870d8f9c")
+    (uuid "cb6222a9-eb55-4646-9946-71ad83872a14")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2048,20 +1945,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"C6\"}"
-    (at -1200.00 -1750.00 0)
+    (at -1200.00 -1760.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 172.72 110.49) (xy 172.72 115.57))
     (stroke (width 0) (type default))
-    (uuid "8d6f6fbe-2cba-4f9b-9c1d-3ba4173b8d67")
+    (uuid "b9b6ab88-efdc-4340-8eb4-d8c36f073b75")
   )
   (label
     "OUT_L_STAGE1"
     (at 172.72 115.57 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "6a90b1a8-47e9-403e-abe2-a5f872358c35")
+    (uuid "4eb14947-4089-4022-94bf-469007984736")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2071,20 +1968,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"R2\"}"
-    (at -1200.00 -1760.00 0)
+    (at -1200.00 -1770.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 210.82 137.16) (xy 215.90 137.16))
     (stroke (width 0) (type default))
-    (uuid "57126786-feef-41d3-985d-4ce0d7913069")
+    (uuid "f9ce6e5a-4df5-4b40-9e43-9bc7ef790863")
   )
   (label
     "OUT_L_STAGE1"
     (at 215.90 137.16 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "c45d8794-a9e4-4867-9479-ee9600510760")
+    (uuid "5e6268e0-19fd-4be0-a90e-19728fbf59cc")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2094,20 +1991,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"U1\"}"
-    (at -1200.00 -1770.00 0)
+    (at -1200.00 -1780.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 111.76 140.97) (xy 111.76 146.05))
     (stroke (width 0) (type default))
-    (uuid "10b89fa2-1d4a-475e-b760-1ad05d5960c5")
+    (uuid "2b2b9a7b-7e06-4062-9f4e-ed9be521e310")
   )
   (label
     "OUT_L_STAGE2_RAW"
     (at 111.76 146.05 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "54bb5aa9-852d-418b-a114-33b139ae432d")
+    (uuid "01f905a9-2b51-44ea-acf3-f09f107c99b8")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2117,20 +2014,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"1\",\"ref\":\"R6\"}"
-    (at -1200.00 -1780.00 0)
+    (at -1200.00 -1790.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 195.58 134.62) (xy 190.50 134.62))
     (stroke (width 0) (type default))
-    (uuid "7bfea8ab-4522-4660-83c9-e9222c9fc297")
+    (uuid "a3054b34-ad51-45e6-9edb-393ff03ee914")
   )
   (label
     "OUT_L_STAGE2_RAW"
     (at 190.50 134.62 180)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "42486a6a-9e6d-47ff-84a5-59fdd794cd51")
+    (uuid "2063d70e-ed0a-4061-a78d-2324e0cf7976")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2140,20 +2037,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"6\",\"ref\":\"U1\"}"
-    (at -1200.00 -1790.00 0)
+    (at -1200.00 -1800.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 210.82 137.16) (xy 215.90 137.16))
     (stroke (width 0) (type default))
-    (uuid "b8cd0848-fa7e-432a-b3a3-e3f2f7f2e9ab")
+    (uuid "d0d7470b-27a6-4db8-a97e-b0ea47c0f9e4")
   )
   (label
     "OUT_L_STAGE2_RAW"
     (at 215.90 137.16 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "cb1b7dce-9133-4328-a445-41897d3fcac6")
+    (uuid "52a5579a-e7be-4fb5-9c2f-263e523e0faa")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2163,20 +2060,43 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"7\",\"ref\":\"U1\"}"
-    (at -1200.00 -1800.00 0)
+    (at -1200.00 -1810.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 86.36 106.68) (xy 91.44 106.68))
+    (stroke (width 0) (type default))
+    (uuid "ef005cf0-4036-4777-8b42-ea40f93ff928")
+  )
+  (label
+    "RIGHT_IN"
+    (at 91.44 106.68 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "cfd4c8be-d7a3-4226-afad-6c4dde7d6252")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"RIGHT_IN\",\"pin\":\"R\",\"ref\":\"J1\"}"
+    (at -1200.00 -1820.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 172.72 102.87) (xy 172.72 97.79))
     (stroke (width 0) (type default))
-    (uuid "7b29084c-f3cf-4461-bcdb-a211cf29add3")
+    (uuid "d1cd261b-efd1-4eae-834b-0020fa9e9a39")
   )
   (label
-    "U1A_MINUS_IN"
+    "STAGE1_NEG"
     (at 172.72 97.79 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "414767a4-9ab9-4a75-a02f-a79cbd51a40e")
+    (uuid "6afe38a3-9a06-416b-8ce7-3b6e500ed9e1")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2185,21 +2105,21 @@
     )
   )
   (text
-    "OpenClaw:bind={\"net_name\":\"U1A_MINUS_IN\",\"pin\":\"2\",\"ref\":\"R2\"}"
-    (at -1200.00 -1810.00 0)
+    "OpenClaw:bind={\"net_name\":\"STAGE1_NEG\",\"pin\":\"2\",\"ref\":\"R2\"}"
+    (at -1200.00 -1830.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 203.20 110.49) (xy 203.20 115.57))
     (stroke (width 0) (type default))
-    (uuid "99d8dcb6-0943-43bb-a058-149e618d0ec3")
+    (uuid "74595ec6-cf8f-46a8-89b2-788e974f0591")
   )
   (label
-    "U1A_MINUS_IN"
+    "STAGE1_NEG"
     (at 203.20 115.57 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "cda0132f-2312-492a-8eac-ea75d59c8dcf")
+    (uuid "f9a24215-862b-48bf-9c71-b0e8c02456a7")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2208,21 +2128,21 @@
     )
   )
   (text
-    "OpenClaw:bind={\"net_name\":\"U1A_MINUS_IN\",\"pin\":\"1\",\"ref\":\"R3\"}"
-    (at -1200.00 -1820.00 0)
+    "OpenClaw:bind={\"net_name\":\"STAGE1_NEG\",\"pin\":\"1\",\"ref\":\"R3\"}"
+    (at -1200.00 -1840.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 195.58 134.62) (xy 190.50 134.62))
     (stroke (width 0) (type default))
-    (uuid "2fc259ed-c536-4a86-b1f1-4ac14a065b90")
+    (uuid "416cdfca-2c41-464c-a4b5-f75f04932eeb")
   )
   (label
-    "U1A_MINUS_IN"
+    "STAGE1_NEG"
     (at 190.50 134.62 180)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "bf6d4fcd-9a95-439c-a546-c0047cd4cd04")
+    (uuid "3bb4c7ca-8062-43e3-9799-269d8528f865")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2231,21 +2151,21 @@
     )
   )
   (text
-    "OpenClaw:bind={\"net_name\":\"U1A_MINUS_IN\",\"pin\":\"2\",\"ref\":\"U1\"}"
-    (at -1200.00 -1830.00 0)
+    "OpenClaw:bind={\"net_name\":\"STAGE1_NEG\",\"pin\":\"2\",\"ref\":\"U1\"}"
+    (at -1200.00 -1850.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 81.28 80.01) (xy 81.28 85.09))
     (stroke (width 0) (type default))
-    (uuid "bb50158b-0dee-43f5-b6ad-ddfa21175f8e")
+    (uuid "82e43944-9e1a-4aa4-95eb-c23412e79cdb")
   )
   (label
     "VMINUS15"
     (at 81.28 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "2015091e-f05e-4ad8-9e34-f1c1009eacd6")
+    (uuid "576fb9d4-ae4d-4b8f-a672-6b4912b736c6")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2255,20 +2175,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"1\",\"ref\":\"C2\"}"
-    (at -1200.00 -1840.00 0)
+    (at -1200.00 -1860.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 142.24 72.39) (xy 142.24 67.31))
     (stroke (width 0) (type default))
-    (uuid "2738d400-7a79-4550-9be3-34834cfa318b")
+    (uuid "d531f8a5-ebb9-4f03-a44c-4860c647c2c2")
   )
   (label
     "VMINUS15"
     (at 142.24 67.31 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "70f53ee9-4b51-4278-b5a6-0d9574024442")
+    (uuid "05b80dc9-31e8-455b-8611-0fa07298a97b")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2278,20 +2198,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"2\",\"ref\":\"C4\"}"
-    (at -1200.00 -1850.00 0)
+    (at -1200.00 -1870.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 200.66 129.54) (xy 200.66 124.46))
     (stroke (width 0) (type default))
-    (uuid "14580bca-b7be-4424-9b8f-3cc9d57b06a7")
+    (uuid "bb84de25-2b0f-40f3-839c-eadf5b6a3616")
   )
   (label
     "VMINUS15"
     (at 200.66 124.46 270)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "56a0c869-7416-42e3-ad21-7c9b606908b3")
+    (uuid "411e2f04-91ed-4103-8ced-bd5f61e1cff9")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2301,20 +2221,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"4\",\"ref\":\"U1\"}"
-    (at -1200.00 -1860.00 0)
+    (at -1200.00 -1880.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 50.80 140.97) (xy 50.80 146.05))
     (stroke (width 0) (type default))
-    (uuid "e2c77fde-2db2-46f2-94cc-caef0660d3a8")
+    (uuid "c0d47ff3-1229-4f3e-8a73-d148129a6cf7")
   )
   (label
     "VOL_L_OUT"
     (at 50.80 146.05 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "b18e2738-d868-486f-85d4-cb8323ace634")
+    (uuid "c9125018-b96a-4a9f-9357-e6b83a1f973b")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2324,20 +2244,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"1\",\"ref\":\"R4\"}"
-    (at -1200.00 -1870.00 0)
+    (at -1200.00 -1890.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 176.53 137.16) (xy 181.61 137.16))
     (stroke (width 0) (type default))
-    (uuid "c2c29f52-5f29-4b38-ab92-c2546c90f6fa")
+    (uuid "1119e2e0-4417-42b4-9367-52af8398cc34")
   )
   (label
     "VOL_L_OUT"
     (at 181.61 137.16 0)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "225e6f6c-bd7e-40e2-8f43-e0e5ef211953")
+    (uuid "8c4caedc-740c-47d8-bb22-83bf0f613dce")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2347,20 +2267,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"2\",\"ref\":\"RV1\"}"
-    (at -1200.00 -1880.00 0)
+    (at -1200.00 -1900.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 195.58 139.70) (xy 190.50 139.70))
     (stroke (width 0) (type default))
-    (uuid "ec84a9c1-6e6a-4486-802f-e4e1f2de6589")
+    (uuid "1af7d81c-d0c7-479c-8b8a-56f125861754")
   )
   (label
     "VOL_L_OUT"
     (at 190.50 139.70 180)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "81c87fe8-d012-40ea-a5b2-e6c773dec0c5")
+    (uuid "cd388a3b-dcdf-4143-877a-db951ef45ca5")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2370,20 +2290,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"3\",\"ref\":\"U1\"}"
-    (at -1200.00 -1890.00 0)
+    (at -1200.00 -1910.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 50.80 80.01) (xy 50.80 85.09))
     (stroke (width 0) (type default))
-    (uuid "e8c7ff03-977f-4df7-8cfe-65daf63419ea")
+    (uuid "eb26d607-6886-4662-a97a-93004bf6b131")
   )
   (label
     "VPLUS15"
     (at 50.80 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "5ce42d84-a8c5-4236-8bae-2271ac7c5a0c")
+    (uuid "50c1cad8-c6a5-4e13-83a2-c51a90b5456a")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2393,20 +2313,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"1\",\"ref\":\"C1\"}"
-    (at -1200.00 -1900.00 0)
+    (at -1200.00 -1920.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 111.76 80.01) (xy 111.76 85.09))
     (stroke (width 0) (type default))
-    (uuid "056a287d-4adc-4d77-9464-1e15b9918b8d")
+    (uuid "8cd9b282-6bca-4357-ad3e-222575a0c123")
   )
   (label
     "VPLUS15"
     (at 111.76 85.09 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "242f5dc3-343d-437b-8ad2-595f1b4a0670")
+    (uuid "9b24f452-d449-4d6c-b4f3-7f4679d16934")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2416,20 +2336,20 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"1\",\"ref\":\"C3\"}"
-    (at -1200.00 -1910.00 0)
+    (at -1200.00 -1930.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
   (wire
     (pts (xy 200.66 144.78) (xy 200.66 149.86))
     (stroke (width 0) (type default))
-    (uuid "9937a29b-978b-49fb-afaf-58f283886719")
+    (uuid "769a13c7-142e-40d5-be02-71c2416bd9d8")
   )
   (label
     "VPLUS15"
     (at 200.66 149.86 90)
     (fields_autoplaced yes)
     (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid "4736e2f4-7387-4505-b0c5-c063c7397eb9")
+    (uuid "455e8b15-0547-408f-a679-6a089e0cf27a")
     (property
       "Intersheet References"
       "${INTERSHEET_REFS}"
@@ -2439,8 +2359,8 @@
   )
   (text
     "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"8\",\"ref\":\"U1\"}"
-    (at -1200.00 -1920.00 0)
+    (at -1200.00 -1940.00 0)
     (effects (font (size 1.27 1.27)) (justify left) hide)
   )
-  (sheet_instances (path "/5fc4d496-399d-4f1c-9a91-bf53d98751d4/" (page "1")))
+  (sheet_instances (path "/" (page "1")))
 )
