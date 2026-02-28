@@ -358,8 +358,9 @@ them pass `new-from-netlist`. Do not use any of them.
 ```
 
 **If you see `❌ Circuit IR schema validation failed`**: your netlist JSON has the
-wrong structure. Discard it, rewrite it using the correct format above, and retry
-`new-from-netlist`. Do not write a `.kicad_sch` file manually.
+wrong structure. Discard it, rewrite it using the exact format shown above
+(see also the pre-flight checklist and error recovery loop in Step 2 of the workflow),
+and retry `new-from-netlist`. Do not write a `.kicad_sch` file manually.
 
 
 
@@ -444,6 +445,45 @@ Then compile it:
     --mode internal
 ```
 
+#### ✅ Pre-flight self-check — run this mentally before calling `new-from-netlist`
+
+Go through this checklist on your Circuit IR JSON before calling the tool.
+If any item fails, fix the JSON first. Do not call the tool with a failing item.
+
+**Top-level structure:**
+- [ ] Only three top-level keys: `"version"`, `"components"`, `"nets"` — nothing else
+- [ ] `"version"` is the **string** `"1"`, not integer `1`, not missing
+- [ ] No `"metadata"`, `"title"`, `"description"` or other wrapper objects at top level
+
+**Every component entry:**
+- [ ] Has `"ref"` and `"symbol"` (lib ID like `"Device:R"`) — both required
+- [ ] Does **NOT** have `"type"`, `"pins"`, `"nets"`, `"connections"`, `"polarity"`, `"num"` or any other extra key
+- [ ] `"symbol"` is a real KiCad lib ID obtained from `search-symbols`, not an invented string
+
+**Every net entry:**
+- [ ] Has `"name"` (string) and `"pins"` (array) — both required
+- [ ] `"pins"` is an **array of objects** `[{"ref": "X", "pin": "Y"}, ...]`, not a list of strings, not a dict
+- [ ] Net assignments live **only in the `nets` array** — not inside component entries
+- [ ] Every `"ref"` in a net's pins matches a ref in `"components"`
+- [ ] Every `"pin"` value is a valid pin for that component's symbol (check with `debug-symbol` if unsure)
+
+**Quick sanity check (run in your head):**
+```
+For each net: does it have at least 2 pin entries? (a single-pin net is usually a bug)
+For each component: is every pin of that component accounted for in at least one net?
+Are there components in "components" that are never referenced in any net? (unused component — likely a mistake)
+```
+
+#### ❌ Error recovery loop
+
+When `new-from-netlist` returns an error:
+
+1. **Read the full error message** — it names the exact problem (`schema validation failed` / `PIN_INVALID: Net X references R1 pin 3` / `IR_SEMANTIC_INVALID: duplicate refs`).
+2. **Fix the Circuit IR JSON** using the error message as a guide. Do NOT guess — read the error.
+3. **Re-run `new-from-netlist`** on the corrected JSON.
+4. Repeat until exit 0. Accept up to 3 fix-and-retry cycles before asking the user for clarification.
+5. **Never write `.kicad_sch` by hand** — not on the first failure, not on the third. If after 3 retries the tool still fails, report the exact error to the user and ask for guidance.
+
 On success the tool prints two paths:
 - **Root schematic** (`<name>.kicad_sch`) — a thin wrapper that references the managed sub-sheet. Contains no symbols.
 - **Managed schematic** (`OpenClaw_Managed.kicad_sch`) — contains all the actual components and nets.
@@ -455,10 +495,7 @@ Opening only the managed file will appear to work but the sheet hierarchy UUID w
 When you deliver the results, explicitly say:
 > "Save both files in the same folder and open `<name>.kicad_sch` in KiCad (not `OpenClaw_Managed.kicad_sch`)."
 
-**If the tool returns an error** (e.g. `❌ Net GND references R1 pin 3, but Device:R valid pins are ['1', '2']`):
-- The error message names the exact ref and pin. Fix that pin number in the Circuit IR JSON.
-- Re-run `new-from-netlist` until it exits 0.
-- **Never** fall back to writing `.kicad_sch` by hand — hand-written output will be structurally wrong.
+
 
 ### Step 3: Review & Confirm
 - Schematic preview image

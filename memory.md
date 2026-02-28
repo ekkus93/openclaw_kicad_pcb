@@ -1,8 +1,25 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T12:00:00Z_
+_Last updated: 2026-02-28T13:00:00Z_
 
 ---
+
+## 2026-02-28T13:00:00Z - Added pre-flight checklist and error recovery loop to SKILL.md
+- **Why**: Bot keeps generating wrong Circuit IR formats, gets a validation error, then falls back
+  to hand-writing `.kicad_sch` instead of fixing the JSON. Tool validation is solid (Pydantic schema
+  + semantic + symbol+pin checks) but the bot's response to errors is wrong.
+- **Added to Step 2 workflow**:
+  - Pre-flight self-check (checklist the bot must run before calling `new-from-netlist`):
+    top-level keys only, no metadata wrapper, version must be string "1", components have no
+    extra fields, nets array has `[{ref, pin}...]` objects not name-only list, etc.
+  - Error recovery loop: read full error → fix JSON → retry → up to 3 cycles → ask user if still failing
+  - Never-write-by-hand rule now in numbered loop, not just a note
+- **Tool validation layers** (for reference):
+  1. Pydantic schema — `additionalProperties: false`, exact key/type enforcement
+  2. `validate_circuit_ir` — dup refs/nets, zero-pin nets, refs not in components, pin in 2 nets
+  3. `validate_ir_symbols` — symbol must exist in index, pin must be valid for that symbol
+
+
 
 ## 2026-02-28T12:00:00Z - NE5532 amp: EDA-style netlist format + hand-written .kicad_sch (again)
 - **What happened**: Bot generated an EDA-tool-style netlist (4th known wrong format) then
