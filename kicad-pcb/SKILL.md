@@ -424,7 +424,14 @@ Then compile it:
 
 On success the tool prints two paths:
 - **Root schematic** (`<name>.kicad_sch`) — a thin wrapper that references the managed sub-sheet. Contains no symbols.
-- **Managed schematic** (`OpenClaw_Managed.kicad_sch`) — **this is the file with the actual components and nets.** Always use this file when sharing or opening in KiCad.
+- **Managed schematic** (`OpenClaw_Managed.kicad_sch`) — contains all the actual components and nets.
+
+**⚠️ You MUST deliver BOTH files to the user.** They must be placed in the same directory.
+The user opens the **root** file (`<name>.kicad_sch`) in KiCad — not `OpenClaw_Managed.kicad_sch`.
+Opening only the managed file will appear to work but the sheet hierarchy UUID will not resolve.
+
+When you deliver the results, explicitly say:
+> "Save both files in the same folder and open `<name>.kicad_sch` in KiCad (not `OpenClaw_Managed.kicad_sch`)."
 
 **If the tool returns an error** (e.g. `❌ Net GND references R1 pin 3, but Device:R valid pins are ['1', '2']`):
 - The error message names the exact ref and pin. Fix that pin number in the Circuit IR JSON.
