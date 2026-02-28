@@ -301,6 +301,44 @@ cause `❌ Circuit IR schema validation failed` and the tool will refuse to run.
 **Net fields:** `name` (required), `pins` (required — array of `{"ref": "X", "pin": "Y"}` objects).  
 **Pin values** in nets are pin *numbers* (e.g. `"1"`, `"2"`) or named pins (e.g. `"T"`, `"R"`, `"S"` for `AudioJack3`) — check the Pin Name Reference table above.
 
+#### ❌ WRONG Circuit IR formats — these will always fail validation
+
+The following are real examples of broken formats the LLM tends to invent. None of
+them pass `new-from-netlist`. Do not use any of them.
+
+```jsonc
+// ❌ WRONG: "title" instead of "version", inline "pins" on component,
+//           no "symbol" field, "nets" as a dict of "REF-PIN" strings
+{
+  "title": "My Circuit",
+  "components": [
+    {"ref": "R1", "value": "10k", "pins": {"1": "VCC", "2": "GND"}}
+  ],
+  "nets": {
+    "VCC": ["U1-8", "R1-1"],
+    "GND": ["R1-2"]
+  }
+}
+
+// ❌ WRONG: nested "metadata" wrapper, missing "symbol", "type" field on component
+{
+  "metadata": {"version": 1, "description": "Headphone Amp"},
+  "components": [
+    {"ref": "C1", "type": "electrolytic", "value": "10u",
+     "pins": {"+": "VCC", "-": "GND"}}
+  ]
+}
+
+// ❌ WRONG: hand-written .kicad_sch with old version, fake generator, no wires
+// (kicad_sch (version 20211014) (generator "OpenAI-GPT") ...)
+// If new-from-netlist fails, fix the netlist — do NOT fall back to writing
+// .kicad_sch by hand. Hand-written output has no validation and will be wrong.
+```
+
+**If you see `❌ Circuit IR schema validation failed`**: your netlist JSON has the
+wrong structure. Discard it, rewrite it using the correct format above, and retry
+`new-from-netlist`. Do not write a `.kicad_sch` file manually.
+
 
 
 ### PCB Layout
