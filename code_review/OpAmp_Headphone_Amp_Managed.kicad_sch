@@ -1,0 +1,2446 @@
+(kicad_sch
+  (version 20230121)
+  (generator eeschema)
+  (uuid "54a54d39-8ff6-4e61-a0c1-2e7cfa048704")
+  (paper "A4")
+  (lib_symbols
+    (symbol
+      "Device:C"
+      (pin_numbers hide)
+      (pin_names (offset 0.254))
+      (in_bom yes)
+      (on_board yes)
+      (property
+        "Reference"
+        "C"
+        (at 0.635 2.54 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Value"
+        "C"
+        (at 0.635 -2.54 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0.9652 -3.81 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "~"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "cap capacitor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Unpolarized capacitor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "C_*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "C_0_1"
+        (polyline
+          (pts (xy -2.032 -0.762) (xy 2.032 -0.762))
+          (stroke (width 0.508) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts (xy -2.032 0.762) (xy 2.032 0.762))
+          (stroke (width 0.508) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+      )
+      (symbol
+        "C_1_1"
+        (pin
+          passive
+          line
+          (at 0 3.81 270)
+          (length 2.794)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 0 -3.81 90)
+          (length 2.794)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Device:C_Polarized"
+      (pin_numbers hide)
+      (pin_names (offset 0.254))
+      (in_bom yes)
+      (on_board yes)
+      (property
+        "Reference"
+        "C"
+        (at 0.635 2.54 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Value"
+        "C_Polarized"
+        (at 0.635 -2.54 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0.9652 -3.81 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "~"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "cap capacitor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Polarized capacitor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "CP_*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "C_Polarized_0_1"
+        (rectangle
+          (start -2.286 0.508)
+          (end 2.286 1.016)
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts (xy -1.778 2.286) (xy -0.762 2.286))
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts (xy -1.27 2.794) (xy -1.27 1.778))
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (rectangle
+          (start 2.286 -0.508)
+          (end -2.286 -1.016)
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type outline))
+        )
+      )
+      (symbol
+        "C_Polarized_1_1"
+        (pin
+          passive
+          line
+          (at 0 3.81 270)
+          (length 2.794)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 0 -3.81 90)
+          (length 2.794)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Connector:AudioJack3"
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "J" (at 0 8.89 0) (effects (font (size 1.27 1.27))))
+      (property
+        "Value"
+        "AudioJack3"
+        (at 0 6.35 0)
+        (effects (font (size 1.27 1.27)))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "~"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "audio jack receptacle stereo headphones phones TRS connector"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Audio Jack, 3 Poles (Stereo / TRS)"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "Jack*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "AudioJack3_0_1"
+        (rectangle
+          (start -5.08 -5.08)
+          (end -6.35 -2.54)
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type outline))
+        )
+        (polyline
+          (pts (xy 0 -2.54) (xy 0.635 -3.175) (xy 1.27 -2.54) (xy 2.54 -2.54))
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts
+            (xy -1.905 -2.54)
+            (xy -1.27 -3.175)
+            (xy -0.635 -2.54)
+            (xy -0.635 0)
+            (xy 2.54 0)
+          )
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts
+            (xy 2.54 2.54)
+            (xy -2.54 2.54)
+            (xy -2.54 -2.54)
+            (xy -3.175 -3.175)
+            (xy -3.81 -2.54)
+          )
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (rectangle
+          (start 2.54 3.81)
+          (end -5.08 -5.08)
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type background))
+        )
+      )
+      (symbol
+        "AudioJack3_1_1"
+        (pin
+          passive
+          line
+          (at 5.08 0 180)
+          (length 2.54)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "R" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 5.08 2.54 180)
+          (length 2.54)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "S" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 5.08 -2.54 180)
+          (length 2.54)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "T" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Device:R"
+      (pin_numbers hide)
+      (pin_names (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property
+        "Reference"
+        "R"
+        (at 2.032 0 90)
+        (effects (font (size 1.27 1.27)))
+      )
+      (property "Value" "R" (at 0 0 90) (effects (font (size 1.27 1.27))))
+      (property
+        "Footprint"
+        ""
+        (at -1.778 0 90)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "~"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "R res resistor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Resistor"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "R_*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "R_0_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+      )
+      (symbol
+        "R_1_1"
+        (pin
+          passive
+          line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Device:R_Potentiometer"
+      (pin_names (offset 1.016) hide)
+      (in_bom yes)
+      (on_board yes)
+      (property
+        "Reference"
+        "RV"
+        (at -4.445 0 90)
+        (effects (font (size 1.27 1.27)))
+      )
+      (property
+        "Value"
+        "R_Potentiometer"
+        (at -2.54 0 90)
+        (effects (font (size 1.27 1.27)))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "~"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "resistor variable"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Potentiometer"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "Potentiometer*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "R_Potentiometer_0_1"
+        (polyline
+          (pts (xy 2.54 0) (xy 1.524 0))
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+        (polyline
+          (pts (xy 1.143 0) (xy 2.286 0.508) (xy 2.286 -0.508) (xy 1.143 0))
+          (stroke (width 0) (type default) (color 0 0 0 0))
+          (fill (type outline))
+        )
+        (rectangle
+          (start 1.016 2.54)
+          (end -1.016 -2.54)
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type none))
+        )
+      )
+      (symbol
+        "R_Potentiometer_1_1"
+        (pin
+          passive
+          line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "1" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 3.81 0 180)
+          (length 1.27)
+          (name "2" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          passive
+          line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "3" (effects (font (size 1.27 1.27))))
+          (number "3" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Amplifier_Operational:LM2904"
+      (pin_names (offset 0.127))
+      (in_bom yes)
+      (on_board yes)
+      (property
+        "Reference"
+        "U"
+        (at 0 5.08 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Value"
+        "LM2904"
+        (at 0 -5.08 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "http://www.ti.com/lit/ds/symlink/lm358.pdf"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property "ki_locked" "" (at 0 0 0) (effects (font (size 1.27 1.27))))
+      (property
+        "ki_keywords"
+        "dual opamp"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Dual Operational Amplifiers, DIP-8/SOIC-8/TSSOP-8/VSSOP-8"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "SOIC*3.9x4.9mm*P1.27mm* DIP*W7.62mm* TO*99* OnSemi*Micro8* TSSOP*3x3mm*P0.65mm* TSSOP*4.4x3mm*P0.65mm* MSOP*3x3mm*P0.65mm* SSOP*3.9x4.9mm*P0.635mm* LFCSP*2x2mm*P0.5mm* *SIP* SOIC*5.3x6.2mm*P1.27mm*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol
+        "LM2904_1_1"
+        (polyline
+          (pts (xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08))
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type background))
+        )
+        (pin
+          output
+          line
+          (at 7.62 0 180)
+          (length 2.54)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          input
+          line
+          (at -7.62 -2.54 0)
+          (length 2.54)
+          (name "-" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          input
+          line
+          (at -7.62 2.54 0)
+          (length 2.54)
+          (name "+" (effects (font (size 1.27 1.27))))
+          (number "3" (effects (font (size 1.27 1.27))))
+        )
+      )
+      (symbol
+        "LM2904_2_1"
+        (polyline
+          (pts (xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08))
+          (stroke (width 0.254) (type default) (color 0 0 0 0))
+          (fill (type background))
+        )
+        (pin
+          input
+          line
+          (at -7.62 2.54 0)
+          (length 2.54)
+          (name "+" (effects (font (size 1.27 1.27))))
+          (number "5" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          input
+          line
+          (at -7.62 -2.54 0)
+          (length 2.54)
+          (name "-" (effects (font (size 1.27 1.27))))
+          (number "6" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          output
+          line
+          (at 7.62 0 180)
+          (length 2.54)
+          (name "~" (effects (font (size 1.27 1.27))))
+          (number "7" (effects (font (size 1.27 1.27))))
+        )
+      )
+      (symbol
+        "LM2904_3_1"
+        (pin
+          power_in
+          line
+          (at -2.54 -7.62 90)
+          (length 3.81)
+          (name "V-" (effects (font (size 1.27 1.27))))
+          (number "4" (effects (font (size 1.27 1.27))))
+        )
+        (pin
+          power_in
+          line
+          (at -2.54 7.62 270)
+          (length 3.81)
+          (name "V+" (effects (font (size 1.27 1.27))))
+          (number "8" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol
+      "Amplifier_Operational:NE5532"
+      (extends "Amplifier_Operational:LM2904")
+      (property
+        "Reference"
+        "U"
+        (at 0 5.08 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Value"
+        "NE5532"
+        (at 0 -5.08 0)
+        (effects (font (size 1.27 1.27)) (justify left))
+      )
+      (property
+        "Footprint"
+        ""
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "Datasheet"
+        "http://www.ti.com/lit/ds/symlink/ne5532.pdf"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_keywords"
+        "dual opamp"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_description"
+        "Dual Low-Noise Operational Amplifiers, DIP-8/SOIC-8"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property
+        "ki_fp_filters"
+        "SOIC*3.9x4.9mm*P1.27mm* DIP*W7.62mm* TO*99* OnSemi*Micro8* TSSOP*3x3mm*P0.65mm* TSSOP*4.4x3mm*P0.65mm* MSOP*3x3mm*P0.65mm* SSOP*3.9x4.9mm*P0.635mm* LFCSP*2x2mm*P0.5mm* *SIP* SOIC*5.3x6.2mm*P1.27mm*"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C")
+    (at 50.80 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "02e5ad80-a6cd-4b79-9389-130b6f067fb9")
+    (property
+      "Reference"
+      "C1"
+      (at 52.07 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100n"
+      (at 52.07 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 50.80 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 50.80 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "56604610-6860-4332-b3cc-bcb2327b0f96"))
+    (pin "2" (uuid "60b26de3-7b3f-48fc-ad25-13a0ed602635"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C")
+    (at 81.28 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "97431461-5a7e-4a6e-8217-b0794479449a")
+    (property
+      "Reference"
+      "C2"
+      (at 82.55 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100n"
+      (at 82.55 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 81.28 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 81.28 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "3736fe09-8ca0-4b33-bc36-9a7cc285746d"))
+    (pin "2" (uuid "1a6f6d0b-7f46-45b1-bd0d-664b8cb421eb"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C2")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C_Polarized")
+    (at 111.76 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "e1296061-bb9c-4570-8fa1-6ce1ca9b386e")
+    (property
+      "Reference"
+      "C3"
+      (at 113.03 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "10u"
+      (at 113.03 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 111.76 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 111.76 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "aaf5e444-17a6-415f-9f66-6e73863dd579"))
+    (pin "2" (uuid "bfca0472-ab53-4009-b048-3988b125906f"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C3")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C_Polarized")
+    (at 142.24 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "236d688f-3518-4eb1-a470-4e4d7e9bcdfa")
+    (property
+      "Reference"
+      "C4"
+      (at 143.51 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "10u"
+      (at 143.51 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 142.24 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 142.24 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "e08fd0f3-84ed-47a4-8693-5f75aa142203"))
+    (pin "2" (uuid "b5c17fcd-ad72-4071-ae52-9e7000427e5d"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C4")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C")
+    (at 172.72 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "989edfa8-de35-46bb-b70e-a4992d072655")
+    (property
+      "Reference"
+      "C5"
+      (at 173.99 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "1u"
+      (at 173.99 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 172.72 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 172.72 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "8074bfaa-2136-4efc-abce-390586e12b5e"))
+    (pin "2" (uuid "134ed301-21bd-481c-a2f4-ff19f741565f"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C5")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C_Polarized")
+    (at 203.20 76.20 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "ee06cead-e5ae-4e2e-9f67-997d73a1fa1e")
+    (property
+      "Reference"
+      "C6"
+      (at 204.47 74.93 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "22u"
+      (at 204.47 77.47 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 203.20 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 203.20 76.20 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "d4435616-3f09-45ce-8c43-06cf537b3229"))
+    (pin "2" (uuid "6b3ee987-9b8b-45ea-914b-e3026528cd4a"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C6")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:C_Polarized")
+    (at 50.80 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "4c4df9e4-c197-4638-a815-8dd47bb02660")
+    (property
+      "Reference"
+      "C7"
+      (at 52.07 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "220u"
+      (at 52.07 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 50.80 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 50.80 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "e9019dae-b544-43d8-861d-5839a7587440"))
+    (pin "2" (uuid "4ea8ec19-c4e0-42d7-ab4f-2b8c222c0ac7"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "C7")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Connector:AudioJack3")
+    (at 81.28 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "3a53a5bd-1fde-4ce9-98fb-3eef0270f40a")
+    (property
+      "Reference"
+      "J1"
+      (at 82.55 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "Audio In"
+      (at 82.55 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 81.28 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 81.28 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "R" (uuid "71e45c58-c23f-4f02-9c88-9b3b905fc559"))
+    (pin "S" (uuid "caf21f80-e633-48a3-8349-3e5fd6a8216b"))
+    (pin "T" (uuid "f06acb33-c797-4d87-b3da-15b2573a3311"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "J1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Connector:AudioJack3")
+    (at 111.76 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "1b95ec2e-e46d-4a45-b9b6-50564e2d2751")
+    (property
+      "Reference"
+      "J2"
+      (at 113.03 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "Headphone Out"
+      (at 113.03 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 111.76 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 111.76 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "R" (uuid "43c595c9-817a-4643-8580-a86d56e85d68"))
+    (pin "S" (uuid "06473f09-435b-44a6-997b-75f1526b3d0a"))
+    (pin "T" (uuid "fe87e0e5-3dfb-401e-b5f4-0522d89c546e"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "J2")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 142.24 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "539b0abd-b589-48f6-a293-413ad2e95a77")
+    (property
+      "Reference"
+      "R1"
+      (at 143.51 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100k"
+      (at 143.51 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 142.24 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 142.24 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "df52dd72-2e2f-4094-aeb1-ff32e8a8e541"))
+    (pin "2" (uuid "61ec8d09-3450-45c6-87e5-dd37ec210ecf"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 172.72 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "68ca2be5-a731-44ec-84a3-8066b84cace6")
+    (property
+      "Reference"
+      "R2"
+      (at 173.99 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "20k"
+      (at 173.99 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 172.72 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 172.72 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "1e7d66d3-bed7-4714-86b1-b6cd2280f221"))
+    (pin "2" (uuid "2a01c922-425d-4f7e-bab1-e01b7319a640"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R2")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 203.20 106.68 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "c08874f6-2de8-42db-8d37-be126597397d")
+    (property
+      "Reference"
+      "R3"
+      (at 204.47 105.41 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "10k"
+      (at 204.47 107.95 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 203.20 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 203.20 106.68 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "0bd3ba3c-cf28-4413-8345-8d1e13ab9250"))
+    (pin "2" (uuid "8deecbcb-4d3f-4d0e-a5fe-e4149be4329d"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R3")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 50.80 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "2cebee8b-7690-469d-aca8-550c011ccc8e")
+    (property
+      "Reference"
+      "R4"
+      (at 52.07 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100k"
+      (at 52.07 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 50.80 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 50.80 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "b2b606d9-be9a-4780-8a87-60b5db4eb9f7"))
+    (pin "2" (uuid "cfbca0c7-45a2-4821-af34-7ad102f7a9f6"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R4")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 81.28 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "92858a15-cdb9-4c41-a708-0b8a02fbdfd9")
+    (property
+      "Reference"
+      "R5"
+      (at 82.55 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100k"
+      (at 82.55 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 81.28 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 81.28 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "099a5967-a360-4689-a6c4-01ebf942e5d4"))
+    (pin "2" (uuid "ae285262-0f81-4bfc-a648-8c8d7cba4920"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R5")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 111.76 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "bf2d3428-bb3f-441d-949e-214ee8e033a9")
+    (property
+      "Reference"
+      "R6"
+      (at 113.03 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "47"
+      (at 113.03 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 111.76 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 111.76 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "5003c15e-00db-4588-9bdf-df13c96b8929"))
+    (pin "2" (uuid "68cbcb06-7d8a-4f95-844f-c423d8025ec8"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R6")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R")
+    (at 142.24 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "1e424f65-5a1c-4cb9-a9c5-9847d148b1b7")
+    (property
+      "Reference"
+      "R7"
+      (at 143.51 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "100k"
+      (at 143.51 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 142.24 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 142.24 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "9bf62aca-fea0-4619-b9b0-df9c77d46ccc"))
+    (pin "2" (uuid "eab4bbe8-3df8-4552-8e46-fe1fd4a0c8cc"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "R7")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:R_Potentiometer")
+    (at 172.72 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "df626935-4382-4ccd-8ab4-2e61435392a1")
+    (property
+      "Reference"
+      "RV1"
+      (at 173.99 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "10k"
+      (at 173.99 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 172.72 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 172.72 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "6cb6ae87-6d09-44d1-ad43-c888ae106889"))
+    (pin "2" (uuid "46814432-dd94-4aaf-99eb-a20e24ab595e"))
+    (pin "3" (uuid "bcc965fc-fb83-4e10-b0f0-a553042c3f70"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "RV1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Amplifier_Operational:NE5532")
+    (at 203.20 137.16 0)
+    (unit 1)
+    (exclude_from_sim yes)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "962c2a97-7d41-4de4-b7f7-2907658cb2b1")
+    (property
+      "Reference"
+      "U1"
+      (at 204.47 135.89 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "NE5532"
+      (at 204.47 138.43 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 203.20 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 203.20 137.16 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "e0b555fe-8023-4258-92d1-ad97270601c1"))
+    (pin "2" (uuid "097736db-4b80-4431-b7c5-ca19ce3de081"))
+    (pin "3" (uuid "d6f6949e-8dc6-4e7a-8735-04e14b2dad00"))
+    (pin "4" (uuid "6007f4c9-402c-432f-a921-bc14746c47fc"))
+    (pin "5" (uuid "24409407-502c-414d-a09f-403d9f0b97c3"))
+    (pin "6" (uuid "b02eb55e-aca7-456c-a663-b04550c9e724"))
+    (pin "7" (uuid "99acf78e-ba4a-4b58-9f19-e6f7af798c49"))
+    (pin "8" (uuid "d111165e-ec5a-488d-afa0-8b5825090614"))
+    (instances
+      (project
+        "OpAmp_Headphone_Amp"
+        (path
+          "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/"
+          (reference "U1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (wire
+    (pts (xy 50.80 72.39) (xy 50.80 67.31))
+    (stroke (width 0) (type default))
+    (uuid "ce2f562f-6c89-4c18-9108-69731b606b5c")
+  )
+  (label
+    "0V"
+    (at 50.80 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "04563752-2005-426c-afe5-b1459caf7417")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"C1\"}"
+    (at -1200.00 -1500.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 81.28 72.39) (xy 81.28 67.31))
+    (stroke (width 0) (type default))
+    (uuid "4188f88c-6a6e-4ab8-b1dd-19c9258133f3")
+  )
+  (label
+    "0V"
+    (at 81.28 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "6d0cad0f-bc4a-486f-aa79-cd3f028c5f6a")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"C2\"}"
+    (at -1200.00 -1510.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 111.76 72.39) (xy 111.76 67.31))
+    (stroke (width 0) (type default))
+    (uuid "dcc3d6b8-a230-439c-a517-e446d4362afa")
+  )
+  (label
+    "0V"
+    (at 111.76 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "09e089d7-c17d-40d7-9c83-0787547336b0")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"C3\"}"
+    (at -1200.00 -1520.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 72.39) (xy 142.24 67.31))
+    (stroke (width 0) (type default))
+    (uuid "a2d81103-c9c3-45f0-bfc7-5fd33b3ee6d4")
+  )
+  (label
+    "0V"
+    (at 142.24 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "1f34304f-2bd6-4d2a-8f33-a2fbd297b43c")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"C4\"}"
+    (at -1200.00 -1530.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 86.36 109.22) (xy 91.44 109.22))
+    (stroke (width 0) (type default))
+    (uuid "e0a2a419-3650-4719-b4c9-e2844e9da9c3")
+  )
+  (label
+    "0V"
+    (at 91.44 109.22 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "2ccaf990-4a06-49fa-acd7-64903ab2bf2e")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"S\",\"ref\":\"J1\"}"
+    (at -1200.00 -1540.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 116.84 109.22) (xy 121.92 109.22))
+    (stroke (width 0) (type default))
+    (uuid "ab7ac928-14a8-47c5-ab73-c8cf717596f3")
+  )
+  (label
+    "0V"
+    (at 121.92 109.22 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "5850620b-44a0-4f46-be9b-cd05020273b8")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"S\",\"ref\":\"J2\"}"
+    (at -1200.00 -1550.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 203.20 102.87) (xy 203.20 97.79))
+    (stroke (width 0) (type default))
+    (uuid "652835c8-10c0-4ca5-8c58-5c424514188f")
+  )
+  (label
+    "0V"
+    (at 203.20 97.79 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "251003ae-ec89-48e5-87c2-1eb6e250c7d7")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"R3\"}"
+    (at -1200.00 -1560.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 50.80 133.35) (xy 50.80 128.27))
+    (stroke (width 0) (type default))
+    (uuid "51216bd3-07b7-4b69-8167-c071c8fdb18a")
+  )
+  (label
+    "0V"
+    (at 50.80 128.27 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "29662d92-9440-490a-83e4-be0b08f60bc7")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"R4\"}"
+    (at -1200.00 -1570.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 81.28 133.35) (xy 81.28 128.27))
+    (stroke (width 0) (type default))
+    (uuid "06846350-2742-422c-b93f-ea6647f038f6")
+  )
+  (label
+    "0V"
+    (at 81.28 128.27 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "f155e155-cf78-43df-8101-82a6a89c8075")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"R5\"}"
+    (at -1200.00 -1580.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 133.35) (xy 142.24 128.27))
+    (stroke (width 0) (type default))
+    (uuid "d94c9d41-db45-489d-8617-035a9f1ad639")
+  )
+  (label
+    "0V"
+    (at 142.24 128.27 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "24e97515-e000-4f57-a2fd-ef1c7b188495")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"2\",\"ref\":\"R7\"}"
+    (at -1200.00 -1590.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 133.35) (xy 172.72 128.27))
+    (stroke (width 0) (type default))
+    (uuid "1940e0e9-68b9-454a-8ce8-61a48650b1d8")
+  )
+  (label
+    "0V"
+    (at 172.72 128.27 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "f85fb784-0c11-423a-be48-9786c6bbb3d8")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"0V\",\"pin\":\"3\",\"ref\":\"RV1\"}"
+    (at -1200.00 -1600.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 50.80 110.49) (xy 50.80 115.57))
+    (stroke (width 0) (type default))
+    (uuid "9c41e25e-59c5-4b1c-aec1-4f3ca8c20b87")
+  )
+  (label
+    "AFTER_R6"
+    (at 50.80 115.57 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "d7ba59d0-2271-464f-b4a3-4804213691cc")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"AFTER_R6\",\"pin\":\"1\",\"ref\":\"C7\"}"
+    (at -1200.00 -1610.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 111.76 133.35) (xy 111.76 128.27))
+    (stroke (width 0) (type default))
+    (uuid "a53644db-e3ad-4e7f-98dc-4c4c0f2e8f0f")
+  )
+  (label
+    "AFTER_R6"
+    (at 111.76 128.27 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "5c95269a-be62-4088-8853-0bffb6e57795")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"AFTER_R6\",\"pin\":\"2\",\"ref\":\"R6\"}"
+    (at -1200.00 -1620.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 203.20 72.39) (xy 203.20 67.31))
+    (stroke (width 0) (type default))
+    (uuid "171ec0e2-5e13-4051-8cc8-ff5e8aa17c45")
+  )
+  (label
+    "BUF_L_IN"
+    (at 203.20 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "f61418d5-e062-488b-9c90-10a646320a39")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"BUF_L_IN\",\"pin\":\"2\",\"ref\":\"C6\"}"
+    (at -1200.00 -1630.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 81.28 140.97) (xy 81.28 146.05))
+    (stroke (width 0) (type default))
+    (uuid "6c49e064-3bfc-42b1-b2e4-1193594bccfc")
+  )
+  (label
+    "BUF_L_IN"
+    (at 81.28 146.05 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "0276b305-972b-42ff-863e-ff11890b15f2")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"BUF_L_IN\",\"pin\":\"1\",\"ref\":\"R5\"}"
+    (at -1200.00 -1640.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 195.58 139.70) (xy 190.50 139.70))
+    (stroke (width 0) (type default))
+    (uuid "355ada21-a2bb-4fd6-bfc8-031073507ba0")
+  )
+  (label
+    "BUF_L_IN"
+    (at 190.50 139.70 180)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "b527ba53-11ee-46e2-a442-8861c81d639d")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"BUF_L_IN\",\"pin\":\"5\",\"ref\":\"U1\"}"
+    (at -1200.00 -1650.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 50.80 102.87) (xy 50.80 97.79))
+    (stroke (width 0) (type default))
+    (uuid "8f940a7a-0fe8-4568-822a-ae65d1c8f088")
+  )
+  (label
+    "HP_L_OUT"
+    (at 50.80 97.79 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "ed713eb3-7e95-4307-8645-255cd3aef38a")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"HP_L_OUT\",\"pin\":\"2\",\"ref\":\"C7\"}"
+    (at -1200.00 -1660.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 116.84 104.14) (xy 121.92 104.14))
+    (stroke (width 0) (type default))
+    (uuid "c5b5c1cf-a213-4b76-8f87-4a42c72631f6")
+  )
+  (label
+    "HP_L_OUT"
+    (at 121.92 104.14 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "99ced88f-c55d-48b9-8bde-9dff4280f3e6")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"HP_L_OUT\",\"pin\":\"T\",\"ref\":\"J2\"}"
+    (at -1200.00 -1670.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 140.97) (xy 142.24 146.05))
+    (stroke (width 0) (type default))
+    (uuid "a9d866df-5625-4b04-970e-af4c5678caec")
+  )
+  (label
+    "HP_L_OUT"
+    (at 142.24 146.05 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "4f576bba-0448-4ca2-b3e3-854cc14a3872")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"HP_L_OUT\",\"pin\":\"1\",\"ref\":\"R7\"}"
+    (at -1200.00 -1680.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 72.39) (xy 172.72 67.31))
+    (stroke (width 0) (type default))
+    (uuid "d7bb6e6b-b305-4bbe-a944-d6f9e7114b82")
+  )
+  (label
+    "IN_L_AC"
+    (at 172.72 67.31 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "c9c06fde-8238-4209-97f4-0f8960d96896")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"2\",\"ref\":\"C5\"}"
+    (at -1200.00 -1690.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 102.87) (xy 142.24 97.79))
+    (stroke (width 0) (type default))
+    (uuid "9fbf33df-90c4-4a72-9f37-53aab9a2995b")
+  )
+  (label
+    "IN_L_AC"
+    (at 142.24 97.79 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "9182f09a-ebfc-4017-b90c-a378b1526758")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"2\",\"ref\":\"R1\"}"
+    (at -1200.00 -1700.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 140.97) (xy 172.72 146.05))
+    (stroke (width 0) (type default))
+    (uuid "0b0cf8fa-575a-4e90-a622-df569777f7df")
+  )
+  (label
+    "IN_L_AC"
+    (at 172.72 146.05 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "214e1395-37e4-4f41-90fb-7fea36992214")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"IN_L_AC\",\"pin\":\"1\",\"ref\":\"RV1\"}"
+    (at -1200.00 -1710.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 80.01) (xy 172.72 85.09))
+    (stroke (width 0) (type default))
+    (uuid "a9ce6ef9-9bf9-4708-87ee-bf7130e6b8af")
+  )
+  (label
+    "LEFT_IN"
+    (at 172.72 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "8db36193-a969-46af-b709-07d4b75c45cb")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"1\",\"ref\":\"C5\"}"
+    (at -1200.00 -1720.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 86.36 104.14) (xy 91.44 104.14))
+    (stroke (width 0) (type default))
+    (uuid "653b298a-f452-4280-a971-411f901d0959")
+  )
+  (label
+    "LEFT_IN"
+    (at 91.44 104.14 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "8575cf70-53e7-405e-bc49-6e3f2890ba13")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"T\",\"ref\":\"J1\"}"
+    (at -1200.00 -1730.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 110.49) (xy 142.24 115.57))
+    (stroke (width 0) (type default))
+    (uuid "defec6ce-6a2e-4a18-b4fb-b1f9bb4a121c")
+  )
+  (label
+    "LEFT_IN"
+    (at 142.24 115.57 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "55bd52ab-6ac9-4b80-a59f-a2bd14edff62")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"LEFT_IN\",\"pin\":\"1\",\"ref\":\"R1\"}"
+    (at -1200.00 -1740.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 203.20 80.01) (xy 203.20 85.09))
+    (stroke (width 0) (type default))
+    (uuid "e13f1d63-881d-47da-a889-5997ac2a1c6d")
+  )
+  (label
+    "OUT_L_STAGE1"
+    (at 203.20 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "72812ab9-1817-47e0-909f-d1a6099493cf")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"C6\"}"
+    (at -1200.00 -1750.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 110.49) (xy 172.72 115.57))
+    (stroke (width 0) (type default))
+    (uuid "a0a35ae6-d071-4d14-b18b-112ad2dd09d9")
+  )
+  (label
+    "OUT_L_STAGE1"
+    (at 172.72 115.57 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "32339874-59ed-491b-beb3-caaec5db016f")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"R2\"}"
+    (at -1200.00 -1760.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 210.82 137.16) (xy 215.90 137.16))
+    (stroke (width 0) (type default))
+    (uuid "2434f175-4c36-40d6-bb37-bc29f1944c73")
+  )
+  (label
+    "OUT_L_STAGE1"
+    (at 215.90 137.16 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "148423b8-13f6-4dce-9286-767de9beaf08")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE1\",\"pin\":\"1\",\"ref\":\"U1\"}"
+    (at -1200.00 -1770.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 111.76 140.97) (xy 111.76 146.05))
+    (stroke (width 0) (type default))
+    (uuid "b82cd250-8bb5-48ee-a768-4a0d079968e6")
+  )
+  (label
+    "OUT_L_STAGE2_RAW"
+    (at 111.76 146.05 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "99441b02-41d2-4ea8-ab06-0f94f7933deb")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"1\",\"ref\":\"R6\"}"
+    (at -1200.00 -1780.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 195.58 134.62) (xy 190.50 134.62))
+    (stroke (width 0) (type default))
+    (uuid "a609607e-7e59-4f17-b3c0-ae264cfc4bba")
+  )
+  (label
+    "OUT_L_STAGE2_RAW"
+    (at 190.50 134.62 180)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "83210fbc-5f94-467f-b52f-e2e512b6e5bd")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"6\",\"ref\":\"U1\"}"
+    (at -1200.00 -1790.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 210.82 137.16) (xy 215.90 137.16))
+    (stroke (width 0) (type default))
+    (uuid "13bff527-0c26-4b91-bb74-d9fe9d43e7b5")
+  )
+  (label
+    "OUT_L_STAGE2_RAW"
+    (at 215.90 137.16 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "6ebf275f-a368-47a9-acf0-108be9e46e67")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"OUT_L_STAGE2_RAW\",\"pin\":\"7\",\"ref\":\"U1\"}"
+    (at -1200.00 -1800.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 172.72 102.87) (xy 172.72 97.79))
+    (stroke (width 0) (type default))
+    (uuid "618c1d0e-a421-4e4a-9216-940baa1fa275")
+  )
+  (label
+    "U1A_IN_NEG"
+    (at 172.72 97.79 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "5b2a7c05-aea5-4185-a0a9-c4ae6334f2a3")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"U1A_IN_NEG\",\"pin\":\"2\",\"ref\":\"R2\"}"
+    (at -1200.00 -1810.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 203.20 110.49) (xy 203.20 115.57))
+    (stroke (width 0) (type default))
+    (uuid "b63408c4-2758-4acc-abda-46caf00e525a")
+  )
+  (label
+    "U1A_IN_NEG"
+    (at 203.20 115.57 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "2a059a68-cf24-46e3-968e-d1ea88e5e5ca")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"U1A_IN_NEG\",\"pin\":\"1\",\"ref\":\"R3\"}"
+    (at -1200.00 -1820.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 195.58 134.62) (xy 190.50 134.62))
+    (stroke (width 0) (type default))
+    (uuid "d7eb4a8c-a94d-4807-a4f5-dc494687935e")
+  )
+  (label
+    "U1A_IN_NEG"
+    (at 190.50 134.62 180)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "84507158-06c6-4182-b2d2-3c694c80fe76")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"U1A_IN_NEG\",\"pin\":\"2\",\"ref\":\"U1\"}"
+    (at -1200.00 -1830.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 81.28 80.01) (xy 81.28 85.09))
+    (stroke (width 0) (type default))
+    (uuid "2c0c64de-19e7-488b-b8b1-2ed3f6cb5f86")
+  )
+  (label
+    "VMINUS15"
+    (at 81.28 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "c7997ab4-574c-48b8-a7a6-d235094fde94")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"1\",\"ref\":\"C2\"}"
+    (at -1200.00 -1840.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 142.24 80.01) (xy 142.24 85.09))
+    (stroke (width 0) (type default))
+    (uuid "557c98f5-f385-4ac9-bbe5-5ead71c7f8f4")
+  )
+  (label
+    "VMINUS15"
+    (at 142.24 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "fbf8e988-002b-4a86-85aa-874337852d3b")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"1\",\"ref\":\"C4\"}"
+    (at -1200.00 -1850.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 200.66 129.54) (xy 200.66 124.46))
+    (stroke (width 0) (type default))
+    (uuid "c7ed89f0-b15e-4768-b412-613aa1fce1e0")
+  )
+  (label
+    "VMINUS15"
+    (at 200.66 124.46 270)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "3d97ed6c-f34d-47b5-b9c2-955d1368adf4")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VMINUS15\",\"pin\":\"4\",\"ref\":\"U1\"}"
+    (at -1200.00 -1860.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 50.80 140.97) (xy 50.80 146.05))
+    (stroke (width 0) (type default))
+    (uuid "62bced09-db57-4fcd-a2a7-624335d8393b")
+  )
+  (label
+    "VOL_L_OUT"
+    (at 50.80 146.05 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "d7627011-7a1e-4f6d-b0fa-b5d3d2a724fe")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"1\",\"ref\":\"R4\"}"
+    (at -1200.00 -1870.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 176.53 137.16) (xy 181.61 137.16))
+    (stroke (width 0) (type default))
+    (uuid "9cc0f0b2-233d-439e-9a8c-14c958526387")
+  )
+  (label
+    "VOL_L_OUT"
+    (at 181.61 137.16 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "416a20b3-b692-46e1-9cd9-79a771712781")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"2\",\"ref\":\"RV1\"}"
+    (at -1200.00 -1880.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 195.58 139.70) (xy 190.50 139.70))
+    (stroke (width 0) (type default))
+    (uuid "7973c4d4-216f-4927-8a56-a8100ff7511c")
+  )
+  (label
+    "VOL_L_OUT"
+    (at 190.50 139.70 180)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "391989c4-7631-4b46-b22b-82cf7dd4ef38")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VOL_L_OUT\",\"pin\":\"3\",\"ref\":\"U1\"}"
+    (at -1200.00 -1890.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 50.80 80.01) (xy 50.80 85.09))
+    (stroke (width 0) (type default))
+    (uuid "af9b2c07-05c2-4f02-9dce-8a0b635d056d")
+  )
+  (label
+    "VPLUS15"
+    (at 50.80 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "eae0d326-2c4f-4f9e-8a83-a61a16e7e7cf")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"1\",\"ref\":\"C1\"}"
+    (at -1200.00 -1900.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 111.76 80.01) (xy 111.76 85.09))
+    (stroke (width 0) (type default))
+    (uuid "0e9b3bbf-d1ef-4238-9f2a-368266cb4cc7")
+  )
+  (label
+    "VPLUS15"
+    (at 111.76 85.09 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "1972de8b-5f16-4dc5-8645-e5c3fbe25f48")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"1\",\"ref\":\"C3\"}"
+    (at -1200.00 -1910.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (wire
+    (pts (xy 200.66 144.78) (xy 200.66 149.86))
+    (stroke (width 0) (type default))
+    (uuid "736cafdf-d099-4ff9-a2ef-4a3e01a2bce1")
+  )
+  (label
+    "VPLUS15"
+    (at 200.66 149.86 90)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "a36bbadb-bd75-4999-b6f5-223b3f52a22c")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "OpenClaw:bind={\"net_name\":\"VPLUS15\",\"pin\":\"8\",\"ref\":\"U1\"}"
+    (at -1200.00 -1920.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (sheet_instances (path "/e19b14c0-045c-4013-aa58-74bf58c9f4d4/" (page "1")))
+)
