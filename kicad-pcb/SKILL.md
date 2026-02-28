@@ -256,8 +256,8 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 | `build-symbol-index [--symbols-dir DIR]` | Pre-populate symbol search cache (run once after installing KiCad) |
 | `debug-symbol <Lib:Name> [--symbols-dir DIR]` | Show resolved pin list and extends chain for one symbol (use to diagnose pin count issues) |
 | `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
-| `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
-| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
+| `fix-netlist --netlist circuit.json [--output fixed.json]` | **Auto-fix common Circuit IR errors and write corrected JSON** |
+| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (auto-fixes errors by default) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
 
@@ -454,35 +454,28 @@ Then write the complete Circuit IR JSON (all components + all nets at once;
 }
 ```
 
-Then validate it first (no files written, catches all 3 layers of errors):
+Then compile it (auto-fix is on by default — the tool repairs common errors before creating files):
 
 ```bash
-# Validate Circuit IR — no files written, exit 0 = clean
-{baseDir}/scripts/kicad_pcb.py validate-netlist \
-    --netlist circuit.json \
-    --symbols-dir /usr/share/kicad/symbols
-# → ✅ Circuit IR valid  (fix and re-run until ✅ before compiling)
-```
-
-Then validate it first (no files written, catches all 3 layers of errors):
-
-```bash
-# Validate Circuit IR — no files written, exit 0 = clean
-{baseDir}/scripts/kicad_pcb.py validate-netlist \
-    --netlist circuit.json \
-    --symbols-dir /usr/share/kicad/symbols
-# → ✅ Circuit IR valid  (fix and re-run until ✅ before compiling)
-```
-
-Then compile it:
-
-```bash
-# Compile Circuit IR → KiCad schematic (never write .kicad_sch directly)
+# Compile Circuit IR → KiCad schematic.
+# If JSON has fixable errors (wrong wrapper, integer version, forbidden fields,
+# wrong pin aliases like '+'/'-') the tool auto-repairs and retries automatically.
 {baseDir}/scripts/kicad_pcb.py new-from-netlist \
     --name LED_Blinker_555 \
     --netlist circuit.json \
     --symbols-dir /usr/share/kicad/symbols \
     --mode internal
+```
+
+If you want to preview or save what auto-fix changed, run `fix-netlist` first:
+
+```bash
+# Inspect and save the auto-fixed JSON without creating a project
+{baseDir}/scripts/kicad_pcb.py fix-netlist \
+    --netlist circuit.json \
+    --output circuit.fixed.json \
+    --symbols-dir /usr/share/kicad/symbols
+# Shows every change applied and writes the corrected JSON for inspection
 ```
 
 #### ✅ Pre-flight self-check — run this mentally before calling `new-from-netlist`
@@ -516,11 +509,13 @@ Are there components in "components" that are never referenced in any net? (unus
 
 #### ❌ Error recovery loop
 
-When `new-from-netlist` returns an error:
+`new-from-netlist` applies **automatic fixes before raising errors** (enabled by default). Common problems — metadata wrappers, integer `version`, forbidden component fields, integer pin numbers, pin aliases like `+`/`-` — are repaired silently and the validation is retried. Only errors that cannot be auto-fixed reach you.
 
-1. **Read the full error message** — it names the exact problem (`schema validation failed` / `PIN_INVALID: Net X references R1 pin 3` / `IR_SEMANTIC_INVALID: duplicate refs`).
-2. **Fix the Circuit IR JSON** using the error message as a guide. Do NOT guess — read the error.
-3. **Re-run `new-from-netlist`** on the corrected JSON.
+When `new-from-netlist` still returns an error after auto-fix:
+
+1. **Read the full error message** — it shows what was fixed AND what remains (e.g. `schema validation failed` / `PIN_INVALID: Net X references R1 pin 3` / `IR_SEMANTIC_INVALID: duplicate refs`). A partial-fix file `<stem>.autofix.json` is written alongside the original.
+2. **Run `fix-netlist`** to inspect and repair the JSON (`fix-netlist --netlist circuit.json --symbols-dir ... --output circuit.fixed.json`). Review the output, then re-run `new-from-netlist` on the fixed file.
+3. If no `--symbols-dir` is provided, pin-alias fixes are skipped (`pin_validation_skipped=True`). Add `--symbols-dir /usr/share/kicad/symbols` to enable alias resolution.
 4. Repeat until exit 0. Accept up to 3 fix-and-retry cycles before asking the user for clarification.
 5. **Never write `.kicad_sch` by hand** — not on the first failure, not on the third. If after 3 retries the tool still fails, report the exact error to the user and ask for guidance.
 

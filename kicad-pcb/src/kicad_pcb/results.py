@@ -107,6 +107,24 @@ class ValidateNetlistResult:
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True)
+class FixNetlistResult:
+    """Result of the ``fix-netlist`` command."""
+
+    #: ``True`` when all validation errors were resolved by auto-fix.
+    fixed: bool
+    #: Path to the fixed JSON file that was written.
+    output_path: Path
+    #: Human-readable descriptions of every change applied.
+    fixes_applied: tuple[str, ...] = field(default_factory=tuple)
+    #: Errors that could not be resolved deterministically.
+    remaining_errors: tuple[str, ...] = field(default_factory=tuple)
+    component_count: int = 0
+    net_count: int = 0
+    #: ``True`` when pin alias validation was skipped (no symbol library available).
+    pin_validation_skipped: bool = False
+
+
 # ---------------------------------------------------------------------------
 # validation
 # ---------------------------------------------------------------------------

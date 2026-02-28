@@ -26,6 +26,7 @@ from .commands.lint import (
 )
 from .commands.netlist import (
     cmd_apply_netlist,
+    cmd_fix_netlist,
     cmd_info_sch,
     cmd_new_from_netlist,
     cmd_validate_netlist,
@@ -153,7 +154,36 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="kicad",
         help="Validation mode (default: kicad)",
     )
+    p_new_netlist.add_argument(
+        "--no-auto-fix",
+        action="store_false",
+        dest="auto_fix",
+        default=True,
+        help="Disable deterministic auto-fix on validation failure",
+    )
     p_new_netlist.set_defaults(func=cmd_new_from_netlist)
+
+    # fix-netlist
+    p_fix_netlist = subparsers.add_parser(
+        "fix-netlist",
+        help="Auto-fix a Circuit IR JSON file and write the corrected version",
+        description=(
+            "Apply deterministic fixes to a Circuit IR JSON file without any LLM calls. "
+            "Fixes are applied in layers: "
+            "(1) schema structure (version, wrappers, forbidden keys); "
+            "(2) component fields (removes 'type', inline 'pins'); "
+            "(3) net pin types (integer values → strings); "
+            "(4) pin aliases ('+'→'1', '-'→'2', 'TIP'→'T', etc. via library lookup). "
+            "The corrected JSON is always written even when errors remain, so you can inspect "
+            "progress or pass it directly to new-from-netlist."
+        ),
+    )
+    p_fix_netlist.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
+    p_fix_netlist.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_fix_netlist.add_argument(
+        "--output", help="Path for the fixed JSON (default: <stem>.fixed.json)"
+    )
+    p_fix_netlist.set_defaults(func=cmd_fix_netlist)
 
     # search-symbols
     p_search = subparsers.add_parser(
