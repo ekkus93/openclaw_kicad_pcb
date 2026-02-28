@@ -351,6 +351,24 @@ them pass `new-from-netlist`. Do not use any of them.
   ]
 }
 
+// ❌ WRONG: SPICE/EDA logical-netlist style — top-level "meta" wrapper instead
+//           of "version", "nodes" key instead of "pins" inside nets, pin numbers
+//           as integers not strings, symbolic pin names "+"/"-"/"TIP"/"SLEEVE"
+//           instead of KiCad pin IDs, "type" on components, no "symbol" field.
+{
+  "meta": {"title": "My Amp"},          // ❌ must be "version": "1" at top level
+  "nets": [
+    {"name": "VCC", "nodes": [          // ❌ "nodes" must be "pins"
+      {"ref": "C1", "pin": "+"},        // ❌ C_Polarized pins are "1"/"2", not "+"/"-"
+      {"ref": "J1", "pin": "TIP"},      // ❌ AudioJack3 pins are "T"/"R"/"S", not full words
+      {"ref": "U1", "pin": 8}           // ❌ pin must be a string: "8", not integer 8
+    ]}
+  ],
+  "components": [
+    {"ref": "U1", "value": "NE5532", "type": "IC"}  // ❌ "type" forbidden; "symbol" missing
+  ]
+}
+
 // ❌ WRONG: hand-written .kicad_sch with old version, fake generator, no wires
 // (kicad_sch (version 20211014) (generator "OpenAI-GPT") ...)
 // If new-from-netlist fails, fix the netlist — do NOT fall back to writing
