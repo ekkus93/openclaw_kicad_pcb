@@ -30,6 +30,7 @@ from .results import (
     ExportDrillResult,
     ExportGerbersResult,
     ExportPosResult,
+    FixNetlistResult,
     FormatFileResult,
     ImportNetlistResult,
     InfoResult,
@@ -223,6 +224,39 @@ def _fmt_validate_netlist(r: ValidateNetlistResult) -> list[str]:
             lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
     else:
         lines.append("   No warnings.")
+    return lines
+
+
+@_register(FixNetlistResult)
+def _fmt_fix_netlist(r: FixNetlistResult) -> list[str]:
+    if r.fixed and not r.pin_validation_skipped:
+        status = "✅ Circuit IR fixed"
+    elif r.fixed and r.pin_validation_skipped:
+        status = "✅ Schema/semantic fixed (pin aliases not checked)"
+    else:
+        status = "⚠️  Partial fix — errors remain"
+    lines = [status, f"   Fixed JSON: {r.output_path}"]
+    if r.component_count or r.net_count:
+        lines.append(f"   Components: {r.component_count}   Nets: {r.net_count}")
+    if r.fixes_applied:
+        lines.append(f"   Fixes applied ({len(r.fixes_applied)}):")
+        for fix in r.fixes_applied:
+            lines.append(f"     • {fix}")
+    else:
+        lines.append("   No changes applied (JSON was already valid or unfixable).")
+    if r.remaining_errors:
+        lines.append(f"   Remaining errors ({len(r.remaining_errors)}) — fix manually:")
+        for err in r.remaining_errors:
+            lines.append(f"     ❌ {err}")
+    if r.pin_validation_skipped:
+        lines.append(
+            "   ⚠️  Pin alias validation skipped — add --symbols-dir to check "
+            "for invalid pin names (e.g. '+'/'-' for polarized caps, 'TIP'/'RING'/'SLEEVE')."
+        )
+    if r.fixed and not r.remaining_errors:
+        lines.append("   → Pass the fixed JSON to new-from-netlist to create the project.")
+    else:
+        lines.append("   → Fix remaining errors, then run fix-netlist or new-from-netlist again.")
     return lines
 
 

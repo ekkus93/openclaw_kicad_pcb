@@ -46,6 +46,7 @@ from .commands.lint import (
 )
 from .commands.netlist import (
     cmd_apply_netlist,
+    cmd_fix_netlist,
     cmd_info_sch,
     cmd_new_from_netlist,
     cmd_validate_netlist,
@@ -175,6 +176,7 @@ from .results import (
     ExportDrillResult,
     ExportGerbersResult,
     ExportPosResult,
+    FixNetlistResult,
     FormatFileResult,
     ImportNetlistResult,
     InfoResult,
@@ -406,6 +408,8 @@ __all__ = [
     "FormatFileResult",
     "NewFromNetlistResult",
     "ValidateNetlistResult",
+    "FixNetlistResult",
+    "cmd_fix_netlist",
     "BuildSymbolIndexResult",
     "CachedSymbol",
     "cmd_build_symbol_index",

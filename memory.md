@@ -1,6 +1,48 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T00:00:00Z_
+_Last updated: 2026-03-02T12:00:00Z_
+
+---
+
+## 2026-03-02T12:00:00Z - feat: deterministic Circuit IR auto-fixer (ir_autofix.py)
+- **Motivation**: Bot occasionally generates Circuit IR JSON with common structural mistakes (metadata
+  wrapper, integer version, forbidden fields, integer pin numbers, alias pins like +/-). Instead of
+  relying on the bot to re-read SKILL.md and correct the JSON, the tool now repairs it automatically.
+- **New module**: `kicad-pcb/src/kicad_pcb/ir_autofix.py` — 4 deterministic fix layers:
+  1. Schema: unwrap `metadata`/`meta` wrappers, `version: 1 (int)` → `"1"`, remove unknown top-level keys
+  2. Components: strip forbidden fields (`type`, inline `pins`, `nets`, etc.)
+  3. Net pin types: integer pin values → strings (`1 → "1"`)
+  4. Pin aliases: `+`→`"1"`, `-`→`"2"`, `TIP`→`"T"`, `RING`→`"R"`, `SLEEVE`→`"S"`, etc. (requires `--symbols-dir`)
+- **Auto-fix in `cmd_new_from_netlist`** (default on, `--no-auto-fix` to disable):
+  - On validation failure: call `autofix_circuit_ir` → write `<stem>.autofix.json` → retry validation
+  - If retry passes: silently use the autofix path and proceed
+  - If retry still fails: raise `UserError` with fix summary + remaining errors + path to partially-fixed file
+- **New command**: `fix-netlist --netlist circuit.json [--output fixed.json] [--symbols-dir DIR]`
+  - Standalone: fix and inspect, writes output file always (even when errors remain)
+  - Pin alias fix skipped if no `--symbols-dir` supplied (`pin_validation_skipped=True` in result)
+- **`FixNetlistResult`** dataclass added to `results.py`
+- **All smoke tests pass**: both `fix-netlist` (without symbols-dir) and `new-from-netlist --auto-fix`
+  (with symbols-dir) verified correct output
+- **SKILL.md updated**: `fix-netlist` in commands table, workflow section replaced duplicate validate
+  blocks with auto-fix description, error recovery loop updated to describe auto-fix behavior
+- **Files changed**: `ir_autofix.py` (new), `results.py`, `commands/netlist.py`, `cli.py`,
+  `formatting.py`, `__init__.py`, `SKILL.md`, `memory.md`
+
+---
+
+## 2026-03-02T00:00:00Z - Fix: flatten extends chain to resolve KiCad 9 load error
+- **Bug**: KiCad 9 (9.0.7 flatpak) cannot load schematics with `(extends "Lib:Parent")` in `lib_symbols`
+  when the schematic is a hierarchical sub-sheet. Error: "No parent for extended symbol Amplifier_Operational:LM2904"
+- **Root cause**: `_embed_symbol_if_found` was embedding both parent (LM2904 with geometry) and child
+  (NE5532 with `extends`) — KiCad 9 still refused to resolve the extends reference in a sub-sheet.
+- **Fix**: New `read_lib_symbol_def_flat()` in `sch_doc.py` merges parent geometry sub-symbols into the
+  child node, renames them (e.g. `LM2904_1_1` → `NE5532_1_1`), removes the `(extends ...)` attribute,
+  and returns a single self-contained node. No parent reference remains.
+- **`_embed_symbol_if_found`** in `commands/netlist.py` now calls `read_lib_symbol_def_flat` instead of
+  `read_lib_symbol_def_chain`.
+- **Verified**: `kicad-cli sch export netlist` returns exit 0 for both root and managed schematics.
+- **Commit**: `337c235` — pushed to master.
+- **Helpers added**: `_collect_subsymbols(sym_node)`, `_rename_subsymbol(sub, old_base, new_base)`
 
 ---
 

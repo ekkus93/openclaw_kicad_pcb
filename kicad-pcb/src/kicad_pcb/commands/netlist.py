@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import shutil
@@ -14,10 +15,17 @@ from ..circuit_ir import CircuitIR
 from ..config import PROJECTS_DIR, get_current_project, load_config, set_current_project
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
+from ..ir_autofix import autofix_circuit_ir
 from ..ir_validate import validate_circuit_ir, validate_ir_symbols
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
-from ..results import ApplyNetlistResult, InfoSchResult, NewFromNetlistResult, ValidateNetlistResult
+from ..results import (
+    ApplyNetlistResult,
+    FixNetlistResult,
+    InfoSchResult,
+    NewFromNetlistResult,
+    ValidateNetlistResult,
+)
 from ..runner import find_kicad_cli
 from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat, read_lib_symbol_pin_at
 from ..sexpr.nodes import ListNode
@@ -218,19 +226,145 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
     )
 
 
+def cmd_fix_netlist(args) -> FixNetlistResult:
+    """Auto-fix a Circuit IR JSON file and write the corrected version.
+
+    Applies deterministic fixes in layers (no LLM calls):
+
+    1. Schema — version type, wrapper removal, forbidden top-level keys.
+    2. Components — removes forbidden fields (``type``, inline ``pins``).
+    3. Nets — integer pin values coerced to strings.
+    4. Aliases — wrong pin names mapped to correct ones via library lookup
+       (only when ``--symbols-dir`` is provided or a default library is found).
+
+    The corrected JSON is always written (even if not fully fixed) so the bot
+    can inspect or pass it to ``new-from-netlist``.
+    """
+    netlist_path = Path(args.netlist)
+    symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
+    output_path = (
+        Path(args.output)
+        if getattr(args, "output", None)
+        else (netlist_path.parent / (netlist_path.stem + ".fixed.json"))
+    )
+
+    # Parse raw JSON (not CircuitIR — it may be malformed)
+    try:
+        raw = json.loads(netlist_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise UserError(
+            f"JSON parse error in {netlist_path}: {exc}",
+            code=ErrorCode.IR_SCHEMA_INVALID,
+        ) from exc
+    if not isinstance(raw, dict):
+        raise UserError(
+            f"Circuit IR must be a JSON object, got {type(raw).__name__}",
+            code=ErrorCode.IR_SCHEMA_INVALID,
+        )
+
+    # Build symbol index if possible (needed for alias fixes).
+    # Only attempt this when --symbols-dir was explicitly provided so the command
+    # stays fast by default; the auto-detect path can scan very large library files.
+    symbol_index: SymbolIndex | None = None
+    if symbols_dir is not None:
+        with contextlib.suppress(UserError):
+            symbol_index = SymbolIndex(symbols_dir=symbols_dir)
+
+    # Run all fix layers
+    outcome = autofix_circuit_ir(raw, symbol_index=symbol_index)
+
+    # Try full validation on the fixed dict to collect remaining errors
+    all_remaining = list(outcome.remaining_errors)
+    component_count = 0
+    net_count = 0
+    try:
+        ir = CircuitIR.model_validate(outcome.ir_dict)
+        validate_circuit_ir(ir)
+        component_count = len(ir.components)
+        net_count = len(ir.nets)
+        if symbol_index is not None:
+            validate_ir_symbols(ir, symbol_index)
+    except (UserError, Exception) as exc:
+        all_remaining.append(str(exc))
+
+    fixed = len(all_remaining) == 0
+
+    # Always write — even when not fully fixed — so the caller can see partial progress
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(outcome.ir_dict, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    return FixNetlistResult(
+        fixed=fixed,
+        output_path=output_path,
+        fixes_applied=outcome.fixes_applied,
+        remaining_errors=tuple(all_remaining),
+        component_count=component_count,
+        net_count=net_count,
+        pin_validation_skipped=(symbol_index is None),
+    )
+
+
 def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     """Create a new project and compile Circuit IR into managed schematic.
 
     Validation runs before any files are written: schema → semantic → symbol+pin.
+    When ``--auto-fix`` is enabled (the default), a deterministic fixer runs on the
+    first validation failure.  If the fixer resolves all errors the project is
+    created from the fixed JSON; if errors remain, a clear error is raised showing
+    what was fixed and what still needs manual correction.
     If validation fails the project directory is never created.
     """
     # Pre-flight: validate all 3 layers before touching the filesystem.
     netlist_path = Path(args.netlist)
     symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
-    ir = CircuitIR.load(netlist_path)  # Layer 1: schema
-    validate_circuit_ir(ir)  # Layer 2: semantic
+    auto_fix: bool = getattr(args, "auto_fix", True)
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
-    validate_ir_symbols(ir, symbol_index)  # Layer 3: symbol + pin
+
+    def _load_and_validate(path: Path) -> CircuitIR:
+        ir = CircuitIR.load(path)  # Layer 1: schema
+        validate_circuit_ir(ir)  # Layer 2: semantic
+        validate_ir_symbols(ir, symbol_index)  # Layer 3: symbol + pin
+        return ir
+
+    try:
+        _load_and_validate(netlist_path)
+    except (UserError, Exception) as first_err:
+        if not auto_fix:
+            raise
+        # --auto-fix: attempt deterministic repair and retry
+        try:
+            raw = json.loads(netlist_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            raise first_err
+        if not isinstance(raw, dict):
+            raise first_err
+        outcome = autofix_circuit_ir(raw, symbol_index=symbol_index)
+        if not outcome.fixes_applied:
+            raise first_err  # Nothing the fixer could touch; surface original error
+        # Write the fixed JSON alongside the original
+        fixed_path = netlist_path.parent / (netlist_path.stem + ".autofix.json")
+        fixed_path.write_text(
+            json.dumps(outcome.ir_dict, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        # Retry validation on the repaired JSON
+        try:
+            _load_and_validate(fixed_path)
+        except (UserError, Exception) as retry_err:
+            fixes_summary = "\n".join(f"  • {f}" for f in outcome.fixes_applied) or "  (none)"
+            raise UserError(
+                f"Auto-fix applied {len(outcome.fixes_applied)} change(s) but "
+                f"validation still fails:\n{fixes_summary}\n"
+                f"Remaining error: {retry_err}\n"
+                f"Partially-fixed JSON written to: {fixed_path}\n"
+                "Correct the remaining issues and pass that file to new-from-netlist.",
+                code=ErrorCode.IR_SCHEMA_INVALID,
+            ) from retry_err
+        # All errors resolved — proceed with the fixed netlist
+        netlist_path = fixed_path
 
     project = _create_project(
         name=args.name,
@@ -241,7 +375,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     apply_result = _apply_netlist_to_project(
         project,
         _ApplyNetlistRequest(
-            netlist_path=Path(args.netlist),
+            netlist_path=netlist_path,  # may be the auto-fixed path
             symbols_dir=Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None,
             mode_name=getattr(args, "mode", "kicad"),
             force=True,
