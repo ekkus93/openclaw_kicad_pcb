@@ -384,9 +384,16 @@ Then compile it:
     --mode internal
 ```
 
-### Step 3: Review & Confirm
+On success the tool prints two paths:
+- **Root schematic** (`<name>.kicad_sch`) — a thin wrapper that references the managed sub-sheet. Contains no symbols.
+- **Managed schematic** (`OpenClaw_Managed.kicad_sch`) — **this is the file with the actual components and nets.** Always use this file when sharing or opening in KiCad.
 
-I'll show you:
+**If the tool returns an error** (e.g. `❌ Net GND references R1 pin 3, but Device:R valid pins are ['1', '2']`):
+- The error message names the exact ref and pin. Fix that pin number in the Circuit IR JSON.
+- Re-run `new-from-netlist` until it exits 0.
+- **Never** fall back to writing `.kicad_sch` by hand — hand-written output will be structurally wrong.
+
+### Step 3: Review & Confirm
 - Schematic preview image
 - Component list (BOM)
 - Calculated values (resistors for timing, etc.)
