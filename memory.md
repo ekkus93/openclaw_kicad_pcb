@@ -1,6 +1,29 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T12:00:00Z_
+_Last updated: 2026-03-02T16:00:00Z_
+
+---
+
+## 2026-03-02T16:00:00Z - feat: signal-flow layout + direct wire routing (layout.py, router.py)
+- **Motivation**: The previous pipeline placed all components on a static 6-column grid and connected
+  every pin with stub+label only — making KiCad schematics unreadable to humans (no wires, all labels).
+- **New module `layout.py`**: `compute_signal_flow_layout(ir)` → `{ref: (x, y)}`
+  - BFS from connector refs (prefix J/P/CON/SJ/TJ) assigns column indices (= BFS depth, cap 20).
+  - If no connectors exist, the most-connected component is used as BFS seed.
+  - Within each column, rows sorted by average-neighbour-column to reduce wire crossings.
+  - Grid: 40.64 mm column width × 25.40 mm row pitch, origin (30.48, 50.80).
+  - Helpers: `_build_adjacency(ir)`, `_bfs_columns(refs, adjacency, seeds)`.
+- **New module `router.py`**: `route_nets(ir, pin_endpoints) → NetRouting`, `write_routing(doc, routing, new_uuid, stats)`
+  - 2-pin nets where pin endpoints ≤ 120 mm (Manhattan) → direct route: pin stub + pin stub + L-shaped wire.
+  - All other nets → stub + net label (unchanged classic behavior).
+  - Data classes: `WireSegment`, `NetLabel`, `BindMarker`, `NetRouting`.
+  - L-routing: horizontal-first (ex2,ey1 corner), degenerate segments omitted.
+- **`commands/netlist.py`**: removed `_write_nets` and `_symbol_position`, replaced with calls to layout/router modules.
+- **Test fix**: `test_wires_connect_at_pin_endpoints` now computes expected endpoints using `compute_signal_flow_layout` instead of hardcoded old grid formula. All 1198 unit tests pass.
+- **SKILL.md**: added "Schematic layout & net routing" subsection in Pipeline section.
+- **Commit**: `ba210ea` — pushed to master.
+- **Note**: symbol rotation (v2 potential) not yet implemented — all symbols remain at angle 0.
+- **Known pending issue**: NE5532 multi-unit collision (pins from Unit A/B land at same coords) — separate bug, not addressed here.
 
 ---
 
