@@ -696,6 +696,24 @@ validated, KiCad-openable schematic in one step.
 The preferred way for an LLM to generate circuits is via **Circuit IR** — a
 structured JSON that the tool compiles deterministically into a KiCad schematic.
 
+### Schematic layout & net routing
+
+The compiler produces a human-readable schematic with connectivity-based
+component placement and direct wire connections where possible:
+
+**Signal-flow layout** — components are arranged left→right by BFS depth from
+connector/header refs (prefix `J`, `P`, `CON`, `SJ`, `TJ`).  Immediately
+connected components land in adjacent columns; within each column rows are
+sorted to minimise wire crossings.  If the circuit has no connectors the most-
+connected component is used as the BFS seed.
+
+**Direct wire routing** — each 2-pin net whose pin endpoints lie within 120 mm
+(Manhattan distance) is connected with short pin stubs + an L-shaped wire
+(horizontal-first).  No redundant net labels are emitted for these nets.
+Multi-pin nets and distant 2-pin nets still fall back to per-pin wire-stub +
+net-label, which is correct and readable.  The routing decisions are completely
+deterministic given the Circuit IR.
+
 ### Circuit IR format (minimal)
 
 ```json
