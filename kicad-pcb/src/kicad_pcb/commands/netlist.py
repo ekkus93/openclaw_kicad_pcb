@@ -219,7 +219,19 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
 
 
 def cmd_new_from_netlist(args) -> NewFromNetlistResult:
-    """Create a new project and compile Circuit IR into managed schematic."""
+    """Create a new project and compile Circuit IR into managed schematic.
+
+    Validation runs before any files are written: schema → semantic → symbol+pin.
+    If validation fails the project directory is never created.
+    """
+    # Pre-flight: validate all 3 layers before touching the filesystem.
+    netlist_path = Path(args.netlist)
+    symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
+    ir = CircuitIR.load(netlist_path)  # Layer 1: schema
+    validate_circuit_ir(ir)  # Layer 2: semantic
+    symbol_index = SymbolIndex(symbols_dir=symbols_dir)
+    validate_ir_symbols(ir, symbol_index)  # Layer 3: symbol + pin
+
     project = _create_project(
         name=args.name,
         out_dir=Path(args.out_dir) if getattr(args, "out_dir", None) else None,
