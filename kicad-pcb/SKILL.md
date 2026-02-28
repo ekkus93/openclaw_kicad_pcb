@@ -263,45 +263,97 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 
 **Common flags** (all three commands): `--symbols-dir`, `--mode internal\|kicad`, `--dry-run`.
 
-#### Circuit IR JSON Schema (EXACT FORMAT — do not invent a different structure)
+#### Circuit IR JSON Schema
 
-The schema is validated strictly by Pydantic (`additionalProperties: false`). Any
-extra field (e.g. `type`, `pins` on a component, a nested `metadata` object) will
-cause `❌ Circuit IR schema validation failed` and the tool will refuse to run.
+The schema is enforced by Pydantic with `additionalProperties: false` at every
+level. Any unrecognised key causes `❌ Circuit IR schema validation failed`.
+
+**Formal grammar (JSON Schema draft-07):**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "kicad-pcb:circuit-ir:v1",
+  "title": "Circuit IR",
+  "type": "object",
+  "required": ["version", "components", "nets"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "1",
+      "description": "Must be the string \"1\" — not integer 1, not missing."
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Component" }
+    },
+    "nets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Net" }
+    }
+  },
+  "$defs": {
+    "Component": {
+      "type": "object",
+      "required": ["ref", "symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "ref":       { "type": "string", "pattern": "^[A-Z]+[0-9]+$",
+                       "description": "Unique reference designator, e.g. \"R1\", \"U3\"." },
+        "symbol":    { "type": "string", "pattern": "^[^:]+:[^:]+$",
+                       "description": "KiCad lib ID — exact output of search-symbols, e.g. \"Device:R\"." },
+        "value":     { "type": "string",
+                       "description": "Component value label, e.g. \"10k\". Optional." },
+        "footprint": { "type": "string",
+                       "description": "KiCad footprint ID, Lib:Footprint format. Optional." },
+        "fields":    { "type": "object",
+                       "additionalProperties": { "type": "string" },
+                       "description": "Extra schematic fields (LCSC part number, manufacturer, …). Optional." }
+      }
+    },
+    "Net": {
+      "type": "object",
+      "required": ["name", "pins"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string",
+                  "description": "Net label, unique within the netlist, e.g. \"VCC\", \"GND\"." },
+        "pins": { "type": "array", "minItems": 1,
+                  "items": { "$ref": "#/$defs/PinRef" } }
+      }
+    },
+    "PinRef": {
+      "type": "object",
+      "required": ["ref", "pin"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string",
+                 "description": "Must match a ref in \"components\"." },
+        "pin": { "type": "string",
+                 "description": "Exact KiCad pin number/name for this symbol — always a string, never an integer. E.g. \"1\", \"A\", \"T\". See Pin Name Reference table." }
+      }
+    }
+  }
+}
+```
+
+**Minimal valid example:**
 
 ```json
 {
   "version": "1",
   "components": [
-    {
-      "ref": "U1",
-      "symbol": "Amplifier_Operational:NE5532",
-      "value": "NE5532"
-    },
-    {
-      "ref": "R1",
-      "symbol": "Device:R",
-      "value": "10k",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-    }
+    {"ref": "U1", "symbol": "Amplifier_Operational:NE5532", "value": "NE5532"},
+    {"ref": "R1", "symbol": "Device:R", "value": "10k",
+     "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"}
   ],
   "nets": [
-    {
-      "name": "VCC",
-      "pins": [
-        {"ref": "U1", "pin": "8"},
-        {"ref": "R1", "pin": "1"}
-      ]
-    }
+    {"name": "VCC", "pins": [{"ref": "U1", "pin": "8"}, {"ref": "R1", "pin": "1"}]}
   ]
 }
 ```
-
-**Required top-level keys:** `version` (string `"1"`), `components` (array), `nets` (array).  
-**Component fields:** `ref` (required), `symbol` (required — KiCad lib ID like `"Device:R"`), `value` (optional), `footprint` (optional), `fields` (optional dict).  
-**Forbidden component fields:** `type`, `pins`, `nets`, `connections`, or any other key not listed above.  
-**Net fields:** `name` (required), `pins` (required — array of `{"ref": "X", "pin": "Y"}` objects).  
-**Pin values** in nets are pin *numbers* (e.g. `"1"`, `"2"`) or named pins (e.g. `"T"`, `"R"`, `"S"` for `AudioJack3`) — check the Pin Name Reference table above.
 
 #### ❌ WRONG Circuit IR formats — these will always fail validation
 
