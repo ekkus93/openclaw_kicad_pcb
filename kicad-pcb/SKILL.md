@@ -329,6 +329,28 @@ them pass `new-from-netlist`. Do not use any of them.
   ]
 }
 
+// ❌ WRONG: EDA-tool-style format — "nets" is a name-only list, per-component
+//           "pins" array carries the net assignment, "type" field on component,
+//           "version" is integer 1 instead of string "1", no "symbol" field.
+//           This is a real format produced by LLMs imitating SPICE/EDA netlists.
+{
+  "metadata": {"title": "My Amp", "version": 1},
+  "nets": [
+    {"name": "VPLUS15"},
+    {"name": "GND"}
+  ],
+  "components": [
+    {"ref": "U1", "value": "NE5532", "type": "IC", "pins": [
+      {"num": 8, "name": "V+", "net": "VPLUS15"},
+      {"num": 4, "name": "V-", "net": "GND"}
+    ]},
+    {"ref": "C1", "value": "100nF", "type": "C", "pins": [
+      {"num": 1, "net": "VPLUS15"},
+      {"num": 2, "net": "GND"}
+    ]}
+  ]
+}
+
 // ❌ WRONG: hand-written .kicad_sch with old version, fake generator, no wires
 // (kicad_sch (version 20211014) (generator "OpenAI-GPT") ...)
 // If new-from-netlist fails, fix the netlist — do NOT fall back to writing
