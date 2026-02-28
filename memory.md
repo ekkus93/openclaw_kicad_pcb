@@ -1,6 +1,18 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T14:00:00Z_
+_Last updated: 2026-03-01T00:00:00Z_
+
+---
+
+## 2026-03-01T00:00:00Z - Added validate-netlist command
+- **New command**: `validate-netlist --netlist circuit.json [--symbols-dir DIR]`
+- **Runs all 3 validation layers** (Pydantic schema → semantic → symbol+pin) without writing any files.
+- **Returns**: `ValidateNetlistResult(valid, netlist_path, component_count, net_count, warnings, symbols_dirs_used)`
+- **Advisory warnings** (non-blocking): `COMPONENT_NOT_IN_ANY_NET`, `SINGLE_PIN_NET`
+- **Exit 0** on clean; **exit 1** with `❌ <error message>` on failure.
+- **SKILL.md updated**: added `validate-netlist` to commands table; added validate-first step in Step 2
+  workflow (run `validate-netlist` before `new-from-netlist` — catches all errors without writing files).
+- **Files changed**: `results.py`, `commands/netlist.py`, `cli.py`, `formatting.py`, `__init__.py`, `SKILL.md`
 
 ---
 

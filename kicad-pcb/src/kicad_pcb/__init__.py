@@ -44,7 +44,12 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
-from .commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
+from .commands.netlist import (
+    cmd_apply_netlist,
+    cmd_info_sch,
+    cmd_new_from_netlist,
+    cmd_validate_netlist,
+)
 from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import (
     cmd_auto_place,
@@ -186,6 +191,7 @@ from .results import (
     SetBoardSizeResult,
     SymbolMatch,
     ValidateFileResult,
+    ValidateNetlistResult,
 )
 
 # CLI runner
@@ -335,6 +341,7 @@ __all__ = [
     "cmd_apply_netlist",
     "cmd_info_sch",
     "cmd_new_from_netlist",
+    "cmd_validate_netlist",
     "cmd_debug_symbol",
     "cmd_search_symbols",
     "cmd_drc",
@@ -398,6 +405,7 @@ __all__ = [
     "ValidateFileResult",
     "FormatFileResult",
     "NewFromNetlistResult",
+    "ValidateNetlistResult",
     "BuildSymbolIndexResult",
     "CachedSymbol",
     "cmd_build_symbol_index",

@@ -24,7 +24,12 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
-from .commands.netlist import cmd_apply_netlist, cmd_info_sch, cmd_new_from_netlist
+from .commands.netlist import (
+    cmd_apply_netlist,
+    cmd_info_sch,
+    cmd_new_from_netlist,
+    cmd_validate_netlist,
+)
 from .commands.patterns import cmd_apply_pattern
 from .commands.pcb import cmd_auto_place, cmd_auto_route, cmd_import_netlist, cmd_set_board_size
 from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
@@ -86,6 +91,22 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         ),
     )
     p_info_sch.set_defaults(func=cmd_info_sch)
+
+    # validate-netlist
+    p_val_netlist = subparsers.add_parser(
+        "validate-netlist",
+        help="Validate a Circuit IR JSON netlist without writing any files",
+        description=(
+            "Validate a Circuit IR JSON file through all three layers: "
+            "(1) Pydantic schema — correct keys, no extra fields, version string; "
+            "(2) semantic — no duplicate refs/nets, no zero-pin nets, all pin refs resolve; "
+            "(3) symbol + pin — every symbol exists in the library index, every pin is valid. "
+            "No files are written. Use this to check a netlist before calling new-from-netlist."
+        ),
+    )
+    p_val_netlist.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
+    p_val_netlist.add_argument("--symbols-dir", help="Optional symbol libraries directory")
+    p_val_netlist.set_defaults(func=cmd_validate_netlist)
 
     # apply-netlist
     p_apply = subparsers.add_parser(

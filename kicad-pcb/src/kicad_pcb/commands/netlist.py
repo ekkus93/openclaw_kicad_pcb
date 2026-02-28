@@ -17,7 +17,7 @@ from ..fs import _atomic_write, _new_uuid
 from ..ir_validate import validate_circuit_ir, validate_ir_symbols
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
-from ..results import ApplyNetlistResult, InfoSchResult, NewFromNetlistResult
+from ..results import ApplyNetlistResult, InfoSchResult, NewFromNetlistResult, ValidateNetlistResult
 from ..runner import find_kicad_cli
 from ..sch_doc import SchematicDoc, read_lib_symbol_def_chain, read_lib_symbol_pin_at
 from ..sexpr.nodes import ListNode
@@ -128,6 +128,71 @@ def cmd_info_sch(args) -> InfoSchResult:
         label_count=root_label_count,
         managed_symbol_count=managed_symbol_count,
         managed_label_count=managed_label_count,
+    )
+
+
+def cmd_validate_netlist(args) -> ValidateNetlistResult:
+    """Validate a Circuit IR JSON file without writing any files.
+
+    Runs all three validation layers in order:
+    1. Pydantic schema (``additionalProperties: false``, required keys, types)
+    2. Semantic checks (duplicate refs/nets, zero-pin nets, unknown component refs)
+    3. Symbol + pin checks (every symbol exists in index, every pin is valid)
+
+    On success prints a summary with advisory warnings for common issues.
+    On failure raises with a specific error message pointing to the exact problem.
+    """
+    netlist_path = Path(args.netlist)
+    symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
+
+    # Layer 1: schema (raises UserError(IR_SCHEMA_INVALID) on failure)
+    ir = CircuitIR.load(netlist_path)
+
+    # Layer 2: semantic (raises UserError(IR_SEMANTIC_INVALID) on failure)
+    validate_circuit_ir(ir)
+
+    # Layer 3: symbol + pin (raises UserError(SYMBOL_NOT_FOUND / PIN_INVALID) on failure)
+    symbol_index = SymbolIndex(symbols_dir=symbols_dir)
+    validate_ir_symbols(ir, symbol_index)
+
+    # Advisory warnings — do not block success, but flag common mistakes
+    warnings: list[dict[str, object]] = []
+
+    refs_in_nets: set[str] = {pin_ref.ref for net in ir.nets for pin_ref in net.pins}
+    component_refs = {component.ref for component in ir.components}
+    unreferenced = sorted(component_refs - refs_in_nets)
+    if unreferenced:
+        warnings.append(
+            {
+                "code": "COMPONENT_NOT_IN_ANY_NET",
+                "message": (
+                    f"{len(unreferenced)} component(s) are not referenced in any net "
+                    "and will be floating in the schematic."
+                ),
+                "details": {"refs": unreferenced},
+            }
+        )
+
+    single_pin_nets = [net.name for net in ir.nets if len(net.pins) == 1]
+    if single_pin_nets:
+        warnings.append(
+            {
+                "code": "SINGLE_PIN_NET",
+                "message": (
+                    f"{len(single_pin_nets)} net(s) have only one connected pin. "
+                    "This is usually a wiring mistake."
+                ),
+                "details": {"nets": single_pin_nets},
+            }
+        )
+
+    return ValidateNetlistResult(
+        valid=True,
+        netlist_path=netlist_path,
+        component_count=len(ir.components),
+        net_count=len(ir.nets),
+        warnings=tuple(warnings),
+        symbols_dirs_used=tuple(str(d) for d in symbol_index.directories),
     )
 
 
