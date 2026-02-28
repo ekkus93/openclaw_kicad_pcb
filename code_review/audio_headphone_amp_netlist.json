@@ -1,0 +1,152 @@
+{
+  "title": "NE5532 Headphone / Line Preamp (Left Channel)",
+  "description": "Single-channel NE5532-based audio preamp/headphone driver with ±15 V rails. Duplicate for right channel.",
+  "ic": {
+    "U1": {
+      "type": "NE5532",
+      "pins": {
+        "1": "OUT_L_STAGE1",
+        "2": "U1A_IN_NEG",
+        "3": "VOL_L_OUT",
+        "4": "VMINUS15",
+        "5": "BUF_L_IN",
+        "6": "OUT_L_STAGE2_RAW",
+        "7": "OUT_L_STAGE2_RAW",
+        "8": "VPLUS15"
+      }
+    }
+  },
+  "nodes": [
+    "VPLUS15",
+    "VMINUS15",
+    "0V",
+    "LEFT_IN",
+    "IN_L_AC",
+    "VOL_L_OUT",
+    "OUT_L_STAGE1",
+    "BUF_L_IN",
+    "OUT_L_STAGE2_RAW",
+    "AFTER_R6",
+    "HP_L_OUT",
+    "U1A_IN_NEG"
+  ],
+  "components": [
+    {
+      "ref": "C1",
+      "type": "capacitor",
+      "value": "100nF",
+      "nodes": ["VPLUS15", "0V"]
+    },
+    {
+      "ref": "C2",
+      "type": "capacitor",
+      "value": "100nF",
+      "nodes": ["VMINUS15", "0V"]
+    },
+    {
+      "ref": "C3",
+      "type": "capacitor",
+      "value": "10uF",
+      "polarity": {"+": "VPLUS15", "-": "0V"},
+      "nodes": ["VPLUS15", "0V"]
+    },
+    {
+      "ref": "C4",
+      "type": "capacitor",
+      "value": "10uF",
+      "polarity": {"-": "VMINUS15", "+": "0V"},
+      "nodes": ["VMINUS15", "0V"]
+    },
+    {
+      "ref": "J1",
+      "type": "jack_3p5mm_stereo",
+      "pins": {
+        "tip_L": "LEFT_IN",
+        "ring_R": "RIGHT_IN_UNUSED",
+        "sleeve": "0V"
+      }
+    },
+    {
+      "ref": "C5",
+      "type": "capacitor",
+      "value": "1uF",
+      "nodes": ["LEFT_IN", "IN_L_AC"]
+    },
+    {
+      "ref": "R1",
+      "type": "resistor",
+      "value": "100k",
+      "nodes": ["LEFT_IN", "IN_L_AC"]
+    },
+    {
+      "ref": "RV1",
+      "type": "potentiometer",
+      "taper": "audio",
+      "value": "10k",
+      "pins": {
+        "1": "IN_L_AC",
+        "2": "VOL_L_OUT",
+        "3": "0V"
+      }
+    },
+    {
+      "ref": "R2",
+      "type": "resistor",
+      "value": "20k",
+      "nodes": ["OUT_L_STAGE1", "U1A_IN_NEG"]
+    },
+    {
+      "ref": "R3",
+      "type": "resistor",
+      "value": "10k",
+      "nodes": ["U1A_IN_NEG", "0V"]
+    },
+    {
+      "ref": "R4",
+      "type": "resistor",
+      "value": "100k",
+      "nodes": ["VOL_L_OUT", "0V"]
+    },
+    {
+      "ref": "C6",
+      "type": "capacitor",
+      "value": "22uF",
+      "polarity": {"+": "OUT_L_STAGE1", "-": "BUF_L_IN"},
+      "nodes": ["OUT_L_STAGE1", "BUF_L_IN"]
+    },
+    {
+      "ref": "R5",
+      "type": "resistor",
+      "value": "100k",
+      "nodes": ["BUF_L_IN", "0V"]
+    },
+    {
+      "ref": "R6",
+      "type": "resistor",
+      "value": "47R",
+      "nodes": ["OUT_L_STAGE2_RAW", "AFTER_R6"]
+    },
+    {
+      "ref": "C7",
+      "type": "capacitor",
+      "value": "220uF",
+      "polarity": {"+": "AFTER_R6", "-": "HP_L_OUT"},
+      "nodes": ["AFTER_R6", "HP_L_OUT"]
+    },
+    {
+      "ref": "R7",
+      "type": "resistor",
+      "value": "100k",
+      "nodes": ["HP_L_OUT", "0V"]
+    },
+    {
+      "ref": "J2",
+      "type": "jack_3p5mm_stereo",
+      "pins": {
+        "tip_L": "HP_L_OUT",
+        "ring_R": "HP_R_OUT_UNUSED",
+        "sleeve": "0V"
+      }
+    }
+  ]
+}
