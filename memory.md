@@ -1,6 +1,25 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T02:30:00Z_
+_Last updated: 2026-03-01T00:00:00Z_
+
+---
+
+## 2026-03-01T00:00:00Z - Bot delivering only one of two required files; added must-deliver-both rule
+- **Root cause**: `new-from-netlist` creates TWO files — `<name>.kicad_sch` (root, thin wrapper) and
+  `OpenClaw_Managed.kicad_sch` (all symbols/nets). The bot was only delivering the managed file.
+  Without the root file alongside it, KiCad can open the managed file but the sheet hierarchy UUID
+  won't resolve correctly. The user must open the ROOT file.
+- **Verification**: `headphone_amp_netlist (1).json` + `OpenClaw_Managed (1).kicad_sch` were both
+  confirmed valid — the netlist passes `new-from-netlist` (19 symbols, 12 nets), the managed
+  .kicad_sch has correct `OpenClaw:bind` markers. Problem was delivery, not generation.
+- **Fix applied**: SKILL.md "On success the tool prints two paths" block rewritten to:
+  - Correct the wrong claim ("Always use managed file in KiCad")
+  - Add ⚠️ MUST deliver BOTH files rule
+  - Add explicit user instruction: open root `<name>.kicad_sch`, not `OpenClaw_Managed.kicad_sch`
+- **Code review examples added**: `code_review/headphone_amp_netlist_1_root.kicad_sch` and
+  `code_review/headphone_amp_netlist_1_managed.kicad_sch` — working two-file pair
+- **Validation gap noted**: no validation that requested IR connections match actual file output;
+  `--mode internal` = LINT only (no ERC). ERC requires `--mode kicad` with kicad-cli.
 
 ---
 
