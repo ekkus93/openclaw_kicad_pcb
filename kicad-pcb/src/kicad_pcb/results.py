@@ -95,6 +95,18 @@ class NewFromNetlistResult:
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True)
+class ValidateNetlistResult:
+    """Result of the ``validate-netlist`` command."""
+
+    valid: bool
+    netlist_path: Path
+    component_count: int
+    net_count: int
+    warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
+
+
 # ---------------------------------------------------------------------------
 # validation
 # ---------------------------------------------------------------------------

@@ -45,6 +45,7 @@ from .results import (
     SearchSymbolsResult,
     SetBoardSizeResult,
     ValidateFileResult,
+    ValidateNetlistResult,
 )
 
 # ---------------------------------------------------------------------------
@@ -202,6 +203,26 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
             lines.append(f"     • {d}")
     for warning in r.warnings:
         lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
+    return lines
+
+
+@_register(ValidateNetlistResult)
+def _fmt_validate_netlist(r: ValidateNetlistResult) -> list[str]:
+    status = "✅ Circuit IR valid" if r.valid else "❌ Circuit IR invalid"
+    lines = [
+        f"{status}: {r.netlist_path}",
+        f"   Components: {r.component_count}",
+        f"   Nets: {r.net_count}",
+    ]
+    if r.symbols_dirs_used:
+        lines.append("   Symbol dirs used:")
+        for d in r.symbols_dirs_used:
+            lines.append(f"     • {d}")
+    if r.warnings:
+        for warning in r.warnings:
+            lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
+    else:
+        lines.append("   No warnings.")
     return lines
 
 

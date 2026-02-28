@@ -255,6 +255,8 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 | `search-symbols <keywords>` | **Search installed libraries for symbol IDs** (use before writing IR JSON) |
 | `build-symbol-index [--symbols-dir DIR]` | Pre-populate symbol search cache (run once after installing KiCad) |
 | `debug-symbol <Lib:Name> [--symbols-dir DIR]` | Show resolved pin list and extends chain for one symbol (use to diagnose pin count issues) |
+| `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
+| `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
 | `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (strict by default) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
@@ -450,6 +452,26 @@ Then write the complete Circuit IR JSON (all components + all nets at once;
     {"name": "OUT",  "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R2", "pin": "1"}, {"ref": "D1", "pin": "A"}]}
   ]
 }
+```
+
+Then validate it first (no files written, catches all 3 layers of errors):
+
+```bash
+# Validate Circuit IR — no files written, exit 0 = clean
+{baseDir}/scripts/kicad_pcb.py validate-netlist \
+    --netlist circuit.json \
+    --symbols-dir /usr/share/kicad/symbols
+# → ✅ Circuit IR valid  (fix and re-run until ✅ before compiling)
+```
+
+Then validate it first (no files written, catches all 3 layers of errors):
+
+```bash
+# Validate Circuit IR — no files written, exit 0 = clean
+{baseDir}/scripts/kicad_pcb.py validate-netlist \
+    --netlist circuit.json \
+    --symbols-dir /usr/share/kicad/symbols
+# → ✅ Circuit IR valid  (fix and re-run until ✅ before compiling)
 ```
 
 Then compile it:
