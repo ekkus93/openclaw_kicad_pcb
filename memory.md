@@ -1,6 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T00:00:00Z_
+_Last updated: 2026-02-28T12:00:00Z_
+
+---
+
+## 2026-02-28T12:00:00Z - NE5532 amp: EDA-style netlist format + hand-written .kicad_sch (again)
+- **What happened**: Bot generated an EDA-tool-style netlist (4th known wrong format) then
+  hand-wrote a `.kicad_sch` directly instead of using the tool.
+- **Wrong format details** (new variant): `{"metadata": {"title": ..., "version": 1}, "nets": [{"name": ...}], "components": [{..."type": "IC", "pins": [{"num": ..., "net": ...}]}]}`.
+  Key mistakes: `metadata` wrapper, `version` integer not string, `nets` as name-only list (no pin refs),
+  net-to-pin mapping stored on components not on nets, `type` field instead of `symbol`, `pins` array
+  on components.
+- **Hand-written .kicad_sch signs**: `generator "openai-gpt-5.1"`, semicolon comments (`;;`),
+  inline `(net ...)` inside `(pin ...)`, wrong symbol IDs (`Device:CP`, `Device:R_POT`).
+- **Fix**: Added 4th ❌ WRONG format to SKILL.md showing the EDA-style format.
+- **Correct IR written**: 18 components (U1 NE5532, C1-C7, R1-R7, RV1, J1, J2), 13 nets.
+  Tool ran successfully: Symbols added: 18, Nets applied: 13.
+- **Code review files added**: `ne5532_headphone_amp_correct_ir.json`,
+  `ne5532_headphone_amp_root.kicad_sch`, `ne5532_headphone_amp_managed.kicad_sch`
+- **Symbol IDs confirmed**: `Amplifier_Operational:NE5532` (pins 1-8 via extends LM2904),
+  `Device:C_Polarized` (pins 1/2), `Device:R_Potentiometer` (pins 1/2/3 wiper=2),
+  `Connector:AudioJack3` (pins T/R/S).
 
 ---
 

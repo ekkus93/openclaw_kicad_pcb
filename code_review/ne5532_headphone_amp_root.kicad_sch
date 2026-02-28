@@ -1,0 +1,37 @@
+(kicad_sch
+  (version 20230121)
+  (generator eeschema)
+  (uuid "c9a4a4d0-0142-43f4-9080-b52a49a104fa")
+  (paper "A4")
+  (lib_symbols)
+  (text
+    "OpenClaw:generated=v1"
+    (at -1000.00 -1000.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (text
+    "OpenClaw:region=managed"
+    (at -1000.00 -1010.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (sheet
+    (at 20.00 20.00)
+    (size 80.00 60.00)
+    (stroke (width 0) (type default))
+    (fill (color 0 0 0 0))
+    (uuid "5ccdf702-000d-489b-acbe-db5ccd405708")
+    (property
+      "Sheetname"
+      "OpenClaw_Managed"
+      (at 21.00 18.50 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Sheetfile"
+      "OpenClaw_Managed.kicad_sch"
+      (at 21.00 81.50 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+  (sheet_instances (path "/" (page "1")))
+)
