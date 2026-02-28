@@ -235,7 +235,7 @@ Pin names must match the KiCad library exactly. Common footguns:
 |--------|-----------|-------|
 | `Device:R` | `1`, `2` | |
 | `Device:C` | `1`, `2` | |
-| `Device:C_Polarized` | `+`, `-` | **Not** `1`/`2` |
+| `Device:C_Polarized` | `1`, `2` | Pin `1` = positive (+), pin `2` = negative (−). The `+` mark is visual only — the pin *number* is `1`/`2`. |
 | `Device:R_Potentiometer` | `1`, `2`, `3` | 1 & 3 = outer lugs, 2 = wiper |
 | `Connector:AudioJack3` | `T`, `R`, `S` | Tip, Ring, Sleeve — **not** `1`/`2`/`3` |
 | `Amplifier_Operational:NE5532` | `1`–`8` | 3=+A, 2=−A, 1=outA, 5=+B, 6=−B, 7=outB, 4=V−, 8=V+ |
@@ -260,6 +260,48 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
 
 **Common flags** (all three commands): `--symbols-dir`, `--mode internal\|kicad`, `--dry-run`.
+
+#### Circuit IR JSON Schema (EXACT FORMAT — do not invent a different structure)
+
+The schema is validated strictly by Pydantic (`additionalProperties: false`). Any
+extra field (e.g. `type`, `pins` on a component, a nested `metadata` object) will
+cause `❌ Circuit IR schema validation failed` and the tool will refuse to run.
+
+```json
+{
+  "version": "1",
+  "components": [
+    {
+      "ref": "U1",
+      "symbol": "Amplifier_Operational:NE5532",
+      "value": "NE5532"
+    },
+    {
+      "ref": "R1",
+      "symbol": "Device:R",
+      "value": "10k",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "pins": [
+        {"ref": "U1", "pin": "8"},
+        {"ref": "R1", "pin": "1"}
+      ]
+    }
+  ]
+}
+```
+
+**Required top-level keys:** `version` (string `"1"`), `components` (array), `nets` (array).  
+**Component fields:** `ref` (required), `symbol` (required — KiCad lib ID like `"Device:R"`), `value` (optional), `footprint` (optional), `fields` (optional dict).  
+**Forbidden component fields:** `type`, `pins`, `nets`, `connections`, or any other key not listed above.  
+**Net fields:** `name` (required), `pins` (required — array of `{"ref": "X", "pin": "Y"}` objects).  
+**Pin values** in nets are pin *numbers* (e.g. `"1"`, `"2"`) or named pins (e.g. `"T"`, `"R"`, `"S"` for `AudioJack3`) — check the Pin Name Reference table above.
+
+
 
 ### PCB Layout
 
