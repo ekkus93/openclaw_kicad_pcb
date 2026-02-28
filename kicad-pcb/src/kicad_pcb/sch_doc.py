@@ -69,6 +69,7 @@ __all__ = [
     "make_wire_node",
     "read_lib_symbol_def",
     "read_lib_symbol_def_chain",
+    "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
 ]
@@ -492,6 +493,75 @@ def read_lib_symbol_def_chain(
         result.append(_strip_id_nodes(renamed))
 
     return result
+
+
+def _collect_subsymbols(sym_node: ListNode) -> list[ListNode]:
+    """Return all direct ``(symbol …)`` children of *sym_node*."""
+    return [item for item in sym_node.items if isinstance(item, ListNode) and item.key == "symbol"]
+
+
+def _rename_subsymbol(sub: ListNode, old_base: str, new_base: str) -> ListNode:
+    """Return *sub* with its name changed from ``old_base_N_M`` → ``new_base_N_M``."""
+    if len(sub.items) < 2 or not isinstance(sub.items[1], StringNode):
+        return sub
+    old_name: str = sub.items[1].value
+    if old_name.startswith(old_base + "_"):
+        new_name = new_base + old_name[len(old_base) :]
+        new_items = list(sub.items)
+        new_items[1] = string(new_name)
+        return ListNode(tuple(new_items), sub.pos)
+    return sub
+
+
+def read_lib_symbol_def_flat(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> ListNode | None:
+    """Load and fully flatten a symbol definition for schematic embedding.
+
+    Unlike :func:`read_lib_symbol_def_chain`, this returns a **single**
+    ``ListNode`` that is completely self-contained — if the symbol has an
+    ``(extends …)`` ancestor chain, the ancestor's geometry (sub-symbol
+    drawing units + pins) is merged into the returned node and the
+    ``(extends …)`` attribute is removed.  This avoids ``(extends …)``
+    references in ``lib_symbols``, which some KiCad versions fail to
+    resolve when opening a schematic file.
+
+    Returns ``None`` when the library or symbol cannot be found, or when
+    the extends chain is broken.
+    """
+    chain = read_lib_symbol_def_chain(lib_name, sym_name, symbols_dir=symbols_dir)
+    if not chain:
+        return None
+    if len(chain) == 1:
+        return chain[0]  # no extends — already self-contained
+
+    # chain is [root_base, ..., direct_parent, derived_leaf] (base-first).
+    root = chain[0]  # has all geometry sub-symbols
+    leaf = chain[-1]  # has property overrides + (extends …)
+
+    # Root base name (unqualified, e.g., "LM2904").
+    root_full_id = _symbol_id(root) or ""
+    root_base = root_full_id.split(":")[-1]
+
+    # Leaf symbol name (unqualified, e.g., "NE5532").
+    leaf_full_id = _symbol_id(leaf) or ""
+    leaf_base = leaf_full_id.split(":")[-1]
+
+    # Collect sub-symbols from the root (these carry all geometry).
+    root_subsymbols = _collect_subsymbols(root)
+    renamed_subsymbols: list[Node] = [
+        _rename_subsymbol(sub, root_base, leaf_base) for sub in root_subsymbols
+    ]
+
+    # Build new leaf items: keep everything except (extends …), then append geometry.
+    leaf_items_no_extends: list[Node] = [
+        item for item in leaf.items if not (isinstance(item, ListNode) and item.key == "extends")
+    ]
+    merged_items = leaf_items_no_extends + renamed_subsymbols
+    return ListNode(tuple(merged_items), leaf.pos)
 
 
 def _strip_id_nodes(node: ListNode) -> ListNode:
