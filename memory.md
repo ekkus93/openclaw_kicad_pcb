@@ -1,8 +1,28 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-02-28T00:00:00Z_
+_Last updated: 2026-02-28T01:30:00Z_
 
 ---
+
+## 2026-02-28T01:30:00Z - Fix: Circuit IR netlist schema errors + C_Polarized pin names (7a27270)
+- **Root cause of bad schematics**: Bot was generating netlists with a completely wrong schema.
+  The wrong format had: nested `{"metadata": {"version": 1, ...}}`, no `symbol` field on components,
+  inline `pins` dict on components, extra `type` field, wrong symbol names.
+  `new-from-netlist` rejected it with `❌ Circuit IR schema validation failed`, so the bot fell back to
+  writing `.kicad_sch` S-expression from scratch using stale KiCad 8 knowledge — which produces completely broken schematics.
+- **Fix 1**: Rewrote `code_review/headphone_amp_left.netlist.json` in correct CircuitIR format.
+  Verified: `new-from-netlist` succeeded with Symbols added: 19, Nets applied: 14.
+- **Fix 2**: `code_review/headphone_amp_left.kicad_sch` replaced with the output of `new-from-netlist` (`OpenClaw_Managed.kicad_sch`).
+- **Fix 3**: SKILL.md pin table correction — `Device:C_Polarized` pin numbers are `1` (positive) and `2` (negative).
+  The `+`/`-` marks are visual graphics only; the actual pin *identifier* in KiCad 9 is the pin number.
+  Verified in `/usr/share/kicad/symbols/Device.kicad_sym`: both pins have `name "~"`, numbers `"1"` and `"2"`.
+- **Fix 4**: Added "Circuit IR JSON Schema (EXACT FORMAT)" section to SKILL.md with:
+  - Minimal complete schema example
+  - Required top-level keys: `version` (string `"1"`), `components`, `nets`
+  - Required component fields: `ref`, `symbol` (KiCad lib ID)
+  - Forbidden component fields: `type`, `pins`, `nets`, `connections`
+  - Clear warning: extra fields → Pydantic validation failure → tool refuses to run
+- **Commit**: `7a27270` pushed to `master`.
 
 ## 2026-02-28T00:29:53Z - Confirmed: Python environment already exists
 - **Note**: Searched memory.md and confirmed the Python venv entry from `2026-02-27T00:00:00Z`.
