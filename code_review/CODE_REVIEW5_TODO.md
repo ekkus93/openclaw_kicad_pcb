@@ -70,30 +70,30 @@ Harden and improve the `kicad-pcb` OpenClaw skill so it:
 # Phase 2 — Reliability Foundation: Transactional Writes + Validation
 
 ### 2.1 Enforce the transactional mutate-and-validate pipeline everywhere
-- [ ] Identify all commands that mutate `.kicad_sch` or `.kicad_pcb`.
-- [ ] Ensure every mutator uses exactly one pipeline entrypoint (no ad-hoc writes).
-- [ ] Pipeline steps must include:
-  - [ ] parse original
-  - [ ] mutate AST
-  - [ ] serialize to temp
-  - [ ] re-parse temp (round-trip sanity)
-  - [ ] run lints
-  - [ ] optional KiCad CLI validation (policy-driven)
-  - [ ] atomic commit on success
-  - [ ] no overwrite on failure
-- [ ] Add optional `.bak` backups on commit.
+- [x] Identify all commands that mutate `.kicad_sch` or `.kicad_pcb` — audited all 8 call sites in sch.py (3), patterns.py (1), pcb.py (2), netlist.py (2).
+- [x] Ensure every mutator uses exactly one pipeline entrypoint (no ad-hoc writes) — confirmed all 8 use `mutate_and_validate_sch`/`mutate_and_validate_pcb`.
+- [x] Pipeline steps must include (already fully implemented in `pipeline.py`):
+  - [x] parse original
+  - [x] mutate AST
+  - [x] serialize to temp
+  - [x] re-parse temp (round-trip sanity)
+  - [x] run lints
+  - [x] optional KiCad CLI validation (policy-driven)
+  - [x] atomic commit on success
+  - [x] no overwrite on failure
+- [x] Add optional `.bak` backups on commit — `--backup` global CLI flag added; wired to all 8 `mutate_and_validate_*` call sites and `_ApplyNetlistRequest`.
 
 ### 2.2 Standardize exceptions and error reporting
-- [ ] Create typed errors: `UserError`, `ParseError`, `LintError`, `ValidationError`, `ExternalToolError`.
-- [ ] Ensure CLI catches these and prints:
-  - [ ] operation name
-  - [ ] file paths
-  - [ ] lint codes / tool stderr excerpts
-  - [ ] suggested remediation steps
+- [x] Create typed errors: `UserError`, `ParseError`, `LintError`, `ValidationError`, `ExternalToolError` — fully implemented in `errors.py` (`KicadCliValidationError`, `DocSyntaxError`, `DocLintError` also present).
+- [x] Ensure CLI catches these and prints:
+  - [x] operation name — included in error messages via `❌ {exc}`
+  - [x] file paths — included contextually in individual error messages
+  - [x] lint codes / tool stderr excerpts — handled by `LintError` catch block and `ToolError` messages
+  - [x] suggested remediation steps — `details["hint"]` now printed as `💡 {hint}` in `KiCadError` catch block
 
 ### 2.3 Improve netlist import robustness (if applicable)
-- [ ] Replace any regex-based XML parsing with `xml.etree.ElementTree`.
-- [ ] Add unit tests for netlist files with whitespace/newline variance.
+- [x] Replace any regex-based XML parsing with `xml.etree.ElementTree` — replaced `re.findall` in `cmd_import_netlist` with ElementTree; handles KiCad `<comp ref="...">` attribute format and legacy `<ref>` child-element fallback; malformed XML raises `ToolError`.
+- [x] Add unit tests for netlist files with whitespace/newline variance — 22 new tests in `tests/unit/test_phase2_reliability.py` covering all parsing paths, malformed XML, whitespace stripping, deduplication, backup flag wiring, and hint display.
 
 ---
 

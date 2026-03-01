@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from ..adapters import KicadCliAdapter
@@ -37,7 +37,11 @@ def cmd_set_board_size(args) -> SetBoardSizeResult:
         doc.set_rect_outline(outline.width, outline.height)
 
     mutate_and_validate_pcb(
-        pcb_file, _mutate, operation="set-board-size", dry_run=getattr(args, "dry_run", False)
+        pcb_file,
+        _mutate,
+        operation="set-board-size",
+        dry_run=getattr(args, "dry_run", False),
+        backup=getattr(args, "backup", False),
     )
     return SetBoardSizeResult(
         width=outline.width,
@@ -47,7 +51,7 @@ def cmd_set_board_size(args) -> SetBoardSizeResult:
     )
 
 
-def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> ImportNetlistResult:
+def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> ImportNetlistResult:  # noqa: PLR0912
     """Export netlist from schematic and report components for PCB placement.
 
     Note: KiCad 7+ links PCB and schematic via UUIDs — no separate netlist
@@ -78,10 +82,38 @@ def cmd_import_netlist(args, *, cli: KicadCliAdapter | None = None) -> ImportNet
             msg += f"\n{result.stderr[:400]}"
         raise ToolError(msg)
 
-    refs = re.findall(r"<ref>([^<]+)</ref>", xml_text)
-    values = re.findall(r"<value>([^<]+)</value>", xml_text)
-    footprints_raw = re.findall(r"<footprint>([^<]*)</footprint>", xml_text)
-    footprints_raw += [""] * (len(refs) - len(footprints_raw))
+    refs: list[str] = []
+    values: list[str] = []
+    footprints_raw: list[str] = []
+    try:
+        xml_root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        raise ToolError(f"Netlist XML is malformed: {exc}") from exc
+
+    # KiCad kicadxml format: <comp ref="..."> with <value>/<footprint> children.
+    for comp in xml_root.iter("comp"):
+        ref = comp.get("ref", "").strip()
+        if not ref:
+            # Older/mock format: <ref> as a child element
+            ref = (comp.findtext("ref") or "").strip()
+        if ref:
+            refs.append(ref)
+            values.append((comp.findtext("value") or "").strip())
+            footprints_raw.append((comp.findtext("footprint") or "").strip())
+
+    # Fallback: flat format where <ref> is a child of some other parent node.
+    if not refs:
+        seen: set[str] = set()
+        for node in xml_root.iter():
+            ref_el = node.find("ref")
+            if ref_el is None:
+                continue
+            ref = (ref_el.text or "").strip()
+            if ref and ref not in seen:
+                seen.add(ref)
+                refs.append(ref)
+                values.append((node.findtext("value") or "").strip())
+                footprints_raw.append((node.findtext("footprint") or "").strip())
     components = tuple(zip(refs, values, footprints_raw))
     return ImportNetlistResult(netlist_file=output_file, components=components)
 
@@ -124,7 +156,11 @@ def cmd_auto_place(args) -> AutoPlaceResult:
             doc.move_footprint(spec.ref, spec.x, spec.y)
 
     mutate_and_validate_pcb(
-        pcb_file, _mutate, operation="auto-place", dry_run=getattr(args, "dry_run", False)
+        pcb_file,
+        _mutate,
+        operation="auto-place",
+        dry_run=getattr(args, "dry_run", False),
+        backup=getattr(args, "backup", False),
     )
     return AutoPlaceResult(
         placed=tuple(placements), spacing=spacing, dry_run=getattr(args, "dry_run", False)
