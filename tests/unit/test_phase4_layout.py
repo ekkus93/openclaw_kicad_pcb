@@ -33,7 +33,7 @@ from unittest.mock import patch
 import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.layout import HeuristicLayoutEngine
+from kicad_pcb.layout import MIN_SEPARATION_MM, HeuristicLayoutEngine
 from kicad_pcb.layout_engine import NoneLayoutEngine, make_layout_engine
 from kicad_pcb.lint import LINT_SUGGESTIONS, LintSeverity, lint_schematic_layout
 from kicad_pcb.router import (
@@ -183,6 +183,106 @@ class TestHeuristicLayoutEngine:
         coords = [(positions[r][0], positions[r][1]) for r in ["R1", "R2", "R3"]]
         # At least two distinct x or y values.
         assert len({c[0] for c in coords}) > 1 or len({c[1] for c in coords}) > 1
+
+
+# ---------------------------------------------------------------------------
+# 4.3b HeuristicLayoutEngine — guaranteed overlap-free (LAY003 never fires)
+# ---------------------------------------------------------------------------
+
+
+class TestHeuristicLayoutNoOverlap:
+    """Verify heuristic grid spacing prevents LAY003 for any reasonable IR.
+
+    The heuristic engine places symbols on a GRID_COL_MM × GRID_ROW_MM grid.
+    LAY003 fires only when both |Δx| and |Δy| are below 10.16 mm (2 × 5.08 mm
+    half-bounding-box, see lint.py).  GRID_ROW_MM = MIN_SEPARATION_MM =
+    20.32 mm > 10.16 mm, so adjacent positions within a column are always
+    overlap-free.  GRID_COL_MM = 30.48 mm also exceeds the threshold.
+    """
+
+    @staticmethod
+    def _symbols_body(positions: dict[str, tuple[float, float, float | None]]) -> str:
+        """Build a schematic body string with one uniquely-UUID'd symbol per position."""
+        parts = []
+        for i, (_ref, pos) in enumerate(sorted(positions.items())):
+            uuid = f"00000000-0000-0000-0000-{i:012d}"
+            parts.append(f'(symbol (lib_id "Device:R") (at {pos[0]} {pos[1]} 0) (uuid "{uuid}"))')
+        return "\n".join(parts)
+
+    def test_min_separation_exceeds_lay003_threshold(self) -> None:
+        """MIN_SEPARATION_MM must be strictly greater than the LAY003 overlap threshold.
+
+        LAY003 fires when abs(dx) < 2*5.08 = 10.16 mm AND abs(dy) < 10.16 mm.
+        MIN_SEPARATION_MM must exceed this to guarantee overlap-free layouts.
+        """
+        lay003_overlap_threshold_mm = 10.16  # 2 × _LAY_SYMBOL_HALF_SIZE_MM from lint.py
+        assert lay003_overlap_threshold_mm < MIN_SEPARATION_MM, (
+            f"MIN_SEPARATION_MM ({MIN_SEPARATION_MM}) must exceed "
+            f"LAY003 threshold ({lay003_overlap_threshold_mm})"
+        )
+
+    def test_linear_chain_no_overlap(self) -> None:
+        """15-component chain must not produce any LAY003 warnings."""
+        refs = [f"R{i}" for i in range(1, 16)]
+        nets = [
+            {
+                "name": f"N{i}",
+                "pins": [{"ref": f"R{i}", "pin": "2"}, {"ref": f"R{i + 1}", "pin": "1"}],
+            }
+            for i in range(1, 15)
+        ]
+        ir = _minimal_ir(refs=refs, nets=nets)
+        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
+        root = _sch(self._symbols_body(positions))
+        assert "LAY003" not in _codes(lint_schematic_layout(root))
+
+    def test_amp_topology_no_overlap(self) -> None:
+        """A 13-component amplifier IR must not produce any LAY003 warnings."""
+        refs = ["J1", "R1", "R2", "R3", "R4", "R5", "C1", "C2", "C3", "C4", "U1", "U2", "R6"]
+        nets = [
+            {"name": "IN", "pins": [{"ref": "J1", "pin": "1"}, {"ref": "R1", "pin": "1"}]},
+            {
+                "name": "N1",
+                "pins": [
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "R2", "pin": "1"},
+                ],
+            },
+            {
+                "name": "N2",
+                "pins": [
+                    {"ref": "U1", "pin": "6"},
+                    {"ref": "C1", "pin": "1"},
+                    {"ref": "R3", "pin": "1"},
+                ],
+            },
+            {"name": "N3", "pins": [{"ref": "R3", "pin": "2"}, {"ref": "U2", "pin": "2"}]},
+            {"name": "OUT", "pins": [{"ref": "U2", "pin": "6"}, {"ref": "R4", "pin": "1"}]},
+            {
+                "name": "FB",
+                "pins": [
+                    {"ref": "R2", "pin": "2"},
+                    {"ref": "R5", "pin": "1"},
+                    {"ref": "U1", "pin": "3"},
+                ],
+            },
+            {
+                "name": "FB2",
+                "pins": [
+                    {"ref": "R6", "pin": "1"},
+                    {"ref": "U2", "pin": "3"},
+                    {"ref": "R4", "pin": "2"},
+                ],
+            },
+            {"name": "C1N2", "pins": [{"ref": "C1", "pin": "2"}, {"ref": "C2", "pin": "1"}]},
+            {"name": "C3N", "pins": [{"ref": "C3", "pin": "1"}, {"ref": "U1", "pin": "4"}]},
+            {"name": "C4N", "pins": [{"ref": "C4", "pin": "1"}, {"ref": "U2", "pin": "4"}]},
+        ]
+        ir = _minimal_ir(refs=refs, nets=nets)
+        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
+        root = _sch(self._symbols_body(positions))
+        assert "LAY003" not in _codes(lint_schematic_layout(root))
 
 
 # ---------------------------------------------------------------------------

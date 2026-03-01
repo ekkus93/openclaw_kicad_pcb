@@ -156,9 +156,9 @@ Replace the current schematic style “place one-by-one and label stubs” with 
   - [x] apply scaling factor
   - [x] add margins
   - [x] snap to KiCad grid if desired
-- [ ] Add caching:
-  - [ ] save computed layout to a JSON file under managed outputs (optional)
-  - [ ] deterministic layout seeds if possible
+- [x] Add caching:
+  - [x] save computed layout to a JSON file under managed outputs (optional)
+  - [x] deterministic layout seeds if possible
 
 ### 4.3 Decide the graph model for layout (important)
 Implement one of these models (or both, with a config):
@@ -194,7 +194,7 @@ Heuristic engine tasks:
   - [ ] feedback parts close to op-amp pins (deferred)
   - [ ] decoupling caps near IC (deferred)
   - [ ] mirrored left/right channels (if IR indicates L/R) (deferred)
-- [ ] Ensure no symbol bounding-box overlaps (detected by LAY003; layout does a best-effort spread).
+- [x] Ensure no symbol bounding-box overlaps (detected by LAY003; layout does a best-effort spread).
 
 ### 4.5 Replace “label stubs everywhere” with real wires and junctions
 Implement a **wiring engine** that draws actual wires for readability.
