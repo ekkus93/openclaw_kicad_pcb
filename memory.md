@@ -1,6 +1,6 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T05:45:16+00:00_
+_Last updated: 2026-03-01T06:16:50+00:00_
 
 ---
 
@@ -1503,3 +1503,31 @@ all pins live in the parent's nested sub-unit blocks.
 of the entire file per symbol. The in-memory `sym_blocks` dict approach is
 correct because KiCad's `(extends ...)` always refers to a symbol in the SAME
 library file.
+
+---
+
+## 2026-03-01T06:16:50+00:00 — Phase 1 complete (commit b071066)
+
+### What was done
+Phase 1 (Documentation and Command Surface Accuracy) completed in full.
+
+**SKILL.md changes (Phase 1.1):**
+- Added missing commands: lint-sch, lint-pcb, validate-sch, validate-pcb,
+  format-sch, format-pcb, apply-pattern
+- Added Validation Policy section: --mode, --dry-run, --no-auto-fix, exit codes,
+  write-safety/rollback
+- Fixed Common Circuit Templates: removed add-component loop suggestion
+  (contradicts ABSOLUTE RULE #3); replaced with Circuit IR / apply-pattern guidance
+- Removed duplicate File Safety prose
+
+**doctor.py changes (Phase 1.2):**
+- Added graphviz/dot health check (between kicad-cli and symbol-lib checks)
+- Checks GRAPHVIZ_DOT env var then PATH; runs dot -V; status=warn if missing
+- Does NOT fail overall_ok (Graphviz non-critical until Phase 4)
+
+**CODE_REVIEW5_TODO.md:** tracked as new file; all Phase 1 checkboxes complete.
+
+### Current phase state
+- Phase 0: complete (b0afc76)
+- Phase 1: complete (b071066)
+- Phase 2+: not started
