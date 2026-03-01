@@ -1,6 +1,23 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T10:00:00+00:00_
+_Last updated: 2026-03-04T12:00:00+00:00_
+
+---
+
+## 2026-03-04T12:00:00+00:00 - feat: Phase 4 — Schematic Readability: Layout + Wiring Engine (commit c625f51)
+- **Scope**: Phase 4 of CODE_REVIEW5_TODO.md — items 4.1–4.6 implemented; 4.7 (rotation) deferred.
+- **4.1 `layout_engine.py`** (pre-existing, verified): `LayoutEngine` Protocol, `NoneLayoutEngine`, `make_layout_engine(mode)` factory for auto/graphviz/heuristic/none modes.
+- **4.2 `graphviz_layout.py`** (pre-existing, fixed ruff issues): `GraphvizLayoutEngine` with bipartite DOT model (power-net excluded), `find_dot_binary()` (env var + PATH), `_build_dot_source()`, `_parse_plain_positions()`, `_gv_to_kicad()`, `snap_positions()`. Subprocess call uses `check=False`.
+- **4.3 Bipartite model**: components and nets as node types; edges = pin membership; power nets go to `cluster_power` subgraph.
+- **4.4 `layout.py`** (pre-existing, verified): `HeuristicLayoutEngine` + `compute_signal_flow_layout()` using BFS signal-flow from input nets.
+- **4.5 `router.py`** (rewritten): 4-tier routing strategy: power nets→`GlobalLabelPlacement` per pin; 2-pin (close)→direct L-route; 3–6 pin→`_hub_route()` (centroid hub + `JunctionPoint`); >6 pin non-power→`GlobalLabelPlacement`; fallback→label stub. `NetRouting` dataclass now has `global_labels` and `junctions` fields. `write_routing()` calls `doc.add_global_label()` and `doc.add_junction()`.
+- **4.6 `lint.py`**: Added `lint_schematic_layout()` with LAY001–LAY005 rules; updated module docstring, `__all__`, and `LINT_SUGGESTIONS`. LAY001: label >3× WARN; LAY002: >60% stub wires WARN; LAY003: overlapping symbols WARN; LAY004: symbol outside A4 ERROR; LAY005: >2 wire islands WARN.
+- **CLI**: `--layout auto|graphviz|heuristic|none` added to `apply-netlist` and `new-from-netlist` subcommands.
+- **`commands/netlist.py`**: `layout_mode: LayoutMode = "auto"` threaded from CLI args through `_ApplyNetlistRequest` into `_write_symbols`; stats now track `global_labels` and `junctions`.
+- **`sch_doc.py`** (pre-existing, fixed noqa): `add_junction()`, `add_global_label()`, `make_junction_node()`, `make_global_label_node()`.
+- **Tests**: 66 new tests in `tests/unit/test_phase4_layout.py`. `test_netlist_commands.py` assertion updated: VCC/GND now get `global_label` nodes (power-net routing), not local `label` nodes.
+- **Ruff fixes**: Removed unused `math` import from `graphviz_layout.py`, added `# noqa: PLC0415` for intentional lazy imports (avoid circular deps), `# noqa: PLR0913` for wide helper functions, `check=False` on subprocess call.
+- **Commit**: `c625f51` on master.
 
 ---
 
@@ -1573,3 +1590,25 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - Phase 0: complete (b0afc76)
 - Phase 1: complete (b071066)
 - Phase 2+: not started
+
+## 2025-07-24T00:00:00Z - Phase 4.2 caching + seed complete
+- Committed 456a220: deterministic layout seed (-Gstart=7) and JSON cache for GraphvizLayoutEngine.
+- Cache stored at `project.path / "openclaw_layout_cache.json"`, keyed by SHA-256 of DOT source.
+- `make_layout_engine` now accepts `seed=` and `cache_path=` kwargs, forwarded to GraphvizLayoutEngine.
+- All Phase 4.2 items are now complete. 88 tests in test_phase4_layout.py (22 new).
+- Full unit suite: 1363 passed.
+
+## 2026-03-01T00:00:00Z - Phase 4.4 overlap-free guarantee complete
+- Committed a4f2e86: MIN_SEPARATION_MM constant + TestHeuristicLayoutNoOverlap (3 tests).
+- MIN_SEPARATION_MM = GRID_ROW_MM = 20.32 mm > LAY003 threshold 10.16 mm.
+- 91 tests in test_phase4_layout.py. All Phase 4.4 items now complete.
+
+## 2026-03-01T00:00:00Z - Phase 4.7 rotation/orientation rules complete
+- compute_orientations(ir, positions) already implemented in layout.py (was done in a prior session).
+- Rules: connectors (J/CON/P/SJ/TJ) → 0°; op-amps/ICs (U/IC/OA) → 0°; passives (R/C/L) → 90° if vertical neighbours dominate, else 0°; default → 0°. Power nets excluded from passive rotation calc.
+- compute_orientations imported and wired in commands/netlist.py _write_symbols; rotation passed to add_symbol (which already accepted rotation: int = 0).
+- TestComputeOrientations (8 tests) was also pre-written but failing because _make_ir lacked `version` and min-nets handling.
+- Fix: updated _make_ir to add version="1" and inject a dummy single-pin placeholder net when nets=[].
+- Committed ad4956b: test: Phase 4.7 — fix _make_ir helper for CircuitIR version + min-nets validation.
+- 99 tests in test_phase4_layout.py. Full unit suite: 1374 passed.
+- All Phase 4.7 checkboxes ticked in CODE_REVIEW5_TODO.md.
