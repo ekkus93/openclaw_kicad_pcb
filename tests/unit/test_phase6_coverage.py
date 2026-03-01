@@ -30,7 +30,12 @@ import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
-from kicad_pcb.layout import ORIGIN_X, HeuristicLayoutEngine
+from kicad_pcb.layout import (
+    GRID_COL_MM,
+    ORIGIN_X,
+    HeuristicLayoutEngine,
+    compute_signal_flow_layout,
+)
 from kicad_pcb.lint import lint_schematic_layout
 from kicad_pcb.router import route_nets
 from kicad_pcb.sch_doc import SchematicDoc
@@ -155,6 +160,156 @@ class TestHeuristicInputPlacement:
         positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
         assert positions["P1"][0] <= positions["R1"][0]
         assert positions["R1"][0] <= positions["U1"][0]
+
+
+# ---------------------------------------------------------------------------
+# 6.1  TestHeuristicFeedbackPlacement
+#
+# In an inverting op-amp stage the feedback resistor R_f connects the op-amp
+# output pin back to the op-amp inverting input.  Because both pins of R_f
+# share nets exclusively with U1, R_f appears as a direct BFS-graph neighbour
+# of U1.  The heuristic engine therefore places R_f in the column immediately
+# adjacent to U1 (|x_delta| == GRID_COL_MM, i.e. exactly one column away).
+# ---------------------------------------------------------------------------
+
+
+class TestHeuristicFeedbackPlacement:
+    """Feedback resistor in op-amp circuit is placed within one column of the op-amp."""
+
+    def _feedback_ir(self) -> CircuitIR:
+        """Inverting op-amp stage: J1 → R_in → U1, R_f: U1_out → U1_inv_in."""
+        return _ir(
+            [
+                ("J1", "Device:Connector"),
+                ("R_in", "Device:R"),
+                ("U1", "Device:R"),
+                ("R_f", "Device:R"),
+            ],
+            [
+                ("IN", [("J1", "1"), ("R_in", "1")]),
+                # R_f's pin 2 and R_in's pin 2 both connect to U1's inverting input.
+                ("MINUS", [("R_in", "2"), ("U1", "2"), ("R_f", "2")]),
+                # R_f's pin 1 connects to U1's output — pure feedback loop.
+                ("OUT", [("U1", "6"), ("R_f", "1")]),
+            ],
+        )
+
+    def test_feedback_resistor_column_adjacent_to_opamp(self) -> None:
+        """R_f must be placed in an adjacent column to U1 (|Δx| ≤ GRID_COL_MM)."""
+        ir = self._feedback_ir()
+        positions = compute_signal_flow_layout(ir)
+        x_u1 = positions["U1"][0]
+        x_rf = positions["R_f"][0]
+        assert abs(x_u1 - x_rf) <= GRID_COL_MM, (
+            f"Feedback R_f (x={x_rf:.2f}) is more than one column away from U1 (x={x_u1:.2f}); "
+            f"expected |Δx| ≤ {GRID_COL_MM} mm."
+        )
+
+    def test_feedback_resistor_not_at_input_column(self) -> None:
+        """R_f must not be placed at the same column as the source connector J1."""
+        ir = self._feedback_ir()
+        positions = compute_signal_flow_layout(ir)
+        x_j1 = positions["J1"][0]
+        x_rf = positions["R_f"][0]
+        assert x_rf > x_j1, (
+            f"R_f (x={x_rf:.2f}) should be downstream of J1 (x={x_j1:.2f}), not at the same column."
+        )
+
+    def test_feedback_circuit_all_positions_distinct(self) -> None:
+        """All four components in the feedback circuit have distinct (x, y) positions."""
+        ir = self._feedback_ir()
+        positions = compute_signal_flow_layout(ir)
+        coords = list(positions.values())
+        assert len(coords) == len(set(coords)), (
+            f"Duplicate positions in feedback circuit: {positions}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 6.1  TestHeuristicLRChannelLayout
+#
+# When a circuit has symmetric L-channel and R-channel component chains
+# (mirror topology, fully independent signal nets), the heuristic engine
+# assigns the same column depth to each corresponding stage.  Both channels
+# are seeded from col-0 (both inputs are J-prefix connectors), so BFS visits
+# them in parallel and assigns isomorphic depths — both channels share the
+# same x-coordinates stage by stage.
+#
+# This is the current "best-effort" L/R behaviour; the engine stacks the two
+# channels vertically (different y per column) rather than spatially mirroring
+# them across a centre axis.
+# ---------------------------------------------------------------------------
+
+
+class TestHeuristicLRChannelLayout:
+    """Symmetric L/R channel circuit: both channels receive the same column depths."""
+
+    def _lr_ir(self) -> CircuitIR:
+        """Two independent 3-component chains: J_L→R_L1→R_L2 and J_R→R_R1→R_R2."""
+        return _ir(
+            [
+                ("J_L", "Device:R"),
+                ("R_L1", "Device:R"),
+                ("R_L2", "Device:R"),
+                ("J_R", "Device:R"),
+                ("R_R1", "Device:R"),
+                ("R_R2", "Device:R"),
+            ],
+            [
+                ("SIG_L1", [("J_L", "1"), ("R_L1", "1")]),
+                ("SIG_L2", [("R_L1", "2"), ("R_L2", "1")]),
+                ("SIG_R1", [("J_R", "1"), ("R_R1", "1")]),
+                ("SIG_R2", [("R_R1", "2"), ("R_R2", "1")]),
+            ],
+        )
+
+    def test_input_connectors_at_same_x(self) -> None:
+        """Both J_L and J_R are seeded at col-0 and placed at the same x."""
+        ir = self._lr_ir()
+        positions = compute_signal_flow_layout(ir)
+        assert positions["J_L"][0] == pytest.approx(positions["J_R"][0]), (
+            f"Input connectors at different x: J_L={positions['J_L'][0]:.2f}, "
+            f"J_R={positions['J_R'][0]:.2f}"
+        )
+
+    def test_first_stage_at_same_x(self) -> None:
+        """R_L1 and R_R1 (first stage of each channel) share the same x."""
+        ir = self._lr_ir()
+        positions = compute_signal_flow_layout(ir)
+        assert positions["R_L1"][0] == pytest.approx(positions["R_R1"][0]), (
+            f"First-stage resistors at different x: "
+            f"R_L1={positions['R_L1'][0]:.2f}, R_R1={positions['R_R1'][0]:.2f}"
+        )
+
+    def test_second_stage_at_same_x(self) -> None:
+        """R_L2 and R_R2 (second stage of each channel) share the same x."""
+        ir = self._lr_ir()
+        positions = compute_signal_flow_layout(ir)
+        assert positions["R_L2"][0] == pytest.approx(positions["R_R2"][0]), (
+            f"Second-stage resistors at different x: "
+            f"R_L2={positions['R_L2'][0]:.2f}, R_R2={positions['R_R2'][0]:.2f}"
+        )
+
+    def test_channels_stacked_at_different_y(self) -> None:
+        """L and R channel components share columns but occupy different row positions."""
+        ir = self._lr_ir()
+        positions = compute_signal_flow_layout(ir)
+        # Both connectors are in col-0; they must be stacked (different y).
+        assert positions["J_L"][1] != pytest.approx(positions["J_R"][1]), (
+            f"Both channel connectors are at the same y={positions['J_L'][1]:.2f}; "
+            "expected them to be stacked in different rows."
+        )
+
+    def test_signal_flows_left_to_right_per_channel(self) -> None:
+        """Within each channel, x increases monotonically from input to output."""
+        ir = self._lr_ir()
+        positions = compute_signal_flow_layout(ir)
+        assert positions["J_L"][0] <= positions["R_L1"][0], "Left ch: stage 1 not right of input"
+        assert positions["R_L1"][0] <= positions["R_L2"][0], "Left ch: stage 2 not right of stage 1"
+        assert positions["J_R"][0] <= positions["R_R1"][0], "Right ch: stage 1 not right of input"
+        assert positions["R_R1"][0] <= positions["R_R2"][0], (
+            "Right ch: stage 2 not right of stage 1"
+        )
 
 
 # ---------------------------------------------------------------------------
