@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -10,6 +9,7 @@ from typing import Literal
 from ..adapters import RunnerProtocol, SubprocessRunner
 from ..compat import MINIMUM_VERSION, parse_version
 from ..config import CONFIG_DIR, PROJECTS_DIR, discover_symbols_dir, get_current_project
+from ..graphviz_layout import find_dot_source
 from ..results import DoctorCheckItem, DoctorResult
 
 
@@ -68,9 +68,10 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         )
         overall_ok = False
 
-    # Graphviz dot (required for schematic layout engine — Phase 4+)
-    dot_path = os.environ.get("GRAPHVIZ_DOT") or shutil.which("dot")
-    if dot_path:
+    # Graphviz dot (required for schematic layout engine)
+    dot_result = find_dot_source()
+    if dot_result is not None:
+        dot_path, dot_source = dot_result
         try:
             r = _runner.run([dot_path, "-V"])
             version_line = (r.stderr.strip() or r.stdout.strip()).splitlines()[0]
@@ -79,7 +80,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
                     status="ok",
                     label="graphviz/dot",
                     message=dot_path,
-                    detail=version_line or None,
+                    detail=f"{version_line}  [source: {dot_source}]",
                 )
             )
         except Exception as exc:  # noqa: BLE001
@@ -87,7 +88,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
                 DoctorCheckItem(
                     status="warn",
                     label="graphviz/dot",
-                    message=f"found but could not query version: {exc}",
+                    message=f"found via {dot_source} but could not query version: {exc}",
                 )
             )
     else:
@@ -96,8 +97,7 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
                 status="warn",
                 label="graphviz/dot",
                 message=(
-                    "not found in PATH  "
-                    "(required for schematic layout; set GRAPHVIZ_DOT or install graphviz)"
+                    "not found  (set GRAPHVIZ_DOT or install graphviz; see THIRD_PARTY_NOTICES.md)"
                 ),
             )
         )

@@ -119,6 +119,57 @@ own generated content from user-authored content.
 
 Default: `new-from-netlist` and `compile-netlist` use **`kicad`** (strict); `apply-netlist` uses **`internal`**.
 
+## Schematic layout engine (Graphviz)
+
+When generating schematics from a Circuit IR the tool runs a **graph layout
+engine** to place components so that signals flow left → right.  By default
+it uses [Graphviz `dot`](https://graphviz.org) for high-quality positioning;
+if Graphviz is not available it falls back to the built-in heuristic engine.
+
+### Installing Graphviz
+
+| Platform | Command |
+|----------|---------|
+| Debian / Ubuntu | `sudo apt-get install graphviz` |
+| macOS (Homebrew) | `brew install graphviz` |
+| Windows | Installer at <https://graphviz.org/download/> |
+
+### Overriding the `dot` path
+
+If you need a specific `dot` binary set the `GRAPHVIZ_DOT` environment
+variable to its absolute path before running any command:
+
+```bash
+export GRAPHVIZ_DOT=/opt/local/bin/dot
+python scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
+```
+
+The discovery order is:
+
+1. `GRAPHVIZ_DOT` environment variable (highest priority)
+2. System `PATH` (`shutil.which("dot")`)
+
+Run `python scripts/kicad_pcb.py doctor` to see which binary is active and
+its version.
+
+### Selecting a layout engine
+
+Pass `--layout` to any generation command:
+
+| Value | Behaviour |
+|-------|-----------|
+| `auto` *(default)* | Graphviz if available, else heuristic |
+| `graphviz` | Graphviz only; error if not found |
+| `heuristic` | BFS-based layout; no external tools required |
+| `none` | No layout; symbols placed at (0, 0) |
+
+### Licensing
+
+Graphviz is an independent open-source tool licensed under the
+[Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html).
+This package does **not** bundle or redistribute any Graphviz binary.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full details.
+
 ## Development
 
 ```bash
