@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -66,6 +67,40 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
             DoctorCheckItem(status="error", label="kicad-cli", message="not found in PATH")
         )
         overall_ok = False
+
+    # Graphviz dot (required for schematic layout engine — Phase 4+)
+    dot_path = os.environ.get("GRAPHVIZ_DOT") or shutil.which("dot")
+    if dot_path:
+        try:
+            r = _runner.run([dot_path, "-V"])
+            version_line = (r.stderr.strip() or r.stdout.strip()).splitlines()[0]
+            checks.append(
+                DoctorCheckItem(
+                    status="ok",
+                    label="graphviz/dot",
+                    message=dot_path,
+                    detail=version_line or None,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            checks.append(
+                DoctorCheckItem(
+                    status="warn",
+                    label="graphviz/dot",
+                    message=f"found but could not query version: {exc}",
+                )
+            )
+    else:
+        checks.append(
+            DoctorCheckItem(
+                status="warn",
+                label="graphviz/dot",
+                message=(
+                    "not found in PATH  "
+                    "(required for schematic layout; set GRAPHVIZ_DOT or install graphviz)"
+                ),
+            )
+        )
 
     # KiCad symbol libraries
     sym_dir_result = discover_symbols_dir()
