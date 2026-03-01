@@ -1621,3 +1621,14 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - doctor.py: removed duplicated GRAPHVIZ_DOT/shutil.which logic; now calls find_dot_source(); detail field shows version + [source: bundled|GRAPHVIZ_DOT|PATH].
 - TestFindDotSource (4 tests): returns None, GRAPHVIZ_DOT source, PATH source, bundled source.
 - 1378 passed. All Phase 5 checkboxes ticked.
+
+## 2026-03-01T00:00:00Z - Phase 6 Tests complete
+- Committed 5b27fd4: test: Phase 6 — layout/golden/wiring/integration coverage.
+- New files: tests/unit/test_phase6_coverage.py (18 tests), tests/integration/test_phase6_integration.py (7 tests).
+- 6.1 TestHeuristicInputPlacement (4 tests): connector refs (J/P/CON) placed at leftmost x; uses ORIGIN_X from layout.py.
+- 6.1 TestGraphvizPositionStability (2 tests): same IR+seed → identical positions; LAY003-clean (skipped if no dot).
+- 6.2 TestLabelDuplicationPolicy (3 tests): 3 degree-2 signal nets → 0 local labels, no dup, ≥3 wires. Already covered by TestRouteNetsDirect/Hub/Power/HighFanout in test_phase4_layout.py.
+- 6.3 TestGoldenResistorDivider (5 tests) + TestGoldenOpAmpStage (4 tests): IR → cmd_new_from_netlist → SchematicDoc.list_symbols(); checks symbols_added, refs placed, positions distinct, LAY003-clean, stable across two runs. Uses TestLib:R + TestLib:DerivedOpAmp from tests/fixtures/symbols/TestLib.kicad_sym.
+- 6.4 TestGraphvizEndToEnd (4 tests, skip if no dot) + TestKiCadCLINetlistExport (3 tests, skip if no kicad-cli): kicad-cli netlist export exits 0 for divider + chain IR; uses home_tmp fixture for Flatpak sandbox compatibility.
+- All 6.1–6.4 checkboxes ticked in CODE_REVIEW5_TODO.md.
+- Full unit suite: 1394+ passed, exit 0.
