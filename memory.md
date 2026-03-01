@@ -1,6 +1,20 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-05-15T02:00:00+00:00_
+_Last updated: 2026-05-15T03:00:00+00:00_
+
+---
+
+## 2026-05-15T03:00:00+00:00 - feat: Phase 6.3 — TestGoldenAudioBlock (small audio block subset)
+- **Scope**: Completed the remaining unchecked `6.3 Golden schematic tests` item: "small audio block (subset of headphone amp)".
+- **Test class**: `TestGoldenAudioBlock` (9 tests) in `tests/unit/test_phase6_coverage.py`.
+- **Circuit**: Left-channel path + shared bias divider — 8 components (J1, J3, J4, R1, R3, R4, R5, R7), 6 nets.
+  - Degree-2 nets → direct wires: IN_L, VCC, OUT_L
+  - Degree-3 T-junction nets → hub routing + junctions: STAGE_L, MID_RAIL
+  - Degree-4 power net → global labels: GND
+- **Tests**: all_refs_placed, positions_all_distinct, zero_local_labels, has_global_labels_for_gnd, has_junctions_for_t_junctions, no_lay003_overlap, layout_stable_across_runs, parses_cleanly, connectors_leftmost.
+- **IR**: Inline dict `_AUDIO_BLOCK_IR` + constant `_AUDIO_BLOCK_REFS` — no stored fixture file needed (same pattern as TestGoldenResistorDivider/TestGoldenOpAmpStage).
+- **Lint fix**: SIM300 Yoda condition `_AUDIO_BLOCK_REFS <= placed` → `placed >= _AUDIO_BLOCK_REFS`.
+- **All tests pass**: exit 0 (full unit suite).
 
 ---
 

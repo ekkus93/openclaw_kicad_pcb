@@ -268,7 +268,7 @@ Add new lint codes to detect “unusable” layout patterns.
 - [x] Add golden expected `.kicad_sch` outputs for:
   - [x] simple resistor divider (`TestGoldenResistorDivider`)
   - [x] op-amp inverting/non-inverting stage (`TestGoldenOpAmpStage`)
-  - [ ] small audio block (subset of headphone amp)
+  - [x] small audio block (subset of headphone amp) (`TestGoldenAudioBlock` — left-channel + bias divider, 8 components, 6 nets)
 - [x] Compare canonical serialized output (or AST equivalence) to catch regressions.
 
 ### 6.4 Integration tests (skip if tools missing)
