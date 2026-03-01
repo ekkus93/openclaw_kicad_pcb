@@ -955,6 +955,74 @@ class TestGraphvizLayoutSeed:
 
 
 # ---------------------------------------------------------------------------
+# Phase 5.2 — find_dot_source (centralized binary discovery)
+# ---------------------------------------------------------------------------
+
+
+class TestFindDotSource:
+    """Unit tests for :func:`~kicad_pcb.graphviz_layout.find_dot_source`."""
+
+    def test_returns_none_when_no_dot(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Returns None when neither env var nor PATH provides dot."""
+        monkeypatch.delenv("GRAPHVIZ_DOT", raising=False)
+        monkeypatch.setattr(_gv_mod.shutil, "which", lambda _cmd: None)
+        # Point bundled path to a location that doesn't exist.
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", tmp_path / "no_dot")
+        assert _gv_mod.find_dot_source() is None
+
+    def test_env_var_takes_precedence(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """GRAPHVIZ_DOT env var is used and source is 'GRAPHVIZ_DOT'."""
+        fake_dot = tmp_path / "dot"
+        fake_dot.write_text("#!/bin/sh\n")
+        fake_dot.chmod(0o755)
+        monkeypatch.setenv("GRAPHVIZ_DOT", str(fake_dot))
+        # Patch bundled path to non-existent so env var wins.
+        bundled = tmp_path / "no_bundled"
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+
+        result = _gv_mod.find_dot_source()
+        assert result is not None
+        path, source = result
+        assert path == str(fake_dot)
+        assert source == "GRAPHVIZ_DOT"
+
+    def test_path_fallback(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Falls back to PATH when no env var set; source is 'PATH'."""
+        monkeypatch.delenv("GRAPHVIZ_DOT", raising=False)
+        bundled = tmp_path / "no_bundled"
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        fake_dot = tmp_path / "dot"
+        fake_dot.write_text("#!/bin/sh\n")
+        fake_dot.chmod(0o755)
+        monkeypatch.setattr(_gv_mod.shutil, "which", lambda _cmd: str(fake_dot))
+
+        result = _gv_mod.find_dot_source()
+        assert result is not None
+        path, source = result
+        assert path == str(fake_dot)
+        assert source == "PATH"
+
+    def test_bundled_binary_first(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Bundled binary is used first when present; source is 'bundled'."""
+        bundled = tmp_path / "dot"
+        bundled.write_text("#!/bin/sh\n")
+        bundled.chmod(0o755)
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        # Even if env var and PATH would return something else, bundled wins.
+        monkeypatch.setenv("GRAPHVIZ_DOT", "/some/other/dot")
+
+        result = _gv_mod.find_dot_source()
+        assert result is not None
+        path, source = result
+        assert path == str(bundled)
+        assert source == "bundled"
+
+
+# ---------------------------------------------------------------------------
 # Phase 4.7 — compute_orientations
 # ---------------------------------------------------------------------------
 

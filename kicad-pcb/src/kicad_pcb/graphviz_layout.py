@@ -144,20 +144,59 @@ def _save_layout_cache(
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Bundled binary slot
+# ---------------------------------------------------------------------------
+
+# When a ``dot`` binary is shipped alongside the package it should be placed
+# at ``<package_root>/bin/dot`` (or ``bin/dot.exe`` on Windows).  The slot is
+# checked *before* the environment variable and PATH lookup so the bundled
+# binary is always preferred when present.
+#
+# Currently no binary is bundled; the constant resolves to a path that will
+# not exist, so the check always falls through to the env-var / PATH steps.
+_BUNDLED_DOT_PATH: Path = Path(__file__).parent / "bin" / "dot"
+
+
 def find_dot_binary() -> str | None:
     """Locate the ``dot`` binary used for Graphviz layout.
 
     Search order:
 
-    1. :envvar:`GRAPHVIZ_DOT` environment variable.
-    2. System :data:`PATH` (``shutil.which``).
+    1. **Bundled binary** — ``<package>/bin/dot`` if present and executable.
+    2. :envvar:`GRAPHVIZ_DOT` environment variable.
+    3. System :data:`PATH` (``shutil.which``).
 
     Returns the resolved path string or ``None`` if not found.
+
+    Use :func:`find_dot_source` to get both the path and discovery source.
     """
+    # 1. Bundled binary (preferred when present).
+    if _BUNDLED_DOT_PATH.is_file() and os.access(_BUNDLED_DOT_PATH, os.X_OK):
+        return str(_BUNDLED_DOT_PATH)
+    # 2. GRAPHVIZ_DOT environment variable.
     env_val = os.environ.get("GRAPHVIZ_DOT", "").strip()
     if env_val and Path(env_val).is_file() and os.access(env_val, os.X_OK):
         return env_val
+    # 3. System PATH.
     return shutil.which("dot")
+
+
+def find_dot_source() -> tuple[str, str] | None:
+    """Return ``(path, source)`` for the resolved ``dot`` binary.
+
+    *source* is one of ``"bundled"``, ``"GRAPHVIZ_DOT"``, or ``"PATH"``.
+    Returns ``None`` if ``dot`` cannot be found.
+    """
+    if _BUNDLED_DOT_PATH.is_file() and os.access(_BUNDLED_DOT_PATH, os.X_OK):
+        return str(_BUNDLED_DOT_PATH), "bundled"
+    env_val = os.environ.get("GRAPHVIZ_DOT", "").strip()
+    if env_val and Path(env_val).is_file() and os.access(env_val, os.X_OK):
+        return env_val, "GRAPHVIZ_DOT"
+    path = shutil.which("dot")
+    if path:
+        return path, "PATH"
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +489,7 @@ class GraphvizLayoutEngine:
 __all__ = [
     "build_dot_source",
     "find_dot_binary",
+    "find_dot_source",
     "GraphvizLayoutEngine",
     "layout_cache_key",
     "load_layout_cache",
