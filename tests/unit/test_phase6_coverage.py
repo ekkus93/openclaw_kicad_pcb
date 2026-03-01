@@ -35,6 +35,7 @@ from kicad_pcb.lint import lint_schematic_layout
 from kicad_pcb.router import route_nets
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse as _parse_sexpr
+from kicad_pcb.sexpr.nodes import ListNode
 
 pytestmark = pytest.mark.unit
 
@@ -424,3 +425,245 @@ class TestGoldenOpAmpStage:
         symbols = {s["ref"]: s for s in doc.list_symbols()}
         # U1 should be placed somewhere meaningful, not at origin (0, 0).
         assert symbols["U1"]["x"] != 0.0 or symbols["U1"]["y"] != 0.0
+
+
+# ---------------------------------------------------------------------------
+# 6.3  TestGoldenHeadphoneAmp  (0.2 — "intended readable layout" golden)
+#
+# A simplified dual-channel passive headphone amplifier: 13 resistor/connector
+# components, 9 nets (5 degree-2 signals, 2 degree-3 T-junctions, 1 degree-4
+# spine, 1 degree-6 power-ground).  The full IR lives in
+# ``tests/fixtures/regressions/headphone_amp_ir.json``.
+#
+# The stored golden file is the reference for what the improved layout looks
+# like.  The tests below verify that generating from the same IR dynamically
+# satisfies the same structural properties:
+#
+#   • All 13 components placed at distinct, non-overlapping positions.
+#   • Zero local label stubs (all nets routed as wires or global labels).
+#   • GND represented via global labels (not plain local label stubs).
+#   • At least one explicit junction (degree-3 T-junction nets present).
+#   • No LAY003 overlap violations.
+#   • Better than the baseline on wire/label metrics (regression guard).
+#
+# The baseline metrics (captured from the original bad generator output stored
+# in ``headphone_amp_current_layout.kicad_sch``) are: 16 local labels, 0
+# global labels, 34 wires, 0 junctions.
+# ---------------------------------------------------------------------------
+
+_HEADPHONE_AMP_IR_PATH = (
+    Path(__file__).resolve().parent.parent / "fixtures" / "regressions" / "headphone_amp_ir.json"
+)
+_HEADPHONE_AMP_GOLDEN_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "fixtures"
+    / "regressions"
+    / "headphone_amp_golden_layout.kicad_sch"
+)
+_HEADPHONE_AMP_BASELINE_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "fixtures"
+    / "regressions"
+    / "headphone_amp_current_layout.kicad_sch"
+)
+
+# Baseline metrics captured from headphone_amp_current_layout.kicad_sch.
+# Used as regression lower-bounds in comparisons below.
+_BASELINE_LABEL_COUNT = 16
+_BASELINE_GLOBAL_LABEL_COUNT = 0
+_BASELINE_JUNCTION_COUNT = 0
+
+
+def _count_nodes(root, key: str) -> int:
+    """Recursively count all ListNode children with the given key."""
+    n = 0
+    if isinstance(root, ListNode):
+        if root.key == key:
+            n += 1
+        for child in root.items:
+            n += _count_nodes(child, key)
+    return n
+
+
+def _new_from_netlist_file(tmp_path: Path, ir_path: Path, *, name: str) -> object:
+    """Run cmd_new_from_netlist using the headphone amp IR file."""
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    return cmd_new_from_netlist(
+        Namespace(
+            name=name,
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(_FIXTURES_DIR),
+            mode="internal",
+            layout="heuristic",
+        )
+    )
+
+
+class TestGoldenHeadphoneAmp:
+    """Headphone amp IR produces a readable schematic — the 'intended golden layout'.
+
+    Verifies the structural improvements over the old label-stub baseline and
+    checks that the stored golden fixture has the expected properties.
+    """
+
+    # -- Fixture integrity --------------------------------------------------
+
+    def test_golden_fixture_exists_and_loads(self) -> None:
+        """The stored golden file exists and parses cleanly."""
+        assert _HEADPHONE_AMP_GOLDEN_PATH.exists(), (
+            f"Golden fixture missing: {_HEADPHONE_AMP_GOLDEN_PATH}"
+        )
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        assert doc is not None
+
+    def test_golden_fixture_has_all_refs(self) -> None:
+        """The stored golden file contains all 13 component refs."""
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        placed = {s["ref"] for s in doc.list_symbols()}
+        expected = {
+            "J1",
+            "J2",
+            "J3",
+            "J4",
+            "J5",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6",
+            "R7",
+            "R8",
+        }
+        assert expected <= placed, f"Missing refs in golden: {expected - placed}"
+
+    def test_golden_fixture_zero_local_labels(self) -> None:
+        """The golden file has zero local label stubs (all nets wired/globalized)."""
+        content = _HEADPHONE_AMP_GOLDEN_PATH.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        label_count = _count_nodes(root, "label")
+        assert label_count == 0, (
+            f"Golden has {label_count} local label stubs; expected 0. "
+            "The baseline had 16 — this is a regression."
+        )
+
+    def test_golden_fixture_has_global_labels(self) -> None:
+        """The golden file uses global labels for power/high-degree nets (GND etc.)."""
+        content = _HEADPHONE_AMP_GOLDEN_PATH.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        gl_count = _count_nodes(root, "global_label")
+        assert gl_count > _BASELINE_GLOBAL_LABEL_COUNT, (
+            f"Golden has {gl_count} global labels; expected >0. "
+            "GND (degree-6) should be represented as global labels."
+        )
+
+    def test_golden_fixture_has_junctions(self) -> None:
+        """The golden file has at least one explicit junction for T-junction nets."""
+        content = _HEADPHONE_AMP_GOLDEN_PATH.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        jct_count = _count_nodes(root, "junction")
+        assert jct_count > _BASELINE_JUNCTION_COUNT, (
+            f"Golden has {jct_count} junctions; expected >0. "
+            "Degree-3 nets (STAGE_L, STAGE_R) should produce T-junctions."
+        )
+
+    def test_golden_fixture_no_lay003_overlap(self) -> None:
+        """The stored golden fixture has no LAY003 symbol-overlap violations."""
+        content = _HEADPHONE_AMP_GOLDEN_PATH.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        issues = lint_schematic_layout(root)
+        lay003 = [i for i in issues if i.code == "LAY003"]
+        assert not lay003, f"LAY003 overlap in golden fixture: {lay003}"
+
+    # -- Dynamic generation tests ------------------------------------------
+
+    def test_dynamic_all_refs_placed(self, tmp_path: Path) -> None:
+        """Generating from the IR places all 13 components."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpAll")
+        assert result.symbols_added == 13
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        placed = {s["ref"] for s in doc.list_symbols()}
+        expected = {
+            "J1",
+            "J2",
+            "J3",
+            "J4",
+            "J5",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6",
+            "R7",
+            "R8",
+        }
+        assert expected <= placed, f"Missing refs: {expected - placed}"
+
+    def test_dynamic_positions_all_distinct(self, tmp_path: Path) -> None:
+        """No two components share the exact same (x, y) position."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpDist")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        positions = [(s["x"], s["y"]) for s in doc.list_symbols()]
+        assert len(positions) == len(set(positions)), (
+            f"Duplicate positions detected: {[p for p in positions if positions.count(p) > 1]}"
+        )
+
+    def test_dynamic_zero_local_labels(self, tmp_path: Path) -> None:
+        """The dynamically generated schematic has zero local label stubs."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpLbl")
+        content = result.managed_schematic_path.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        label_count = _count_nodes(root, "label")
+        assert label_count == 0, (
+            f"Generated schematic has {label_count} local labels; expected 0. "
+            f"Baseline had {_BASELINE_LABEL_COUNT}."
+        )
+
+    def test_dynamic_better_than_baseline_global_labels(self, tmp_path: Path) -> None:
+        """Generated schematic uses more global labels than the baseline (>0)."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpGL")
+        content = result.managed_schematic_path.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        gl_count = _count_nodes(root, "global_label")
+        assert gl_count > _BASELINE_GLOBAL_LABEL_COUNT, (
+            f"Generated schematic has {gl_count} global labels; "
+            f"expected >{_BASELINE_GLOBAL_LABEL_COUNT}."
+        )
+
+    def test_dynamic_has_junctions(self, tmp_path: Path) -> None:
+        """Generated schematic has at least one junction for T-junction nets."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpJct")
+        content = result.managed_schematic_path.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        jct_count = _count_nodes(root, "junction")
+        assert jct_count > _BASELINE_JUNCTION_COUNT, (
+            f"Generated schematic has {jct_count} junctions; expected >{_BASELINE_JUNCTION_COUNT}."
+        )
+
+    def test_dynamic_no_lay003_overlap(self, tmp_path: Path) -> None:
+        """No LAY003 symbol-overlap violations in the generated schematic."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpLAY")
+        content = result.managed_schematic_path.read_text(encoding="utf-8")
+        root = _parse_sexpr(content.rstrip("\n"))
+        issues = lint_schematic_layout(root)
+        lay003 = [i for i in issues if i.code == "LAY003"]
+        assert not lay003, f"LAY003 overlap: {lay003}"
+
+    def test_dynamic_layout_stable(self, tmp_path: Path) -> None:
+        """Two independent runs on the same IR produce the same symbol positions."""
+        r1 = _new_from_netlist_file(tmp_path / "r1", _HEADPHONE_AMP_IR_PATH, name="HpS1")
+        r2 = _new_from_netlist_file(tmp_path / "r2", _HEADPHONE_AMP_IR_PATH, name="HpS2")
+        doc1 = SchematicDoc.load(r1.managed_schematic_path)
+        doc2 = SchematicDoc.load(r2.managed_schematic_path)
+        pos1 = {s["ref"]: (s["x"], s["y"]) for s in doc1.list_symbols()}
+        pos2 = {s["ref"]: (s["x"], s["y"]) for s in doc2.list_symbols()}
+        assert pos1 == pos2, f"Positions differ between runs:\n  run1={pos1}\n  run2={pos2}"
+
+    def test_dynamic_parses_cleanly(self, tmp_path: Path) -> None:
+        """The generated managed schematic loads without parse errors."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpParse")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        assert doc is not None
