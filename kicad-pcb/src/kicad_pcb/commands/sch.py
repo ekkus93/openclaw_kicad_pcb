@@ -96,6 +96,7 @@ def cmd_add_component(args) -> AddComponentResult:
         operation="add-component",
         dry_run=getattr(args, "dry_run", False),
         backup=getattr(args, "backup", False),
+        strict=getattr(args, "strict", False),
     )
 
     return AddComponentResult(

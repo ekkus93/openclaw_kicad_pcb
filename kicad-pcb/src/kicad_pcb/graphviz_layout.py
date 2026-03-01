@@ -361,6 +361,7 @@ class GraphvizLayoutEngine:
         self._timeout = timeout
         self._seed = seed
         self._cache_path = cache_path
+        self.last_fallback_info: dict[str, str] | None = None
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -399,6 +400,11 @@ class GraphvizLayoutEngine:
         try:
             positions = self._run_dot(dot_source)
         except Exception as exc:  # noqa: BLE001
+            self.last_fallback_info = {
+                "command": f"{self._dot} -Tplain -Gstart={self._seed}",
+                "error": str(exc),
+                "fallback": "heuristic",
+            }
             _log.warning("GraphvizLayoutEngine failed (%s); falling back to heuristic layout.", exc)
             positions = {}
 

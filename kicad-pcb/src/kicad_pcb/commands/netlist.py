@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,6 +17,7 @@ from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir_autofix import autofix_circuit_ir
 from ..ir_validate import validate_circuit_ir, validate_ir_symbols
+from ..layout import compute_orientations
 from ..layout_engine import LayoutMode, make_layout_engine
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
@@ -61,6 +63,7 @@ class _ApplyNetlistRequest:
     dry_run: bool
     backup: bool = False
     layout_mode: LayoutMode = "auto"
+    strict: bool = False
 
 
 def cmd_info_sch(args) -> InfoSchResult:
@@ -227,6 +230,7 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             dry_run=bool(getattr(args, "dry_run", False)),
             backup=bool(getattr(args, "backup", False)),
             layout_mode=getattr(args, "layout", "auto"),
+            strict=bool(getattr(args, "strict", False)),
         ),
     )
 
@@ -386,6 +390,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
             force=True,
             dry_run=False,
             layout_mode=getattr(args, "layout", "auto"),
+            strict=bool(getattr(args, "strict", False)),
         ),
     )
 
@@ -457,7 +462,7 @@ def _apply_netlist_to_project(
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
 
-        symbol_positions, pin_endpoints, symbol_defs_missing = _write_symbols(
+        symbol_positions, pin_endpoints, symbol_defs_missing, layout_fallback = _write_symbols(
             doc=doc,
             ir=ir,
             symbol_index=symbol_index,
@@ -466,6 +471,18 @@ def _apply_netlist_to_project(
             layout_mode=request.layout_mode,
             cache_path=project.path / "openclaw_layout_cache.json",
         )
+        if layout_fallback is not None:
+            warnings.append(
+                {
+                    "code": "GRAPHVIZ_LAYOUT_FALLBACK",
+                    "message": (
+                        "Graphviz layout failed; using heuristic fallback. "
+                        f"Command: {layout_fallback['command']!r}. "
+                        f"Error: {layout_fallback['error']}"
+                    ),
+                    "details": layout_fallback,
+                }
+            )
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
         write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
 
@@ -541,6 +558,7 @@ def _apply_netlist_to_project(
         operation="apply-netlist",
         dry_run=request.dry_run,
         backup=request.backup,
+        strict=request.strict,
     )
 
     if request.dry_run:
@@ -586,6 +604,7 @@ def _write_symbols(  # noqa: PLR0913
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
     set[str],
+    dict[str, str] | None,
 ]:
     """Place all symbols from *ir* into *doc*.
 
@@ -607,11 +626,12 @@ def _write_symbols(  # noqa: PLR0913
 
     engine = make_layout_engine(layout_mode, cache_path=cache_path)
     raw_layout = engine.compute_symbol_positions(ir)
-    # Normalise to (x, y) — drop rotation for placement (SchematicDoc.add_symbol
-    # takes x/y without rotation in the current API).
+    fallback_info: dict[str, str] | None = getattr(engine, "last_fallback_info", None)
+    # Build plain (x, y) map for coordinate lookup and orientation computation.
     layout: dict[str, tuple[float, float]] = {
         ref: (pos[0], pos[1]) for ref, pos in raw_layout.items()
     }
+    orientations: dict[str, int] = compute_orientations(ir, layout)
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]
@@ -632,23 +652,39 @@ def _write_symbols(  # noqa: PLR0913
             valid_pins,
             pin_uuids,
             project_name,
+            rotation=orientations.get(component.ref, 0),
         )
         symbol_positions[component.ref] = (x, y)
 
-        # Compute pin endpoint positions in schematic space.
-        # Pin (at px py angle) in library space translates to (x+px, y+py)
-        # in schematic space when the symbol is placed at (x, y) at angle=0.
+        # Compute pin endpoint positions in schematic space, applying the
+        # symbol's rotation.
+        # Pin (at px py angle) in library space is transformed by rotation θ:
+        #   schematic_x = x + cos(θ)*px - sin(θ)*py
+        #   schematic_y = y + sin(θ)*px + cos(θ)*py
+        #   schematic_angle = (pa + θ) % 360
+        # When θ=0 this reduces to the identity transform.
+        rotation = orientations.get(component.ref, 0)
         lib_name, sym_name = component.symbol.split(":", 1)
         for directory in symbol_index.directories:
             pin_at = read_lib_symbol_pin_at(lib_name, sym_name, symbols_dir=directory)
             if pin_at:
-                for pin_num, (px, py, pa) in pin_at.items():
-                    pin_endpoints[(component.ref, pin_num)] = (x + px, y + py, pa)
+                if rotation == 0:
+                    for pin_num, (px, py, pa) in pin_at.items():
+                        pin_endpoints[(component.ref, pin_num)] = (x + px, y + py, pa)
+                else:
+                    theta = math.radians(rotation)
+                    cos_t = math.cos(theta)
+                    sin_t = math.sin(theta)
+                    for pin_num, (px, py, pa) in pin_at.items():
+                        rpx = cos_t * px - sin_t * py
+                        rpy = sin_t * px + cos_t * py
+                        rpa = (pa + rotation) % 360
+                        pin_endpoints[(component.ref, pin_num)] = (x + rpx, y + rpy, rpa)
                 break  # use first directory that has the symbol
 
         stats["symbols"] += 1
 
-    return symbol_positions, pin_endpoints, symbol_defs_missing
+    return symbol_positions, pin_endpoints, symbol_defs_missing, fallback_info
 
 
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:
