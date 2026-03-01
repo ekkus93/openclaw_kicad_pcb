@@ -1,6 +1,23 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-05-15T00:00:00+00:00_
+_Last updated: 2026-05-15T01:00:00+00:00_
+
+---
+
+## 2026-05-15T01:00:00+00:00 - feat: Phase 0.2 — headphone amp golden layout fixture (commit c16f850)
+- **Scope**: Completed the deferred Phase 0.2 TODO: "Add a small intended readable layout target (golden) for the same circuit"
+- **Golden fixture**: `tests/fixtures/regressions/headphone_amp_golden_layout.kicad_sch` — generated from `headphone_amp_ir.json` using heuristic layout engine
+  - 13 components placed at distinct, non-overlapping positions
+  - 0 local label stubs (vs 16 in baseline `headphone_amp_current_layout.kicad_sch`)
+  - 8 global labels for GND/power nets (vs 0 in baseline)
+  - 3 junctions at T-junction nets STAGE_L/STAGE_R/MID_RAIL (vs 0 in baseline)
+  - 54 wires (vs 34 stub wires in baseline)
+- **Tests**: 14 new in `TestGoldenHeadphoneAmp` in `tests/unit/test_phase6_coverage.py`
+  - 5 fixture integrity tests (fixture exists, has all refs, zero labels, has global labels, no LAY003)
+  - 8 dynamic generation tests (all refs placed, distinct positions, zero labels, >baseline global labels, has junctions, no LAY003, stable layout, parses cleanly)
+  - Also added `from kicad_pcb.sexpr.nodes import ListNode` import and `_count_nodes`/`_new_from_netlist_file` helpers
+- **Total**: 1422 unit tests passing
+- **Commit**: `c16f850` on master.
 
 ---
 

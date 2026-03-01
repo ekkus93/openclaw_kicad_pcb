@@ -41,7 +41,7 @@ Harden and improve the `kicad-pcb` OpenClaw skill so it:
 
 ### 0.2 Baseline schematic readability snapshots
 - [x] Add at least one "unusable schematic layout" fixture produced by current generator — `tests/fixtures/regressions/headphone_amp_current_layout.kicad_sch` (13-component amp, 16 label nodes, no power symbols, no junctions; committed `b0afc76`).
-- [ ] Add a small "intended readable layout" target (golden) for the same circuit — deferred until Phase 4 Graphviz output is accepted.
+- [x] Add a small "intended readable layout" target (golden) for the same circuit — `tests/fixtures/regressions/headphone_amp_golden_layout.kicad_sch` (generated via heuristic layout; 0 label stubs, 8 global labels, 3 junctions; committed c16f850).
 
 ---
 
