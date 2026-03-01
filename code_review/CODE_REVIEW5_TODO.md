@@ -100,25 +100,30 @@ Harden and improve the `kicad-pcb` OpenClaw skill so it:
 # Phase 3 — S-expression and KiCad Document Correctness
 
 ### 3.1 Confirm parser strategy (“borrow” vs “own”) and simplify
-- [ ] Decide and implement one of:
-  - [ ] **Preferred:** Use the existing in-repo S-expression stack as the single source for parse/serialize, and keep any external library only for optional verification/tests.
+- [x] Decide and implement one of:
+  - [x] **Preferred:** Use the existing in-repo S-expression stack as the single source for parse/serialize, and keep any external library only for optional verification/tests.
   - [ ] Or: Replace in-repo parser with a borrowed library and remove/disable duplicate parser code.
-- [ ] Update dependencies accordingly (avoid dual-parser drift).
+- [x] Update dependencies accordingly (avoid dual-parser drift).
+  - `kiutils>=1.4` moved to `[project.optional-dependencies.dev]`; strategy documented in `sexpr/__init__.py`.
 
 ### 3.2 Make minimal project template generation AST-based
-- [ ] Replace hand-written template strings for `.kicad_sch` / `.kicad_pcb` skeletons with AST builders.
-- [ ] Add golden tests for skeleton files.
-- [ ] Add integration “smoke load” test (parse + optional `kicad-cli` check).
+- [x] Replace hand-written template strings for `.kicad_sch` / `.kicad_pcb` skeletons with AST builders.
+  - `_build_sch_skeleton()` and `_build_pcb_skeleton()` in `commands/project.py`.
+- [x] Add golden tests for skeleton files.
+  - `TestSchSkeleton` and `TestPcbSkeleton` in `tests/unit/test_phase3_correctness.py`.
+- [x] Add integration "smoke load" test (parse + optional `kicad-cli` check).
+  - `_check_sexp` + round-trip parse→serialize→re-parse verified in tests.
 
 ### 3.3 Expand structural lint rules (syntax is not enough)
-- [ ] Ensure lints exist and are enforced for:
-  - [ ] duplicate refs
-  - [ ] duplicate UUIDs
-  - [ ] missing required symbol properties (Reference/Value)
-  - [ ] malformed coords/at
-  - [ ] missing outline / invalid outline (pcb)
-  - [ ] layer declarations on generated primitives
-- [ ] Add a clear mapping from lint code -> fix suggestion.
+- [x] Ensure lints exist and are enforced for:
+  - [x] duplicate refs (SCH003/PCB002)
+  - [x] duplicate UUIDs (SCH002/PCB002)
+  - [x] missing required symbol properties (Reference/Value) (SCH004/SCH005)
+  - [x] malformed coords/at (SCH006/SCH007/PCB003/PCB004)
+  - [x] missing outline / invalid outline (pcb) (PCB005/PCB006/PCB007/PCB008)
+  - [x] layer declarations on generated primitives: SCH010 (label missing at), PCB010 (gr_* missing layer), PCB011 (pad missing layers)
+- [x] Add a clear mapping from lint code -> fix suggestion.
+  - `LINT_SUGGESTIONS` updated with entries for SCH010, PCB010, PCB011.
 
 ---
 
