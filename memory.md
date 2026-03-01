@@ -1612,3 +1612,12 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - Committed ad4956b: test: Phase 4.7 — fix _make_ir helper for CircuitIR version + min-nets validation.
 - 99 tests in test_phase4_layout.py. Full unit suite: 1374 passed.
 - All Phase 4.7 checkboxes ticked in CODE_REVIEW5_TODO.md.
+
+## 2026-03-01T00:00:00Z - Phase 5 Graphviz licensing + centralized discovery complete
+- Committed 05e5f19: feat: Phase 5 — Graphviz licensing docs, centralized dot discovery, find_dot_source.
+- THIRD_PARTY_NOTICES.md created at project root: Graphviz EPL-1.0 license, redistribution summary, install instructions.
+- README.md: added "Schematic layout engine (Graphviz)" section covering install, GRAPHVIZ_DOT override, --layout values table, licensing note.
+- graphviz_layout.py: added _BUNDLED_DOT_PATH constant (package/bin/dot slot, currently no binary there); added find_dot_source() -> (path, source) | None with bundled→env→PATH priority; both find_dot_binary and find_dot_source in __all__.
+- doctor.py: removed duplicated GRAPHVIZ_DOT/shutil.which logic; now calls find_dot_source(); detail field shows version + [source: bundled|GRAPHVIZ_DOT|PATH].
+- TestFindDotSource (4 tests): returns None, GRAPHVIZ_DOT source, PATH source, bundled source.
+- 1378 passed. All Phase 5 checkboxes ticked.
