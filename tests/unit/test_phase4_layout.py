@@ -33,7 +33,7 @@ from unittest.mock import patch
 import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.layout import MIN_SEPARATION_MM, HeuristicLayoutEngine
+from kicad_pcb.layout import MIN_SEPARATION_MM, HeuristicLayoutEngine, compute_orientations
 from kicad_pcb.layout_engine import NoneLayoutEngine, make_layout_engine
 from kicad_pcb.lint import LINT_SUGGESTIONS, LintSeverity, lint_schematic_layout
 from kicad_pcb.router import (
@@ -952,3 +952,129 @@ class TestGraphvizLayoutSeed:
         engine = make_layout_engine("graphviz", cache_path=cache_file)
         assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
         assert engine._cache_path == cache_file  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
+# Phase 4.7 — compute_orientations
+# ---------------------------------------------------------------------------
+
+
+def _make_ir(
+    components: list[tuple[str, str]],
+    nets: list[tuple[str, list[tuple[str, str]]]],
+    *,
+    version: str = "1",
+) -> CircuitIR:
+    """Minimal CircuitIR factory.
+
+    *components* is ``[(ref, symbol), ...]``.
+    *nets* is ``[(net_name, [(ref, pin), ...]), ...]``.
+    """
+    ir_components = [ComponentIR(ref=ref, symbol=sym) for ref, sym in components]
+    ir_nets = [
+        NetIR(name=name, pins=[PinRefIR(ref=r, pin=p) for r, p in pins]) for name, pins in nets
+    ]
+    # CircuitIR requires at least one component and one net.  When the caller
+    # provides an empty list (common in orientation tests that only care about
+    # prefix-based rules), inject a harmless single-pin placeholder net so the
+    # model validation passes without affecting adjacency calculations.
+    if not ir_components:
+        ir_components = [ComponentIR(ref="_DUMMY", symbol="_")]
+    if not ir_nets:
+        ir_nets = [NetIR(name="_NC", pins=[PinRefIR(ref=ir_components[0].ref, pin="1")])]
+    return CircuitIR(version=version, components=ir_components, nets=ir_nets)
+
+
+class TestComputeOrientations:
+    """Unit tests for :func:`compute_orientations`."""
+
+    def test_connector_always_zero(self) -> None:
+        """Connector refs (J/CON/P/SJ/TJ) always get 0° regardless of neighbours."""
+        ir = _make_ir(
+            [("J1", "Connector_Generic:Conn_01x02"), ("R1", "Device:R")],
+            [("SIG", [("J1", "1"), ("R1", "1")])],
+        )
+        positions = {"J1": (0.0, 0.0), "R1": (30.0, 0.0)}
+        result = compute_orientations(ir, positions)
+        assert result["J1"] == 0
+
+    def test_opamp_always_zero(self) -> None:
+        """Op-amp / IC refs always get 0°."""
+        ir = _make_ir(
+            [("U1", "Amplifier_Operational:TL071"), ("R1", "Device:R")],
+            [("SIG", [("U1", "3"), ("R1", "1")])],
+        )
+        positions = {"U1": (0.0, 0.0), "R1": (0.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        # U1 has a vertical neighbour but must stay 0° (IC rule)
+        assert result["U1"] == 0
+
+    def test_passive_horizontal_neighbours_gives_zero(self) -> None:
+        """Passive with horizontally-offset neighbours → 0° (horizontal orientation)."""
+        # J1 --- R1 --- R2, all in a horizontal line
+        ir = _make_ir(
+            [("J1", "Connector_Generic:Conn_01x02"), ("R1", "Device:R"), ("R2", "Device:R")],
+            [
+                ("A", [("J1", "1"), ("R1", "1")]),
+                ("B", [("R1", "2"), ("R2", "1")]),
+            ],
+        )
+        positions = {"J1": (0.0, 30.0), "R1": (30.0, 30.0), "R2": (60.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 0
+
+    def test_passive_vertical_neighbours_gives_90(self) -> None:
+        """Passive with vertically-offset neighbours → 90°."""
+        ir = _make_ir(
+            [
+                ("U1", "Amplifier_Operational:TL071"),
+                ("R1", "Device:R"),
+                ("U2", "Amplifier_Operational:TL071"),
+            ],
+            [
+                ("A", [("U1", "1"), ("R1", "1")]),
+                ("B", [("R1", "2"), ("U2", "1")]),
+            ],
+        )
+        # U1 above R1 above U2 — vertical arrangement
+        positions = {"U1": (30.0, 0.0), "R1": (30.0, 20.0), "U2": (30.0, 40.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 90
+
+    def test_default_zero_for_unknown_prefix(self) -> None:
+        """Components with unrecognised prefix default to 0°."""
+        ir = _make_ir([("XYZ1", "Some:Lib")], [])
+        result = compute_orientations(ir, {"XYZ1": (0.0, 0.0)})
+        assert result["XYZ1"] == 0
+
+    def test_power_nets_excluded_from_neighbour_calc(self) -> None:
+        """Power/GND connections do not influence passive rotation.
+
+        R1 only connects to VCC and GND (power nets) — no signal neighbours
+        → 0° (neither horizontal nor vertical bias).
+        """
+        ir = _make_ir(
+            [("R1", "Device:R")],
+            [
+                ("VCC", [("R1", "1")]),
+                ("GND", [("R1", "2")]),
+            ],
+        )
+        positions = {"R1": (30.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 0
+
+    def test_isolated_passive_defaults_zero(self) -> None:
+        """Passive with no neighbours at all gets 0°."""
+        ir = _make_ir([("C1", "Device:C")], [])
+        result = compute_orientations(ir, {"C1": (30.0, 30.0)})
+        assert result["C1"] == 0
+
+    def test_all_components_returned(self) -> None:
+        """Every component in the IR appears in the result."""
+        refs = ["J1", "U1", "R1", "C1", "XYZ1"]
+        comps = [(r, "Lib:sym") for r in refs]
+        ir = _make_ir(comps, [])
+        positions = {r: (float(i) * 10, 0.0) for i, r in enumerate(refs)}
+        result = compute_orientations(ir, positions)
+        assert set(result) == set(refs)
