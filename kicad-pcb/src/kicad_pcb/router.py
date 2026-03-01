@@ -173,6 +173,55 @@ def _hub_route(
     return segs, junctions
 
 
+def _spine_route(
+    endpoints: list[tuple[float, float]],
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Route a multi-pin net as a spine with T-junction taps.
+
+    Determines the dominant axis (horizontal vs vertical) from the bounding
+    box of *endpoints*, draws a single spine wire along that axis, then
+    connects each endpoint to the nearest point on the spine with a
+    perpendicular segment and a :class:`JunctionPoint` at the T-intersection.
+
+    This produces a cleaner "bus-style" visual than the centroid-hub approach
+    when all stubs lie roughly along a line.
+
+    Returns *(segments, junctions)*.
+    """
+    xs = [e[0] for e in endpoints]
+    ys = [e[1] for e in endpoints]
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+
+    segs: list[WireSegment] = []
+    junctions: list[JunctionPoint] = []
+
+    if x_span >= y_span:
+        # Horizontal spine — spine runs left-to-right at the mean Y.
+        spine_y = _snap_grid(sum(ys) / len(ys))
+        spine_x0 = _snap_grid(min(xs))
+        spine_x1 = _snap_grid(max(xs))
+        segs.append(WireSegment(spine_x0, spine_y, spine_x1, spine_y))
+        for ex, ey in endpoints:
+            sx = _snap_grid(ex)
+            if not math.isclose(ey, spine_y, abs_tol=0.01):
+                segs.append(WireSegment(sx, ey, sx, spine_y))
+            junctions.append(JunctionPoint(sx, spine_y))
+    else:
+        # Vertical spine — spine runs top-to-bottom at the mean X.
+        spine_x = _snap_grid(sum(xs) / len(xs))
+        spine_y0 = _snap_grid(min(ys))
+        spine_y1 = _snap_grid(max(ys))
+        segs.append(WireSegment(spine_x, spine_y0, spine_x, spine_y1))
+        for ex, ey in endpoints:
+            sy = _snap_grid(ey)
+            if not math.isclose(ex, spine_x, abs_tol=0.01):
+                segs.append(WireSegment(ex, sy, spine_x, sy))
+            junctions.append(JunctionPoint(spine_x, sy))
+
+    return segs, junctions
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -180,6 +229,7 @@ def route_nets(  # noqa: PLR0912, PLR0915
     *,
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+    use_bus: bool = False,
 ) -> NetRouting:
     """Compute routing decisions for all nets in *ir*.
 
@@ -194,6 +244,9 @@ def route_nets(  # noqa: PLR0912, PLR0915
     * **Hub route** — 3–:data:`_HUB_MAX_DEGREE` known pins, all endpoints
       reachable: route spokes to a centroid hub; add a
       :class:`JunctionPoint` at the hub.  No net labels emitted.
+      When *use_bus* is ``True`` the hub strategy is replaced by
+      :func:`_spine_route` which draws a straight spine wire with
+      T-junction taps for a cleaner bus-style visual.
     * **Global-label route** — high-degree non-power nets (> ``_HUB_MAX_DEGREE``):
       emit one :class:`GlobalLabelPlacement` per pin (same result as power
       nets but using the ``passive`` shape so it's visually distinct).
@@ -202,6 +255,17 @@ def route_nets(  # noqa: PLR0912, PLR0915
 
     Unknown pins (absent from *pin_endpoints*) always fall back to an
     off-canvas position with local labels.
+
+    Parameters
+    ----------
+    ir:
+        Circuit IR with nets and components.
+    pin_endpoints:
+        ``{(ref, pin): (x, y, angle)}`` map produced by the schematic builder.
+    use_bus:
+        When ``True``, replace centroid-hub routing for multi-pin local nets
+        with spine-style routing (:func:`_spine_route`).  Produces a cleaner
+        "one long wire with taps" visual instead of star-shaped spokes.
 
     Returns a :class:`NetRouting` with all decisions.
     """
@@ -267,7 +331,10 @@ def route_nets(  # noqa: PLR0912, PLR0915
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 stub_ends.append((ex, ey))
-            hub_segs, hub_junctions = _hub_route(stub_ends)
+            if use_bus:
+                hub_segs, hub_junctions = _spine_route(stub_ends)
+            else:
+                hub_segs, hub_junctions = _hub_route(stub_ends)
             routing.wires.extend(hub_segs)
             routing.junctions.extend(hub_junctions)
             continue

@@ -44,7 +44,14 @@ from typing import IO
 from .adapters import KicadCliAdapter
 from .errors import ParseError, ToolError
 from .fs import _atomic_write, _write_temp_text
-from .lint import LintError, LintIssue, LintSeverity, lint_pcb, lint_schematic
+from .lint import (
+    LintError,
+    LintIssue,
+    LintSeverity,
+    lint_pcb,
+    lint_schematic,
+    lint_schematic_layout,
+)
 from .pcb_doc import PcbDoc
 from .sch_doc import SchematicDoc
 from .sexpr.nodes import ListNode
@@ -173,6 +180,8 @@ def mutate_and_validate_sch(  # noqa: PLR0913 — keyword-only args make call si
         lint_root = parsed_root if parsed_root is not None else parse(content)
         effective_strict = strict or mode >= ValidationMode.FULL
         issues = lint_schematic(lint_root)
+        # LAY001–LAY005: layout readability gates run at LINT level and above.
+        issues = issues + lint_schematic_layout(lint_root)
         _raise_if_errors(issues, strict=effective_strict, operation=operation)
         _log_stage("validate.lint", path=path, mode=mode, operation=operation, t0=t4)
 
