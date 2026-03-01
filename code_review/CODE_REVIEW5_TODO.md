@@ -229,21 +229,21 @@ Add new lint codes to detect “unusable” layout patterns.
 # Phase 5 — Graphviz Licensing and Distribution Notes
 
 ### 5.1 Add licensing documentation for bundled Graphviz
-- [ ] Add `THIRD_PARTY_NOTICES.md` (or update existing) to include:
-  - [ ] Graphviz name/version
-  - [ ] license name and link
-  - [ ] redistribution notice requirements (as applicable)
-- [ ] Add a short note in README:
-  - [ ] Graphviz is bundled as an external tool for schematic layout
-  - [ ] how to replace it with a system-installed Graphviz later
-  - [ ] how to override `dot` path
+- [x] Add `THIRD_PARTY_NOTICES.md` (or update existing) to include:
+  - [x] Graphviz name/version
+  - [x] license name and link
+  - [x] redistribution notice requirements (as applicable)
+- [x] Add a short note in README:
+  - [x] Graphviz is bundled as an external tool for schematic layout
+  - [x] how to replace it with a system-installed Graphviz later
+  - [x] how to override `dot` path
 
 ### 5.2 Make bundling strategy explicit in code
-- [ ] Centralize discovery of `dot` binary:
-  - [ ] bundled path first
-  - [ ] env override
-  - [ ] PATH lookup as last resort
-- [ ] Provide `doctor` output with which path is used.
+- [x] Centralize discovery of `dot` binary:
+  - [x] bundled path first
+  - [x] env override
+  - [x] PATH lookup as last resort
+- [x] Provide `doctor` output with which path is used.
 
 ---
 
