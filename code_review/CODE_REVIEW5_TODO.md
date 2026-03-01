@@ -220,9 +220,9 @@ Add new lint codes to detect “unusable” layout patterns.
 - [ ] Enforce these lints at `--validate lint|full` for schematic generation commands. (deferred to Phase 5)
 
 ### 4.7 Add rotation/orientation rules (optional but improves readability)
-- [ ] Rotate resistors/caps based on wire direction (horizontal vs vertical).
-- [ ] Keep op-amps oriented consistently (inputs left, outputs right).
-- [ ] Keep connectors at edges (inputs left, outputs right, power top/bottom).
+- [x] Rotate resistors/caps based on wire direction (horizontal vs vertical).
+- [x] Keep op-amps oriented consistently (inputs left, outputs right).
+- [x] Keep connectors at edges (inputs left, outputs right, power top/bottom).
 
 ---
 
