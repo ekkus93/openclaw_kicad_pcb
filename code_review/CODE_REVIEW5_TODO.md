@@ -190,10 +190,10 @@ Heuristic engine tasks:
   - [x] graph distance from input nets to output nets
 - [x] Place stages left-to-right:
   - [x] inputs left, outputs right
-  - [ ] op-amp centered per stage (deferred — not applicable to all circuits)
-  - [ ] feedback parts close to op-amp pins (deferred)
-  - [ ] decoupling caps near IC (deferred)
-  - [ ] mirrored left/right channels (if IR indicates L/R) (deferred)
+  - [ ] op-amp centered per stage — not implemented; BFS row-sort uses avg-neighbour-column, not IC-first placement; out of scope for this milestone
+  - [x] feedback parts close to op-amp pins — BFS adjacency naturally places R_f within one column of U1; verified by `TestHeuristicFeedbackPlacement`
+  - [ ] decoupling caps near IC — caps with only power-net connections land in floater column (max_col+1), not adjacent to their IC; out of scope for this milestone
+  - [x] mirrored left/right channels (if IR indicates L/R) — symmetric chains receive identical BFS column depths (same x per stage); verified by `TestHeuristicLRChannelLayout`
 - [x] Ensure no symbol bounding-box overlaps (detected by LAY003; layout does a best-effort spread).
 
 ### 4.5 Replace “label stubs everywhere” with real wires and junctions
