@@ -91,7 +91,11 @@ def cmd_add_component(args) -> AddComponentResult:
         _placed["y"] = y
 
     mutate_and_validate_sch(
-        sch_file, _mutate, operation="add-component", dry_run=getattr(args, "dry_run", False)
+        sch_file,
+        _mutate,
+        operation="add-component",
+        dry_run=getattr(args, "dry_run", False),
+        backup=getattr(args, "backup", False),
     )
 
     return AddComponentResult(
@@ -127,7 +131,11 @@ def cmd_add_net(args) -> AddNetResult:
         doc.add_label(label.name, label.x, label.y, uuid)
 
     mutate_and_validate_sch(
-        sch_file, _mutate, operation="add-net", dry_run=getattr(args, "dry_run", False)
+        sch_file,
+        _mutate,
+        operation="add-net",
+        dry_run=getattr(args, "dry_run", False),
+        backup=getattr(args, "backup", False),
     )
     return AddNetResult(
         name=label.name, x=label.x, y=label.y, dry_run=getattr(args, "dry_run", False)
@@ -157,7 +165,11 @@ def cmd_connect(args) -> ConnectResult:
         doc.add_wire(wire.x1, wire.y1, wire.x2, wire.y2, uuid)
 
     mutate_and_validate_sch(
-        sch_file, _mutate, operation="connect", dry_run=getattr(args, "dry_run", False)
+        sch_file,
+        _mutate,
+        operation="connect",
+        dry_run=getattr(args, "dry_run", False),
+        backup=getattr(args, "backup", False),
     )
     return ConnectResult(
         x1=wire.x1, y1=wire.y1, x2=wire.x2, y2=wire.y2, dry_run=getattr(args, "dry_run", False)

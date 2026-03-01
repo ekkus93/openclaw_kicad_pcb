@@ -93,7 +93,13 @@ def cmd_apply_pattern(args) -> ApplyPatternResult:  # noqa: ANN001 — argparse 
         )
         _outcome["result"] = outcome
 
-    mutate_and_validate_sch(sch_file, _mutate, operation="apply-pattern", dry_run=dry_run)
+    mutate_and_validate_sch(
+        sch_file,
+        _mutate,
+        operation="apply-pattern",
+        dry_run=dry_run,
+        backup=getattr(args, "backup", False),
+    )
 
     outcome = _outcome["result"]
     return ApplyPatternResult(

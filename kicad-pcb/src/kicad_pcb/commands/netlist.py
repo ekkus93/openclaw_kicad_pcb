@@ -59,6 +59,7 @@ class _ApplyNetlistRequest:
     mode_name: str | None
     force: bool
     dry_run: bool
+    backup: bool = False
 
 
 def cmd_info_sch(args) -> InfoSchResult:
@@ -223,6 +224,7 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             mode_name=getattr(args, "mode", None),
             force=bool(getattr(args, "force", False)),
             dry_run=bool(getattr(args, "dry_run", False)),
+            backup=bool(getattr(args, "backup", False)),
         ),
     )
 
@@ -531,6 +533,7 @@ def _apply_netlist_to_project(
         cli=cli,
         operation="apply-netlist",
         dry_run=request.dry_run,
+        backup=request.backup,
     )
 
     if request.dry_run:

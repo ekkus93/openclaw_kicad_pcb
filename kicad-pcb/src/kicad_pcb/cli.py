@@ -62,6 +62,13 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default=False,
         help="Output result as JSON",
     )
+    parser.add_argument(
+        "--backup",
+        action="store_true",
+        dest="backup",
+        default=False,
+        help="Write <file>.bak before overwriting any .kicad_sch / .kicad_pcb file",
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="Command")
 
@@ -596,4 +603,7 @@ def main() -> None:  # noqa: PLR0912 PLR0915
             print(json.dumps({"ok": False, "error": exc.as_dict()}, indent=2))
         else:
             print(f"❌ {exc}")
+            hint = exc.details.get("hint") if exc.details else None
+            if hint:
+                print(f"   💡 {hint}")
         sys.exit(1)
