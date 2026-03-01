@@ -1,10 +1,31 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T16:00:00Z_
+_Last updated: 2026-03-01T05:45:16+00:00_
 
 ---
 
-## 2026-03-02T16:00:00Z - feat: signal-flow layout + direct wire routing (layout.py, router.py)
+## 2026-03-01T05:45:16+00:00 - chore(phase0): regression fixture READMEs + headphone-amp baselines
+- **Scope**: Phase 0 of CODE_REVIEW5_TODO.md — capture known-bad cases and baselines.
+- **Decisions made**:
+  - Graphviz layout (system-installed, not bundled) replaces heuristic BFS engine. Heuristic will be **deleted** in Phase 4.
+  - Phases executed in order (0 → 1 → 2 → 3 → 4 …).
+  - Audio_Headphone_Amp used as acceptance-criterion circuit; other circuits to be added later.
+- **Phase 0.1** — `tests/fixtures/broken/README.md` added documenting all four existing broken fixtures:
+  - bug1: sub-symbol renamed with lib prefix (regex without count=1)
+  - bug2: `(id N)` tokens from old KiCad library format
+  - bug3: misindented closing paren for lib_symbols
+  - bug4: placed symbols missing `(instances …)` block
+  - The comment headers in each `.kicad_sch` file already contained this info; README adds navigability.
+- **Phase 0.2** — `tests/fixtures/regressions/` directory created:
+  - `headphone_amp_ir.json`: 13-component dual-channel amp IR using TestLib:R only (system-lib-free). Nets: IN_L/R (deg 2), VCC (deg 2), OUT_L/R (deg 2), STAGE_L/R (deg 3), MID_RAIL (deg 4), GND (deg 6).
+  - `headphone_amp_current_layout.kicad_sch`: snapshot of current BFS+label-stub generator output. Measured defects: 16 label nodes (GND×6, MID_RAIL×4, STAGE_L×3, STAGE_R×3), no power symbols, no junctions, grid-sequential layout. Page usage: 91×152 mm (fits A4). 8 routing wires (2-pin direct routes work).
+  - `README.md`: circuit topology, net degree table, measured stats, intended Phase 4 target description.
+- **No new Python tests** added in Phase 0 (fixtures are documentation/reference; tests come in Phase 6).
+- **Commit**: `b0afc76` — pushed to master.
+
+---
+
+## 2026-02-28T11:14:24+00:00 - feat: signal-flow layout + direct wire routing (layout.py, router.py)
 - **Motivation**: The previous pipeline placed all components on a static 6-column grid and connected
   every pin with stub+label only — making KiCad schematics unreadable to humans (no wires, all labels).
 - **New module `layout.py`**: `compute_signal_flow_layout(ir)` → `{ref: (x, y)}`
@@ -27,7 +48,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-03-02T12:00:00Z - feat: deterministic Circuit IR auto-fixer (ir_autofix.py)
+## 2026-02-28T09:39:40+00:00 - feat: deterministic Circuit IR auto-fixer (ir_autofix.py)
 - **Motivation**: Bot occasionally generates Circuit IR JSON with common structural mistakes (metadata
   wrapper, integer version, forbidden fields, integer pin numbers, alias pins like +/-). Instead of
   relying on the bot to re-read SKILL.md and correct the JSON, the tool now repairs it automatically.
@@ -53,7 +74,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-03-02T00:00:00Z - Fix: flatten extends chain to resolve KiCad 9 load error
+## 2026-02-28T08:19:25+00:00 - Fix: flatten extends chain to resolve KiCad 9 load error
 - **Bug**: KiCad 9 (9.0.7 flatpak) cannot load schematics with `(extends "Lib:Parent")` in `lib_symbols`
   when the schematic is a hierarchical sub-sheet. Error: "No parent for extended symbol Amplifier_Operational:LM2904"
 - **Root cause**: `_embed_symbol_if_found` was embedding both parent (LM2904 with geometry) and child
@@ -69,7 +90,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-03-01T00:00:00Z - Added validate-netlist command
+## 2026-02-28T05:59:50+00:00 - Added validate-netlist command
 - **New command**: `validate-netlist --netlist circuit.json [--symbols-dir DIR]`
 - **Runs all 3 validation layers** (Pydantic schema → semantic → symbol+pin) without writing any files.
 - **Returns**: `ValidateNetlistResult(valid, netlist_path, component_count, net_count, warnings, symbols_dirs_used)`
@@ -81,7 +102,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-02-28T14:00:00Z - 5th wrong format: SPICE/EDA logical-netlist style
+## 2026-02-28T05:20:31+00:00 - 5th wrong format: SPICE/EDA logical-netlist style
 - **Format variant**: `{"meta": {...}, "nets": [{"name": ..., "nodes": [...]}], "components": [{"type": ...}]}`
 - **Specific failures**: `"meta"` instead of `"version": "1"`, `"nodes"` instead of `"pins"`, pin
   numbers as integers not strings, `"+"/"−"` pin names for C_Polarized (should be `"1"/"2"`),
@@ -92,7 +113,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-02-28T13:00:00Z - Added pre-flight checklist and error recovery loop to SKILL.md
+## 2026-02-28T03:22:10+00:00 - Added pre-flight checklist and error recovery loop to SKILL.md
 - **Why**: Bot keeps generating wrong Circuit IR formats, gets a validation error, then falls back
   to hand-writing `.kicad_sch` instead of fixing the JSON. Tool validation is solid (Pydantic schema
   + semantic + symbol+pin checks) but the bot's response to errors is wrong.
@@ -109,7 +130,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 
 
-## 2026-02-28T12:00:00Z - NE5532 amp: EDA-style netlist format + hand-written .kicad_sch (again)
+## 2026-02-28T03:15:36+00:00 - NE5532 amp: EDA-style netlist format + hand-written .kicad_sch (again)
 - **What happened**: Bot generated an EDA-tool-style netlist (4th known wrong format) then
   hand-wrote a `.kicad_sch` directly instead of using the tool.
 - **Wrong format details** (new variant): `{"metadata": {"title": ..., "version": 1}, "nets": [{"name": ...}], "components": [{..."type": "IC", "pins": [{"num": ..., "net": ...}]}]}`.
@@ -129,7 +150,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-03-01T00:00:00Z - Bot delivering only one of two required files; added must-deliver-both rule
+## 2026-02-28T02:17:51+00:00 - Bot delivering only one of two required files; added must-deliver-both rule
 - **Root cause**: `new-from-netlist` creates TWO files — `<name>.kicad_sch` (root, thin wrapper) and
   `OpenClaw_Managed.kicad_sch` (all symbols/nets). The bot was only delivering the managed file.
   Without the root file alongside it, KiCad can open the managed file but the sheet hierarchy UUID
@@ -148,7 +169,7 @@ _Last updated: 2026-03-02T16:00:00Z_
 
 ---
 
-## 2026-02-28T02:30:00Z - Bot still generating wrong netlists; added WRONG FORMAT anti-patterns (974af21)
+## 2026-02-28T01:36:44+00:00 - Bot still generating wrong netlists; added WRONG FORMAT anti-patterns (974af21)
 - **Pattern**: Bot keeps inventing netlist formats that fail CircuitIR schema validation.
   Seen formats so far:
   - `{"title": ..., "components": [...pins inline...], "nets": {"NET": ["R1-1", ...]}}`
@@ -162,7 +183,7 @@ _Last updated: 2026-03-02T16:00:00Z_
   never write .kicad_sch by hand.
 - **Commit**: `974af21` pushed to `master`.
 
-## 2026-02-28T01:30:00Z - Fix: Circuit IR netlist schema errors + C_Polarized pin names (7a27270)
+## 2026-02-28T01:16:30+00:00 - Fix: Circuit IR netlist schema errors + C_Polarized pin names (7a27270)
 - **Root cause of bad schematics**: Bot was generating netlists with a completely wrong schema.
   The wrong format had: nested `{"metadata": {"version": 1, ...}}`, no `symbol` field on components,
   inline `pins` dict on components, extra `type` field, wrong symbol names.
