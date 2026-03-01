@@ -148,3 +148,31 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
         visual_col += num_sub
 
     return positions
+
+
+# ---------------------------------------------------------------------------
+# LayoutEngine wrapper (satisfies layout_engine.LayoutEngine Protocol)
+# ---------------------------------------------------------------------------
+
+
+class HeuristicLayoutEngine:
+    """BFS signal-flow layout engine; requires no external tools.
+
+    Wraps :func:`compute_signal_flow_layout` to satisfy the
+    :class:`~kicad_pcb.layout_engine.LayoutEngine` Protocol.  Rotation is
+    not supported (always returns ``None`` for the third tuple element).
+    """
+
+    def compute_symbol_positions(
+        self,
+        ir: CircuitIR,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Delegate to :func:`compute_signal_flow_layout`.
+
+        Returns ``{ref: (x_mm, y_mm, None)}`` — rotation is always ``None``.
+        """
+        raw = compute_signal_flow_layout(ir)
+        return {ref: (x, y, None) for ref, (x, y) in raw.items()}
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return "HeuristicLayoutEngine()"

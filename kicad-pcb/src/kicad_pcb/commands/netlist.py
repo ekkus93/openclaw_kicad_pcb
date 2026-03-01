@@ -16,7 +16,7 @@ from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir_autofix import autofix_circuit_ir
 from ..ir_validate import validate_circuit_ir, validate_ir_symbols
-from ..layout import compute_signal_flow_layout
+from ..layout_engine import LayoutMode, make_layout_engine
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import (
@@ -60,6 +60,7 @@ class _ApplyNetlistRequest:
     force: bool
     dry_run: bool
     backup: bool = False
+    layout_mode: LayoutMode = "auto"
 
 
 def cmd_info_sch(args) -> InfoSchResult:
@@ -225,6 +226,7 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             force=bool(getattr(args, "force", False)),
             dry_run=bool(getattr(args, "dry_run", False)),
             backup=bool(getattr(args, "backup", False)),
+            layout_mode=getattr(args, "layout", "auto"),
         ),
     )
 
@@ -383,6 +385,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
             mode_name=getattr(args, "mode", "kicad"),
             force=True,
             dry_run=False,
+            layout_mode=getattr(args, "layout", "auto"),
         ),
     )
 
@@ -441,6 +444,8 @@ def _apply_netlist_to_project(
         "symbols": 0,
         "wires": 0,
         "labels": 0,
+        "global_labels": 0,
+        "junctions": 0,
         "binding_markers": 0,
     }
 
@@ -458,6 +463,7 @@ def _apply_netlist_to_project(
             symbol_index=symbol_index,
             project_name=project.name,
             stats=stats,
+            layout_mode=request.layout_mode,
         )
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
         write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
@@ -566,13 +572,14 @@ def _apply_netlist_to_project(
     )
 
 
-def _write_symbols(
+def _write_symbols(  # noqa: PLR0913
     *,
     doc: SchematicDoc,
     ir: CircuitIR,
     symbol_index: SymbolIndex,
     project_name: str,
     stats: dict[str, int],
+    layout_mode: LayoutMode = "auto",
 ) -> tuple[
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
@@ -596,7 +603,13 @@ def _write_symbols(
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
     symbol_defs_missing: set[str] = set()
 
-    layout = compute_signal_flow_layout(ir)
+    engine = make_layout_engine(layout_mode)
+    raw_layout = engine.compute_symbol_positions(ir)
+    # Normalise to (x, y) — drop rotation for placement (SchematicDoc.add_symbol
+    # takes x/y without rotation in the current API).
+    layout: dict[str, tuple[float, float]] = {
+        ref: (pos[0], pos[1]) for ref, pos in raw_layout.items()
+    }
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]

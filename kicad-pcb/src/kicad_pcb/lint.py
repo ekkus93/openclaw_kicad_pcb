@@ -14,6 +14,13 @@ Schematic (SCH):
     SCH009  Symbol instance ``lib_id`` not found in embedded ``lib_symbols``
     SCH010  Net/power label node missing ``(at …)`` placement
 
+Layout (LAY):
+    LAY001  Net label name appears more than N times (label-stub style indicator)
+    LAY002  Majority of wire segments are stub-length (label-stub style)
+    LAY003  Symbols have overlapping approximate bounding boxes
+    LAY004  Symbol placed outside A4 page bounds
+    LAY005  Wire graph has too many disconnected islands
+
 PCB (PCB):
     PCB001  Invalid root node (not ``kicad_pcb``)
     PCB002  Duplicate UUID
@@ -30,6 +37,8 @@ PCB (PCB):
 
 from __future__ import annotations
 
+import math
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 
@@ -43,6 +52,7 @@ __all__ = [
     "LintSeverity",
     "lint_pcb",
     "lint_schematic",
+    "lint_schematic_layout",
 ]
 
 # Coordinates beyond ±10 000 mm are almost certainly erroneous for hobby PCBs.
@@ -365,6 +375,218 @@ def lint_schematic(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
                     "SCH010",
                     f"Label '{label_name}' ({node.key}) is missing an '(at …)' placement node",
                     path=f"kicad_sch/{node.key}",
+                )
+            )
+
+    return issues
+
+
+# ---------------------------------------------------------------------------
+# Layout readability lint (LAY) — schematic-level geometry rules
+# ---------------------------------------------------------------------------
+
+# LAY001: a net label name appearing more than this many times suggests
+# "label-stub everywhere" style rather than connected wires.
+_LAY_LABEL_MAX_COUNT: int = 3
+
+# LAY002: if this fraction of wire segments are shorter than the stub
+# length, the schematic is mostly stubs rather than real wires.
+_LAY_STUB_FRACTION_THRESHOLD: float = 0.60
+
+# LAY003: half-size of an approximate symbol bounding box (mm).
+_LAY_SYMBOL_HALF_SIZE_MM: float = 5.08
+
+# LAY004: A4 page bounds (mm).
+_LAY_PAGE_MAX_X: float = 297.0
+_LAY_PAGE_MAX_Y: float = 210.0
+
+# LAY005: more than this many disconnected wire/component islands is suspicious.
+_LAY_MAX_ISLANDS: int = 2
+
+# Stub wire threshold in mm (200 mil). Mirrors router.WIRE_EXTEND_MM.
+_WIRE_STUB_LEN_MM: float = 5.08
+
+
+def lint_schematic_layout(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
+    """Return layout readability issues (LAY001–LAY005) for *root*.
+
+    These rules fire on structurally valid schematics that are visually poor
+    (e.g. label-stub style, overlapping symbols, symbols off-page).
+    Call after :func:`lint_schematic` when readability gating is desired.
+    """
+    issues: list[LintIssue] = []
+
+    if not isinstance(root, ListNode) or root.key != "kicad_sch":
+        return issues
+
+    items = root.items[1:]  # skip the root key atom
+
+    # ----------------------------------------------------------------
+    # Collect symbol positions
+    # ----------------------------------------------------------------
+    sym_positions: list[tuple[float, float]] = []
+    for node in items:
+        if not isinstance(node, ListNode) or node.key != "symbol":
+            continue
+        at_node = find_first(node, "at")
+        if at_node is None or len(at_node.items) < 3:
+            continue
+        try:
+            sx = float(at_node.items[1].value)  # type: ignore[union-attr]
+            sy = float(at_node.items[2].value)  # type: ignore[union-attr]
+            sym_positions.append((sx, sy))
+        except (AttributeError, ValueError):
+            pass
+
+    # ----------------------------------------------------------------
+    # LAY001 — net label appears more than _LAY_LABEL_MAX_COUNT times
+    # ----------------------------------------------------------------
+    label_counts: Counter[str] = Counter()
+    for node in items:
+        if (
+            isinstance(node, ListNode)
+            and node.key == "label"
+            and len(node.items) >= 2
+            and isinstance(node.items[1], StringNode)
+        ):
+            label_counts[node.items[1].value] += 1
+    for name, count in label_counts.items():
+        if count > _LAY_LABEL_MAX_COUNT:
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY001",
+                    f"Net label '{name}' appears {count} times "
+                    f"(threshold {_LAY_LABEL_MAX_COUNT}); consider using direct wires",
+                    path="kicad_sch/label",
+                )
+            )
+
+    # ----------------------------------------------------------------
+    # LAY002 — majority of wires are stub-length (label-stub style)
+    # ----------------------------------------------------------------
+    wire_lengths: list[float] = []
+    for node in items:
+        if not isinstance(node, ListNode) or node.key != "wire":
+            continue
+        pts = find_first(node, "pts")
+        if pts is None:
+            continue
+        xy_nodes = [n for n in pts.items[1:] if isinstance(n, ListNode) and n.key == "xy"]
+        if len(xy_nodes) < 2:
+            continue
+        try:
+            x1 = float(xy_nodes[0].items[1].value)  # type: ignore[union-attr]
+            y1 = float(xy_nodes[0].items[2].value)  # type: ignore[union-attr]
+            x2 = float(xy_nodes[1].items[1].value)  # type: ignore[union-attr]
+            y2 = float(xy_nodes[1].items[2].value)  # type: ignore[union-attr]
+            wire_lengths.append(math.hypot(x2 - x1, y2 - y1))
+        except (AttributeError, ValueError, IndexError):
+            pass
+    if wire_lengths:
+        stub_count = sum(1 for w in wire_lengths if w <= _WIRE_STUB_LEN_MM + 0.01)
+        fraction = stub_count / len(wire_lengths)
+        if fraction > _LAY_STUB_FRACTION_THRESHOLD:
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY002",
+                    f"{stub_count}/{len(wire_lengths)} wire segments ({fraction:.0%}) "
+                    f"are stub-length (\u2264{_WIRE_STUB_LEN_MM} mm); "
+                    "schematic may be using label-stub style instead of connected wires",
+                    path="kicad_sch/wire",
+                )
+            )
+
+    # ----------------------------------------------------------------
+    # LAY003 — overlapping symbols (approximate bounding boxes)
+    # ----------------------------------------------------------------
+    if len(sym_positions) >= 2:
+        for i, (x1, y1) in enumerate(sym_positions):
+            for x2, y2 in sym_positions[i + 1 :]:
+                if (
+                    abs(x1 - x2) < _LAY_SYMBOL_HALF_SIZE_MM * 2
+                    and abs(y1 - y2) < _LAY_SYMBOL_HALF_SIZE_MM * 2
+                ):
+                    issues.append(
+                        LintIssue(
+                            _WARN,
+                            "LAY003",
+                            f"Symbols at ({x1},{y1}) and ({x2},{y2}) overlap "
+                            f"(approx bounding box ±{_LAY_SYMBOL_HALF_SIZE_MM} mm)",
+                            path="kicad_sch/symbol",
+                        )
+                    )
+
+    # ----------------------------------------------------------------
+    # LAY004 — symbol outside A4 page bounds
+    # ----------------------------------------------------------------
+    for sx, sy in sym_positions:
+        if not (0.0 <= sx <= _LAY_PAGE_MAX_X and 0.0 <= sy <= _LAY_PAGE_MAX_Y):
+            issues.append(
+                LintIssue(
+                    _ERR,
+                    "LAY004",
+                    f"Symbol at ({sx},{sy}) is outside A4 page bounds "
+                    f"(0–{_LAY_PAGE_MAX_X} × 0–{_LAY_PAGE_MAX_Y} mm)",
+                    path="kicad_sch/symbol",
+                )
+            )
+
+    # ----------------------------------------------------------------
+    # LAY005 — too many disconnected visual islands (union-find on wires)
+    # ----------------------------------------------------------------
+    wire_endpoints: list[tuple[float, float, float, float]] = []
+    for node in items:
+        if not isinstance(node, ListNode) or node.key != "wire":
+            continue
+        pts = find_first(node, "pts")
+        if pts is None:
+            continue
+        xy_nodes = [n for n in pts.items[1:] if isinstance(n, ListNode) and n.key == "xy"]
+        if len(xy_nodes) < 2:
+            continue
+        try:
+            ex1 = round(float(xy_nodes[0].items[1].value), 2)  # type: ignore[union-attr]
+            ey1 = round(float(xy_nodes[0].items[2].value), 2)  # type: ignore[union-attr]
+            ex2 = round(float(xy_nodes[1].items[1].value), 2)  # type: ignore[union-attr]
+            ey2 = round(float(xy_nodes[1].items[2].value), 2)  # type: ignore[union-attr]
+            wire_endpoints.append((ex1, ey1, ex2, ey2))
+        except (AttributeError, ValueError, IndexError):
+            pass
+    if wire_endpoints:
+        pts_list: list[tuple[float, float]] = []
+        for ex1, ey1, ex2, ey2 in wire_endpoints:
+            if (ex1, ey1) not in pts_list:
+                pts_list.append((ex1, ey1))
+            if (ex2, ey2) not in pts_list:
+                pts_list.append((ex2, ey2))
+        parent = list(range(len(pts_list)))
+
+        def _find(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        def _union(a: int, b: int) -> None:
+            ra, rb = _find(a), _find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        idx_map = {p: k for k, p in enumerate(pts_list)}
+        for ex1, ey1, ex2, ey2 in wire_endpoints:
+            if (ex1, ey1) in idx_map and (ex2, ey2) in idx_map:
+                _union(idx_map[(ex1, ey1)], idx_map[(ex2, ey2)])
+        island_count = len({_find(i) for i in range(len(pts_list))})
+        if island_count > _LAY_MAX_ISLANDS:
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY005",
+                    f"Wire graph has {island_count} disconnected islands "
+                    f"(threshold {_LAY_MAX_ISLANDS}); schematic may have isolated regions",
+                    path="kicad_sch/wire",
                 )
             )
 
@@ -725,5 +947,25 @@ LINT_SUGGESTIONS: dict[str, str] = {
     "PCB011": (
         "Add a '(layers \"<Cu_layer>\")' node to every pad "
         "so KiCad knows which copper layers it belongs to."
+    ),
+    "LAY001": (
+        "Reduce repeated net labels by connecting symbols with wires "
+        "instead of placing the same label stub more than 3 times."
+    ),
+    "LAY002": (
+        "Replace short stub wires + labels with direct wire connections between symbols "
+        "to improve schematic readability."
+    ),
+    "LAY003": (
+        "Move overlapping symbols apart using 'apply-netlist --layout graphviz' "
+        "or manually reposition them in KiCad's schematic editor."
+    ),
+    "LAY004": (
+        "Move the symbol inside the A4 page area (0–297 × 0–210 mm). "
+        "Re-run 'apply-netlist' to recompute positions from the netlist."
+    ),
+    "LAY005": (
+        "Add net labels or wires to connect isolated wire islands, "
+        "or verify that all schematic sections are intentionally separate sheets."
     ),
 }

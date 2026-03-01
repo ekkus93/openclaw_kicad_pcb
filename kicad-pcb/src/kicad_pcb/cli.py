@@ -137,6 +137,16 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     p_apply.add_argument("--force", action="store_true", help="Adopt non-owned schematic")
     p_apply.add_argument("--dry-run", action="store_true", help="Validate without writing")
+    p_apply.add_argument(
+        "--layout",
+        choices=["auto", "graphviz", "heuristic", "none"],
+        default="auto",
+        dest="layout",
+        help=(
+            "Schematic layout engine (default: auto — Graphviz if available, "
+            "else heuristic signal-flow)"
+        ),
+    )
     p_apply.set_defaults(func=cmd_apply_netlist)
 
     # new-from-netlist
@@ -167,6 +177,16 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         dest="auto_fix",
         default=True,
         help="Disable deterministic auto-fix on validation failure",
+    )
+    p_new_netlist.add_argument(
+        "--layout",
+        choices=["auto", "graphviz", "heuristic", "none"],
+        default="auto",
+        dest="layout",
+        help=(
+            "Schematic layout engine (default: auto — Graphviz if available, "
+            "else heuristic signal-flow)"
+        ),
     )
     p_new_netlist.set_defaults(func=cmd_new_from_netlist)
 
