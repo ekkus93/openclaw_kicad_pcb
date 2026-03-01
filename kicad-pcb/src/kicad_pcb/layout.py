@@ -27,6 +27,14 @@ ORIGIN_Y: float = 50.80
 # stays within an A4 page (297 mm).
 MAX_ROWS_PER_COL: int = 10
 
+# Minimum centre-to-centre distance (mm) between any two heuristic positions.
+# This equals GRID_ROW_MM (the tighter axis: symbols in the same column are
+# stacked GRID_ROW_MM apart).  LAY003 fires when both |Δx| and |Δy| are less
+# than 2 × _LAY_SYMBOL_HALF_SIZE_MM = 10.16 mm (see lint.py).  Since
+# GRID_ROW_MM (20.32) > 10.16 and GRID_COL_MM (30.48) > 10.16, every pair of
+# heuristic positions is guaranteed to be overlap-free per the LAY003 rule.
+MIN_SEPARATION_MM: float = GRID_ROW_MM
+
 # Reference prefixes treated as signal sources (left edge of layout).
 # Connectors and headers are the natural entry-points of a PCB circuit.
 _SOURCE_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
