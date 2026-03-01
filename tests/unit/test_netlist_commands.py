@@ -988,17 +988,18 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
     """Router: a 2-pin net within routing range must be wired directly, not via label.
 
     A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets:
-     - VCC  (1-pin)  → expected to get a stub+label (correct fallback)
+     - VCC  (power)  → expected to get a global_label (power routing)
      - MID  (2-pin)  → R1-pin2 and R2-pin1 are adjacent; router must emit
                        an L-shaped wire, NOT a net label
-     - GND  (1-pin)  → expected to get a stub+label (correct fallback)
+     - GND  (power)  → expected to get a global_label (power routing)
 
     Assertions
     ----------
     1. No ``(label "MID" …)`` node exists in the managed schematic.
     2. At least one wire is longer than WIRE_EXTEND_MM — an L-route bridge
        was actually generated (not just two disconnected stubs).
-    3. Labels DO exist for "VCC" and "GND" — single-pin fallback is intact.
+    3. ``(global_label "VCC" …)`` and ``(global_label "GND" …)`` exist —
+       power net routing is intact.
     """
     ir_path = tmp_path / "divider.json"
     ir_path.write_text(
@@ -1082,9 +1083,24 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
         "the router may only have emitted pin stubs with no L-route bridge."
     )
 
-    # Assertion 3: Single-pin nets must still fall back to net labels.
-    assert "VCC" in label_names, "Expected label for single-pin net 'VCC' not found."
-    assert "GND" in label_names, "Expected label for single-pin net 'GND' not found."
+    # Assertion 3: Single-pin power nets must get global_label nodes (power routing),
+    # not local net labels.  The new router recognises VCC/GND as power nets and
+    # emits (global_label …) via doc.add_global_label rather than (label …).
+    global_label_names: set[str] = set()
+    for node in walk(managed_doc.root):
+        if (
+            isinstance(node, ListNode)
+            and node.key == "global_label"
+            and len(node.items) >= 2  # noqa: PLR2004
+            and isinstance(node.items[1], StringNode)
+        ):
+            global_label_names.add(node.items[1].value)
+    assert "VCC" in global_label_names, (
+        f"Expected global_label for power net 'VCC'; found: {sorted(global_label_names)}"
+    )
+    assert "GND" in global_label_names, (
+        f"Expected global_label for power net 'GND'; found: {sorted(global_label_names)}"
+    )
 
 
 @_skip_no_system_symbols

@@ -62,6 +62,8 @@ def _parse_lib_file(path: Path) -> ListNode:
 
 __all__ = [
     "SchematicDoc",
+    "make_global_label_node",
+    "make_junction_node",
     "make_label_node",
     "make_managed_sheet_node",
     "make_text_node",
@@ -222,6 +224,66 @@ def make_text_node(text: str, x: float, y: float, *, hidden: bool = False) -> Li
         string(text),
         L(atom("at"), fnum(x, 2), fnum(y, 2), atom("0")),
         effects,
+    )
+
+
+def make_junction_node(x: float, y: float, junction_uuid: str) -> ListNode:
+    """Build a KiCad ``(junction ...)`` node at *(x, y)*.
+
+    Junctions are placed where wire segments meet at a T- or X-intersection
+    to make the electrical connection explicit in the schematic.
+    """
+    return L(
+        atom("junction"),
+        L(atom("at"), fnum(x, 2), fnum(y, 2)),
+        L(atom("diameter"), atom("0")),
+        L(atom("color"), atom("0"), atom("0"), atom("0"), atom("0")),
+        L(atom("uuid"), string(junction_uuid)),
+    )
+
+
+def make_global_label_node(  # noqa: PLR0913
+    name: str,
+    x: float,
+    y: float,
+    label_uuid: str,
+    *,
+    angle: int = 0,
+    shape: str = "input",
+) -> ListNode:
+    """Build a KiCad ``(global_label ...)`` node.
+
+    Global labels (power flags, supply rails) are used in place of ordinary
+    net labels for power nets (GND, VCC, etc.) and for nets that cross
+    sheet boundaries, to avoid spaghetti label repetition.
+
+    Parameters
+    ----------
+    shape:
+        KiCad shape keyword: ``"input"``, ``"output"``, ``"bidirectional"``,
+        ``"tri_state"``, or ``"passive"``.  Defaults to ``"input"``.
+    """
+    effects = L(
+        atom("effects"),
+        _effects_font(),
+        L(atom("justify"), atom("left")),
+    )
+    intersheet_prop = L(
+        atom("property"),
+        string("Intersheet References"),
+        string("${INTERSHEET_REFS}"),
+        L(atom("at"), atom("0"), atom("0"), atom("0")),
+        L(atom("effects"), _effects_font(), L(atom("hide"), atom("yes"))),
+    )
+    return L(
+        atom("global_label"),
+        string(name),
+        L(atom("shape"), atom(shape)),
+        L(atom("at"), fnum(x, 2), fnum(y, 2), atom(str(angle))),
+        L(atom("fields_autoplaced"), atom("yes")),
+        effects,
+        L(atom("uuid"), string(label_uuid)),
+        intersheet_prop,
     )
 
 
@@ -840,6 +902,33 @@ class SchematicDoc:
     def add_text(self, text: str, x: float, y: float, *, hidden: bool = False) -> None:
         """Append a text node to the schematic."""
         self._insert_before_sheet_instances(make_text_node(text, x, y, hidden=hidden))
+
+    def add_junction(self, x: float, y: float, junction_uuid: str) -> None:
+        """Append a junction node at *(x, y)* to the schematic.
+
+        Junctions are required wherever wire segments meet at a T- or
+        X-intersection so KiCad treats them as electrically connected.
+        """
+        self._insert_before_sheet_instances(make_junction_node(x, y, junction_uuid))
+
+    def add_global_label(  # noqa: PLR0913
+        self,
+        name: str,
+        x: float,
+        y: float,
+        label_uuid: str,
+        *,
+        angle: int = 0,
+        shape: str = "input",
+    ) -> None:
+        """Append a global label node to the schematic.
+
+        Global labels are used for power nets (GND, VCC, …) and for any net
+        that should cross sheet boundaries without fragmented local labels.
+        """
+        self._insert_before_sheet_instances(
+            make_global_label_node(name, x, y, label_uuid, angle=angle, shape=shape)
+        )
 
     # ------------------------------------------------------------------
     # Layout query

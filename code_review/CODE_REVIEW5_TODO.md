@@ -133,29 +133,29 @@ Harden and improve the `kicad-pcb` OpenClaw skill so it:
 Replace the current schematic style “place one-by-one and label stubs” with a real **graph layout** and **graph wiring** so the schematic reads like a conventional circuit diagram.
 
 ### 4.1 Introduce a schematic layout subsystem
-- [ ] Define a `LayoutEngine` interface:
-  - [ ] `compute_symbol_positions(ir) -> dict[ref, (x, y, rot?)]`
-  - [ ] optional: `compute_net_routes(...)` (or handled separately)
-- [ ] Add config/CLI option:
-  - [ ] `--layout auto|graphviz|heuristic|none`
-  - [ ] default `auto` (Graphviz if available, else heuristic)
-- [ ] Keep layout independent of KiCad AST serialization logic.
+- [x] Define a `LayoutEngine` interface:
+  - [x] `compute_symbol_positions(ir) -> dict[ref, (x, y, rot?)]`
+  - [x] optional: `compute_net_routes(...)` (or handled separately)
+- [x] Add config/CLI option:
+  - [x] `--layout auto|graphviz|heuristic|none`
+  - [x] default `auto` (Graphviz if available, else heuristic)
+- [x] Keep layout independent of KiCad AST serialization logic.
 
 ### 4.2 Graphviz integration (bundled binary)
-- [ ] Add `graphviz/` (or similar) module for calling `dot`.
-- [ ] Support a configured/bundled `dot` path:
-  - [ ] default to a bundled binary within the repo/distribution
-  - [ ] allow override via env var or config (e.g., `GRAPHVIZ_DOT`)
-- [ ] Convert circuit IR into a Graphviz DOT graph:
-  - [ ] nodes: symbols (refdes) and/or nets (see 4.3)
-  - [ ] edges: connectivity (symbol-pin to net, or symbol-symbol simplified)
-  - [ ] use `rankdir=LR` to encourage left-to-right flow
-  - [ ] use clusters for functional blocks (optional initial: per channel L/R)
-- [ ] Parse Graphviz output positions (`dot -Tplain` recommended) into coordinates.
-- [ ] Map Graphviz coordinate space to KiCad coordinate space:
-  - [ ] apply scaling factor
-  - [ ] add margins
-  - [ ] snap to KiCad grid if desired
+- [x] Add `graphviz/` (or similar) module for calling `dot`.
+- [x] Support a configured/bundled `dot` path:
+  - [x] default to a bundled binary within the repo/distribution
+  - [x] allow override via env var or config (e.g., `GRAPHVIZ_DOT`)
+- [x] Convert circuit IR into a Graphviz DOT graph:
+  - [x] nodes: symbols (refdes) and/or nets (see 4.3)
+  - [x] edges: connectivity (symbol-pin to net, or symbol-symbol simplified)
+  - [x] use `rankdir=LR` to encourage left-to-right flow
+  - [x] use clusters for functional blocks (optional initial: per channel L/R)
+- [x] Parse Graphviz output positions (`dot -Tplain` recommended) into coordinates.
+- [x] Map Graphviz coordinate space to KiCad coordinate space:
+  - [x] apply scaling factor
+  - [x] add margins
+  - [x] snap to KiCad grid if desired
 - [ ] Add caching:
   - [ ] save computed layout to a JSON file under managed outputs (optional)
   - [ ] deterministic layout seeds if possible
@@ -163,7 +163,7 @@ Replace the current schematic style “place one-by-one and label stubs” with 
 ### 4.3 Decide the graph model for layout (important)
 Implement one of these models (or both, with a config):
 
-- [ ] **Bipartite model (recommended initially):**
+- [x] **Bipartite model (recommended initially):**
   - node types: `component` and `net`
   - edges: component ↔ net membership
   - benefit: captures multi-pin nets cleanly
@@ -175,49 +175,49 @@ Implement one of these models (or both, with a config):
   - risk: loses clarity about multi-drop nets
 
 Add rules:
-- [ ] Treat power nets specially:
-  - [ ] omit from Graphviz graph or compress them
-  - [ ] place power symbols separately (top/bottom rails)
+- [x] Treat power nets specially:
+  - [x] omit from Graphviz graph or compress them
+  - [x] place power symbols separately (top/bottom rails)
 
 ### 4.4 Add a heuristic fallback layout engine (must exist)
 Even if Graphviz is bundled, keep a heuristic engine for:
-- [ ] minimal dependencies / troubleshooting
-- [ ] predictable staging for certain circuit types (audio/analog)
+- [x] minimal dependencies / troubleshooting
+- [x] predictable staging for certain circuit types (audio/analog)
 
 Heuristic engine tasks:
-- [ ] Identify “stages” from IR using:
-  - [ ] net name patterns (IN/OUT, V+/V-, GND)
-  - [ ] graph distance from input nets to output nets
-- [ ] Place stages left-to-right:
-  - [ ] inputs left, outputs right
-  - [ ] op-amp centered per stage
-  - [ ] feedback parts close to op-amp pins
-  - [ ] decoupling caps near IC
-  - [ ] mirrored left/right channels (if IR indicates L/R)
-- [ ] Ensure no symbol bounding-box overlaps (approx bounding boxes are fine).
+- [x] Identify "stages" from IR using:
+  - [x] net name patterns (IN/OUT, V+/V-, GND)
+  - [x] graph distance from input nets to output nets
+- [x] Place stages left-to-right:
+  - [x] inputs left, outputs right
+  - [ ] op-amp centered per stage (deferred — not applicable to all circuits)
+  - [ ] feedback parts close to op-amp pins (deferred)
+  - [ ] decoupling caps near IC (deferred)
+  - [ ] mirrored left/right channels (if IR indicates L/R) (deferred)
+- [ ] Ensure no symbol bounding-box overlaps (detected by LAY003; layout does a best-effort spread).
 
 ### 4.5 Replace “label stubs everywhere” with real wires and junctions
 Implement a **wiring engine** that draws actual wires for readability.
 
-- [ ] Create rules per net degree:
-  - [ ] degree == 2: draw a direct orthogonal wire between the two pins
-  - [ ] degree 3–6: create a hub/junction spine and connect pins to it
-  - [ ] high-degree nets (GND, VCC, etc.): use power symbols/global labels; avoid spaghetti
-- [ ] Reduce label duplication:
-  - [ ] at most one label per net within a local region by default
-  - [ ] only label nets that cross blocks or are semantically important
-- [ ] Add junctions explicitly where wires meet (KiCad `(junction ...)` nodes as needed).
+- [x] Create rules per net degree:
+  - [x] degree == 2: draw a direct orthogonal wire between the two pins
+  - [x] degree 3–6: create a hub/junction spine and connect pins to it
+  - [x] high-degree nets (GND, VCC, etc.): use power symbols/global labels; avoid spaghetti
+- [x] Reduce label duplication:
+  - [x] at most one label per net within a local region by default
+  - [x] only label nets that cross blocks or are semantically important
+- [x] Add junctions explicitly where wires meet (KiCad `(junction ...)` nodes as needed).
 - [ ] Add optional “bus” style later (out of scope for initial implementation).
 
 ### 4.6 Add schematic-layout lints (readability gates)
 Add new lint codes to detect “unusable” layout patterns.
 
-- [ ] `LAY001`: net label appears more than N times (configurable)
-- [ ] `LAY002`: >X% of wires shorter than stub threshold (indicates label-stub style)
-- [ ] `LAY003`: overlapping symbols (approx bounding boxes)
-- [ ] `LAY004`: symbols placed outside page bounds
-- [ ] `LAY005`: too many disconnected visual islands (heuristic using wire graph)
-- [ ] Enforce these lints at `--validate lint|full` for schematic generation commands.
+- [x] `LAY001`: net label appears more than N times (configurable)
+- [x] `LAY002`: >X% of wires shorter than stub threshold (indicates label-stub style)
+- [x] `LAY003`: overlapping symbols (approx bounding boxes)
+- [x] `LAY004`: symbols placed outside page bounds
+- [x] `LAY005`: too many disconnected visual islands (heuristic using wire graph)
+- [ ] Enforce these lints at `--validate lint|full` for schematic generation commands. (deferred to Phase 5)
 
 ### 4.7 Add rotation/orientation rules (optional but improves readability)
 - [ ] Rotate resistors/caps based on wire direction (horizontal vs vertical).
