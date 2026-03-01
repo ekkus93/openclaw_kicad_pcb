@@ -28,6 +28,7 @@ Mode semantics
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from typing_extensions import Protocol, runtime_checkable
@@ -94,13 +95,25 @@ class NoneLayoutEngine:
 # ---------------------------------------------------------------------------
 
 
-def make_layout_engine(mode: LayoutMode) -> LayoutEngine:
+def make_layout_engine(
+    mode: LayoutMode,
+    *,
+    seed: int = 7,
+    cache_path: Path | None = None,
+) -> LayoutEngine:
     """Return the layout engine appropriate for *mode*.
 
     Parameters
     ----------
     mode:
         See module-level docstring for mode semantics.
+    seed:
+        Passed as ``-Gstart=<seed>`` to ``dot`` so every run on the same
+        input graph produces the same layout (default ``7``).
+    cache_path:
+        If supplied, the Graphviz engine will load/save layout results from
+        this JSON file keyed by the SHA-256 of the DOT source.  Ignored for
+        non-Graphviz engines.
 
     Raises
     ------
@@ -124,14 +137,14 @@ def make_layout_engine(mode: LayoutMode) -> LayoutEngine:
                 "Graphviz 'dot' binary not found.  "
                 "Set the GRAPHVIZ_DOT environment variable or install graphviz, then retry."
             )
-        return GraphvizLayoutEngine(dot_path=dot)
+        return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path)
 
     # mode == "auto"
     from .graphviz_layout import GraphvizLayoutEngine, find_dot_binary  # noqa: PLC0415
 
     dot = find_dot_binary()
     if dot:
-        return GraphvizLayoutEngine(dot_path=dot)
+        return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path)
     from .layout import HeuristicLayoutEngine  # noqa: PLC0415
 
     return HeuristicLayoutEngine()

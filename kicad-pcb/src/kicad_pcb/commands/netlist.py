@@ -464,6 +464,7 @@ def _apply_netlist_to_project(
             project_name=project.name,
             stats=stats,
             layout_mode=request.layout_mode,
+            cache_path=project.path / "openclaw_layout_cache.json",
         )
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
         write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
@@ -580,6 +581,7 @@ def _write_symbols(  # noqa: PLR0913
     project_name: str,
     stats: dict[str, int],
     layout_mode: LayoutMode = "auto",
+    cache_path: Path | None = None,
 ) -> tuple[
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
@@ -603,7 +605,7 @@ def _write_symbols(  # noqa: PLR0913
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
     symbol_defs_missing: set[str] = set()
 
-    engine = make_layout_engine(layout_mode)
+    engine = make_layout_engine(layout_mode, cache_path=cache_path)
     raw_layout = engine.compute_symbol_positions(ir)
     # Normalise to (x, y) — drop rotation for placement (SchematicDoc.add_symbol
     # takes x/y without rotation in the current API).
