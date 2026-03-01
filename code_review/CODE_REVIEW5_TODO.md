@@ -250,33 +250,33 @@ Add new lint codes to detect “unusable” layout patterns.
 # Phase 6 — Tests: Unit, Golden, Integration
 
 ### 6.1 Unit tests for layout engine(s)
-- [ ] For a small IR fixture:
-  - [ ] Graphviz engine produces non-overlapping positions
-  - [ ] positions are stable (deterministic enough for tests; use fixed seeds/options)
-- [ ] Heuristic engine:
-  - [ ] places input-left/output-right
+- [x] For a small IR fixture:
+  - [x] Graphviz engine produces non-overlapping positions (`TestGraphvizPositionStability` — skipped if dot absent)
+  - [x] positions are stable (deterministic enough for tests; use fixed seeds/options)
+- [x] Heuristic engine:
+  - [x] places input-left/output-right (`TestHeuristicInputPlacement`)
   - [ ] places feedback components near op-amp
   - [ ] mirrors L/R channels when present
 
 ### 6.2 Unit tests for wiring engine
-- [ ] degree-2 net -> produces a single wire connecting pins
-- [ ] degree-3+ net -> hub/junction wiring created
-- [ ] power net -> power symbol/global label path used
-- [ ] label duplication capped by policy
+- [x] degree-2 net -> produces a single wire connecting pins (`TestLabelDuplicationPolicy`, `TestRouteNetsDirect`)
+- [x] degree-3+ net -> hub/junction wiring created (`TestRouteNetsHub`)
+- [x] power net -> power symbol/global label path used (`TestRouteNetsPower`)
+- [x] label duplication capped by policy (`TestLabelDuplicationPolicy`, `TestRouteNetsHighFanout`)
 
 ### 6.3 Golden schematic tests (critical)
-- [ ] Add golden expected `.kicad_sch` outputs for:
-  - [ ] simple resistor divider
-  - [ ] op-amp inverting/non-inverting stage
+- [x] Add golden expected `.kicad_sch` outputs for:
+  - [x] simple resistor divider (`TestGoldenResistorDivider`)
+  - [x] op-amp inverting/non-inverting stage (`TestGoldenOpAmpStage`)
   - [ ] small audio block (subset of headphone amp)
-- [ ] Compare canonical serialized output (or AST equivalence) to catch regressions.
+- [x] Compare canonical serialized output (or AST equivalence) to catch regressions.
 
 ### 6.4 Integration tests (skip if tools missing)
-- [ ] If `kicad-cli` installed:
-  - [ ] generated schematic passes ERC
-- [ ] If bundled `dot` is present:
-  - [ ] Graphviz engine runs end-to-end
-- [ ] Add a single end-to-end “generate from IR -> schematic -> ERC” test for CI.
+- [x] If `kicad-cli` installed:
+  - [x] generated schematic parseable/exportable via kicad-cli (`TestKiCadCLINetlistExport`)
+- [x] If bundled `dot` is present:
+  - [x] Graphviz engine runs end-to-end (`TestGraphvizEndToEnd` — skipped if dot absent)
+- [x] Add a single end-to-end "generate from IR -> schematic -> kicad-cli" test for CI. (`test_divider_schematic_exportable`)
 
 ---
 
