@@ -24,6 +24,12 @@ Covers:
 
 from __future__ import annotations
 
+import contextlib
+import json
+import subprocess
+from pathlib import Path
+from unittest.mock import patch
+
 import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
@@ -617,3 +623,232 @@ class TestLintSuggestionsForLAY:
         for code in ["LAY001", "LAY002", "LAY003", "LAY004", "LAY005"]:
             assert code in LINT_SUGGESTIONS, f"LINT_SUGGESTIONS missing {code}"
             assert LINT_SUGGESTIONS[code], f"LINT_SUGGESTIONS[{code!r}] is empty"
+
+
+# ---------------------------------------------------------------------------
+# 4.17 Graphviz layout cache helpers
+# ---------------------------------------------------------------------------
+
+
+def _simple_ir() -> CircuitIR:
+    """Return a minimal two-component IR for cache tests."""
+    components = [
+        ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+        ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+    ]
+    nets = [
+        NetIR(name="VCC", pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="C1", pin="1")]),
+        NetIR(name="GND", pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="C1", pin="2")]),
+    ]
+    return CircuitIR(version="1", components=components, nets=nets)
+
+
+class TestGraphvizLayoutCacheHelpers:
+    """Unit tests for the module-level cache helper functions."""
+
+    def test_cache_key_is_stable(self) -> None:
+        ir = _simple_ir()
+        src = _gv_mod.build_dot_source(ir)
+        key1 = _gv_mod.layout_cache_key(src)
+        key2 = _gv_mod.layout_cache_key(src)
+        assert key1 == key2
+        assert len(key1) == 64  # SHA-256 hex
+
+    def test_cache_key_changes_with_different_source(self) -> None:
+        key_a = _gv_mod.layout_cache_key("digraph A {}")
+        key_b = _gv_mod.layout_cache_key("digraph B {}")
+        assert key_a != key_b
+
+    def test_load_cache_miss_when_file_absent(self, tmp_path: Path) -> None:
+        result = _gv_mod.load_layout_cache(tmp_path / "nonexistent.json", "anykey")
+        assert result is None
+
+    def test_cache_roundtrip(self, tmp_path: Path) -> None:
+        cache_file: Path = tmp_path / "layout.json"
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (30.0, 50.0, None),
+            "C1": (40.0, 60.0, None),
+        }
+        key = "deadbeef" * 8  # 64 hex chars
+
+        _gv_mod.save_layout_cache(cache_file, key, positions)
+        loaded = _gv_mod.load_layout_cache(cache_file, key)
+
+        assert loaded is not None
+        assert loaded["R1"][0] == pytest.approx(30.0)
+        assert loaded["R1"][1] == pytest.approx(50.0)
+        assert loaded["C1"][0] == pytest.approx(40.0)
+        assert loaded["C1"][1] == pytest.approx(60.0)
+
+    def test_load_cache_miss_on_key_mismatch(self, tmp_path: Path) -> None:
+        cache_file: Path = tmp_path / "layout.json"
+        _gv_mod.save_layout_cache(cache_file, "key-A" * 12 + "key-", {"R1": (1.0, 2.0, None)})
+        result = _gv_mod.load_layout_cache(cache_file, "key-B" * 12 + "key-")
+        assert result is None
+
+    def test_load_cache_miss_on_version_mismatch(self, tmp_path: Path) -> None:
+        cache_file: Path = tmp_path / "layout.json"
+        cache_file.write_text(
+            json.dumps({"version": 999, "key": "k", "positions": {}}), encoding="utf-8"
+        )
+        assert _gv_mod.load_layout_cache(cache_file, "k") is None
+
+    def test_save_cache_silently_ignores_permission_error(self, tmp_path: Path) -> None:
+        """save_layout_cache must not raise even if the file cannot be written."""
+        cache_file: Path = tmp_path / "layout.json"
+        with patch("pathlib.Path.write_text", side_effect=PermissionError("read-only")):
+            # Should not raise.
+            _gv_mod.save_layout_cache(cache_file, "k", {"R1": (1.0, 2.0, None)})
+
+
+# ---------------------------------------------------------------------------
+# 4.18 GraphvizLayoutEngine cache integration
+# ---------------------------------------------------------------------------
+
+
+class TestGraphvizLayoutEngineCache:
+    """Integration tests for seed and cache on GraphvizLayoutEngine."""
+
+    def test_cache_hit_skips_dot(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When a valid cache entry exists, _run_dot must not be called."""
+        ir = _simple_ir()
+        dot_source = _gv_mod.build_dot_source(ir)
+        cache_key = _gv_mod.layout_cache_key(dot_source)
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (31.0, 51.0, None),
+            "C1": (41.0, 61.0, None),
+        }
+        cache_file: Path = tmp_path / "layout.json"
+        _gv_mod.save_layout_cache(cache_file, cache_key, positions)
+
+        run_dot_called = False
+
+        def fake_run_dot(self: object, dot_source: str) -> dict[str, tuple[float, float, None]]:
+            nonlocal run_dot_called
+            run_dot_called = True
+            return {}
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot", cache_path=cache_file)
+        result = engine.compute_symbol_positions(ir)
+
+        assert not run_dot_called, "_run_dot was called despite a cache hit"
+        assert result["R1"][0] == pytest.approx(31.0)
+        assert result["C1"][1] == pytest.approx(61.0)
+
+    def test_cache_written_after_dot_run(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """After a cache miss, the engine writes the new result to disk."""
+        ir = _simple_ir()
+        cache_file: Path = tmp_path / "layout.json"
+
+        def fake_run_dot(self: object, dot_source: str) -> dict[str, tuple[float, float, None]]:
+            return {"R1": (32.0, 52.0, None), "C1": (42.0, 62.0, None)}
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot", cache_path=cache_file)
+        engine.compute_symbol_positions(ir)
+
+        assert cache_file.exists(), "cache file was not written after dot run"
+
+        # Second call with identical IR should hit the cache, not call dot.
+        run_dot_called = False
+
+        def fake_run_dot_2(self: object, dot_source: str) -> dict[str, tuple[float, float, None]]:
+            nonlocal run_dot_called
+            run_dot_called = True
+            return {}
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot_2)
+        engine2 = _gv_mod.GraphvizLayoutEngine(dot_path="dot", cache_path=cache_file)
+        engine2.compute_symbol_positions(ir)
+
+        assert not run_dot_called, "second run should have been a cache hit"
+
+    def test_no_cache_path_does_not_write(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Without cache_path, no cache file is created."""
+
+        ir = _simple_ir()
+
+        def fake_run_dot(self: object, dot_source: str) -> dict[str, tuple[float, float, None]]:
+            return {"R1": (1.0, 2.0, None), "C1": (3.0, 4.0, None)}
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")  # no cache_path
+        engine.compute_symbol_positions(ir)
+
+        # No cache files should have appeared in cwd.
+        assert not any(p.suffix == ".json" for p in Path().iterdir()), (
+            "unexpected .json file created in cwd"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 4.19 Deterministic seed tests
+# ---------------------------------------------------------------------------
+
+
+class TestGraphvizLayoutSeed:
+    """Verify -Gstart=<seed> is forwarded to dot subprocess."""
+
+    def test_default_seed_in_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        ir = _simple_ir()
+        captured_cmd: list[list[str]] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            captured_cmd.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="/usr/bin/dot")
+        dot_source = _gv_mod.build_dot_source(ir)
+        with contextlib.suppress(Exception):
+            engine._run_dot(dot_source)
+
+        assert captured_cmd, "subprocess.run was not called"
+        assert "-Gstart=7" in captured_cmd[0], f"Expected '-Gstart=7' in cmd; got {captured_cmd[0]}"
+
+    def test_custom_seed_in_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        ir = _simple_ir()
+        captured_cmd: list[list[str]] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            captured_cmd.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="/usr/bin/dot", seed=42)
+        dot_source = _gv_mod.build_dot_source(ir)
+        with contextlib.suppress(Exception):
+            engine._run_dot(dot_source)
+
+        assert captured_cmd, "subprocess.run was not called"
+        assert "-Gstart=42" in captured_cmd[0], (
+            f"Expected '-Gstart=42' in cmd; got {captured_cmd[0]}"
+        )
+
+    def test_make_layout_engine_forwards_seed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """make_layout_engine passes seed= to GraphvizLayoutEngine."""
+        monkeypatch.setenv("GRAPHVIZ_DOT", "/usr/bin/dot")
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
+        engine = make_layout_engine("graphviz", seed=99)
+        assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
+        assert engine._seed == 99  # noqa: SLF001
+
+    def test_make_layout_engine_forwards_cache_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """make_layout_engine passes cache_path= to GraphvizLayoutEngine."""
+        cache_file: Path = tmp_path / "c.json"
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
+        engine = make_layout_engine("graphviz", cache_path=cache_file)
+        assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
+        assert engine._cache_path == cache_file  # noqa: SLF001

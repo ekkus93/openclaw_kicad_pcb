@@ -31,6 +31,8 @@ Public API
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 import re
@@ -66,6 +68,75 @@ _POWER_NET_PATTERN = re.compile(
 
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
+
+
+# ---------------------------------------------------------------------------
+# Layout cache
+# ---------------------------------------------------------------------------
+
+# Bump when the cache JSON schema changes to invalidate all persisted caches.
+_CACHE_FORMAT_VERSION = 1
+
+
+def _layout_cache_key(dot_source: str) -> str:
+    """Return a stable SHA-256 hex digest for *dot_source*.
+
+    The digest is used as the cache lookup key — any change in circuit topology
+    (new component, different net) produces a different key and therefore a
+    guaranteed cache miss.
+    """
+    return hashlib.sha256(dot_source.encode()).hexdigest()
+
+
+def _load_layout_cache(
+    cache_path: Path,
+    cache_key: str,
+) -> dict[str, tuple[float, float, None]] | None:
+    """Return cached symbol positions if *cache_path* exists and *cache_key* matches.
+
+    Returns ``None`` on any error (missing file, JSON parse failure, key or
+    version mismatch) so the caller always falls through to a fresh layout
+    computation.
+    """
+    try:
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+        if data.get("version") != _CACHE_FORMAT_VERSION or data.get("key") != cache_key:
+            return None
+        raw: dict[str, list[float | None]] = data.get("positions", {})
+        return {
+            ref: (float(v[0]), float(v[1]), None)  # type: ignore[arg-type]
+            for ref, v in raw.items()
+            if isinstance(v, list) and len(v) >= 2
+        }
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _save_layout_cache(
+    cache_path: Path,
+    cache_key: str,
+    positions: dict[str, tuple[float, float, float | None]],
+) -> None:
+    """Persist *positions* to *cache_path*.  Silently ignores all write errors.
+
+    The cache file is a JSON document::
+
+        {
+            "version": 1,
+            "key": "<sha256-hex-of-dot-source>",
+            "positions": {"R1": [x, y, null], ...}
+        }
+    """
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "version": _CACHE_FORMAT_VERSION,
+            "key": cache_key,
+            "positions": {ref: [x, y, rot] for ref, (x, y, rot) in positions.items()},
+        }
+        cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        _log.debug("Failed to write layout cache to %s", cache_path)
 
 
 # ---------------------------------------------------------------------------
@@ -243,10 +314,14 @@ class GraphvizLayoutEngine:
         dot_path: str,
         scale: float = SCALE_MM_PER_GV,
         timeout: float = 10.0,
+        seed: int = 7,
+        cache_path: Path | None = None,
     ) -> None:
         self._dot = dot_path
         self._scale = scale
         self._timeout = timeout
+        self._seed = seed
+        self._cache_path = cache_path
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -257,16 +332,33 @@ class GraphvizLayoutEngine:
     ) -> dict[str, tuple[float, float, float | None]]:
         """Run ``dot`` on *ir* and return ``{ref: (x_mm, y_mm, None)}``.
 
-        Falls back to the heuristic engine if ``dot`` fails (e.g. binary
-        missing, subprocess error, no nodes returned) so that the pipeline
-        always produces *some* layout.
+        **Cache:** If *cache_path* was supplied and a cached result exists for
+        the current circuit topology (keyed by sha256 of the DOT source), the
+        cached positions are returned immediately without invoking ``dot``.
+        After a fresh run the result is written back to the cache.
+
+        **Determinism:** ``dot`` is invoked with ``-Gstart=<seed>`` (default
+        7) so that repeated runs on identical input produce stable output.
+
+        Falls back to the heuristic engine if ``dot`` fails.
         """
         refs = sorted(c.ref for c in ir.components)
         if not refs:
             return {}
 
+        # Build DOT source up-front so we can derive the cache key.
+        dot_source = _build_dot_source(ir)
+        cache_key = _layout_cache_key(dot_source)
+
+        # --- Cache hit: return immediately without invoking dot. ---
+        if self._cache_path is not None:
+            cached = _load_layout_cache(self._cache_path, cache_key)
+            if cached is not None:
+                _log.debug("Layout cache hit (key %s…); skipping dot.", cache_key[:8])
+                return cached
+
         try:
-            positions = self._run_dot(ir)
+            positions = self._run_dot(dot_source)
         except Exception as exc:  # noqa: BLE001
             _log.warning("GraphvizLayoutEngine failed (%s); falling back to heuristic layout.", exc)
             positions = {}
@@ -289,21 +381,32 @@ class GraphvizLayoutEngine:
 
         # Re-key from safe_id → original ref
         safe_to_ref = {_safe_id(r): r for r in refs}
-        return {safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref}
+        result = {safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref}
+
+        # --- Cache write: persist for next run. ---
+        if self._cache_path is not None:
+            _save_layout_cache(self._cache_path, cache_key, result)
+            _log.debug("Layout cache written (key %s…).", cache_key[:8])
+
+        return result
 
     # ----------------------------------------------------------------
     # Private helpers
     # ----------------------------------------------------------------
 
-    def _run_dot(self, ir: CircuitIR) -> dict[str, tuple[float, float, None]]:
-        """Build DOT source, run dot, and return parsed positions."""
-        dot_source = _build_dot_source(ir)
+    def _run_dot(self, dot_source: str) -> dict[str, tuple[float, float, None]]:
+        """Invoke ``dot`` on *dot_source* and return parsed KiCad positions.
+
+        Passes ``-Gstart=<seed>`` to make layout deterministic across repeated
+        runs on the same input.
+        """
         _log.debug("DOT source:\n%s", dot_source)
 
+        cmd: list[str] = [self._dot, "-Tplain", f"-Gstart={self._seed}"]
         for attempt in range(_MAX_ATTEMPTS):
             try:
                 result = subprocess.run(  # noqa: S603
-                    [self._dot, "-Tplain"],
+                    cmd,
                     input=dot_source,
                     capture_output=True,
                     text=True,
@@ -348,12 +451,18 @@ __all__ = [
     "build_dot_source",
     "find_dot_binary",
     "GraphvizLayoutEngine",
+    "layout_cache_key",
+    "load_layout_cache",
     "parse_plain_positions",
+    "save_layout_cache",
 ]
 
 # Expose internals for unit tests under public names
 build_dot_source = _build_dot_source
+layout_cache_key = _layout_cache_key
+load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
+save_layout_cache = _save_layout_cache
 
 
 def _snap(v: float, grid: float = 0.254) -> float:
