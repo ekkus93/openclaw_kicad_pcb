@@ -1,6 +1,27 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T08:00:00+00:00_
+_Last updated: 2026-03-03T10:00:00+00:00_
+
+---
+
+## 2026-03-03T10:00:00+00:00 - feat: Phase 3 — S-expression and KiCad Document Correctness (commit 474e39d)
+- **Scope**: Phase 3 of CODE_REVIEW5_TODO.md — all checkboxes marked complete.
+- **3.1 Parser strategy**:
+  - `kiutils>=1.4` moved from `[project.dependencies]` to `[project.optional-dependencies.dev]`.
+  - In-repo `sexpr/` stack confirmed as the sole runtime parser/serializer.
+  - Strategy documented in `sexpr/__init__.py` module docstring.
+- **3.2 AST-based skeleton generation**:
+  - Added `_PCB_LAYERS` constant (22-entry layer table) and `_build_sch_skeleton()` / `_build_pcb_skeleton()` helpers in `commands/project.py` using `L()`/`atom()`/`string()` builder API.
+  - Replaced hand-written f-string and multiline template strings in `cmd_new` with calls to the new helpers.
+  - Skeletons are validated via `_check_sexp` + round-trip parse→serialize→re-parse in tests.
+- **3.3 New lint rules**:
+  - SCH010: `label`/`global_label`/`hierarchical_label` missing `(at …)` → ERROR.
+  - PCB010: `gr_line`/`gr_arc`/`gr_rect`/`gr_poly`/`gr_curve` missing `(layer …)` → ERROR.
+  - PCB011: footprint `pad` missing `(layers …)` → WARNING.
+  - `LINT_SUGGESTIONS` updated with entries for all three new codes.
+- **Tests**: 54 new tests in `tests/unit/test_phase3_correctness.py` covering parser-strategy invariants, skeleton structure + round-trip, and all three new lint rules.
+- **Files changed**: pyproject.toml, sexpr/__init__.py, commands/project.py, lint.py, tests/unit/test_phase3_correctness.py, CODE_REVIEW5_TODO.md.
+- **Commit**: `474e39d` — pushed to master.
 
 ---
 
