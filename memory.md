@@ -1,6 +1,27 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-01T06:16:50+00:00_
+_Last updated: 2026-03-02T08:00:00+00:00_
+
+---
+
+## 2026-03-02T08:00:00+00:00 - feat: Phase 2 — Reliability Foundation complete (commit bbb5c25)
+- **Scope**: Phase 2 of CODE_REVIEW5_TODO.md — all checkboxes marked complete.
+- **2.1 Transactional pipeline enforcement**:
+  - Audited all 8 `mutate_and_validate_*` call sites: sch.py (3), patterns.py (1), pcb.py (2), netlist.py (2).
+  - Confirmed pipeline.py was already fully implemented (parse→mutate→serialize→re-parse→lint→cli→atomic-commit).
+  - Added `--backup` global CLI flag to cli.py; wired `backup=getattr(args,"backup",False)` to all 8 call sites.
+  - `_ApplyNetlistRequest` dataclass gained `backup: bool = False` field; plumbed through `cmd_apply_netlist` and `_apply_netlist_to_project`.
+- **2.2 Error reporting**:
+  - Error hierarchy already fully implemented in errors.py.
+  - Added `details["hint"]` printing to `KiCadError` catch block in cli.py (`💡 {hint}` line).
+- **2.3 XML parsing robustness**:
+  - Replaced `re.findall` regex in `cmd_import_netlist` (pcb.py) with `xml.etree.ElementTree`.
+  - Handles KiCad kicadxml `<comp ref="...">` attribute format (primary) and `<ref>child</ref>` flat fallback.
+  - Malformed XML raises `ToolError` ("Netlist XML is malformed") instead of silently returning empty list.
+  - Flat fallback deduplicates refs seen across multiple `<net>` nodes.
+- **Tests**: 22 new tests in `tests/unit/test_phase2_reliability.py` — 1221 total (all passing).
+- **Files changed**: cli.py, commands/sch.py, commands/patterns.py, commands/pcb.py, commands/netlist.py, tests/unit/test_phase2_reliability.py, CODE_REVIEW5_TODO.md.
+- **Commit**: `bbb5c25` — pushed to master.
 
 ---
 
