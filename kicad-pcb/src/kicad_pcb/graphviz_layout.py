@@ -91,7 +91,7 @@ def _layout_cache_key(dot_source: str) -> str:
 def _load_layout_cache(
     cache_path: Path,
     cache_key: str,
-) -> dict[str, tuple[float, float, None]] | None:
+) -> dict[str, tuple[float, float, float | None]] | None:
     """Return cached symbol positions if *cache_path* exists and *cache_key* matches.
 
     Returns ``None`` on any error (missing file, JSON parse failure, key or
@@ -311,7 +311,7 @@ def _gv_to_kicad(
     origin_x: float = ORIGIN_X,
     origin_y: float = ORIGIN_Y,
     scale: float = SCALE_MM_PER_GV,
-) -> dict[str, tuple[float, float, None]]:
+) -> dict[str, tuple[float, float, float | None]]:
     """Map Graphviz node positions to KiCad mm coordinates.
 
     Graphviz origin is bottom-left; KiCad origin is top-left.  We invert
@@ -320,7 +320,7 @@ def _gv_to_kicad(
     if not gv_positions:
         return {}
     max_gv_y = max(y for _, y in gv_positions.values())
-    result: dict[str, tuple[float, float, None]] = {}
+    result: dict[str, tuple[float, float, float | None]] = {}
     for node_name, (gv_x, gv_y) in gv_positions.items():
         x_mm = origin_x + gv_x * scale
         y_mm = origin_y + (max_gv_y - gv_y) * scale
@@ -426,7 +426,9 @@ class GraphvizLayoutEngine:
 
         # Re-key from safe_id → original ref
         safe_to_ref = {_safe_id(r): r for r in refs}
-        result = {safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref}
+        result: dict[str, tuple[float, float, float | None]] = {
+            safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
+        }
 
         # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
@@ -439,7 +441,7 @@ class GraphvizLayoutEngine:
     # Private helpers
     # ----------------------------------------------------------------
 
-    def _run_dot(self, dot_source: str) -> dict[str, tuple[float, float, None]]:
+    def _run_dot(self, dot_source: str) -> dict[str, tuple[float, float, float | None]]:
         """Invoke ``dot`` on *dot_source* and return parsed KiCad positions.
 
         Passes ``-Gstart=<seed>`` to make layout deterministic across repeated
