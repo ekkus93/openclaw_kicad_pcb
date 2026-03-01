@@ -12,6 +12,87 @@ from ..errors import UserError
 from ..fs import _atomic_write
 from ..models import ProjectRef
 from ..results import InfoResult, NewProjectResult, OpenResult
+from ..sexpr.builder import L, atom, string
+from ..sexpr.serializer import serialize
+
+# ---------------------------------------------------------------------------
+# Skeleton-file AST builders (Phase 3.2)
+# ---------------------------------------------------------------------------
+
+# Standard KiCad layer table (version 20230121).  Each entry is
+# (number, canonical_name, type, nickname_or_None).
+_PCB_LAYERS: tuple[tuple[int, str, str, str | None], ...] = (
+    (0, "F.Cu", "signal", None),
+    (31, "B.Cu", "signal", None),
+    (32, "B.Adhes", "user", "B.Adhesive"),
+    (33, "F.Adhes", "user", "F.Adhesive"),
+    (34, "B.Paste", "user", None),
+    (35, "F.Paste", "user", None),
+    (36, "B.SilkS", "user", "B.Silkscreen"),
+    (37, "F.SilkS", "user", "F.Silkscreen"),
+    (38, "B.Mask", "user", None),
+    (39, "F.Mask", "user", None),
+    (40, "Dwgs.User", "user", "User.Drawings"),
+    (41, "Cmts.User", "user", "User.Comments"),
+    (42, "Eco1.User", "user", "User.Eco1"),
+    (43, "Eco2.User", "user", "User.Eco2"),
+    (44, "Edge.Cuts", "user", None),
+    (45, "Margin", "user", None),
+    (46, "B.CrtYd", "user", "B.Courtyard"),
+    (47, "F.CrtYd", "user", "F.Courtyard"),
+    (48, "B.Fab", "user", None),
+    (49, "F.Fab", "user", None),
+    (50, "User.1", "user", None),
+    (51, "User.2", "user", None),
+)
+
+
+def _build_sch_skeleton(project_uuid: str) -> str:
+    """Return a minimal, parseable ``kicad_sch`` S-expression string.
+
+    Built via the in-repo AST builder to avoid hand-written template strings and
+    ensure the output is structurally valid by construction.
+    """
+    ast = L(
+        atom("kicad_sch"),
+        L(atom("version"), atom("20230121")),
+        L(atom("generator"), atom("eeschema")),
+        L(atom("uuid"), string(project_uuid)),
+        L(atom("paper"), string("A4")),
+        L(atom("lib_symbols")),
+        L(
+            atom("sheet_instances"),
+            L(atom("path"), string("/"), L(atom("page"), string("1"))),
+        ),
+    )
+    return serialize(ast) + "\n"
+
+
+def _build_pcb_skeleton() -> str:
+    """Return a minimal, parseable ``kicad_pcb`` S-expression string.
+
+    Built via the in-repo AST builder; all 22 standard layers are generated from
+    the :data:`_PCB_LAYERS` table so the layer list and the template are kept in
+    sync from a single source.
+    """
+    layer_nodes = []
+    for num, name, kind, nickname in _PCB_LAYERS:
+        items: list = [atom(str(num)), string(name), atom(kind)]
+        if nickname:
+            items.append(string(nickname))
+        layer_nodes.append(L(*items))
+
+    ast = L(
+        atom("kicad_pcb"),
+        L(atom("version"), atom("20230121")),
+        L(atom("generator"), atom("pcbnew")),
+        L(atom("general"), L(atom("thickness"), atom("1.6"))),
+        L(atom("paper"), string("A4")),
+        L(atom("layers"), *layer_nodes),
+        L(atom("setup"), L(atom("pad_to_mask_clearance"), atom("0"))),
+        L(atom("net"), atom("0"), string("")),
+    )
+    return serialize(ast) + "\n"
 
 
 def cmd_new(args) -> NewProjectResult:
@@ -36,56 +117,14 @@ def cmd_new(args) -> NewProjectResult:
     }
     _atomic_write(pro_file, json.dumps(pro_content, indent=2), operation="new")
 
-    # Create empty schematic (validated via _atomic_write)
+    # Create empty schematic (AST-built, then validated via _atomic_write)
     sch_file = project_dir / f"{name}.kicad_sch"
-    sch_content = f'''(kicad_sch (version 20230121) (generator eeschema)
-  (uuid "{_uuid_module.uuid4()!s}")
-  (paper "A4")
-  (lib_symbols)
-  (sheet_instances
-    (path "/" (page "1"))
-  )
-)
-'''
+    sch_content = _build_sch_skeleton(str(_uuid_module.uuid4()))
     _atomic_write(sch_file, sch_content, "kicad_sch", operation="new")
 
-    # Create empty PCB
+    # Create empty PCB (AST-built, then validated via _atomic_write)
     pcb_file = project_dir / f"{name}.kicad_pcb"
-    pcb_content = """(kicad_pcb (version 20230121) (generator pcbnew)
-  (general
-    (thickness 1.6)
-  )
-  (paper "A4")
-  (layers
-    (0 "F.Cu" signal)
-    (31 "B.Cu" signal)
-    (32 "B.Adhes" user "B.Adhesive")
-    (33 "F.Adhes" user "F.Adhesive")
-    (34 "B.Paste" user)
-    (35 "F.Paste" user)
-    (36 "B.SilkS" user "B.Silkscreen")
-    (37 "F.SilkS" user "F.Silkscreen")
-    (38 "B.Mask" user)
-    (39 "F.Mask" user)
-    (40 "Dwgs.User" user "User.Drawings")
-    (41 "Cmts.User" user "User.Comments")
-    (42 "Eco1.User" user "User.Eco1")
-    (43 "Eco2.User" user "User.Eco2")
-    (44 "Edge.Cuts" user)
-    (45 "Margin" user)
-    (46 "B.CrtYd" user "B.Courtyard")
-    (47 "F.CrtYd" user "F.Courtyard")
-    (48 "B.Fab" user)
-    (49 "F.Fab" user)
-    (50 "User.1" user)
-    (51 "User.2" user)
-  )
-  (setup
-    (pad_to_mask_clearance 0)
-  )
-  (net 0 "")
-)
-"""
+    pcb_content = _build_pcb_skeleton()
     _atomic_write(pcb_file, pcb_content, "kicad_pcb", operation="new")
 
     # Save as current project

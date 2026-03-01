@@ -3,6 +3,17 @@
 This sub-package implements a full tokenizer → parser → serializer pipeline
 plus utility helpers for navigating and transforming the resulting AST.
 
+Parser Strategy (single source of truth)
+-----------------------------------------
+The in-repo :mod:`.parser` / :mod:`.serializer` stack is the **sole** mechanism
+used to read and write ``.kicad_sch`` / ``.kicad_pcb`` files in production code.
+External libraries (e.g. ``kiutils``) are **not** imported by any runtime module;
+they are retained only in the development / test environment as an optional
+independent verification tool (see ``tests/unit/test_fixtures.py``).
+
+This avoids dual-parser drift: there is exactly one code path that determines
+how AST nodes are created, mutated, and serialized back to disk.
+
 Quick Start
 -----------
 ::

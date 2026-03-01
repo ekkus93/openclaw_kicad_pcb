@@ -12,6 +12,7 @@ Schematic (SCH):
     SCH007  Malformed wire ``(pts …)`` — missing or non-numeric coordinates
     SCH008  ``lib_symbols`` section missing or empty when placed symbols exist
     SCH009  Symbol instance ``lib_id`` not found in embedded ``lib_symbols``
+    SCH010  Net/power label node missing ``(at …)`` placement
 
 PCB (PCB):
     PCB001  Invalid root node (not ``kicad_pcb``)
@@ -23,6 +24,8 @@ PCB (PCB):
     PCB007  ``Edge.Cuts`` bounding box has zero or negative dimension
     PCB008  ``gr_line`` on ``Edge.Cuts`` has malformed ``layer`` or ``width``
     PCB009  Coordinates out of sane range (|value| > 10 000 mm)
+    PCB010  Graphic primitive (``gr_line``/``gr_arc``/etc.) missing ``(layer …)`` declaration
+    PCB011  Footprint pad missing ``(layers …)`` declaration
 """
 
 from __future__ import annotations
@@ -343,6 +346,28 @@ def lint_schematic(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
                     )
                 )
 
+    # ------------------------------------------------------------------
+    # SCH010 — net/power label nodes missing (at …) placement
+    # ------------------------------------------------------------------
+    _LABEL_KEYS = {"label", "global_label", "hierarchical_label", "net_tie"}
+    for node in walk(root):
+        if not (isinstance(node, ListNode) and node.key in _LABEL_KEYS):
+            continue
+        if find_first(node, "at") is None:
+            label_name = (
+                node.items[1].value
+                if len(node.items) >= 2 and isinstance(node.items[1], StringNode)
+                else "?"
+            )
+            issues.append(
+                LintIssue(
+                    _ERR,
+                    "SCH010",
+                    f"Label '{label_name}' ({node.key}) is missing an '(at …)' placement node",
+                    path=f"kicad_sch/{node.key}",
+                )
+            )
+
     return issues
 
 
@@ -614,6 +639,49 @@ def lint_pcb(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
                 )
                 break  # one warning per node is enough
 
+    # ------------------------------------------------------------------
+    # PCB010 — graphic primitives missing (layer …) declaration
+    # ------------------------------------------------------------------
+    _GR_KEYS = {"gr_line", "gr_arc", "gr_rect", "gr_poly", "gr_curve"}
+    for item in root.items:
+        if not (isinstance(item, ListNode) and item.key in _GR_KEYS):
+            continue
+        if find_first(item, "layer") is None:
+            issues.append(
+                LintIssue(
+                    _ERR,
+                    "PCB010",
+                    f"Graphic primitive '({item.key} …)' is missing a '(layer …)' declaration",
+                    path=f"kicad_pcb/{item.key}",
+                )
+            )
+
+    # ------------------------------------------------------------------
+    # PCB011 — footprint pads missing (layers …) declaration
+    # ------------------------------------------------------------------
+    for fp in footprints:
+        fp_name = (
+            fp.items[1].value if len(fp.items) >= 2 and isinstance(fp.items[1], StringNode) else "?"
+        )
+        for child in fp.items:
+            if not (isinstance(child, ListNode) and child.key == "pad"):
+                continue
+            pad_num = (
+                child.items[1].value
+                if len(child.items) >= 2 and isinstance(child.items[1], (AtomNode, StringNode))
+                else "?"
+            )
+            if find_first(child, "layers") is None:
+                issues.append(
+                    LintIssue(
+                        _WARN,
+                        "PCB011",
+                        f"Pad '{pad_num}' in footprint '{fp_name}'"
+                        " is missing a '(layers \u2026)' declaration",
+                        path="kicad_pcb/footprint/pad",
+                    )
+                )
+
     return issues
 
 
@@ -631,6 +699,10 @@ LINT_SUGGESTIONS: dict[str, str] = {
     "SCH007": "Ensure wire '(pts (xy …) (xy …))' contains valid numeric coordinates.",
     "SCH008": "Embed the symbol definition via 'Save Symbol Copy' in KiCad.",
     "SCH009": "Embed the missing library symbol or check that the lib_id matches.",
+    "SCH010": (
+        "Add an '(at x y rotation)' node to every label/global_label/hierarchical_label "
+        "so KiCad knows where to place it on the schematic."
+    ),
     "PCB001": "Check that the file is a KiCad PCB layout (.kicad_pcb).",
     "PCB002": "Re-save the PCB in KiCad to regenerate unique UUIDs.",
     "PCB003": "Ensure every footprint has an '(at x y)' placement node.",
@@ -646,5 +718,12 @@ LINT_SUGGESTIONS: dict[str, str] = {
     ),
     "PCB009": (
         "Move footprints closer to the origin (coordinates should be < 10 000 mm from origin)."
+    ),
+    "PCB010": (
+        "Add a '(layer \"<layer_name>\")' node to every gr_line/gr_arc/gr_rect/gr_poly/gr_curve."
+    ),
+    "PCB011": (
+        "Add a '(layers \"<Cu_layer>\")' node to every pad "
+        "so KiCad knows which copper layers it belongs to."
     ),
 }
