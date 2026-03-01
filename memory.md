@@ -1700,3 +1700,25 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - 6.4 TestGraphvizEndToEnd (4 tests, skip if no dot) + TestKiCadCLINetlistExport (3 tests, skip if no kicad-cli): kicad-cli netlist export exits 0 for divider + chain IR; uses home_tmp fixture for Flatpak sandbox compatibility.
 - All 6.1–6.4 checkboxes ticked in CODE_REVIEW5_TODO.md.
 - Full unit suite: 1394+ passed, exit 0.
+
+## 2026-03-01T00:00:00Z - All future-work items implemented; milestone complete
+- Committed f8e9965: feat: implement all deferred future-work items (4.4/4.5/4.6)
+- 4.4 op-amp centering per stage: layout.py post-sorts each BFS column so ICs
+  (U/IC/OA prefix) appear at centre rows, passives above/below. Two helpers added:
+  _build_signal_adjacency (power nets excluded) and _build_power_adjacency (power only).
+  TestOpAmpCentering: 3 tests.
+- 4.4 decoupling caps near IC: power-only passives (no signal adjacency) get
+  post-BFS column reassigned to anchor_col+1 of nearest IC via power adjacency.
+  TestDecouplingCapPlacement: 2 tests.
+- 4.5 bus-style (spine) wiring: router.py _spine_route() added. Determines dominant
+  axis (H vs V from bounding box span), draws a single spine wire, then T-junction
+  taps for each stub end. route_nets(use_bus=True) uses spine instead of hub.
+  TestBusStyleSpineRoute: 4 tests.
+- 4.6 LAY lints at --validate: pipeline.py now imports lint_schematic_layout and
+  runs it in the LINT block alongside lint_schematic. LAY001-LAY005 issues collected;
+  raise in FULL/strict mode, stay as warnings in plain LINT mode.
+  TestLAYLintsInPipeline: 5 tests (FULL raises, strict+LINT raises, non-strict doesn't,
+  SYNTAX doesn't, full issue presence check).
+- CODE_REVIEW5_TODO.md: all [ ] items ticked including Definition of Done.
+- Test suite: 1453 passed, 2 skipped (up from 1439). Commit f8e9965.
+- MILESTONE COMPLETE: all phases 0-7 done; all DoD criteria met.
