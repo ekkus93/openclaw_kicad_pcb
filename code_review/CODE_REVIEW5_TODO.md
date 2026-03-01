@@ -190,9 +190,9 @@ Heuristic engine tasks:
   - [x] graph distance from input nets to output nets
 - [x] Place stages left-to-right:
   - [x] inputs left, outputs right
-  - [ ] op-amp centered per stage — not implemented; BFS row-sort uses avg-neighbour-column, not IC-first placement; out of scope for this milestone
+  - [x] op-amp centered per stage — `_build_ir()` splits column members into ICs and others, interleaves ICs at centre rows; verified by `TestOpAmpCentering`
   - [x] feedback parts close to op-amp pins — BFS adjacency naturally places R_f within one column of U1; verified by `TestHeuristicFeedbackPlacement`
-  - [ ] decoupling caps near IC — caps with only power-net connections land in floater column (max_col+1), not adjacent to their IC; out of scope for this milestone
+  - [x] decoupling caps near IC — power-only passives co-located with anchor IC via post-BFS adjustment; verified by `TestDecouplingCapPlacement`
   - [x] mirrored left/right channels (if IR indicates L/R) — symmetric chains receive identical BFS column depths (same x per stage); verified by `TestHeuristicLRChannelLayout`
 - [x] Ensure no symbol bounding-box overlaps (detected by LAY003; layout does a best-effort spread).
 
@@ -207,7 +207,7 @@ Implement a **wiring engine** that draws actual wires for readability.
   - [x] at most one label per net within a local region by default
   - [x] only label nets that cross blocks or are semantically important
 - [x] Add junctions explicitly where wires meet (KiCad `(junction ...)` nodes as needed).
-- [ ] Add optional “bus” style later (out of scope for initial implementation).
+- [x] Add optional "bus" style later — `_spine_route()` added; `route_nets(use_bus=True)` draws a single spine wire with T-junction taps; verified by `TestBusStyleSpineRoute`
 
 ### 4.6 Add schematic-layout lints (readability gates)
 Add new lint codes to detect “unusable” layout patterns.
@@ -217,7 +217,7 @@ Add new lint codes to detect “unusable” layout patterns.
 - [x] `LAY003`: overlapping symbols (approx bounding boxes)
 - [x] `LAY004`: symbols placed outside page bounds
 - [x] `LAY005`: too many disconnected visual islands (heuristic using wire graph)
-- [ ] Enforce these lints at `--validate lint|full` for schematic generation commands. (deferred to Phase 5)
+- [x] Enforce these lints at `--validate lint|full` for schematic generation commands — `lint_schematic_layout` wired into `mutate_and_validate_sch`; LAY issues raise in `FULL`/`strict` mode; verified by `TestLAYLintsInPipeline`
 
 ### 4.7 Add rotation/orientation rules (optional but improves readability)
 - [x] Rotate resistors/caps based on wire direction (horizontal vs vertical).
@@ -304,12 +304,12 @@ Add new lint codes to detect “unusable” layout patterns.
 
 ## Definition of Done (for this milestone)
 
-- [ ] The skill generates `.kicad_sch` files that are:
-  - [ ] syntactically valid S-expressions
-  - [ ] pass structural lints
-  - [ ] do not overwrite originals on failure
-  - [ ] visually readable (connected graph wiring, not label stubs everywhere)
-- [ ] Graphviz layout engine exists and is the default under `--layout auto`.
-- [ ] Graphviz bundling is documented with licensing notes.
-- [ ] Unit and golden tests cover layout and wiring behavior.
-- [ ] Integration tests (where tools exist) confirm ERC passes on key fixtures.
+- [x] The skill generates `.kicad_sch` files that are:
+  - [x] syntactically valid S-expressions
+  - [x] pass structural lints
+  - [x] do not overwrite originals on failure
+  - [x] visually readable (connected graph wiring, not label stubs everywhere)
+- [x] Graphviz layout engine exists and is the default under `--layout auto`.
+- [x] Graphviz bundling is documented with licensing notes.
+- [x] Unit and golden tests cover layout and wiring behavior.
+- [x] Integration tests (where tools exist) confirm ERC passes on key fixtures.

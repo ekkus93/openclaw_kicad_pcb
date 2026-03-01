@@ -42,6 +42,39 @@ _SOURCE_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
 # Hard cap on BFS depth to prevent runaway on pathological inputs.
 _MAX_COLS: int = 20
 
+# Op-amp / IC prefixes — kept at standard 0° orientation (inputs left, out right).
+_OP_AMP_PREFIXES: tuple[str, ...] = ("U", "IC", "OA")
+
+# Passive component prefixes — rotated to 90° when neighbours are vertically arranged.
+_PASSIVE_PREFIXES: tuple[str, ...] = ("R", "C", "L")
+
+# Net-name prefixes that are power/ground rails.  Connections through these
+# nets are excluded from the orientation heuristic so only signal nets drive
+# the rotation decision.
+_POWER_NET_PREFIXES: tuple[str, ...] = (
+    "GND",
+    "VCC",
+    "VDD",
+    "VSS",
+    "PWR",
+    "AGND",
+    "PGND",
+    "DGND",
+    "V+",
+    "V-",
+    "VBAT",
+    "VREF",
+)
+
+
+def _is_power_net_layout(name: str) -> bool:
+    """Return True when *name* looks like a power/ground rail.
+
+    Inline duplicate of the router-level helper to avoid a circular import.
+    """
+    upper = name.upper()
+    return any(upper == pfx or upper.startswith(pfx) for pfx in _POWER_NET_PREFIXES)
+
 
 # ---------------------------------------------------------------------------
 # Private helpers
@@ -52,6 +85,36 @@ def _build_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
     """Return undirected adjacency graph ``{ref: {neighbour_refs}}`` from net data."""
     adjacency: dict[str, set[str]] = defaultdict(set)
     for net in ir.nets:
+        pin_refs = [p.ref for p in net.pins]
+        for i, r_i in enumerate(pin_refs):
+            for r_j in pin_refs[i + 1 :]:
+                if r_i != r_j:
+                    adjacency[r_i].add(r_j)
+                    adjacency[r_j].add(r_i)
+    return adjacency
+
+
+def _build_signal_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
+    """Return adjacency graph built from *signal* nets only (power nets excluded)."""
+    adjacency: dict[str, set[str]] = defaultdict(set)
+    for net in ir.nets:
+        if _is_power_net_layout(net.name):
+            continue
+        pin_refs = [p.ref for p in net.pins]
+        for i, r_i in enumerate(pin_refs):
+            for r_j in pin_refs[i + 1 :]:
+                if r_i != r_j:
+                    adjacency[r_i].add(r_j)
+                    adjacency[r_j].add(r_i)
+    return adjacency
+
+
+def _build_power_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
+    """Return adjacency graph built from *power* nets only (signal nets excluded)."""
+    adjacency: dict[str, set[str]] = defaultdict(set)
+    for net in ir.nets:
+        if not _is_power_net_layout(net.name):
+            continue
         pin_refs = [p.ref for p in net.pins]
         for i, r_i in enumerate(pin_refs):
             for r_j in pin_refs[i + 1 :]:
@@ -127,6 +190,35 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
 
     col = _bfs_columns(refs, adjacency, seeds)
 
+    # --- Post-BFS: co-locate power-only passives with their anchor IC -------
+    # A decoupling capacitor (or similar passive) that connects *only* through
+    # power/ground rails has no signal-net neighbours, so BFS places it
+    # arbitrarily far from its associated IC.  We fix this by detecting
+    # power-only passives and reassigning their column to sit immediately
+    # after the column of their nearest IC (found through power adjacency).
+    sig_adj = _build_signal_adjacency(ir)
+    pwr_adj = _build_power_adjacency(ir)
+    max_bfs_col = max(col.values(), default=0)
+
+    for r in refs:
+        upper = r.upper()
+        if not any(upper.startswith(p) for p in _PASSIVE_PREFIXES):
+            continue  # Only passives benefit from this adjustment.
+        if sig_adj.get(r):
+            continue  # Component has signal connections — BFS placement is correct.
+        # Identify IC neighbours through shared power nets.
+        ic_neighbors = [
+            n
+            for n in pwr_adj.get(r, set())
+            if any(n.upper().startswith(p) for p in _OP_AMP_PREFIXES)
+        ]
+        if not ic_neighbors:
+            continue
+        # Assign to the column immediately after the nearest IC.
+        anchor_col = min(col.get(n, max_bfs_col) for n in ic_neighbors)
+        col[r] = min(anchor_col + 1, max_bfs_col)
+    # -------------------------------------------------------------------------
+
     # Sort within each column by average-neighbour-column to cut crossings.
     by_col: dict[int, list[str]] = defaultdict(list)
     for r, c in col.items():
@@ -142,12 +234,22 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
     # layout stays within a single A4 page.  Each BFS-column occupies at
     # least one visual column; if it has more than MAX_ROWS_PER_COL members
     # it overflows into consecutive additional visual columns.
+    #
+    # Within each column, op-amps / ICs are placed at the *centre* rows so
+    # surrounding passives connect naturally above and below — matching the
+    # conventional circuit-diagram convention of "op-amp centred per stage".
     positions: dict[str, tuple[float, float]] = {}
     visual_col = 0
     for c_num, members in sorted(by_col.items()):
         members.sort(key=_avg_nbr_col)
-        num_sub = max(1, math.ceil(len(members) / MAX_ROWS_PER_COL))
-        for idx, ref in enumerate(members):
+        # Centre op-amps: split into IC refs and others, interleave so ICs
+        # occupy the middle rows of the column.
+        ic_refs = [r for r in members if any(r.upper().startswith(p) for p in _OP_AMP_PREFIXES)]
+        other_refs = [r for r in members if r not in set(ic_refs)]
+        mid = len(other_refs) // 2
+        ordered = other_refs[:mid] + ic_refs + other_refs[mid:]
+        num_sub = max(1, math.ceil(len(ordered) / MAX_ROWS_PER_COL))
+        for idx, ref in enumerate(ordered):
             sub = idx // MAX_ROWS_PER_COL
             row = idx % MAX_ROWS_PER_COL
             x = ORIGIN_X + (visual_col + sub) * GRID_COL_MM
@@ -156,6 +258,72 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
         visual_col += num_sub
 
     return positions
+
+
+def compute_orientations(
+    ir: CircuitIR,
+    positions: dict[str, tuple[float, float]],
+) -> dict[str, int]:
+    """Return ``{ref: rotation_degrees}`` orientation for every component.
+
+    Rules
+    -----
+    * **Connectors** (J/CON/P/SJ/TJ): 0° — standard library orientation places
+      pins on the right edge so wires flow left→right from the connector.
+    * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
+      left and output on the right, which is correct for the usual KiCad symbols.
+    * **Passives** (R/C/L): 90° when the sum of |Δy| to signal-net neighbours
+      exceeds the sum of |Δx|; otherwise 0°.  This aligns resistors and capacitors
+      with their dominant wire direction.
+    * **Default**: 0°.
+
+    Power / ground nets (identified by :func:`_is_power_net_layout`) are excluded
+    from the neighbour calculation so pull-ups / bypass capacitors that only
+    connect to rails are not biased by them.
+    """
+    # Build adjacency through signal nets only.
+    adjacency: dict[str, list[str]] = defaultdict(list)
+    for net in ir.nets:
+        if _is_power_net_layout(net.name):
+            continue
+        pin_refs = [p.ref for p in net.pins]
+        for i, r_i in enumerate(pin_refs):
+            for r_j in pin_refs[i + 1 :]:
+                if r_i != r_j:
+                    adjacency[r_i].append(r_j)
+                    adjacency[r_j].append(r_i)
+
+    result: dict[str, int] = {}
+    for comp in ir.components:
+        ref = comp.ref
+        upper = ref.upper()
+
+        # Connectors: always 0°.
+        if any(upper.startswith(pfx) for pfx in _SOURCE_PREFIXES):
+            result[ref] = 0
+            continue
+
+        # Op-amps / ICs: always 0°.
+        if any(upper.startswith(pfx) for pfx in _OP_AMP_PREFIXES):
+            result[ref] = 0
+            continue
+
+        # Passives: 90° when vertically-arranged neighbours dominate.
+        if any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES) and ref in positions:
+            x, y = positions[ref]
+            total_dx = 0.0
+            total_dy = 0.0
+            for nbr in adjacency.get(ref, []):
+                if nbr in positions:
+                    nx, ny = positions[nbr]
+                    total_dx += abs(nx - x)
+                    total_dy += abs(ny - y)
+            result[ref] = 90 if total_dy > total_dx else 0
+            continue
+
+        result[ref] = 0
+
+    return result
 
 
 # ---------------------------------------------------------------------------
