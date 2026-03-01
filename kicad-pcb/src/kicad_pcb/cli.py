@@ -147,6 +147,7 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
             "else heuristic signal-flow)"
         ),
     )
+    p_apply.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
     p_apply.set_defaults(func=cmd_apply_netlist)
 
     # new-from-netlist
@@ -187,6 +188,9 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
             "Schematic layout engine (default: auto — Graphviz if available, "
             "else heuristic signal-flow)"
         ),
+    )
+    p_new_netlist.add_argument(
+        "--strict", action="store_true", help="Treat lint warnings as errors"
     )
     p_new_netlist.set_defaults(func=cmd_new_from_netlist)
 
@@ -289,6 +293,17 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="kicad",
         help="Validation mode (default: kicad)",
     )
+    p_compile.add_argument(
+        "--layout",
+        choices=["auto", "graphviz", "heuristic", "none"],
+        default="auto",
+        dest="layout",
+        help=(
+            "Schematic layout engine (default: auto — Graphviz if available, "
+            "else heuristic signal-flow)"
+        ),
+    )
+    p_compile.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
     p_compile.set_defaults(func=cmd_new_from_netlist)
 
     # drc
@@ -340,6 +355,7 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_add.add_argument(
         "--dry-run", action="store_true", dest="dry_run", help="Validate without writing"
     )
+    p_add.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
     p_add.set_defaults(func=cmd_add_component)
 
     # apply-pattern

@@ -283,22 +283,22 @@ Add new lint codes to detect “unusable” layout patterns.
 # Phase 7 — UX / Controls (Optional but Recommended)
 
 ### 7.1 CLI flags and configuration
-- [ ] Add/confirm:
-  - [ ] `--layout ...`
-  - [ ] `--validate ...`
-  - [ ] `--strict` (warnings -> errors)
-  - [ ] `--dry-run` (validate but do not commit)
-  - [ ] `--json` output for structured responses
+- [x] Add/confirm:
+  - [x] `--layout ...`
+  - [x] `--validate ...`
+  - [x] `--strict` (warnings -> errors)
+  - [x] `--dry-run` (validate but do not commit)
+  - [x] `--json` output for structured responses
 
 ### 7.2 Improve diagnostics for layout failures
-- [ ] If Graphviz fails, print:
-  - [ ] command invoked
-  - [ ] stderr excerpt
-  - [ ] fallback used (heuristic)
-- [ ] On layout lint failure, include:
-  - [ ] which lint codes fired
-  - [ ] which nets/symbols triggered them
-  - [ ] suggestion to relax thresholds or switch layout engine
+- [x] If Graphviz fails, print:
+  - [x] command invoked
+  - [x] stderr excerpt
+  - [x] fallback used (heuristic)
+- [x] On layout lint failure, include:
+  - [x] which lint codes fired
+  - [x] which nets/symbols triggered them
+  - [x] suggestion to relax thresholds or switch layout engine
 
 ---
 
