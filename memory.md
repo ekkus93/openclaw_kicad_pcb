@@ -1,6 +1,17 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-05-15T01:00:00+00:00_
+_Last updated: 2026-05-15T02:00:00+00:00_
+
+---
+
+## 2026-05-15T02:00:00+00:00 - feat: Phase 6.1 — feedback placement + L/R channel layout tests
+- **Scope**: Completed the two remaining unchecked `6.1 Unit tests for layout engine(s)` items.
+- **New test classes** in `tests/unit/test_phase6_coverage.py`:
+  - `TestHeuristicFeedbackPlacement` (3 tests): feedback resistor (both pins on op-amp-only nets) must be ≤1 column (GRID_COL_MM) from op-amp; must be downstream of input connector; all positions distinct.
+  - `TestHeuristicLRChannelLayout` (5 tests): symmetric L/R chains get same BFS column depth per stage (same x); stacked at different y; signal flows L→R within each channel.
+- **New import**: added `compute_signal_flow_layout` and `GRID_COL_MM` to imports in test file (alongside existing `ORIGIN_X`, `HeuristicLayoutEngine`).
+- **All tests pass**: exit code 0 (full unit suite). Previous count was 1422 + 8 new = 1430 passing.
+- **Lint**: ruff format reformatted 1 file; ruff check all passed.
 
 ---
 

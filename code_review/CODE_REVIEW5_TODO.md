@@ -255,8 +255,8 @@ Add new lint codes to detect “unusable” layout patterns.
   - [x] positions are stable (deterministic enough for tests; use fixed seeds/options)
 - [x] Heuristic engine:
   - [x] places input-left/output-right (`TestHeuristicInputPlacement`)
-  - [ ] places feedback components near op-amp
-  - [ ] mirrors L/R channels when present
+  - [x] places feedback components near op-amp (`TestHeuristicFeedbackPlacement`)
+  - [x] mirrors L/R channels when present (`TestHeuristicLRChannelLayout`)
 
 ### 6.2 Unit tests for wiring engine
 - [x] degree-2 net -> produces a single wire connecting pins (`TestLabelDuplicationPolicy`, `TestRouteNetsDirect`)
