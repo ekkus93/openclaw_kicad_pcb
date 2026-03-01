@@ -1,6 +1,32 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T12:00:00+00:00_
+_Last updated: 2026-05-15T00:00:00+00:00_
+
+---
+
+## 2026-05-15T00:00:00+00:00 - feat: Phase 7 — --strict flag wiring + Graphviz fallback diagnostics (commit 1668c0a)
+- **Scope**: Phase 7 of CODE_REVIEW5_TODO.md — all 7.1 and 7.2 items complete. All checkboxes ticked.
+- **7.1 CLI flags**:
+  - `--strict` added to `apply-netlist`, `new-from-netlist`, `compile-netlist`, `add-component`
+  - `--layout` added to `compile-netlist` (was missing; the others already had it)
+  - `_ApplyNetlistRequest` gains `strict: bool = False` dataclass field
+  - `cmd_apply_netlist` and `cmd_new_from_netlist` forward `strict=bool(getattr(args, "strict", False))`
+  - `_apply_netlist_to_project` now calls `mutate_and_validate_sch(strict=request.strict)`
+  - `cmd_add_component` now calls `mutate_and_validate_sch(strict=getattr(args, "strict", False))`
+  - `--validate`/`--mode internal|kicad` confirmed already present; `--dry-run` and `--json` confirmed already present
+- **7.2 Graphviz fallback diagnostics**:
+  - `GraphvizLayoutEngine.__init__` initialises `self.last_fallback_info: dict[str, str] | None = None`
+  - `compute_symbol_positions` populates `last_fallback_info` with `{command, error, fallback}` in the `except` handler when `_run_dot` raises
+  - `_write_symbols` return type extended from 3-tuple to 4-tuple (4th element: `dict[str, str] | None` fallback info)
+  - `_write_symbols` captures `getattr(engine, "last_fallback_info", None)` and includes it as 4th element
+  - `_mutate_managed` unpacks 4th value; if not None appends `GRAPHVIZ_LAYOUT_FALLBACK` warning to `warnings` list with `message`, `details` → propagated in `ApplyNetlistResult.warnings`
+- **Tests**: 14 new in `tests/unit/test_phase7_ux.py` (1408 total unit tests passing)
+  - `TestStrictFieldWiring`: `_ApplyNetlistRequest` has `strict` field with correct default
+  - `TestCLIParsers`: `--strict`/`--layout` accepted by relevant subcommands (argparse test)
+  - `TestGraphvizFallbackInfo`: `last_fallback_info` lifecycle (None initially, populated on failure, None when mocked success)
+  - `TestWriteSymbolsFourTuple`: `_write_symbols` returns 4-element tuple, 4th is None for heuristic
+  - `TestFallbackWarningInResult`: mocked bad engine → `GRAPHVIZ_LAYOUT_FALLBACK` warning in result; heuristic → no warning
+- **Commit**: `1668c0a` on master.
 
 ---
 
