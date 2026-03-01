@@ -172,12 +172,26 @@ python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 
 | Command | Description |
 |---------|-------------|
-| `add-component <LIB:SYM> <REF>` | Add component to schematic |
+| `add-component <LIB:SYM> <REF>` | Add component to schematic (single-component; prefer Circuit IR pipeline for full designs) |
 | `connect --from X,Y --to X,Y` | Wire two coordinates together |
 | `add-net NAME [--x X] [--y Y]` | Create named net label at position |
 | `preview-schematic` | Generate schematic image |
 | `erc` | Run electrical rules check |
-| `info-sch [--json]` | Inspect current schematic (symbols, ownership, pin→net bindings) |
+| `info-sch` | Inspect current schematic (symbols, ownership, pin→net bindings) |
+
+### File Lint, Validate & Format
+
+These commands operate on individual files rather than the current project.
+All three lint/validate commands exit non-zero when issues are found.
+
+| Command | Description |
+|---------|-------------|
+| `lint-sch <path>` | Lint a `.kicad_sch` file — report style and structural warnings |
+| `lint-pcb <path>` | Lint a `.kicad_pcb` file — report style and structural warnings |
+| `validate-sch <path>` | Parse + lint a `.kicad_sch` file; exits 1 on any error or warning |
+| `validate-pcb <path>` | Parse + lint a `.kicad_pcb` file; exits 1 on any error or warning |
+| `format-sch <path>` | Canonicalise (reformat) a `.kicad_sch` file **in-place** |
+| `format-pcb <path>` | Canonicalise (reformat) a `.kicad_pcb` file **in-place** |
 
 ### Symbol Discovery (ALWAYS do this before writing Circuit IR JSON)
 
@@ -257,9 +271,10 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 | `debug-symbol <Lib:Name> [--symbols-dir DIR]` | Show resolved pin list and extends chain for one symbol (use to diagnose pin count issues) |
 | `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
 | `fix-netlist --netlist circuit.json [--output fixed.json]` | **Auto-fix common Circuit IR errors and write corrected JSON** |
-| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (auto-fixes errors by default) |
+| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (auto-fixes errors by default; `--no-auto-fix` disables) |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
+| `apply-pattern --pattern PATTERN [opts]` | Apply a pre-built pattern: `resistor-divider`, `led-resistor`, `connector-breakout`, `decoupling-cap` |
 
 **Common flags** (all three commands): `--symbols-dir`, `--mode internal\|kicad`, `--dry-run`.
 
@@ -620,8 +635,14 @@ You confirm or request changes.
 
 ## Common Circuit Templates
 
-> No built-in templates are included in v1.0.0. Build circuits using
-> `add-component` and `connect` commands as shown in the workflow above.
+> No named pattern templates ship in v1.0.0. Use the **Circuit IR pipeline**
+> (`new-from-netlist`) to generate any circuit: write the complete `{version, components, nets}`
+> JSON and compile it in one shot.  The `apply-pattern` command provides a small set of
+> pre-wired sub-circuit patterns (`resistor-divider`, `led-resistor`, `connector-breakout`,
+> `decoupling-cap`) for convenience.
+>
+> **Do not** call `add-component` in a loop to build a design — it bypasses ownership,
+> managed-sheet isolation, and net wiring.  See ABSOLUTE RULE #3 above.
 
 ## Configuration
 
@@ -676,14 +697,6 @@ PCBWay typical pricing (2-layer, 100x100mm, qty 5):
 ⚠️ **High Voltage Warning**: This skill does not validate electrical safety. For mains-connected circuits, consult a qualified engineer.
 
 ⚠️ **No Auto-Order (Yet)**: Cart placement requires your explicit confirmation.
-
-## File Safety
-
-All schematic (`.kicad_sch`) and PCB (`.kicad_pcb`) write operations include a
-basic S-expression syntax check before committing to disk. If the generated
-output fails the balanced-parentheses or root-node check, the write is aborted
-and the original file is left untouched. A `ParseError` is raised describing
-the failure.
 
 ## Circuit IR Pipeline Workflow ← USE THIS FOR ALL SCHEMATIC GENERATION
 
@@ -779,6 +792,57 @@ schematic and insert the marker; subsequent updates work without `--force`.
 | `kicad` | `kicad-cli` installed | `new-from-netlist`, `compile-netlist` |
 
 Pass `--mode internal` to any command to skip the `kicad-cli` requirement.
+
+---
+
+## Validation Policy
+
+### `--mode` (schema + connectivity validation level)
+
+All three netlist commands (`validate-netlist`, `new-from-netlist` / `compile-netlist`,
+`apply-netlist`) share a `--mode` flag that controls the final validation pass:
+
+| Mode | What is checked | kicad-cli required? |
+|------|-----------------|---------------------|
+| `internal` | Pydantic schema + semantic lint + symbol/pin lookup (built-in) | No |
+| `kicad` | All of `internal` **plus** `kicad-cli sch run` ERC pass | Yes |
+
+Default: `new-from-netlist`/`compile-netlist` use `kicad` (strictest); `apply-netlist` uses `internal`.
+
+Use `--mode internal` when `kicad-cli` is unavailable or for faster iteration.  The
+generated schematic is identical either way — only the verification depth differs.
+
+### `--dry-run` (available on most write commands)
+
+When `--dry-run` is passed the command performs all validation and reports exactly
+what would be written, but **no files are created or modified**.  Supported by:
+`apply-netlist`, `new-from-netlist` / `compile-netlist`, `add-component`,
+`add-net`, `connect`, `set-board-size`, `apply-pattern`.
+
+### `--no-auto-fix` (`new-from-netlist` / `compile-netlist` only)
+
+By default (`auto_fix=True`) these commands run `fix-netlist` internally before
+raising errors, repairing schema wrapper issues, forbidden component fields, integer
+pin values, and pin aliases (`+`→`1`, `-`→`2`, etc.).  Pass `--no-auto-fix` to
+see the raw validation failure instead.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (or `--dry-run` with no errors) |
+| `1` | Validation error / lint issue / doctor check failed |
+
+`doctor` exits `1` when any check has status `error`.
+`lint-sch`, `lint-pcb`, `validate-sch`, `validate-pcb` exit `1` when issues are found.
+All other commands exit `0` on success.
+
+### Write safety (rollback behaviour)
+
+All schematic and PCB write operations are atomic: the tool writes to a temporary
+path and only replaces the original on success.  If the generated S-expression fails
+a balanced-parentheses check or root-node check, the write is **aborted** and the
+original file is left **untouched**.  A `ParseError` is raised describing the failure.
 
 ---
 
