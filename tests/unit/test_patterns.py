@@ -16,7 +16,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
-from kicad_pcb import sch_doc as _sch_doc
+from kicad_pcb import lib_symbol as _lib_symbol
 from kicad_pcb.cli import _build_parser
 from kicad_pcb.commands import patterns as _cmd_patterns
 from kicad_pcb.commands.patterns import cmd_apply_pattern
@@ -53,7 +53,7 @@ def _no_sym_library(monkeypatch: pytest.MonkeyPatch) -> None:
     because no KiCad symbol library is required.  Parsing large ``.kicad_sym``
     files on every test call would make the suite prohibitively slow.
     """
-    monkeypatch.setattr(_sch_doc, "_DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
+    monkeypatch.setattr(_lib_symbol, "_DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
 
 
 # ---------------------------------------------------------------------------
@@ -551,7 +551,7 @@ class TestCmdApplyPattern:
         pin list ``["1", "2"]`` and embeds a minimal stub symbol so that the
         SCH009 lint check passes without a real KiCad installation.
         """
-        monkeypatch.setattr("kicad_pcb.sch_doc._DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
+        monkeypatch.setattr("kicad_pcb.lib_symbol._DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
 
     _MINIMAL_SCH = dedent("""\
         (kicad_sch (version 20230121) (generator test)
