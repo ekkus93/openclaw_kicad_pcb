@@ -107,7 +107,7 @@ def _parse_float_atom(node: Node, *, default: float) -> float:
     return default
 
 
-def _symbol_metadata(symbol_node: ListNode) -> dict[str, str | float]:
+def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
     """Extract placement metadata from a placed symbol ``(symbol ...)`` AST node.
 
     Returns a dict with keys ``ref``, ``symbol_id``, ``value``, ``uuid``,
