@@ -107,6 +107,7 @@ def make_symbol_node(  # noqa: PLR0913
     pin_nums: list[str],
     pin_uuids: list[str],
     project_name: str,
+    rotation: int = 0,
 ) -> ListNode:
     """Build a placed symbol instance ``(symbol …)`` node for a schematic.
 
@@ -121,11 +122,13 @@ def make_symbol_node(  # noqa: PLR0913
     pin_nums:     Ordered list of pin number strings.
     pin_uuids:    UUID string for each pin (parallel to *pin_nums*).
     project_name: KiCad project name (used in ``(instances …)``).
+    rotation:     Symbol rotation in degrees (CCW, KiCad convention).
+                  0 = default orientation, 90 = rotated 90° CCW.
     """
     items: list[Node] = [
         atom("symbol"),
         L(atom("lib_id"), string(lib_sym)),
-        L(atom("at"), fnum(x, 2), fnum(y, 2), atom("0")),
+        L(atom("at"), fnum(x, 2), fnum(y, 2), atom(str(rotation))),
         L(atom("unit"), atom("1")),
         L(atom("exclude_from_sim"), atom("yes")),
         L(atom("in_bom"), atom("yes")),
@@ -864,6 +867,7 @@ class SchematicDoc:
         pin_nums: list[str],
         pin_uuids: list[str],
         project_name: str,
+        rotation: int = 0,
     ) -> None:
         """Append a placed symbol instance to the schematic.
 
@@ -880,6 +884,7 @@ class SchematicDoc:
             pin_nums,
             pin_uuids,
             project_name,
+            rotation=rotation,
         )
         self._insert_before_sheet_instances(node)
 
