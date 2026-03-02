@@ -271,28 +271,75 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
     return positions
 
 
+def _classify_passive_pins(
+    ir: CircuitIR,
+) -> tuple[frozenset[str], frozenset[str]]:
+    """Return ``(refs_with_power_pin, refs_with_signal_pin)`` for components in *ir*.
+
+    Iterates once over ``ir.nets`` and sorts each pin reference into the
+    *power* bucket (if the net is a power/ground rail) or the *signal* bucket.
+    """
+    power_refs: set[str] = set()
+    signal_refs: set[str] = set()
+    for net in ir.nets:
+        bucket = power_refs if _is_power_net_layout(net.name) else signal_refs
+        for pin in net.pins:
+            bucket.add(pin.ref)
+    return frozenset(power_refs), frozenset(signal_refs)
+
+
+def _series_passive_rotation(
+    ref: str,
+    positions: dict[str, tuple[float, float]],
+    adjacency: dict[str, list[str]],
+) -> int:
+    """Return 0° or 90° for a series passive using the position heuristic.
+
+    90° when the sum of |Δy| to signal-net neighbours exceeds the sum of |Δx|;
+    otherwise 0°.  Defaults to 0° when *ref* is not in *positions*.
+    """
+    if ref not in positions:
+        return 0
+    x, y = positions[ref]
+    total_dx = total_dy = 0.0
+    for nbr in adjacency.get(ref, []):
+        if nbr in positions:
+            nx, ny = positions[nbr]
+            total_dx += abs(nx - x)
+            total_dy += abs(ny - y)
+    return 90 if total_dy > total_dx else 0
+
+
 def compute_orientations(
     ir: CircuitIR,
     positions: dict[str, tuple[float, float]],
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
-    Rules
-    -----
+    Rules (applied in priority order)
+    -----------------------------------
     * **Connectors** (J/CON/P/SJ/TJ): 0° — standard library orientation places
       pins on the right edge so wires flow left→right from the connector.
     * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
       left and output on the right, which is correct for the usual KiCad symbols.
-    * **Passives** (R/C/L): 90° when the sum of |Δy| to signal-net neighbours
-      exceeds the sum of |Δx|; otherwise 0°.  This aligns resistors and capacitors
-      with their dominant wire direction.
+    * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1 signal-net
+      pin): 90°.  A bypass capacitor, pull-up, or pull-down resistor straddles a
+      power rail and the signal path, so a vertical (90°) orientation visually
+      shows the connection from signal wire down to the rail.
+    * **Passives — position heuristic** (R/C/L with all pins on signal nets):
+      90° when the sum of |Δy| to signal-net neighbours exceeds the sum of |Δx|;
+      otherwise 0°.  This orients in-column feedback or coupling components to
+      match the dominant wire direction.
     * **Default**: 0°.
 
     Power / ground nets (identified by :func:`_is_power_net_layout`) are excluded
-    from the neighbour calculation so pull-ups / bypass capacitors that only
-    connect to rails are not biased by them.
+    from the position-based neighbour calculation so they do not bias series
+    passives.  They ARE used for the shunt-topology check above.
     """
-    # Build adjacency through signal nets only.
+    # Pre-compute shunt topology: which refs have power-net pins / signal-net pins.
+    power_pin_refs, signal_pin_refs = _classify_passive_pins(ir)
+
+    # Build adjacency through signal nets only (for the position heuristic).
     adjacency: dict[str, list[str]] = defaultdict(list)
     for net in ir.nets:
         if _is_power_net_layout(net.name):
@@ -319,17 +366,13 @@ def compute_orientations(
             result[ref] = 0
             continue
 
-        # Passives: 90° when vertically-arranged neighbours dominate.
-        if any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES) and ref in positions:
-            x, y = positions[ref]
-            total_dx = 0.0
-            total_dy = 0.0
-            for nbr in adjacency.get(ref, []):
-                if nbr in positions:
-                    nx, ny = positions[nbr]
-                    total_dx += abs(nx - x)
-                    total_dy += abs(ny - y)
-            result[ref] = 90 if total_dy > total_dx else 0
+        if any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES):
+            # Shunt-topology: passive straddles a power rail and a signal path.
+            if ref in power_pin_refs and ref in signal_pin_refs:
+                result[ref] = 90
+                continue
+            # Position heuristic for pure-signal (series) passives.
+            result[ref] = _series_passive_rotation(ref, positions, adjacency)
             continue
 
         result[ref] = 0
