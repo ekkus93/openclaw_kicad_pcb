@@ -131,11 +131,11 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
 
 ### 3.1 `graphviz_layout.py::_build_dot_source()` — Decoupling cap co-location
 
-- [ ] Detect **decoupling capacitors**: `C*` that have exactly one non-power
-  net pin → that pin connects to an IC's power pin.
-- [ ] Assign the decoupling cap to the **same column** as its IC by adding
-  a zero-weight invisible edge `{C → IC [style=invis, weight=100]}`.
-- [ ] Group decoupling caps above the IC centre (lower y value in KiCad
+- [x] Detect **decoupling capacitors**: `C*` that have exactly one non-power
+  net pin → that pin connects to an IC's power pin. *(impl: `_find_decoupling_caps()`)*
+- [x] Assign the decoupling cap to the **same column** as its IC by adding
+  a zero-weight invisible edge `{C → IC [style=invis, weight=10]}`. *(impl: `_emit_decoupling_constraints()`)*
+- [x] Group decoupling caps above the IC centre (lower y value in KiCad
   coordinates) using a `{rank=same; IC; C_decoupling;}` subgraph.
 
 ### 3.2 `graphviz_layout.py::_gv_to_kicad()` — VCC bus / GND bus snap
@@ -144,13 +144,13 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
   (`PWR_FLAG`, explicit `#PWR` symbols, decoupling caps).
 - [ ] Clamp VCC-related symbols to `y = ORIGIN_Y` (top row).
 - [ ] Clamp GND symbols to `y = PAGE_MAX_Y - 20` (bottom row).
-- [ ] Shift decoupling caps to the same x as their IC anchor, offset by
-  `-GRID_ROW_MM` on the y axis (one row above).
+- [x] Shift decoupling caps to the same x as their IC anchor, offset by
+  `-GRID_ROW_MM` on the y axis (one row above). *(impl: `_post_snap_decoupling_caps()`)*
 
 ### 3.3 Tests
 
-- [ ] `test_decoupling_cap_same_x_as_ic()`.
-- [ ] `test_power_flag_at_top_y()`.
+- [x] `test_decoupling_cap_same_x_as_ic()` — covered by `TestDecouplingCapCoLocation` (5 tests).
+- [ ] `test_power_flag_at_top_y()` — deferred to 3.2 VCC/GND bus snap (not yet implemented).
 
 ---
 

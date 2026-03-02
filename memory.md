@@ -1,6 +1,72 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-02T19:30:00+00:00_
+_Last updated: 2026-03-03T01:00:00+00:00_
+
+---
+
+## 2026-03-03T01:00:00+00:00 — feat: Phase 3 — decoupling cap co-location (commit f57c69a)
+
+### What changed
+- `graphviz_layout.py`: added `GRID_ROW_MM = 7.62` (300 mil), `_CAPACITOR_PREFIXES`, `_is_capacitor()`.
+- `_find_decoupling_caps(ir) -> dict[str, str]`: detect `C*` refs where exactly ONE pin is on a non-power signal net (e.g. `VCC_LOCAL`) and the other pin is on a power net. Returns `{cap_ref: ic_ref}`.
+- `_emit_decoupling_constraints(lines, map)`: emits invisible edge `cap → ic [style=invis, weight=10]` + `{rank=same; ic; cap}` subgraph for each pair. Extracted as helper to keep `_build_dot_source` under PLR0912 branch limit.
+- `_build_dot_source(ir, *, decoupling_map=None)`: new optional kwarg; emits decoupling constraints when supplied.
+- `_post_snap_decoupling_caps(positions, map)`: after dot layout, snaps each decoupling cap to `(ic.x, ic.y - GRID_ROW_MM)`.
+- `compute_symbol_positions()`: computes `decoupling_map` before DOT source; applies post-snap before cache write.
+- All new helpers exported in `__all__` and as public aliases.
+
+### Tests: 9 new (1491 total, up from 1482)
+- `TestFindDecouplingCaps`: 4 tests — detection, true bypass cap not detected, connector-only neighbour, non-cap refs.
+- `TestDecouplingCapCoLocation`: 5 tests — invisible edge in DOT, rank=same subgraph, x-snap matches IC, y-snap = IC.y - GRID_ROW_MM, unchanged without decoupling_map.
+
+### Scope note
+- 3.2 VCC/GND bus snap (clamping `#PWR` + `PWR_FLAG` to top/bottom y) is NOT yet implemented — true bypass caps with both pins on power nets (VCC+GND) remain in `cluster_power`.
+- `test_power_flag_at_top_y()` deferred accordingly.
+
+### TODO state
+- ✅ Phase 0 (BFS seeder fix, commit ddac319)
+- ✅ Phase 3.1 + 3.2 (decoupling cap co-location x+y snap, commit f57c69a)
+- ⏳ Phase 3.2 partial: VCC/GND bus snap still pending
+- ✅ Phase 4 (shunt orientation, commit 377d977)
+- ⏳ Phase 2 (affinity grouping), Phase 5 (feedback), others
+
+---
+
+## 2026-03-02T23:30:00+00:00 - fix+feat: Phase 0 (layout) + Phase 4 (orientation) (commits ddac319, 377d977)
+
+### Phase 0 — Single-column layout bug fix (commit ddac319)
+- **Root cause**: `_assign_bfs_tiers` seeded ALL connectors at tier 0 simultaneously. Output connectors got the same tier as inputs → all signal components collapsed to tier 1 → single column at x≈33.82mm.
+- **Fix**: Seed only the alphabetically-first connector. Output connectors reach their natural tier via BFS. Parallel input connectors not reachable from the seed default to tier 0 (correct behavior).
+- **Files**: `kicad-pcb/src/kicad_pcb/graphviz_layout.py` (seed fix), `tests/unit/test_phase4_layout.py` (3 previously failing tests now pass)
+- **Also**: Extracted `_tier_rank_keyword()` helper to avoid PLR0912 branch-count violation.
+- **Updated**: `tests/unit/test_phase6_coverage.py::TestGoldenAudioBlock::test_connectors_leftmost` — removed J3 assertion; J3 is power-only (cluster_power, rank=max, rightmost after fix).
+- **Tests fixed**: `TestAssignBfsTiers::test_linear_chain_connector_to_connector`, `test_output_connector_gets_higher_tier_than_ic`, `TestBuildDotSourceSignalFlow::test_tier_separation_via_rank_same_subgraphs`.
+
+### Phase 4 — Shunt-topology orientation (commit 377d977)
+- **New rule**: Passives with ≥1 power-net pin AND ≥1 signal-net pin → 90° (bypass cap, pull-up, pull-down). Pure-signal passives continue using position-based heuristic.
+- **Does NOT change**: Power-only passives (VCC→GND, both power pins) stay at 0°. In-column series passives (both signal pins, vertical position > horizontal) still get 90° from heuristic.
+- **Helpers added**: `_classify_passive_pins(ir)` → `(power_refs, signal_refs)` frozensets; `_series_passive_rotation()` for position heuristic.
+- **File**: `kicad-pcb/src/kicad_pcb/layout.py`
+- **New tests**: `TestShuntOrientations` (6 tests): bypass_cap_gnd_is_90, pullup_resistor_vcc_is_90, pulldown_resistor_gnd_is_90, series_uses_heuristic, both_pins_power_stays_zero, shunt_fires_before_heuristic.
+- **Note**: Orientations applied in `commands/netlist.py::_write_symbols()` for ALL engines (Graphviz and Heuristic), not inside the engine. Phase 4.2 from TODO was already done.
+
+### Current state
+- All 1482 unit tests pass; ruff clean.
+- `code_review/COMPONENT_PLACEMENT_TODO.md` — Phases 0 and 4 complete; Phase 3 is next recommended step.
+- Python env: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2) — always use this, NOT system python3 or conda.
+- `dot` binary: `/usr/bin/dot` (graphviz 2.43.0)
+
+---
+
+## 2026-03-02T22:00:00+00:00 - feat: session management (commits 676a6cd, c28bf3b)
+- **Feature**: Isolated session directory per design task, preventing stale-file reuse across designs.
+- **Session dir location**: `{projects_dir}/sessions/{slug}_{uuid8}/` (e.g. `~/.openclaw/workspace/sessions/headphone_amp_3f2a1b4c/`)
+- **Contents**: `session.json` + `*.json` netlists + `{Name}/` KiCad project subdir + `{Name}_schematic.zip`
+- **New CLI commands**: `new-session --name N [-d DESC]`, `session-info`, `close-session`
+- **Auto-integration in `new-from-netlist`**: When session is active — (1) netlist resolves from session dir if not found at literal path, (2) KiCad project created inside session dir, (3) schematics auto-zipped into session dir.
+- **Config persistence**: `~/.kicad-pcb/current_session.json`
+- **Files changed**: `models.py` (SessionRef), `config.py` (get/set/clear_current_session, get_sessions_base_dir), `results.py` (NewSessionResult, SessionInfoResult, extended NewFromNetlistResult), `commands/session.py` (new), `commands/netlist.py` (session integration + _create_schematic_zip), `cli.py` (3 new subparsers), `formatting.py` (new formatters), `__init__.py` (exports), `tests/unit/test_session.py` (13 tests, all passing), `SKILL.md` (Session Management section added)
+- **Bot usage**: Always run `new-session --name <name>` at the start of a design task before writing netlist JSON or calling `new-from-netlist`.
 
 ---
 
