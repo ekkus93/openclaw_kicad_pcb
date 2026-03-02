@@ -18,7 +18,7 @@ from ..fs import _atomic_write, _new_uuid
 from ..ir_autofix import autofix_circuit_ir
 from ..ir_validate import validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
-from ..layout_engine import LayoutMode, make_layout_engine
+from ..layout_engine import make_layout_engine
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import (
@@ -62,7 +62,6 @@ class _ApplyNetlistRequest:
     force: bool
     dry_run: bool
     backup: bool = False
-    layout_mode: LayoutMode = "auto"
     strict: bool = False
 
 
@@ -229,7 +228,6 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             force=bool(getattr(args, "force", False)),
             dry_run=bool(getattr(args, "dry_run", False)),
             backup=bool(getattr(args, "backup", False)),
-            layout_mode=getattr(args, "layout", "auto"),
             strict=bool(getattr(args, "strict", False)),
         ),
     )
@@ -389,7 +387,6 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
             mode_name=getattr(args, "mode", "kicad"),
             force=True,
             dry_run=False,
-            layout_mode=getattr(args, "layout", "auto"),
             strict=bool(getattr(args, "strict", False)),
         ),
     )
@@ -468,7 +465,6 @@ def _apply_netlist_to_project(
             symbol_index=symbol_index,
             project_name=project.name,
             stats=stats,
-            layout_mode=request.layout_mode,
             cache_path=project.path / "openclaw_layout_cache.json",
         )
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
@@ -586,7 +582,6 @@ def _write_symbols(  # noqa: PLR0913
     symbol_index: SymbolIndex,
     project_name: str,
     stats: dict[str, int],
-    layout_mode: LayoutMode = "auto",
     cache_path: Path | None = None,
 ) -> tuple[
     dict[str, tuple[float, float]],
@@ -611,7 +606,7 @@ def _write_symbols(  # noqa: PLR0913
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
     symbol_defs_missing: set[str] = set()
 
-    engine = make_layout_engine(layout_mode, cache_path=cache_path)
+    engine = make_layout_engine(cache_path=cache_path)
     raw_layout = engine.compute_symbol_positions(ir)
     # Build plain (x, y) map for coordinate lookup and orientation computation.
     layout: dict[str, tuple[float, float]] = {

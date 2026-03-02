@@ -53,6 +53,11 @@ _log = logging.getLogger(__name__)
 ORIGIN_X: float = 30.48  # mm — left margin on an A4 page
 ORIGIN_Y: float = 50.80  # mm — top margin on an A4 page
 
+# Usable schematic area on an A4 sheet (page is 297 × 210 mm).
+# Leave a 10 mm gutter on the right and bottom edges.
+PAGE_MAX_X: float = 287.0  # mm (297 - 10)
+PAGE_MAX_Y: float = 200.0  # mm (210 - 10)
+
 # Scale factor: mm per one "graph unit" in dot -Tplain output.
 # dot -Tplain reports node centre coordinates in inches (not points).
 # _LAY_SYMBOL_HALF_SIZE_MM = 5.08 mm, so symbols need ≥ 10.16 mm
@@ -319,6 +324,10 @@ def _gv_to_kicad(
 
     Graphviz origin is bottom-left; KiCad origin is top-left.  We invert
     the y axis so that higher-ranked nodes appear at the top of the schematic.
+
+    If the scaled positions would exceed the usable A4 area
+    (:data:`PAGE_MAX_X` × :data:`PAGE_MAX_Y`) the entire layout is
+    proportionally shrunk (preserving relative distances) until it fits.
     """
     if not gv_positions:
         return {}
@@ -329,6 +338,32 @@ def _gv_to_kicad(
         y_mm = origin_y + (max_gv_y - gv_y) * scale
         # Snap to 0.01 mm for readability
         result[node_name] = (round(x_mm, 2), round(y_mm, 2), None)
+
+    # --- Page-fit normalisation -------------------------------------------
+    # If any position lies outside the usable area, proportionally scale the
+    # whole layout down so that every position is within [origin_x..PAGE_MAX_X]
+    # × [origin_y..PAGE_MAX_Y].  This keeps relative topology intact.
+    max_x = max(pos[0] for pos in result.values())
+    max_y = max(pos[1] for pos in result.values())
+    avail_x = PAGE_MAX_X - origin_x  # available width after margins
+    avail_y = PAGE_MAX_Y - origin_y  # available height after margins
+    span_x = max_x - origin_x  # current width of laid-out content
+    span_y = max_y - origin_y  # current height of laid-out content
+    shrink = 1.0
+    if span_x > 0 and span_x > avail_x:
+        shrink = min(shrink, avail_x / span_x)
+    if span_y > 0 and span_y > avail_y:
+        shrink = min(shrink, avail_y / span_y)
+    if shrink < 1.0:
+        result = {
+            name: (
+                round(origin_x + (pos[0] - origin_x) * shrink, 2),
+                round(origin_y + (pos[1] - origin_y) * shrink, 2),
+                None,
+            )
+            for name, pos in result.items()
+        }
+
     return result
 
 
@@ -417,7 +452,8 @@ class GraphvizLayoutEngine:
         if missing:
             raise RuntimeError(
                 f"Graphviz 'dot' did not return positions for refs: {missing!r}.  "
-                "Try --layout heuristic if this circuit cannot be processed by Graphviz."
+                "Check the DOT graph for isolated nodes or unsupported syntax, "
+                "or file a bug with the circuit IR."
             )
 
         # Re-key from safe_id → original ref

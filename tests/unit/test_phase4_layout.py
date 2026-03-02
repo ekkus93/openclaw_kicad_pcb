@@ -121,10 +121,6 @@ def _sev(issues: list, code: str) -> LintSeverity | None:
 
 
 class TestLayoutEngineFactory:
-    def test_none_mode_returns_none_engine(self) -> None:
-        engine = make_layout_engine("none")
-        assert isinstance(engine, NoneLayoutEngine)
-
     def test_none_engine_places_all_refs_at_origin(self) -> None:
         ir = _minimal_ir(refs=["U1", "U2", "C3"])
         engine = NoneLayoutEngine()
@@ -135,21 +131,11 @@ class TestLayoutEngineFactory:
         ys = {pos[1] for pos in positions.values()}
         assert len(xs) == 1 and len(ys) == 1
 
-    def test_heuristic_mode_returns_heuristic_engine(self) -> None:
-        engine = make_layout_engine("heuristic")
-        assert isinstance(engine, HeuristicLayoutEngine)
-
-    def test_graphviz_mode_raises_without_dot(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """make_layout_engine('graphviz') raises RuntimeError when dot is absent."""
-        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: None)
-        with pytest.raises(RuntimeError, match="dot"):
-            make_layout_engine("graphviz")
-
-    def test_auto_mode_raises_when_no_dot(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """make_layout_engine('auto') raises RuntimeError when dot is absent."""
+    def test_raises_when_dot_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """make_layout_engine() raises RuntimeError when dot is absent."""
         monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: None)
         with pytest.raises(RuntimeError, match="dot.*not found"):
-            make_layout_engine("auto")
+            make_layout_engine()
 
 
 # ---------------------------------------------------------------------------
@@ -938,7 +924,7 @@ class TestGraphvizLayoutSeed:
         """make_layout_engine passes seed= to GraphvizLayoutEngine."""
         monkeypatch.setenv("GRAPHVIZ_DOT", "/usr/bin/dot")
         monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
-        engine = make_layout_engine("graphviz", seed=99)
+        engine = make_layout_engine(seed=99)
         assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
         assert engine._seed == 99  # noqa: SLF001
 
@@ -948,7 +934,7 @@ class TestGraphvizLayoutSeed:
         """make_layout_engine passes cache_path= to GraphvizLayoutEngine."""
         cache_file: Path = tmp_path / "c.json"
         monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
-        engine = make_layout_engine("graphviz", cache_path=cache_file)
+        engine = make_layout_engine(cache_path=cache_file)
         assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
         assert engine._cache_path == cache_file  # noqa: SLF001
 
