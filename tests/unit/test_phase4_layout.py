@@ -1399,3 +1399,217 @@ class TestBuildDotSourceSignalFlow:
         assert ranksep_lines, "ranksep directive missing from DOT source"
         val_str = ranksep_lines[0].split("=")[1].strip().rstrip(";")
         assert float(val_str) >= 1.5, f"ranksep too small: {val_str}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — Decoupling cap co-location (Rule §5)
+# ---------------------------------------------------------------------------
+
+
+def _decoupling_ir() -> CircuitIR:
+    """Return an IR with C1 as a decoupling cap (one signal net, one power net).
+
+    Topology:
+    * J1 -- IN_SIG --> R1 -- OUT_SIG --> U1
+    * C1: pin1 on VCC_LOCAL (signal, shared with U1), pin2 on GND (power)
+    * VCC_LOCAL is NOT in the power-net pattern so it is treated as a signal net.
+    """
+    components = [
+        ComponentIR(ref="J1", symbol="Device:Conn", value="Input"),
+        ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+        ComponentIR(ref="U1", symbol="Device:IC", value="OpAmp"),
+        ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+    ]
+    nets = [
+        NetIR(
+            name="IN_SIG",
+            pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="R1", pin="1")],
+        ),
+        NetIR(
+            name="OUT_SIG",
+            pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="U1", pin="1")],
+        ),
+        # VCC_LOCAL: shared between U1's power pin and C1's signal pin.
+        NetIR(
+            name="VCC_LOCAL",
+            pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="C1", pin="1")],
+        ),
+        # GND: power net — C1's second pin and J1's return.
+        NetIR(
+            name="GND",
+            pins=[PinRefIR(ref="J1", pin="2"), PinRefIR(ref="C1", pin="2")],
+        ),
+    ]
+    return CircuitIR(version="1", components=components, nets=nets)
+
+
+class TestFindDecouplingCaps:
+    """Unit tests for _find_decoupling_caps()."""
+
+    def test_cap_with_one_signal_pin_detected(self) -> None:
+        """C1 with VCC_LOCAL (signal) + GND (power) → detected as decoupling cap for U1."""
+        ir = _decoupling_ir()
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {"C1": "U1"}, (
+            f"Expected C1 to be mapped to U1 as decoupling cap, got: {result}"
+        )
+
+    def test_true_bypass_cap_not_detected(self) -> None:
+        """C1 with both VCC and GND (both power nets) → not treated as decoupling cap."""
+        components = [
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+        ]
+        nets = [
+            NetIR(name="VCC", pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="C1", pin="1")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="C1", pin="2")]),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {}, f"Expected empty map for true bypass cap, got: {result}"
+
+    def test_cap_with_only_connector_neighbour_not_detected(self) -> None:
+        """If only connectors share C1's signal net, no IC is associated → not detected."""
+        components = [
+            ComponentIR(ref="J1", symbol="Device:Conn", value="In"),
+            ComponentIR(ref="C1", symbol="Device:C", value="10n"),
+        ]
+        nets = [
+            # VCC_EXT is not a power net by regex, so it's a signal net.
+            NetIR(
+                name="VCC_EXT",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="C1", pin="1")],
+            ),
+            NetIR(name="GND", pins=[PinRefIR(ref="J1", pin="2"), PinRefIR(ref="C1", pin="2")]),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {}, (
+            f"Expected empty map when only connector shares signal net, got: {result}"
+        )
+
+    def test_non_capacitor_ref_not_detected(self) -> None:
+        """R1 (resistor) with one signal pin and one power pin → NOT detected as decoupling."""
+        components = [
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="Device:IC", value="OpAmp"),
+        ]
+        nets = [
+            NetIR(
+                name="VBIAS",
+                pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="U1", pin="1")],
+            ),
+            NetIR(name="GND", pins=[PinRefIR(ref="R1", pin="2")]),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {}, f"Expected empty map for resistor (not a capacitor), got: {result}"
+
+
+class TestDecouplingCapCoLocation:
+    """Integration tests for decoupling cap co-location in DOT source and post-snap."""
+
+    def test_invisible_edge_in_dot_source(self) -> None:
+        """DOT source must contain an invisible edge from the decoupling cap to its IC."""
+        ir = _decoupling_ir()
+        decoupling_map = _gv_mod.find_decoupling_caps(ir)
+        assert decoupling_map, "pre-condition: decoupling_map should not be empty"
+
+        src = _gv_mod.build_dot_source(ir, decoupling_map=decoupling_map)
+        # Expect: "  C1 -> U1 [style=invis, weight=10];"
+        assert "C1 -> U1 [style=invis" in src, (
+            f"invisible edge C1->U1 missing from DOT source.\nFull source:\n{src}"
+        )
+
+    def test_rank_same_subgraph_for_decoupling_pair(self) -> None:
+        """DOT source must contain a rank=same subgraph grouping the IC and its bypass cap."""
+        ir = _decoupling_ir()
+        decoupling_map = _gv_mod.find_decoupling_caps(ir)
+        src = _gv_mod.build_dot_source(ir, decoupling_map=decoupling_map)
+        # Look for the rank=same block that contains both U1 and C1.
+        assert "rank=same" in src, "rank=same directive missing"
+        # The pair U1 + C1 must appear inside a rank=same block.
+        lines = src.splitlines()
+        in_same = False
+        found_u1 = found_c1 = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped == "rank=same;":
+                in_same = True
+                found_u1 = found_c1 = False
+            elif stripped == "}" and in_same:
+                if found_u1 and found_c1:
+                    break
+                in_same = False
+            elif in_same:
+                if stripped == "U1;":
+                    found_u1 = True
+                if stripped == "C1;":
+                    found_c1 = True
+        assert found_u1 and found_c1, (
+            "No rank=same subgraph containing both U1 and C1 found in DOT source.\n"
+            f"Full source:\n{src}"
+        )
+
+    def test_post_snap_sets_cap_x_equal_to_ic_x(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """After compute_symbol_positions, decoupling cap x must equal its IC's x."""
+        ir = _decoupling_ir()
+
+        # Fake dot output: C1 at a different column than U1.
+        # Keys are safe_ids (same as refs for these component names).
+        fake_positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 50.80, None),
+            "R1": (55.0, 50.80, None),
+            "U1": (80.0, 60.0, None),
+            "C1": (35.0, 40.0, None),  # different x than U1 initially
+        }
+
+        def fake_run_dot(
+            self_engine: object, dot_source: str
+        ) -> dict[str, tuple[float, float, float | None]]:
+            return fake_positions
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")
+        result = engine.compute_symbol_positions(ir)
+
+        u1_x = result["U1"][0]
+        c1_x = result["C1"][0]
+        assert c1_x == pytest.approx(u1_x), (
+            f"C1.x ({c1_x}) should equal U1.x ({u1_x}) after decoupling-cap snap"
+        )
+
+    def test_post_snap_sets_cap_y_above_ic(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """After compute_symbol_positions, decoupling cap y = IC.y - GRID_ROW_MM."""
+        ir = _decoupling_ir()
+
+        fake_positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 50.80, None),
+            "R1": (55.0, 50.80, None),
+            "U1": (80.0, 60.0, None),
+            "C1": (35.0, 40.0, None),
+        }
+
+        def fake_run_dot(
+            self_engine: object, dot_source: str
+        ) -> dict[str, tuple[float, float, float | None]]:
+            return fake_positions
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")
+        result = engine.compute_symbol_positions(ir)
+
+        u1_y = result["U1"][1]
+        c1_y = result["C1"][1]
+        expected_y = u1_y - _gv_mod.GRID_ROW_MM
+        assert c1_y == pytest.approx(expected_y), (
+            f"C1.y ({c1_y}) should be U1.y - GRID_ROW_MM ({expected_y}), but got {c1_y}"
+        )
+
+    def test_dot_source_unchanged_without_decoupling_map(self) -> None:
+        """build_dot_source without decoupling_map must not contain invisible edges."""
+        ir = _decoupling_ir()
+        src = _gv_mod.build_dot_source(ir)  # no decoupling_map kwarg
+        assert "style=invis" not in src, (
+            "Unexpected invisible edge in DOT source when no decoupling_map was supplied"
+        )
