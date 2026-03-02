@@ -10,16 +10,23 @@ Main class
 
 Library helpers (standalone)
 -----------------------------
-:func:`read_lib_symbol_def`  — extract and rename a symbol from a ``.kicad_sym`` file.
-:func:`read_lib_symbol_pins` — extract pin numbers from a library symbol.
+:func:`read_lib_symbol_def`       — extract a single symbol (no extends chain).
+:func:`read_lib_symbol_def_chain` — load a symbol plus its full extends chain.
+:func:`read_lib_symbol_def_flat`  — load a fully-merged self-contained symbol.
+:func:`read_lib_symbol_pins`      — extract pin numbers from a library symbol.
+:func:`read_lib_symbol_pin_at`    — extract pin connection-point coordinates.
 
 AST emitters (IR → ListNode)
 -----------------------------
 These create the ``ListNode`` trees for schematic elements:
 
-:func:`make_symbol_node`  — placed symbol instance.
-:func:`make_wire_node`    — wire segment.
-:func:`make_label_node`   — net label.
+:func:`make_symbol_node`        — placed symbol instance.
+:func:`make_wire_node`          — wire segment.
+:func:`make_label_node`         — net label.
+:func:`make_global_label_node`  — global / power label.
+:func:`make_junction_node`      — junction dot.
+:func:`make_text_node`          — text annotation.
+:func:`make_managed_sheet_node` — OpenClaw managed sub-sheet.
 """
 
 from __future__ import annotations
@@ -173,6 +180,21 @@ def make_wire_node(x1: float, y1: float, x2: float, y2: float, wire_uuid: str) -
     )
 
 
+def _make_intersheet_prop() -> ListNode:
+    """Return the standard KiCad ``(property "Intersheet References" …)`` node.
+
+    Both ``(label …)`` and ``(global_label …)`` nodes require this property
+    for cross-sheet reference rendering.  Extracted to avoid duplication.
+    """
+    return L(
+        atom("property"),
+        string("Intersheet References"),
+        string("${INTERSHEET_REFS}"),
+        L(atom("at"), atom("0"), atom("0"), atom("0")),
+        L(atom("effects"), _effects_font(), L(atom("hide"), atom("yes"))),
+    )
+
+
 def make_label_node(name: str, x: float, y: float, label_uuid: str, *, angle: int = 0) -> ListNode:
     """Build a ``(label …)`` net-label node for a schematic.
 
@@ -189,18 +211,6 @@ def make_label_node(name: str, x: float, y: float, label_uuid: str, *, angle: in
         _effects_font(),
         L(atom("justify"), atom("left"), atom("bottom")),
     )
-    intersheet_effects = L(
-        atom("effects"),
-        _effects_font(),
-        L(atom("hide"), atom("yes")),
-    )
-    intersheet_prop = L(
-        atom("property"),
-        string("Intersheet References"),
-        string("${INTERSHEET_REFS}"),
-        L(atom("at"), atom("0"), atom("0"), atom("0")),
-        intersheet_effects,
-    )
     return L(
         atom("label"),
         string(name),
@@ -208,7 +218,7 @@ def make_label_node(name: str, x: float, y: float, label_uuid: str, *, angle: in
         L(atom("fields_autoplaced"), atom("yes")),
         effects,
         L(atom("uuid"), string(label_uuid)),
-        intersheet_prop,
+        _make_intersheet_prop(),
     )
 
 
@@ -271,13 +281,6 @@ def make_global_label_node(  # noqa: PLR0913
         _effects_font(),
         L(atom("justify"), atom("left")),
     )
-    intersheet_prop = L(
-        atom("property"),
-        string("Intersheet References"),
-        string("${INTERSHEET_REFS}"),
-        L(atom("at"), atom("0"), atom("0"), atom("0")),
-        L(atom("effects"), _effects_font(), L(atom("hide"), atom("yes"))),
-    )
     return L(
         atom("global_label"),
         string(name),
@@ -286,7 +289,7 @@ def make_global_label_node(  # noqa: PLR0913
         L(atom("fields_autoplaced"), atom("yes")),
         effects,
         L(atom("uuid"), string(label_uuid)),
-        intersheet_prop,
+        _make_intersheet_prop(),
     )
 
 
@@ -437,6 +440,48 @@ def _collect_pin_at(
     return result
 
 
+def _resolve_sym_chain(
+    lib_name: str,
+    sym_name: str,
+    symbols_dir: Path | None,
+) -> tuple[ListNode, list[str], bool] | None:
+    """Load a ``.kicad_sym`` file and walk the ``extends`` chain for *sym_name*.
+
+    Returns ``(lib_root, chain, complete)`` or ``None`` if the file cannot be
+    found or parsed.
+
+    * ``lib_root``  — parsed root of the ``.kicad_sym`` file.
+    * ``chain``     — symbol names in derived-first order (``sym_name`` first).
+      Empty when *sym_name* itself is absent from the library.
+    * ``complete``  — ``True`` when the walk ended at a root base symbol with
+      no further ``extends``; ``False`` when a missing node caused early
+      termination.  Callers that require the full chain should reject
+      ``complete=False`` results.
+    """
+    if symbols_dir is None:
+        symbols_dir = _DEFAULT_SYMBOLS_DIR
+    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
+    if not lib_file.exists():
+        return None
+    try:
+        lib_root = _parse_lib_file(lib_file)
+    except (ParseError, OSError):
+        return None
+    chain: list[str] = []
+    visited: set[str] = set()
+    current: str | None = sym_name
+    complete = True
+    while current is not None and current not in visited:
+        node = _find_lib_symbol(lib_root, current)
+        if node is None:
+            complete = False
+            break
+        visited.add(current)
+        chain.append(current)
+        current = _get_extends_name(node)
+    return lib_root, chain, complete
+
+
 def read_lib_symbol_def(
     lib_name: str,
     sym_name: str,
@@ -450,6 +495,12 @@ def read_lib_symbol_def(
     * Root symbol id renamed from ``"sym_name"`` → ``"lib_name:sym_name"``.
     * ``(id N)`` child items stripped (KiCad 9 schematics do not use them).
 
+    .. note::
+        This function does **not** follow ``(extends …)`` chains.  For symbols
+        that inherit from a base, use :func:`read_lib_symbol_def_chain` or
+        :func:`read_lib_symbol_def_flat` so the full inheritance tree is
+        present in the schematic's ``lib_symbols`` section.
+
     Returns ``None`` when the library file or symbol is not found, or if the
     file cannot be parsed.
 
@@ -460,30 +511,18 @@ def read_lib_symbol_def(
     symbols_dir: Directory containing ``.kicad_sym`` files.  Defaults to the
                  system KiCad symbols directory if ``None``.
     """
-    if symbols_dir is None:
-        symbols_dir = _DEFAULT_SYMBOLS_DIR
-
-    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
-    if not lib_file.exists():
+    resolved = _resolve_sym_chain(lib_name, sym_name, symbols_dir)
+    if resolved is None:
         return None
-    try:
-        lib_root = _parse_lib_file(lib_file)
-    except (ParseError, OSError):
-        return None
-
+    lib_root, _, _complete = resolved
     sym_node = _find_lib_symbol(lib_root, sym_name)
     if sym_node is None:
         return None
-
     # Rename root symbol: "R" → "Device:R".  Sub-symbol children keep their
     # short names ("R_0_1", "R_1_1") which KiCad requires.
-    full_id = f"{lib_name}:{sym_name}"
     new_items: list[Node] = list(sym_node.items)
-    new_items[1] = string(full_id)
-
+    new_items[1] = string(f"{lib_name}:{sym_name}")
     # Strip (id N) items recursively — not used in KiCad 9 schematics.
-    # In real KiCad library files (id N) appears both as a direct child of
-    # the symbol node AND nested inside (property ...) sub-nodes.
     return _strip_id_nodes(ListNode(tuple(new_items), NO_POS))
 
 
@@ -516,28 +555,12 @@ def read_lib_symbol_def_chain(
     sym_name:    Symbol name within the library (e.g. ``"NE5532"``).
     symbols_dir: Directory containing ``.kicad_sym`` files.
     """
-    if symbols_dir is None:
-        symbols_dir = _DEFAULT_SYMBOLS_DIR
-
-    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
-    if not lib_file.exists():
+    resolved = _resolve_sym_chain(lib_name, sym_name, symbols_dir)
+    if resolved is None:
         return []
-    try:
-        lib_root = _parse_lib_file(lib_file)
-    except (ParseError, OSError):
-        return []
-
-    # Walk extends chain: collect sym_names in derived-first order.
-    chain: list[str] = []
-    visited: set[str] = set()
-    current: str | None = sym_name
-    while current is not None and current not in visited:
-        node = _find_lib_symbol(lib_root, current)
-        if node is None:
-            return []  # broken chain — refuse to emit a partial result
-        visited.add(current)
-        chain.append(current)
-        current = _get_extends_name(node)
+    lib_root, chain, complete = resolved
+    if not chain or not complete:
+        return []  # symbol not found or extends chain is broken
 
     chain.reverse()  # base-first so KiCad can resolve references in order
 
@@ -545,7 +568,7 @@ def read_lib_symbol_def_chain(
     for name in chain:
         node = _find_lib_symbol(lib_root, name)
         if node is None:
-            return []  # shouldn't happen — already verified above
+            return []  # shouldn't happen — chain was verified complete
 
         # Qualify root-level id: "NE5532" → "Amplifier_Operational:NE5532".
         new_items_chain: list[Node] = list(node.items)
@@ -660,29 +683,10 @@ def read_lib_symbol_pins(
     sym_name:    Symbol name within the library (e.g. ``"R"``).
     symbols_dir: Directory containing ``.kicad_sym`` files.
     """
-    if symbols_dir is None:
-        symbols_dir = _DEFAULT_SYMBOLS_DIR
-
-    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
-    if not lib_file.exists():
+    resolved = _resolve_sym_chain(lib_name, sym_name, symbols_dir)
+    if resolved is None:
         return []
-    try:
-        lib_root = _parse_lib_file(lib_file)
-    except (ParseError, OSError):
-        return []
-
-    # Build extends chain (derived first) so we can collect pins from all
-    # ancestor symbols.  For non-extends symbols the chain has one entry.
-    chain: list[str] = []
-    visited: set[str] = set()
-    current: str | None = sym_name
-    while current is not None and current not in visited:
-        node = _find_lib_symbol(lib_root, current)
-        if node is None:
-            break
-        visited.add(current)
-        chain.append(current)
-        current = _get_extends_name(node)
+    lib_root, chain, _complete = resolved
 
     # Collect pins base-first.  Derived symbols may redefine pins from the
     # base; ``seen`` deduplicates by pin number so each appears only once.
@@ -725,28 +729,10 @@ def read_lib_symbol_pin_at(
     sym_name:    Symbol name within the library (e.g. ``"R"``).
     symbols_dir: Directory containing ``.kicad_sym`` files.
     """
-    if symbols_dir is None:
-        symbols_dir = _DEFAULT_SYMBOLS_DIR
-
-    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
-    if not lib_file.exists():
+    resolved = _resolve_sym_chain(lib_name, sym_name, symbols_dir)
+    if resolved is None:
         return {}
-    try:
-        lib_root = _parse_lib_file(lib_file)
-    except (ParseError, OSError):
-        return {}
-
-    # Build extends chain (derived first) so we can collect from base symbols.
-    chain: list[str] = []
-    visited: set[str] = set()
-    current: str | None = sym_name
-    while current is not None and current not in visited:
-        node = _find_lib_symbol(lib_root, current)
-        if node is None:
-            break
-        visited.add(current)
-        chain.append(current)
-        current = _get_extends_name(node)
+    lib_root, chain, _complete = resolved
 
     # Collect pin positions base-first; first occurrence wins (same as pins).
     result: dict[str, tuple[float, float, float]] = {}
@@ -758,6 +744,136 @@ def read_lib_symbol_pin_at(
             if pin_num not in result:
                 result[pin_num] = coords
     return result
+
+
+# ---------------------------------------------------------------------------
+# SchematicDoc helpers  (used by SchematicDoc methods; defined here so they
+# appear before the class that calls them)
+# ---------------------------------------------------------------------------
+
+
+def _get_sheet_uuid(sheet_node: ListNode) -> str | None:
+    """Extract ``(uuid "value")`` from a ``(sheet ...)`` node."""
+    for item in sheet_node.items:
+        if (
+            isinstance(item, ListNode)
+            and item.key == "uuid"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+        ):
+            return item.items[1].value
+    return None
+
+
+def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
+    """Return the value of a named ``(property ...)`` inside a ``(sheet ...)`` node."""
+    for child in sheet_node.items:
+        if not isinstance(child, ListNode) or child.key != "property":
+            continue
+        if len(child.items) < 3:
+            continue
+        name_node = child.items[1]
+        value_node = child.items[2]
+        if (
+            isinstance(name_node, StringNode)
+            and isinstance(value_node, StringNode)
+            and name_node.value == prop_name
+        ):
+            return value_node.value
+    return None
+
+
+def _parse_float_atom(node: Node, *, default: float) -> float:
+    """Parse a float from an :class:`AtomNode`, returning *default* on failure."""
+    if not isinstance(node, AtomNode):
+        return default
+    with contextlib.suppress(ValueError):
+        return float(node.value)
+    return default
+
+
+def _symbol_metadata(symbol_node: ListNode) -> dict[str, str | float]:
+    """Extract placement metadata from a placed symbol ``(symbol ...)`` AST node.
+
+    Returns a dict with keys ``ref``, ``symbol_id``, ``value``, ``uuid``,
+    ``unit`` (all ``str``) and ``x``, ``y`` (both ``float``).
+    """
+    symbol_id = ""
+    ref = ""
+    value = ""
+    sym_uuid = ""
+    unit = ""
+    x = 0.0
+    y = 0.0
+
+    for child in symbol_node.items:
+        if not isinstance(child, ListNode):
+            continue
+        if (
+            child.key == "lib_id"
+            and len(child.items) >= 2
+            and isinstance(child.items[1], StringNode)
+        ):
+            symbol_id = child.items[1].value
+        elif (
+            child.key == "uuid" and len(child.items) >= 2 and isinstance(child.items[1], StringNode)
+        ):
+            sym_uuid = child.items[1].value
+        elif child.key == "unit" and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
+            unit = child.items[1].value
+        elif child.key == "at" and len(child.items) >= 3:
+            x = _parse_float_atom(child.items[1], default=x)
+            y = _parse_float_atom(child.items[2], default=y)
+        elif child.key == "property" and len(child.items) >= 3:
+            name_node = child.items[1]
+            value_node = child.items[2]
+            if isinstance(name_node, StringNode) and isinstance(value_node, StringNode):
+                if name_node.value == "Reference":
+                    ref = value_node.value
+                elif name_node.value == "Value":
+                    value = value_node.value
+
+    return {
+        "ref": ref,
+        "symbol_id": symbol_id,
+        "value": value,
+        "uuid": sym_uuid,
+        "x": x,
+        "y": y,
+        "unit": unit,
+    }
+
+
+def _parse_binding_marker(marker: str) -> dict[str, str] | None:
+    """Parse an ``OpenClaw:bind=<JSON>`` marker string into a ``{ref, pin, net_name}`` dict.
+
+    Returns ``None`` when the marker is malformed or any required field is absent.
+    """
+    payload = marker.removeprefix("OpenClaw:bind=")
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    ref = data.get("ref")
+    pin = data.get("pin")
+    net_name = data.get("net_name")
+    # Check each field individually so mypy can narrow the types to `str`.
+    if not isinstance(ref, str) or not ref:
+        return None
+    if not isinstance(pin, str) or not pin:
+        return None
+    if not isinstance(net_name, str) or not net_name:
+        return None
+
+    return {
+        "ref": ref,
+        "pin": pin,
+        "net_name": net_name,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1149,117 +1265,3 @@ class SchematicDoc:
                 break
         items.insert(insertion_idx, node)
         self.root = ListNode(tuple(items), self.root.pos)
-
-
-def _get_sheet_uuid(sheet_node: ListNode) -> str | None:
-    """Extract ``(uuid "value")`` from a ``(sheet ...)`` node."""
-    for item in sheet_node.items:
-        if (
-            isinstance(item, ListNode)
-            and item.key == "uuid"
-            and len(item.items) >= 2
-            and isinstance(item.items[1], StringNode)
-        ):
-            return item.items[1].value
-    return None
-
-
-def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
-    """Return property value for a schematic ``(sheet ...)`` property name."""
-    for child in sheet_node.items:
-        if not isinstance(child, ListNode) or child.key != "property":
-            continue
-        if len(child.items) < 3:
-            continue
-        name_node = child.items[1]
-        value_node = child.items[2]
-        if (
-            isinstance(name_node, StringNode)
-            and isinstance(value_node, StringNode)
-            and name_node.value == prop_name
-        ):
-            return value_node.value
-    return None
-
-
-def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
-    symbol_id = ""
-    ref = ""
-    value = ""
-    sym_uuid = ""
-    unit = ""
-    x = 0.0
-    y = 0.0
-
-    for child in symbol_node.items:
-        if not isinstance(child, ListNode):
-            continue
-        if (
-            child.key == "lib_id"
-            and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
-        ):
-            symbol_id = child.items[1].value
-        elif (
-            child.key == "uuid" and len(child.items) >= 2 and isinstance(child.items[1], StringNode)
-        ):
-            sym_uuid = child.items[1].value
-        elif child.key == "unit" and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
-            unit = child.items[1].value
-        elif child.key == "at" and len(child.items) >= 3:
-            x = _parse_float_atom(child.items[1], default=x)
-            y = _parse_float_atom(child.items[2], default=y)
-        elif child.key == "property" and len(child.items) >= 3:
-            name_node = child.items[1]
-            value_node = child.items[2]
-            if isinstance(name_node, StringNode) and isinstance(value_node, StringNode):
-                if name_node.value == "Reference":
-                    ref = value_node.value
-                elif name_node.value == "Value":
-                    value = value_node.value
-
-    return {
-        "ref": ref,
-        "symbol_id": symbol_id,
-        "value": value,
-        "uuid": sym_uuid,
-        "x": x,
-        "y": y,
-        "unit": unit,
-    }
-
-
-def _parse_float_atom(node: Node, *, default: float) -> float:
-    if not isinstance(node, AtomNode):
-        return default
-    with contextlib.suppress(ValueError):
-        return float(node.value)
-    return default
-
-
-def _parse_binding_marker(marker: str) -> dict[str, str] | None:
-    payload = marker.removeprefix("OpenClaw:bind=")
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError:
-        return None
-
-    if not isinstance(data, dict):
-        return None
-
-    ref = data.get("ref")
-    pin = data.get("pin")
-    net_name = data.get("net_name")
-    # Check each field individually so mypy can narrow the types to `str`.
-    if not isinstance(ref, str) or not ref:
-        return None
-    if not isinstance(pin, str) or not pin:
-        return None
-    if not isinstance(net_name, str) or not net_name:
-        return None
-
-    return {
-        "ref": ref,
-        "pin": pin,
-        "net_name": net_name,
-    }
