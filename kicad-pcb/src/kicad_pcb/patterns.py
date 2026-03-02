@@ -47,7 +47,7 @@ from .preflight import (
     check_symbol_accessible,
     collect_existing_refs,
 )
-from .sch_doc import SchematicDoc, read_lib_symbol_def_chain, read_lib_symbol_pins
+from .sch_doc import SchematicDoc, read_lib_symbol_def_flat, read_lib_symbol_pins
 from .sexpr.builder import L, atom, string
 
 # ---------------------------------------------------------------------------
@@ -134,10 +134,9 @@ def _place_component(  # noqa: PLR0913
         # the symbol library is unavailable (e.g. in dry-run / offline tests).
         pin_nums = ["1", "2"]
 
-    sym_defs = read_lib_symbol_def_chain(lib_name, sym_name, symbols_dir=symbols_dir)
-    if sym_defs:
-        for sym_def in sym_defs:
-            doc.embed_lib_symbol(sym_def)
+    sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=symbols_dir)
+    if sym_def is not None:
+        doc.embed_lib_symbol(sym_def)
     else:
         # Library not available (offline / CI without KiCad installed).
         # Embed a minimal stub so that SCH009 lint (lib_id not in lib_symbols)

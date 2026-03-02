@@ -324,7 +324,7 @@ class TestGetSetSymbolsDirConfig:
 
 class TestCmdAddComponentSymbolDir:
     """cmd_add_component must pass the discovered (or explicit) symbols_dir
-    down to read_lib_symbol_pins / read_lib_symbol_def_chain."""
+    down to read_lib_symbol_pins / read_lib_symbol_def_flat."""
 
     def test_explicit_symbols_dir_passed_through(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -337,14 +337,13 @@ class TestCmdAddComponentSymbolDir:
             captured["pins_dir"] = symbols_dir
             return ["1", "2"]
 
-        def fake_read_def(lib: str, sym: str, *, symbols_dir: Path) -> list[str]:
+        def fake_read_def(lib: str, sym: str, *, symbols_dir: Path) -> None:
             captured["def_dir"] = symbols_dir
-            return []
 
         sym_dir = _make_sym_dir(tmp_path)
 
         monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins)
-        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def_chain", fake_read_def)
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def_flat", fake_read_def)
 
         # Stub out get_current_project and mutate_and_validate_sch.
         sch_file = tmp_path / "board.kicad_sch"
@@ -387,12 +386,11 @@ class TestCmdAddComponentSymbolDir:
             captured["pins_dir"] = symbols_dir
             return ["1", "2"]
 
-        def fake_read_def(lib: str, sym: str, *, symbols_dir: Path) -> list[str]:
+        def fake_read_def(lib: str, sym: str, *, symbols_dir: Path) -> None:
             captured["def_dir"] = symbols_dir
-            return []
 
         monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_pins", fake_read_pins)
-        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def_chain", fake_read_def)
+        monkeypatch.setattr("kicad_pcb.commands.sch.read_lib_symbol_def_flat", fake_read_def)
         # Make discover_symbols_dir return our tmp sym_dir.
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.discover_symbols_dir",
