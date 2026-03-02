@@ -9,15 +9,13 @@ Covers two main areas:
       ``compile-netlist``, and ``add-component`` all expose ``--strict``; and
       ``compile-netlist`` also exposes ``--layout``.
 
-7.2  Graphviz fallback diagnostics
-    - TestGraphvizFallbackInfo  : ``GraphvizLayoutEngine.last_fallback_info`` is
-      ``None`` initially and is populated with ``command``, ``error``, and
-      ``fallback`` keys when ``dot`` fails.
-    - TestWriteSymbolsFallback  : ``_write_symbols`` returns a 4-tuple whose
-      fourth element carries the fallback info (or ``None`` when no fallback).
-    - TestFallbackWarningInResult: end-to-end: when graphviz is forced to fail,
-      ``cmd_new_from_netlist`` includes a ``GRAPHVIZ_LAYOUT_FALLBACK`` warning
-      in the ``ApplyNetlistResult``.
+7.2  Graphviz mandatory (no silent fallback)
+    - TestGraphvizFailsLoud     : ``GraphvizLayoutEngine`` raises
+      ``RuntimeError`` when ``dot`` fails or returns no positions.
+    - TestWriteSymbolsThreeTuple: ``_write_symbols`` returns a 3-tuple.
+    - TestGraphvizRequiredEndToEnd: end-to-end: when ``make_layout_engine``
+      returns an engine with a broken ``dot`` path, ``_write_symbols`` raises
+      ``RuntimeError`` (no silent warn/fallback).
 """
 
 from __future__ import annotations
@@ -155,64 +153,57 @@ class TestCLIParsers:
 
 
 # ---------------------------------------------------------------------------
-# 7.2  Graphviz fallback diagnostics
+# 7.2  Graphviz mandatory (no silent fallback)
 # ---------------------------------------------------------------------------
 
 
-class TestGraphvizFallbackInfo:
-    """GraphvizLayoutEngine.last_fallback_info lifecycle."""
+class TestGraphvizFailsLoud:
+    """GraphvizLayoutEngine raises RuntimeError when dot fails — no silent fallback."""
 
     def _make_engine(self) -> GraphvizLayoutEngine:
         return GraphvizLayoutEngine(dot_path="/nonexistent/dot")
 
-    def test_initial_value_is_none(self) -> None:
-        eng = self._make_engine()
-        assert eng.last_fallback_info is None
-
-    def test_fallback_info_populated_on_failure(self) -> None:
-        """When dot fails, last_fallback_info is set with command/error/fallback keys."""
+    def test_raises_on_dot_failure(self) -> None:
+        """When dot binary does not exist, compute_symbol_positions raises RuntimeError."""
         eng = self._make_engine()
         ir = CircuitIR(
             version="1",
             components=[ComponentIR(ref="R1", symbol="Device:R")],
             nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
         )
-        # dot does not exist → run will fail; engine falls back to heuristic.
-        eng.compute_symbol_positions(ir)
-
-        assert eng.last_fallback_info is not None
-        info = eng.last_fallback_info
-        assert "command" in info
-        assert "error" in info
-        assert info.get("fallback") == "heuristic"
-        # command string should contain the dot path and -Tplain
-        assert "-Tplain" in info["command"]
-
-    def test_fallback_info_none_when_no_failure(self) -> None:
-        """If the engine succeeds (mocked), last_fallback_info remains None."""
-        eng = self._make_engine()
-        ir = CircuitIR(
-            version="1",
-            components=[ComponentIR(ref="R1", symbol="Device:R")],
-            nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
-        )
-        # Patch _run_dot to succeed and return a valid position dict.
-        with patch.object(eng, "_run_dot", return_value={"R1": (10.0, 20.0, None)}):
+        with pytest.raises(RuntimeError, match="dot.*failed|dot.*not found"):
             eng.compute_symbol_positions(ir)
 
-        assert eng.last_fallback_info is None
+    def test_no_last_fallback_info_attribute(self) -> None:
+        """GraphvizLayoutEngine no longer exposes last_fallback_info."""
+        eng = self._make_engine()
+        assert not hasattr(eng, "last_fallback_info"), (
+            "last_fallback_info should have been removed; Graphviz is now mandatory"
+        )
+
+    def test_succeeds_when_dot_mocked(self) -> None:
+        """When _run_dot is mocked to succeed, compute_symbol_positions returns positions."""
+        eng = self._make_engine()
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="R1", symbol="Device:R")],
+            nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
+        )
+        with patch.object(eng, "_run_dot", return_value={"R1": (10.0, 20.0, None)}):
+            result = eng.compute_symbol_positions(ir)
+        assert "R1" in result
 
 
 # ---------------------------------------------------------------------------
-# 7.2  _write_symbols returns 4-tuple
+# 7.2  _write_symbols returns 3-tuple
 # ---------------------------------------------------------------------------
 
 
-class TestWriteSymbolsFourTuple:
-    """_write_symbols must return a 4-tuple (positions, endpoints, missing, fallback_info)."""
+class TestWriteSymbolsThreeTuple:
+    """_write_symbols must return a 3-tuple (positions, endpoints, missing)."""
 
-    def test_returns_four_elements(self, tmp_path: Path) -> None:
-        """The return value of _write_symbols is a 4-element tuple."""
+    def test_returns_three_elements(self, tmp_path: Path) -> None:
+        """The return value of _write_symbols is a 3-element tuple."""
         from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
         from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
         from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
@@ -256,41 +247,67 @@ class TestWriteSymbolsFourTuple:
         )
 
         assert isinstance(result, tuple), "Expected a tuple return value"
-        assert len(result) == 4, f"Expected 4-tuple, got {len(result)}-tuple"
-        # Fourth element is fallback_info: None for heuristic (no fallback)
-        _positions, _endpoints, _missing, fallback_info = result
-        assert fallback_info is None, "Heuristic engine should not set fallback_info"
+        assert len(result) == 3, f"Expected 3-tuple, got {len(result)}-tuple"
+        _positions, _endpoints, _missing = result
 
 
 # ---------------------------------------------------------------------------
-# 7.2  GRAPHVIZ_LAYOUT_FALLBACK warning in result
+# 7.2  Graphviz required end-to-end
 # ---------------------------------------------------------------------------
 
 
-class TestFallbackWarningInResult:
-    """When graphviz fails, ApplyNetlistResult includes a GRAPHVIZ_LAYOUT_FALLBACK warning."""
+class TestGraphvizRequiredEndToEnd:
+    """When the engine's dot path is broken, _write_symbols raises RuntimeError."""
 
-    def test_fallback_warning_present_when_dot_fails(self, tmp_path: Path) -> None:
-        """End-to-end: forced graphviz failure → GRAPHVIZ_LAYOUT_FALLBACK in warnings.
-
-        We patch make_layout_engine (as imported in commands.netlist) to return a
-        GraphvizLayoutEngine pointing at a nonexistent binary so the test is
-        deterministic regardless of whether graphviz is installed.
+    def test_broken_dot_raises_runtime_error(self, tmp_path: Path) -> None:
+        """End-to-end: a GraphvizLayoutEngine with a bad dot path raises RuntimeError
+        from _write_symbols — no silent GRAPHVIZ_LAYOUT_FALLBACK warning.
         """
-        bad_engine = GraphvizLayoutEngine(dot_path="/nonexistent/dot")
-        with patch("kicad_pcb.commands.netlist.make_layout_engine", return_value=bad_engine):
-            result = _new_from_netlist(tmp_path, _minimal_ir_payload(), layout="heuristic")
+        from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
+        from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
+        from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
+        from kicad_pcb.sexpr.nodes import ListNode  # noqa: PLC0415
+        from kicad_pcb.symbol_index import SymbolIndex  # noqa: PLC0415
 
-        codes = [w.get("code") for w in result.warnings]  # type: ignore[attr-defined]
-        assert "GRAPHVIZ_LAYOUT_FALLBACK" in codes, (
-            f"Expected GRAPHVIZ_LAYOUT_FALLBACK in warnings; got: {codes}"
+        minimal_sch = (
+            "(kicad_sch (version 20230121) (generator eeschema)\n"
+            '  (uuid "00000000-0000-0000-0000-000000000001")\n'
+            '  (paper "A4"))\n'
         )
-        w = next(w for w in result.warnings if w.get("code") == "GRAPHVIZ_LAYOUT_FALLBACK")  # type: ignore[attr-defined]
-        assert "command" in w.get("details", {})
-        assert "error" in w.get("details", {})
-        assert w["details"]["fallback"] == "heuristic"
+        root = _parse(minimal_sch)
+        assert isinstance(root, ListNode)
+        doc = SchematicDoc(root)
 
-    def test_no_fallback_warning_with_heuristic_engine(self, tmp_path: Path) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="R1", symbol="Device:R")],
+            nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
+        )
+        index = SymbolIndex(symbols_dir=None)
+        stats: dict = {
+            "symbols": 0,
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+        bad_engine = GraphvizLayoutEngine(dot_path="/nonexistent/dot")
+        with (
+            patch("kicad_pcb.commands.netlist.make_layout_engine", return_value=bad_engine),
+            pytest.raises(RuntimeError, match="dot.*failed|dot.*not found"),
+        ):
+            _write_symbols(
+                doc=doc,
+                ir=ir,
+                symbol_index=index,
+                project_name="test",
+                stats=stats,
+                layout_mode="graphviz",
+                cache_path=None,
+            )
+
+    def test_no_fallback_warning_code_with_heuristic(self, tmp_path: Path) -> None:
         """Using layout=heuristic never produces a GRAPHVIZ_LAYOUT_FALLBACK warning."""
         result = _new_from_netlist(tmp_path, _minimal_ir_payload(), layout="heuristic")
         codes = [w.get("code") for w in result.warnings]  # type: ignore[attr-defined]

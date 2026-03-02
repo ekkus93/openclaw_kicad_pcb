@@ -13,8 +13,9 @@ Public API
 Mode semantics
 --------------
 ``"auto"``
-    Try Graphviz first (``dot`` found via :envvar:`GRAPHVIZ_DOT` or :data:`PATH`).
-    Falls back to the heuristic BFS engine if ``dot`` is not discoverable.
+    Use Graphviz (``dot`` found via :envvar:`GRAPHVIZ_DOT` or :data:`PATH`).
+    Raises :class:`RuntimeError` if ``dot`` is not found.  Equivalent to
+    ``"graphviz"`` mode.
 ``"graphviz"``
     Always use :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.
     Raises :class:`RuntimeError` if ``dot`` is not found.
@@ -143,8 +144,9 @@ def make_layout_engine(
     from .graphviz_layout import GraphvizLayoutEngine, find_dot_binary  # noqa: PLC0415
 
     dot = find_dot_binary()
-    if dot:
-        return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path)
-    from .layout import HeuristicLayoutEngine  # noqa: PLC0415
-
-    return HeuristicLayoutEngine()
+    if not dot:
+        raise RuntimeError(
+            "Graphviz 'dot' binary not found.  "
+            "Set the GRAPHVIZ_DOT environment variable or install graphviz, then retry."
+        )
+    return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path)

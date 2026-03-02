@@ -462,7 +462,7 @@ def _apply_netlist_to_project(
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
 
-        symbol_positions, pin_endpoints, symbol_defs_missing, layout_fallback = _write_symbols(
+        symbol_positions, pin_endpoints, symbol_defs_missing = _write_symbols(
             doc=doc,
             ir=ir,
             symbol_index=symbol_index,
@@ -471,18 +471,6 @@ def _apply_netlist_to_project(
             layout_mode=request.layout_mode,
             cache_path=project.path / "openclaw_layout_cache.json",
         )
-        if layout_fallback is not None:
-            warnings.append(
-                {
-                    "code": "GRAPHVIZ_LAYOUT_FALLBACK",
-                    "message": (
-                        "Graphviz layout failed; using heuristic fallback. "
-                        f"Command: {layout_fallback['command']!r}. "
-                        f"Error: {layout_fallback['error']}"
-                    ),
-                    "details": layout_fallback,
-                }
-            )
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
         write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
 
@@ -604,7 +592,6 @@ def _write_symbols(  # noqa: PLR0913
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
     set[str],
-    dict[str, str] | None,
 ]:
     """Place all symbols from *ir* into *doc*.
 
@@ -626,7 +613,6 @@ def _write_symbols(  # noqa: PLR0913
 
     engine = make_layout_engine(layout_mode, cache_path=cache_path)
     raw_layout = engine.compute_symbol_positions(ir)
-    fallback_info: dict[str, str] | None = getattr(engine, "last_fallback_info", None)
     # Build plain (x, y) map for coordinate lookup and orientation computation.
     layout: dict[str, tuple[float, float]] = {
         ref: (pos[0], pos[1]) for ref, pos in raw_layout.items()
@@ -684,7 +670,7 @@ def _write_symbols(  # noqa: PLR0913
 
         stats["symbols"] += 1
 
-    return symbol_positions, pin_endpoints, symbol_defs_missing, fallback_info
+    return symbol_positions, pin_endpoints, symbol_defs_missing
 
 
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:

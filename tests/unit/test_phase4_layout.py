@@ -145,12 +145,11 @@ class TestLayoutEngineFactory:
         with pytest.raises(RuntimeError, match="dot"):
             make_layout_engine("graphviz")
 
-    def test_auto_mode_falls_back_to_heuristic_when_no_dot(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_auto_mode_raises_when_no_dot(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """make_layout_engine('auto') raises RuntimeError when dot is absent."""
         monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: None)
-        engine = make_layout_engine("auto")
-        assert isinstance(engine, HeuristicLayoutEngine)
+        with pytest.raises(RuntimeError, match="dot.*not found"):
+            make_layout_engine("auto")
 
 
 # ---------------------------------------------------------------------------

@@ -143,8 +143,8 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="auto",
         dest="layout",
         help=(
-            "Schematic layout engine (default: auto — Graphviz if available, "
-            "else heuristic signal-flow)"
+            "Schematic layout engine (default: auto — requires Graphviz dot; "
+            "use heuristic for dot-free layout)"
         ),
     )
     p_apply.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
@@ -185,8 +185,8 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="auto",
         dest="layout",
         help=(
-            "Schematic layout engine (default: auto — Graphviz if available, "
-            "else heuristic signal-flow)"
+            "Schematic layout engine (default: auto — requires Graphviz dot; "
+            "use heuristic for dot-free layout)"
         ),
     )
     p_new_netlist.add_argument(
@@ -299,8 +299,8 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="auto",
         dest="layout",
         help=(
-            "Schematic layout engine (default: auto — Graphviz if available, "
-            "else heuristic signal-flow)"
+            "Schematic layout engine (default: auto — requires Graphviz dot; "
+            "use heuristic for dot-free layout)"
         ),
     )
     p_compile.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
