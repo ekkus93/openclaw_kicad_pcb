@@ -1722,3 +1722,26 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - CODE_REVIEW5_TODO.md: all [ ] items ticked including Definition of Done.
 - Test suite: 1453 passed, 2 skipped (up from 1439). Commit f8e9965.
 - MILESTONE COMPLETE: all phases 0-7 done; all DoD criteria met.
+
+## 2025-07-13 - Graphviz mandatory; LAY004 page-bounds fix
+
+- Fixed LAY004 bug: MAX_ROWS_PER_COL was 10 (row 8 at 213mm > A4 210mm);
+  replaced with derived constant `int((PAGE_HEIGHT_MM - ORIGIN_Y) / GRID_ROW_MM) = 7`.
+  Commit 5c68a1e.
+- Made Graphviz mandatory (no silent heuristic fallback). Commit 6e44b3f.
+  - GraphvizLayoutEngine.compute_symbol_positions raises RuntimeError when dot
+    fails, returns no positions, or returns incomplete positions.
+  - make_layout_engine("auto") raises RuntimeError when dot not found (equivalent
+    to "graphviz" mode). No more HeuristicLayoutEngine fallback in auto mode.
+  - Removed last_fallback_info attribute and GRAPHVIZ_LAYOUT_FALLBACK warning
+    from _write_symbols (now returns 3-tuple, not 4-tuple).
+  - CLI help text updated to reflect dot requirement.
+  - All test_netlist_commands tests now pass layout="heuristic" explicitly.
+  - test_phase4_layout: renamed test_auto_mode_falls_back_to_heuristic_when_no_dot
+    → test_auto_mode_raises_when_no_dot.
+  - test_phase7_ux: replaced TestGraphvizFallbackInfo/TestWriteSymbolsFourTuple/
+    TestFallbackWarningInResult with TestGraphvizFailsLoud/TestWriteSymbolsThreeTuple/
+    TestGraphvizRequiredEndToEnd.
+  - graphviz is NOT installed on this dev machine (sudo apt install graphviz to install).
+- Test suite: 1453 passed, 2 skipped. Both skips are TestGraphvizPositionStability
+  (skip when dot absent — quality tests, not error-path tests).
