@@ -53,10 +53,13 @@ _log = logging.getLogger(__name__)
 ORIGIN_X: float = 30.48  # mm — left margin on an A4 page
 ORIGIN_Y: float = 50.80  # mm — top margin on an A4 page
 
-# Scale factor: how many mm one Graphviz "point" unit represents.
-# Graphviz internal units are points (72 pt/inch). A typical value of ~3.5
-# gives comfortable spacing on an A4 sheet.
-SCALE_MM_PER_GV: float = 3.5
+# Scale factor: mm per one "graph unit" in dot -Tplain output.
+# dot -Tplain reports node centre coordinates in inches (not points).
+# _LAY_SYMBOL_HALF_SIZE_MM = 5.08 mm, so symbols need ≥ 10.16 mm
+# centre-to-centre to avoid LAY003.  With nodesep=0.5 + node height=0.5
+# the minimum same-rank separation is 1.0 inch, so:
+#   SCALE ≥ 10.16 mm / 1.0 in  →  use 20 mm/in for comfortable margins.
+SCALE_MM_PER_GV: float = 20.0
 
 # Nets whose names match these patterns are treated as power rails and
 # excluded from the main bipartite graph to avoid hub explosion.
