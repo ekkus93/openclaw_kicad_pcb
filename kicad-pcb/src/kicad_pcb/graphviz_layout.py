@@ -39,6 +39,7 @@ import re
 import shutil
 import subprocess
 from collections import deque
+from itertools import combinations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -377,6 +378,36 @@ def _tier_rank_keyword(tier_index: int, n_tiers: int) -> str:
     return "same"
 
 
+def _compute_net_weights(signal_nets: list) -> dict[str, int]:
+    """Return ``{net_name: weight}`` for each signal net.
+
+    Weight is ``5`` when at least one pair of components sharing this net also
+    shares **2 or more signal nets** in total.  This indicates a tight
+    functional coupling (e.g. two pins of an op-amp feedback network, or
+    series/shunt resistor pairs).  Higher weights tell Graphviz to prefer
+    short, uncrossed connections between those component pairs.
+
+    All other nets get weight ``1`` (Graphviz default).
+    """
+    # Map (ref_a, ref_b) → number of signal nets they share.
+    pair_net_count: dict[tuple[str, str], int] = {}
+    for net in signal_nets:
+        refs = sorted({p.ref for p in net.pins})
+        for a, b in combinations(refs, 2):
+            key = (a, b)
+            pair_net_count[key] = pair_net_count.get(key, 0) + 1
+
+    result: dict[str, int] = {}
+    for net in signal_nets:
+        refs = sorted({p.ref for p in net.pins})
+        max_shared = max(
+            (pair_net_count.get((a, b), 0) for a, b in combinations(refs, 2)),
+            default=0,
+        )
+        result[net.name] = 5 if max_shared >= 2 else 1
+    return result
+
+
 def _emit_decoupling_constraints(
     lines: list[str],
     decoupling_map: dict[str, str],
@@ -430,6 +461,7 @@ def _build_dot_source(
         "  rankdir=LR;",
         "  nodesep=0.5;",
         "  ranksep=1.5;",
+        "  ordering=out;",
         "  node [shape=box, width=0.8, height=0.5, fixedsize=true];",
     ]
 
@@ -437,6 +469,9 @@ def _build_dot_source(
 
     # Collect signal nets (non-power, ≥2 pins).
     signal_nets = [net for net in ir.nets if not _is_power_net(net.name) and len(net.pins) >= 2]
+
+    # Compute per-net edge weights: boost to 5 for tightly-coupled pairs.
+    net_weights = _compute_net_weights(signal_nets)
 
     # Categorise: power-only refs have no signal net connections.
     signal_refs: set[str] = set()
@@ -482,9 +517,11 @@ def _build_dot_source(
         # Sort by (tier, ref) for a stable, deterministic ordering.
         sorted_pins = sorted(pin_refs, key=lambda r: (tiers.get(r, 0), r))
         upstream = sorted_pins[0]
-        lines.append(f"  {_safe_id(upstream)} -> {net_id};")
+        w = net_weights.get(net.name, 1)
+        weight_attr = f" [weight={w}]" if w > 1 else ""
+        lines.append(f"  {_safe_id(upstream)} -> {net_id}{weight_attr};")
         for downstream in sorted_pins[1:]:
-            lines.append(f"  {net_id} -> {_safe_id(downstream)};")
+            lines.append(f"  {net_id} -> {_safe_id(downstream)}{weight_attr};")
 
     # Power-only refs in a subgraph at the right so they don't disrupt flow.
     if power_only_refs:
@@ -782,6 +819,7 @@ class GraphvizLayoutEngine:
 __all__ = [
     "assign_bfs_tiers",
     "build_dot_source",
+    "compute_net_weights",
     "emit_decoupling_constraints",
     "find_decoupling_caps",
     "find_dot_binary",
@@ -800,6 +838,7 @@ __all__ = [
 # Expose internals for unit tests under public names
 assign_bfs_tiers = _assign_bfs_tiers
 build_dot_source = _build_dot_source
+compute_net_weights = _compute_net_weights
 emit_decoupling_constraints = _emit_decoupling_constraints
 find_decoupling_caps = _find_decoupling_caps
 is_capacitor = _is_capacitor
