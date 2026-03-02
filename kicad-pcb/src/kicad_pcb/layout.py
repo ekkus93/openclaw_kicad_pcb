@@ -271,6 +271,74 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
     return positions
 
 
+def compute_affinity_groups(
+    ir: CircuitIR,
+    tiers: dict[str, int],
+) -> dict[int, list[str]]:
+    """Return ``{tier_index: [ref, …]}`` sorted by signal affinity to the previous tier.
+
+    For each tier, components are ordered so those most strongly coupled to
+    any component in the **previous tier** appear first (toward the top of the
+    schematic).  Tier 0 components are sorted alphabetically as a stable base.
+
+    Affinity between components *A* and *B* is::
+
+        affinity(A, B) = |shared_signal_nets(A, B)| / min(|signal_nets(A)|, |signal_nets(B)|)
+
+    Power/ground nets are excluded from the affinity calculation.
+
+    Parameters
+    ----------
+    ir:
+        Circuit IR.
+    tiers:
+        ``{ref: tier_index}`` mapping — typically from ``assign_bfs_tiers()``.
+
+    Returns
+    -------
+    dict[int, list[str]]
+        ``{tier_index: [ref, …]}`` sorted by descending affinity to the
+        previous tier (alphabetical tiebreak within same score).
+    """
+    # Accumulate signal nets per ref.
+    ref_nets: dict[str, set[str]] = defaultdict(set)
+    for net in ir.nets:
+        if _is_power_net_layout(net.name):
+            continue
+        for pin in net.pins:
+            ref_nets[pin.ref].add(net.name)
+
+    def _affinity(a: str, b: str) -> float:
+        nets_a = ref_nets.get(a, set())
+        nets_b = ref_nets.get(b, set())
+        shared = len(nets_a & nets_b)
+        denom = min(len(nets_a), len(nets_b))
+        if denom == 0:
+            return 0.0
+        return shared / denom
+
+    # Group refs by tier.
+    tier_groups: dict[int, list[str]] = defaultdict(list)
+    for ref, tier in tiers.items():
+        tier_groups[tier].append(ref)
+
+    result: dict[int, list[str]] = {}
+    sorted_tiers = sorted(tier_groups)
+    for i, tier in enumerate(sorted_tiers):
+        members = tier_groups[tier]
+        if i == 0:
+            # First tier: stable alphabetical sort — no previous tier to compare.
+            result[tier] = sorted(members)
+            continue
+        prev_tier = sorted_tiers[i - 1]
+        prev_members = result.get(prev_tier, [])
+        # Score = sum of affinities to all previous-tier members.
+        scores = {ref: sum(_affinity(ref, p) for p in prev_members) for ref in members}
+        result[tier] = sorted(members, key=lambda r: (-scores[r], r))
+
+    return dict(result)
+
+
 def _classify_passive_pins(
     ir: CircuitIR,
 ) -> tuple[frozenset[str], frozenset[str]]:
