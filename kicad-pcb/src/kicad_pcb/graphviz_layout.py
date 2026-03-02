@@ -67,6 +67,10 @@ PAGE_MAX_Y: float = 200.0  # mm (210 - 10)
 #   SCALE ≥ 10.16 mm / 1.0 in  →  use 20 mm/in for comfortable margins.
 SCALE_MM_PER_GV: float = 20.0
 
+# Vertical spacing between a decoupling capacitor and its associated IC.
+# One KiCad symbol row = 300 mil = 7.62 mm (KiCad default body height).
+GRID_ROW_MM: float = 7.62
+
 # Nets whose names match these patterns are treated as power rails and
 # excluded from the main bipartite graph to avoid hub explosion.
 _POWER_NET_PATTERN = re.compile(
@@ -213,12 +217,69 @@ def find_dot_source() -> tuple[str, str] | None:
 # ---------------------------------------------------------------------------
 
 _CONNECTOR_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
+_CAPACITOR_PREFIXES: tuple[str, ...] = ("C",)
 
 
 def _is_connector(ref: str) -> bool:
     """Return True if *ref* is a connector designator (``J*``, ``P*``, etc.)."""
     r = ref.upper()
     return any(r.startswith(p) for p in _CONNECTOR_PREFIXES)
+
+
+def _is_capacitor(ref: str) -> bool:
+    """Return True if *ref* is a capacitor designator (``C*``)."""
+    r = ref.upper()
+    return any(r.startswith(p) for p in _CAPACITOR_PREFIXES)
+
+
+def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
+    """Return ``{cap_ref: ic_ref}`` for decoupling/bypass capacitors.
+
+    A decoupling cap is a ``C*`` component where **exactly one** pin is on a
+    non-power signal net and the remaining pin(s) are on power nets.  The
+    associated IC is the first *non-connector, non-capacitor* component that
+    shares the same non-power net as the cap.
+
+    This handles bypass caps wired as::
+
+        VCC_LOCAL(signal net) ─── [C1] ─── GND(power net)
+
+    where ``VCC_LOCAL`` is a local distribution net not matched by
+    :func:`_is_power_net` (e.g. the IC's filtered supply net).  True
+    VCC→GND caps (both pins on recognised power nets) are left in
+    ``cluster_power``.
+    """
+    # Build: ref → list of net names for that ref.
+    ref_to_nets: dict[str, list[str]] = {}
+    # Build: net_name → list of refs participating in that net.
+    net_to_refs: dict[str, list[str]] = {}
+
+    for net in ir.nets:
+        for pin in net.pins:
+            ref_to_nets.setdefault(pin.ref, []).append(net.name)
+            net_to_refs.setdefault(net.name, []).append(pin.ref)
+
+    result: dict[str, str] = {}
+    for comp in ir.components:
+        if not _is_capacitor(comp.ref):
+            continue
+        nets_for_cap = ref_to_nets.get(comp.ref, [])
+        signal_nets_for_cap = [n for n in nets_for_cap if not _is_power_net(n)]
+        power_nets_for_cap = [n for n in nets_for_cap if _is_power_net(n)]
+        if len(signal_nets_for_cap) != 1 or not power_nets_for_cap:
+            continue
+        # Exactly one signal net — find the IC on that shared net.
+        signal_net = signal_nets_for_cap[0]
+        for neighbor_ref in net_to_refs.get(signal_net, []):
+            if neighbor_ref == comp.ref:
+                continue
+            if _is_connector(neighbor_ref) or _is_capacitor(neighbor_ref):
+                continue
+            # First non-connector, non-capacitor neighbor → treated as the IC.
+            result[comp.ref] = neighbor_ref
+            break
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +377,35 @@ def _tier_rank_keyword(tier_index: int, n_tiers: int) -> str:
     return "same"
 
 
-def _build_dot_source(ir: CircuitIR) -> str:
+def _emit_decoupling_constraints(
+    lines: list[str],
+    decoupling_map: dict[str, str],
+) -> None:
+    """Append invisible-edge + rank=same lines to *lines* for *decoupling_map*.
+
+    Emitted for each ``{cap_ref: ic_ref}`` pair:
+
+    * An invisible directed edge ``cap → ic [style=invis, weight=10]`` so that
+      Graphviz pulls the cap toward the IC without affecting the visible graph.
+    * A ``{rank=same; ic; cap}`` subgraph to place both in the same column.
+    """
+    for cap_ref, ic_ref in sorted(decoupling_map.items()):
+        cap_id = _safe_id(cap_ref)
+        ic_id = _safe_id(ic_ref)
+        lines.append(f"  {cap_id} -> {ic_id} [style=invis, weight=10];")
+    for cap_ref, ic_ref in sorted(decoupling_map.items()):
+        lines.append("  {")
+        lines.append("    rank=same;")
+        lines.append(f"    {_safe_id(ic_ref)};")
+        lines.append(f"    {_safe_id(cap_ref)};")
+        lines.append("  }")
+
+
+def _build_dot_source(
+    ir: CircuitIR,
+    *,
+    decoupling_map: dict[str, str] | None = None,
+) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
     Uses BFS tier assignment (:func:`_assign_bfs_tiers`) to determine the
@@ -331,6 +420,10 @@ def _build_dot_source(ir: CircuitIR) -> str:
       multiple columns instead of collapsing into a single column.
     * A ``cluster_power`` subgraph (``rank=max``) for components that are
       only connected via power nets (GND, VCC, etc.).
+    * **Decoupling cap co-location** (optional): if *decoupling_map* is
+      supplied, each ``{cap → ic}`` pair gets an invisible zero-weight edge
+      (``style=invis, weight=10``) and a ``{rank=same; ic; cap}`` subgraph to
+      pull the cap into the same Graphviz column as its associated IC.
     """
     lines: list[str] = [
         "digraph sch {",
@@ -402,6 +495,11 @@ def _build_dot_source(ir: CircuitIR) -> str:
             lines.append(f"    {_safe_id(ref)};")
         lines.append("  }")
 
+    # Decoupling cap co-location: invisible edges + rank=same pull each
+    # bypass cap into the same column as its associated IC.
+    if decoupling_map:
+        _emit_decoupling_constraints(lines, decoupling_map)
+
     lines.append("}")
     return "\n".join(lines)
 
@@ -436,6 +534,28 @@ def _parse_plain_positions(plain_output: str) -> dict[str, tuple[float, float]]:
             continue
         positions[name] = (gv_x, gv_y)
     return positions
+
+
+def _post_snap_decoupling_caps(
+    positions: dict[str, tuple[float, float, float | None]],
+    decoupling_map: dict[str, str],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Snap each decoupling cap to sit directly above its associated IC.
+
+    Sets the cap's x-coordinate to match the IC's x-coordinate and offsets
+    the cap's y-coordinate by ``-GRID_ROW_MM`` (one KiCad symbol row above
+    the IC, given that y increases downward in KiCad coordinates).
+
+    Caps or ICs not present in *positions* are silently skipped (e.g. if the
+    cap was not returned by Graphviz because it was isolated).
+    """
+    result = dict(positions)
+    for cap_ref, ic_ref in decoupling_map.items():
+        if cap_ref not in result or ic_ref not in result:
+            continue
+        ic_x, ic_y, _ = result[ic_ref]
+        result[cap_ref] = (round(ic_x, 2), round(ic_y - GRID_ROW_MM, 2), None)
+    return result
 
 
 def _gv_to_kicad(
@@ -548,8 +668,12 @@ class GraphvizLayoutEngine:
         if not refs:
             return {}
 
+        # Detect decoupling caps before building DOT source so the same map
+        # can be used both for invisible-edge constraints and post-layout snap.
+        decoupling_map = _find_decoupling_caps(ir)
+
         # Build DOT source up-front so we can derive the cache key.
-        dot_source = _build_dot_source(ir)
+        dot_source = _build_dot_source(ir, decoupling_map=decoupling_map)
         cache_key = _layout_cache_key(dot_source)
 
         # --- Cache hit: return immediately without invoking dot. ---
@@ -586,6 +710,10 @@ class GraphvizLayoutEngine:
         result: dict[str, tuple[float, float, float | None]] = {
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
+
+        # Post-layout: snap decoupling caps to sit directly above their IC.
+        if decoupling_map:
+            result = _post_snap_decoupling_caps(result, decoupling_map)
 
         # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
@@ -654,23 +782,32 @@ class GraphvizLayoutEngine:
 __all__ = [
     "assign_bfs_tiers",
     "build_dot_source",
+    "emit_decoupling_constraints",
+    "find_decoupling_caps",
     "find_dot_binary",
     "find_dot_source",
     "GraphvizLayoutEngine",
+    "GRID_ROW_MM",
+    "is_capacitor",
     "is_connector",
     "layout_cache_key",
     "load_layout_cache",
     "parse_plain_positions",
+    "post_snap_decoupling_caps",
     "save_layout_cache",
 ]
 
 # Expose internals for unit tests under public names
 assign_bfs_tiers = _assign_bfs_tiers
 build_dot_source = _build_dot_source
+emit_decoupling_constraints = _emit_decoupling_constraints
+find_decoupling_caps = _find_decoupling_caps
+is_capacitor = _is_capacitor
 is_connector = _is_connector
 layout_cache_key = _layout_cache_key
 load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
+post_snap_decoupling_caps = _post_snap_decoupling_caps
 save_layout_cache = _save_layout_cache
 
 
