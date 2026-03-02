@@ -13,7 +13,33 @@ from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from .lint import LintIssue as _LintFinding
-    from .models import FootprintMoveSpec, ProjectRef, ValidationResult
+    from .models import FootprintMoveSpec, ProjectRef, SessionRef, ValidationResult
+
+
+# ---------------------------------------------------------------------------
+# session
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class NewSessionResult:
+    """Result of the ``new-session`` command."""
+
+    name: str
+    uuid: str
+    path: Path
+    created: str
+    description: str = ""
+
+
+@dataclass(frozen=True)
+class SessionInfoResult:
+    """Result of the ``session-info`` command."""
+
+    session: SessionRef
+    project_count: int = 0
+    netlist_files: tuple[str, ...] = field(default_factory=tuple)
+    zip_files: tuple[str, ...] = field(default_factory=tuple)
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +119,8 @@ class NewFromNetlistResult:
     kicad_cli_used: bool
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
+    zip_path: Path | None = None
+    session_path: Path | None = None
 
 
 @dataclass(frozen=True)

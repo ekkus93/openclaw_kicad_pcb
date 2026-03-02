@@ -6,13 +6,20 @@ import contextlib
 import json
 import math
 import shutil
+import zipfile as _zipfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
-from ..config import PROJECTS_DIR, get_current_project, load_config, set_current_project
+from ..config import (
+    PROJECTS_DIR,
+    get_current_project,
+    get_current_session,
+    load_config,
+    set_current_project,
+)
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir_autofix import autofix_circuit_ir
@@ -323,9 +330,61 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     created from the fixed JSON; if errors remain, a clear error is raised showing
     what was fixed and what still needs manual correction.
     If validation fails the project directory is never created.
+
+    Session integration
+    -------------------
+    When a session is active (set via ``new-session``), three things happen
+    automatically:
+
+    1. **Project location** — the KiCad project sub-directory is created inside
+       the session directory (unless ``--out-dir`` is given explicitly).
+    2. **Netlist resolution** — if ``--netlist`` names a file that does not exist
+       at the given path but *does* exist inside the session directory, the
+       session-local copy is used automatically.
+    3. **Auto-zip** — after successful generation, all ``*.kicad_sch`` files in
+       the project directory are zipped into ``<session_dir>/<name>_schematic.zip``.
     """
+    # ------------------------------------------------------------------
+    # Session: resolve netlist path and output dir
+    # ------------------------------------------------------------------
+    session = get_current_session()
+
+    raw_netlist_arg: str = args.netlist
+    netlist_path = Path(raw_netlist_arg)
+
+    # If the path doesn't resolve but a session is active, try looking for the
+    # file inside the session directory so the bot can pass just a filename.
+    if not netlist_path.exists() and session is not None:
+        candidate = session.path / netlist_path.name
+        if candidate.exists():
+            netlist_path = candidate
+
+    if not netlist_path.exists():
+        raise UserError(
+            f"Netlist file not found: {raw_netlist_arg}",
+            code=ErrorCode.IO_ERROR,
+            details={
+                "path": str(netlist_path),
+                "hint": (
+                    f"If a session is active, place the file inside '{session.path}' "
+                    "and pass just the filename."
+                )
+                if session
+                else "Check the path and try again.",
+            },
+        )
+
+    # Determine where to create the project: explicit flag > active session > default.
+    explicit_out_dir = Path(args.out_dir) if getattr(args, "out_dir", None) else None
+    out_dir: Path | None = (
+        explicit_out_dir
+        if explicit_out_dir is not None
+        else (session.path if session is not None else None)
+    )
+
+    # ------------------------------------------------------------------
     # Pre-flight: validate all 3 layers before touching the filesystem.
-    netlist_path = Path(args.netlist)
+    # ------------------------------------------------------------------
     symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
     auto_fix: bool = getattr(args, "auto_fix", True)
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
@@ -375,7 +434,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
 
     project = _create_project(
         name=args.name,
-        out_dir=Path(args.out_dir) if getattr(args, "out_dir", None) else None,
+        out_dir=out_dir,
         description=getattr(args, "description", "") or "",
     )
 
@@ -391,6 +450,13 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         ),
     )
 
+    # ------------------------------------------------------------------
+    # Session: auto-zip all schematic files into the session directory.
+    # ------------------------------------------------------------------
+    zip_path: Path | None = None
+    if session is not None:
+        zip_path = _create_schematic_zip(project.path, session.path, project.name)
+
     return NewFromNetlistResult(
         name=project.name,
         path=project.path,
@@ -401,7 +467,24 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         kicad_cli_used=apply_result.kicad_cli_used,
         warnings=apply_result.warnings,
         symbols_dirs_used=apply_result.symbols_dirs_used,
+        zip_path=zip_path,
+        session_path=session.path if session is not None else None,
     )
+
+
+def _create_schematic_zip(project_path: Path, dest_dir: Path, name: str) -> Path:
+    """Zip all ``*.kicad_sch`` files in *project_path* into *dest_dir*/<name>_schematic.zip.
+
+    Returns the path of the created zip file.  Existing zips with the same name
+    are overwritten so that re-running ``new-from-netlist`` always reflects the
+    latest generation.
+    """
+    sch_files = sorted(project_path.glob("*.kicad_sch"))
+    zip_path = dest_dir / f"{name}_schematic.zip"
+    with _zipfile.ZipFile(zip_path, "w", _zipfile.ZIP_DEFLATED) as zf:
+        for sch_file in sch_files:
+            zf.write(sch_file, sch_file.name)
+    return zip_path
 
 
 def _apply_netlist_to_project(
