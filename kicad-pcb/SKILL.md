@@ -158,6 +158,43 @@ python3 {baseDir}/scripts/kicad_pcb.py pcbway-quote --quantity 5
 
 ## Commands
 
+### Session Management
+
+Sessions isolate all artefacts for one design task (netlist JSON, KiCad project,
+zip output) into a single UUID-suffixed directory. **Always start a session
+before creating a netlist or running `new-from-netlist`.** This prevents files
+from previous designs from being accidentally reused.
+
+| Command | Description |
+|---------|-------------|
+| `new-session --name NAME [-d DESCRIPTION]` | Create a new session directory in the workspace (`sessions/{slug}_{uuid8}/`) and activate it |
+| `session-info` | Show the active session: path, KiCad project count, netlist files, zip files |
+| `close-session` | Deactivate the session (directory is kept; artefacts remain safe) |
+
+**Session workflow** (always follow this order):
+
+```bash
+# 1. Start a session for this design task
+python3 {baseDir}/scripts/kicad_pcb.py new-session --name headphone_amp
+
+# 2. Write the netlist JSON INTO the session directory (shown in session-info output)
+python3 {baseDir}/scripts/kicad_pcb.py session-info
+
+# 3. Compile — netlist resolves from session dir automatically
+python3 {baseDir}/scripts/kicad_pcb.py new-from-netlist \
+    --netlist headphone_amp_netlist.json \
+    --symbols-dir /usr/share/kicad/symbols
+
+# 4. Schematic zip is auto-created in the session dir
+#    Close when done with this task
+python3 {baseDir}/scripts/kicad_pcb.py close-session
+```
+
+> When a session is active, `new-from-netlist` automatically:
+> - Looks for the netlist file inside the session directory if not found at the literal path
+> - Creates the KiCad project inside the session directory
+> - Zips the generated schematics into the session directory
+
 ### Project Management
 
 | Command | Description |
@@ -271,7 +308,7 @@ not in the library the tool will reject the netlist with `SYMBOL_NOT_FOUND`,
 | `debug-symbol <Lib:Name> [--symbols-dir DIR]` | Show resolved pin list and extends chain for one symbol (use to diagnose pin count issues) |
 | `validate-netlist --netlist circuit.json` | **Validate Circuit IR JSON (all 3 layers) — no files written** |
 | `fix-netlist --netlist circuit.json [--output fixed.json]` | **Auto-fix common Circuit IR errors and write corrected JSON** |
-| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (auto-fixes errors by default; `--no-auto-fix` disables) |
+| `new-from-netlist --name N --netlist circuit.json` | Create project from Circuit IR JSON (auto-fixes errors by default; `--no-auto-fix` disables). When a session is active, netlist resolves from the session dir and output goes there automatically. |
 | `compile-netlist --name N --netlist circuit.json` | Alias for `new-from-netlist` |
 | `apply-netlist --netlist circuit.json [--force]` | Apply IR to open project's managed region |
 | `apply-pattern --pattern PATTERN [opts]` | Apply a pre-built pattern: `resistor-divider`, `led-resistor`, `connector-breakout`, `decoupling-cap` |
