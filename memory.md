@@ -1,6 +1,37 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-05-15T03:00:00+00:00_
+_Last updated: 2026-06-02T00:00:00+00:00_
+
+---
+
+## 2026-06-02T00:00:00+00:00 - feat: remove --layout CLI arg; hardwire Graphviz (commit 9d65838)
+- **User request**: remove `--layout` CLI argument — Graphviz is the only layout engine used.
+- **Production changes**:
+  - `layout_engine.py`: `make_layout_engine()` now takes NO `mode` arg (removed `LayoutMode` type alias); always returns `GraphvizLayoutEngine`
+  - `cli.py`: `--layout` arg removed from all 3 subparsers (`apply-netlist`, `new-from-netlist`, `compile-netlist`)
+  - `commands/netlist.py`: `LayoutMode` import removed; `layout_mode` field removed from `_ApplyNetlistRequest`; `_write_symbols` no longer accepts `layout_mode` param
+  - `graphviz_layout.py`: Added `PAGE_MAX_X=287.0`, `PAGE_MAX_Y=200.0`; `_gv_to_kicad()` now normalises layout proportionally when it would overflow A4 (prevents LAY004 on large circuits)
+  - `lint.py`: LAY003 suggestion updated to remove `--layout graphviz` reference
+- **Test changes**:
+  - `test_phase4_layout.py`: factory tests updated (no mode arg); merged graphviz/auto tests
+  - `test_phase7_ux.py`: removed `--layout heuristic` parametrize case; removed `layout_mode=` params  
+  - `test_netlist_commands.py`: removed 20 `layout="heuristic"` instances; fixed `test_wires_connect_at_pin_endpoints` to apply symbol rotation when computing expected pin endpoints (uses `compute_orientations`); changed `test_direct_wiring_not_all_label_only` assertion 2 to count-based (≥5 wire segments)
+  - `test_phase6_coverage.py`: removed `layout="heuristic"` from 2 helper functions
+- **Key insight**: `compute_orientations` gives passive R/C/L components 90° rotation when they are vertically stacked (|Δy| > |Δx| among signal-net neighbors). This rotates pin offsets, so `pin2.x = sx + 0` (not `sx + 5.08`) when rotation=90.
+- **Test counts**: 1451 unit tests pass, 22 integration tests pass; ruff clean
+- **`HeuristicLayoutEngine`**: still exists in `layout.py` and is still independently tested; just no longer reachable via `make_layout_engine()`
+
+---
+
+## 2026-05-15T05:00:00+00:00 - All 1477 tests verified passing (unit + integration)
+- **Unit tests**: 1455 passed, 0 skipped — `tests/unit/`
+- **Integration tests**: 22 passed — `tests/integration/` (previously never run)
+  - `test_phase0_smoke.py`: 15 tests, 4m 42s — Flatpak kicad-cli ~20s per invocation is normal, not a hang
+  - `test_phase6_integration.py`: 7 tests (4 graphviz + 3 kicad-cli), 13s
+- **kicad-cli**: Flatpak at `/home/ubo/.local/bin/kicad-cli`; can only access paths under HOME (not /tmp); `home_tmp` fixture in `tests/conftest.py` handles this by using `~/tmp/kicad-tests/<uuid>`
+- **SCALE_MM_PER_GV**: Fixed to 20.0 (was 3.5 — dot output is inches, not points; 20mm/in ≥ 10.16mm required to avoid LAY003)
+- **Latest commit**: `db11374` — all changes pushed to master
+- **Note**: previous runs appeared to "hang" because Flatpak startup is slow; running without `head` pipe shows full output and completes normally in ~5 min
 
 ---
 
