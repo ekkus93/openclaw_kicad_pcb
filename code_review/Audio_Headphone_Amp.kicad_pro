@@ -3,7 +3,7 @@
     "design_settings": {}
   },
   "meta": {
-    "filename": "OpAmp_Headphone_Amp_v3.kicad_pro",
+    "filename": "Audio_Headphone_Amp.kicad_pro",
     "version": 1
   },
   "schematic": {
@@ -11,7 +11,7 @@
   },
   "sheets": [
     [
-      "OpAmp_Headphone_Amp_v3.kicad_sch",
+      "Audio_Headphone_Amp.kicad_sch",
       ""
     ]
   ]
