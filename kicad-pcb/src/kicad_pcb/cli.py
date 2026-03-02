@@ -37,6 +37,7 @@ from .commands.preview import cmd_preview_pcb, cmd_preview_schematic
 from .commands.project import cmd_info, cmd_new, cmd_open
 from .commands.sch import cmd_add_component, cmd_add_net, cmd_connect
 from .commands.search import cmd_build_symbol_index, cmd_debug_symbol, cmd_search_symbols
+from .commands.session import cmd_close_session, cmd_new_session, cmd_session_info
 from .commands.validation import cmd_drc, cmd_erc
 from .errors import KiCadError
 from .formatting import format_result, format_result_json
@@ -86,6 +87,37 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_open = subparsers.add_parser("open", help="Open existing project")
     p_open.add_argument("path", help="Project path")
     p_open.set_defaults(func=cmd_open)
+
+    # new-session
+    p_new_session = subparsers.add_parser(
+        "new-session",
+        help="Start a new design session (creates an isolated working directory)",
+        description=(
+            "Create a fresh session directory under {projects_dir}/sessions/ and make "
+            "it the active session.  All subsequent netlist files, KiCad project "
+            "directories, and zip outputs go into this directory, preventing stale "
+            "files from previous runs from being picked up."
+        ),
+    )
+    p_new_session.add_argument(
+        "--name", "-n", default="session", help="Short human-readable name (default: session)"
+    )
+    p_new_session.add_argument("-d", "--description", default="", help="Optional description")
+    p_new_session.set_defaults(func=cmd_new_session)
+
+    # session-info
+    p_session_info = subparsers.add_parser(
+        "session-info",
+        help="Show the current session directory and its contents",
+    )
+    p_session_info.set_defaults(func=cmd_session_info)
+
+    # close-session
+    p_close_session = subparsers.add_parser(
+        "close-session",
+        help="Deactivate the current session (directory is preserved)",
+    )
+    p_close_session.set_defaults(func=cmd_close_session)
 
     # info-sch
     p_info_sch = subparsers.add_parser(

@@ -38,12 +38,14 @@ from .results import (
     LintFileResult,
     NewFromNetlistResult,
     NewProjectResult,
+    NewSessionResult,
     OpenResult,
     PackageFabResult,
     PcbwayQuoteResult,
     PreviewPcbResult,
     PreviewSchematicResult,
     SearchSymbolsResult,
+    SessionInfoResult,
     SetBoardSizeResult,
     ValidateFileResult,
     ValidateNetlistResult,
@@ -198,12 +200,55 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
         f"   Nets applied: {r.nets_applied}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
+    if r.session_path is not None:
+        lines.append(f"   Session: {r.session_path}")
+    if r.zip_path is not None:
+        lines.append(f"   Schematic zip: {r.zip_path}")
     if r.symbols_dirs_used:
         lines.append("   Symbol dirs used:")
         for d in r.symbols_dirs_used:
             lines.append(f"     • {d}")
     for warning in r.warnings:
         lines.append(f"   ⚠️  [{warning.get('code', 'WARN')}] {warning.get('message', '')}")
+    return lines
+
+
+@_register(NewSessionResult)
+def _fmt_new_session(r: NewSessionResult) -> list[str]:
+    lines = [
+        f"✅ Session started: {r.name} ({r.uuid[:8]})",
+        f"   Session directory: {r.path}",
+        f"   Created: {r.created}",
+    ]
+    if r.description:
+        lines.append(f"   Description: {r.description}")
+    lines.append(
+        "   Place netlist JSON files here, then run new-from-netlist with just the filename."
+    )
+    return lines
+
+
+@_register(SessionInfoResult)
+def _fmt_session_info(r: SessionInfoResult) -> list[str]:
+    s = r.session
+    lines = [
+        f"📁 Current session: {s.name} ({s.short_id})",
+        f"   Path: {s.path}",
+        f"   Created: {s.created}",
+    ]
+    if s.description:
+        lines.append(f"   Description: {s.description}")
+    lines.append(f"   KiCad projects: {r.project_count}")
+    if r.netlist_files:
+        lines.append("   Netlist files:")
+        for f in r.netlist_files:
+            lines.append(f"     • {f}")
+    else:
+        lines.append("   Netlist files: (none)")
+    if r.zip_files:
+        lines.append("   Zip files:")
+        for f in r.zip_files:
+            lines.append(f"     • {f}")
     return lines
 
 

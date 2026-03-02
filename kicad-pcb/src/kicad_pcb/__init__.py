@@ -67,6 +67,7 @@ from .commands.sch import (
     cmd_connect,
 )
 from .commands.search import cmd_build_symbol_index, cmd_debug_symbol, cmd_search_symbols
+from .commands.session import cmd_close_session, cmd_new_session, cmd_session_info
 from .commands.validation import cmd_drc, cmd_erc
 
 # Version compatibility (Phase 8.1)
@@ -84,17 +85,23 @@ from .config import (
     CONFIG_DIR,
     CONFIG_FILE,
     CURRENT_PROJECT_FILE,
+    CURRENT_SESSION_FILE,
     DEFAULT_PCB_OPTIONS,
     PROJECTS_DIR,
+    SESSIONS_SUBDIR,
     SYMBOLS_CANDIDATES,
     SymbolsDir,
+    clear_current_session,
     discover_symbols_dir,
     ensure_dirs,
     get_current_project,
+    get_current_session,
+    get_sessions_base_dir,
     get_symbols_dir_config,
     load_config,
     save_config,
     set_current_project,
+    set_current_session,
     set_symbols_dir_config,
 )
 
@@ -128,6 +135,7 @@ from .models import (
     LintIssue,
     NetLabelSpec,
     ProjectRef,
+    SessionRef,
     ValidationResult,
     WireSegment,
 )
@@ -184,12 +192,14 @@ from .results import (
     LintFileResult,
     NewFromNetlistResult,
     NewProjectResult,
+    NewSessionResult,
     OpenResult,
     PackageFabResult,
     PcbwayQuoteResult,
     PreviewPcbResult,
     PreviewSchematicResult,
     SearchSymbolsResult,
+    SessionInfoResult,
     SetBoardSizeResult,
     SymbolMatch,
     ValidateFileResult,
@@ -297,12 +307,18 @@ __all__ = [
     "CONFIG_FILE",
     "PROJECTS_DIR",
     "CURRENT_PROJECT_FILE",
+    "CURRENT_SESSION_FILE",
+    "SESSIONS_SUBDIR",
     "DEFAULT_PCB_OPTIONS",
     "ensure_dirs",
     "load_config",
     "save_config",
     "get_current_project",
     "set_current_project",
+    "get_current_session",
+    "set_current_session",
+    "clear_current_session",
+    "get_sessions_base_dir",
     # symbol library discovery (Phase 8.2)
     "SYMBOLS_CANDIDATES",
     "SymbolsDir",
@@ -417,6 +433,13 @@ __all__ = [
     "SearchSymbolsResult",
     "SymbolCache",
     "SymbolMatch",
+    # session management
+    "SessionRef",
+    "NewSessionResult",
+    "SessionInfoResult",
+    "cmd_new_session",
+    "cmd_session_info",
+    "cmd_close_session",
     # formatting
     "format_result",
     "format_result_json",

@@ -16,7 +16,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import ProjectRef
+from .models import ProjectRef, SessionRef
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -26,6 +26,10 @@ CONFIG_DIR = Path.home() / ".kicad-pcb"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 PROJECTS_DIR = Path.home() / "kicad-projects"
 CURRENT_PROJECT_FILE = CONFIG_DIR / "current_project.json"
+CURRENT_SESSION_FILE = CONFIG_DIR / "current_session.json"
+
+#: Sub-directory within projects_dir where session directories are created.
+SESSIONS_SUBDIR = "sessions"
 
 DEFAULT_PCB_OPTIONS: dict = {
     "layers": 2,
@@ -178,3 +182,40 @@ def set_current_project(project: ProjectRef) -> None:
     ensure_dirs()
     with CURRENT_PROJECT_FILE.open("w", encoding="utf-8") as f:
         json.dump(project.to_dict(), f, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Session config
+# ---------------------------------------------------------------------------
+
+
+def get_current_session() -> SessionRef | None:
+    """Return the active :class:`.SessionRef`, or ``None`` if no session is open."""
+    if CURRENT_SESSION_FILE.exists():
+        try:
+            with CURRENT_SESSION_FILE.open(encoding="utf-8") as f:
+                data = json.load(f)
+            return SessionRef.from_dict(data)
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass
+    return None
+
+
+def set_current_session(session: SessionRef) -> None:
+    """Persist *session* to ``current_session.json``."""
+    ensure_dirs()
+    with CURRENT_SESSION_FILE.open("w", encoding="utf-8") as f:
+        json.dump(session.to_dict(), f, indent=2)
+
+
+def clear_current_session() -> None:
+    """Remove the active session marker (does not delete the session directory)."""
+    if CURRENT_SESSION_FILE.exists():
+        CURRENT_SESSION_FILE.unlink()
+
+
+def get_sessions_base_dir() -> Path:
+    """Return the base directory for session folders (``{projects_dir}/sessions/``)."""
+    cfg = load_config()
+    base = Path(cfg.get("projects_dir", PROJECTS_DIR))
+    return base / SESSIONS_SUBDIR

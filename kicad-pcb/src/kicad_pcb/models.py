@@ -10,6 +10,7 @@ across command functions.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -71,6 +72,84 @@ class ProjectRef:
         """Serialise to the JSON dict stored in ``current_project.json``."""
         return {
             "name": self.name,
+            "path": str(self.path),
+            "created": self.created,
+            "description": self.description,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Session
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SessionRef:
+    """A reference to an on-disk session directory.
+
+    A session groups all artefacts for a single design task — netlist JSON
+    files, the generated KiCad project sub-directory, and any zipped outputs —
+    under one uniquely-named folder so stale files from previous runs are
+    never accidentally reused.
+
+    Directory layout::
+
+        {projects_dir}/sessions/{slug}_{short_id}/   ← session.path
+            session.json                              ← session metadata
+            my_circuit_netlist.json                   ← netlist file(s)
+            MyCircuit/                                ← KiCad project dir (ProjectRef.path)
+                MyCircuit.kicad_sch
+                MyCircuit.kicad_pcb
+                MyCircuit.kicad_pro
+                OpenClaw_Managed.kicad_sch
+            MyCircuit_schematic.zip                   ← auto-generated zip
+
+    Use :func:`~kicad_pcb.config.get_current_session` /
+    :func:`~kicad_pcb.config.set_current_session` to persist and restore the
+    active session across CLI invocations.
+    """
+
+    name: str
+    uuid: str
+    path: Path
+    created: str = ""
+    description: str = ""
+
+    # ------------------------------------------------------------------
+    # Derived properties
+    # ------------------------------------------------------------------
+
+    @property
+    def short_id(self) -> str:
+        """First 8 hex characters of the session UUID."""
+        return self.uuid[:8]
+
+    @property
+    def dir_name(self) -> str:
+        """The directory name component: ``{slug}_{short_id}``."""
+        slug = re.sub(r"[^a-z0-9]+", "_", self.name.lower()).strip("_") or "session"
+        return f"{slug}_{self.short_id}"
+
+    # ------------------------------------------------------------------
+    # Serialisation
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_dict(cls, d: dict) -> SessionRef:
+        """Construct from the JSON dict stored in ``session.json``."""
+        return cls(
+            name=d["name"],
+            uuid=d["uuid"],
+            path=Path(d["path"]),
+            created=d.get("created", ""),
+            description=d.get("description", ""),
+        )
+
+    def to_dict(self) -> dict:
+        """Serialise to the JSON dict stored in ``session.json``."""
+        return {
+            "name": self.name,
+            "uuid": self.uuid,
             "path": str(self.path),
             "created": self.created,
             "description": self.description,
