@@ -978,7 +978,12 @@ class TestGoldenAudioBlock:
         assert doc is not None
 
     def test_connectors_leftmost(self, tmp_path: Path) -> None:
-        """Input connectors J1/J3 are placed left of or equal to resistors."""
+        """Signal input connector J1 is placed left of or equal to resistors.
+
+        J3 is a power-supply connector (only VCC / GND nets) so the layout
+        engine places it in the power cluster at rank=max (far right).  We
+        do not assert J3's x position here; that placement is correct.
+        """
         result = _new_from_netlist(tmp_path, _AUDIO_BLOCK_IR, name="AudioBlockConn")
         doc = SchematicDoc.load(result.managed_schematic_path)
         symbols = {s["ref"]: s["x"] for s in doc.list_symbols()}
@@ -987,9 +992,6 @@ class TestGoldenAudioBlock:
         assert symbols["J1"] <= max_resistor_x, (
             f"J1 (x={symbols['J1']:.2f}) should be left of or equal to the rightmost resistor "
             f"(x={max_resistor_x:.2f})."
-        )
-        assert symbols["J3"] <= max_resistor_x, (
-            f"J3 (x={symbols['J3']:.2f}) should be left of or equal to the rightmost resistor."
         )
 
 

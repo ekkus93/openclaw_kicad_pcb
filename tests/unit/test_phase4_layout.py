@@ -1131,3 +1131,143 @@ class TestComputeOrientations:
         positions = {r: (float(i) * 10, 0.0) for i, r in enumerate(refs)}
         result = compute_orientations(ir, positions)
         assert set(result) == set(refs)
+
+
+# ---------------------------------------------------------------------------
+# Phase 0 — BFS tier assignment + directional DOT source (regression 0.3)
+# ---------------------------------------------------------------------------
+
+
+def _chain_ir(refs: list[str], net_names: list[str] | None = None) -> CircuitIR:
+    """Build a linear chain IR: refs[0] — N0 — refs[1] — N1 — ... — refs[-1].
+
+    Each successive pair of refs shares a signal net.  ``net_names`` may
+    override the auto-generated ``NET0``, ``NET1``, … names.
+    """
+    if net_names is None:
+        net_names = [f"NET{i}" for i in range(len(refs) - 1)]
+    components = [ComponentIR(ref=r, symbol="Lib:sym", value="x") for r in refs]
+    nets = [
+        NetIR(
+            name=net_names[i],
+            pins=[PinRefIR(ref=refs[i], pin="1"), PinRefIR(ref=refs[i + 1], pin="2")],
+        )
+        for i in range(len(refs) - 1)
+    ]
+    return CircuitIR(version="1", components=components, nets=nets)
+
+
+class TestAssignBfsTiers:
+    """Unit tests for the BFS tier-assignment helper."""
+
+    def test_linear_chain_connector_to_connector(self) -> None:
+        """J1 → R1 → U1 → J2 should yield ascending tiers 0,1,2,3."""
+        refs = ["J1", "R1", "U1", "J2"]
+        ir = _chain_ir(refs)
+        signal_nets = [n for n in ir.nets if len(n.pins) >= 2]
+        tiers = _gv_mod.assign_bfs_tiers(refs, signal_nets)
+        # J1 (connector, seed first) must be before R1 before U1 before J2.
+        assert tiers["J1"] < tiers["R1"] < tiers["U1"] < tiers["J2"]
+
+    def test_single_component_gets_tier_zero(self) -> None:
+        refs = ["R1"]
+        tiers = _gv_mod.assign_bfs_tiers(refs, [])
+        assert tiers["R1"] == 0
+
+    def test_isolated_component_defaults_to_zero(self) -> None:
+        """A component with no signal-net connections gets tier 0."""
+        refs = ["J1", "R_isolated"]
+        ir = _chain_ir(["J1", "R1"])  # R_isolated not in ir nets
+        signal_nets = [n for n in ir.nets if len(n.pins) >= 2]
+        tiers = _gv_mod.assign_bfs_tiers(refs, signal_nets)
+        assert tiers.get("R_isolated", 0) == 0
+
+    def test_no_connectors_all_refs_reachable(self) -> None:
+        """When there are no connectors, BFS starts from all refs; all are assigned."""
+        refs = ["R1", "R2", "R3"]
+        ir = _chain_ir(refs)
+        signal_nets = [n for n in ir.nets if len(n.pins) >= 2]
+        tiers = _gv_mod.assign_bfs_tiers(refs, signal_nets)
+        assert set(tiers) == set(refs)
+
+    def test_output_connector_gets_higher_tier_than_ic(self) -> None:
+        """J_IN → R1 → U1 → J_OUT: J_OUT tier must exceed U1 tier."""
+        refs = ["J_IN", "R1", "U1", "J_OUT"]
+        ir = _chain_ir(refs)
+        signal_nets = [n for n in ir.nets if len(n.pins) >= 2]
+        tiers = _gv_mod.assign_bfs_tiers(refs, signal_nets)
+        assert tiers["J_OUT"] > tiers["U1"]
+
+
+class TestBuildDotSourceSignalFlow:
+    """Regression tests for the fixed _build_dot_source (Phase 0)."""
+
+    def _dot(self, ir: CircuitIR) -> str:
+        return _gv_mod.build_dot_source(ir)
+
+    def test_has_directional_net_hub_edges(self) -> None:
+        """DOT source for a J1→R1 chain has upstream→net AND net→downstream edges."""
+        ir = _chain_ir(["J1", "R1"])
+        src = self._dot(ir)
+        # J1 is the alphabetically-first connector (seed tier 0).
+        # R1 is tier 1.  Expected: J1 -> net_NET0; net_NET0 -> R1
+        assert "J1 -> net_NET0" in src or "J1->net_NET0" in src
+        assert "net_NET0 -> R1" in src or "net_NET0->R1" in src
+
+    def test_no_edges_are_all_into_net_nodes(self) -> None:
+        """In the old bipartite model every edge was comp→net with no return edges.
+        After the fix, at least one net_* node must have an outgoing edge to a comp.
+        """
+        ir = _chain_ir(["J1", "R1", "U1", "J2"])
+        src = self._dot(ir)
+        # Find lines where a net_* node is the *source* of an edge.
+        net_source_lines = [line for line in src.splitlines() if line.strip().startswith("net_")]
+        assert net_source_lines, "No net→component edges found; old bipartite model still in use"
+
+    def test_rank_source_subgraph_present_for_input_connector(self) -> None:
+        """The first-tier group must use rank=source."""
+        ir = _chain_ir(["J1", "R1", "U1", "J2"])
+        src = self._dot(ir)
+        assert "rank=source" in src
+
+    def test_rank_sink_subgraph_present_for_output_connector(self) -> None:
+        """The last-tier group must use rank=sink."""
+        ir = _chain_ir(["J1", "R1", "U1", "J2"])
+        src = self._dot(ir)
+        assert "rank=sink" in src
+
+    def test_power_only_components_in_cluster_power(self) -> None:
+        """Components connected only via power nets must appear in cluster_power."""
+        components = [
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+        ]
+        nets = [
+            NetIR(name="VCC", pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="C1", pin="1")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="C1", pin="2")]),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        src = self._dot(ir)
+        assert "cluster_power" in src
+        assert "rank=max" in src
+
+    def test_tier_separation_via_rank_same_subgraphs(self) -> None:
+        """For a 4-component chain, at least 3 separate rank subgraphs are emitted."""
+        ir = _chain_ir(["J1", "R1", "U1", "J2"])
+        src = self._dot(ir)
+        rank_lines = [ln for ln in src.splitlines() if "rank=" in ln]
+        # Expect at least rank=source, one rank=same (U1 or R1), rank=sink
+        assert len(rank_lines) >= 3, (
+            f"Expected ≥3 rank= lines for a 4-component chain, got {len(rank_lines)}: "
+            + repr(rank_lines)
+        )
+
+    def test_ranksep_is_increased(self) -> None:
+        """ranksep must be at least 1.5 to give adequate tier spacing."""
+        ir = _chain_ir(["J1", "R1"])
+        src = self._dot(ir)
+        # e.g. "  ranksep=1.5;"
+        ranksep_lines = [ln for ln in src.splitlines() if "ranksep" in ln]
+        assert ranksep_lines, "ranksep directive missing from DOT source"
+        val_str = ranksep_lines[0].split("=")[1].strip().rstrip(";")
+        assert float(val_str) >= 1.5, f"ranksep too small: {val_str}"

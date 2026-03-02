@@ -38,6 +38,7 @@ import os
 import re
 import shutil
 import subprocess
+from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -208,7 +209,84 @@ def find_dot_source() -> tuple[str, str] | None:
 
 
 # ---------------------------------------------------------------------------
-# DOT graph builder (bipartite model)
+# Component classification (used by DOT builder and BFS tier assignment)
+# ---------------------------------------------------------------------------
+
+_CONNECTOR_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
+
+
+def _is_connector(ref: str) -> bool:
+    """Return True if *ref* is a connector designator (``J*``, ``P*``, etc.)."""
+    r = ref.upper()
+    return any(r.startswith(p) for p in _CONNECTOR_PREFIXES)
+
+
+# ---------------------------------------------------------------------------
+# BFS tier assignment
+# ---------------------------------------------------------------------------
+
+
+def _assign_bfs_tiers(
+    refs: list[str],
+    signal_nets: list,  # list[NetIR] — avoid circular import at runtime
+) -> dict[str, int]:
+    """Return ``{ref: tier}`` for all *refs* using BFS from connector seeds.
+
+    Connector refs (``J*``, ``P*``, ``CON*``, etc.) are used as BFS seeds
+    processed in sorted (alphabetical) order.  The alphabetically-first
+    connector is the most likely signal source; downstream connectors receive
+    higher tier values naturally via BFS traversal.
+
+    Non-connector components receive intermediate tiers.  Power-only or
+    isolated components default to tier ``0``.
+    """
+    # Build undirected adjacency from signal nets.
+    ref_set = set(refs)
+    adj: dict[str, list[str]] = {r: [] for r in refs}
+    for net in signal_nets:
+        pin_refs = [p.ref for p in net.pins if p.ref in ref_set]
+        for i, r1 in enumerate(pin_refs):
+            for r2 in pin_refs[i + 1 :]:
+                adj[r1].append(r2)
+                adj[r2].append(r1)
+
+    # Seeds: only the alphabetically-first connector.
+    #
+    # Using all connectors as seeds simultaneously causes both input AND
+    # output connectors to start at tier 0, which collapses the entire
+    # circuit into one column.  By seeding only the first connector we let
+    # BFS propagate naturally: any output connector at the far end of the
+    # signal chain reaches a high tier via BFS, while parallel input
+    # connectors that are NOT reachable from the seed fall through to the
+    # "unreached → tier 0" default at the end of the function — correct
+    # because they are at the same input stage as the primary seed.
+    all_connectors = sorted(r for r in refs if _is_connector(r))
+    seeds = [all_connectors[0]] if all_connectors else sorted(refs)
+
+    tier: dict[str, int] = {}
+    queue: deque[str] = deque()
+    for seed in seeds:
+        if seed not in tier:
+            tier[seed] = 0
+            queue.append(seed)
+
+    while queue:
+        ref = queue.popleft()
+        for neighbor in adj.get(ref, []):
+            if neighbor not in tier:
+                tier[neighbor] = tier[ref] + 1
+                queue.append(neighbor)
+
+    # Unreached refs (isolated or power-only) → tier 0.
+    for r in refs:
+        if r not in tier:
+            tier[r] = 0
+
+    return tier
+
+
+# ---------------------------------------------------------------------------
+# DOT graph builder
 # ---------------------------------------------------------------------------
 
 
@@ -221,54 +299,101 @@ def _safe_id(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "_", name)
 
 
-def _build_dot_source(ir: CircuitIR) -> str:
-    """Build a Graphviz DOT source string for *ir* using a bipartite model.
+def _tier_rank_keyword(tier_index: int, n_tiers: int) -> str:
+    """Return the Graphviz ``rank=`` keyword for *tier_index* of *n_tiers* tiers.
 
-    Component nodes are shaped as ``box``.  Net nodes are shaped as
-    ``ellipse``.  Power nets are excluded; components only connected via
-    power nets are added to a ``power_rails`` cluster at the right edge.
+    * Single-tier graphs → ``same`` (no forced ordering).
+    * First tier (index 0) → ``source`` (signal sources at the left edge).
+    * Last tier → ``sink`` (signal sinks at the right edge).
+    * All intermediate tiers → ``same`` (column grouping without edge constraint).
+    """
+    if n_tiers == 1:
+        return "same"
+    if tier_index == 0:
+        return "source"
+    if tier_index == n_tiers - 1:
+        return "sink"
+    return "same"
+
+
+def _build_dot_source(ir: CircuitIR) -> str:
+    """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
+
+    Uses BFS tier assignment (:func:`_assign_bfs_tiers`) to determine the
+    left-to-right rank of each component, then emits:
+
+    * One ``{ rank=same; }`` (or ``rank=source`` / ``rank=sink`` for the first
+      and last tiers) subgraph per BFS tier so Graphviz respects signal-flow
+      column ordering.
+    * Directed ``component → net_node → component`` edges where the upstream
+      component has a lower BFS tier than the downstream component.  This
+      gives Graphviz correct rank information so components spread across
+      multiple columns instead of collapsing into a single column.
+    * A ``cluster_power`` subgraph (``rank=max``) for components that are
+      only connected via power nets (GND, VCC, etc.).
     """
     lines: list[str] = [
         "digraph sch {",
         "  rankdir=LR;",
         "  nodesep=0.5;",
-        "  ranksep=1.0;",
+        "  ranksep=1.5;",
         "  node [shape=box, width=0.8, height=0.5, fixedsize=true];",
     ]
 
     refs = sorted(c.ref for c in ir.components)
 
-    # Build net membership: net_name -> list of refs
-    net_members: dict[str, list[str]] = {}
-    for net in ir.nets:
-        net_members[net.name] = [p.ref for p in net.pins]
+    # Collect signal nets (non-power, ≥2 pins).
+    signal_nets = [net for net in ir.nets if not _is_power_net(net.name) and len(net.pins) >= 2]
 
-    # Categorise each ref: signal-connected (has ≥1 non-power net) or power-only
+    # Categorise: power-only refs have no signal net connections.
     signal_refs: set[str] = set()
-    for name, members in net_members.items():
-        if not _is_power_net(name):
-            signal_refs.update(members)
-
+    for net in signal_nets:
+        signal_refs.update(p.ref for p in net.pins)
     power_only_refs = [r for r in refs if r not in signal_refs]
 
-    # Emit component nodes
+    # BFS tier assignment — determines left-to-right rank for each component.
+    tiers = _assign_bfs_tiers(refs, signal_nets)
+
+    # Group signal-connected refs by tier.
+    tier_groups: dict[int, list[str]] = {}
+    for ref in refs:
+        if ref in power_only_refs:
+            continue
+        tier_groups.setdefault(tiers.get(ref, 0), []).append(ref)
+
+    # Emit component nodes.
     for ref in refs:
         safe = _safe_id(ref)
         lines.append(f'  {safe} [label="{ref}", shape=box];')
 
-    # Emit net nodes + edges for signal nets
-    for net in ir.nets:
-        if _is_power_net(net.name):
-            continue
-        if len(net.pins) < 2:
-            continue
+    # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
+    # rank=same for all intermediate tiers.
+    sorted_tier_vals = sorted(tier_groups)
+    n_tiers = len(sorted_tier_vals)
+    for i, tier_val in enumerate(sorted_tier_vals):
+        members = tier_groups[tier_val]
+        rank_kw = _tier_rank_keyword(i, n_tiers)
+        lines.append("  {")
+        lines.append(f"    rank={rank_kw};")
+        for ref in sorted(members):
+            lines.append(f"    {_safe_id(ref)};")
+        lines.append("  }")
+
+    # Emit net nodes + directional edges.
+    # For each signal net, sort pins by ascending BFS tier so edges flow
+    # left → right through the net hub node.
+    for net in signal_nets:
+        pin_refs = [p.ref for p in net.pins]
         net_id = "net_" + _safe_id(net.name)
         lines.append(f'  {net_id} [label="{net.name}", shape=ellipse, width=0.6, height=0.4];')
-        for pin in net.pins:
-            ref_id = _safe_id(pin.ref)
-            lines.append(f"  {ref_id} -> {net_id};")
+        # Sort by (tier, ref) for a stable, deterministic ordering.
+        sorted_pins = sorted(pin_refs, key=lambda r: (tiers.get(r, 0), r))
+        upstream = sorted_pins[0]
+        lines.append(f"  {_safe_id(upstream)} -> {net_id};")
+        for downstream in sorted_pins[1:]:
+            lines.append(f"  {net_id} -> {_safe_id(downstream)};")
 
-    # Power-only refs in a subgraph at the right so they don't disrupt flow
+    # Power-only refs in a subgraph at the right so they don't disrupt flow.
     if power_only_refs:
         lines.append("  subgraph cluster_power {")
         lines.append('    label="power";')
@@ -527,10 +652,12 @@ class GraphvizLayoutEngine:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "assign_bfs_tiers",
     "build_dot_source",
     "find_dot_binary",
     "find_dot_source",
     "GraphvizLayoutEngine",
+    "is_connector",
     "layout_cache_key",
     "load_layout_cache",
     "parse_plain_positions",
@@ -538,7 +665,9 @@ __all__ = [
 ]
 
 # Expose internals for unit tests under public names
+assign_bfs_tiers = _assign_bfs_tiers
 build_dot_source = _build_dot_source
+is_connector = _is_connector
 layout_cache_key = _layout_cache_key
 load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
