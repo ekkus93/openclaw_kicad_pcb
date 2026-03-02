@@ -15,17 +15,28 @@ if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
 
 # ---------------------------------------------------------------------------
+# Page dimensions (mm) — must match lint.py _LAY_PAGE_MAX_X / _LAY_PAGE_MAX_Y.
+# KiCad A4 schematic page: 297 mm wide × 210 mm tall (landscape orientation).
+PAGE_WIDTH_MM: float = 297.0
+PAGE_HEIGHT_MM: float = 210.0
+
 # Grid constants (mm)
 # ---------------------------------------------------------------------------
 GRID_COL_MM: float = 30.48  # 1200 mil column width
-GRID_ROW_MM: float = 20.32  # 800 mil row pitch — fits ~10 rows on A4
+GRID_ROW_MM: float = 20.32  # 800 mil row pitch
 ORIGIN_X: float = 30.48
 ORIGIN_Y: float = 50.80
 
 # Maximum number of components stacked in one visual column before wrapping
-# to a new sub-column.  At 20.32 mm pitch, 10 rows reach y ≈ 253 mm which
-# stays within an A4 page (297 mm).
-MAX_ROWS_PER_COL: int = 10
+# to a new sub-column.  Derived from page height so no symbol ever lands
+# outside the A4 boundary (LAY004).
+#
+#   max_y = ORIGIN_Y + (MAX_ROWS_PER_COL - 1) * GRID_ROW_MM
+#         = 50.80 + 6 × 20.32 = 172.72 mm  (< PAGE_HEIGHT_MM = 210 mm).
+#
+# The previous hard-coded value of 10 put row 8 at 213.36 mm, triggering
+# LAY004 whenever a circuit had 9+ components in a single BFS column.
+MAX_ROWS_PER_COL: int = int((PAGE_HEIGHT_MM - ORIGIN_Y) / GRID_ROW_MM)
 
 # Minimum centre-to-centre distance (mm) between any two heuristic positions.
 # This equals GRID_ROW_MM (the tighter axis: symbols in the same column are
