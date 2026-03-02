@@ -1134,6 +1134,134 @@ class TestComputeOrientations:
 
 
 # ---------------------------------------------------------------------------
+# Phase 4 — Shunt topology orientation (topology-driven, not position-based)
+# ---------------------------------------------------------------------------
+
+
+class TestShuntOrientations:
+    """compute_orientations detects shunt topology and forces 90° rotation.
+
+    A passive is shunt when ≥1 pin connects to a power/ground net AND ≥1 pin
+    connects to a signal net.  This covers bypass capacitors and pull-up /
+    pull-down resistors.  Pure-signal passives continue to use the existing
+    position-based heuristic.
+    """
+
+    def test_bypass_cap_gnd_is_90(self) -> None:
+        """AC-bypass capacitor: one pin on a signal net, one pin on GND → 90°.
+
+        This covers the classic audio-stage bypass cap (AUDIO_IN to GND) where
+        one pin is in the signal path and the other drains to the ground rail.
+        Note: a *power-supply* decoupling cap with VCC–GND pins has *both* pins
+        on power nets and is NOT detected as shunt by this rule (see
+        test_both_pins_power_only_stays_zero).
+        """
+        ir = _make_ir(
+            [("C1", "Device:C"), ("U1", "Amplifier_Operational:TL071")],
+            [
+                # Signal net: shared between C1 pin 1 and the op-amp input.
+                ("AUDIO_IN", [("C1", "1"), ("U1", "3")]),
+                # Power net: C1 pin 2 drains to GND.
+                ("GND", [("C1", "2")]),
+            ],
+        )
+        # Positions irrelevant — shunt check fires before position heuristic.
+        positions = {"C1": (50.0, 50.0), "U1": (50.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["C1"] == 90, (
+            "AC-bypass cap (signal → GND) should be vertical (90°) regardless of position."
+        )
+
+    def test_pullup_resistor_vcc_is_90(self) -> None:
+        """Pull-up resistor: one pin on VCC, one on a signal net → 90°."""
+        ir = _make_ir(
+            [("R1", "Device:R"), ("U1", "74xx:74HC74")],
+            [
+                ("VCC", [("R1", "1")]),
+                ("nRESET", [("R1", "2"), ("U1", "4")]),
+            ],
+        )
+        positions = {"R1": (40.0, 10.0), "U1": (60.0, 10.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 90, "Pull-up resistor (VCC → signal) should be vertical (90°)."
+
+    def test_pulldown_resistor_gnd_is_90(self) -> None:
+        """Pull-down resistor: one pin on GND, one on a signal net → 90°."""
+        ir = _make_ir(
+            [("R2", "Device:R"), ("U1", "74xx:74HC00")],
+            [
+                ("SIG", [("R2", "1"), ("U1", "1")]),
+                ("GND", [("R2", "2")]),
+            ],
+        )
+        positions = {"R2": (40.0, 20.0), "U1": (60.0, 20.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R2"] == 90, "Pull-down resistor (signal → GND) should be vertical (90°)."
+
+    def test_series_resistor_no_power_pin_uses_heuristic(self) -> None:
+        """Series resistor with no power-pin uses the position heuristic (→ 0° when horizontal)."""
+        ir = _make_ir(
+            [("R1", "Device:R"), ("J1", "Connector:Conn"), ("U1", "Amplifier_Operational:TL071")],
+            [
+                ("IN", [("J1", "1"), ("R1", "1")]),
+                ("MID", [("R1", "2"), ("U1", "3")]),
+            ],
+        )
+        # Horizontal arrangement: position heuristic gives 0°.
+        positions = {"J1": (0.0, 30.0), "R1": (30.0, 30.0), "U1": (60.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 0, (
+            "Series resistor between horizontally-spaced components should stay 0°."
+        )
+
+    def test_both_pins_power_only_stays_zero(self) -> None:
+        """Passive with BOTH pins on power nets (no signal pin) keeps 0°.
+
+        This is the existing behaviour for test_power_nets_excluded_from_neighbour_calc
+        and must not regress.  A resistor between VCC and GND is NOT a shunt in
+        the signal-path sense.
+        """
+        ir = _make_ir(
+            [("R1", "Device:R")],
+            [
+                ("VCC", [("R1", "1")]),
+                ("GND", [("R1", "2")]),
+            ],
+        )
+        positions = {"R1": (30.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["R1"] == 0, (
+            "Passive with only power-net pins (no signal net) must keep 0° (no shunt detection)."
+        )
+
+    def test_shunt_fires_before_position_heuristic(self) -> None:
+        """Shunt rule overrides position heuristic even when neighbours are horizontal.
+
+        If C1 has one GND pin, it should be 90° regardless of whether the
+        remaining signal-net neighbours are arranged horizontally or vertically.
+        """
+        ir = _make_ir(
+            [
+                ("C1", "Device:C"),
+                ("U1", "Amplifier_Operational:TL071"),
+                ("U2", "Amplifier_Operational:TL071"),
+            ],
+            [
+                # Signal net connects C1 to two horizontally-offset op-amps.
+                ("SIG", [("C1", "1"), ("U1", "6"), ("U2", "3")]),
+                # Power net connects C1's second pin to GND.
+                ("GND", [("C1", "2")]),
+            ],
+        )
+        # U1 and U2 are far apart horizontally → position heuristic would give 0°.
+        positions = {"C1": (50.0, 30.0), "U1": (0.0, 30.0), "U2": (100.0, 30.0)}
+        result = compute_orientations(ir, positions)
+        assert result["C1"] == 90, (
+            "Shunt detection should override the position heuristic (GND pin present)."
+        )
+
+
+# ---------------------------------------------------------------------------
 # Phase 0 — BFS tier assignment + directional DOT source (regression 0.3)
 # ---------------------------------------------------------------------------
 
