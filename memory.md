@@ -1,8 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T01:00:00+00:00_
+_Last updated: 2026-03-03T01:30:00+00:00_
 
 ---
+
+## 2026-03-03T01:30:00+00:00 — feat: Phase 2 — affinity grouping + net-weight hints (commit 12f662a)
+
+### What changed
+- `graphviz_layout.py`: added `_compute_net_weights(signal_nets)` — returns `{net: weight}` where `weight=5` for nets whose endpoints share >=2 signal nets (tightly coupled pairs), `1` otherwise.
+- `_build_dot_source`: added `ordering=out` directive; emits `[weight=N]` on hub edges when `N > 1`.
+- `layout.py`: added `compute_affinity_groups(ir, tiers) -> dict[int, list[str]]` — sorts components within each tier by descending affinity to previous-tier components. Metric: `shared_signal_nets(A,B) / min(|nets(A)|, |nets(B)|)`. Power nets excluded. Tier 0 → alphabetical.
+
+### Tests: 7 new (1498 total, up from 1491)
+- `TestComputeAffinityGroups`: 3 tests — sorted refs, alphabetical first tier, isolated component.
+- `TestNetWeights`: 4 tests — weight 1 for single net, weight 5 for 2+ shared nets, weight 5 in DOT source, ordering=out in DOT source.
+
+### TODO state
+- ✅ Phase 0 (BFS seeder fix, commit ddac319)
+- ✅ Phase 2 (affinity grouping + net weights, commit 12f662a)
+- ✅ Phase 3.1+3.2 partial (decoupling cap co-location, commit f57c69a); 3.2 VCC/GND bus snap deferred
+- ✅ Phase 4 (shunt orientation, commit 377d977)
+- ⏳ Phase 5 (feedback), Phase 1 (proper tier module), Phase 3.2 VCC/GND snap
 
 ## 2026-03-03T01:00:00+00:00 — feat: Phase 3 — decoupling cap co-location (commit f57c69a)
 
