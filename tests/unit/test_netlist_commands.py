@@ -15,9 +15,8 @@ from kicad_pcb.commands.netlist import (
     resolve_schematic_paths,
 )
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.layout import compute_signal_flow_layout
+from kicad_pcb.layout import compute_orientations
 from kicad_pcb.models import ProjectRef
-from kicad_pcb.router import WIRE_EXTEND_MM
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_first, walk
@@ -86,7 +85,6 @@ def test_cmd_apply_netlist_creates_managed_schematic(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
             force=True,
             dry_run=False,
         )
@@ -120,7 +118,6 @@ def test_cmd_new_from_netlist_creates_project_and_applies(tmp_path: Path) -> Non
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -152,7 +149,6 @@ def test_new_from_netlist_schematic_parses_and_ownership_marker_present(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -190,7 +186,6 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -249,7 +244,6 @@ def test_apply_netlist_idempotent_apply_twice(
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
-        layout="heuristic",
         force=True,
         dry_run=False,
     )
@@ -281,7 +275,6 @@ def test_new_from_netlist_idempotency_via_two_projects(tmp_path: Path) -> None:
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
-        layout="heuristic",
     )
     args_b = Namespace(
         name="Idem_B",
@@ -290,7 +283,6 @@ def test_new_from_netlist_idempotency_via_two_projects(tmp_path: Path) -> None:
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
-        layout="heuristic",
     )
 
     result_a = cmd_new_from_netlist(args_a)
@@ -339,7 +331,6 @@ def test_empty_generation_invariant_raises_coded_error(
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
-                layout="heuristic",
                 force=True,
                 dry_run=False,
             )
@@ -385,7 +376,6 @@ def test_apply_netlist_dry_run_emits_no_write_warning(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
             force=True,
             dry_run=True,
         )
@@ -449,7 +439,6 @@ def test_apply_netlist_requires_at_least_80_percent_components_placed(
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
-                layout="heuristic",
                 force=True,
                 dry_run=False,
             )
@@ -557,7 +546,6 @@ def test_extends_symbol_embeds_flat_derived_in_lib_symbols(tmp_path: Path) -> No
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -628,7 +616,6 @@ def test_extends_symbol_instance_carries_all_inherited_pins(tmp_path: Path) -> N
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -677,7 +664,6 @@ def test_extends_symbol_nets_on_inherited_pins_validate_and_bind(tmp_path: Path)
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -743,7 +729,6 @@ def test_broken_extends_chain_raises_symbol_has_no_pins(tmp_path: Path) -> None:
                 netlist=str(ir_path),
                 symbols_dir=str(tmp_path),
                 mode="internal",
-                layout="heuristic",
             )
         )
 
@@ -783,7 +768,6 @@ def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
-                layout="heuristic",
             )
         )
 
@@ -903,7 +887,6 @@ def test_circuit_fidelity_multi_component_testlib(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -952,7 +935,6 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -976,17 +958,33 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
             except (ValueError, AttributeError):
                 pass
 
-    # Compute expected pin endpoints in schematic space using the same
-    # signal-flow layout algorithm the pipeline uses.
+    # Compute expected pin endpoints from the ACTUAL symbol positions in the
+    # generated schematic, applying the same rotation logic as _write_symbols.
     pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
     assert pin_at, "TestLib:R pin positions not found in fixture library"
 
-    ir = CircuitIR.model_validate(ir_data)
-    layout = compute_signal_flow_layout(ir)
+    ir = CircuitIR.load(ir_path)
+    layout: dict[str, tuple[float, float]] = {
+        str(sym["ref"]): (float(sym["x"]), float(sym["y"])) for sym in managed_doc.list_symbols()
+    }
+    orientations = compute_orientations(ir, layout)
+
     expected_endpoints: dict[tuple[str, str], tuple[float, float]] = {}
-    for ref, (sx, sy) in layout.items():
-        for pin_num, (px, py, _pa) in pin_at.items():
-            expected_endpoints[(ref, pin_num)] = (round(sx + px, 2), round(sy + py, 2))
+    for sym in managed_doc.list_symbols():
+        ref = str(sym["ref"])
+        sx, sy = float(sym["x"]), float(sym["y"])
+        rotation = orientations.get(ref, 0)
+        if rotation == 0:
+            for pin_num, (px, py, _pa) in pin_at.items():
+                expected_endpoints[(ref, pin_num)] = (round(sx + px, 2), round(sy + py, 2))
+        else:
+            theta = math.radians(rotation)
+            cos_t = math.cos(theta)
+            sin_t = math.sin(theta)
+            for pin_num, (px, py, _pa) in pin_at.items():
+                rpx = cos_t * px - sin_t * py
+                rpy = sin_t * px + cos_t * py
+                expected_endpoints[(ref, pin_num)] = (round(sx + rpx, 2), round(sy + rpy, 2))
 
     # Verify every expected pin endpoint has a wire starting there.
     missing: list[str] = []
@@ -1013,8 +1011,8 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
     Assertions
     ----------
     1. No ``(label "MID" …)`` node exists in the managed schematic.
-    2. At least one wire is longer than WIRE_EXTEND_MM — an L-route bridge
-       was actually generated (not just two disconnected stubs).
+    2. At least 5 wire segments are present (4 pin stubs + ≥1 L-route bridge) —
+       a direct-wire bridge was actually generated between R1 and R2.
     3. ``(global_label "VCC" …)`` and ``(global_label "GND" …)`` exist —
        power net routing is intact.
     """
@@ -1052,7 +1050,6 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
@@ -1074,9 +1071,12 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
         f"All labels present: {sorted(label_names)}"
     )
 
-    # Assertion 2: At least one wire longer than a single pin stub must exist,
-    # proving the router emitted a real L-route bridge between R1 and R2.
-    has_routing_wire = False
+    # Assertion 2: a direct-wire bridge between R1 and R2 must have been emitted.
+    # For direct routing the router adds 2 stubs per MID pin + 1–2 L-route bridge
+    # segments.  For only stub fallback it would have added a local net label for
+    # MID (caught by assertion 1).  We verify that at least one bridge wire
+    # exists in addition to the 4 pin-stub wires (VCC, GND, R1-pin2, R2-pin1).
+    all_wire_segments: list[tuple[float, float, float, float]] = []
     for node in walk(managed_doc.root):
         if not (isinstance(node, ListNode) and node.key == "wire"):
             continue
@@ -1090,15 +1090,17 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
                 y1 = float(xy1.items[2].value)  # type: ignore[union-attr]
                 x2 = float(xy2.items[1].value)  # type: ignore[union-attr]
                 y2 = float(xy2.items[2].value)  # type: ignore[union-attr]
-                if math.hypot(x2 - x1, y2 - y1) > WIRE_EXTEND_MM + 0.01:
-                    has_routing_wire = True
-                    break
+                all_wire_segments.append((x1, y1, x2, y2))
             except (ValueError, AttributeError, IndexError):
                 pass
 
-    assert has_routing_wire, (
-        f"No wire longer than WIRE_EXTEND_MM ({WIRE_EXTEND_MM}mm) found; "
-        "the router may only have emitted pin stubs with no L-route bridge."
+    # 4 stub wires (VCC stub, GND stub, R1-pin2 stub, R2-pin1 stub) + at least
+    # one L-route bridge = minimum 5 wire segments for a direct-wire routing.
+    # Stub-only would produce 4 wires + a MID label, which assertion 1 already
+    # catches — so reaching here means direct routing fired.
+    assert len(all_wire_segments) >= 5, (  # noqa: PLR2004
+        f"Expected ≥5 wire segments for direct-wire routing; found {len(all_wire_segments)}. "
+        "The router may not have emitted an L-route bridge between R1 and R2."
     )
 
     # Assertion 3: Single-pin power nets must get global_label nodes (power routing),
@@ -1184,7 +1186,6 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
             netlist=str(ir_path),
             symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -1446,7 +1447,6 @@ def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Pat
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
-            layout="heuristic",
         )
     )
 

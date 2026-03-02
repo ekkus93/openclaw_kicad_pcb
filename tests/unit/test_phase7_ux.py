@@ -6,8 +6,7 @@ Covers two main areas:
     - TestStrictFieldWiring     : ``_ApplyNetlistRequest`` has a ``strict`` field
       that is passed to ``mutate_and_validate_sch``.
     - TestCLIParsers            : ``apply-netlist``, ``new-from-netlist``,
-      ``compile-netlist``, and ``add-component`` all expose ``--strict``; and
-      ``compile-netlist`` also exposes ``--layout``.
+      ``compile-netlist``, and ``add-component`` all expose ``--strict``.
 
 7.2  Graphviz mandatory (no silent fallback)
     - TestGraphvizFailsLoud     : ``GraphvizLayoutEngine`` raises
@@ -52,7 +51,7 @@ def _minimal_ir_payload() -> dict:
 
 
 def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str = "proj", **extra) -> object:
-    """Run cmd_new_from_netlist in internal/heuristic mode."""
+    """Run cmd_new_from_netlist in internal mode."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     ir_path = tmp_path / "ir.json"
     ir_path.write_text(json.dumps(ir_payload), encoding="utf-8")
@@ -63,7 +62,6 @@ def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str = "proj", *
         description="",
         symbols_dir=str(_FIXTURES_DIR) if _FIXTURES_DIR.exists() else None,
         mode="internal",
-        layout="heuristic",
         auto_fix=False,
         strict=False,
     )
@@ -115,7 +113,7 @@ class TestStrictFieldWiring:
 
 
 class TestCLIParsers:
-    """Check that relevant subcommands expose --strict (and compile-netlist exposes --layout)."""
+    """Check that relevant subcommands expose --strict."""
 
     @pytest.mark.parametrize(
         "subcommand,extra_required",
@@ -123,10 +121,6 @@ class TestCLIParsers:
             (["apply-netlist", "--netlist", "x.json", "--strict"], {}),
             (["new-from-netlist", "--name", "p", "--netlist", "x.json", "--strict"], {}),
             (["compile-netlist", "--name", "p", "--netlist", "x.json", "--strict"], {}),
-            (
-                ["compile-netlist", "--name", "p", "--netlist", "x.json", "--layout", "heuristic"],
-                {},
-            ),
             (["add-component", "Device:R", "R1", "--strict"], {}),
         ],
     )
@@ -242,7 +236,6 @@ class TestWriteSymbolsThreeTuple:
             symbol_index=index,
             project_name="test",
             stats=stats,
-            layout_mode="heuristic",
             cache_path=None,
         )
 
@@ -303,12 +296,11 @@ class TestGraphvizRequiredEndToEnd:
                 symbol_index=index,
                 project_name="test",
                 stats=stats,
-                layout_mode="graphviz",
                 cache_path=None,
             )
 
-    def test_no_fallback_warning_code_with_heuristic(self, tmp_path: Path) -> None:
-        """Using layout=heuristic never produces a GRAPHVIZ_LAYOUT_FALLBACK warning."""
-        result = _new_from_netlist(tmp_path, _minimal_ir_payload(), layout="heuristic")
+    def test_no_fallback_warning_code(self, tmp_path: Path) -> None:
+        """No GRAPHVIZ_LAYOUT_FALLBACK warning ever appears in results."""
+        result = _new_from_netlist(tmp_path, _minimal_ir_payload())
         codes = [w.get("code") for w in result.warnings]  # type: ignore[attr-defined]
         assert "GRAPHVIZ_LAYOUT_FALLBACK" not in codes

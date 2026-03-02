@@ -78,7 +78,7 @@ def _write_ir(path: Path, payload: dict) -> None:
 
 
 def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str) -> object:
-    """Run cmd_new_from_netlist in internal/heuristic mode and return result."""
+    """Run cmd_new_from_netlist in internal mode and return result."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     ir_path = tmp_path / "ir.json"
     _write_ir(ir_path, ir_payload)
@@ -90,7 +90,6 @@ def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str) -> object:
             netlist=str(ir_path),
             symbols_dir=str(_FIXTURES_DIR),
             mode="internal",
-            layout="heuristic",
         )
     )
 
@@ -651,7 +650,6 @@ def _new_from_netlist_file(tmp_path: Path, ir_path: Path, *, name: str) -> objec
             netlist=str(ir_path),
             symbols_dir=str(_FIXTURES_DIR),
             mode="internal",
-            layout="heuristic",
         )
     )
 

@@ -137,16 +137,6 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     p_apply.add_argument("--force", action="store_true", help="Adopt non-owned schematic")
     p_apply.add_argument("--dry-run", action="store_true", help="Validate without writing")
-    p_apply.add_argument(
-        "--layout",
-        choices=["auto", "graphviz", "heuristic", "none"],
-        default="auto",
-        dest="layout",
-        help=(
-            "Schematic layout engine (default: auto — requires Graphviz dot; "
-            "use heuristic for dot-free layout)"
-        ),
-    )
     p_apply.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
     p_apply.set_defaults(func=cmd_apply_netlist)
 
@@ -178,16 +168,6 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         dest="auto_fix",
         default=True,
         help="Disable deterministic auto-fix on validation failure",
-    )
-    p_new_netlist.add_argument(
-        "--layout",
-        choices=["auto", "graphviz", "heuristic", "none"],
-        default="auto",
-        dest="layout",
-        help=(
-            "Schematic layout engine (default: auto — requires Graphviz dot; "
-            "use heuristic for dot-free layout)"
-        ),
     )
     p_new_netlist.add_argument(
         "--strict", action="store_true", help="Treat lint warnings as errors"
@@ -292,16 +272,6 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         choices=["internal", "kicad"],
         default="kicad",
         help="Validation mode (default: kicad)",
-    )
-    p_compile.add_argument(
-        "--layout",
-        choices=["auto", "graphviz", "heuristic", "none"],
-        default="auto",
-        dest="layout",
-        help=(
-            "Schematic layout engine (default: auto — requires Graphviz dot; "
-            "use heuristic for dot-free layout)"
-        ),
     )
     p_compile.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
     p_compile.set_defaults(func=cmd_new_from_netlist)

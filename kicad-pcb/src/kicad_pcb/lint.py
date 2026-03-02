@@ -957,8 +957,8 @@ LINT_SUGGESTIONS: dict[str, str] = {
         "to improve schematic readability."
     ),
     "LAY003": (
-        "Move overlapping symbols apart using 'apply-netlist --layout graphviz' "
-        "or manually reposition them in KiCad's schematic editor."
+        "Move overlapping symbols apart by re-running 'apply-netlist' "
+        "or manually repositioning them in KiCad's schematic editor."
     ),
     "LAY004": (
         "Move the symbol inside the A4 page area (0–297 × 0–210 mm). "
