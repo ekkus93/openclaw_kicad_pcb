@@ -86,6 +86,7 @@ def test_cmd_apply_netlist_creates_managed_schematic(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
             force=True,
             dry_run=False,
         )
@@ -119,6 +120,7 @@ def test_cmd_new_from_netlist_creates_project_and_applies(tmp_path: Path) -> Non
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -150,6 +152,7 @@ def test_new_from_netlist_schematic_parses_and_ownership_marker_present(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -187,6 +190,7 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -245,6 +249,7 @@ def test_apply_netlist_idempotent_apply_twice(
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
+        layout="heuristic",
         force=True,
         dry_run=False,
     )
@@ -276,6 +281,7 @@ def test_new_from_netlist_idempotency_via_two_projects(tmp_path: Path) -> None:
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
+        layout="heuristic",
     )
     args_b = Namespace(
         name="Idem_B",
@@ -284,6 +290,7 @@ def test_new_from_netlist_idempotency_via_two_projects(tmp_path: Path) -> None:
         netlist=str(ir_path),
         symbols_dir=str(fixtures_dir),
         mode="internal",
+        layout="heuristic",
     )
 
     result_a = cmd_new_from_netlist(args_a)
@@ -332,6 +339,7 @@ def test_empty_generation_invariant_raises_coded_error(
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
+                layout="heuristic",
                 force=True,
                 dry_run=False,
             )
@@ -377,6 +385,7 @@ def test_apply_netlist_dry_run_emits_no_write_warning(
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
             force=True,
             dry_run=True,
         )
@@ -440,6 +449,7 @@ def test_apply_netlist_requires_at_least_80_percent_components_placed(
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
+                layout="heuristic",
                 force=True,
                 dry_run=False,
             )
@@ -547,6 +557,7 @@ def test_extends_symbol_embeds_flat_derived_in_lib_symbols(tmp_path: Path) -> No
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -617,6 +628,7 @@ def test_extends_symbol_instance_carries_all_inherited_pins(tmp_path: Path) -> N
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -665,6 +677,7 @@ def test_extends_symbol_nets_on_inherited_pins_validate_and_bind(tmp_path: Path)
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -730,6 +743,7 @@ def test_broken_extends_chain_raises_symbol_has_no_pins(tmp_path: Path) -> None:
                 netlist=str(ir_path),
                 symbols_dir=str(tmp_path),
                 mode="internal",
+                layout="heuristic",
             )
         )
 
@@ -769,6 +783,7 @@ def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
                 netlist=str(ir_path),
                 symbols_dir=str(fixtures_dir),
                 mode="internal",
+                layout="heuristic",
             )
         )
 
@@ -888,6 +903,7 @@ def test_circuit_fidelity_multi_component_testlib(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -936,6 +952,7 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -1035,6 +1052,7 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
@@ -1166,6 +1184,7 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
             netlist=str(ir_path),
             symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
             mode="internal",
+            layout="heuristic",
         )
     )
 
@@ -1427,6 +1446,7 @@ def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Pat
             netlist=str(ir_path),
             symbols_dir=str(fixtures_dir),
             mode="internal",
+            layout="heuristic",
         )
     )
 

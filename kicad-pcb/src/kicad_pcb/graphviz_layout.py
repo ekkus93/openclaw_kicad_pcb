@@ -361,7 +361,6 @@ class GraphvizLayoutEngine:
         self._timeout = timeout
         self._seed = seed
         self._cache_path = cache_path
-        self.last_fallback_info: dict[str, str] | None = None
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -380,7 +379,7 @@ class GraphvizLayoutEngine:
         **Determinism:** ``dot`` is invoked with ``-Gstart=<seed>`` (default
         7) so that repeated runs on identical input produce stable output.
 
-        Falls back to the heuristic engine if ``dot`` fails.
+        Raises :class:`RuntimeError` if ``dot`` fails or returns no positions.
         """
         refs = sorted(c.ref for c in ir.components)
         if not refs:
@@ -400,29 +399,23 @@ class GraphvizLayoutEngine:
         try:
             positions = self._run_dot(dot_source)
         except Exception as exc:  # noqa: BLE001
-            self.last_fallback_info = {
-                "command": f"{self._dot} -Tplain -Gstart={self._seed}",
-                "error": str(exc),
-                "fallback": "heuristic",
-            }
-            _log.warning("GraphvizLayoutEngine failed (%s); falling back to heuristic layout.", exc)
-            positions = {}
+            raise RuntimeError(
+                f"Graphviz 'dot' failed: {exc}.  Command: {self._dot} -Tplain -Gstart={self._seed}"
+            ) from exc
 
         if not positions:
-            _log.debug("Graphviz returned no node positions; using heuristic fallback.")
-            from .layout import HeuristicLayoutEngine  # noqa: PLC0415
+            raise RuntimeError(
+                "Graphviz 'dot' returned no node positions.  "
+                f"Command: {self._dot} -Tplain -Gstart={self._seed}"
+            )
 
-            return HeuristicLayoutEngine().compute_symbol_positions(ir)
-
-        # Verify all refs are covered; fill any gaps via heuristic.
+        # Verify all refs are covered.
         missing = [r for r in refs if _safe_id(r) not in positions]
         if missing:
-            from .layout import compute_signal_flow_layout  # noqa: PLC0415
-
-            heuristic = compute_signal_flow_layout(ir)
-            for ref in missing:
-                x, y = heuristic.get(ref, (ORIGIN_X, ORIGIN_Y))
-                positions[_safe_id(ref)] = (x, y, None)  # type: ignore[assignment]
+            raise RuntimeError(
+                f"Graphviz 'dot' did not return positions for refs: {missing!r}.  "
+                "Try --layout heuristic if this circuit cannot be processed by Graphviz."
+            )
 
         # Re-key from safe_id → original ref
         safe_to_ref = {_safe_id(r): r for r in refs}
