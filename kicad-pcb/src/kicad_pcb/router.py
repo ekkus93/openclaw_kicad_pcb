@@ -29,6 +29,13 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 WIRE_EXTEND_MM: float = 5.08  # pin stub length — 200 mil (one KiCad grid unit)
 MAX_DIRECT_DIST_MM: float = 120.0  # Manhattan distance cap for direct routing
+# When tiers are provided, a wire longer than this triggers net-label routing
+# even between adjacent-tier components.  Separate from MAX_DIRECT_DIST_MM so
+# the Manhattan fallback (no tiers) is not affected.  (Rule §4)
+MAX_DIRECT_WIRE_MM: float = 30.0
+# Approximate half-edge of a KiCad symbol bounding box (200 mil = 5.08 mm).
+# Used by detect_body_crossings to detect component-body wire crossings.
+SYMBOL_HALF_SIZE_MM: float = 5.08
 
 # Nets with degree > this threshold fall back to global-label style (avoids
 # spaghetti wiring for busses and power rails).
@@ -45,6 +52,112 @@ _POWER_NET_RE = re.compile(
 def _is_power_net_name(name: str) -> bool:
     """Return True when *name* corresponds to a power-rail net."""
     return bool(_POWER_NET_RE.match(name))
+
+
+def _tier_distance(ref_a: str, ref_b: str, tiers: dict[str, int]) -> int:
+    """Return the absolute tier-index difference between two component refs."""
+    return abs(tiers.get(ref_a, 0) - tiers.get(ref_b, 0))
+
+
+def _wire_crosses_box(  # noqa: PLR0913
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    bx: float,
+    by: float,
+    half: float,
+) -> bool:
+    """Return True when segment (x1,y1)→(x2,y2) intersects the axis-aligned
+    bounding box centred at *(bx, by)* with half-edge *half*.
+
+    Only orthogonal (horizontal and vertical) segments are considered;
+    diagonal segments always return False.
+    """
+    lx, rx = bx - half, bx + half
+    ty, bot = by - half, by + half  # top (smaller y in KiCad) / bottom
+    if math.isclose(y1, y2, abs_tol=0.01):  # horizontal segment
+        seg_lx, seg_rx = min(x1, x2), max(x1, x2)
+        return ty <= y1 <= bot and seg_lx < rx and seg_rx > lx
+    if math.isclose(x1, x2, abs_tol=0.01):  # vertical segment
+        seg_ty, seg_bot = min(y1, y2), max(y1, y2)
+        return lx <= x1 <= rx and seg_ty < bot and seg_bot > ty
+    return False
+
+
+def _detour_segment(
+    seg: WireSegment,
+    bx: float,
+    by: float,
+    half: float,
+) -> list[WireSegment]:
+    """Replace *seg* with a detour path that bypasses the AABB at *(bx, by)*.
+
+    For a horizontal wire the detour routes **above** the box
+    (``y_new = by - half - half``); for a vertical wire the detour routes
+    **to the left** (``x_new = bx - half - half``).
+
+    The returned list contains up to five orthogonal segments forming a
+    rectangular jog around the obstacle.
+    """
+    if math.isclose(seg.y1, seg.y2, abs_tol=0.01):  # horizontal
+        detour_y = by - half - half  # one symbol-height above box top
+        enter_x = max(bx - half, min(seg.x1, seg.x2))
+        exit_x = min(bx + half, max(seg.x1, seg.x2))
+        return [
+            WireSegment(seg.x1, seg.y1, enter_x, seg.y1),
+            WireSegment(enter_x, seg.y1, enter_x, detour_y),
+            WireSegment(enter_x, detour_y, exit_x, detour_y),
+            WireSegment(exit_x, detour_y, exit_x, seg.y2),
+            WireSegment(exit_x, seg.y2, seg.x2, seg.y2),
+        ]
+    if math.isclose(seg.x1, seg.x2, abs_tol=0.01):  # vertical
+        detour_x = bx - half - half  # one symbol-width to the left of box
+        enter_y = max(by - half, min(seg.y1, seg.y2))
+        exit_y = min(by + half, max(seg.y1, seg.y2))
+        return [
+            WireSegment(seg.x1, seg.y1, seg.x1, enter_y),
+            WireSegment(seg.x1, enter_y, detour_x, enter_y),
+            WireSegment(detour_x, enter_y, detour_x, exit_y),
+            WireSegment(detour_x, exit_y, seg.x1, exit_y),
+            WireSegment(seg.x1, exit_y, seg.x2, seg.y2),
+        ]
+    return [seg]  # diagonal — no detour (uncommon in schematic routing)
+
+
+def detect_body_crossings(
+    wires: list[WireSegment],
+    positions: dict[str, tuple[float, float, float | None]],
+) -> list[WireSegment]:
+    """Reroute wire segments that pass through a component bounding box.
+
+    Each component in *positions* is approximated as a
+    ``SYMBOL_HALF_SIZE_MM``-square bounding box centred on its KiCad
+    coordinates.  Any wire segment that intersects such a box is replaced with
+    a rectangular detour path (see :func:`_detour_segment`); all other
+    segments pass through unchanged.
+
+    Parameters
+    ----------
+    wires:
+        Current list of :class:`WireSegment` objects from :func:`route_nets`.
+    positions:
+        ``{ref: (x, y, rotation)}`` position map from the layout engine.
+
+    Returns a new wire list with all body crossings rerouted.
+    """
+    bboxes = [(pos[0], pos[1]) for pos in positions.values()]
+    result: list[WireSegment] = []
+    for seg in wires:
+        replaced = False
+        for bx, by in bboxes:
+            if _wire_crosses_box(seg.x1, seg.y1, seg.x2, seg.y2, bx, by, SYMBOL_HALF_SIZE_MM):
+                result.extend(_detour_segment(seg, bx, by, SYMBOL_HALF_SIZE_MM))
+                replaced = True
+                break  # one detour per segment; further crossings resolved on next call
+        if not replaced:
+            result.append(seg)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +343,8 @@ def route_nets(  # noqa: PLR0912, PLR0915
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
     use_bus: bool = False,
+    tiers: dict[str, int] | None = None,
+    positions: dict[str, tuple[float, float, float | None]] | None = None,
 ) -> NetRouting:
     """Compute routing decisions for all nets in *ir*.
 
@@ -238,9 +353,16 @@ def route_nets(  # noqa: PLR0912, PLR0915
     * **Power net** (`GND`, `VCC`, etc.) — emit a
       :class:`GlobalLabelPlacement` (power shape) per pin; avoids spaghetti
       on high-fanout rails.
-    * **Direct route** — exactly 2 known pins, Manhattan distance ≤
-      :data:`MAX_DIRECT_DIST_MM`: draw stub + stub + L-shaped connecting
-      wire.  No net labels emitted.
+    * **Direct route** — exactly 2 known pins.  Routing condition (Rule §4):
+
+      * When *tiers* is provided: direct route is used only when the
+        tier distance between the two pins is ≤ 1 **and** the resulting
+        L-route length is ≤ :data:`MAX_DIRECT_WIRE_MM`.  All other 2-pin
+        nets fall back to label route to avoid cross-tier spaghetti.
+      * When *tiers* is ``None`` (default): falls back to the legacy
+        Manhattan-distance cap (:data:`MAX_DIRECT_DIST_MM`).
+
+      No net labels are emitted for direct routes.
     * **Hub route** — 3–:data:`_HUB_MAX_DEGREE` known pins, all endpoints
       reachable: route spokes to a centroid hub; add a
       :class:`JunctionPoint` at the hub.  No net labels emitted.
@@ -266,6 +388,13 @@ def route_nets(  # noqa: PLR0912, PLR0915
         When ``True``, replace centroid-hub routing for multi-pin local nets
         with spine-style routing (:func:`_spine_route`).  Produces a cleaner
         "one long wire with taps" visual instead of star-shaped spokes.
+    tiers:
+        Optional ``{ref: tier_index}`` map.  When supplied, tier distance
+        governs the direct-route decision instead of Manhattan distance.
+    positions:
+        Optional ``{ref: (x, y, rotation)}`` layout position map.  When
+        supplied, wire segments that cross component bounding boxes are
+        automatically rerouted via :func:`detect_body_crossings`.
 
     Returns a :class:`NetRouting` with all decisions.
     """
@@ -310,7 +439,15 @@ def route_nets(  # noqa: PLR0912, PLR0915
             p1, (wx1, wy1, wa1) = known[1]
             ex0, ey0 = _stub_end(wx0, wy0, wa0)
             ex1, ey1 = _stub_end(wx1, wy1, wa1)
-            if _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM:
+            if tiers is not None:
+                # Rule §4: use tier distance + wire length guard.
+                tdist = _tier_distance(p0.ref, p1.ref, tiers)
+                l_segs = _l_route(ex0, ey0, ex1, ey1)
+                wire_len = sum(math.hypot(s.x2 - s.x1, s.y2 - s.y1) for s in l_segs)
+                can_direct = tdist <= 1 and wire_len <= MAX_DIRECT_WIRE_MM
+            else:
+                can_direct = _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM
+            if can_direct:
                 routing.wires.append(WireSegment(wx0, wy0, ex0, ey0))
                 routing.wires.append(WireSegment(wx1, wy1, ex1, ey1))
                 routing.wires.extend(_l_route(ex0, ey0, ex1, ey1))
@@ -375,6 +512,12 @@ def route_nets(  # noqa: PLR0912, PLR0915
             routing.labels.append(NetLabel(net.name, ex, ey, 0))
             routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
             fallback_y -= 10.0
+
+    # ----------------------------------------------------------------
+    # Body-crossing guard (Rule §4.3)
+    # ----------------------------------------------------------------
+    if positions is not None:
+        routing.wires = detect_body_crossings(routing.wires, positions)
 
     return routing
 
