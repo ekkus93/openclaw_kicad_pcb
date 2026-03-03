@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from .circuit_ir import CircuitIR
-from .errors import ErrorCode, UserError
-from .symbol_index import SymbolIndex
+from ..circuit_ir import CircuitIR
+from ..errors import ErrorCode, UserError
+from ..symbol_index import SymbolIndex
 
 
 def validate_circuit_ir(ir: CircuitIR) -> None:

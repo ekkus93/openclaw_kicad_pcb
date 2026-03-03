@@ -124,7 +124,7 @@ from .formatting import format_result, format_result_json
 
 # File-system utilities
 from .fs import SUPPORTED_ROOTS, _atomic_write, _check_sexp, _new_uuid, _write_temp_text
-from .ir_validate import validate_circuit_ir, validate_ir_symbols
+from .ir.validate import validate_circuit_ir, validate_ir_symbols
 from .lint import LINT_SUGGESTIONS, LintError, LintSeverity, lint_pcb, lint_schematic
 
 # Typed domain models

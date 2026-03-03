@@ -19,7 +19,7 @@ import copy
 from dataclasses import dataclass, field
 from typing import Any
 
-from .symbol_index import SymbolIndex
+from ..symbol_index import SymbolIndex
 
 # ---------------------------------------------------------------------------
 # Alias table

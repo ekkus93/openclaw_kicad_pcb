@@ -22,8 +22,8 @@ from ..config import (
 )
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
-from ..ir_autofix import autofix_circuit_ir
-from ..ir_validate import validate_circuit_ir, validate_ir_symbols
+from ..ir.autofix import autofix_circuit_ir
+from ..ir.validate import validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
 from ..layout_engine import make_layout_engine
 from ..models import ProjectRef
