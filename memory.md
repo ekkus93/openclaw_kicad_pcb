@@ -1988,3 +1988,11 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
   Fix: use [^{}] instead of [^}] to prevent spanning across nested braces.
 - 8 new tests in TestIcUnitGroups. 287 tests pass total.
 - Commit: dd614bc
+
+## 2025-07-14T00:00:00Z — Phase 7 complete: stereo channel detection and L/R vertical split
+
+- `layout.py`: `StereoChannel = Literal["L", "R", "mono"]`, `_STEREO_SUFFIX_RE` (matches `_L/-L/_R/-R` at end of net name), `detect_stereo_channels(ir)` — scans signal net names (≥2 pins, non-power), returns `{ref: channel}`.
+- `graphviz_layout.py`: `_STEREO_DEOVERLAP_MIN_MM = 10.17` (2×5.08+ε), `_apply_stereo_split(positions, channels)` — L→top 45%, R→bottom at 55%+, mono unchanged. Post-compression same-column deoverlap sweep prevents LAY003 regressions. Fast-path returns same object when no L/R channels. Wired into `compute_symbol_positions` after feedback snap.
+- KEY GOTCHA: 0.45× y-compression reduces spacing below LAY003 10.16mm threshold. Fixed by a deoverlap sweep that pushes same-x-column components ≥10.17mm apart within their channel band.
+- 11 new tests: TestDetectStereoChannels (6) + TestApplyStereoSplit (5). All 298 tests pass.
+- Commit: efd0e1d
