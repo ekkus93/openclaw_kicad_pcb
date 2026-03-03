@@ -503,15 +503,15 @@ __all__ = [
 
 ## Phase 8 — Run full checks and commit
 
-- [ ] `ruff check kicad-pcb/src/ tests/` — zero warnings.
-- [ ] `mypy kicad-pcb/src/kicad_pcb/` — zero errors across all source files.
-  - [ ] Pay attention to `lint_helpers.py`: the `_collect_wire_segments` helper
+- [x] `ruff check kicad-pcb/src/ tests/` — zero warnings.
+- [x] `mypy kicad-pcb/src/kicad_pcb/` — zero errors across all source files.
+  - [x] Pay attention to `lint_helpers.py`: the `_collect_wire_segments` helper
       will carry the same `# type: ignore[union-attr]` on `.value` access — add
       a comment and make sure mypy is happy with the overall shape.
-- [ ] `pytest tests/unit/ tests/integration/ -q` — all tests pass (including
+- [x] `pytest tests/unit/ tests/integration/ -q` — all tests pass (including
     all new `TestLAY*` and `TestSCH010` test classes).
-- [ ] Verify line counts meet Phase 7.3 targets.
-- [ ] Commit with message:
+- [x] Verify line counts meet Phase 7.3 targets.
+- [x] Commit with message:
   `refactor: split lint.py into lint_types / lint_helpers / lint_sch / lint_pcb`
 
 ---
