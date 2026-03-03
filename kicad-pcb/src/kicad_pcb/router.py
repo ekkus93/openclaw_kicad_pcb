@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -23,6 +22,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
     from .sch_doc import SchematicDoc
+
+from .component_types import is_power_net as _is_power_net_name
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -40,18 +41,6 @@ SYMBOL_HALF_SIZE_MM: float = 5.08
 # Nets with degree > this threshold fall back to global-label style (avoids
 # spaghetti wiring for busses and power rails).
 _HUB_MAX_DEGREE: int = 6
-
-# Power net pattern — these nets always use global labels regardless of degree.
-_POWER_NET_RE = re.compile(
-    r"^(?:GND|AGND|DGND|PGND|VCC|VDD|VSS|V\+|V-|VBAT|VREF|0V|"
-    r"[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
-    re.IGNORECASE,
-)
-
-
-def _is_power_net_name(name: str) -> bool:
-    """Return True when *name* corresponds to a power-rail net."""
-    return bool(_POWER_NET_RE.match(name))
 
 
 def _tier_distance(ref_a: str, ref_b: str, tiers: dict[str, int]) -> int:

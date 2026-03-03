@@ -3,6 +3,43 @@
 All layout engines satisfy :class:`LayoutEngine` and return
 ``{ref: (x_mm, y_mm, rotation_deg | None)}`` placements.
 
+Pipeline overview
+-----------------
+The full placement pipeline executed by :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`:
+
+1. **Tier assignment** (:func:`~kicad_pcb.tier.assign_tiers`) — topological
+   longest-path layering assigns each component a discrete x-column (tier 0 =
+   leftmost, increasing → rightward).  Connectors are pinned to tier 0;
+   power-only components are post-processed separately.
+
+2. **DOT graph construction** — a bipartite signal graph (components ↔ signal
+   nets, power nets excluded) is serialised to Graphviz DOT format.  Node
+   ``rank`` attributes inject the tier assignments so that Graphviz's
+   barycentric ordering step minimises edge crossings while respecting the
+   computed x-order.
+
+3. **Graphviz rank / coordinate computation** — ``dot -Tplain`` is invoked as a
+   subprocess.  The plain-text output provides (x, y) centre coordinates in
+   inches, which are scaled to millimetres via ``SCALE_MM_PER_GV``.
+
+4. **KiCad coordinate mapping** (:func:`~kicad_pcb.graphviz_layout.snap_positions`) —
+   raw dot coordinates are snapped to the KiCad 200-mil grid
+   (``GRID_ROW_MM = 7.62 mm``), page-bounds-checked, and deduplicated
+   so no two symbols share the same grid cell.
+
+5. **Orientation computation** (:func:`~kicad_pcb.layout.compute_orientations`) —
+   each component is classified as *series* (0°, horizontal in signal path)
+   or *shunt* (90°, bridging to a power/ground rail) based on its connected
+   nets.
+
+6. **Stereo-split** (optional, :func:`~kicad_pcb.layout.detect_stereo_channels`) —
+   when the circuit contains two symmetric stereo channels, components are
+   split vertically: left channel in the top half, right channel in the
+   bottom half of the A4 page.
+
+The final output maps each reference designator to a ``(x_mm, y_mm,
+rotation_deg | None)`` triple ready for :func:`~kicad_pcb.sch_writer.write_schematic`.
+
 Public API
 ----------
 :class:`LayoutEngine`             — structural Protocol every engine must satisfy.

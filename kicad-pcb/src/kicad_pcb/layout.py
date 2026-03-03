@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
+from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
 
 # ---------------------------------------------------------------------------
 # Page dimensions (mm) — must match lint.py _LAY_PAGE_MAX_X / _LAY_PAGE_MAX_Y.
@@ -70,27 +71,18 @@ _PASSIVE_PREFIXES: tuple[str, ...] = ("R", "C", "L")
 
 # Net-name prefixes that are power/ground rails.  Connections through these
 # nets are excluded from the orientation heuristic so only signal nets drive
-# the rotation decision.
-_POWER_NET_PREFIXES: tuple[str, ...] = (
-    "GND",
-    "VCC",
-    "VDD",
-    "VSS",
-    "PWR",
-    "AGND",
-    "PGND",
-    "DGND",
-    "V+",
-    "V-",
-    "VBAT",
-    "VREF",
-)
+# the rotation decision.  Imported from component_types to avoid duplication.
+_POWER_NET_PREFIXES: tuple[str, ...] = _POWER_NET_PREFIXES_CT
 
 
 def _is_power_net_layout(name: str) -> bool:
     """Return True when *name* looks like a power/ground rail.
 
-    Inline duplicate of the router-level helper to avoid a circular import.
+    Uses :data:`~kicad_pcb.component_types.POWER_NET_PREFIXES` from
+    :mod:`kicad_pcb.component_types`.  The ``startswith`` test intentionally
+    matches prefixed variants (e.g. ``VCC_FILTERED``) so that any net whose
+    name starts with a known power prefix is excluded from signal-path
+    orientation heuristics.
     """
     upper = name.upper()
     return any(upper == pfx or upper.startswith(pfx) for pfx in _POWER_NET_PREFIXES)

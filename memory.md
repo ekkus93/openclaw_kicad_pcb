@@ -2037,3 +2037,17 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - `tests/integration/test_phase9_integration.py`: 9 tests covering all assertions from 9.3 spec plus `make_layout_engine_with_ir` factory checks. All 9 pass.
 - KNOWN PRE-EXISTING FAILURE: `test_no_cache_path_does_not_write` — always fails because `kicad-pcb/_meta.json` and `skill.json` exist in the pytest CWD. Pre-dates Phase 9.
 - 1560 unit tests pass (1 pre-existing failure). 9 + existing phase6 integration tests pass.
+
+## 2025-07-11T00:00:00Z - Phase 10: Cleanup and documentation complete
+- Phase 10 spec items all done and committed.
+- **10.1 Extract shared component-type constants**:
+  - Added `POWER_NET_PREFIXES` tuple, `POWER_NET_PATTERN` compiled regex, and  `is_power_net(name: str) -> bool` to `component_types.py`.
+  - Added `import re` to `component_types.py`.
+  - `graphviz_layout.py`: removed local `_POWER_NET_PATTERN` regex + `_is_power_net()` function; replaced with `from .component_types import is_power_net as _is_power_net`. Removed redundant local aliases `_CONNECTOR_PREFIXES`/`_CAPACITOR_PREFIXES`; updated `_is_connector()`/`_is_capacitor()` to use `_CONNECTOR_PREFIXES_CT`/`_CAPACITOR_PREFIXES_CT` directly.
+  - `router.py`: removed `_POWER_NET_RE` regex + `_is_power_net_name()` function + now-unused `import re`; replaced with `from .component_types import is_power_net as _is_power_net_name`.
+  - `layout.py`: removed local `_POWER_NET_PREFIXES` tuple (12 items); replaced with `from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT`; `_is_power_net_layout()` now uses the centralized constant; docstring updated to reflect this.
+  - NOTE: `layout.py` keeps `_is_power_net_layout()` with `startswith` semantics (more permissive than IS regex — matches "VCC_FILTERED" etc.) — intentional for orientation heuristics. `graphviz_layout.py` and `router.py` use strict full-match regex via `is_power_net()`.
+- **10.2 layout_engine.py docstring**: Updated module docstring with full 6-step pipeline description (tier assignment → DOT graph → Graphviz → KiCad coord mapping → orientation → stereo split).
+- **10.3 COMPONENT_PLACEMENT.md**: Added "Implementation Status" table at top, covering all 10 rules with Status and implementing file/function.
+- **10.4 Tests**: ruff clean, mypy clean (51 files), all unit+integration tests pass (1561+31).
+- All Phase 10 checkboxes ticked in `code_review/COMPONENT_PLACEMENT_TODO.md`.
