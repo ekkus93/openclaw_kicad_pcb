@@ -59,6 +59,7 @@ from .gv_snap import (
     PAGE_MAX_X,
     PAGE_MAX_Y,
     SCALE_MM_PER_GV,
+    _apply_post_layout_snaps,
     _apply_stereo_split,
     _fit_to_page,
     _gv_to_kicad,
@@ -263,28 +264,18 @@ class GraphvizLayoutEngine:
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
 
-        # Post-layout: snap raw Graphviz positions to the KiCad 50-mil grid
-        # before any specialised snaps run.  The specialised post-layout passes
-        # below may override individual positions with off-grid values (e.g.
-        # ORIGIN_Y for power rails, precise IC offsets for decoupling caps);
-        # that is intentional — they take priority over the grid snap.
-        result = snap_positions(result)
-
-        # Post-layout: snap #PWR/#FLG power symbols to top or bottom page row.
-        result = _snap_power_symbols(result, ir)
-
-        # Post-layout: snap feedback components above their anchor IC/connector.
-        if feedback_refs:
-            result = _snap_feedback_components(result, annotations, ir)
-
-        # Post-layout: apply stereo L/R vertical split.
+        # Post-layout: apply all snap passes in canonical order (grid → power
+        # → feedback → stereo split → decoupling caps).  See
+        # gv_snap._apply_post_layout_snaps for the ordering rationale.
         channels = _detect_stereo_channels(ir)
-        if any(v in ("L", "R") for v in channels.values()):
-            result = _apply_stereo_split(result, channels)
-
-        # Post-layout: snap decoupling caps to sit directly above their IC.
-        if decoupling_map:
-            result = _post_snap_decoupling_caps(result, decoupling_map)
+        result = _apply_post_layout_snaps(
+            result,
+            ir,
+            feedback_refs=feedback_refs,
+            annotations=annotations,
+            channels=channels,
+            decoupling_map=decoupling_map,
+        )
 
         # Compute component orientations (rotation in degrees) from signal topology
         # and merge into the result so callers receive (x, y, rotation) triples.
@@ -361,6 +352,7 @@ class GraphvizLayoutEngine:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "apply_post_layout_snaps",
     "apply_stereo_split",
     "assign_bfs_tiers",
     "build_dot_source",
@@ -394,6 +386,7 @@ __all__ = [
 # public names for backwards compatibility and direct test access.
 # New code should import from graphviz_layout (not from the sub-modules).
 # ---------------------------------------------------------------------------
+apply_post_layout_snaps = _apply_post_layout_snaps
 assign_bfs_tiers = _assign_bfs_tiers
 build_dot_source = _build_dot_source
 compute_net_weights = _compute_net_weights

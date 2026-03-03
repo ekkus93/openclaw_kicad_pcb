@@ -2785,6 +2785,111 @@ class TestApplyStereoSplit:
 
 
 # ---------------------------------------------------------------------------
+# Phase 5 — _apply_post_layout_snaps coordinator
+# ---------------------------------------------------------------------------
+
+
+class TestApplyPostLayoutSnaps:
+    """Tests for :func:`apply_post_layout_snaps` in graphviz_layout."""
+
+    def _simple_ir(self) -> CircuitIR:
+        """Minimal IR: one connector, one resistor, one power symbol."""
+        return CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="In"),
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="#PWR01", symbol="power:VCC", value="VCC"),
+            ],
+            nets=[
+                NetIR(
+                    name="NET",
+                    pins=[
+                        PinRefIR(ref="J1", pin="1"),
+                        PinRefIR(ref="R1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[
+                        PinRefIR(ref="R1", pin="2"),
+                        PinRefIR(ref="#PWR01", pin="1"),
+                    ],
+                ),
+            ],
+        )
+
+    def test_snap_order_power_before_feedback(self) -> None:
+        """Power snap must run before feedback snap.
+
+        A ``#PWR`` VCC symbol must be clamped to ``ORIGIN_Y`` by the power
+        snap pass even when a feedback ref shares the same x-column.  The
+        feedback snap only moves non-``#PWR`` refs, so the power-snap result
+        is preserved.
+        """
+        ir = self._simple_ir()
+        # Place #PWR01 at a y somewhere in the middle of the page.
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "#PWR01": (50.0, 120.0, None),
+            "R1": (50.0, 100.0, None),
+            "J1": (30.48, 80.0, None),
+        }
+        # Treat R1 as a feedback ref so the feedback pass attempts to move it.
+        annotations = {"R1": ComponentAnnotation(feedback=True)}
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs={"R1"},
+            annotations=annotations,
+            channels={"J1": "mono", "R1": "mono", "#PWR01": "mono"},
+            decoupling_map={},
+        )
+        # Power snap: #PWR01 (VCC) → top row = ORIGIN_Y.
+        assert result["#PWR01"][1] == pytest.approx(_gv_mod.ORIGIN_Y), (
+            f"#PWR01 must be clamped to ORIGIN_Y={_gv_mod.ORIGIN_Y} by power snap, "
+            f"got {result['#PWR01'][1]}"
+        )
+
+    def test_snap_skips_empty_feedback_refs(self) -> None:
+        """Passing feedback_refs=set() must not raise and must return valid positions."""
+        ir = self._simple_ir()
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 80.0, None),
+            "R1": (50.0, 100.0, None),
+        }
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={"J1": "mono", "R1": "mono"},
+            decoupling_map={},
+        )
+        # All refs must still be present; no exception raised.
+        assert set(result.keys()) == {"J1", "R1"}
+
+    def test_snap_skips_mono_channels(self) -> None:
+        """All-mono channels must leave y-coordinates at their grid-snapped values."""
+        ir = self._simple_ir()
+        # Place components at exact grid positions so snap does not change them.
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 50.80, None),
+            "R1": (50.80, 76.20, None),
+        }
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={"J1": "mono", "R1": "mono"},
+            decoupling_map={},
+        )
+        # No stereo split — y values unchanged (they're already on the grid).
+        assert result["J1"][1] == pytest.approx(positions["J1"][1])
+        assert result["R1"][1] == pytest.approx(positions["R1"][1])
+
+
+# ---------------------------------------------------------------------------
 # Phase 8 — Wire routing improvements (Rule §4)
 # ---------------------------------------------------------------------------
 
