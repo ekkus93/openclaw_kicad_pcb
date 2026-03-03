@@ -11,6 +11,7 @@ priority chain so that users can override the default system path at any level:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 from dataclasses import dataclass
@@ -190,14 +191,25 @@ def set_current_project(project: ProjectRef) -> None:
 
 
 def get_current_session() -> SessionRef | None:
-    """Return the active :class:`.SessionRef`, or ``None`` if no session is open."""
+    """Return the active :class:`.SessionRef`, or ``None`` if no session is open.
+
+    If the persisted session directory no longer exists on disk (e.g. it was
+    manually deleted), the stale marker is silently removed and ``None`` is
+    returned so the bot does not accidentally create files in a missing path.
+    """
     if CURRENT_SESSION_FILE.exists():
         try:
             with CURRENT_SESSION_FILE.open(encoding="utf-8") as f:
                 data = json.load(f)
-            return SessionRef.from_dict(data)
+            ref = SessionRef.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError):
-            pass
+            return None
+        if not ref.path.exists():
+            # Session directory was deleted; clean up the stale marker.
+            with contextlib.suppress(OSError):
+                CURRENT_SESSION_FILE.unlink()
+            return None
+        return ref
     return None
 
 
