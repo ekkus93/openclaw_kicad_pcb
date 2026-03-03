@@ -7,6 +7,7 @@ import types
 import uuid
 from pathlib import Path
 
+import kicad_pcb.commands.session as session_mod
 import kicad_pcb.config as cfg_mod
 import pytest
 from kicad_pcb.commands.session import cmd_close_session, cmd_new_session, cmd_session_info
@@ -22,12 +23,28 @@ from kicad_pcb.results import NewSessionResult, SessionInfoResult
 
 @pytest.fixture()
 def session_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Patch config so all session I/O goes into tmp_path."""
+    """Patch config so all session I/O goes into tmp_path.
+
+    Two patches are required for each symbol:
+    * ``cfg_mod`` — affects code that calls via the module (e.g. config helpers).
+    * ``session_mod`` — affects ``cmd_new_session`` / ``cmd_session_info`` /
+      ``cmd_close_session``, which import the names directly
+      (``from ..config import get_sessions_base_dir``) and therefore hold a
+      direct binding that is unaffected by patching the config module.
+    """
     sessions_dir = tmp_path / "sessions"
     current_file = tmp_path / "current_session.json"
 
+    # Patch config module (for helpers called via cfg_mod.*)
     monkeypatch.setattr(cfg_mod, "CURRENT_SESSION_FILE", current_file)
     monkeypatch.setattr(cfg_mod, "get_sessions_base_dir", lambda: sessions_dir)
+
+    # Patch commands.session module (for direct-import bindings in cmd_*)
+    monkeypatch.setattr(session_mod, "get_sessions_base_dir", lambda: sessions_dir)
+    monkeypatch.setattr(session_mod, "get_current_session", get_current_session)
+    monkeypatch.setattr(session_mod, "set_current_session", set_current_session)
+    monkeypatch.setattr(session_mod, "clear_current_session", clear_current_session)
+
     return tmp_path
 
 
@@ -117,10 +134,12 @@ def test_get_current_session_returns_none_when_no_file(session_env: Path):
 
 def test_set_get_current_session_round_trip(session_env: Path, tmp_path: Path):
     uid = uuid.uuid4().hex
+    session_dir = tmp_path / "test_dir"
+    session_dir.mkdir()
     ref = SessionRef(
         name="test",
         uuid=uid,
-        path=tmp_path / "test_dir",
+        path=session_dir,
         created="2025-01-01T00:00:00",
         description="",
     )
@@ -134,12 +153,30 @@ def test_set_get_current_session_round_trip(session_env: Path, tmp_path: Path):
 
 def test_clear_current_session_removes_file(session_env: Path, tmp_path: Path):
     uid = uuid.uuid4().hex
-    ref = SessionRef(name="x", uuid=uid, path=tmp_path / "x", created="", description="")
+    session_dir = tmp_path / "x"
+    session_dir.mkdir()
+    ref = SessionRef(name="x", uuid=uid, path=session_dir, created="", description="")
     set_current_session(ref)
     assert get_current_session() is not None
 
     clear_current_session()
     assert get_current_session() is None
+
+
+def test_get_current_session_returns_none_for_missing_dir(session_env: Path, tmp_path: Path):
+    """When the session directory has been deleted, get_current_session clears the stale
+    marker and returns None instead of returning a ref with a broken path."""
+    uid = uuid.uuid4().hex
+    missing_dir = tmp_path / "gone"
+    # Deliberately do NOT create missing_dir
+    ref = SessionRef(name="stale", uuid=uid, path=missing_dir, created="", description="")
+    set_current_session(ref)
+    assert cfg_mod.CURRENT_SESSION_FILE.exists()
+
+    result = get_current_session()
+
+    assert result is None
+    assert not cfg_mod.CURRENT_SESSION_FILE.exists()
 
 
 # ---------------------------------------------------------------------------
