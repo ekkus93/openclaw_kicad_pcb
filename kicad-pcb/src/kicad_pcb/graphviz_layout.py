@@ -50,6 +50,7 @@ from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .layout import ComponentAnnotation as _ComponentAnnotation
+from .layout import detect_stereo_channels as _detect_stereo_channels
 from .layout import find_feedback_paths as _find_feedback_paths
 from .tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
 from .tier import assign_tiers as _assign_tiers
@@ -67,6 +68,11 @@ ORIGIN_Y: float = 50.80  # mm — top margin on an A4 page
 # Leave a 10 mm gutter on the right and bottom edges.
 PAGE_MAX_X: float = 287.0  # mm (297 - 10)
 PAGE_MAX_Y: float = 200.0  # mm (210 - 10)
+
+# Minimum centre-to-centre distance that avoids a LAY003 overlap warning
+# (symbol bounding box = ±5.08 mm, so touching copies are 10.16 mm apart).
+# Used by _apply_stereo_split to push compressed same-column components apart.
+_STEREO_DEOVERLAP_MIN_MM: float = 10.17  # 2 × 5.08 + ε
 
 # Scale factor: mm per one "graph unit" in dot -Tplain output.
 # dot -Tplain reports node centre coordinates in inches (not points).
@@ -649,6 +655,78 @@ def _parse_plain_positions(plain_output: str) -> dict[str, tuple[float, float]]:
     return positions
 
 
+def _apply_stereo_split(
+    positions: dict[str, tuple[float, float, float | None]],
+    channels: dict[str, str],
+    *,
+    origin_y: float = ORIGIN_Y,
+    page_max_y: float = PAGE_MAX_Y,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Remap y-coordinates to enforce stereo top-half / bottom-half split.
+
+    Components classified as *left-channel* are compressed into the top
+    45 % of the usable page height; *right-channel* components occupy the
+    bottom band starting at 55 % of the usable page height.  *Mono* /
+    unclassified components are left at their original y position.
+
+    Formulae (as specified in Rule \u00a78):
+
+    * L: ``y_final = origin_y + (y_relative \u00d7 0.45)``
+    * R: ``y_final = origin_y + page_height \u00d7 0.55 + (y_relative \u00d7 0.45)``
+    * mono: unchanged
+
+    where ``y_relative = y \u2212 origin_y`` and
+    ``page_height = page_max_y \u2212 origin_y``.
+
+    Parameters
+    ----------
+    positions:
+        Current KiCad mm positions from ``_gv_to_kicad``.
+    channels:
+        ``{ref: channel}`` from :func:`detect_stereo_channels`.
+    origin_y:
+        Top of the usable schematic area (default :data:`ORIGIN_Y`).
+    page_max_y:
+        Bottom of the usable schematic area (default :data:`PAGE_MAX_Y`).
+    """
+    # Fast-path: skip entirely when no L or R components are present.
+    if not any(v in ("L", "R") for v in channels.values()):
+        return positions
+
+    page_height = page_max_y - origin_y
+    result: dict[str, tuple[float, float, float | None]] = {}
+    for ref, (x, y, rot) in positions.items():
+        channel = channels.get(ref, "mono")
+        y_rel = y - origin_y
+        if channel == "L":
+            y_new = origin_y + y_rel * 0.45
+        elif channel == "R":
+            y_new = origin_y + page_height * 0.55 + y_rel * 0.45
+        else:
+            y_new = y
+        result[ref] = (x, round(y_new, 2), rot)
+
+    # Deoverlap pass: components in the same x-column may end up closer than
+    # 10.16 mm after y-compression.  Sort each column by ascending y and push
+    # any pair that would violate LAY003 apart.
+    by_x: dict[float, list[str]] = defaultdict(list)
+    for ref, (x, _y, _rot) in result.items():
+        by_x[x].append(ref)
+    for group in by_x.values():
+        if len(group) < 2:
+            continue
+        group.sort(key=lambda r: result[r][1])
+        for i in range(1, len(group)):
+            prev_ref = group[i - 1]
+            curr_ref = group[i]
+            px, py, pr = result[prev_ref]
+            cx, cy, cr = result[curr_ref]
+            if cy - py < _STEREO_DEOVERLAP_MIN_MM:
+                result[curr_ref] = (cx, round(py + _STEREO_DEOVERLAP_MIN_MM, 2), cr)
+
+    return result
+
+
 def _snap_feedback_components(
     positions: dict[str, tuple[float, float, float | None]],
     annotations: dict[str, _ComponentAnnotation],
@@ -943,6 +1021,11 @@ class GraphvizLayoutEngine:
         if feedback_refs:
             result = _snap_feedback_components(result, annotations, ir)
 
+        # Post-layout: apply stereo L/R vertical split.
+        channels = _detect_stereo_channels(ir)
+        if any(v in ("L", "R") for v in channels.values()):
+            result = _apply_stereo_split(result, channels)
+
         # Post-layout: snap decoupling caps to sit directly above their IC.
         if decoupling_map:
             result = _post_snap_decoupling_caps(result, decoupling_map)
@@ -1012,6 +1095,7 @@ class GraphvizLayoutEngine:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "apply_stereo_split",
     "assign_bfs_tiers",
     "build_dot_source",
     "compute_net_weights",
@@ -1049,6 +1133,7 @@ post_snap_decoupling_caps = _post_snap_decoupling_caps
 save_layout_cache = _save_layout_cache
 snap_feedback_components = _snap_feedback_components
 snap_power_symbols = _snap_power_symbols
+apply_stereo_split = _apply_stereo_split
 
 
 def _snap(v: float, grid: float = 0.254) -> float:

@@ -8,9 +8,10 @@ components end up adjacent to each other.
 from __future__ import annotations
 
 import math
+import re
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
@@ -581,6 +582,77 @@ def find_feedback_paths(
                 break
 
         result[ref] = ComponentAnnotation(feedback=is_feedback)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Stereo channel detection (Rule §8)
+# ---------------------------------------------------------------------------
+
+#: Channel label type — ``"L"``, ``"R"``, or ``"mono"``.
+StereoChannel = Literal["L", "R", "mono"]
+
+#: Regex matching the stereo-channel suffix at the end of a net name.
+#: Captures ``_L``, ``-L``, ``_R``, ``-R`` (case-insensitive).
+_STEREO_SUFFIX_RE: re.Pattern[str] = re.compile(r"[_-]([LR])$", re.IGNORECASE)
+
+
+def detect_stereo_channels(
+    ir: CircuitIR,
+) -> dict[str, StereoChannel]:
+    """Classify every component as left-channel, right-channel, or mono.
+
+    Algorithm
+    ---------
+    For each component, collect all signal nets (non-power, \u22652 pins) that it
+    participates in.  A net is *left-channel* when its name ends with ``_L``
+    or ``-L`` (case-insensitive); similarly for ``_R`` / ``-R`` (right).
+
+    Channel assignment rules:
+
+    * **L** — at least one L-channel net, zero R-channel nets.
+    * **R** — at least one R-channel net, zero L-channel nets.
+    * **mono** — both L and R nets, or no stereo-suffix nets at all.
+
+    This is the topological signature of a stereo headphone-amp pair:
+    ``R1`` sits on ``IN_L`` only \u2192 ``R1`` is ``\"L\"``;  ``R2`` sits on ``IN_R``
+    only \u2192 ``R2`` is ``\"R\"``;  ``J1`` (both channels) \u2192 ``\"mono\"``.
+
+    Parameters
+    ----------
+    ir:
+        Parsed circuit IR.
+
+    Returns
+    -------
+    dict[str, StereoChannel]
+        Maps every component reference to its channel.  All components in
+        *ir* are present in the result; components with no signal-net
+        connections receive ``\"mono\"``.
+    """
+    # Collect signal nets (non-power, \u22652 pins).
+    signal_nets = [n for n in ir.nets if not _is_power_net_layout(n.name) and len(n.pins) >= 2]
+
+    # Build: component \u2192 set of stereo channel labels from its signal nets.
+    comp_channels: dict[str, set[str]] = {c.ref: set() for c in ir.components}
+    for net in signal_nets:
+        m = _STEREO_SUFFIX_RE.search(net.name)
+        if m is None:
+            continue  # no stereo suffix; doesn't affect channel assignment
+        letter = m.group(1).upper()  # "L" or "R"
+        for pin in net.pins:
+            if pin.ref in comp_channels:
+                comp_channels[pin.ref].add(letter)
+
+    result: dict[str, StereoChannel] = {}
+    for ref, letters in comp_channels.items():
+        if letters == {"L"}:
+            result[ref] = "L"
+        elif letters == {"R"}:
+            result[ref] = "R"
+        else:
+            result[ref] = "mono"
 
     return result
 
