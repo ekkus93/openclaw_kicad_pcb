@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import math
 import shutil
 from collections.abc import Callable
@@ -89,11 +90,10 @@ def _apply_netlist_to_project(
     symbol_index = SymbolIndex(symbols_dir=request.symbols_dir)
     validate_ir_symbols(ir, symbol_index)
 
-    sheet_uuid = _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
-
-    managed_sch_path = project.path / MANAGED_SHEET_FILE
-    _ensure_managed_file_exists(managed_sch_path, dry_run=request.dry_run)
-
+    # Pre-flight: check kicad-cli availability BEFORE touching the filesystem.
+    # This prevents a half-initialised project where the root schematic has been
+    # adopted and the managed schematic is an empty stub, but the generation
+    # itself cannot run because a required tool is missing.
     cli: KicadCliAdapter | None = None
     if mode >= ValidationMode.KICAD:
         if shutil.which("kicad-cli") is None:
@@ -114,6 +114,16 @@ def _apply_netlist_to_project(
             }
         )
 
+    sheet_uuid = _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
+
+    managed_sch_path = project.path / MANAGED_SHEET_FILE
+    # Track whether we are about to create the managed file for the first time.
+    # If generation subsequently fails we delete the empty stub so the project
+    # is left in a clean, retryable state rather than having a misleading
+    # zero-content managed schematic on disk.
+    managed_was_absent = not managed_sch_path.exists()
+    _ensure_managed_file_exists(managed_sch_path, dry_run=request.dry_run)
+
     stats: dict[str, int] = {
         "symbols": 0,
         "wires": 0,
@@ -123,25 +133,36 @@ def _apply_netlist_to_project(
         "binding_markers": 0,
     }
 
-    mutate_and_validate_sch(
-        managed_sch_path,
-        _build_managed_mutator(
-            ir=ir,
-            project=project,
-            symbol_index=symbol_index,
-            sheet_uuid=sheet_uuid,
-            request=request,
-            stats=stats,
-            warnings=warnings,
-            managed_sch_path=managed_sch_path,
-        ),
-        mode=mode,
-        cli=cli,
-        operation="apply-netlist",
-        dry_run=request.dry_run,
-        backup=request.backup,
-        strict=request.strict,
-    )
+    try:
+        mutate_and_validate_sch(
+            managed_sch_path,
+            _build_managed_mutator(
+                ir=ir,
+                project=project,
+                symbol_index=symbol_index,
+                sheet_uuid=sheet_uuid,
+                request=request,
+                stats=stats,
+                warnings=warnings,
+                managed_sch_path=managed_sch_path,
+            ),
+            mode=mode,
+            cli=cli,
+            operation="apply-netlist",
+            dry_run=request.dry_run,
+            backup=request.backup,
+            strict=request.strict,
+        )
+    except Exception:
+        # If the managed schematic was newly created as an empty stub and the
+        # mutation failed, remove it so that the project is left in a clean state.
+        # A subsequent retry will reinitialise the file from scratch.
+        # Suppress OSError so a filesystem race (e.g. concurrent deletion) does
+        # not shadow the original exception.
+        if managed_was_absent and not request.dry_run:
+            with contextlib.suppress(OSError):
+                managed_sch_path.unlink(missing_ok=True)
+        raise
 
     if request.dry_run:
         warnings.append(
