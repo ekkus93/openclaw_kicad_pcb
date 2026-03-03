@@ -19,9 +19,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from .lint_types import _ERR, LintIssue
-from .sexpr.nodes import AtomNode, ListNode, StringNode
-from .sexpr.utils import find_first, walk
+from ..sexpr.nodes import AtomNode, ListNode, StringNode
+from ..sexpr.utils import find_first, walk
+from .defs import _ERR, LintIssue
 
 
 def _is_numeric_atom(node: object) -> bool:

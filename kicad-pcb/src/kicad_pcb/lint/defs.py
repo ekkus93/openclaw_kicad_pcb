@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from .errors import KiCadError
+from ..errors import KiCadError
 
 __all__ = [
     "LintError",

@@ -11,9 +11,9 @@ Import from this module for backwards compatibility with existing call sites.
 
 from __future__ import annotations
 
-from .lint_pcb import lint_pcb
-from .lint_sch import lint_schematic, lint_schematic_layout
-from .lint_types import LINT_SUGGESTIONS, LintError, LintIssue, LintSeverity
+from .defs import LINT_SUGGESTIONS, LintError, LintIssue, LintSeverity
+from .pcb import lint_pcb
+from .sch import lint_schematic, lint_schematic_layout
 
 __all__ = [
     "LintError",
