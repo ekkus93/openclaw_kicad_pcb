@@ -40,6 +40,13 @@ from __future__ import annotations
 import math
 from collections import Counter
 
+from .lint_helpers import (
+    _collect_uuids,
+    _float_from_atom,
+    _get_property_value,
+    _is_numeric_atom,
+    _symbol_lib_id,
+)
 from .lint_types import _ERR, _WARN, LINT_SUGGESTIONS, LintError, LintIssue, LintSeverity
 from .sexpr.nodes import AtomNode, ListNode, StringNode
 from .sexpr.utils import find_all, find_first, walk
@@ -56,71 +63,6 @@ __all__ = [
 
 # Coordinates beyond ±10 000 mm are almost certainly erroneous for hobby PCBs.
 _COORD_MAX: float = 10_000.0
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _is_numeric_atom(node: object) -> bool:
-    """Return ``True`` when *node* is an :class:`AtomNode` holding a valid float."""
-    if not isinstance(node, AtomNode):
-        return False
-    try:
-        float(node.value)
-        return True
-    except ValueError:
-        return False
-
-
-def _float_from_atom(node: object) -> float | None:
-    """Return the float value of *node* if it is a numeric :class:`AtomNode`."""
-    if not isinstance(node, AtomNode):
-        return None
-    try:
-        return float(node.value)
-    except ValueError:
-        return None
-
-
-def _collect_uuids(root: ListNode) -> list[str]:
-    """Walk *root* and return every ``(uuid "value")`` string found."""
-    uuids: list[str] = []
-    for node in walk(root):
-        if (
-            isinstance(node, ListNode)
-            and node.key == "uuid"
-            and len(node.items) >= 2
-            and isinstance(node.items[1], StringNode)
-        ):
-            uuids.append(node.items[1].value)
-    return uuids
-
-
-def _get_property_value(sym: ListNode, prop_name: str) -> str | None:
-    """Return the value of a ``(property "prop_name" "value" …)`` direct child."""
-    for child in sym.items:
-        if (
-            isinstance(child, ListNode)
-            and child.key == "property"
-            and len(child.items) >= 3
-            and isinstance(child.items[1], StringNode)
-            and child.items[1].value == prop_name
-            and isinstance(child.items[2], StringNode)
-        ):
-            return child.items[2].value
-    return None
-
-
-def _symbol_lib_id(sym: ListNode) -> str | None:
-    """Return the ``(lib_id "…")`` value from a placed symbol node."""
-    lib_id_node = find_first(sym, "lib_id")
-    if lib_id_node is not None and len(lib_id_node.items) >= 2:
-        item = lib_id_node.items[1]
-        if isinstance(item, StringNode):
-            return item.value
-    return None
-
 
 # ---------------------------------------------------------------------------
 # Schematic lint rules

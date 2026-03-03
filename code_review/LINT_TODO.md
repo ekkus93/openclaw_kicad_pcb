@@ -91,29 +91,29 @@ These helpers have no dependency on which domain (schematic vs PCB) is being che
 
 ### 2.1 Create `kicad-pcb/src/kicad_pcb/lint_helpers.py`
 
-- [ ] Move `_is_numeric_atom(node: object) -> bool`.
-- [ ] Move `_float_from_atom(node: object) -> float | None`.
-- [ ] Move `_collect_uuids(root: ListNode) -> list[str]`.
-- [ ] Move `_get_property_value(sym: ListNode, prop_name: str) -> str | None`.
-  - [ ] This is used only in `lint_schematic`; move it here rather than into
+- [x] Move `_is_numeric_atom(node: object) -> bool`.
+- [x] Move `_float_from_atom(node: object) -> float | None`.
+- [x] Move `_collect_uuids(root: ListNode) -> list[str]`.
+- [x] Move `_get_property_value(sym: ListNode, prop_name: str) -> str | None`.
+  - [x] This is used only in `lint_schematic`; move it here rather than into
       `lint_sch.py` because it is a generic AST property accessor that could be
       reused if new rules are added.
-- [ ] Move `_symbol_lib_id(sym: ListNode) -> str | None`.
-  - [ ] Same rationale as `_get_property_value`.
-- [ ] **Add** `_check_duplicate_uuids(uuids: list[str], code: str) -> list[LintIssue]`
+- [x] Move `_symbol_lib_id(sym: ListNode) -> str | None`.
+  - [x] Same rationale as `_get_property_value`.
+- [x] **Add** `_check_duplicate_uuids(uuids: list[str], code: str) -> list[LintIssue]`
     (see Phase 5.1 — eliminates the duplicate SCH002/PCB002 logic).
-- [ ] **Add** `_collect_wire_segments(items: list) -> list[tuple[float, float, float, float]]`
+- [x] **Add** `_collect_wire_segments(items: list) -> list[tuple[float, float, float, float]]`
     (see Phase 5.2 — eliminates the duplicate LAY002/LAY005 wire-extraction logic).
-- [ ] Write a module docstring explaining that all functions are private helpers
+- [x] Write a module docstring explaining that all functions are private helpers
     used by both `lint_sch.py` and `lint_pcb.py`.
-- [ ] All functions remain `_`-prefixed.
-- [ ] Import only what is needed: `AtomNode`, `ListNode`, `StringNode` from
+- [x] All functions remain `_`-prefixed.
+- [x] Import only what is needed: `AtomNode`, `ListNode`, `StringNode` from
     `.sexpr.nodes`; `walk` from `.sexpr.utils`; `LintIssue`, `_ERR` from
     `.lint_types`.
 
 ### 2.2 Update `lint.py`
 
-- [ ] Add import block:
+- [x] Add import block:
   ```python
   from .lint_helpers import (
       _check_duplicate_uuids,
@@ -125,13 +125,13 @@ These helpers have no dependency on which domain (schematic vs PCB) is being che
       _symbol_lib_id,
   )
   ```
-- [ ] Remove all moved helper bodies from `lint.py`.
-- [ ] Remove `from .sexpr.nodes import AtomNode, ListNode, StringNode` from
+- [x] Remove all moved helper bodies from `lint.py`.
+- [x] Remove `from .sexpr.nodes import AtomNode, ListNode, StringNode` from
     `lint.py` if no longer directly used there after the move (verify with ruff).
 
 ### 2.3 Tests
 
-- [ ] Confirm: `_is_numeric_atom`, `_float_from_atom` resolved by existing tests
+- [x] Confirm: `_is_numeric_atom`, `_float_from_atom` resolved by existing tests
     — no changes expected (tests access them via `lint_schematic` / `lint_pcb`
     paths, not directly).
 
@@ -236,7 +236,7 @@ new module, not as a separate pass).
 
 ### 5.1 Deduplicate UUID-checking logic (SCH002 / PCB002)
 
-- [ ] In `lint_helpers.py`, add:
+- [x] In `lint_helpers.py`, add:
   ```python
   def _check_duplicate_uuids(uuids: list[str], code: str) -> list[LintIssue]:
       """Return ERROR issues for every UUID that appears more than once."""
@@ -262,7 +262,7 @@ new module, not as a separate pass).
 The same `pts → xy[0] / xy[1]` extraction loop appears nearly identically in
 both LAY002 and LAY005.
 
-- [ ] In `lint_helpers.py`, add:
+- [x] In `lint_helpers.py`, add:
   ```python
   def _collect_wire_segments(
       items: list,
