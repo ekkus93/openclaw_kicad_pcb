@@ -51,6 +51,7 @@ from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .layout import ComponentAnnotation as _ComponentAnnotation
 from .layout import find_feedback_paths as _find_feedback_paths
+from .tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
 from .tier import assign_tiers as _assign_tiers
 
 _log = logging.getLogger(__name__)
@@ -416,6 +417,43 @@ def _compute_net_weights(signal_nets: list) -> dict[str, int]:
     return result
 
 
+def _emit_tier_subgraphs(
+    lines: list[str],
+    tier_groups: dict[int, list[str]],
+) -> None:
+    """Emit ``{ rank=... }`` subgraphs for each tier into *lines*."""
+    sorted_tier_vals = sorted(tier_groups)
+    n_tiers = len(sorted_tier_vals)
+    for i, tier_val in enumerate(sorted_tier_vals):
+        members = tier_groups[tier_val]
+        rank_kw = _tier_rank_keyword(i, n_tiers)
+        lines.append("  {")
+        lines.append(f"    rank={rank_kw};")
+        for ref in sorted(members):
+            lines.append(f"    {_safe_id(ref)};")
+        lines.append("  }")
+
+
+def _extend_power_only_refs(
+    power_only_refs: list[str],
+    signal_refs: set[str],
+    refs: list[str],
+    power_unit_refs: set[str],
+) -> None:
+    """Extend *power_only_refs* in-place with IC power units not already present.
+
+    Multi-unit IC power units (e.g. ``U1B``) that happen to connect via a net
+    whose name is not caught by :func:`_is_power_net` would otherwise slip into
+    the signal tier grid.  This helper forces them into ``cluster_power``.
+    """
+    already: set[str] = set(power_only_refs)
+    for r in refs:
+        if r in power_unit_refs and r not in already:
+            power_only_refs.append(r)
+            signal_refs.discard(r)
+            already.add(r)
+
+
 def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> None:
     """Append ``cluster_feedback`` DOT subgraph for *feedback_refs*.
 
@@ -465,6 +503,7 @@ def _build_dot_source(
     *,
     decoupling_map: dict[str, str] | None = None,
     feedback_refs: set[str] | None = None,
+    power_unit_refs: set[str] | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -508,6 +547,12 @@ def _build_dot_source(
         signal_refs.update(p.ref for p in net.pins)
     power_only_refs = [r for r in refs if r not in signal_refs]
 
+    # Multi-unit IC power units: force into cluster_power even when they happen
+    # to appear on a signal-looking net (belt-and-suspenders; in practice VCC/
+    # GND are caught by _is_power_net so they are already in power_only_refs).
+    if power_unit_refs:
+        _extend_power_only_refs(power_only_refs, signal_refs, refs, power_unit_refs)
+
     # Longest-path tier assignment — determines left-to-right rank for each component.
     tiers = _assign_tiers(ir)
 
@@ -525,16 +570,7 @@ def _build_dot_source(
 
     # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
     # rank=same for all intermediate tiers.
-    sorted_tier_vals = sorted(tier_groups)
-    n_tiers = len(sorted_tier_vals)
-    for i, tier_val in enumerate(sorted_tier_vals):
-        members = tier_groups[tier_val]
-        rank_kw = _tier_rank_keyword(i, n_tiers)
-        lines.append("  {")
-        lines.append(f"    rank={rank_kw};")
-        for ref in sorted(members):
-            lines.append(f"    {_safe_id(ref)};")
-        lines.append("  }")
+    _emit_tier_subgraphs(lines, tier_groups)
 
     # Emit net nodes + directional edges.
     # For each signal net, sort pins by ascending BFS tier so edges flow
@@ -850,9 +886,18 @@ class GraphvizLayoutEngine:
         annotations = _find_feedback_paths(ir, _tiers)
         feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
 
+        # Detect multi-unit IC groups; extract power units for cluster_power.
+        _unit_groups = _assign_ic_units_to_tiers(ir, _tiers)
+        _power_unit_refs: set[str] = {
+            g.power_unit for g in _unit_groups.values() if g.power_unit is not None
+        }
+
         # Build DOT source up-front so we can derive the cache key.
         dot_source = _build_dot_source(
-            ir, decoupling_map=decoupling_map, feedback_refs=feedback_refs or None
+            ir,
+            decoupling_map=decoupling_map,
+            feedback_refs=feedback_refs or None,
+            power_unit_refs=_power_unit_refs or None,
         )
         cache_key = _layout_cache_key(dot_source)
 

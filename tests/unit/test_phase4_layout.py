@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import subprocess
 from pathlib import Path
 from unittest.mock import patch
@@ -51,7 +52,7 @@ from kicad_pcb.router import (
 )
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.nodes import AtomNode
-from kicad_pcb.tier import assign_tiers
+from kicad_pcb.tier import IcUnitGroup, assign_ic_units_to_tiers, assign_tiers
 
 pytestmark = pytest.mark.unit
 
@@ -2384,3 +2385,119 @@ class TestSnapFeedbackComponents:
         }
         result = _gv_mod.snap_feedback_components(positions, annotations, ir)
         assert result == positions
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — Multi-unit IC handling
+# ---------------------------------------------------------------------------
+
+
+def _multi_unit_ir() -> CircuitIR:
+    """Minimal dual-op-amp circuit with a multi-unit IC.
+
+    Signal path: J1 --[NET_IN]--> U1A --[NET_OUT]--> J2.
+    Power unit: U1B connected only to VCC and GND.
+    """
+    return CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [
+                {"ref": "J1", "symbol": "Connector:Conn_01x01", "value": ""},
+                {"ref": "U1A", "symbol": "Amplifier:NE5532", "value": "NE5532"},
+                {"ref": "U1B", "symbol": "Amplifier:NE5532", "value": "NE5532"},
+                {"ref": "J2", "symbol": "Connector:Conn_01x01", "value": ""},
+            ],
+            "nets": [
+                {"name": "NET_IN", "pins": [{"ref": "J1", "pin": "1"}, {"ref": "U1A", "pin": "3"}]},
+                {
+                    "name": "NET_OUT",
+                    "pins": [{"ref": "U1A", "pin": "1"}, {"ref": "J2", "pin": "1"}],
+                },
+                {"name": "VCC", "pins": [{"ref": "U1B", "pin": "8"}]},
+                {"name": "GND", "pins": [{"ref": "U1B", "pin": "4"}]},
+            ],
+        }
+    )
+
+
+class TestIcUnitGroups:
+    """Phase 6 — assign_ic_units_to_tiers and per-unit DOT placement."""
+
+    def test_multi_unit_ref_detected(self) -> None:
+        """U1A and U1B are grouped under base ref U1."""
+        ir = _multi_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        assert "U1" in groups
+        assert groups["U1"].units == ["U1A", "U1B"]
+        assert groups["U1"].base_ref == "U1"
+
+    def test_power_unit_detected(self) -> None:
+        """U1B (only VCC/GND nets) is identified as the power unit."""
+        ir = _multi_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        assert groups["U1"].power_unit == "U1B"
+
+    def test_single_unit_ic_excluded(self) -> None:
+        """A plain 'U1' ref (no letter suffix) produces no group entry."""
+        ir = _make_ir(
+            [("J1", "Connector"), ("U1", "Amp:TL071"), ("J2", "Connector")],
+            [("NET_IN", [("J1", "1"), ("U1", "3")]), ("NET_OUT", [("U1", "1"), ("J2", "1")])],
+        )
+        groups = assign_ic_units_to_tiers(ir, assign_tiers(ir))
+        assert groups == {}
+
+    def test_passive_ref_with_letter_suffix_excluded(self) -> None:
+        """R1A is a passive prefix; it must not be treated as a multi-unit IC."""
+        ir = _make_ir(
+            [("J1", "Connector"), ("R1A", "Device:R"), ("J2", "Connector")],
+            [("NET", [("J1", "1"), ("R1A", "1"), ("J2", "1")])],
+        )
+        groups = assign_ic_units_to_tiers(ir, assign_tiers(ir))
+        assert groups == {}
+
+    def test_ic_unit_group_dataclass_defaults(self) -> None:
+        """IcUnitGroup default values are correct."""
+        g = IcUnitGroup(base_ref="U2")
+        assert g.units == []
+        assert g.power_unit is None
+
+    def test_multi_unit_ic_power_unit_in_power_cluster(self) -> None:  # spec test
+        """DOT source places U1B (power unit) inside cluster_power subgraph."""
+        ir = _multi_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        power_unit_refs = {g.power_unit for g in groups.values() if g.power_unit is not None}
+        dot = _gv_mod._build_dot_source(ir, power_unit_refs=power_unit_refs)
+        # cluster_power must exist and contain U1B.
+        assert "cluster_power" in dot
+        cluster_start = dot.index("cluster_power")
+        cluster_end = dot.index("}", cluster_start)
+        cluster_body = dot[cluster_start:cluster_end]
+        assert "U1B" in cluster_body
+
+    def test_multi_unit_ic_signal_units_in_signal_tiers(self) -> None:  # spec test
+        """DOT source places U1A (signal unit) in a rank=same tier subgraph."""
+        ir = _multi_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        power_unit_refs = {g.power_unit for g in groups.values() if g.power_unit is not None}
+        dot = _gv_mod._build_dot_source(ir, power_unit_refs=power_unit_refs)
+        # U1A must appear in a rank=... subgraph (rank=source, rank=same, or rank=sink).
+        rank_blocks = re.findall(r"\{[^{}]*rank=(?:same|source|sink)[^{}]*\}", dot, re.DOTALL)
+        assert any("U1A" in block for block in rank_blocks), (
+            f"U1A not found in any rank subgraph.\nDOT:\n{dot}"
+        )
+
+    def test_power_unit_not_in_signal_tiers(self) -> None:
+        """U1B must not appear in any rank=same/source/sink subgraph."""
+        ir = _multi_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        power_unit_refs = {g.power_unit for g in groups.values() if g.power_unit is not None}
+        dot = _gv_mod._build_dot_source(ir, power_unit_refs=power_unit_refs)
+        rank_blocks = re.findall(r"\{[^{}]*rank=(?:same|source|sink)[^{}]*\}", dot, re.DOTALL)
+        assert not any("U1B" in block for block in rank_blocks), (
+            f"U1B must not be in a tier subgraph.\nDOT:\n{dot}"
+        )
