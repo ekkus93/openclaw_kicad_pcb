@@ -1909,3 +1909,21 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - 11 new tests: TestComponentTypes (6) + TestAssignTiers (5) in test_phase4_layout.py.
 - COMPONENT_PLACEMENT_TODO.md Phase 1 items all ticked.
 - Commit: bcc0dbd. Pre-existing 1495+ tests still pass.
+
+## 2025-07-14 - Phase 3.2: VCC/GND bus snap for #PWR and #FLG power symbols
+
+- New function `_snap_power_symbols(positions, ir, *, origin_y, page_max_y)` in
+  graphviz_layout.py (called before _post_snap_decoupling_caps in compute_symbol_positions).
+  - #PWR/#FLG refs with GND-type values (GND/AGND/DGND/PGND/SGND/VSS/0V) → y = PAGE_MAX_Y-20
+  - All other #PWR/#FLG refs (VCC, VDD, PWR_FLAG, etc.) → y = ORIGIN_Y
+  - x-coordinate preserved; components absent from positions silently skipped.
+- PAGE_MAX_Y and snap_power_symbols added to __all__; public alias defined.
+- Detection: ref.startswith("#PWR") or ref.startswith("#FLG").
+- 7 new tests in TestSnapPowerSymbols (test_phase4_layout.py):
+  VCC top, GND bottom, PWR_FLAG top, AGND bottom, x preserved, non-power unchanged,
+  monkeypatched end-to-end integration (safe_id keys: "#PWR01" → "_PWR01").
+- COMPONENT_PLACEMENT_TODO.md Phase 3.2 checkboxes + 3.3 test_power_flag_at_top_y all ticked.
+- Commits: 13b0f76 (implementation). 228 combined layout tests pass.
+- KEY GOTCHA: compute_symbol_positions renames refs via _safe_id() before calling
+  _snap_power_symbols. Fake positions in integration tests MUST use safe_id keys
+  (e.g. "_PWR01"), not original refs ("#PWR01").
