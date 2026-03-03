@@ -600,6 +600,45 @@ def _post_snap_decoupling_caps(
     return result
 
 
+def _snap_power_symbols(
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    origin_y: float = ORIGIN_Y,
+    page_max_y: float = PAGE_MAX_Y,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Clamp ``#PWR`` and ``#FLG`` power symbols to the top or bottom page row.
+
+    Identifies all components whose ref begins with ``#PWR`` or ``#FLG``
+    (KiCad global power-net and PWR_FLAG markers) and pins their y-coordinate
+    to one of two rows:
+
+    * **GND-type** (value upper-cased equals or starts with ``GND``, ``AGND``,
+      ``DGND``, ``PGND``, ``SGND``, ``VSS``, or ``0V``) →
+      ``y = page_max_y - 20`` (bottom row, clear of the lower margin).
+    * **All other power symbols** (VCC, VDD, VBAT, VREF, PWR_FLAG, etc.) →
+      ``y = origin_y`` (top row).
+
+    The x-coordinate is preserved so that each power symbol stays above or
+    below the component it shares a net with in the Graphviz layout.
+    Components not present in *positions* are silently skipped.
+    """
+    _GND_STARTS: tuple[str, ...] = ("GND", "AGND", "DGND", "PGND", "SGND", "VSS", "0V")
+    result = dict(positions)
+    for comp in ir.components:
+        ref = comp.ref
+        if not (ref.startswith("#PWR") or ref.startswith("#FLG")):
+            continue
+        if ref not in result:
+            continue
+        val = (comp.value or "").upper()
+        is_gnd = any(val == g or val.startswith(g) for g in _GND_STARTS)
+        target_y = round(page_max_y - 20.0, 2) if is_gnd else origin_y
+        x, _, rot = result[ref]
+        result[ref] = (x, target_y, rot)
+    return result
+
+
 def _gv_to_kicad(
     gv_positions: dict[str, tuple[float, float]],
     *,
@@ -753,6 +792,9 @@ class GraphvizLayoutEngine:
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
 
+        # Post-layout: snap #PWR/#FLG power symbols to top or bottom page row.
+        result = _snap_power_symbols(result, ir)
+
         # Post-layout: snap decoupling caps to sit directly above their IC.
         if decoupling_map:
             result = _post_snap_decoupling_caps(result, decoupling_map)
@@ -835,9 +877,11 @@ __all__ = [
     "is_connector",
     "layout_cache_key",
     "load_layout_cache",
+    "PAGE_MAX_Y",
     "parse_plain_positions",
     "post_snap_decoupling_caps",
     "save_layout_cache",
+    "snap_power_symbols",
 ]
 
 # Expose internals for unit tests under public names
@@ -853,6 +897,7 @@ load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
 post_snap_decoupling_caps = _post_snap_decoupling_caps
 save_layout_cache = _save_layout_cache
+snap_power_symbols = _snap_power_symbols
 
 
 def _snap(v: float, grid: float = 0.254) -> float:
