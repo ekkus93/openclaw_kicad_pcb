@@ -255,26 +255,28 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 7.1 New function `layout.py::detect_stereo_channels(ir)`
 
-- [ ] Heuristic: two components are in the **same stereo pair** when they
+- [x] Heuristic: two components are in the **same stereo pair** when they
   share identical net-name patterns except for an `_L`/`_R` or `-L`/`-R`
   suffix (e.g., `OUT_L` vs `OUT_R`).
-- [ ] Return `{ref: channel}` where channel is `"L"`, `"R"`, or `"mono"`.
+- [x] Return `{ref: channel}` where channel is `"L"`, `"R"`, or `"mono"`.
 
 ### 7.2 `graphviz_layout.py::_gv_to_kicad()` — Apply stereo vertical split
 
-- [ ] After layout, partition components by channel.
-- [ ] Force Left-channel components into the top half of the page:
+- [x] After layout, partition components by channel.
+- [x] Force Left-channel components into the top half of the page:
   `y_final = ORIGIN_Y + (y_relative * 0.45)` (use 45% of page height).
-- [ ] Force Right-channel components into the bottom half:
+- [x] Force Right-channel components into the bottom half:
   `y_final = ORIGIN_Y + page_height * 0.55 + (y_relative * 0.45)`.
-- [ ] Mono / shared components: keep centred vertically at
-  `ORIGIN_Y + page_height * 0.5`.
+- [x] Mono / shared components: keep centred vertically at
+  `ORIGIN_Y + page_height * 0.5`. *(implemented as "unchanged"; a
+  post-compression same-column deoverlap sweep (`_STEREO_DEOVERLAP_MIN_MM`)
+  prevents LAY003 regressions caused by y-compression.)*
 
 ### 7.3 Tests
 
-- [ ] `test_detect_stereo_channels_from_net_suffix()`.
-- [ ] `test_left_channel_above_midline()`.
-- [ ] `test_right_channel_below_midline()`.
+- [x] `test_detect_stereo_channels_from_net_suffix()`.
+- [x] `test_left_channel_above_midline()`.
+- [x] `test_right_channel_below_midline()`.
 
 ---
 
