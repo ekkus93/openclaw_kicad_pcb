@@ -62,12 +62,12 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .circuit_ir import CircuitIR
+    from ..circuit_ir import CircuitIR
 
-from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
-from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
-from .component_types import is_power_net as _is_power_net
-from .layout import ComponentAnnotation as _ComponentAnnotation
+from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
+from ..component_types import is_power_net as _is_power_net
+from ..layout import ComponentAnnotation as _ComponentAnnotation
 
 # ---------------------------------------------------------------------------
 # Page-layout constants

@@ -55,12 +55,12 @@ from itertools import combinations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .circuit_ir import CircuitIR
+    from ..circuit_ir import CircuitIR
 
-from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
-from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
-from .component_types import is_power_net as _is_power_net
-from .tier import assign_tiers as _assign_tiers
+from ..component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
+from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from ..component_types import is_power_net as _is_power_net
+from ..tier import assign_tiers as _assign_tiers
 
 # ---------------------------------------------------------------------------
 # Component classification
