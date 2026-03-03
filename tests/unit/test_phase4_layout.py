@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import re
 import subprocess
 from pathlib import Path
@@ -48,8 +49,12 @@ from kicad_pcb.layout import (
 from kicad_pcb.layout_engine import NoneLayoutEngine, make_layout_engine
 from kicad_pcb.lint import LINT_SUGGESTIONS, LintSeverity, lint_schematic_layout
 from kicad_pcb.router import (
+    MAX_DIRECT_WIRE_MM,
+    SYMBOL_HALF_SIZE_MM,
+    WireSegment,
     _hub_route,
     _is_power_net_name,
+    detect_body_crossings,
     route_nets,
 )
 from kicad_pcb.sexpr import parse
@@ -2691,3 +2696,136 @@ class TestApplyStereoSplit:
         assert result["R1"][2] == pytest.approx(0.0)
         assert result["R2"][0] == pytest.approx(80.0)
         assert result["R2"][2] == pytest.approx(90.0)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — Wire routing improvements (Rule §4)
+# ---------------------------------------------------------------------------
+
+
+class TestPhase8WireRouting:
+    """Phase 8 — tier-distance routing threshold, 30-mm label trigger, body-crossing guard."""
+
+    def test_cross_tier_net_gets_label_not_long_wire(self) -> None:  # spec test
+        """Components at non-adjacent tiers (tier_distance > 1) must use label route."""
+        ir = _make_ir(
+            [("J1", "Connector"), ("U1", "Amplifier:TL071")],
+            [("SKIP", [("J1", "1"), ("U1", "3")])],
+        )
+        tiers = {"J1": 0, "U1": 2}  # tier_distance = 2
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("J1", "1"): (30.0, 100.0, 0.0),
+            ("U1", "3"): (200.0, 100.0, 180.0),
+        }
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, tiers=tiers)
+        assert len(routing.labels) > 0, (
+            "Expected per-pin net labels for non-adjacent tier net; got none"
+        )
+        # No wire should span the full inter-component gap.
+        long_wires = [s for s in routing.wires if abs(s.x2 - s.x1) > 50 or abs(s.y2 - s.y1) > 50]
+        assert not long_wires, f"Unexpectedly long wires found: {long_wires}"
+
+    def test_route_nets_respects_tier_distance(self) -> None:  # spec test
+        """Adjacent tier (distance=1) and short wire → direct; distance>1 → labels."""
+        ir_adj = _make_ir(
+            [("J1", "Connector"), ("R1", "Device:R")],
+            [("NET_ADJ", [("J1", "1"), ("R1", "1")])],
+        )
+        tiers_adj = {"J1": 0, "R1": 1}  # distance = 1
+        endpoints_adj: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("J1", "1"): (30.0, 100.0, 0.0),
+            ("R1", "1"): (48.0, 100.0, 180.0),  # ≤20 mm — within MAX_DIRECT_WIRE_MM
+        }
+        routing_adj = route_nets(ir=ir_adj, pin_endpoints=endpoints_adj, tiers=tiers_adj)
+        assert routing_adj.labels == [], (
+            f"Adjacent tier / short wire should use direct route; labels={routing_adj.labels}"
+        )
+
+        ir_far = _make_ir(
+            [("J1", "Connector"), ("U1", "Amplifier:TL071")],
+            [("NET_FAR", [("J1", "1"), ("U1", "3")])],
+        )
+        tiers_far = {"J1": 0, "U1": 2}  # distance = 2
+        endpoints_far: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("J1", "1"): (30.0, 100.0, 0.0),
+            ("U1", "3"): (90.0, 100.0, 180.0),
+        }
+        routing_far = route_nets(ir=ir_far, pin_endpoints=endpoints_far, tiers=tiers_far)
+        assert len(routing_far.labels) == 2, (
+            f"Non-adjacent tier net must have 2 per-pin labels; got {routing_far.labels}"
+        )
+
+    def test_long_wire_adjacent_tier_gets_label(self) -> None:
+        """Adjacent tier (distance=1) but wire > MAX_DIRECT_WIRE_MM → label route."""
+        ir = _make_ir(
+            [("R1", "Device:R"), ("R2", "Device:R")],
+            [("NET1", [("R1", "1"), ("R2", "1")])],
+        )
+        tiers = {"R1": 0, "R2": 1}  # distance = 1 (adjacent)
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("R1", "1"): (30.0, 100.0, 0.0),
+            ("R2", "1"): (200.0, 100.0, 180.0),  # ≈160 mm direct — exceeds 30 mm
+        }
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, tiers=tiers)
+        assert len(routing.labels) == 2, (
+            f"Long adjacent-tier wire should fall back to labels; got {routing.labels}"
+        )
+
+    def test_route_nets_no_tiers_falls_back_to_manhattan(self) -> None:
+        """Without tiers, the legacy Manhattan-distance cap behaviour is preserved."""
+        ir = _make_ir(
+            [("R1", "Device:R"), ("R2", "Device:R")],
+            [("NET1", [("R1", "1"), ("R2", "1")])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("R1", "1"): (30.0, 100.0, 0.0),
+            ("R2", "1"): (55.0, 100.0, 180.0),  # ≈19 mm — within Manhattan 120 mm cap
+        }
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)  # tiers=None
+        assert routing.labels == [], (
+            "Without tiers, close pins should be directly routed with no labels"
+        )
+
+    def test_no_body_crossings_after_routing(self) -> None:  # spec test
+        """detect_body_crossings routes around component bounding boxes."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R_mid": (100.0, 100.0, None),
+        }
+        # Horizontal wire from x=50 to x=150 at y=100 passes straight through R_mid.
+        crossing_wire = WireSegment(50.0, 100.0, 150.0, 100.0)
+        result = detect_body_crossings([crossing_wire], positions)
+
+        # The original crossing wire must have been replaced.
+        assert crossing_wire not in result, "Crossing wire should be replaced by a detour"
+        # Output must have more than 1 segment (the detour adds extra segments).
+        assert len(result) > 1, f"Expected multiple detour segments; got {result}"
+        # No output segment should span from before the box to after the box at y≈100.
+        half = SYMBOL_HALF_SIZE_MM
+        bx, by = 100.0, 100.0
+        for seg in result:
+            if not math.isclose(seg.y1, seg.y2, abs_tol=0.5):
+                continue  # skip non-horizontal segments
+            if not (by - half - 1.0 <= seg.y1 <= by + half + 1.0):
+                continue  # not in the y-band of the obstacle
+            seg_lx = min(seg.x1, seg.x2)
+            seg_rx = max(seg.x1, seg.x2)
+            assert not (seg_lx < bx - half and seg_rx > bx + half), (
+                f"Segment {seg} still spans R_mid bounding box"
+            )
+
+    def test_detect_body_crossings_noop_when_clear(self) -> None:
+        """Wires that miss all component boxes pass through detect_body_crossings unchanged."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R_far": (200.0, 200.0, None),
+        }
+        seg = WireSegment(10.0, 10.0, 30.0, 10.0)
+        result = detect_body_crossings([seg], positions)
+        assert result == [seg], "Non-crossing wire must be returned unchanged"
+
+    def test_max_direct_wire_mm_constant_is_30(self) -> None:
+        """MAX_DIRECT_WIRE_MM must be 30.0 mm as specified in Rule §4."""
+        assert MAX_DIRECT_WIRE_MM == 30.0  # exact constant — no approx needed
+
+    def test_symbol_half_size_mm_constant_is_5_08(self) -> None:
+        """SYMBOL_HALF_SIZE_MM must be 5.08 mm (200 mil = one KiCad grid unit)."""
+        assert SYMBOL_HALF_SIZE_MM == 5.08  # exact constant — no approx needed
