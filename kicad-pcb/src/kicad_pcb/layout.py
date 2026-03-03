@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict, deque
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -476,6 +477,110 @@ def compute_orientations(
 
         # Diodes (D*), and all other unmatched components default to 0°.
         result[ref] = 0
+
+    return result
+
+
+@dataclass
+class ComponentAnnotation:
+    """Metadata annotations produced by layout analysis passes.
+
+    Attributes
+    ----------
+    feedback:
+        ``True`` when the component has been identified as a feedback
+        (back-edge) element by :func:`find_feedback_paths`.
+    """
+
+    feedback: bool = False
+
+
+def find_feedback_paths(
+    ir: CircuitIR,
+    tiers: dict[str, int],
+) -> dict[str, ComponentAnnotation]:
+    """Detect passive components that act as feedback (back-edge) connections.
+
+    A passive component ``C`` is classified as *feedback* when the two (or
+    more) signal nets it connects to **share at least one other component**
+    in common.  This is the topological fingerprint of a feedback connection:
+    the same IC or connector appears on both of ``C``'s terminals, meaning
+    ``C`` forms a loop from one pin of that component back to another pin of
+    the same component.
+
+    Classic example — inverting op-amp with feedback resistor R_fb:
+
+    .. code-block:: text
+
+        J1 ──[NET_IN]──► U1(inv-input)
+                         U1 ──[NET_OUT]──► J2
+              R_fb ──pin1──[NET_IN]──► (U1)
+              R_fb ──pin2──[NET_OUT]──► (U1)
+
+    Both NET_IN and NET_OUT contain U1, so the intersection is {U1} ≠ ∅
+    → R_fb is detected as feedback.
+
+    A series resistor between two distinct components does *not* share any
+    component across its two nets, so it is correctly left unmarked.
+
+    Parameters
+    ----------
+    ir:
+        Parsed circuit IR.
+    tiers:
+        ``{ref: tier_index}`` from :func:`~kicad_pcb.tier.assign_tiers`.
+        Currently used as context but the primary detection criterion is
+        topological (shared component); reserved for future refinement.
+
+    Returns
+    -------
+    dict[str, ComponentAnnotation]
+        One entry per component in *ir*.  Only passive components with the
+        feedback topology have ``annotation.feedback == True``; all others
+        have ``annotation.feedback == False``.
+    """
+    # Collect signal nets (non-power, ≥2 pins).
+    signal_nets = [n for n in ir.nets if not _is_power_net_layout(n.name) and len(n.pins) >= 2]
+    signal_refs: set[str] = {p.ref for net in signal_nets for p in net.pins}
+
+    # Build: component → list of signal nets it participates in.
+    comp_to_nets: dict[str, list] = defaultdict(list)
+    for net in signal_nets:
+        for pin in net.pins:
+            comp_to_nets[pin.ref].append(net)
+
+    result: dict[str, ComponentAnnotation] = {}
+    for comp in ir.components:
+        ref = comp.ref
+        upper = ref.upper()
+
+        # Only passives can be feedback components.
+        if not any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES):
+            result[ref] = ComponentAnnotation(feedback=False)
+            continue
+
+        # Must have at least 2 distinct signal nets to form a loop.
+        own_nets = comp_to_nets.get(ref, [])
+        if len(own_nets) < 2 or ref not in signal_refs:
+            result[ref] = ComponentAnnotation(feedback=False)
+            continue
+
+        # For each pair of signal nets C participates in, check whether
+        # any OTHER component appears on both nets.  If so, C bridges two
+        # pins of the same component → feedback loop topology.
+        is_feedback = False
+        for i, net_a in enumerate(own_nets):
+            others_a = {p.ref for p in net_a.pins if p.ref != ref}
+            for net_b in own_nets[i + 1 :]:
+                others_b = {p.ref for p in net_b.pins if p.ref != ref}
+                if others_a & others_b:
+                    # Shared component found: C loops across the same device.
+                    is_feedback = True
+                    break
+            if is_feedback:
+                break
+
+        result[ref] = ComponentAnnotation(feedback=is_feedback)
 
     return result
 
