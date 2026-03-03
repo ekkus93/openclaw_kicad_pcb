@@ -696,8 +696,15 @@ def _write_symbols(  # noqa: PLR0913
     layout: dict[str, tuple[float, float]] = {
         ref: (pos[0], pos[1]) for ref, pos in raw_layout.items()
     }
-    tiers: dict[str, int] = assign_tiers(ir)
-    orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
+    # Prefer engine-provided rotation (non-None) over computing it separately.
+    # GraphvizLayoutEngine always returns a float rotation; NoneLayoutEngine returns
+    # None, in which case we fall back to the standalone compute_orientations call.
+    _need_fallback_orientations = any(pos[2] is None for pos in raw_layout.values())
+    if _need_fallback_orientations:
+        tiers: dict[str, int] = assign_tiers(ir)
+        orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
+    else:
+        orientations = {ref: int(pos[2]) for ref, pos in raw_layout.items() if pos[2] is not None}
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]

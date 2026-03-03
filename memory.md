@@ -2014,3 +2014,26 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - KEY: The 30mm limit applies even for adjacent-tier (distance=1) components when tiers is provided.
 - KEY: detect_body_crossings is a single pass; cascading detours require multiple calls.
 - Commit: 8c4248e
+
+## 2026-03-03T12:00:00Z — Phase 9 complete: layout engine integration
+
+- `graphviz_layout.py` changes:
+  - Added `from .layout import compute_orientations as _compute_orientations` import.
+  - `_build_dot_source()` gains optional `tiers: dict[str,int] | None = None` param; uses it instead of calling `_assign_tiers(ir)` redundantly.
+  - `GraphvizLayoutEngine.__init__()` gains `tiers: dict[str,int] | None = None`; stored as `self._tiers` (# noqa: PLR0913 on the method).
+  - `compute_symbol_positions()` now:
+    1. Uses `self._tiers or _assign_tiers(ir)` — no redundant calls.
+    2. Passes `_tiers` to `_build_dot_source()`.
+    3. After re-keying raw positions, calls `snap_positions(result)` FIRST (before specialised snaps), then runs `_snap_power_symbols`, `_snap_feedback_components`, `_apply_stereo_split`, `_post_snap_decoupling_caps`.
+    4. After all snaps: calls `_compute_orientations(ir, plain_positions, _tiers)` and merges as `(x, y, float(rotation))`.
+    5. Returns `{ref: (x, y, rotation_deg)}` on all paths.
+  - Added `snap_positions` to `__all__`.
+  - KEY: snap_positions runs BEFORE specialised post-layout snaps (power/feedback/stereo/decoupling). Those snaps override positions with off-grid values; that is intentional.
+- `layout_engine.py` changes:
+  - `make_layout_engine()` gains `tiers: dict[str,int] | None = None`; passes to `GraphvizLayoutEngine`.
+  - New `make_layout_engine_with_ir(ir, *, seed, cache_path)` factory: calls `assign_tiers(ir)` and calls `make_layout_engine(tiers=...)`.
+- `commands/netlist.py::_write_symbols()`:
+  - Replaced `tiers = assign_tiers(ir); orientations = compute_orientations(...)` with: check if `raw_layout` has all non-None rotations; if yes, use `int(pos[2])` directly; else fall back to the separate compute path (for NoneLayoutEngine).
+- `tests/integration/test_phase9_integration.py`: 9 tests covering all assertions from 9.3 spec plus `make_layout_engine_with_ir` factory checks. All 9 pass.
+- KNOWN PRE-EXISTING FAILURE: `test_no_cache_path_does_not_write` — always fails because `kicad-pcb/_meta.json` and `skill.json` exist in the pytest CWD. Pre-dates Phase 9.
+- 1560 unit tests pass (1 pre-existing failure). 9 + existing phase6 integration tests pass.
