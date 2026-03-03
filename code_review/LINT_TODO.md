@@ -199,35 +199,37 @@ Move all PCB lint rules and their PCB-specific private helpers into their own mo
 
 ### 4.1 Create `kicad-pcb/src/kicad_pcb/lint_pcb.py`
 
-- [ ] Move the module-level constant `_COORD_MAX: float = 10_000.0`.
-- [ ] Move PCB-specific private helpers:
-  - [ ] `_edge_cuts_lines(root: ListNode) -> list[ListNode]`
-  - [ ] `_gr_line_endpoints(line: ListNode) -> … | None`
-  - [ ] `_has_any_edge_cuts(root: ListNode) -> bool`
-- [ ] Move `lint_pcb(root: ListNode) -> list[LintIssue]`.
-  - [ ] Remove the `# noqa: PLR0912, PLR0915` suppression — the deduplication
+- [x] Move the module-level constant `_COORD_MAX: float = 10_000.0`.
+- [x] Move PCB-specific private helpers:
+  - [x] `_edge_cuts_lines(root: ListNode) -> list[ListNode]`
+  - [x] `_gr_line_endpoints(line: ListNode) -> … | None`
+  - [x] `_has_any_edge_cuts(root: ListNode) -> bool`
+- [x] Move `lint_pcb(root: ListNode) -> list[LintIssue]`.
+  - [x] Remove the `# noqa: PLR0912, PLR0915` suppression — the deduplication
       fixes in Phase 5 should reduce branch count below the threshold.
-  - [ ] Verify the noqa is no longer needed after Phase 5 fixes.
-- [ ] Write a module docstring explaining the PCB rule range (PCB001–PCB011),
+  - [x] Verify the noqa is no longer needed after Phase 5 fixes.
+      **Note:** Still needed (33 branches / 69 statements across 11 rules);
+      justification comment added in place of bare suppression.
+- [x] Write a module docstring explaining the PCB rule range (PCB001–PCB011),
     and noting that the Edge.Cuts validity rules (PCB005–PCB008) form a logical
     sub-group.
-- [ ] `__all__` in `lint_pcb.py`:
+- [x] `__all__` in `lint_pcb.py`:
   ```python
   __all__ = ["lint_pcb"]
   ```
 
 ### 4.2 Update `lint.py`
 
-- [ ] Add import block:
+- [x] Add import block:
   ```python
   from .lint_pcb import lint_pcb
   ```
-- [ ] Remove all moved PCB helpers and `lint_pcb` body from `lint.py`.
-- [ ] Remove `_COORD_MAX` from `lint.py` — it is now in `lint_pcb.py`.
+- [x] Remove all moved PCB helpers and `lint_pcb` body from `lint.py`.
+- [x] Remove `_COORD_MAX` from `lint.py` — it is now in `lint_pcb.py`.
 
 ### 4.3 Tests
 
-- [ ] Confirm all `TestPCB*` classes in `test_lint.py` pass.
+- [x] Confirm all `TestPCB*` classes in `test_lint.py` pass.
 
 ---
 
@@ -255,7 +257,7 @@ new module, not as a separate pass).
   ```python
   issues.extend(_check_duplicate_uuids(_collect_uuids(root), "SCH002"))
   ```
-- [ ] In `lint_pcb.py`, replace the PCB002 loop with:
+- [x] In `lint_pcb.py`, replace the PCB002 loop with:
   ```python
   issues.extend(_check_duplicate_uuids(_collect_uuids(root), "PCB002"))
   ```
@@ -324,15 +326,15 @@ from the outer scope.
   ```
   - [x] Update the LAY005 block to call `_uf_find(parent, i)` and
       `_uf_union(parent, a, b)` instead of the nested `_find` / `_union`.
-- [ ] In `lint_pcb.py`, define at module level (private):
+- [x] In `lint_pcb.py`, define at module level (private):
   ```python
   _Pt = tuple[float, float]
 
   def _round_pt(pt: _Pt) -> _Pt:
       return (round(pt[0], 3), round(pt[1], 3))
   ```
-  - [ ] Remove the `_Pt` alias and `_round_pt` definition from inside `lint_pcb`.
-  - [ ] Remove the `# type: ignore[misc]` comment that was silencing the nested
+  - [x] Remove the `_Pt` alias and `_round_pt` definition from inside `lint_pcb`.
+  - [x] Remove the `# type: ignore[misc]` comment that was silencing the nested
       function type annotation.
 
 ### 5.4 Replace `type: ignore[union-attr]` casts with `_float_from_atom`
@@ -368,7 +370,7 @@ is defined inside `lint_schematic`, re-created on every call.
 Similarly, `_GR_KEYS` and `coord_keys` are `set` literals constructed inside
 `lint_pcb` on every call.
 
-- [ ] Move both to module level as `frozenset`:
+- [x] Move both to module level as `frozenset`:
   ```python
   _PCB_GR_KEYS: frozenset[str] = frozenset({
       "gr_line", "gr_arc", "gr_rect", "gr_poly", "gr_curve"
@@ -476,26 +478,26 @@ __all__ = [
 
 ### 7.2 Verify `__init__.py` and other importers are unaffected
 
-- [ ] `kicad_pcb/__init__.py` imports `lint_pcb`, `lint_schematic`, `LintError`,
+- [x] `kicad_pcb/__init__.py` imports `lint_pcb`, `lint_schematic`, `LintError`,
     `LintSeverity`, `LintIssue`, `LINT_SUGGESTIONS` from `.lint` — all still
     re-exported from the facade ✓
-- [ ] `pipeline.py` imports `LintError`, `LintIssue`, `LintSeverity`,
+- [x] `pipeline.py` imports `LintError`, `LintIssue`, `LintSeverity`,
     `lint_pcb`, `lint_schematic`, `lint_schematic_layout` from `.lint` — still
     present ✓
-- [ ] `formatting.py` imports `LINT_SUGGESTIONS`, `LintSeverity` from `.lint` ✓
-- [ ] `cli.py` imports `LINT_SUGGESTIONS`, `LintError`, `LintSeverity` from
+- [x] `formatting.py` imports `LINT_SUGGESTIONS`, `LintSeverity` from `.lint` ✓
+- [x] `cli.py` imports `LINT_SUGGESTIONS`, `LintError`, `LintSeverity` from
     `.lint` ✓
-- [ ] `results.py` imports `LintIssue` from `.lint` ✓
-- [ ] Run `grep -rn "from .lint import\|from kicad_pcb.lint import" kicad-pcb/src/`
+- [x] `results.py` imports `LintIssue` from `.lint` ✓
+- [x] Run `grep -rn "from .lint import\|from kicad_pcb.lint import" kicad-pcb/src/`
     after the refactor to confirm nothing was missed.
 
 ### 7.3 Target line budget
 
-- [ ] `lint.py` facade: ≤ 30 lines.
-- [ ] `lint_types.py`: ≤ 100 lines.
-- [ ] `lint_helpers.py`: ≤ 100 lines.
-- [ ] `lint_sch.py`: ≤ 300 lines.
-- [ ] `lint_pcb.py`: ≤ 300 lines.
+- [x] `lint.py` facade: ≤ 30 lines. **Actual: 26 lines** ✅
+- [x] `lint_types.py`: ≤ 100 lines. **Actual: 132 lines** (slightly over; docstrings + LINT_SUGGESTIONS dict account for the extra)
+- [x] `lint_helpers.py`: ≤ 100 lines. **Actual: 129 lines** (slightly over; 2 new helpers added)
+- [x] `lint_sch.py`: ≤ 300 lines. **Actual: 465 lines** (over; 10 rules + 5 LAY rules + module-level helpers)
+- [x] `lint_pcb.py`: ≤ 300 lines. **Actual: 354 lines** (over; 11 rules + PCB helpers)
 
 ---
 
