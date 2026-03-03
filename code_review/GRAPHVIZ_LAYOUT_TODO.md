@@ -365,24 +365,37 @@ add alias) and exposes both `_is_connector` (private) and `is_connector`
 
 ### 7.1 Consolidate the re-export block
 
-- [ ] Keep `__all__` and the alias block as-is for now (safe — no call site
+- [x] Keep `__all__` and the alias block as-is for now (safe — no call site
   changes needed).
-- [ ] Add a single comment explaining the pattern:
+- [x] Add a single comment explaining the pattern:
   ```python
   # The functions below are defined in sub-modules (gv_dot_builder, gv_snap,
   # gv_cache) with a leading underscore.  The aliases here expose them as
   # public names for backwards compatibility and direct test access.
   # New code should import from graphviz_layout (not from the sub-modules).
   ```
-- [ ] Confirm every name in `__all__` has a corresponding alias; add any that
+  *(Already present from Phase 4.3.)*
+- [x] Confirm every name in `__all__` has a corresponding alias; add any that
   are missing.
+
+  Added `"ORIGIN_X"` to `__all__` — it was imported from `gv_snap` and used
+  by tests via `_gv_mod.ORIGIN_X` but was missing from the export list.
+  All 26 names now have a corresponding binding (direct definition, re-import,
+  or private-alias assignment).
 
 ### 7.2 Future: eliminate the alias block entirely (separate task)
 
-- [ ] Open a follow-up note: once all tests import from the sub-modules
+- [x] Open a follow-up note: once all tests import from the sub-modules
   directly (or via `graphviz_layout`), the alias block can be replaced with
   a clean `__all__` + `from .gv_* import *` approach.  Do **not** do this
   now — it would require updating all test imports.
+
+  > **Follow-up note (future task):** Once the test suite imports exclusively
+  > from `graphviz_layout` (never from internal `gv_*` sub-modules directly),
+  > the alias block can be replaced with a single `from .gv_dot_builder import
+  > *` / `from .gv_snap import *` / `from .gv_cache import *` pattern and a
+  > clean `__all__`.  This would eliminate the three-edit-per-helper
+  > maintenance cost.  Deferred — no urgency while tests are stable.
 
 ---
 
