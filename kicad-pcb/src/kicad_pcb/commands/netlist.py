@@ -42,6 +42,7 @@ from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
 from ..tier import assign_tiers
+from ._validate import advisory_warnings, full_validate
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
@@ -166,46 +167,9 @@ def cmd_validate_netlist(args) -> ValidateNetlistResult:
     netlist_path = Path(args.netlist)
     symbols_dir = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
 
-    # Layer 1: schema (raises UserError(IR_SCHEMA_INVALID) on failure)
-    ir = CircuitIR.load(netlist_path)
-
-    # Layer 2: semantic (raises UserError(IR_SEMANTIC_INVALID) on failure)
-    validate_circuit_ir(ir)
-
-    # Layer 3: symbol + pin (raises UserError(SYMBOL_NOT_FOUND / PIN_INVALID) on failure)
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
-    validate_ir_symbols(ir, symbol_index)
-
-    # Advisory warnings — do not block success, but flag common mistakes
-    warnings: list[dict[str, object]] = []
-
-    refs_in_nets: set[str] = {pin_ref.ref for net in ir.nets for pin_ref in net.pins}
-    component_refs = {component.ref for component in ir.components}
-    unreferenced = sorted(component_refs - refs_in_nets)
-    if unreferenced:
-        warnings.append(
-            {
-                "code": "COMPONENT_NOT_IN_ANY_NET",
-                "message": (
-                    f"{len(unreferenced)} component(s) are not referenced in any net "
-                    "and will be floating in the schematic."
-                ),
-                "details": {"refs": unreferenced},
-            }
-        )
-
-    single_pin_nets = [net.name for net in ir.nets if len(net.pins) == 1]
-    if single_pin_nets:
-        warnings.append(
-            {
-                "code": "SINGLE_PIN_NET",
-                "message": (
-                    f"{len(single_pin_nets)} net(s) have only one connected pin. "
-                    "This is usually a wiring mistake."
-                ),
-                "details": {"nets": single_pin_nets},
-            }
-        )
+    ir = full_validate(netlist_path, symbol_index)
+    warnings = advisory_warnings(ir)
 
     return ValidateNetlistResult(
         valid=True,
@@ -390,14 +354,8 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     auto_fix: bool = getattr(args, "auto_fix", True)
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
 
-    def _load_and_validate(path: Path) -> CircuitIR:
-        ir = CircuitIR.load(path)  # Layer 1: schema
-        validate_circuit_ir(ir)  # Layer 2: semantic
-        validate_ir_symbols(ir, symbol_index)  # Layer 3: symbol + pin
-        return ir
-
     try:
-        _load_and_validate(netlist_path)
+        full_validate(netlist_path, symbol_index)
     except (UserError, Exception) as first_err:
         if not auto_fix:
             raise
@@ -419,7 +377,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         )
         # Retry validation on the repaired JSON
         try:
-            _load_and_validate(fixed_path)
+            full_validate(fixed_path, symbol_index)
         except (UserError, Exception) as retry_err:
             fixes_summary = "\n".join(f"  • {f}" for f in outcome.fixes_applied) or "  (none)"
             raise UserError(
