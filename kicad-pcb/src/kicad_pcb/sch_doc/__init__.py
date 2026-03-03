@@ -18,9 +18,9 @@ import contextlib
 import json
 from pathlib import Path
 
-from .errors import ParseError
-from .fs import _atomic_write
-from .lib_symbol import (
+from ..errors import ParseError
+from ..fs import _atomic_write
+from ..lib_symbol import (
     _symbol_id,
     read_lib_symbol_def,
     read_lib_symbol_def_chain,
@@ -28,7 +28,12 @@ from .lib_symbol import (
     read_lib_symbol_pin_at,
     read_lib_symbol_pins,
 )
-from .sch_nodes import (
+from ..sexpr.builder import L, atom, string
+from ..sexpr.nodes import AtomNode, ListNode, Node, StringNode
+from ..sexpr.parser import parse_file
+from ..sexpr.serializer import serialize
+from ..sexpr.utils import find_first, replace_section
+from .nodes import (
     ManagedSheetSpec,
     make_global_label_node,
     make_junction_node,
@@ -38,11 +43,6 @@ from .sch_nodes import (
     make_text_node,
     make_wire_node,
 )
-from .sexpr.builder import L, atom, string
-from .sexpr.nodes import AtomNode, ListNode, Node, StringNode
-from .sexpr.parser import parse_file
-from .sexpr.serializer import serialize
-from .sexpr.utils import find_first, replace_section
 
 __all__ = [
     "SchematicDoc",

@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .sexpr.builder import L, atom, fnum, string
-from .sexpr.nodes import NO_POS, ListNode, Node
+from ..sexpr.builder import L, atom, fnum, string
+from ..sexpr.nodes import NO_POS, ListNode, Node
 
 __all__ = [
     "ManagedSheetSpec",
