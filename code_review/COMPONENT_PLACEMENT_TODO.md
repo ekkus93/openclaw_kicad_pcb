@@ -231,23 +231,23 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 6.1 New function `tier.py::assign_ic_units_to_tiers(ir, tiers)`
 
-- [ ] Detect multi-unit symbols (KiCad `unit > 0` suffix in ref). Group by
+- [x] Detect multi-unit symbols (KiCad `unit > 0` suffix in ref). Group by
   base ref (e.g., `U1A`, `U1B` → base `U1`).
-- [ ] Assign each unit to the tier of its connected signal nets.
-- [ ] Assign the **power unit** (unit with only power net connections) to a
+- [x] Assign each unit to the tier of its connected signal nets.
+- [x] Assign the **power unit** (unit with only power net connections) to a
   floating position beside the power rails cluster, not in the main tier grid.
 
 ### 6.2 `graphviz_layout.py::_build_dot_source()` — Per-unit nodes for multi-unit ICs
 
-- [ ] Instead of a single node per `ref`, emit one node per *unit* for
+- [x] Instead of a single node per `ref`, emit one node per *unit* for
   multi-unit ICs: `U1A`, `U1B`, etc.
-- [ ] Connect each unit node with correct signal edges.
-- [ ] Place the power unit in `cluster_power`.
+- [x] Connect each unit node with correct signal edges.
+- [x] Place the power unit in `cluster_power`.
 
 ### 6.3 Tests
 
-- [ ] `test_multi_unit_ic_power_unit_in_power_cluster()`.
-- [ ] `test_multi_unit_ic_signal_units_in_signal_tiers()`.
+- [x] `test_multi_unit_ic_power_unit_in_power_cluster()`.
+- [x] `test_multi_unit_ic_signal_units_in_signal_tiers()`.
 
 ---
 

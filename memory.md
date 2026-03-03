@@ -1965,3 +1965,26 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
   R_fb between J1 (tier 0) and J2 (tier 3), not necessarily above all neighbors.
   The shared-component criterion is correct and topology-driven.
 - Commit: 27e4f43
+
+## 2026-03-03 - Phase 6: Multi-unit IC grouping and power-unit cluster placement
+
+- IcUnitGroup dataclass in tier.py: base_ref, units (sorted list), power_unit | None
+- assign_ic_units_to_tiers(ir, tiers) -> dict[str, IcUnitGroup]:
+  Detects IC refs with letter-suffix unit designator (U1A, U1B, OA3B...)
+  using _MULTI_UNIT_RE = r'^([A-Za-z]+[0-9]+)([A-Za-z]+)$'.
+  Groups by base ref; only base refs with >=2 unit variants returned.
+  Power unit: unit whose every connected net is a power rail.
+- graphviz_layout.py:
+  - _extend_power_only_refs(): belt-and-suspenders helper for power unit placement
+  - _emit_tier_subgraphs(): extracted from _build_dot_source (PLR0912 reduction)
+  - _build_dot_source: power_unit_refs param; calls both helpers
+  - compute_symbol_positions: calls _assign_ic_units_to_tiers, extracts power_unit_refs
+- KEY DESIGN NOTE: For typical circuits (power unit on VCC/GND), the power unit
+  ALREADY lands in cluster_power via existing logic (power nets excluded from signal_nets
+  -> power unit has no signal_refs -> in power_only_refs). _extend_power_only_refs
+  is belt-and-suspenders for edge cases.
+- KEY TEST BUG: regex r"\{[^}]*rank=...\}" could span from 'digraph sch {' through
+  node definitions to find rank=source in first tier block, picking up U1B node defs.
+  Fix: use [^{}] instead of [^}] to prevent spanning across nested braces.
+- 8 new tests in TestIcUnitGroups. 287 tests pass total.
+- Commit: dd614bc
