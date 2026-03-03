@@ -278,15 +278,24 @@ Individual targeted fixes that do not require a new module.
 
 ### 6.1 Document or consolidate `_assign_bfs_tiers` vs `tier.assign_tiers`
 
-- [ ] Read both implementations side-by-side and write a comparison comment
+- [x] Read both implementations side-by-side and write a comparison comment
   at the top of `_assign_bfs_tiers` (in `gv_dot_builder.py`) that states:
   - What BFS-from-single-seed produces that longest-path does not, and vice versa.
   - Whether `_assign_bfs_tiers` is still reachable from any non-test code path.
-- [ ] If `_assign_bfs_tiers` is only reached via the `assign_bfs_tiers`
+- [x] If `_assign_bfs_tiers` is only reached via the `assign_bfs_tiers`
   re-export (i.e. test-only), add a `# used only in tests` comment so it is
   clearly not production logic.
-- [ ] If the functions can be safely merged, open a follow-up task to do so;
+- [x] If the functions can be safely merged, open a follow-up task to do so;
   do not merge them in this phase (higher regression risk).
+
+  > **Follow-up note (future task):** `_assign_bfs_tiers` (BFS from the
+  > alphabetically-first connector seed) and `tier.assign_tiers` (longest-path
+  > from all sources) produce different tier distributions.  BFS can collapse
+  > parallel input connectors to tier 0 which is sometimes desirable for
+  > visual grouping; longest-path is more robust for deep signal chains.
+  > Consolidation would require updating `TestAssignBfsTiers` and removing the
+  > `assign_bfs_tiers` re-export from `__all__`.  Low priority — the function
+  > is test-only and imposes no maintenance burden.
 
 ### 6.2 Fix `_extend_power_only_refs` — stop mutating two caller arguments
 
