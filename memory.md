@@ -2192,3 +2192,30 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - Final line counts: lint.py 26, lint_types.py 132, lint_helpers.py 129, lint_sch.py 465, lint_pcb.py 353 (total 1,105 vs original 971 single file — four focused modules + facade).
 - All Phase 8 checkboxes ticked. Refactoring TODO fully resolved.
 - Commit chain: 291a143 → 15dd276 → 9e257ba → e453ced → 153ad09 → (Phase 8 commit).
+
+## 2026-03-04T00:00:00Z — commands/netlist.py refactoring DONE (all 5 phases)
+
+### Summary
+909-line `commands/netlist.py` split into 4 focused modules. All checks pass.
+
+### Final state
+- `commands/netlist.py`: 392 lines — thin cmd_* entrypoints only; imports/re-exports from helpers
+- `commands/_validate.py`: 87 lines — `full_validate`, `advisory_warnings`
+- `commands/_project.py`: 119 lines — `minimal_schematic_text`, `_create_project`, `_create_schematic_zip`
+- `commands/_sch_apply.py`: 496 lines — constants, `_ApplyNetlistRequest`, `_apply_netlist_to_project`, `_build_managed_mutator` factory, `_transform_pin_at`, `_write_symbols`, lifecycle helpers
+- New test file `tests/unit/test_sch_apply.py`: 15 tests
+
+### Commit chain
+- `feec294` Phase 1 — extract `_validate.py`
+- `95a82be` Phase 2 — extract `_project.py`
+- `fc95b0d` Phase 3 — extract `_sch_apply.py` + fix `test_phase7_ux.py` patch path
+- `99a95b4` Phase 4 — new unit tests (1605 total passing)
+- `f07f6da` Phase 5 — tick NETLIST_TODO.md
+
+### Key decisions
+- `_write_symbols` and `resolve_schematic_paths` re-exported from `netlist.py` via `# noqa: F401` for callers
+- `_build_managed_mutator` factory lifts the `_mutate_managed` closure with all 8 captured vars explicit
+- `_transform_pin_at` is a pure helper easily unit-tested in isolation
+- `cmd_fix_netlist` validates from in-memory dict (`CircuitIR.model_validate`) — `full_validate` not applicable
+
+
