@@ -45,6 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = [
     "assign_tiers",
     "assign_ic_units_to_tiers",
+    "choose_seed_connector",
     "IcUnitGroup",
     "TIER_SPACING_MM",
     "ORIGIN_X_MM",
@@ -161,9 +162,9 @@ def _undirected_bfs(
                 adj[a].append(b)
                 adj[b].append(a)
 
-    # Seed: alphabetically-first connector.
-    all_connectors = sorted(r for r in refs if component_type(r) == "connector")
-    seeds = [all_connectors[0]] if all_connectors else sorted(refs)[:1]
+    # Seed: connector with maximum hop-distance to nearest IC (prefers input
+    # connector; falls back to alphabetically-first connector when equidistant).
+    seeds = [_choose_seed_connector(refs, signal_nets)]
 
     tier: dict[str, int] = {}
     queue: deque[str] = deque()
@@ -333,6 +334,97 @@ def _longest_path_dp(
 
 
 # ---------------------------------------------------------------------------
+# Step 4b — Flip tier assignment when the seed connector is an output
+# ---------------------------------------------------------------------------
+
+
+def _choose_seed_connector(
+    refs: list[str],
+    signal_nets: list[NetIR],
+) -> str:
+    """Return the connector ref most suitable as the BFS seed (input connector).
+
+    Among all connectors, selects the one with the **longest shortest-path** to
+    any IC component in the undirected signal graph.  This heuristic reliably
+    identifies true *input* connectors, which are separated from the active
+    amplifier by more passive stages (e.g. coupling capacitors, bias resistors)
+    than output connectors (which tend to connect to the amplifier output
+    through fewer components).
+
+    Example — NE5532 headphone amplifier:
+
+    * ``J1`` (headphone out) → RV1 (vol pot) → U1A output: **2 hops** to IC.
+    * ``J2`` (audio in) → C2 (coupling cap) → R (bias) → U1A input: **3 hops**.
+
+    ``J2`` wins (most hops) → BFS seeds from ``J2`` → ``J2`` gets tier 0
+    (leftmost / ``rank=source``) and ``J1`` gets the last tier
+    (rightmost / ``rank=sink``).  This matches the standard convention of
+    inputs on the left and outputs on the right.
+
+    Falls back to the alphabetically-first connector when:
+
+    * There are no ICs in the circuit (BFS comparison is meaningless).
+    * All connectors are equidistant from every IC (tie → alphabetical order).
+
+    Parameters
+    ----------
+    refs:
+        All component references in the circuit.
+    signal_nets:
+        Non-power nets with ≥ 2 pins, used to build the adjacency graph.
+
+    Returns
+    -------
+    str
+        The reference string of the preferred BFS seed connector.
+    """
+    connectors = sorted(r for r in refs if component_type(r) == "connector")
+    if not connectors:
+        return sorted(refs)[0]
+
+    ics = {r for r in refs if component_type(r) == "ic"}
+    if not ics:
+        return connectors[0]  # no ICs — fall back to alphabetical
+
+    # Build undirected signal adjacency.
+    ref_set = set(refs)
+    adj: dict[str, list[str]] = {r: [] for r in refs}
+    for net in signal_nets:
+        pin_refs = [p.ref for p in net.pins if p.ref in ref_set]
+        for i, a in enumerate(pin_refs):
+            for b in pin_refs[i + 1 :]:
+                adj[a].append(b)
+                adj[b].append(a)
+
+    def _min_hops_to_ic(start: str) -> int:
+        """Return the minimum BFS hop count from *start* to any IC, or ``maxsize``."""
+        visited: set[str] = {start}
+        queue: deque[tuple[str, int]] = deque([(start, 0)])
+        while queue:
+            node, dist = queue.popleft()
+            if node in ics:
+                return dist
+            for nbr in adj[node]:
+                if nbr not in visited:
+                    visited.add(nbr)
+                    queue.append((nbr, dist + 1))
+        return 10_000  # IC unreachable
+
+    distances = {c: _min_hops_to_ic(c) for c in connectors}
+    max_dist = max(distances.values())
+
+    # Among connectors sharing the maximum distance, keep alphabetical order
+    # for determinism.
+    best = min(c for c in connectors if distances[c] == max_dist)
+    _log.debug(
+        "tier: seed connector chosen = %r (IC hop-distances: %s)",
+        best,
+        {c: d for c, d in sorted(distances.items())},
+    )
+    return best
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -451,3 +543,11 @@ def assign_ic_units_to_tiers(
         result[base] = IcUnitGroup(base_ref=base, units=units, power_unit=power_unit)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Public re-export (private implementation exposed under a public name)
+# ---------------------------------------------------------------------------
+
+#: Public alias for :func:`_choose_seed_connector`.
+choose_seed_connector = _choose_seed_connector

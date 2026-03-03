@@ -52,14 +52,17 @@ is:
 
 1. :func:`snap_positions` (grid)
 2. :func:`_snap_power_symbols`
+2b. :func:`_snap_connectors_to_ic_y` (Rule 2: connector y-alignment)
 3. :func:`_snap_feedback_components` (if any feedback refs exist)
 4. :func:`_apply_stereo_split` (if any L/R channels exist)
 5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
 6. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
 7. :func:`_deoverlap_positions` (always; final guard against grid collisions)
 
-Power symbols must run before feedback snap so that a ``#PWR`` ref that
-shares a column with a feedback component is correctly clamped first.
+Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
+refs are already at their fixed rows before connectors compute their median.
+Connector-y-snap runs before feedback snap so feedback-adjusted y values
+take a correctly-anchored connector y as their starting point.
 Stereo split runs after feedback snap so that feedback-adjusted y values are
 used as the input to channel compression.
 ``_compact_y_gap`` runs before decoupling caps so that bypass-cap y positions
@@ -70,6 +73,7 @@ of which earlier pass introduced it.
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
@@ -81,6 +85,23 @@ from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
 from ..layout import ComponentAnnotation as _ComponentAnnotation
+
+# ---------------------------------------------------------------------------
+# Connector-classification helpers (used by _snap_connectors_to_ic_y)
+# ---------------------------------------------------------------------------
+
+
+def _is_ic_ref(ref: str) -> bool:
+    """Return True if *ref* looks like an IC designator (U*, IC*, OA*, OP*, etc)."""
+    r = ref.upper()
+    return any(r.startswith(p) for p in _IC_PREFIXES_CT)
+
+
+def _is_connector_ref(ref: str) -> bool:
+    """Return True if *ref* looks like a connector designator (J*, P*, CON*, etc)."""
+    r = ref.upper()
+    return any(r.startswith(p) for p in _CONNECTOR_PREFIXES_CT)
+
 
 # ---------------------------------------------------------------------------
 # Page-layout constants
@@ -97,10 +118,12 @@ PAGE_MAX_Y: float = 200.0  # mm (210 - 10)
 # Scale factor: mm per one "graph unit" in dot -Tplain output.
 # dot -Tplain reports node centre coordinates in inches (not points).
 # _LAY_SYMBOL_HALF_SIZE_MM = 5.08 mm, so symbols need ≥ 10.16 mm
-# centre-to-centre to avoid LAY003.  With nodesep=0.5 + node height=0.5
-# the minimum same-rank separation is 1.0 inch, so:
-#   SCALE ≥ 10.16 mm / 1.0 in  →  use 20 mm/in for comfortable margins.
-SCALE_MM_PER_GV: float = 20.0
+# centre-to-centre to avoid LAY003.  With nodesep=0.8 + node height=0.5
+# the minimum same-rank separation is 1.3 inches, so:
+#   SCALE ≥ 10.16 mm / 1.3 in  →  use 24 mm/in for comfortable margins.
+# (Rule 4: increased from 20.0 to give more mm per Graphviz unit, spreading
+# the overall layout and reducing visual crowding.)
+SCALE_MM_PER_GV: float = 24.0
 
 # Vertical spacing between a decoupling capacitor and its associated IC.
 # One KiCad symbol row = 300 mil = 7.62 mm (KiCad default body height).
@@ -254,6 +277,67 @@ def snap_positions(
 # ---------------------------------------------------------------------------
 # Post-layout specialised snap passes
 # ---------------------------------------------------------------------------
+
+
+def _snap_connectors_to_ic_y(
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    grid: float = 1.27,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Snap each connector's y-coordinate to the median y of its signal-net neighbours.
+
+    Connectors placed by Graphviz in ``rank=source`` or ``rank=sink`` can land
+    far above or below the main circuit body when they are the only component
+    in their tier (e.g. the audio-in jack floating at ``y = ORIGIN_Y`` while
+    the opamp body sits 40–60 mm lower on the page).
+
+    This pass sets each connector's y to the median y of all components it is
+    directly connected to via **signal nets** (power nets excluded, and other
+    connectors excluded from the neighbour list so connectors don't push each
+    other around).  The median is grid-snapped to the KiCad 50-mil grid.
+
+    Only the y-coordinate is adjusted; x and rotation are preserved.
+    Components absent from *positions* are silently skipped.
+
+    Why median rather than mean?  The median is robust to outlier positions
+    (e.g. a decoupling capacitor already snapped to the top of its IC) that
+    would pull a mean-based average to an incorrect y.
+    """
+    connector_refs: set[str] = {c.ref for c in ir.components if _is_connector_ref(c.ref)}
+    if not connector_refs:
+        return positions
+
+    # Build signal-neighbour lists for each connector.
+    sig_nbrs: dict[str, list[str]] = {r: [] for r in connector_refs}
+    for net in ir.nets:
+        if _is_power_net(net.name):
+            continue
+        pin_refs = [p.ref for p in net.pins]
+        for ref in pin_refs:
+            if ref not in connector_refs:
+                continue
+            for other in pin_refs:
+                # Exclude self and other connectors — only use circuit-body
+                # components (passives, ICs) as anchors.
+                if other == ref or other in connector_refs:
+                    continue
+                if other in positions:
+                    sig_nbrs[ref].append(other)
+
+    result = dict(positions)
+    for con_ref in connector_refs:
+        if con_ref not in result:
+            continue
+        nbrs = sig_nbrs.get(con_ref, [])
+        if not nbrs:
+            continue
+        nbr_ys = sorted(result[n][1] for n in nbrs)
+        median_y = nbr_ys[len(nbr_ys) // 2]  # lower-median for determinism
+        snapped_y = round(round(median_y / grid) * grid, 4)
+        x, _, rot = result[con_ref]
+        result[con_ref] = (x, snapped_y, rot)
+    return result
 
 
 def _snap_power_symbols(
@@ -455,18 +539,38 @@ def _apply_stereo_split(
 def _deoverlap_positions(
     positions: dict[str, tuple[float, float, float | None]],
     *,
-    grid: float = GRID_ROW_MM,
+    skip_pairs: frozenset[tuple[str, str]] = frozenset(),
 ) -> dict[str, tuple[float, float, float | None]]:
     """Push coincident positions apart so every component occupies a distinct grid cell.
 
     After all snap passes multiple components may land on the same (x, y).  This
     pass groups refs by x-column, sorts each group by ascending y (then by ref
     for determinism), and nudges any component whose y-distance from the previous
-    component is less than *grid* downward by *grid* increments until every pair
-    is at least *grid* millimetres apart.
+    component is less than the LAY003-safe minimum apart.
+
+    The minimum separation is the next grid multiple strictly above
+    ``_STEREO_DEOVERLAP_MIN_MM`` (10.17 mm = 2 × 5.08 mm + ε), which equals
+    9 × 1.27 mm = 11.43 mm.  This guarantees that no two components in the
+    same x-column are closer than the LAY003 overlap threshold (10.16 mm).
 
     Only the y-coordinate is modified; x and rotation are preserved.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions to deoverlap in-place (a copy is made).
+    skip_pairs:
+        A set of ``(min_ref, max_ref)`` canonical pairs that should be left
+        at their existing separation even if it is below the minimum gap.
+        Used to preserve intentional co-locations such as decoupling caps
+        placed exactly one ``GRID_ROW_MM`` above their IC.
     """
+    # Minimum grid-snapped separation that clears the LAY003 threshold:
+    # ceil(_STEREO_DEOVERLAP_MIN_MM / 1.27) × 1.27 = ceil(8.007) × 1.27 = 11.43 mm.
+    _SNAP_GRID: float = 1.27
+    _min_steps: int = math.ceil(_STEREO_DEOVERLAP_MIN_MM / _SNAP_GRID)
+    min_sep: float = _min_steps * _SNAP_GRID
+
     by_x: dict[float, list[str]] = defaultdict(list)
     for ref, (x, _y, _rot) in positions.items():
         by_x[x].append(ref)
@@ -482,8 +586,11 @@ def _deoverlap_positions(
             curr_ref = group[i]
             _px, py, _pr = result[prev_ref]
             cx, cy, cr = result[curr_ref]
-            if cy - py < grid:
-                new_y = round(py + grid, 4)
+            if cy - py < min_sep:
+                pair = (min(prev_ref, curr_ref), max(prev_ref, curr_ref))
+                if pair in skip_pairs:
+                    continue  # intentional co-location (e.g. decoupling cap)
+                new_y = round(py + min_sep, 4)
                 result[curr_ref] = (cx, new_y, cr)
     return result
 
@@ -575,11 +682,14 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
 
-    The seven passes must run in the order shown — see the module docstring
+    The eight passes must run in the order shown — see the module docstring
     for the rationale behind each ordering constraint:
 
     1. :func:`snap_positions` — quantise to the KiCad 50-mil grid.
     2. :func:`_snap_power_symbols` — clamp ``#PWR``/``#FLG`` to top/bottom row.
+    2b. :func:`_snap_connectors_to_ic_y` — pull each connector's y to the median
+        y of its signal-net neighbours, preventing connectors from floating far
+        above or below the main circuit body (Rule 2).
     3. :func:`_snap_feedback_components` — pull feedback passives above anchor IC
        (skipped when *feedback_refs* is empty).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
@@ -594,6 +704,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
+    result = _snap_connectors_to_ic_y(result, ir)
     if feedback_refs:
         result = _snap_feedback_components(result, annotations, ir)
     if any(v in ("L", "R") for v in channels.values()):
@@ -601,5 +712,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     result = _compact_y_gap(result, ir)
     if decoupling_map:
         result = _post_snap_decoupling_caps(result, decoupling_map)
-    result = _deoverlap_positions(result)
+    # Build canonical skip-pairs from the decoupling map so that intentional
+    # one-grid-row cap/IC co-locations are not nudged by _deoverlap_positions.
+    decouple_skip: frozenset[tuple[str, str]] = frozenset(
+        (min(cap, ic), max(cap, ic)) for cap, ic in decoupling_map.items()
+    )
+    result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     return result

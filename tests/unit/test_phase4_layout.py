@@ -2869,9 +2869,14 @@ class TestApplyPostLayoutSnaps:
         assert set(result.keys()) == {"J1", "R1"}
 
     def test_snap_skips_mono_channels(self) -> None:
-        """All-mono channels must leave y-coordinates at their grid-snapped values."""
+        """All-mono channels must not trigger a stereo split.
+
+        With no L/R channels present, ``_apply_stereo_split`` is skipped.
+        However, ``_snap_connectors_to_ic_y`` (Rule 2) still runs and snaps
+        J1's y-coordinate to the median y of its signal-net neighbours (R1).
+        """
         ir = self._simple_ir()
-        # Place components at exact grid positions so snap does not change them.
+        # Place components at exact grid positions.
         positions: dict[str, tuple[float, float, float | None]] = {
             "J1": (30.48, 50.80, None),
             "R1": (50.80, 76.20, None),
@@ -2884,9 +2889,10 @@ class TestApplyPostLayoutSnaps:
             channels={"J1": "mono", "R1": "mono"},
             decoupling_map={},
         )
-        # No stereo split — y values unchanged (they're already on the grid).
-        assert result["J1"][1] == pytest.approx(positions["J1"][1])
+        # No stereo split — R1 (non-connector) y stays unchanged.
         assert result["R1"][1] == pytest.approx(positions["R1"][1])
+        # Connector J1 is snapped to R1's y by _snap_connectors_to_ic_y (Rule 2).
+        assert result["J1"][1] == pytest.approx(76.20)
 
 
 # ---------------------------------------------------------------------------
@@ -3013,9 +3019,14 @@ class TestPhase8WireRouting:
         result = detect_body_crossings([seg], positions)
         assert result == [seg], "Non-crossing wire must be returned unchanged"
 
-    def test_max_direct_wire_mm_constant_is_30(self) -> None:
-        """MAX_DIRECT_WIRE_MM must be 30.0 mm as specified in Rule §4."""
-        assert MAX_DIRECT_WIRE_MM == 30.0  # exact constant — no approx needed
+    def test_max_direct_wire_mm_constant_is_70(self) -> None:
+        """MAX_DIRECT_WIRE_MM must be 70.0 mm to clear the wider layout scale.
+
+        With ranksep=2.5 × SCALE_MM_PER_GV=24.0 = 60 mm between adjacent
+        tiers, the threshold must exceed 60 mm so adjacent-tier components
+        are still wired directly rather than routed via labels.
+        """
+        assert MAX_DIRECT_WIRE_MM == 70.0  # exact constant — no approx needed
 
     def test_symbol_half_size_mm_constant_is_5_08(self) -> None:
         """SYMBOL_HALF_SIZE_MM must be 5.08 mm (200 mil = one KiCad grid unit)."""

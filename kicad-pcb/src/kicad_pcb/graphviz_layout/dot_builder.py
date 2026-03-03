@@ -389,8 +389,8 @@ def _build_dot_source(
     lines: list[str] = [
         "digraph sch {",
         "  rankdir=LR;",
-        "  nodesep=0.5;",
-        "  ranksep=1.5;",
+        "  nodesep=0.8;",  # Rule 3: increased from 0.5 — more vertical room within tiers
+        "  ranksep=2.5;",  # Rule 3: increased from 1.5 — more horizontal room between tiers
         "  ordering=out;",
         "  node [shape=box, width=0.8, height=0.5, fixedsize=true];",
     ]

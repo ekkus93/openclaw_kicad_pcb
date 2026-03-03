@@ -29,11 +29,16 @@ from .component_types import is_power_net as _is_power_net_name
 # Constants
 # ---------------------------------------------------------------------------
 WIRE_EXTEND_MM: float = 5.08  # pin stub length — 200 mil (one KiCad grid unit)
-MAX_DIRECT_DIST_MM: float = 120.0  # Manhattan distance cap for direct routing
+# Raised from 120.0 → 200.0 to accommodate the wider layout scale
+# (ranksep=2.5 × SCALE_MM_PER_GV=24.0 puts simple 2-component circuits up to
+# ~150 mm apart when routed without tier information).
+MAX_DIRECT_DIST_MM: float = 200.0  # Manhattan distance cap for direct routing
 # When tiers are provided, a wire longer than this triggers net-label routing
 # even between adjacent-tier components.  Separate from MAX_DIRECT_DIST_MM so
 # the Manhattan fallback (no tiers) is not affected.  (Rule §4)
-MAX_DIRECT_WIRE_MM: float = 30.0
+# Raised from 30.0 → 70.0 to accommodate the wider layout scale
+# (ranksep=2.5 × SCALE_MM_PER_GV=24.0 = 60 mm between adjacent tiers).
+MAX_DIRECT_WIRE_MM: float = 70.0
 # Approximate half-edge of a KiCad symbol bounding box (200 mil = 5.08 mm).
 # Used by detect_body_crossings to detect component-body wire crossings.
 SYMBOL_HALF_SIZE_MM: float = 5.08
