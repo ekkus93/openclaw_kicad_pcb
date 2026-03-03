@@ -196,34 +196,34 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 5.1 New function `layout.py::find_feedback_paths(ir, tiers)` 
 
-- [ ] Detect **feedback components**: passives where one pin connects to a
+- [x] Detect **feedback components**: passives where one pin connects to a
   net rooted at a later tier and the other pin connects to a net rooted at an
   earlier tier (i.e., they create a back-edge).
-- [ ] Mark them with a `feedback=True` attribute in a `ComponentAnnotation`
+- [x] Mark them with a `feedback=True` attribute in a `ComponentAnnotation`
   dataclass (new; lives in `layout.py`).
   
 ### 5.2 `graphviz_layout.py::_build_dot_source()` — Feedback loop U-bend constraints
 
-- [ ] For feedback components, add both a forward edge (current tier) and a
+- [x] For feedback components, add both a forward edge (current tier) and a
   constraint edge directing Graphviz to route them above the amplifier stage:
   - Add `[constraint=false]` on the back-edge so dot doesn't pull the ranks
     backward.
   - Add `[style=invis]` edge from `{feedback_component}` to a dummy node at
     tier+1 to push the feedback component row above the IC.
-- [ ] Emit the feedback component into a `cluster_feedback` subgraph (no
+- [x] Emit the feedback component into a `cluster_feedback` subgraph (no
   visible border) to keep it grouped.
 
 ### 5.3 `graphviz_layout.py::_gv_to_kicad()` — Raise feedback components above amp
 
-- [ ] Post-layout: for any component marked `feedback=True`, if its y > IC's y
+- [x] Post-layout: for any component marked `feedback=True`, if its y > IC's y
   (in KiCad coords, y increases downward), flip it to `IC.y - GRID_ROW_MM`
   so it appears visually above the amplifier body.
 
 ### 5.4 Tests
 
-- [ ] `test_find_feedback_resistor()` — R_fb connecting op-amp output net to
+- [x] `test_find_feedback_resistor()` — R_fb connecting op-amp output net to
   op-amp inverting input net is detected as feedback.
-- [ ] `test_feedback_component_placed_above_amp()`.
+- [x] `test_feedback_component_placed_above_amp()`.
 
 ---
 

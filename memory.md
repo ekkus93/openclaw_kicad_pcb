@@ -1942,3 +1942,26 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - Note: PLR0912 (too many branches) was triggered by adding explicit diode
   branch; resolved by folding diode into default 0deg fallthrough.
   Docstring still documents D* -> 0deg explicitly.
+
+## 2025-07-14 - Phase 5: Feedback network detection and U-bend placement
+
+- ComponentAnnotation dataclass (layout.py): feedback: bool = False
+- find_feedback_paths(ir, tiers) -> dict[str, ComponentAnnotation]:
+  Topological "shared-component" algorithm: passive C is feedback when
+  the two signal nets on its pins share >=1 common non-C component.
+  (e.g., R_fb on NET_IN=[J1,U1] and NET_OUT=[U1,J2] -> both have U1 -> feedback=True)
+  tiers param reserved for API compatibility; topology-driven detection.
+- _emit_feedback_constraints(lines, feedback_refs): DOT helper emitting
+  cluster_feedback subgraph (style=invis) + invis dummy-node edges per ref.
+- _build_dot_source: feedback_refs param; constraint=false on net->feedback edges.
+- _snap_feedback_components(positions, annotations, ir): post-layout snap
+  places feedback component at anchor_y - GRID_ROW_MM above nearest IC/connector.
+  Falls back to any positioned neighbour if no IC/connector found.
+- compute_symbol_positions wired up: assign_tiers -> find_feedback_paths ->
+  _build_dot_source(feedback_refs) -> _snap_feedback_components
+- 11 new tests: TestFindFeedbackPaths (7) + TestSnapFeedbackComponents (4)
+- 246 tests pass (all test_phase4_layout + test_phase2_reliability + test_phase3_correctness + test_netlist_commands)
+- KEY GOTCHA: tier-based feedback detection FAILS because assign_tiers places
+  R_fb between J1 (tier 0) and J2 (tier 3), not necessarily above all neighbors.
+  The shared-component criterion is correct and topology-driven.
+- Commit: 27e4f43
