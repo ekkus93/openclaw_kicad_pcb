@@ -1,6 +1,43 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T17:10:00Z_
+_Last updated: 2026-03-03T19:30:00Z_
+
+---
+
+## 2026-03-03T19:30:00Z — empty managed schematic bug fixed (commit 916f990)
+
+### Root cause discovered from session log
+- OpenClaw bot was generating schematics where `OpenClaw_Managed.kicad_sch` was
+  completely empty (identical to `minimal_schematic_text()`).
+- Traced via bot session log `0962acb3` and code analysis:
+  1. `_apply_netlist_to_project` ran `_ensure_managed_file_exists` (creates empty stub)
+  2. `mutate_and_validate_sch` then FAILED (layout engine error, kicad-cli missing,
+     or lint error)
+  3. The empty stub remained on disk since the write happens after mutation
+  4. Bot then ran `zip` shell command directly on whatever files existed — including
+     the empty `OpenClaw_Managed.kicad_sch`
+
+### Two bugs fixed in `commands/_sch_apply.py`
+1. **kicad-cli check after filesystem writes** — the `kicad-cli` availability check ran
+   AFTER `_ensure_managed_file_exists` wrote the empty template. A missing `kicad-cli`
+   raised `ToolError` but left the empty stub on disk.
+   **Fix**: moved the KICAD-mode pre-flight check to before any filesystem writes
+   (`_ensure_project_root_owned`, `_ensure_managed_file_exists`).
+
+2. **No cleanup on error** — when `mutate_and_validate_sch` failed for any reason,
+   the empty managed sch stub stayed on disk, misleading the bot.
+   **Fix**: track `managed_was_absent = not managed_sch_path.exists()` before
+   `_ensure_managed_file_exists`; wrap `mutate_and_validate_sch` in try/except; on
+   exception if managed file was newly created (and not dry-run), delete it so the
+   project is in a clean, retryable state.
+
+### Also added
+- `import contextlib` to `_sch_apply.py` (needed for `contextlib.suppress(OSError)`)
+
+### Checks passed
+- ruff check: all OK (109 files)
+- mypy: no issues (62 source files)
+- pytest: 1605 passed
 
 ---
 
