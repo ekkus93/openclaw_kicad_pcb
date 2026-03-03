@@ -2095,6 +2095,92 @@ def _power_ir() -> CircuitIR:
     )
 
 
+class TestFitToPage:
+    """Unit tests for _fit_to_page() (Phase 6.4 — page-fit normalisation)."""
+
+    def _positions(
+        self, refs_xy: list[tuple[str, float, float]]
+    ) -> dict[str, tuple[float, float, float | None]]:
+        return {ref: (x, y, None) for ref, x, y in refs_xy}
+
+    def test_positions_within_bounds_unchanged(self) -> None:
+        """Positions already within the A4 area must be returned unchanged."""
+        positions = self._positions(
+            [
+                ("R1", _gv_mod.ORIGIN_X + 10.0, _gv_mod.ORIGIN_Y + 10.0),
+                ("R2", _gv_mod.ORIGIN_X + 50.0, _gv_mod.ORIGIN_Y + 50.0),
+            ]
+        )
+        result = _gv_mod.fit_to_page(positions)
+        assert result["R1"][:2] == pytest.approx(positions["R1"][:2])
+        assert result["R2"][:2] == pytest.approx(positions["R2"][:2])
+
+    def test_fit_to_page_shrinks_oversized_layout(self) -> None:
+        """Layout wider than PAGE_MAX_X must be proportionally shrunk to fit."""
+        # Place one component way off to the right, far past PAGE_MAX_X.
+        far_x = _gv_mod.PAGE_MAX_X + 300.0
+        positions = self._positions(
+            [
+                ("R1", _gv_mod.ORIGIN_X, _gv_mod.ORIGIN_Y),
+                ("R2", far_x, _gv_mod.ORIGIN_Y + 20.0),
+            ]
+        )
+        result = _gv_mod.fit_to_page(positions)
+
+        # After fitting, no x-coordinate may exceed PAGE_MAX_X.
+        for ref, (x, y, _) in result.items():
+            assert x <= _gv_mod.PAGE_MAX_X + 0.01, (
+                f"{ref}: x={x} exceeds PAGE_MAX_X={_gv_mod.PAGE_MAX_X}"
+            )
+            assert y <= _gv_mod.PAGE_MAX_Y + 0.01, (
+                f"{ref}: y={y} exceeds PAGE_MAX_Y={_gv_mod.PAGE_MAX_Y}"
+            )
+
+        # The leftmost component stays at ORIGIN_X (the origin is not shifted).
+        assert result["R1"][0] == pytest.approx(_gv_mod.ORIGIN_X), (
+            "Leftmost component x must remain at ORIGIN_X after page-fit shrink."
+        )
+
+    def test_fit_to_page_shrinks_too_tall_layout(self) -> None:
+        """Layout taller than PAGE_MAX_Y must be proportionally shrunk to fit."""
+        tall_y = _gv_mod.PAGE_MAX_Y + 200.0
+        positions = self._positions(
+            [
+                ("C1", _gv_mod.ORIGIN_X + 10.0, _gv_mod.ORIGIN_Y),
+                ("C2", _gv_mod.ORIGIN_X + 10.0, tall_y),
+            ]
+        )
+        result = _gv_mod.fit_to_page(positions)
+        for ref, (x, y, _) in result.items():
+            assert y <= _gv_mod.PAGE_MAX_Y + 0.01, (
+                f"{ref}: y={y} exceeds PAGE_MAX_Y={_gv_mod.PAGE_MAX_Y} after fit"
+            )
+
+    def test_empty_positions_returns_empty(self) -> None:
+        """An empty positions dict must return an empty dict without error."""
+        result = _gv_mod.fit_to_page({})
+        assert result == {}
+
+    def test_relative_distances_preserved(self) -> None:
+        """After shrinking, the ratio of distances between components is unchanged."""
+        # Two components, one very far to the right.
+        positions = self._positions(
+            [
+                ("A", _gv_mod.ORIGIN_X, _gv_mod.ORIGIN_Y),
+                ("B", _gv_mod.ORIGIN_X + 600.0, _gv_mod.ORIGIN_Y),
+            ]
+        )
+        result = _gv_mod.fit_to_page(positions)
+        orig_dx = positions["B"][0] - positions["A"][0]
+        new_dx = result["B"][0] - result["A"][0]
+        # The ratio should be constant (= avail_x / span_x)
+        expected_ratio = (_gv_mod.PAGE_MAX_X - _gv_mod.ORIGIN_X) / orig_dx
+        assert new_dx == pytest.approx(orig_dx * expected_ratio, rel=1e-4), (
+            f"Distance ratio not preserved: orig_dx={orig_dx}, new_dx={new_dx}, "
+            f"expected_ratio={expected_ratio}"
+        )
+
+
 class TestSnapPowerSymbols:
     """Tests for _snap_power_symbols() in graphviz_layout."""
 
