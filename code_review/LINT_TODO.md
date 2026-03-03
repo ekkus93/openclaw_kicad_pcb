@@ -145,47 +145,50 @@ dependency on PCB types.
 
 ### 3.1 Create `kicad-pcb/src/kicad_pcb/lint_sch.py`
 
-- [ ] Move all LAY rule constants from `lint.py`:
-  - [ ] `_LAY_LABEL_MAX_COUNT: int = 3`
-  - [ ] `_LAY_STUB_FRACTION_THRESHOLD: float = 0.60`
-  - [ ] `_LAY_SYMBOL_HALF_SIZE_MM: float = 5.08`
-  - [ ] `_LAY_PAGE_MAX_X: float = 297.0`
-  - [ ] `_LAY_PAGE_MAX_Y: float = 210.0`
-  - [ ] `_LAY_MAX_ISLANDS: int = 2`
-  - [ ] `_WIRE_STUB_LEN_MM: float = 5.08`
-- [ ] Move `lint_schematic(root: ListNode) -> list[LintIssue]`.
-  - [ ] Remove the `# noqa: PLR0912, PLR0915` suppression — after applying Phase
+- [x] Move all LAY rule constants from `lint.py`:
+  - [x] `_LAY_LABEL_MAX_COUNT: int = 3`
+  - [x] `_LAY_STUB_FRACTION_THRESHOLD: float = 0.60`
+  - [x] `_LAY_SYMBOL_HALF_SIZE_MM: float = 5.08`
+  - [x] `_LAY_PAGE_MAX_X: float = 297.0`
+  - [x] `_LAY_PAGE_MAX_Y: float = 210.0`
+  - [x] `_LAY_MAX_ISLANDS: int = 2`
+  - [x] `_WIRE_STUB_LEN_MM: float = 5.08`
+- [x] Move `lint_schematic(root: ListNode) -> list[LintIssue]`.
+  - [x] Remove the `# noqa: PLR0912, PLR0915` suppression — after applying Phase
       5 fixes (deduplication + extracting nested helpers), the function will be
       short enough to satisfy the linter naturally.
-  - [ ] Verify the noqa is no longer needed; if still needed after Phase 5, add a
+  - [x] Verify the noqa is no longer needed; if still needed after Phase 5, add a
       note explaining why (but do not leave a bare suppression without justification).
-- [ ] Move `lint_schematic_layout(root: ListNode) -> list[LintIssue]`.
-  - [ ] Same noqa goal.
-- [ ] Keep all functions `_`-prefixed where appropriate; `lint_schematic` and
+      **Note:** Still needed (29 branches / 54 statements across 10 rules); a
+      justification comment was added in place of a bare suppression.
+- [x] Move `lint_schematic_layout(root: ListNode) -> list[LintIssue]`.
+  - [x] Same noqa goal. **Note:** Still needed (24 branches across 5 rules);
+      justification comment added.
+- [x] Keep all functions `_`-prefixed where appropriate; `lint_schematic` and
     `lint_schematic_layout` are public.
-- [ ] Write a module docstring explaining the SCH and LAY rule ranges, the
+- [x] Write a module docstring explaining the SCH and LAY rule ranges, the
     distinction between structural (`lint_schematic`) and readability
     (`lint_schematic_layout`) checks, and when to call each.
-- [ ] `__all__` in `lint_sch.py`:
+- [x] `__all__` in `lint_sch.py`:
   ```python
   __all__ = ["lint_schematic", "lint_schematic_layout"]
   ```
 
 ### 3.2 Update `lint.py`
 
-- [ ] Add import block:
+- [x] Add import block:
   ```python
   from .lint_sch import lint_schematic, lint_schematic_layout
   ```
-- [ ] Remove all moved rule bodies and LAY constants from `lint.py`.
-- [ ] Remove `import math` and `from collections import Counter` from `lint.py`
+- [x] Remove all moved rule bodies and LAY constants from `lint.py`.
+- [x] Remove `import math` and `from collections import Counter` from `lint.py`
     if only needed by the SCH/LAY rules (verify with ruff).
 
 ### 3.3 Tests
 
-- [ ] Confirm all `TestSCH*` classes in `test_lint.py` pass — they call
+- [x] Confirm all `TestSCH*` classes in `test_lint.py` pass — they call
     `lint_schematic` which is still re-exported from `kicad_pcb.lint`.
-- [ ] Confirm `lint_schematic_layout` is accessible from `kicad_pcb.lint` for
+- [x] Confirm `lint_schematic_layout` is accessible from `kicad_pcb.lint` for
     any test that calls it directly.
 
 ---
@@ -248,7 +251,7 @@ new module, not as a separate pass).
           seen.add(u)
       return issues
   ```
-- [ ] In `lint_sch.py`, replace the SCH002 loop with:
+- [x] In `lint_sch.py`, replace the SCH002 loop with:
   ```python
   issues.extend(_check_duplicate_uuids(_collect_uuids(root), "SCH002"))
   ```
@@ -291,12 +294,12 @@ both LAY002 and LAY005.
               pass
       return segs
   ```
-- [ ] In `lint_schematic_layout` (in `lint_sch.py`):
-  - [ ] Replace the LAY002 wire loop with `_collect_wire_segments(items)` for
+- [x] In `lint_schematic_layout` (in `lint_sch.py`):
+  - [x] Replace the LAY002 wire loop with `_collect_wire_segments(items)` for
       computing `wire_lengths`.
-  - [ ] Replace the LAY005 wire loop with `_collect_wire_segments(items)` for
+  - [x] Replace the LAY005 wire loop with `_collect_wire_segments(items)` for
       computing `wire_endpoints`.
-- [ ] Reduces `lint_schematic_layout` by ~25 lines.
+- [x] Reduces `lint_schematic_layout` by ~25 lines.
 
 ### 5.3 Lift nested function definitions out of rule functions
 
@@ -305,7 +308,7 @@ union-find (LAY005) algorithm, and `_round_pt` is defined inside `lint_pcb`
 for the PCB006 dangling-endpoint check. None of these closures capture anything
 from the outer scope.
 
-- [ ] In `lint_sch.py`, define at module level (private):
+- [x] In `lint_sch.py`, define at module level (private):
   ```python
   def _uf_find(parent: list[int], i: int) -> int:
       """Path-compressing find for the union-find used in LAY005."""
@@ -319,7 +322,7 @@ from the outer scope.
       if ra != rb:
           parent[ra] = rb
   ```
-  - [ ] Update the LAY005 block to call `_uf_find(parent, i)` and
+  - [x] Update the LAY005 block to call `_uf_find(parent, i)` and
       `_uf_union(parent, a, b)` instead of the nested `_find` / `_union`.
 - [ ] In `lint_pcb.py`, define at module level (private):
   ```python
@@ -341,10 +344,10 @@ sy = float(at_node.items[2].value)  # type: ignore[union-attr]
 ```
 The `_float_from_atom` helper already exists for exactly this purpose.
 
-- [ ] Replace all six `float(node.items[N].value)  # type: ignore[union-attr]`
+- [x] Replace all six `float(node.items[N].value)  # type: ignore[union-attr]`
     casts in `lint_schematic_layout` with calls to `_float_from_atom`, guarding
     with `if x is None: continue`.
-- [ ] After the fix, remove any remaining `# type: ignore[union-attr]` comments
+- [x] After the fix, remove any remaining `# type: ignore[union-attr]` comments
     from `lint_sch.py`.
 
 ### 5.5 Move `_LABEL_KEYS` to module level in `lint_sch.py`
@@ -352,13 +355,13 @@ The `_float_from_atom` helper already exists for exactly this purpose.
 Currently `_LABEL_KEYS = {"label", "global_label", "hierarchical_label", "net_tie"}`
 is defined inside `lint_schematic`, re-created on every call.
 
-- [ ] Move it to module level in `lint_sch.py`:
+- [x] Move it to module level in `lint_sch.py`:
   ```python
   _SCH_LABEL_KEYS: frozenset[str] = frozenset({
       "label", "global_label", "hierarchical_label", "net_tie"
   })
   ```
-- [ ] Use `frozenset` (hashable, signals immutability).
+- [x] Use `frozenset` (hashable, signals immutability).
 
 ### 5.6 Move `_GR_KEYS`/`coord_keys` to module level in `lint_pcb.py`
 
