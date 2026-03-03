@@ -1,6 +1,31 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T20:30:00Z_
+_Last updated: 2026-03-03T21:00:00Z_
+
+---
+
+## 2026-03-03T21:00:00Z — session integration tests for cmd_new_from_netlist (commit 6c88ef6)
+
+### Gap closed
+- Existing netlist tests always pass `out_dir` explicitly → entire session code
+  path in `cmd_new_from_netlist` was untested.
+- Added `tests/unit/test_netlist_session.py` with 6 integration tests covering
+  every session branch.
+
+### Tests added
+1. `test_with_session_project_goes_in_session_dir` — project created inside session.path
+2. `test_with_session_creates_zip_in_session_dir` — auto-zip in session.path
+3. `test_with_session_result_has_session_path` — result.session_path == session_dir
+4. `test_with_session_resolves_netlist_by_filename` — bare filename resolved from session dir
+5. `test_explicit_out_dir_overrides_session` — explicit out_dir used; zip still goes to session dir
+6. `test_no_session_no_zip_no_session_path` — without session: zip_path=None, session_path=None
+
+### Key implementation note
+- Patches `kicad_pcb.commands.netlist.get_current_session` (direct import binding),
+  NOT `kicad_pcb.config.get_current_session`.
+
+### Results
+- Full suite: 1612 passed, 0 failed, 0 session dir pollution.
 
 ---
 
