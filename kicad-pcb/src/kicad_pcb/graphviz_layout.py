@@ -39,6 +39,7 @@ import re
 import shutil
 import subprocess
 from collections import defaultdict, deque
+from collections.abc import Mapping
 from itertools import combinations
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -661,7 +662,7 @@ def _parse_plain_positions(plain_output: str) -> dict[str, tuple[float, float]]:
 
 def _apply_stereo_split(
     positions: dict[str, tuple[float, float, float | None]],
-    channels: dict[str, str],
+    channels: Mapping[str, str],
     *,
     origin_y: float = ORIGIN_Y,
     page_max_y: float = PAGE_MAX_Y,
