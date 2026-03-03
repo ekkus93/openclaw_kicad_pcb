@@ -39,10 +39,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .circuit_ir import CircuitIR
+    from ..circuit_ir import CircuitIR
 
-from .gv_cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
-from .gv_dot_builder import (
+from ..layout import compute_orientations as _compute_orientations
+from ..layout import detect_stereo_channels as _detect_stereo_channels
+from ..layout import find_feedback_paths as _find_feedback_paths
+from ..tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
+from ..tier import assign_tiers as _assign_tiers
+from .cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
+from .dot_builder import (
     _assign_bfs_tiers,
     _build_dot_source,
     _compute_net_weights,
@@ -52,7 +57,7 @@ from .gv_dot_builder import (
     _is_connector,
     _safe_id,
 )
-from .gv_snap import (
+from .snap import (
     GRID_ROW_MM,
     ORIGIN_X,
     ORIGIN_Y,
@@ -69,11 +74,6 @@ from .gv_snap import (
     _snap_power_symbols,
     snap_positions,
 )
-from .layout import compute_orientations as _compute_orientations
-from .layout import detect_stereo_channels as _detect_stereo_channels
-from .layout import find_feedback_paths as _find_feedback_paths
-from .tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
-from .tier import assign_tiers as _assign_tiers
 
 _log = logging.getLogger(__name__)
 
