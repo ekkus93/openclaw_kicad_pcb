@@ -284,7 +284,7 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 8.1 `router.py::route_nets()` — Net-label threshold tied to tier distance
 
-- [ ] Currently, direct L-routes are used when Manhattan ≤ 120 mm.
+- [x] Currently, direct L-routes are used when Manhattan ≤ 120 mm.
   Replace with a tier-distance condition:
   ```
   if tier_distance(pin_a.ref, pin_b.ref) <= 1:
@@ -293,33 +293,35 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
       emit net label (avoids diagonal "spaghetti")
   ```
   Requires threading `tiers: dict[str, int]` into `route_nets()`.
-- [ ] Update `route_nets()` signature to accept optional `tiers` param
+- [x] Update `route_nets()` signature to accept optional `tiers` param
   (default `None` → fall back to current Manhattan cap).
 
 ### 8.2 `router.py::_l_route()` — 30 mm net-label trigger
 
-- [ ] If the direct L-route segment length > 30 mm AND the pins are in
+- [x] If the direct L-route segment length > 30 mm AND the pins are in
   non-adjacent tiers, emit a net label on the wire midpoint instead of
   extending the wire across the gap. (Per Rule §4: labels for long
   cross-sheet nets.)
-- [ ] Add `MAX_DIRECT_WIRE_MM: float = 30.0` constant (distinct from the
+- [x] Add `MAX_DIRECT_WIRE_MM: float = 30.0` constant (distinct from the
   existing `MAX_DIRECT_DIST_MM = 120.0` which caps the Manhattan fallback).
 
 ### 8.3 `router.py` — Body-crossing guard
 
-- [ ] After computing all wire segments, check if any wire passes through a
+- [x] After computing all wire segments, check if any wire passes through a
   component bounding box (approximate: each component is a 10.16 × 10.16 mm
   box centred on its position).
-- [ ] If a crossing is detected, reroute the segment as a two-segment
-  detour (add a 5.08 mm bend above or below the blocking component).
-- [ ] Add `detect_body_crossings(wires, positions) -> list[WireSegment]`
+- [x] If a crossing is detected, reroute the segment as a two-segment
+  detour (add a 5.08 mm bend above or below the blocking component). *(impl:
+  5-segment rectangular jog around the obstacle; "two-segment" refers to the
+  two added bypass segments; also adds `SYMBOL_HALF_SIZE_MM = 5.08` constant.)*
+- [x] Add `detect_body_crossings(wires, positions) -> list[WireSegment]`
   as a helper.
 
 ### 8.4 Tests
 
-- [ ] `test_cross_tier_net_gets_label_not_long_wire()`.
-- [ ] `test_route_nets_respects_tier_distance()`.
-- [ ] `test_no_body_crossings_after_routing()`.
+- [x] `test_cross_tier_net_gets_label_not_long_wire()`.
+- [x] `test_route_nets_respects_tier_distance()`.
+- [x] `test_no_body_crossings_after_routing()`.
 
 ---
 

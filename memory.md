@@ -1996,3 +1996,21 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - KEY GOTCHA: 0.45× y-compression reduces spacing below LAY003 10.16mm threshold. Fixed by a deoverlap sweep that pushes same-x-column components ≥10.17mm apart within their channel band.
 - 11 new tests: TestDetectStereoChannels (6) + TestApplyStereoSplit (5). All 298 tests pass.
 - Commit: efd0e1d
+
+## 2026-03-03T00:00:00Z — Phase 8 complete: wire routing improvements (Rule §4)
+
+- `router.py` additions:
+  - `MAX_DIRECT_WIRE_MM = 30.0` — label trigger for long wires
+  - `SYMBOL_HALF_SIZE_MM = 5.08` — component bounding box half-edge
+  - `_tier_distance(ref_a, ref_b, tiers)`: abs tier-index difference
+  - `_wire_crosses_box(x1,y1,x2,y2,bx,by,half)`: AABB intersection for orthogonal segments; diagonal always False
+  - `_detour_segment(seg, bx, by, half)`: 5-segment rectangular jog around obstacle (above for horizontal, left for vertical)
+  - `detect_body_crossings(wires, positions)`: single-pass scan, replaces crossing segments with detours
+  - `route_nets()` new params: `tiers=None`, `positions=None`
+    - With tiers: tier_distance <= 1 AND wire_len <= MAX_DIRECT_WIRE_MM → direct; else → label route
+    - Without tiers: legacy Manhattan MAX_DIRECT_DIST_MM fallback preserved
+    - With positions: calls detect_body_crossings at end
+- 8 new tests in TestPhase8WireRouting. 314 tests pass total.
+- KEY: The 30mm limit applies even for adjacent-tier (distance=1) components when tiers is provided.
+- KEY: detect_body_crossings is a single pass; cascading detours require multiple calls.
+- Commit: 8c4248e
