@@ -122,34 +122,34 @@ normalisation, grid snapping, and all post-layout snap passes.
 
 ### 3.1 Create `kicad-pcb/src/kicad_pcb/gv_snap.py`
 
-- [ ] Move page-layout constants that are used *only* by snap functions:
+- [x] Move page-layout constants that are used *only* by snap functions:
   `ORIGIN_X`, `ORIGIN_Y`, `PAGE_MAX_X`, `PAGE_MAX_Y`, `SCALE_MM_PER_GV`,
   `GRID_ROW_MM`, `_STEREO_DEOVERLAP_MIN_MM`.
-  - [ ] Constants that are also needed by `GraphvizLayoutEngine` (e.g.
+  - [x] Constants that are also needed by `GraphvizLayoutEngine` (e.g.
     `SCALE_MM_PER_GV`, `ORIGIN_X`, `ORIGIN_Y`) should be defined in
     `gv_snap.py` and re-imported into `graphviz_layout.py` so there is a
     single authoritative definition.
-- [ ] Move `_parse_plain_positions(plain_output)`.
-- [ ] Move `_gv_to_kicad(gv_positions, *, origin_x, origin_y, scale)`.
-  - [ ] **Split the two concerns** (see Phase 6.4): extract
+- [x] Move `_parse_plain_positions(plain_output)`.
+- [x] Move `_gv_to_kicad(gv_positions, *, origin_x, origin_y, scale)`.
+  - [x] **Split the two concerns** (see Phase 6.4): extract
     `_fit_to_page(positions, *, origin_x, origin_y) -> positions` so that
     coordinate mapping and page-fit normalisation are independently testable.
-- [ ] Move `snap_positions(positions, *, grid)` (already public).
-- [ ] Move `_snap(v, grid)` (private helper for `snap_positions`).
-- [ ] Move `_snap_power_symbols(positions, ir, *, origin_y, page_max_y)`.
-  - [ ] **Name the magic number** (see Phase 6.5): introduce
+- [x] Move `snap_positions(positions, *, grid)` (already public).
+- [x] Move `_snap(v, grid)` (private helper for `snap_positions`).
+- [x] Move `_snap_power_symbols(positions, ir, *, origin_y, page_max_y)`.
+  - [x] **Name the magic number** (see Phase 6.5): introduce
     `_POWER_BOTTOM_MARGIN_MM: float = 20.0` with a comment.
-- [ ] Move `_snap_feedback_components(positions, annotations, ir)`.
-- [ ] Move `_post_snap_decoupling_caps(positions, decoupling_map)`.
-- [ ] Move `_apply_stereo_split(positions, channels, *, origin_y, page_max_y)`.
-  - [ ] **Fix Unicode escapes in docstring** (see Phase 6.6): replace `\u00a7`,
+- [x] Move `_snap_feedback_components(positions, annotations, ir)`.
+- [x] Move `_post_snap_decoupling_caps(positions, decoupling_map)`.
+- [x] Move `_apply_stereo_split(positions, channels, *, origin_y, page_max_y)`.
+  - [x] **Fix Unicode escapes in docstring** (see Phase 6.6): replace `\u00a7`,
     `\u00d7`, `\u2212` with literal `§`, `×`, `−`.
-- [ ] Write module docstring explaining the coordinate system transform and
+- [x] Write module docstring explaining the coordinate system transform and
   the ordering of post-layout snap passes.
 
 ### 3.2 Update `graphviz_layout.py`
 
-- [ ] Replace all moved bodies with an import block:
+- [x] Replace all moved bodies with an import block:
   ```python
   from .gv_snap import (
       _apply_stereo_split,
@@ -167,14 +167,14 @@ normalisation, grid snapping, and all post-layout snap passes.
       GRID_ROW_MM,
   )
   ```
-- [ ] Verify `from collections import defaultdict` is still needed; remove
+- [x] Verify `from collections import defaultdict` is still needed; remove
   if not.
-- [ ] Verify `from collections.abc import Mapping` is still needed; remove
+- [x] Verify `from collections.abc import Mapping` is still needed; remove
   if not.
 
 ### 3.3 Tests
 
-- [ ] Confirm `_gv_mod.snap_positions`, `_gv_mod.snap_power_symbols`,
+- [x] Confirm `_gv_mod.snap_positions`, `_gv_mod.snap_power_symbols`,
   `_gv_mod.snap_feedback_components`, `_gv_mod.apply_stereo_split`,
   `_gv_mod.parse_plain_positions`, `_gv_mod.post_snap_decoupling_caps`
   all resolve through the re-export.
@@ -189,22 +189,22 @@ block.
 
 ### 4.1 Binary discovery section
 
-- [ ] Retain `_BUNDLED_DOT_PATH`, `find_dot_binary()`, `find_dot_source()`.
+- [x] Retain `_BUNDLED_DOT_PATH`, `find_dot_binary()`, `find_dot_source()`.
   These have no natural home in the helper modules.
-- [ ] Remove the double section header ("Binary discovery" + "Bundled binary
+- [x] Remove the double section header ("Binary discovery" + "Bundled binary
   slot") — merge into a single `# Binary discovery` section.
 
 ### 4.2 `GraphvizLayoutEngine`
 
-- [ ] Retain the class in `graphviz_layout.py` — it is the orchestrator and
+- [x] Retain the class in `graphviz_layout.py` — it is the orchestrator and
   the only class in the public API.
 - [ ] Refactor `compute_symbol_positions` (see Phase 5).
 
 ### 4.3 Re-export block
 
-- [ ] Keep `__all__` and the alias assignments so existing imports such as
+- [x] Keep `__all__` and the alias assignments so existing imports such as
   `from kicad_pcb.graphviz_layout import build_dot_source` continue to work.
-- [ ] Add a comment block explaining that the aliases exist for backwards
+- [x] Add a comment block explaining that the aliases exist for backwards
   compatibility and test access only:
   ```python
   # ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ Individual targeted fixes that do not require a new module.
 
 ### 6.4 Split `_gv_to_kicad` — coordinate mapping vs page-fit normalisation
 
-- [ ] Extract the page-fit block into:
+- [x] Extract the page-fit block into:
   ```python
   def _fit_to_page(
       positions: dict[str, tuple[float, float, float | None]],
@@ -322,23 +322,23 @@ Individual targeted fixes that do not require a new module.
   ) -> dict[str, tuple[float, float, float | None]]:
       """Proportionally shrink *positions* so all points fit within the A4 area."""
   ```
-- [ ] `_gv_to_kicad` calls `_fit_to_page` as its last step.
-- [ ] Add `fit_to_page` to `__all__` / re-export block.
-- [ ] Add a test `test_fit_to_page_shrinks_oversized_layout()`.
+- [x] `_gv_to_kicad` calls `_fit_to_page` as its last step.
+- [x] Add `fit_to_page` to `__all__` / re-export block.
+- [x] Add a test `test_fit_to_page_shrinks_oversized_layout()`.
 
 ### 6.5 Name the magic number in `_snap_power_symbols`
 
-- [ ] Add at module level in `gv_snap.py`:
+- [x] Add at module level in `gv_snap.py`:
   ```python
   # Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
   # and one grid row above the very bottom of the usable area.
   _POWER_BOTTOM_MARGIN_MM: float = 20.0
   ```
-- [ ] Replace `page_max_y - 20.0` with `page_max_y - _POWER_BOTTOM_MARGIN_MM`.
+- [x] Replace `page_max_y - 20.0` with `page_max_y - _POWER_BOTTOM_MARGIN_MM`.
 
 ### 6.6 Fix Unicode escapes in `_apply_stereo_split` docstring
 
-- [ ] Replace `\u00a7` → `§`, `\u00d7` → `×`, `\u2212` → `−` in the
+- [x] Replace `\u00a7` → `§`, `\u00d7` → `×`, `\u2212` → `−` in the
   docstring.  The source file is UTF-8; there is no reason to use escape
   sequences.
 
