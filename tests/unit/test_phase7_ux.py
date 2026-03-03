@@ -287,7 +287,7 @@ class TestGraphvizRequiredEndToEnd:
         }
         bad_engine = GraphvizLayoutEngine(dot_path="/nonexistent/dot")
         with (
-            patch("kicad_pcb.commands.netlist.make_layout_engine", return_value=bad_engine),
+            patch("kicad_pcb.commands._sch_apply.make_layout_engine", return_value=bad_engine),
             pytest.raises(RuntimeError, match="dot.*failed|dot.*not found"),
         ):
             _write_symbols(
