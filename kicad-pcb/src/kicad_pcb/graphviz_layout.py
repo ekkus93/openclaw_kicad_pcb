@@ -38,7 +38,7 @@ import os
 import re
 import shutil
 import subprocess
-from collections import deque
+from collections import defaultdict, deque
 from itertools import combinations
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -48,6 +48,9 @@ if TYPE_CHECKING:
 
 from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
+from .layout import ComponentAnnotation as _ComponentAnnotation
+from .layout import find_feedback_paths as _find_feedback_paths
 from .tier import assign_tiers as _assign_tiers
 
 _log = logging.getLogger(__name__)
@@ -413,6 +416,26 @@ def _compute_net_weights(signal_nets: list) -> dict[str, int]:
     return result
 
 
+def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> None:
+    """Append ``cluster_feedback`` DOT subgraph for *feedback_refs*.
+
+    Each feedback component gets an invisible dummy node and an
+    ``[style=invis, weight=10]`` edge to that dummy, biasing Graphviz to
+    place the feedback component above (earlier rank than) the amplifier.
+    The subgraph itself has no visible border (``style=invis``).
+    """
+    sorted_fb = sorted(feedback_refs)
+    lines.append("  subgraph cluster_feedback {")
+    lines.append('    label="";')
+    lines.append("    style=invis;")
+    for ref in sorted_fb:
+        safe = _safe_id(ref)
+        dummy = f"__fbdummy_{safe}__"
+        lines.append(f"    {dummy} [style=invis, width=0, height=0];")
+        lines.append(f"    {safe} -> {dummy} [style=invis, weight=10];")
+    lines.append("  }")
+
+
 def _emit_decoupling_constraints(
     lines: list[str],
     decoupling_map: dict[str, str],
@@ -441,6 +464,7 @@ def _build_dot_source(
     ir: CircuitIR,
     *,
     decoupling_map: dict[str, str] | None = None,
+    feedback_refs: set[str] | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -526,7 +550,12 @@ def _build_dot_source(
         weight_attr = f" [weight={w}]" if w > 1 else ""
         lines.append(f"  {_safe_id(upstream)} -> {net_id}{weight_attr};")
         for downstream in sorted_pins[1:]:
-            lines.append(f"  {net_id} -> {_safe_id(downstream)}{weight_attr};")
+            # Feedback components sit at a higher tier than all their
+            # neighbours; constrain=false prevents dot from pulling the
+            # ranks backward when these "downstream" slots are feedback refs.
+            is_fb = feedback_refs is not None and downstream in feedback_refs
+            extra = " [constraint=false]" if is_fb else (weight_attr if weight_attr else "")
+            lines.append(f"  {net_id} -> {_safe_id(downstream)}{extra};")
 
     # Power-only refs in a subgraph at the right so they don't disrupt flow.
     if power_only_refs:
@@ -541,6 +570,12 @@ def _build_dot_source(
     # bypass cap into the same column as its associated IC.
     if decoupling_map:
         _emit_decoupling_constraints(lines, decoupling_map)
+
+    # Feedback components: invisible upward edge pushes them above the
+    # amplifier tier.  Grouped in a style=invis cluster so they don't
+    # disrupt the power cluster.
+    if feedback_refs:
+        _emit_feedback_constraints(lines, feedback_refs)
 
     lines.append("}")
     return "\n".join(lines)
@@ -576,6 +611,63 @@ def _parse_plain_positions(plain_output: str) -> dict[str, tuple[float, float]]:
             continue
         positions[name] = (gv_x, gv_y)
     return positions
+
+
+def _snap_feedback_components(
+    positions: dict[str, tuple[float, float, float | None]],
+    annotations: dict[str, _ComponentAnnotation],
+    ir: CircuitIR,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Place feedback components visually above their nearest IC/connector anchor.
+
+    For each component annotated ``feedback=True``, locates the
+    IC or connector that shares a signal net with it and snaps the feedback
+    component to ``anchor_y - GRID_ROW_MM``.  This produces the U-bend visual
+    convention (feedback resistors float above the amplifier stage).
+
+    The x-coordinate is preserved.  Components absent from *positions* or
+    with no IC/connector neighbour in *positions* are silently skipped.
+    """
+    _anchor_prefixes = _IC_PREFIXES_CT + _CONNECTOR_PREFIXES_CT
+
+    signal_nets = [n for n in ir.nets if not _is_power_net(n.name) and len(n.pins) >= 2]
+
+    # Build: component → set of direct signal-net neighbours.
+    comp_nbrs: dict[str, set[str]] = defaultdict(set)
+    for net in signal_nets:
+        for pin in net.pins:
+            for other in net.pins:
+                if other.ref != pin.ref:
+                    comp_nbrs[pin.ref].add(other.ref)
+
+    result = dict(positions)
+    for comp in ir.components:
+        ref = comp.ref
+        ann = annotations.get(ref)
+        if ann is None or not ann.feedback or ref not in result:
+            continue
+
+        # Find an anchor in the signal-net neighbourhood.  Prefer IC/connector
+        # over passive neighbours; fall back to any positioned neighbour.
+        anchor_y: float | None = None
+        priority_nbrs = sorted(comp_nbrs.get(ref, []))
+        for nbr in priority_nbrs:  # IC/connector pass
+            if any(nbr.upper().startswith(pfx) for pfx in _anchor_prefixes) and nbr in result:
+                anchor_y = result[nbr][1]
+                break
+        if anchor_y is None:
+            for nbr in priority_nbrs:  # fallback: any positioned neighbour
+                if nbr in result:
+                    anchor_y = result[nbr][1]
+                    break
+
+        if anchor_y is None:
+            continue
+
+        x, _, rot = result[ref]
+        result[ref] = (x, round(anchor_y - GRID_ROW_MM, 2), rot)
+
+    return result
 
 
 def _post_snap_decoupling_caps(
@@ -753,8 +845,15 @@ class GraphvizLayoutEngine:
         # can be used both for invisible-edge constraints and post-layout snap.
         decoupling_map = _find_decoupling_caps(ir)
 
+        # Detect feedback components (passives that form back-edges).
+        _tiers = _assign_tiers(ir)
+        annotations = _find_feedback_paths(ir, _tiers)
+        feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
+
         # Build DOT source up-front so we can derive the cache key.
-        dot_source = _build_dot_source(ir, decoupling_map=decoupling_map)
+        dot_source = _build_dot_source(
+            ir, decoupling_map=decoupling_map, feedback_refs=feedback_refs or None
+        )
         cache_key = _layout_cache_key(dot_source)
 
         # --- Cache hit: return immediately without invoking dot. ---
@@ -794,6 +893,10 @@ class GraphvizLayoutEngine:
 
         # Post-layout: snap #PWR/#FLG power symbols to top or bottom page row.
         result = _snap_power_symbols(result, ir)
+
+        # Post-layout: snap feedback components above their anchor IC/connector.
+        if feedback_refs:
+            result = _snap_feedback_components(result, annotations, ir)
 
         # Post-layout: snap decoupling caps to sit directly above their IC.
         if decoupling_map:
@@ -877,10 +980,12 @@ __all__ = [
     "is_connector",
     "layout_cache_key",
     "load_layout_cache",
+    "ORIGIN_Y",
     "PAGE_MAX_Y",
     "parse_plain_positions",
     "post_snap_decoupling_caps",
     "save_layout_cache",
+    "snap_feedback_components",
     "snap_power_symbols",
 ]
 
@@ -897,6 +1002,7 @@ load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
 post_snap_decoupling_caps = _post_snap_decoupling_caps
 save_layout_cache = _save_layout_cache
+snap_feedback_components = _snap_feedback_components
 snap_power_symbols = _snap_power_symbols
 
 
