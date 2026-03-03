@@ -41,6 +41,7 @@ from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat, read_lib_symbol_pi
 from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
+from ..tier import assign_tiers
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
@@ -695,7 +696,8 @@ def _write_symbols(  # noqa: PLR0913
     layout: dict[str, tuple[float, float]] = {
         ref: (pos[0], pos[1]) for ref, pos in raw_layout.items()
     }
-    orientations: dict[str, int] = compute_orientations(ir, layout)
+    tiers: dict[str, int] = assign_tiers(ir)
+    orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]
