@@ -1269,6 +1269,121 @@ class TestShuntOrientations:
 
 
 # ---------------------------------------------------------------------------
+# Phase 4.1 — Connector orientation (tier-driven) and diode explicit 0°
+# ---------------------------------------------------------------------------
+
+
+class TestConnectorOrientations:
+    """compute_orientations uses tier info to set connector direction.
+
+    Input connectors (tier 0) get 0° so their pins point right into the
+    circuit.  Output connectors (max tier) get 180° so their pins point
+    left, back toward the circuit.  Intermediate connectors (if any)
+    default to 0°.  When no tiers dict is passed the old behaviour
+    (always 0°) is preserved for backward compatibility.
+    """
+
+    # ------------------------------------------------------------------
+    # Shared fixture: J1 → R1 → U1 → J2 linear chain
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _chain_ir_4() -> CircuitIR:
+        """J1 — NET0 — R1 — NET1 — U1 — NET2 — J2."""
+        return _make_ir(
+            [
+                ("J1", "Connector_Generic:Conn_01x02"),
+                ("R1", "Device:R"),
+                ("U1", "Amplifier_Operational:TL071"),
+                ("J2", "Connector_Generic:Conn_01x02"),
+            ],
+            [
+                ("NET0", [("J1", "1"), ("R1", "1")]),
+                ("NET1", [("R1", "2"), ("U1", "3")]),
+                ("NET2", [("U1", "6"), ("J2", "1")]),
+            ],
+        )
+
+    @staticmethod
+    def _tiers_4() -> dict[str, int]:
+        """Tier map for the 4-component chain: J1=0, R1=1, U1=2, J2=3."""
+        return {"J1": 0, "R1": 1, "U1": 2, "J2": 3}
+
+    @staticmethod
+    def _positions_4() -> dict[str, tuple[float, float]]:
+        return {"J1": (0.0, 30.0), "R1": (30.0, 30.0), "U1": (60.0, 30.0), "J2": (90.0, 30.0)}
+
+    # ------------------------------------------------------------------
+
+    def test_input_connector_orientation_is_0(self) -> None:
+        """Input connector at tier 0 must be 0° (pins point right)."""
+        ir = self._chain_ir_4()
+        result = compute_orientations(ir, self._positions_4(), tiers=self._tiers_4())
+        assert result["J1"] == 0, f"Input connector J1 (tier 0) should be 0°, got {result['J1']}"
+
+    def test_output_connector_orientation_is_180(self) -> None:
+        """Output connector at max tier must be 180° (pins point left)."""
+        ir = self._chain_ir_4()
+        result = compute_orientations(ir, self._positions_4(), tiers=self._tiers_4())
+        assert result["J2"] == 180, (
+            f"Output connector J2 (tier 3 = max) should be 180°, got {result['J2']}"
+        )
+
+    def test_non_connector_components_unaffected_by_tiers(self) -> None:
+        """Passing tiers must not change orientation of non-connector components."""
+        ir = self._chain_ir_4()
+        result_no_tiers = compute_orientations(ir, self._positions_4())
+        result_with_tiers = compute_orientations(ir, self._positions_4(), tiers=self._tiers_4())
+        for ref in ("R1", "U1"):
+            assert result_no_tiers[ref] == result_with_tiers[ref], (
+                f"{ref} orientation changed when tiers were added: "
+                f"{result_no_tiers[ref]} → {result_with_tiers[ref]}"
+            )
+
+    def test_connector_without_tiers_defaults_to_zero(self) -> None:
+        """When tiers=None (backward compat), all connectors are 0°."""
+        ir = self._chain_ir_4()
+        result = compute_orientations(ir, self._positions_4(), tiers=None)
+        assert result["J1"] == 0, "J1 should be 0° when no tiers provided"
+        assert result["J2"] == 0, "J2 should be 0° without tiers (no 180° flip)"
+
+    def test_single_connector_circuit_stays_zero(self) -> None:
+        """A circuit with only one connector (max_tier == 0) keeps 0°.
+
+        When all connectors are at tier 0 and max_tier is 0 the output
+        connector guard ``_max_tier > 0`` prevents a false 180° assignment.
+        """
+        ir = _make_ir(
+            [("J1", "Connector_Generic:Conn_01x01"), ("R1", "Device:R")],
+            [("NET", [("J1", "1"), ("R1", "1")])],
+        )
+        tiers = {"J1": 0, "R1": 0}
+        result = compute_orientations(ir, {"J1": (0.0, 0.0), "R1": (30.0, 0.0)}, tiers=tiers)
+        assert result["J1"] == 0, "Single-tier connector should never be 180°"
+
+    def test_diode_always_zero(self) -> None:
+        """Diode D* is always 0° (anode left, cathode right)."""
+        ir = _make_ir(
+            [("D1", "Device:D"), ("J1", "Connector_Generic:Conn_01x01")],
+            [("SIGNAL", [("D1", "A"), ("J1", "1")])],
+        )
+        tiers = {"D1": 1, "J1": 0}
+        positions = {"D1": (30.0, 30.0), "J1": (0.0, 30.0)}
+        result = compute_orientations(ir, positions, tiers=tiers)
+        assert result["D1"] == 0, f"Diode D1 should always be 0°, got {result['D1']}"
+
+    def test_diode_zero_regardless_of_tiers(self) -> None:
+        """Diode orientation is 0° with or without a tiers dict."""
+        ir = _make_ir(
+            [("D2", "Device:D_Schottky")],
+            [("ANODE", [("D2", "A")])],
+        )
+        pos = {"D2": (30.0, 30.0)}
+        assert compute_orientations(ir, pos)["D2"] == 0
+        assert compute_orientations(ir, pos, tiers={"D2": 2})["D2"] == 0
+
+
+# ---------------------------------------------------------------------------
 # Phase 0 — BFS tier assignment + directional DOT source (regression 0.3)
 # ---------------------------------------------------------------------------
 

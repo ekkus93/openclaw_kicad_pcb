@@ -388,13 +388,29 @@ def _series_passive_rotation(
 def compute_orientations(
     ir: CircuitIR,
     positions: dict[str, tuple[float, float]],
+    tiers: dict[str, int] | None = None,
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
+    Parameters
+    ----------
+    ir:
+        Parsed circuit IR.
+    positions:
+        ``{ref: (x_mm, y_mm)}`` layout positions (used for the passive
+        position heuristic).
+    tiers:
+        Optional ``{ref: tier_index}`` from :func:`~kicad_pcb.tier.assign_tiers`.
+        When provided, connector orientation is determined by tier:
+        tier 0 → 0° (input, pins point right); max tier → 180° (output,
+        pins point left toward the circuit).  When *None*, all connectors
+        default to 0°.
+
     Rules (applied in priority order)
     -----------------------------------
-    * **Connectors** (J/CON/P/SJ/TJ): 0° — standard library orientation places
-      pins on the right edge so wires flow left→right from the connector.
+    * **Connectors** (J/CON/P/SJ/TJ):
+      - With *tiers*: tier 0 → 0°; max tier → 180°; intermediate → 0°.
+      - Without *tiers*: always 0°.
     * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
       left and output on the right, which is correct for the usual KiCad symbols.
     * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1 signal-net
@@ -405,6 +421,8 @@ def compute_orientations(
       90° when the sum of |Δy| to signal-net neighbours exceeds the sum of |Δx|;
       otherwise 0°.  This orients in-column feedback or coupling components to
       match the dominant wire direction.
+    * **Diodes** (D*): always 0° (anode left, cathode right for forward-biased
+      series placement).
     * **Default**: 0°.
 
     Power / ground nets (identified by :func:`_is_power_net_layout`) are excluded
@@ -426,14 +444,20 @@ def compute_orientations(
                     adjacency[r_i].append(r_j)
                     adjacency[r_j].append(r_i)
 
+    # Pre-compute max tier for connector direction decisions.
+    _max_tier: int = max(tiers.values()) if tiers else 0
+
     result: dict[str, int] = {}
     for comp in ir.components:
         ref = comp.ref
         upper = ref.upper()
 
-        # Connectors: always 0°.
+        # Connectors: 0° for input (tier 0), 180° for output (max tier).
         if any(upper.startswith(pfx) for pfx in _SOURCE_PREFIXES):
-            result[ref] = 0
+            if tiers is not None and _max_tier > 0:
+                result[ref] = 180 if tiers.get(ref, 0) == _max_tier else 0
+            else:
+                result[ref] = 0
             continue
 
         # Op-amps / ICs: always 0°.
@@ -450,6 +474,7 @@ def compute_orientations(
             result[ref] = _series_passive_rotation(ref, positions, adjacency)
             continue
 
+        # Diodes (D*), and all other unmatched components default to 0°.
         result[ref] = 0
 
     return result
