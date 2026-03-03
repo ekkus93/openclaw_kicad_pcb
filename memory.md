@@ -1,6 +1,36 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T19:30:00Z_
+_Last updated: 2026-03-03T20:30:00Z_
+
+---
+
+## 2026-03-03T20:30:00Z — session test isolation + stale-session auto-clear (commit 6925dec)
+
+### Root cause: test pollution (hundreds of dirs in ~/kicad-projects/sessions/)
+- `test_session.py` fixture monkeypatched `cfg_mod.get_sessions_base_dir` but
+  `session.py` uses `from ..config import get_sessions_base_dir` — a direct binding
+  not affected by patching the config module attribute.
+- Result: every test run leaked real session directories into `~/kicad-projects/sessions/`
+  (500+ dirs with names like `amp_*`, `headphone_amp_*`, `counter_test_*`, etc.)
+- Fix: also patch `kicad_pcb.commands.session.get_sessions_base_dir` in the fixture.
+
+### Root cause: stale current_session.json
+- `get_current_session()` returned a SessionRef even when the session directory
+  had been deleted (e.g. user manually removed the dir).
+- Any code using `session.path` as `out_dir` would silently recreate the dir.
+- Fix in `config.py`: if `ref.path` doesn't exist, remove the stale marker and return None.
+- Uses `contextlib.suppress(OSError)` for the unlink.
+
+### Tests updated
+- `test_set_get_current_session_round_trip`: now creates session dir before testing
+- `test_clear_current_session_removes_file`: now creates session dir before testing
+- New `test_get_current_session_returns_none_for_missing_dir`: covers stale-session case
+- Total: 14 session tests, all pass. Full suite: 1566 passed / 39 pre-existing failures.
+
+### Files changed
+- `kicad-pcb/src/kicad_pcb/config.py` — added `import contextlib`, stale-session check
+- `tests/unit/test_session.py` — fixture patch fix, test fixes, new test
+- Committed `6925dec`, pushed to master
 
 ---
 
