@@ -50,6 +50,7 @@ from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .layout import ComponentAnnotation as _ComponentAnnotation
+from .layout import compute_orientations as _compute_orientations
 from .layout import detect_stereo_channels as _detect_stereo_channels
 from .layout import find_feedback_paths as _find_feedback_paths
 from .tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
@@ -510,6 +511,7 @@ def _build_dot_source(
     decoupling_map: dict[str, str] | None = None,
     feedback_refs: set[str] | None = None,
     power_unit_refs: set[str] | None = None,
+    tiers: dict[str, int] | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -560,7 +562,9 @@ def _build_dot_source(
         _extend_power_only_refs(power_only_refs, signal_refs, refs, power_unit_refs)
 
     # Longest-path tier assignment — determines left-to-right rank for each component.
-    tiers = _assign_tiers(ir)
+    # Use pre-computed tiers if supplied (avoids redundant work when the caller already
+    # ran assign_tiers).
+    tiers = tiers if tiers is not None else _assign_tiers(ir)
 
     # Group signal-connected refs by tier.
     tier_groups: dict[int, list[str]] = {}
@@ -917,7 +921,7 @@ class GraphvizLayoutEngine:
         Subprocess timeout in seconds. Default: 10.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         dot_path: str,
@@ -925,12 +929,14 @@ class GraphvizLayoutEngine:
         timeout: float = 10.0,
         seed: int = 7,
         cache_path: Path | None = None,
+        tiers: dict[str, int] | None = None,
     ) -> None:
         self._dot = dot_path
         self._scale = scale
         self._timeout = timeout
         self._seed = seed
         self._cache_path = cache_path
+        self._tiers = tiers
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -939,7 +945,16 @@ class GraphvizLayoutEngine:
     def compute_symbol_positions(
         self, ir: CircuitIR
     ) -> dict[str, tuple[float, float, float | None]]:
-        """Run ``dot`` on *ir* and return ``{ref: (x_mm, y_mm, None)}``.
+        """Run ``dot`` on *ir* and return ``{ref: (x_mm, y_mm, rotation_deg)}``.
+
+        **Rotation:** Orientation is computed via
+        :func:`~kicad_pcb.layout.compute_orientations` after Graphviz layout
+        and merged into each tuple.  Connectors at tier 0 get 0°; last-tier
+        connectors get 180°; series passives get 0° (or 90° when y-spread
+        dominates); shunt/bypass passives get 90°.
+
+        **Snapping:** All positions are snapped to the KiCad 50-mil grid
+        (1.27 mm) after the Graphviz raw output is processed.
 
         **Cache:** If *cache_path* was supplied and a cached result exists for
         the current circuit topology (keyed by sha256 of the DOT source), the
@@ -960,7 +975,7 @@ class GraphvizLayoutEngine:
         decoupling_map = _find_decoupling_caps(ir)
 
         # Detect feedback components (passives that form back-edges).
-        _tiers = _assign_tiers(ir)
+        _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir)
         annotations = _find_feedback_paths(ir, _tiers)
         feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
 
@@ -971,11 +986,13 @@ class GraphvizLayoutEngine:
         }
 
         # Build DOT source up-front so we can derive the cache key.
+        # Pass pre-computed tiers so _build_dot_source skips a redundant assign_tiers call.
         dot_source = _build_dot_source(
             ir,
             decoupling_map=decoupling_map,
             feedback_refs=feedback_refs or None,
             power_unit_refs=_power_unit_refs or None,
+            tiers=_tiers,
         )
         cache_key = _layout_cache_key(dot_source)
 
@@ -1014,6 +1031,13 @@ class GraphvizLayoutEngine:
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
 
+        # Post-layout: snap raw Graphviz positions to the KiCad 50-mil grid
+        # before any specialised snaps run.  The specialised post-layout passes
+        # below may override individual positions with off-grid values (e.g.
+        # ORIGIN_Y for power rails, precise IC offsets for decoupling caps);
+        # that is intentional — they take priority over the grid snap.
+        result = snap_positions(result)
+
         # Post-layout: snap #PWR/#FLG power symbols to top or bottom page row.
         result = _snap_power_symbols(result, ir)
 
@@ -1029,6 +1053,16 @@ class GraphvizLayoutEngine:
         # Post-layout: snap decoupling caps to sit directly above their IC.
         if decoupling_map:
             result = _post_snap_decoupling_caps(result, decoupling_map)
+
+        # Compute component orientations (rotation in degrees) from signal topology
+        # and merge into the result so callers receive (x, y, rotation) triples.
+        _plain_positions: dict[str, tuple[float, float]] = {
+            ref: (x, y) for ref, (x, y, _) in result.items()
+        }
+        _orientations = _compute_orientations(ir, _plain_positions, _tiers)
+        result = {
+            ref: (x, y, float(_orientations.get(ref, 0))) for ref, (x, y, _) in result.items()
+        }
 
         # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
@@ -1115,6 +1149,7 @@ __all__ = [
     "post_snap_decoupling_caps",
     "save_layout_cache",
     "snap_feedback_components",
+    "snap_positions",
     "snap_power_symbols",
 ]
 

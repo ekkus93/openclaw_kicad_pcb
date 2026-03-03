@@ -329,15 +329,15 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 9.1 `layout_engine.py::make_layout_engine()` — Pass tiers to engine
 
-- [ ] Add optional `tiers: dict[str, int] | None = None` parameter.
-- [ ] If `tiers` is provided, store on the engine and use it in
+- [x] Add optional `tiers: dict[str, int] | None = None` parameter.
+- [x] If `tiers` is provided, store on the engine and use it in
   `_build_dot_source()` (Phase 1.2).
-- [ ] Add a convenience factory `make_layout_engine_with_ir(ir)` that
+- [x] Add a convenience factory `make_layout_engine_with_ir(ir)` that
   computes tiers internally and returns a fully configured engine.
 
 ### 9.2 `graphviz_layout.py::GraphvizLayoutEngine` — End-to-end integration
 
-- [ ] Revise `compute_symbol_positions()` to run the full pipeline after
+- [x] Revise `compute_symbol_positions()` to run the full pipeline after
   getting raw positions from dot:
   1. `gv_positions = _run_dot(dot_source)` — existing step
   2. `kicad_positions = _gv_to_kicad(gv_positions)` — existing step
@@ -348,7 +348,7 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 9.3 Integration test
 
-- [ ] Add `tests/integration/test_layout_pipeline.py` (or extend existing
+- [x] Add `tests/integration/test_phase9_integration.py` (or extend existing
   `tests/unit/test_graphviz_layout.py`):
   - Build a minimal headphone-amp IR (3 tiers: J_IN → R1, C1 → U1 → J_OUT).
   - Run `make_layout_engine().compute_symbol_positions(ir)`.
