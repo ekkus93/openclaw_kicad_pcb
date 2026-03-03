@@ -28,7 +28,9 @@ Re-exports
 from __future__ import annotations
 
 import logging
+import re
 from collections import deque
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .component_types import (
@@ -42,11 +44,44 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "assign_tiers",
+    "assign_ic_units_to_tiers",
+    "IcUnitGroup",
     "TIER_SPACING_MM",
     "ORIGIN_X_MM",
 ]
 
 _log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Multi-unit IC detection
+# ---------------------------------------------------------------------------
+
+#: Matches multi-unit IC refs such as "U1A", "OA3B", "IC12AB".
+#: Group 1 is the base ref (e.g. "U1"), group 2 is the unit suffix (e.g. "A").
+_MULTI_UNIT_RE: re.Pattern[str] = re.compile(r"^([A-Za-z]+[0-9]+)([A-Za-z]+)$")
+
+
+@dataclass
+class IcUnitGroup:
+    """Detected grouping of multi-unit IC symbol references.
+
+    Parameters
+    ----------
+    base_ref:
+        The stem shared by all units, e.g. ``"U1"`` for ``U1A`` / ``U1B``.
+    units:
+        Sorted list of individual unit reference strings.
+    power_unit:
+        Reference of the unit whose every net connection is a power rail (VCC,
+        GND, etc.), or ``None`` when no such unit exists.  The power unit is
+        placed in the ``cluster_power`` DOT subgraph rather than the main
+        signal-flow tier grid.
+    """
+
+    base_ref: str
+    units: list[str] = field(default_factory=list)
+    power_unit: str | None = None
+
 
 # ---------------------------------------------------------------------------
 # Power-net detection (local; avoids import of regex-heavy graphviz_layout)
@@ -348,3 +383,71 @@ def assign_tiers(ir: CircuitIR) -> dict[str, int]:
 
     # Step 4: longest-path DP.
     return _longest_path_dp(refs, succ, pred)
+
+
+def assign_ic_units_to_tiers(
+    ir: CircuitIR,
+    tiers: dict[str, int],
+) -> dict[str, IcUnitGroup]:
+    """Group multi-unit IC references and identify their power unit.
+
+    Scans *ir.components* for IC references that carry a letter-suffix unit
+    designator (e.g. ``U1A``, ``U1B``, ``U1C``).  Components whose reference
+    does not match the ``<IC_PREFIX><digits><letters>`` pattern are ignored.
+
+    For each group the function checks all nets in *ir.nets*: if every net a
+    unit appears on is a *power net* (GND, VCC, etc.) then that unit is
+    flagged as the *power unit*.  The power unit should be placed in the
+    ``cluster_power`` DOT subgraph rather than the main signal-flow tier grid.
+
+    Parameters
+    ----------
+    ir:
+        Parsed circuit IR.
+    tiers:
+        Per-component tier mapping from :func:`assign_tiers` (reserved for
+        future ranking logic; topology-driven detection does not use it).
+
+    Returns
+    -------
+    dict[str, IcUnitGroup]
+        Maps each *base_ref* (e.g. ``"U1"``) to its :class:`IcUnitGroup`.
+        Only base refs with \u2265 2 unit variants in *ir.components* are included.
+    """
+    # Build mapping ref \u2192 set of net names it appears on.
+    ref_to_nets: dict[str, set[str]] = {c.ref: set() for c in ir.components}
+    for net in ir.nets:
+        for pin in net.pins:
+            if pin.ref in ref_to_nets:
+                ref_to_nets[pin.ref].add(net.name)
+
+    # Detect multi-unit IC refs and group by base ref.
+    raw_groups: dict[str, list[str]] = {}
+    for comp in ir.components:
+        if component_type(comp.ref) != "ic":
+            continue
+        m = _MULTI_UNIT_RE.match(comp.ref)
+        if m is None:
+            continue
+        base = m.group(1)
+        if component_type(base) != "ic":
+            # Guard against false positives with passive-prefixed refs.
+            continue
+        raw_groups.setdefault(base, []).append(comp.ref)
+
+    # Build IcUnitGroup for each base with \u2265 2 units.
+    result: dict[str, IcUnitGroup] = {}
+    for base, unit_refs in raw_groups.items():
+        if len(unit_refs) < 2:
+            continue
+        units = sorted(unit_refs)
+        # Power unit: every connected net is a power rail.
+        power_unit: str | None = None
+        for unit_ref in units:
+            connected = ref_to_nets.get(unit_ref, set())
+            if connected and all(_is_power_net(n) for n in connected):
+                power_unit = unit_ref
+                break
+        result[base] = IcUnitGroup(base_ref=base, units=units, power_unit=power_unit)
+
+    return result
