@@ -1927,3 +1927,18 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - KEY GOTCHA: compute_symbol_positions renames refs via _safe_id() before calling
   _snap_power_symbols. Fake positions in integration tests MUST use safe_id keys
   (e.g. "_PWR01"), not original refs ("#PWR01").
+
+## 2025-07-14 - Phase 4.1: Connector tier-driven orientation + diode 0deg
+
+- compute_orientations() now accepts optional tiers: dict[str, int] | None = None
+  - tier 0 (input connectors) -> 0deg; max_tier (output connectors) -> 180deg
+  - tiers=None: all connectors 0deg (backward compat)
+  - _max_tier > 0 guard prevents false 180deg when all connectors share tier 0
+  - D* diodes: 0deg (documented in docstring; handled by default fallthrough)
+- netlist.py _write_symbols(): now calls assign_tiers(ir) and passes tiers to compute_orientations
+- 7 new tests in TestConnectorOrientations (test_phase4_layout.py)
+- All 235 layout/reliability/correctness/netlist tests pass
+- Commit: ab81e92
+- Note: PLR0912 (too many branches) was triggered by adding explicit diode
+  branch; resolved by folding diode into default 0deg fallthrough.
+  Docstring still documents D* -> 0deg explicitly.

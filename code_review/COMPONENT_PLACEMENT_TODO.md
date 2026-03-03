@@ -168,12 +168,12 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
     - **One pin on a power/GND net, other on signal net** → component is **shunt** → orient 90° (vertical).
     - **Both pins on power nets** → degenerate bypass; default to 90°.
   - Special case potentiometer (`RV*`): always 90°.
-- [ ] For connectors (`J*`, `P*`, `CON*`):
+- [x] For connectors (`J*`, `P*`, `CON*`):
   - Input connectors (tier 0): 0° (pins point right, toward circuit).
   - Output connectors (last tier): 180° (pins point left, toward circuit).
   - Determine input vs output by tier: `tier == 0 → 0°`, `tier == max_tier → 180°`.
 - [x] For ICs and op-amps (`U*`, `IC*`, `OA*`): always 0°.
-- [ ] For diodes (`D*`): 0° (anode left, cathode right for forward-biased series diodes).
+- [x] For diodes (`D*`): 0° (anode left, cathode right for forward-biased series diodes).
 
 ### 4.2 `graphviz_layout.py::GraphvizLayoutEngine.compute_symbol_positions()`
 
@@ -186,8 +186,8 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 - [x] `test_series_resistor_orientation_is_0()` — `TestShuntOrientations::test_series_resistor_no_power_pin_uses_heuristic`.
 - [x] `test_shunt_bypass_cap_orientation_is_90()` — `TestShuntOrientations::test_bypass_cap_gnd_is_90`, `test_pullup_resistor_vcc_is_90`, `test_pulldown_resistor_gnd_is_90`, `test_shunt_fires_before_position_heuristic`.
-- [ ] `test_input_connector_orientation_is_0()`.
-- [ ] `test_output_connector_orientation_is_180()`.
+- [x] `test_input_connector_orientation_is_0()` — covered by `TestConnectorOrientations::test_input_connector_orientation_is_0` (Phase 4.1).
+- [x] `test_output_connector_orientation_is_180()` — covered by `TestConnectorOrientations::test_output_connector_orientation_is_180` (Phase 4.1).
 - [x] `test_ic_orientation_is_always_0()` — `TestShuntOrientations::test_both_pins_power_only_stays_zero` covers passive fallback; IC always 0° verified by existing tests.
 
 ---
