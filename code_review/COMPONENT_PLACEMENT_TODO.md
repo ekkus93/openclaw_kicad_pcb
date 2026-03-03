@@ -141,17 +141,17 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
 
 ### 3.2 `graphviz_layout.py::_gv_to_kicad()` — VCC bus / GND bus snap
 
-- [ ] After coordinate mapping, identify components classified as power nets
+- [x] After coordinate mapping, identify components classified as power nets
   (`PWR_FLAG`, explicit `#PWR` symbols, decoupling caps).
-- [ ] Clamp VCC-related symbols to `y = ORIGIN_Y` (top row).
-- [ ] Clamp GND symbols to `y = PAGE_MAX_Y - 20` (bottom row).
+- [x] Clamp VCC-related symbols to `y = ORIGIN_Y` (top row).
+- [x] Clamp GND symbols to `y = PAGE_MAX_Y - 20` (bottom row).
 - [x] Shift decoupling caps to the same x as their IC anchor, offset by
   `-GRID_ROW_MM` on the y axis (one row above). *(impl: `_post_snap_decoupling_caps()`)*
 
 ### 3.3 Tests
 
 - [x] `test_decoupling_cap_same_x_as_ic()` — covered by `TestDecouplingCapCoLocation` (5 tests).
-- [ ] `test_power_flag_at_top_y()` — deferred to 3.2 VCC/GND bus snap (not yet implemented).
+- [x] `test_power_flag_at_top_y()` — covered by `TestSnapPowerSymbols::test_power_flag_clamped_to_top_y` (Phase 3.2).
 
 ---
 
