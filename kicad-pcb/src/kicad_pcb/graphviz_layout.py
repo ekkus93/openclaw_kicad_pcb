@@ -31,8 +31,6 @@ Public API
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import os
 import re
@@ -51,6 +49,7 @@ from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import is_power_net as _is_power_net
+from .gv_cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
 from .layout import ComponentAnnotation as _ComponentAnnotation
 from .layout import compute_orientations as _compute_orientations
 from .layout import detect_stereo_channels as _detect_stereo_channels
@@ -91,75 +90,6 @@ GRID_ROW_MM: float = 7.62
 
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
-
-
-# ---------------------------------------------------------------------------
-# Layout cache
-# ---------------------------------------------------------------------------
-
-# Bump when the cache JSON schema changes to invalidate all persisted caches.
-_CACHE_FORMAT_VERSION = 1
-
-
-def _layout_cache_key(dot_source: str) -> str:
-    """Return a stable SHA-256 hex digest for *dot_source*.
-
-    The digest is used as the cache lookup key — any change in circuit topology
-    (new component, different net) produces a different key and therefore a
-    guaranteed cache miss.
-    """
-    return hashlib.sha256(dot_source.encode()).hexdigest()
-
-
-def _load_layout_cache(
-    cache_path: Path,
-    cache_key: str,
-) -> dict[str, tuple[float, float, float | None]] | None:
-    """Return cached symbol positions if *cache_path* exists and *cache_key* matches.
-
-    Returns ``None`` on any error (missing file, JSON parse failure, key or
-    version mismatch) so the caller always falls through to a fresh layout
-    computation.
-    """
-    try:
-        data = json.loads(cache_path.read_text(encoding="utf-8"))
-        if data.get("version") != _CACHE_FORMAT_VERSION or data.get("key") != cache_key:
-            return None
-        raw: dict[str, list[float | None]] = data.get("positions", {})
-        return {
-            ref: (float(v[0]), float(v[1]), None)  # type: ignore[arg-type]
-            for ref, v in raw.items()
-            if isinstance(v, list) and len(v) >= 2
-        }
-    except Exception:  # noqa: BLE001
-        return None
-
-
-def _save_layout_cache(
-    cache_path: Path,
-    cache_key: str,
-    positions: dict[str, tuple[float, float, float | None]],
-) -> None:
-    """Persist *positions* to *cache_path*.  Silently ignores all write errors.
-
-    The cache file is a JSON document::
-
-        {
-            "version": 1,
-            "key": "<sha256-hex-of-dot-source>",
-            "positions": {"R1": [x, y, null], ...}
-        }
-    """
-    try:
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "version": _CACHE_FORMAT_VERSION,
-            "key": cache_key,
-            "positions": {ref: [x, y, rot] for ref, (x, y, rot) in positions.items()},
-        }
-        cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    except Exception:  # noqa: BLE001
-        _log.debug("Failed to write layout cache to %s", cache_path)
 
 
 # ---------------------------------------------------------------------------
