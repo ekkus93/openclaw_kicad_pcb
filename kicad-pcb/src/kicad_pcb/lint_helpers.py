@@ -17,6 +17,8 @@ _collect_wire_segments  Extract ``(x1, y1, x2, y2)`` tuples from wire nodes.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from .lint_types import _ERR, LintIssue
 from .sexpr.nodes import AtomNode, ListNode, StringNode
 from .sexpr.utils import find_first, walk
@@ -98,7 +100,7 @@ def _check_duplicate_uuids(uuids: list[str], code: str) -> list[LintIssue]:
 
 
 def _collect_wire_segments(
-    items: list,
+    items: Sequence[object],
 ) -> list[tuple[float, float, float, float]]:
     """Return ``(x1, y1, x2, y2)`` for every well-formed wire node in *items*.
 
