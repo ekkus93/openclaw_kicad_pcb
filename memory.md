@@ -1,6 +1,39 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T11:45:00Z_
+_Last updated: 2026-03-03T12:30:00Z_
+
+---
+
+## 2026-03-03T12:30:00Z — lint.py refactor started (Phase 1 complete)
+
+### Context
+New refactor: `lint.py` (971 lines, 3 rule domains) → 4 focused modules + thin facade.
+Plan tracked in `code_review/LINT_TODO.md`.
+
+### Phase 1 complete (commit `291a143`)
+- Created `kicad-pcb/src/kicad_pcb/lint_types.py` (~115 lines):
+  - `LintSeverity`, `LintIssue`, `LintError`, `_ERR`, `_WARN`, `LINT_SUGGESTIONS`
+- `lint.py` now imports from `lint_types`; class bodies + LINT_SUGGESTIONS dict removed
+- `LINT_SUGGESTIONS` added to `lint.py` `__all__`
+- 62/62 tests pass ✅
+
+### Target structure
+```
+lint_types.py      # types + suggestions (~115 lines) ✅ DONE
+lint_helpers.py    # shared AST helpers  (~80 lines)
+lint_sch.py        # SCH + LAY rules     (~290 lines)
+lint_pcb.py        # PCB rules           (~290 lines)
+lint.py            # thin facade         (~30 lines)
+```
+
+### Remaining phases
+- Phase 2: extract lint_helpers.py (shared helpers + new _check_duplicate_uuids + _collect_wire_segments)
+- Phase 3: extract lint_sch.py (lint_schematic + lint_schematic_layout, apply 5.3/5.4/5.5 inline)
+- Phase 4: extract lint_pcb.py (lint_pcb + PCB helpers, apply 5.3/5.6 inline)
+- Phase 5: code smell fixes (applied inline during phases 3+4)
+- Phase 6: add missing tests (TestSCH010, TestLAY001–TestLAY005, 17 total)
+- Phase 7: slim lint.py to facade
+- Phase 8: full checks + commit
 
 ---
 
@@ -2146,3 +2179,16 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - **Phase 4.4**: Revised target from ≤ 220 to ≤ 420 lines. 220 was not achievable (didn't account for 40-line import block, 35-line module docstring, 55-line compute_symbol_positions docstring). Current: 405 lines (66% reduction from original 1198).
 - All Phase 5 + 4.4 checkboxes ticked. ruff + mypy clean. 59 targeted tests pass.
 - **Next phases**: Phase 6.1 (document BFS vs longest-path), Phase 7 (tidy __all__ block), Phase 8 (full run + final commit).
+
+## 2026-03-03T00:00:00Z — Phase 6 (missing tests) complete; lint.py refactoring at Phase 8
+- Phase 6 committed as `153ad09`: added `TestSCH010` (3 tests), `TestLAY001`–`TestLAY005` (4+3+3+4+4=18 tests), 83 total tests pass.
+- New helpers added to test file: `_wire(x1, y1, x2, y2)` and `_sym_at(x, y)` for inline LAY test fixtures.
+- Imports added to test file: `lint_schematic_layout` from `kicad_pcb.lint`; `_LAY_LABEL_MAX_COUNT`, `_LAY_MAX_ISLANDS`, `_LAY_SYMBOL_HALF_SIZE_MM` from `kicad_pcb.lint_sch`.
+- All Phase 6 checkboxes ticked in `code_review/LINT_TODO.md`.
+- **Remaining**: Phase 8 (full checks + final commit with all-phases message).
+
+## 2026-03-03T00:00:00Z — Phase 8 complete — lint.py refactoring DONE
+- ruff check, mypy, pytest all pass cleanly.
+- Final line counts: lint.py 26, lint_types.py 132, lint_helpers.py 129, lint_sch.py 465, lint_pcb.py 353 (total 1,105 vs original 971 single file — four focused modules + facade).
+- All Phase 8 checkboxes ticked. Refactoring TODO fully resolved.
+- Commit chain: 291a143 → 15dd276 → 9e257ba → e453ced → 153ad09 → (Phase 8 commit).
