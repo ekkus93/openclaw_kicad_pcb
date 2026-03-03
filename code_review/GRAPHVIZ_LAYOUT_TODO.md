@@ -65,32 +65,32 @@ and `_build_dot_source` itself.
 
 ### 2.1 Create `kicad-pcb/src/kicad_pcb/gv_dot_builder.py`
 
-- [ ] Move `_is_connector(ref)` and `_is_capacitor(ref)`.
-  - [ ] These are thin wrappers over `component_types` constants — keep them
+- [x] Move `_is_connector(ref)` and `_is_capacitor(ref)`.
+  - [x] These are thin wrappers over `component_types` constants — keep them
     here but document that they exist for local convenience.
-- [ ] Move `_find_decoupling_caps(ir) -> dict[str, str]`.
-- [ ] Move `_assign_bfs_tiers(refs, signal_nets) -> dict[str, int]`.
-  - [ ] **Document the semantic difference from `tier.assign_tiers`**: BFS
+- [x] Move `_find_decoupling_caps(ir) -> dict[str, str]`.
+- [x] Move `_assign_bfs_tiers(refs, signal_nets) -> dict[str, int]`.
+  - [x] **Document the semantic difference from `tier.assign_tiers`**: BFS
     from a single connector seed vs. longest-path layering from all sources.
     Add a note explaining *why* both are needed (or open a consolidation
     sub-task, see Phase 6.1).
-- [ ] Move `_safe_id(name)`.
-- [ ] Move `_tier_rank_keyword(tier_index, n_tiers)`.
-- [ ] Move `_compute_net_weights(signal_nets)`.
-- [ ] Move `_emit_tier_subgraphs(lines, tier_groups)`.
-- [ ] Move `_extend_power_only_refs(...)` — **and fix the mutation smell**
+- [x] Move `_safe_id(name)`.
+- [x] Move `_tier_rank_keyword(tier_index, n_tiers)`.
+- [x] Move `_compute_net_weights(signal_nets)`.
+- [x] Move `_emit_tier_subgraphs(lines, tier_groups)`.
+- [x] Move `_extend_power_only_refs(...)` — **and fix the mutation smell**
   (see Phase 6.2).
-- [ ] Move `_emit_feedback_constraints(lines, feedback_refs)`.
-- [ ] Move `_emit_decoupling_constraints(lines, decoupling_map)`.
-- [ ] Move `_build_dot_source(ir, *, ...)`.
-  - [ ] **Fix parameter shadowing** (see Phase 6.3).
-- [ ] Write module docstring covering the bipartite graph model and DOT
+- [x] Move `_emit_feedback_constraints(lines, feedback_refs)`.
+- [x] Move `_emit_decoupling_constraints(lines, decoupling_map)`.
+- [x] Move `_build_dot_source(ir, *, ...)`.
+  - [x] **Fix parameter shadowing** (see Phase 6.3).
+- [x] Write module docstring covering the bipartite graph model and DOT
   emission strategy.
-- [ ] All functions remain `_`-prefixed (private within the package).
+- [x] All functions remain `_`-prefixed (private within the package).
 
 ### 2.2 Update `graphviz_layout.py`
 
-- [ ] Replace all moved bodies with a single import block:
+- [x] Replace all moved bodies with a single import block:
   ```python
   from .gv_dot_builder import (
       _assign_bfs_tiers,
@@ -102,14 +102,14 @@ and `_build_dot_source` itself.
       _is_connector,
   )
   ```
-- [ ] Remove `import re` and `from itertools import combinations` if no longer
+- [x] Remove `import re` and `from itertools import combinations` if no longer
   used in `graphviz_layout.py` after the move (verify with ruff).
-- [ ] The public aliases in `__all__` (`build_dot_source`, `is_connector`, etc.)
+- [x] The public aliases in `__all__` (`build_dot_source`, `is_connector`, etc.)
   remain in `graphviz_layout.py` — they just now point at the imported names.
 
 ### 2.3 Tests
 
-- [ ] Confirm `_gv_mod.build_dot_source`, `_gv_mod.compute_net_weights`,
+- [x] Confirm `_gv_mod.build_dot_source`, `_gv_mod.compute_net_weights`,
   `_gv_mod.find_decoupling_caps`, `_gv_mod.is_connector`, `_gv_mod.is_capacitor`
   still resolve correctly through the re-export.
 
@@ -286,7 +286,7 @@ Individual targeted fixes that do not require a new module.
 
 ### 6.2 Fix `_extend_power_only_refs` — stop mutating two caller arguments
 
-- [ ] Rename to `_partition_power_unit_refs` and change signature to return
+- [x] Rename to `_partition_power_unit_refs` and change signature to return
   the updated pair instead of mutating in place:
   ```python
   def _partition_power_unit_refs(
@@ -296,13 +296,13 @@ Individual targeted fixes that do not require a new module.
       power_unit_refs: set[str],
   ) -> tuple[list[str], set[str]]:   # (updated power_only_refs, updated signal_refs)
   ```
-- [ ] Update the single call site in `_build_dot_source`.
-- [ ] Update `__all__` and the re-export alias if `emit_power_only_refs` /
-  `extend_power_only_refs` is currently listed there (search `__all__`).
+- [x] Update the single call site in `_build_dot_source`.
+- [x] Update `__all__` and the re-export alias if `emit_power_only_refs` /
+  `extend_power_only_refs` is currently listed there (search `__all__`).  ← not in __all__, no alias needed.
 
 ### 6.3 Fix parameter name shadowing in `_build_dot_source`
 
-- [ ] Line: `tiers = tiers if tiers is not None else _assign_tiers(ir)`
+- [x] Line: `tiers = tiers if tiers is not None else _assign_tiers(ir)`
   shadows the `tiers` parameter.  Rename the local:
   ```python
   _tiers = tiers if tiers is not None else _assign_tiers(ir)
