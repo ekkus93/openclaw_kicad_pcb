@@ -52,7 +52,7 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
 
 ### 1.1 New module `tier.py` — Longest-path layering
 
-- [ ] Implement `assign_tiers(ir: CircuitIR) -> dict[str, int]`.
+- [x] Implement `assign_tiers(ir: CircuitIR) -> dict[str, int]`.
   - Build an undirected component graph from signal nets.
   - Identify **source** components (input connectors, by ref prefix) and
     **sink** components (output connectors).
@@ -63,7 +63,7 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
     - Tier N-1: output connectors / signal sinks.
   - Detect **feedback edges** (back-edges in DFS) and break cycles by
     reversing the edge with the smallest weight (smallest pin count).
-- [ ] Classify component function from ref prefix:
+- [x] Classify component function from ref prefix:
   ```
   "J", "CON", "P", "SJ", "TJ"  → connector
   "U", "IC", "OA"               → active / IC
@@ -72,22 +72,22 @@ assigns every component to the same rank → single column at x ≈ 33.82 mm.
   ```
   (Extract constants to a shared `component_types.py` so `layout.py` and
   `graphviz_layout.py` can share them without circular imports.)
-- [ ] Expose `TIER_SPACING_MM: float = 30.48` and `ORIGIN_X_MM: float = 30.48`
+- [x] Expose `TIER_SPACING_MM: float = 30.48` and `ORIGIN_X_MM: float = 30.48`
   so that `x = ORIGIN_X + tier * TIER_SPACING_MM` when computing initial x.
 
 ### 1.2 `graphviz_layout.py::_build_dot_source()` — Inject Graphviz rank constraints from tiers
 
-- [ ] Call `assign_tiers()` to get `{ref: tier}`.
-- [ ] Group components by tier and emit a `{ rank=same; ... }` subgraph per
+- [x] Call `assign_tiers()` to get `{ref: tier}`.
+- [x] Group components by tier and emit a `{ rank=same; ... }` subgraph per
   tier so dot respects the tier order while optimising y-positions freely.
-- [ ] Pass `ranksep=1.5` (increase from 1.0) to give more horizontal spacing.
+- [x] Pass `ranksep=1.5` (increase from 1.0) to give more horizontal spacing.
 
 ### 1.3 Tests
 
-- [ ] `test_assign_tiers_linear_chain()` — J1→R1→U1→J2 yields tiers 0,1,2,3.
-- [ ] `test_assign_tiers_breaks_cycle()` — feedback resistor R_fb in U1→R_fb→U1
+- [x] `test_assign_tiers_linear_chain()` — J1→R1→U1→J2 yields tiers 0,1,2,3.
+- [x] `test_assign_tiers_breaks_cycle()` — feedback resistor R_fb in U1→R_fb→U1
   does not cause infinite loop; R_fb gets tier > U1 input tier.
-- [ ] `test_rank_same_subgraph_present()` — DOT source for a 2-tier circuit
+- [x] `test_rank_same_subgraph_present()` — DOT source for a 2-tier circuit
   contains a `rank=same` subgraph for each tier.
 
 ---
