@@ -1,7 +1,7 @@
 (kicad_sch
   (version 20230121)
   (generator eeschema)
-  (uuid "2c46de98-1cb7-4171-9d2b-ed9ee1a55f3d")
+  (uuid "40101b19-0928-4b09-912d-5f8acb6a9ae2")
   (paper "A4")
   (lib_symbols)
   (text
@@ -19,7 +19,7 @@
     (size 80.00 60.00)
     (stroke (width 0) (type default))
     (fill (color 0 0 0 0))
-    (uuid "fdad1fc7-922b-449c-a2f7-75bec20dc6cb")
+    (uuid "378dcc89-b2fd-4803-bdbf-dd33d51988a4")
     (property
       "Sheetname"
       "OpenClaw_Managed"
