@@ -6,19 +6,14 @@ import contextlib
 import json
 import math
 import shutil
-import zipfile as _zipfile
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
 from ..config import (
-    PROJECTS_DIR,
     get_current_project,
     get_current_session,
-    load_config,
-    set_current_project,
 )
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
@@ -42,6 +37,7 @@ from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
 from ..tier import assign_tiers
+from ._project import _create_project, _create_schematic_zip, minimal_schematic_text
 from ._validate import advisory_warnings, full_validate
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
@@ -431,21 +427,6 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     )
 
 
-def _create_schematic_zip(project_path: Path, dest_dir: Path, name: str) -> Path:
-    """Zip all ``*.kicad_sch`` files in *project_path* into *dest_dir*/<name>_schematic.zip.
-
-    Returns the path of the created zip file.  Existing zips with the same name
-    are overwritten so that re-running ``new-from-netlist`` always reflects the
-    latest generation.
-    """
-    sch_files = sorted(project_path.glob("*.kicad_sch"))
-    zip_path = dest_dir / f"{name}_schematic.zip"
-    with _zipfile.ZipFile(zip_path, "w", _zipfile.ZIP_DEFLATED) as zf:
-        for sch_file in sch_files:
-            zf.write(sch_file, sch_file.name)
-    return zip_path
-
-
 def _apply_netlist_to_project(
     project: ProjectRef,
     request: _ApplyNetlistRequest,
@@ -496,7 +477,7 @@ def _apply_netlist_to_project(
     def _mutate_managed(doc: SchematicDoc) -> None:
         # Authoritative sync for managed sheet file: replace all generated
         # content by reconstructing from IR each run.
-        root = parse(_minimal_schematic_text())
+        root = parse(minimal_schematic_text())
         if not isinstance(root, ListNode):
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
@@ -743,18 +724,6 @@ def _resolve_mode(mode_name: str | None, *, default: ValidationMode) -> Validati
     )
 
 
-def _minimal_schematic_text() -> str:
-    return f'''(kicad_sch (version 20230121) (generator eeschema)
-    (uuid "{_new_uuid()}")
-    (paper "A4")
-    (lib_symbols)
-    (sheet_instances
-        (path "/" (page "1"))
-    )
-)
-'''
-
-
 def _ensure_managed_file_exists(path: Path, *, dry_run: bool) -> None:
     if path.exists():
         return
@@ -769,7 +738,7 @@ def _ensure_managed_file_exists(path: Path, *, dry_run: bool) -> None:
         )
     _atomic_write(
         path,
-        _minimal_schematic_text(),
+        minimal_schematic_text(),
         root="kicad_sch",
         operation="create-managed-sheet",
     )
@@ -804,63 +773,3 @@ def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: boo
     # _mutate is always called exactly once by mutate_and_validate_sch
     # (dry_run skips the write but still calls the mutator for validation).
     return _captured_uuid[0] if _captured_uuid else _new_uuid()
-
-
-def _create_project(*, name: str, out_dir: Path | None, description: str) -> ProjectRef:
-    slug = name.replace(" ", "_")
-    if out_dir is None:
-        cfg = load_config()
-        base = Path(cfg.get("projects_dir", PROJECTS_DIR))
-    else:
-        base = out_dir
-
-    project_dir = base / slug
-    if project_dir.exists():
-        raise UserError(f"Project already exists: {project_dir}")
-
-    project_dir.mkdir(parents=True, exist_ok=False)
-    pro_file = project_dir / f"{slug}.kicad_pro"
-    sch_file = project_dir / f"{slug}.kicad_sch"
-    pcb_file = project_dir / f"{slug}.kicad_pcb"
-
-    _atomic_write(
-        pro_file,
-        json.dumps(
-            {
-                "board": {"design_settings": {}},
-                "meta": {"filename": f"{slug}.kicad_pro", "version": 1},
-                "schematic": {"drawing": {}},
-                "sheets": [[f"{slug}.kicad_sch", ""]],
-            },
-            indent=2,
-        ),
-        operation="new-from-netlist",
-    )
-    _atomic_write(
-        sch_file,
-        _minimal_schematic_text(),
-        root="kicad_sch",
-        operation="new-from-netlist",
-    )
-    _atomic_write(
-        pcb_file,
-        """(kicad_pcb (version 20230121) (generator pcbnew)
-  (general (thickness 1.6))
-  (paper "A4")
-  (layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))
-  (setup (pad_to_mask_clearance 0))
-  (net 0 "")
-)
-""",
-        root="kicad_pcb",
-        operation="new-from-netlist",
-    )
-
-    project = ProjectRef(
-        name=slug,
-        path=project_dir,
-        created=datetime.now().isoformat(),
-        description=description,
-    )
-    set_current_project(project)
-    return project
