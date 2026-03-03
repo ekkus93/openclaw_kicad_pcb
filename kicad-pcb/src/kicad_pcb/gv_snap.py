@@ -430,3 +430,42 @@ def _apply_stereo_split(
                 result[curr_ref] = (cx, round(py + _STEREO_DEOVERLAP_MIN_MM, 2), cr)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Composite snap coordinator
+# ---------------------------------------------------------------------------
+
+
+def _apply_post_layout_snaps(  # noqa: PLR0913
+    result: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    feedback_refs: set[str],
+    annotations: dict[str, _ComponentAnnotation],
+    channels: Mapping[str, str],
+    decoupling_map: dict[str, str],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Apply all post-layout positional corrections in canonical order.
+
+    The five passes must run in the order shown — see the module docstring
+    for the rationale behind each ordering constraint:
+
+    1. :func:`snap_positions` — quantise to the KiCad 50-mil grid.
+    2. :func:`_snap_power_symbols` — clamp ``#PWR``/``#FLG`` to top/bottom row.
+    3. :func:`_snap_feedback_components` — pull feedback passives above anchor IC
+       (skipped when *feedback_refs* is empty).
+    4. :func:`_apply_stereo_split` — compress L/R components into page halves
+       (skipped when no L or R channel is present in *channels*).
+    5. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their IC
+       (skipped when *decoupling_map* is empty).
+    """
+    result = snap_positions(result)
+    result = _snap_power_symbols(result, ir)
+    if feedback_refs:
+        result = _snap_feedback_components(result, annotations, ir)
+    if any(v in ("L", "R") for v in channels.values()):
+        result = _apply_stereo_split(result, channels)
+    if decoupling_map:
+        result = _post_snap_decoupling_caps(result, decoupling_map)
+    return result
