@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.ir_validate import validate_circuit_ir, validate_ir_symbols
+from kicad_pcb.ir.validate import validate_circuit_ir, validate_ir_symbols
 from kicad_pcb.symbol_index import SymbolIndex
 
 
