@@ -66,6 +66,8 @@ from .snap import (
     SCALE_MM_PER_GV,
     _apply_post_layout_snaps,
     _apply_stereo_split,
+    _compact_y_gap,
+    _deoverlap_positions,
     _fit_to_page,
     _gv_to_kicad,
     _parse_plain_positions,
@@ -356,7 +358,9 @@ __all__ = [
     "apply_stereo_split",
     "assign_bfs_tiers",
     "build_dot_source",
+    "compact_y_gap",
     "compute_net_weights",
+    "deoverlap_positions",
     "emit_decoupling_constraints",
     "find_decoupling_caps",
     "find_dot_binary",
@@ -388,9 +392,12 @@ __all__ = [
 # New code should import from graphviz_layout (not from the sub-modules).
 # ---------------------------------------------------------------------------
 apply_post_layout_snaps = _apply_post_layout_snaps
+apply_stereo_split = _apply_stereo_split
 assign_bfs_tiers = _assign_bfs_tiers
 build_dot_source = _build_dot_source
+compact_y_gap = _compact_y_gap
 compute_net_weights = _compute_net_weights
+deoverlap_positions = _deoverlap_positions
 emit_decoupling_constraints = _emit_decoupling_constraints
 find_decoupling_caps = _find_decoupling_caps
 fit_to_page = _fit_to_page
@@ -403,4 +410,3 @@ post_snap_decoupling_caps = _post_snap_decoupling_caps
 save_layout_cache = _save_layout_cache
 snap_feedback_components = _snap_feedback_components
 snap_power_symbols = _snap_power_symbols
-apply_stereo_split = _apply_stereo_split

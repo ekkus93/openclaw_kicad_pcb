@@ -27,6 +27,13 @@ raw node positions:
      their associated IC.
    * :func:`_apply_stereo_split` — compress L/R stereo components into the
      top or bottom half of the page.
+   * :func:`_compact_y_gap` — collapse the largest vertical gap in the
+     layout for non-power-symbol components so the circuit appears as one
+     connected region (fixes the "split circuit" artifact that arises when
+     isolated source-tier connectors land far from the amp body).
+   * :func:`_deoverlap_positions` — push any components that share the
+     same grid cell apart after all previous snaps complete (fixes grid
+     collisions introduced by snapping or compression).
 
 Coordinate system
 -----------------
@@ -47,12 +54,18 @@ is:
 2. :func:`_snap_power_symbols`
 3. :func:`_snap_feedback_components` (if any feedback refs exist)
 4. :func:`_apply_stereo_split` (if any L/R channels exist)
-5. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
+5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
+6. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
+7. :func:`_deoverlap_positions` (always; final guard against grid collisions)
 
 Power symbols must run before feedback snap so that a ``#PWR`` ref that
 shares a column with a feedback component is correctly clamped first.
 Stereo split runs after feedback snap so that feedback-adjusted y values are
 used as the input to channel compression.
+``_compact_y_gap`` runs before decoupling caps so that bypass-cap y positions
+are relative to the compacted IC y values.
+``_deoverlap_positions`` runs last so it resolves every collision regardless
+of which earlier pass introduced it.
 """
 
 from __future__ import annotations
@@ -200,9 +213,11 @@ def _gv_to_kicad(
     result: dict[str, tuple[float, float, float | None]] = {}
     for node_name, (gv_x, gv_y) in gv_positions.items():
         x_mm = origin_x + gv_x * scale
-        y_mm = origin_y + (max_gv_y - gv_y) * scale
-        # Snap to 0.01 mm for readability
-        result[node_name] = (round(x_mm, 2), round(y_mm, 2), None)
+        # Clamp to origin_y: dot occasionally places nodes slightly above the
+        # reported bounding box (gv_y > max_gv_y), which would produce
+        # y_mm < origin_y (above the top margin) without the clamp.
+        y_mm = max(origin_y, round(origin_y + (max_gv_y - gv_y) * scale, 2))
+        result[node_name] = (round(x_mm, 2), y_mm, None)
     return _fit_to_page(result, origin_x=origin_x, origin_y=origin_y)
 
 
@@ -433,6 +448,118 @@ def _apply_stereo_split(
 
 
 # ---------------------------------------------------------------------------
+# General deoverlap and y-gap compact
+# ---------------------------------------------------------------------------
+
+
+def _deoverlap_positions(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    grid: float = GRID_ROW_MM,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Push coincident positions apart so every component occupies a distinct grid cell.
+
+    After all snap passes multiple components may land on the same (x, y).  This
+    pass groups refs by x-column, sorts each group by ascending y (then by ref
+    for determinism), and nudges any component whose y-distance from the previous
+    component is less than *grid* downward by *grid* increments until every pair
+    is at least *grid* millimetres apart.
+
+    Only the y-coordinate is modified; x and rotation are preserved.
+    """
+    by_x: dict[float, list[str]] = defaultdict(list)
+    for ref, (x, _y, _rot) in positions.items():
+        by_x[x].append(ref)
+
+    result = dict(positions)
+    for group in by_x.values():
+        if len(group) < 2:
+            continue
+        # Stable sort: ascending y, then by ref name to break ties.
+        group.sort(key=lambda r: (result[r][1], r))
+        for i in range(1, len(group)):
+            prev_ref = group[i - 1]
+            curr_ref = group[i]
+            _px, py, _pr = result[prev_ref]
+            cx, cy, cr = result[curr_ref]
+            if cy - py < grid:
+                new_y = round(py + grid, 4)
+                result[curr_ref] = (cx, new_y, cr)
+    return result
+
+
+def _compact_y_gap(
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    min_gap_mm: float = 30.0,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Collapse the largest vertical gap in the layout for non-power-symbol components.
+
+    DOT sometimes places isolated source-tier connectors at the very top of the
+    Graphviz graph (``gv_y ≈ max_gv_y``), which maps to ``y ≈ ORIGIN_Y`` in
+    KiCad coordinates.  The bulk of the circuit then lands at a lower y,
+    producing a visually jarring gap.  This pass:
+
+    1. Identifies *regular* components (refs that do **not** start with ``#PWR``
+       or ``#FLG``), which have programmatically fixed y positions assigned by
+       :func:`_snap_power_symbols` and must not be moved.
+    2. Finds consecutive distinct y-values in the regular set and locates the
+       largest gap.  If it exceeds *min_gap_mm*, the components **below** the
+       gap (larger y) are shifted *upward* (toward ORIGIN_Y) by
+       ``gap_size − GRID_ROW_MM`` so a single-row separation remains.
+    3. Power/flag symbols are left at their original positions.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions after all specialised snap passes.
+    ir:
+        Circuit IR, used only to detect power-symbol refs.
+    min_gap_mm:
+        Gaps smaller than this threshold are ignored (default 30 mm ≈ 4 grid rows).
+    """
+    if not positions:
+        return positions
+
+    power_sym_refs: set[str] = {
+        comp.ref
+        for comp in ir.components
+        if comp.ref.startswith("#PWR") or comp.ref.startswith("#FLG")
+    }
+    regular_refs = [r for r in positions if r not in power_sym_refs]
+    if not regular_refs:
+        return positions
+
+    # Distinct y values for regular components, ascending.
+    ys = sorted({round(positions[r][1], 2) for r in regular_refs})
+    if len(ys) < 2:
+        return positions
+
+    # Find the largest consecutive gap.
+    max_gap = 0.0
+    gap_threshold_y = 0.0  # y-value *above* the gap (the lower of the two boundary rows)
+    for i in range(1, len(ys)):
+        gap = ys[i] - ys[i - 1]
+        if gap > max_gap:
+            max_gap = gap
+            gap_threshold_y = ys[i - 1]  # components with y > this are "below the gap"
+
+    if max_gap <= min_gap_mm:
+        return positions
+
+    # Shift all regular components below the gap upward to close it.
+    # Keep one GRID_ROW_MM separation so the two clusters remain visually distinct.
+    collapse = round(max_gap - GRID_ROW_MM, 4)
+    result = dict(positions)
+    for ref in regular_refs:
+        x, y, rot = result[ref]
+        if y > gap_threshold_y:
+            result[ref] = (x, round(y - collapse, 4), rot)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
 
@@ -448,7 +575,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
 
-    The five passes must run in the order shown — see the module docstring
+    The seven passes must run in the order shown — see the module docstring
     for the rationale behind each ordering constraint:
 
     1. :func:`snap_positions` — quantise to the KiCad 50-mil grid.
@@ -457,8 +584,13 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
        (skipped when *feedback_refs* is empty).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
        (skipped when no L or R channel is present in *channels*).
-    5. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their IC
+    5. :func:`_compact_y_gap` — collapse the largest vertical gap in the layout
+       for non-power-symbol components so the circuit appears as one connected
+       region rather than two separate clusters.
+    6. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their IC
        (skipped when *decoupling_map* is empty).
+    7. :func:`_deoverlap_positions` — push any remaining grid collisions apart so
+       no two components share the same (x, y) cell.
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
@@ -466,6 +598,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _snap_feedback_components(result, annotations, ir)
     if any(v in ("L", "R") for v in channels.values()):
         result = _apply_stereo_split(result, channels)
+    result = _compact_y_gap(result, ir)
     if decoupling_map:
         result = _post_snap_decoupling_caps(result, decoupling_map)
+    result = _deoverlap_positions(result)
     return result
