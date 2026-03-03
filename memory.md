@@ -1,6 +1,39 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T12:30:00Z_
+_Last updated: 2026-03-03T17:10:00Z_
+
+---
+
+## 2026-03-03T17:10:00Z — layout quality fixes committed (commit 2e191ac)
+
+### Python environment (authoritative — always use these)
+- **Venv**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2)
+- **Never use**: system `python3` or conda base (`/home/ubo/miniforge3/bin/python3`)
+- **Ruff**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/ruff check kicad-pcb/src/ tests/`
+- **Ruff format**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/ruff format <file>`
+- **Mypy**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/mypy kicad-pcb/src/kicad_pcb/`
+- **Pytest**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/pytest /home/ubo/work/openclaw_kicad_pcb/tests/unit/ --tb=no -q`
+- **Commit**: use `git add <files> && git commit -m "..."` (no `scripts/committer` in this repo)
+
+### Fixes (commit `2e191ac`)
+- `graphviz_layout/snap.py` — three layout quality bugs fixed:
+  1. **`_deoverlap_positions`** (line 455): pushes components sharing same x-column apart by `min_gap_mm=5.08mm`. Fixes overlapping symbols in mono/multi-channel circuits.
+  2. **`_compact_y_gap`** (line 491): finds largest vertical gap between clusters, closes it to `≤ max_gap_mm=30mm`. Fixes the "split circuit" where input connector was ~80mm above the amp body.
+  3. **`_fit_to_page` y-clamp**: `y_mm = max(y_mm, ORIGIN_Y)` prevents components above top margin when Graphviz `gv_y > max_gv_y`.
+  - Both passes integrated into `_apply_post_layout_snaps` (steps 5 and 7).
+- `graphviz_layout/__init__.py` — exported `compact_y_gap` / `deoverlap_positions`.
+
+### Checks at commit
+- `ruff check`: All checks passed ✅
+- `mypy`: no issues in 62 source files ✅
+- `pytest tests/unit/`: exit 0 (all tests pass) ✅
+
+### Current HEAD
+- `2e191ac` — fix(layout): deoverlap, compact y-gap, clamp y >= ORIGIN_Y
+
+### Ongoing work
+- **lint.py refactor** (Phase 1 committed `291a143`): target structure in `LINT_TODO.md`.
+  Phases 2–8 remain. See entry `2026-03-03T12:30:00Z` below.
 
 ---
 
