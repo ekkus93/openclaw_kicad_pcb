@@ -46,6 +46,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
 
+from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
+from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from .tier import assign_tiers as _assign_tiers
+
 _log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -217,8 +221,9 @@ def find_dot_source() -> tuple[str, str] | None:
 # Component classification (used by DOT builder and BFS tier assignment)
 # ---------------------------------------------------------------------------
 
-_CONNECTOR_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
-_CAPACITOR_PREFIXES: tuple[str, ...] = ("C",)
+# Aliases to component_types constants — kept here for local helpers.
+_CONNECTOR_PREFIXES: tuple[str, ...] = _CONNECTOR_PREFIXES_CT
+_CAPACITOR_PREFIXES: tuple[str, ...] = _CAPACITOR_PREFIXES_CT
 
 
 def _is_connector(ref: str) -> bool:
@@ -439,8 +444,8 @@ def _build_dot_source(
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
-    Uses BFS tier assignment (:func:`_assign_bfs_tiers`) to determine the
-    left-to-right rank of each component, then emits:
+    Uses longest-path tier assignment (:func:`tier.assign_tiers`) to determine
+    the left-to-right rank of each component, then emits:
 
     * One ``{ rank=same; }`` (or ``rank=source`` / ``rank=sink`` for the first
       and last tiers) subgraph per BFS tier so Graphviz respects signal-flow
@@ -479,8 +484,8 @@ def _build_dot_source(
         signal_refs.update(p.ref for p in net.pins)
     power_only_refs = [r for r in refs if r not in signal_refs]
 
-    # BFS tier assignment — determines left-to-right rank for each component.
-    tiers = _assign_bfs_tiers(refs, signal_nets)
+    # Longest-path tier assignment — determines left-to-right rank for each component.
+    tiers = _assign_tiers(ir)
 
     # Group signal-connected refs by tier.
     tier_groups: dict[int, list[str]] = {}

@@ -14,6 +14,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
 
+from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
+
 # ---------------------------------------------------------------------------
 # Page dimensions (mm) — must match lint.py _LAY_PAGE_MAX_X / _LAY_PAGE_MAX_Y.
 # KiCad A4 schematic page: 297 mm wide × 210 mm tall (landscape orientation).
@@ -47,16 +50,20 @@ MAX_ROWS_PER_COL: int = int((PAGE_HEIGHT_MM - ORIGIN_Y) / GRID_ROW_MM)
 MIN_SEPARATION_MM: float = GRID_ROW_MM
 
 # Reference prefixes treated as signal sources (left edge of layout).
-# Connectors and headers are the natural entry-points of a PCB circuit.
-_SOURCE_PREFIXES: tuple[str, ...] = ("J", "CON", "P", "SJ", "TJ")
+# Imported from component_types to avoid duplication.
+_SOURCE_PREFIXES: tuple[str, ...] = _CONNECTOR_PREFIXES_CT
 
 # Hard cap on BFS depth to prevent runaway on pathological inputs.
 _MAX_COLS: int = 20
 
 # Op-amp / IC prefixes — kept at standard 0° orientation (inputs left, out right).
-_OP_AMP_PREFIXES: tuple[str, ...] = ("U", "IC", "OA")
+# Imported from component_types to avoid duplication.
+_OP_AMP_PREFIXES: tuple[str, ...] = _IC_PREFIXES_CT
 
-# Passive component prefixes — rotated to 90° when neighbours are vertically arranged.
+# Passive component prefixes for orientation/affinity heuristics.  This is a
+# deliberate *subset* of component_types.PASSIVE_PREFIXES: diodes (D) and BJTs
+# (Q) are intentionally excluded here because the orientation heuristic is
+# only meaningful for two-terminal RLC passives.
 _PASSIVE_PREFIXES: tuple[str, ...] = ("R", "C", "L")
 
 # Net-name prefixes that are power/ground rails.  Connections through these
