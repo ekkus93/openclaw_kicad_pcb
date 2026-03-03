@@ -1,11 +1,14 @@
 """Shared component-type classification constants for *kicad_pcb*.
 
-Centralises reference-designator prefix sets and tier-spacing constants so
-that :mod:`layout`, :mod:`graphviz_layout`, :mod:`tier` and :mod:`router`
-can all import from one place without circular imports.
+Centralises reference-designator prefix sets, power-net matching, and
+tier-spacing constants so that :mod:`layout`, :mod:`graphviz_layout`,
+:mod:`tier` and :mod:`router` can all import from one place without
+circular imports.
 """
 
 from __future__ import annotations
+
+import re
 
 # ---------------------------------------------------------------------------
 # Reference-designator prefix sets
@@ -27,6 +30,35 @@ MISC_PREFIXES: tuple[str, ...] = ("BT", "F", "S", "SW")
 CAPACITOR_PREFIXES: tuple[str, ...] = ("C",)
 
 # ---------------------------------------------------------------------------
+# Power/ground net identification
+# ---------------------------------------------------------------------------
+
+#: Top-level prefixes of power and ground rail net names.
+#: Used for simple ``startswith``-style tests in layout heuristics.
+POWER_NET_PREFIXES: tuple[str, ...] = (
+    "GND",
+    "VCC",
+    "VDD",
+    "VSS",
+    "PWR",
+    "AGND",
+    "PGND",
+    "DGND",
+    "V+",
+    "V-",
+    "VBAT",
+    "VREF",
+)
+
+#: Pre-compiled full-match regex for power/ground net names.
+#: Covers named rails, PWR_FLAG, and numeric voltage forms (e.g. +5V, -12V, 3V3).
+POWER_NET_PATTERN: re.Pattern[str] = re.compile(
+    r"^(?:GND|AGND|DGND|PGND|VCC|VDD|VSS|V\+|V-|VBAT|VREF|0V|"
+    r"[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
+    re.IGNORECASE,
+)
+
+# ---------------------------------------------------------------------------
 # Layout spacing constants (in millimetres, matching KiCad's internal grid)
 # ---------------------------------------------------------------------------
 
@@ -38,8 +70,33 @@ ORIGIN_X_MM: float = 30.48  # 1.2 inch
 
 
 # ---------------------------------------------------------------------------
-# Classification helper
+# Classification helpers
 # ---------------------------------------------------------------------------
+
+
+def is_power_net(name: str) -> bool:
+    """Return True when *name* is a power or ground rail net.
+
+    Uses :data:`POWER_NET_PATTERN` for a full-name, case-insensitive match.
+    Numeric voltage forms such as ``+5V``, ``-12V``, ``3V3``, and ``0V`` are
+    recognised in addition to the named prefixes.
+
+    Examples::
+
+        >>> is_power_net("GND")
+        True
+        >>> is_power_net("VCC")
+        True
+        >>> is_power_net("+5V")
+        True
+        >>> is_power_net("0V")
+        True
+        >>> is_power_net("PWR_FLAG")
+        True
+        >>> is_power_net("SIGNAL_NET")
+        False
+    """
+    return bool(POWER_NET_PATTERN.match(name))
 
 
 def component_type(ref: str) -> str:

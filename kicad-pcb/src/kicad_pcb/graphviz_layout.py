@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 from .component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
+from .component_types import is_power_net as _is_power_net
 from .layout import ComponentAnnotation as _ComponentAnnotation
 from .layout import compute_orientations as _compute_orientations
 from .layout import detect_stereo_channels as _detect_stereo_channels
@@ -87,14 +88,6 @@ SCALE_MM_PER_GV: float = 20.0
 # Vertical spacing between a decoupling capacitor and its associated IC.
 # One KiCad symbol row = 300 mil = 7.62 mm (KiCad default body height).
 GRID_ROW_MM: float = 7.62
-
-# Nets whose names match these patterns are treated as power rails and
-# excluded from the main bipartite graph to avoid hub explosion.
-_POWER_NET_PATTERN = re.compile(
-    r"^(?:GND|AGND|DGND|PGND|VCC|VDD|VSS|V\+|V-|VBAT|VREF|"
-    r"[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
-    re.IGNORECASE,
-)
 
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
@@ -233,21 +226,17 @@ def find_dot_source() -> tuple[str, str] | None:
 # Component classification (used by DOT builder and BFS tier assignment)
 # ---------------------------------------------------------------------------
 
-# Aliases to component_types constants — kept here for local helpers.
-_CONNECTOR_PREFIXES: tuple[str, ...] = _CONNECTOR_PREFIXES_CT
-_CAPACITOR_PREFIXES: tuple[str, ...] = _CAPACITOR_PREFIXES_CT
-
 
 def _is_connector(ref: str) -> bool:
     """Return True if *ref* is a connector designator (``J*``, ``P*``, etc.)."""
     r = ref.upper()
-    return any(r.startswith(p) for p in _CONNECTOR_PREFIXES)
+    return any(r.startswith(p) for p in _CONNECTOR_PREFIXES_CT)
 
 
 def _is_capacitor(ref: str) -> bool:
     """Return True if *ref* is a capacitor designator (``C*``)."""
     r = ref.upper()
-    return any(r.startswith(p) for p in _CAPACITOR_PREFIXES)
+    return any(r.startswith(p) for p in _CAPACITOR_PREFIXES_CT)
 
 
 def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
@@ -367,10 +356,6 @@ def _assign_bfs_tiers(
 # ---------------------------------------------------------------------------
 # DOT graph builder
 # ---------------------------------------------------------------------------
-
-
-def _is_power_net(name: str) -> bool:
-    return bool(_POWER_NET_PATTERN.match(name))
 
 
 def _safe_id(name: str) -> str:

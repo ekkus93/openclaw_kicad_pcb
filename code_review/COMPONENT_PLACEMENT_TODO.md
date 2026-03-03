@@ -363,33 +363,33 @@ total_dx and 0° otherwise. Replace with topology-driven logic:
 
 ### 10.1 Extract shared component-type constants
 
-- [ ] Create `kicad_pcb/component_types.py` with:
+- [x] Create `kicad_pcb/component_types.py` with:
   ```python
   CONNECTOR_PREFIXES = ("J", "CON", "P", "SJ", "TJ")
   IC_PREFIXES = ("U", "IC", "OA")
-  PASSIVE_PREFIXES = ("R", "C", "L", "D", "Q", "RV")
+  PASSIVE_PREFIXES = ("R", "C", "L", "D", "Q")
   POWER_NET_PREFIXES = ("GND", "AGND", "DGND", "PGND", "VCC", "VDD", ...)
   ```
-- [ ] Remove duplicate prefix lists from `layout.py`, `graphviz_layout.py`,
+- [x] Remove duplicate prefix lists from `layout.py`, `graphviz_layout.py`,
   and `router.py`; replace with imports from `component_types.py`.
 
 ### 10.2 Update `layout_engine.py` docstring
 
-- [ ] Document the full layout pipeline: tier assignment → dot rank injection
+- [x] Document the full layout pipeline: tier assignment → dot rank injection
   → bipartite (or component) graph → KiCad coordinate mapping → orientation
   → snapping.
 
 ### 10.3 Update `COMPONENT_PLACEMENT.md`
 
-- [ ] Add a "Status" column to each rule (Planned / Implemented / Tested).
-- [ ] Record the file and function that implements each rule.
+- [x] Add a "Status" column to each rule (Planned / Implemented / Tested).
+- [x] Record the file and function that implements each rule.
 
 ### 10.4 Run full test suite
 
-- [ ] `ruff check .` — zero warnings.
-- [ ] `mypy .` — zero errors.
-- [ ] `pytest tests/unit/ -q` — all existing tests still pass.
-- [ ] Coverage ≥ 70% on new functions.
+- [x] `ruff check .` — zero warnings.
+- [x] `mypy .` — zero errors.
+- [x] `pytest tests/unit/ -q` — all existing tests still pass.
+- [x] Coverage ≥ 70% on new functions.
 
 ---
 
