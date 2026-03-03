@@ -23,7 +23,10 @@ from __future__ import annotations
 import math
 from collections import Counter
 
-from .lint_helpers import (
+from ..sexpr.nodes import ListNode, StringNode
+from ..sexpr.utils import find_all, find_first, walk
+from .defs import _ERR, _WARN, LintIssue
+from .helpers import (
     _check_duplicate_uuids,
     _collect_uuids,
     _collect_wire_segments,
@@ -32,9 +35,6 @@ from .lint_helpers import (
     _is_numeric_atom,
     _symbol_lib_id,
 )
-from .lint_types import _ERR, _WARN, LintIssue
-from .sexpr.nodes import ListNode, StringNode
-from .sexpr.utils import find_all, find_first, walk
 
 __all__ = ["lint_schematic", "lint_schematic_layout"]
 

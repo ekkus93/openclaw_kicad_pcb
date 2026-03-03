@@ -15,7 +15,7 @@ from kicad_pcb.lint import (
     lint_schematic,
     lint_schematic_layout,
 )
-from kicad_pcb.lint_sch import (
+from kicad_pcb.lint.sch import (
     _LAY_LABEL_MAX_COUNT,
     _LAY_MAX_ISLANDS,
     _LAY_SYMBOL_HALF_SIZE_MM,

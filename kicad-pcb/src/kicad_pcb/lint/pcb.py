@@ -12,15 +12,15 @@ Edge.Cuts sub-group (PCB005–PCB008)
 
 from __future__ import annotations
 
-from .lint_helpers import (
+from ..sexpr.nodes import AtomNode, ListNode, StringNode
+from ..sexpr.utils import find_first, walk
+from .defs import _ERR, _WARN, LintIssue
+from .helpers import (
     _check_duplicate_uuids,
     _collect_uuids,
     _float_from_atom,
     _is_numeric_atom,
 )
-from .lint_types import _ERR, _WARN, LintIssue
-from .sexpr.nodes import AtomNode, ListNode, StringNode
-from .sexpr.utils import find_first, walk
 
 __all__ = ["lint_pcb"]
 
