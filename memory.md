@@ -1891,3 +1891,21 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
   - graphviz is NOT installed on this dev machine (sudo apt install graphviz to install).
 - Test suite: 1453 passed, 2 skipped. Both skips are TestGraphvizPositionStability
   (skip when dot absent — quality tests, not error-path tests).
+
+## 2025-07-14 - Phase 1: Longest-path tier assignment + component_types
+
+- New module `kicad-pcb/src/kicad_pcb/component_types.py`:
+  CONNECTOR/IC/PASSIVE/MISC/CAPACITOR_PREFIXES + component_type() classifier.
+  Eliminates duplication across layout.py, graphviz_layout.py, tier.py.
+- New module `kicad-pcb/src/kicad_pcb/tier.py`: assign_tiers(ir) using:
+  1. Undirected BFS seeded from alphabetically-first connector for preliminary tiers
+  2. Directed graph built from BFS tiers + type-order tiebreaker
+  3. DFS-based cycle breaking (removes weakest back-edge by net-pin count)
+  4. Longest-path DP (Kahn topological sort): tier[v] = max(tier[u]+1)
+- graphviz_layout.py: _build_dot_source() now calls _assign_tiers() (from tier.py);
+  _CONNECTOR/_CAPACITOR_PREFIXES aliased to component_types.
+- layout.py: _SOURCE_PREFIXES/_OP_AMP_PREFIXES aliased to imported constants;
+  _PASSIVE_PREFIXES kept local (deliberate RLC-only subset for orientation heuristic).
+- 11 new tests: TestComponentTypes (6) + TestAssignTiers (5) in test_phase4_layout.py.
+- COMPONENT_PLACEMENT_TODO.md Phase 1 items all ticked.
+- Commit: bcc0dbd. Pre-existing 1495+ tests still pass.
