@@ -2344,3 +2344,60 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - `cmd_fix_netlist` validates from in-memory dict (`CircuitIR.model_validate`) — `full_validate` not applicable
 
 
+
+## 2025-07-14T00:00:00Z - Layout quality rules implementation (4 rules)
+
+### Summary
+Implemented 4 layout quality rules to address: inputs right/outputs left,
+column-stacking, insufficient spacing, and connector floating above circuit body.
+Commit: `11b71e6`
+
+### Rules implemented
+
+**Rule 1 — Input connector as BFS seed** (`tier.py`):
+- `_choose_seed_connector(refs, signal_nets)`: picks connector with max BFS hops
+  to nearest IC → identifies input connector → placed at rank=source (left).
+- Updated `_undirected_bfs` to seed from this connector instead of alpha-first.
+- Public alias `choose_seed_connector` added to `__all__`.
+
+**Rule 2 — Connector y-alignment** (`snap.py`):
+- `_snap_connectors_to_ic_y(positions, ir)`: snaps each connector's y to the
+  median y of its non-connector, non-power signal neighbours.
+- Runs as step 2b in `_apply_post_layout_snaps` (after power symbols, before
+  feedback snap).
+
+**Rule 3 — Wider DOT spacing** (`dot_builder.py`):
+- `nodesep`: 0.5 → 0.8 (more vertical room within tiers)
+- `ranksep`: 1.5 → 2.5 (more horizontal room between tiers)
+
+**Rule 4 — Larger layout scale** (`snap.py`):
+- `SCALE_MM_PER_GV`: 20.0 → 24.0 mm/gv (spreads layout to reduce visual crowding)
+
+### Supporting fixes required by wider layout
+
+- `_deoverlap_positions`: raised check threshold to `_STEREO_DEOVERLAP_MIN_MM`
+  (10.17 mm → 11.43 mm on grid) to prevent LAY003 overlaps from the wider
+  layout. Added `skip_pairs` parameter so intentional decoupling-cap/IC
+  co-locations (7.62 mm = GRID_ROW_MM) are NOT pushed apart.
+- `MAX_DIRECT_WIRE_MM`: 30 → 70 mm (new adjacent-tier distance ≈ 60 mm)
+- `MAX_DIRECT_DIST_MM`: 120 → 200 mm (no-tier manhattan fallback for ≈150 mm gaps)
+  NOTE: `_sch_apply.py` calls `route_nets` without tiers → uses manhattan fallback.
+
+### Regression fixes
+1. `test_snap_skips_mono_channels`: J1 now snapped to R1.y=76.20 by Rule 2.
+   Updated assertion and docstring to match new expected behavior.
+2. `test_dynamic_no_lay003_overlap`: Symbols 9.9mm apart (< 10.16mm threshold)
+   caused LAY003. Fixed by raising `_deoverlap_positions` threshold.
+3. `test_direct_wiring_not_all_label_only`: R1/R2 now 153mm apart (pins 143mm),
+   exceeding old `MAX_DIRECT_DIST_MM=120mm`. Fixed by raising to 200mm.
+4. `TestDecouplingCapCoLocation::test_post_snap_sets_cap_y_above_ic`:
+   New deoverlap threshold pushed IC away from its decoupling cap (7.62mm gap <
+   11.43mm threshold). Fixed by passing `skip_pairs=decouple_skip` to deoverlap.
+
+### New test file
+`tests/unit/test_layout_rules.py`: 16 tests covering all 4 rules
+(TestChooseSeedConnector, TestAssignTiersDirectionality, TestSnapConnectorsToIcY,
+TestDotSpacing, TestLayoutScale). All passing.
+
+### Final state: 1628 tests, all passing.
+
