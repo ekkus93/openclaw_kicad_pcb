@@ -1,0 +1,405 @@
+# `graphviz_layout.py` — Refactoring TODO
+
+Cross-reference: code review in conversation history (2026-03-03).
+
+Current state: 1198 lines, four unrelated responsibilities mixed together.
+Goal: ≤ ~200-line orchestrator + three focused helper modules, all code smells fixed.
+
+---
+
+## Proposed target structure
+
+```
+kicad-pcb/src/kicad_pcb/
+    gv_cache.py          # layout cache — key derivation, load, save   (~65 lines)
+    gv_dot_builder.py    # DOT source builder + all _emit_* helpers     (~310 lines)
+    gv_snap.py           # coordinate mapping + all _snap_* transforms  (~240 lines)
+    graphviz_layout.py   # binary discovery + GraphvizLayoutEngine       (~210 lines)
+```
+
+`graphviz_layout.py` re-exports everything that the existing `__all__` list
+names, so **no call site or test import changes** are needed.
+
+---
+
+## Phase 1 — Extract `gv_cache.py`
+
+Move the layout-cache subsystem out of `graphviz_layout.py` into its own module.
+This group has no dependency on DOT syntax, subprocess, or KiCad coordinates.
+
+### 1.1 Create `kicad-pcb/src/kicad_pcb/gv_cache.py`
+
+- [x] Move the module-level constant `_CACHE_FORMAT_VERSION = 1`.
+- [x] Move `_layout_cache_key(dot_source: str) -> str`.
+- [x] Move `_load_layout_cache(cache_path, cache_key) -> … | None`.
+  - [x] **Fix type annotation**: changed `raw: dict[str, list[float | None]]` to
+    `raw: dict[str, Any]`; removed the `# type: ignore[arg-type]` — mypy clean.
+- [x] Move `_save_layout_cache(cache_path, cache_key, positions) -> None`.
+- [x] Write module docstring explaining the cache format and invalidation policy.
+- [x] All three functions remain private (`_`-prefixed) within the new module.
+
+### 1.2 Update `graphviz_layout.py`
+
+- [x] Replace the three function bodies with imports from `.gv_cache`:
+  ```python
+  from .gv_cache import (
+      _layout_cache_key,
+      _load_layout_cache,
+      _save_layout_cache,
+  )
+  ```
+- [x] Remove `import hashlib` from `graphviz_layout.py` (no longer needed there).
+
+### 1.3 Tests
+
+- [x] Verified `TestGraphvizLayoutCacheHelpers` + `TestGraphvizLayoutEngineCache`
+  (10 tests) pass — they import via `_gv_mod.*` re-exports as before.
+
+---
+
+## Phase 2 — Extract `gv_dot_builder.py`
+
+Move everything that produces a DOT source string: classification helpers,
+BFS tier assignment, `_safe_id`/`_tier_rank_keyword`, all `_emit_*` functions,
+and `_build_dot_source` itself.
+
+### 2.1 Create `kicad-pcb/src/kicad_pcb/gv_dot_builder.py`
+
+- [ ] Move `_is_connector(ref)` and `_is_capacitor(ref)`.
+  - [ ] These are thin wrappers over `component_types` constants — keep them
+    here but document that they exist for local convenience.
+- [ ] Move `_find_decoupling_caps(ir) -> dict[str, str]`.
+- [ ] Move `_assign_bfs_tiers(refs, signal_nets) -> dict[str, int]`.
+  - [ ] **Document the semantic difference from `tier.assign_tiers`**: BFS
+    from a single connector seed vs. longest-path layering from all sources.
+    Add a note explaining *why* both are needed (or open a consolidation
+    sub-task, see Phase 6.1).
+- [ ] Move `_safe_id(name)`.
+- [ ] Move `_tier_rank_keyword(tier_index, n_tiers)`.
+- [ ] Move `_compute_net_weights(signal_nets)`.
+- [ ] Move `_emit_tier_subgraphs(lines, tier_groups)`.
+- [ ] Move `_extend_power_only_refs(...)` — **and fix the mutation smell**
+  (see Phase 6.2).
+- [ ] Move `_emit_feedback_constraints(lines, feedback_refs)`.
+- [ ] Move `_emit_decoupling_constraints(lines, decoupling_map)`.
+- [ ] Move `_build_dot_source(ir, *, ...)`.
+  - [ ] **Fix parameter shadowing** (see Phase 6.3).
+- [ ] Write module docstring covering the bipartite graph model and DOT
+  emission strategy.
+- [ ] All functions remain `_`-prefixed (private within the package).
+
+### 2.2 Update `graphviz_layout.py`
+
+- [ ] Replace all moved bodies with a single import block:
+  ```python
+  from .gv_dot_builder import (
+      _assign_bfs_tiers,
+      _build_dot_source,
+      _compute_net_weights,
+      _emit_decoupling_constraints,
+      _find_decoupling_caps,
+      _is_capacitor,
+      _is_connector,
+  )
+  ```
+- [ ] Remove `import re` and `from itertools import combinations` if no longer
+  used in `graphviz_layout.py` after the move (verify with ruff).
+- [ ] The public aliases in `__all__` (`build_dot_source`, `is_connector`, etc.)
+  remain in `graphviz_layout.py` — they just now point at the imported names.
+
+### 2.3 Tests
+
+- [ ] Confirm `_gv_mod.build_dot_source`, `_gv_mod.compute_net_weights`,
+  `_gv_mod.find_decoupling_caps`, `_gv_mod.is_connector`, `_gv_mod.is_capacitor`
+  still resolve correctly through the re-export.
+
+---
+
+## Phase 3 — Extract `gv_snap.py`
+
+Move all coordinate-space transforms: DOT→KiCad mapping, page-fit
+normalisation, grid snapping, and all post-layout snap passes.
+
+### 3.1 Create `kicad-pcb/src/kicad_pcb/gv_snap.py`
+
+- [ ] Move page-layout constants that are used *only* by snap functions:
+  `ORIGIN_X`, `ORIGIN_Y`, `PAGE_MAX_X`, `PAGE_MAX_Y`, `SCALE_MM_PER_GV`,
+  `GRID_ROW_MM`, `_STEREO_DEOVERLAP_MIN_MM`.
+  - [ ] Constants that are also needed by `GraphvizLayoutEngine` (e.g.
+    `SCALE_MM_PER_GV`, `ORIGIN_X`, `ORIGIN_Y`) should be defined in
+    `gv_snap.py` and re-imported into `graphviz_layout.py` so there is a
+    single authoritative definition.
+- [ ] Move `_parse_plain_positions(plain_output)`.
+- [ ] Move `_gv_to_kicad(gv_positions, *, origin_x, origin_y, scale)`.
+  - [ ] **Split the two concerns** (see Phase 6.4): extract
+    `_fit_to_page(positions, *, origin_x, origin_y) -> positions` so that
+    coordinate mapping and page-fit normalisation are independently testable.
+- [ ] Move `snap_positions(positions, *, grid)` (already public).
+- [ ] Move `_snap(v, grid)` (private helper for `snap_positions`).
+- [ ] Move `_snap_power_symbols(positions, ir, *, origin_y, page_max_y)`.
+  - [ ] **Name the magic number** (see Phase 6.5): introduce
+    `_POWER_BOTTOM_MARGIN_MM: float = 20.0` with a comment.
+- [ ] Move `_snap_feedback_components(positions, annotations, ir)`.
+- [ ] Move `_post_snap_decoupling_caps(positions, decoupling_map)`.
+- [ ] Move `_apply_stereo_split(positions, channels, *, origin_y, page_max_y)`.
+  - [ ] **Fix Unicode escapes in docstring** (see Phase 6.6): replace `\u00a7`,
+    `\u00d7`, `\u2212` with literal `§`, `×`, `−`.
+- [ ] Write module docstring explaining the coordinate system transform and
+  the ordering of post-layout snap passes.
+
+### 3.2 Update `graphviz_layout.py`
+
+- [ ] Replace all moved bodies with an import block:
+  ```python
+  from .gv_snap import (
+      _apply_stereo_split,
+      _gv_to_kicad,
+      _parse_plain_positions,
+      _post_snap_decoupling_caps,
+      _snap_feedback_components,
+      _snap_power_symbols,
+      snap_positions,
+      ORIGIN_X,
+      ORIGIN_Y,
+      PAGE_MAX_X,
+      PAGE_MAX_Y,
+      SCALE_MM_PER_GV,
+      GRID_ROW_MM,
+  )
+  ```
+- [ ] Verify `from collections import defaultdict` is still needed; remove
+  if not.
+- [ ] Verify `from collections.abc import Mapping` is still needed; remove
+  if not.
+
+### 3.3 Tests
+
+- [ ] Confirm `_gv_mod.snap_positions`, `_gv_mod.snap_power_symbols`,
+  `_gv_mod.snap_feedback_components`, `_gv_mod.apply_stereo_split`,
+  `_gv_mod.parse_plain_positions`, `_gv_mod.post_snap_decoupling_caps`
+  all resolve through the re-export.
+
+---
+
+## Phase 4 — Slim down `graphviz_layout.py`
+
+After Phases 1–3, `graphviz_layout.py` should contain only:
+binary discovery, `GraphvizLayoutEngine`, and the backwards-compat re-export
+block.
+
+### 4.1 Binary discovery section
+
+- [ ] Retain `_BUNDLED_DOT_PATH`, `find_dot_binary()`, `find_dot_source()`.
+  These have no natural home in the helper modules.
+- [ ] Remove the double section header ("Binary discovery" + "Bundled binary
+  slot") — merge into a single `# Binary discovery` section.
+
+### 4.2 `GraphvizLayoutEngine`
+
+- [ ] Retain the class in `graphviz_layout.py` — it is the orchestrator and
+  the only class in the public API.
+- [ ] Refactor `compute_symbol_positions` (see Phase 5).
+
+### 4.3 Re-export block
+
+- [ ] Keep `__all__` and the alias assignments so existing imports such as
+  `from kicad_pcb.graphviz_layout import build_dot_source` continue to work.
+- [ ] Add a comment block explaining that the aliases exist for backwards
+  compatibility and test access only:
+  ```python
+  # ---------------------------------------------------------------------------
+  # Backwards-compatible re-exports (public names for tests and external code)
+  # ---------------------------------------------------------------------------
+  ```
+
+### 4.4 Target line budget
+
+- [ ] After the refactor, `graphviz_layout.py` should be ≤ 220 lines
+  (binary discovery ~50, `GraphvizLayoutEngine` ~120, re-export block ~50).
+
+---
+
+## Phase 5 — Refactor `compute_symbol_positions`
+
+The method is ~85 lines with six sequential comment-blocked pipeline stages.
+Extract the post-layout snap sequence into a named helper.
+
+### 5.1 Extract `_apply_post_layout_snaps`
+
+- [ ] Create a private function (in `gv_snap.py` or inside the engine class):
+  ```python
+  def _apply_post_layout_snaps(
+      result: dict[str, tuple[float, float, float | None]],
+      ir: CircuitIR,
+      *,
+      feedback_refs: set[str],
+      annotations: dict[str, ComponentAnnotation],
+      channels: dict[str, str],
+      decoupling_map: dict[str, str],
+  ) -> dict[str, tuple[float, float, float | None]]:
+      """Apply all post-layout positional corrections in canonical order."""
+      result = snap_positions(result)
+      result = _snap_power_symbols(result, ir)
+      if feedback_refs:
+          result = _snap_feedback_components(result, annotations, ir)
+      if any(v in ("L", "R") for v in channels.values()):
+          result = _apply_stereo_split(result, channels)
+      if decoupling_map:
+          result = _post_snap_decoupling_caps(result, decoupling_map)
+      return result
+  ```
+- [ ] Update `compute_symbol_positions` to call `_apply_post_layout_snaps`
+  and then the orientation merge step.  The method body should read as a
+  clear narrative: prepare inputs → run dot → apply snaps → compute
+  orientations → cache write → return.
+- [ ] Add `apply_post_layout_snaps` to `__all__` and the re-export block
+  in `graphviz_layout.py` so the new helper is testable.
+
+### 5.2 Tests
+
+- [ ] Add `TestApplyPostLayoutSnaps` in `test_phase4_layout.py`:
+  - [ ] `test_snap_order_power_before_feedback()` — verify power snap runs
+    before feedback snap by checking that a `#PWR` ref is clamped to
+    `ORIGIN_Y` even when a feedback ref shares its column.
+  - [ ] `test_snap_skips_empty_feedback_refs()` — passing `feedback_refs=set()`
+    does not raise and returns the same positions.
+  - [ ] `test_snap_skips_mono_channels()` — passing all refs as `"mono"` does
+    not invoke the stereo split logic.
+
+---
+
+## Phase 6 — Fix code smells
+
+Individual targeted fixes that do not require a new module.
+
+### 6.1 Document or consolidate `_assign_bfs_tiers` vs `tier.assign_tiers`
+
+- [ ] Read both implementations side-by-side and write a comparison comment
+  at the top of `_assign_bfs_tiers` (in `gv_dot_builder.py`) that states:
+  - What BFS-from-single-seed produces that longest-path does not, and vice versa.
+  - Whether `_assign_bfs_tiers` is still reachable from any non-test code path.
+- [ ] If `_assign_bfs_tiers` is only reached via the `assign_bfs_tiers`
+  re-export (i.e. test-only), add a `# used only in tests` comment so it is
+  clearly not production logic.
+- [ ] If the functions can be safely merged, open a follow-up task to do so;
+  do not merge them in this phase (higher regression risk).
+
+### 6.2 Fix `_extend_power_only_refs` — stop mutating two caller arguments
+
+- [ ] Rename to `_partition_power_unit_refs` and change signature to return
+  the updated pair instead of mutating in place:
+  ```python
+  def _partition_power_unit_refs(
+      refs: list[str],
+      signal_refs: set[str],
+      power_only_refs: list[str],
+      power_unit_refs: set[str],
+  ) -> tuple[list[str], set[str]]:   # (updated power_only_refs, updated signal_refs)
+  ```
+- [ ] Update the single call site in `_build_dot_source`.
+- [ ] Update `__all__` and the re-export alias if `emit_power_only_refs` /
+  `extend_power_only_refs` is currently listed there (search `__all__`).
+
+### 6.3 Fix parameter name shadowing in `_build_dot_source`
+
+- [ ] Line: `tiers = tiers if tiers is not None else _assign_tiers(ir)`
+  shadows the `tiers` parameter.  Rename the local:
+  ```python
+  _tiers = tiers if tiers is not None else _assign_tiers(ir)
+  ```
+  and replace all subsequent references to `tiers` within the function body
+  with `_tiers`.
+
+### 6.4 Split `_gv_to_kicad` — coordinate mapping vs page-fit normalisation
+
+- [ ] Extract the page-fit block into:
+  ```python
+  def _fit_to_page(
+      positions: dict[str, tuple[float, float, float | None]],
+      *,
+      origin_x: float = ORIGIN_X,
+      origin_y: float = ORIGIN_Y,
+  ) -> dict[str, tuple[float, float, float | None]]:
+      """Proportionally shrink *positions* so all points fit within the A4 area."""
+  ```
+- [ ] `_gv_to_kicad` calls `_fit_to_page` as its last step.
+- [ ] Add `fit_to_page` to `__all__` / re-export block.
+- [ ] Add a test `test_fit_to_page_shrinks_oversized_layout()`.
+
+### 6.5 Name the magic number in `_snap_power_symbols`
+
+- [ ] Add at module level in `gv_snap.py`:
+  ```python
+  # Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
+  # and one grid row above the very bottom of the usable area.
+  _POWER_BOTTOM_MARGIN_MM: float = 20.0
+  ```
+- [ ] Replace `page_max_y - 20.0` with `page_max_y - _POWER_BOTTOM_MARGIN_MM`.
+
+### 6.6 Fix Unicode escapes in `_apply_stereo_split` docstring
+
+- [ ] Replace `\u00a7` → `§`, `\u00d7` → `×`, `\u2212` → `−` in the
+  docstring.  The source file is UTF-8; there is no reason to use escape
+  sequences.
+
+---
+
+## Phase 7 — Tidy the `__all__` / alias block
+
+The current approach requires three edits per helper (define, add to `__all__`,
+add alias) and exposes both `_is_connector` (private) and `is_connector`
+(alias) in the same namespace.
+
+### 7.1 Consolidate the re-export block
+
+- [ ] Keep `__all__` and the alias block as-is for now (safe — no call site
+  changes needed).
+- [ ] Add a single comment explaining the pattern:
+  ```python
+  # The functions below are defined in sub-modules (gv_dot_builder, gv_snap,
+  # gv_cache) with a leading underscore.  The aliases here expose them as
+  # public names for backwards compatibility and direct test access.
+  # New code should import from graphviz_layout (not from the sub-modules).
+  ```
+- [ ] Confirm every name in `__all__` has a corresponding alias; add any that
+  are missing.
+
+### 7.2 Future: eliminate the alias block entirely (separate task)
+
+- [ ] Open a follow-up note: once all tests import from the sub-modules
+  directly (or via `graphviz_layout`), the alias block can be replaced with
+  a clean `__all__` + `from .gv_* import *` approach.  Do **not** do this
+  now — it would require updating all test imports.
+
+---
+
+## Phase 8 — Run full checks and commit
+
+- [ ] `ruff check kicad-pcb/src/ tests/` — zero warnings (run after each phase).
+- [ ] `mypy kicad-pcb/src/kicad_pcb/` — zero errors across all 51+ source
+  files (the new modules must have full type annotations).
+- [ ] `pytest tests/unit/ tests/integration/ --tb=short -q` — all existing
+  tests pass.
+- [ ] Check that `graphviz_layout.py` is ≤ 220 lines.
+- [ ] Check that no new module exceeds ~320 lines.
+- [ ] Commit with message following the pattern:
+  `refactor: split graphviz_layout into gv_cache / gv_dot_builder / gv_snap`
+
+---
+
+## Implementation order
+
+| Priority | Phase | Rationale |
+|----------|-------|-----------|
+| 1 | 1 — Extract `gv_cache.py` | Smallest, zero dependencies on other phases; safe first step |
+| 2 | 6.3 — Fix param shadowing | One-line fix, do before Phase 2 to avoid propagating the bug |
+| 3 | 6.2 — Fix `_extend_power_only_refs` | Fix before moving to `gv_dot_builder.py` |
+| 4 | 2 — Extract `gv_dot_builder.py` | Largest move; do after smells in that group are fixed |
+| 5 | 6.4 — Split `_gv_to_kicad` | Fix before moving to `gv_snap.py` |
+| 6 | 6.5, 6.6 — Magic number + docstring | Trivial; fix before the snap move |
+| 7 | 3 — Extract `gv_snap.py` | After all snap-related smells are fixed |
+| 8 | 4 — Slim `graphviz_layout.py` | Clean up after all moves are done |
+| 9 | 5 — Refactor `compute_symbol_positions` | Needs snaps already in `gv_snap.py` |
+| 10 | 6.1 — Document BFS vs longest-path | Research task; no code risk |
+| 11 | 7 — Tidy `__all__` block | Polish pass after everything else is stable |
+| 12 | 8 — Full checks + commit | Always last |
