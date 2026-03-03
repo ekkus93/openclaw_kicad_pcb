@@ -390,55 +390,55 @@ SCH010 or any LAY rule.
 SCH010 fires when a `label`, `global_label`, `hierarchical_label`, or `net_tie`
 node is missing an `(at …)` child.
 
-- [ ] `test_label_missing_at_is_error()` — label node with no `(at …)` child
+- [x] `test_label_missing_at_is_error()` — label node with no `(at …)` child
     produces SCH010 ERROR.
-- [ ] `test_global_label_missing_at_is_error()` — same for `global_label`.
-- [ ] `test_label_with_at_is_clean()` — label with an `(at x y)` child
+- [x] `test_global_label_missing_at_is_error()` — same for `global_label`.
+- [x] `test_label_with_at_is_clean()` — label with an `(at x y)` child
     produces no SCH010 issue.
 
 ### 6.2 Add `TestLAY001` in `test_lint.py`
 
-- [ ] `test_label_appears_once_is_clean()` — single label, no LAY001.
-- [ ] `test_label_at_threshold_is_clean()` — label appears exactly
+- [x] `test_label_appears_once_is_clean()` — single label, no LAY001.
+- [x] `test_label_at_threshold_is_clean()` — label appears exactly
     `_LAY_LABEL_MAX_COUNT` times, no warning.
-- [ ] `test_label_exceeds_threshold_is_warning()` — label appears
+- [x] `test_label_exceeds_threshold_is_warning()` — label appears
     `_LAY_LABEL_MAX_COUNT + 1` times, produces LAY001 WARNING.
-- [ ] `test_multiple_labels_independent()` — two distinct label names, each
+- [x] `test_multiple_labels_independent()` — two distinct label names, each
     exceeding the threshold, produces two LAY001 warnings.
 
 ### 6.3 Add `TestLAY002` in `test_lint.py`
 
-- [ ] `test_all_stub_wires_triggers_warning()` — schematic with only stub-length
+- [x] `test_all_stub_wires_triggers_warning()` — schematic with only stub-length
     wires (≤ 5.08 mm) produces LAY002.
-- [ ] `test_mostly_long_wires_is_clean()` — majority of wires are above stub
+- [x] `test_mostly_long_wires_is_clean()` — majority of wires are above stub
     length, no LAY002.
-- [ ] `test_no_wires_is_clean()` — schematic with no wire nodes, no LAY002.
+- [x] `test_no_wires_is_clean()` — schematic with no wire nodes, no LAY002.
 
 ### 6.4 Add `TestLAY003` in `test_lint.py`
 
-- [ ] `test_two_overlapping_symbols_is_warning()` — two symbols within
+- [x] `test_two_overlapping_symbols_is_warning()` — two symbols within
     `2 × _LAY_SYMBOL_HALF_SIZE_MM` of each other produce LAY003.
-- [ ] `test_two_separated_symbols_is_clean()` — symbols far apart, no LAY003.
-- [ ] `test_single_symbol_no_overlap()` — one symbol, no LAY003.
+- [x] `test_two_separated_symbols_is_clean()` — symbols far apart, no LAY003.
+- [x] `test_single_symbol_no_overlap()` — one symbol, no LAY003.
 
 ### 6.5 Add `TestLAY004` in `test_lint.py`
 
-- [ ] `test_symbol_inside_a4_is_clean()` — symbol at (100, 100), no LAY004.
-- [ ] `test_symbol_outside_x_bound_is_error()` — symbol at (300, 100),
+- [x] `test_symbol_inside_a4_is_clean()` — symbol at (100, 100), no LAY004.
+- [x] `test_symbol_outside_x_bound_is_error()` — symbol at (300, 100),
     produces LAY004 ERROR.
-- [ ] `test_symbol_outside_y_bound_is_error()` — symbol at (100, 220),
+- [x] `test_symbol_outside_y_bound_is_error()` — symbol at (100, 220),
     produces LAY004 ERROR.
-- [ ] `test_symbol_at_origin_is_clean()` — symbol at (0, 0), no LAY004.
+- [x] `test_symbol_at_origin_is_clean()` — symbol at (0, 0), no LAY004.
 
 ### 6.6 Add `TestLAY005` in `test_lint.py`
 
-- [ ] `test_connected_wires_single_island()` — all wires form one connected
+- [x] `test_connected_wires_single_island()` — all wires form one connected
     component, no LAY005.
-- [ ] `test_two_islands_is_clean()` — exactly `_LAY_MAX_ISLANDS` isolated
+- [x] `test_two_islands_is_clean()` — exactly `_LAY_MAX_ISLANDS` isolated
     components, no LAY005.
-- [ ] `test_three_islands_is_warning()` — three disconnected wire groups
+- [x] `test_three_islands_is_warning()` — three disconnected wire groups
     produce LAY005 WARNING.
-- [ ] `test_no_wires_is_clean()` — no wire nodes at all, no LAY005.
+- [x] `test_no_wires_is_clean()` — no wire nodes at all, no LAY005.
 
 ---
 
