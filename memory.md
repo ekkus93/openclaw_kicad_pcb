@@ -1,10 +1,37 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T09:24:28Z_
+_Last updated: 2026-03-03T10:10:00Z_
 
 ---
 
-## 2026-03-03T09:20:00Z — refactor: Phase 1 — extract gv_cache.py
+## 2026-03-03T10:10:00Z — refactor: Phase 2 — extract gv_dot_builder.py (+ 6.2 + 6.3 fixes)
+
+### What changed
+- Created `kicad-pcb/src/kicad_pcb/gv_dot_builder.py` (477 lines): extracted all DOT builder functions from `graphviz_layout.py` — `_is_connector`, `_is_capacitor`, `_find_decoupling_caps`, `_assign_bfs_tiers`, `_safe_id`, `_tier_rank_keyword`, `_compute_net_weights`, `_emit_tier_subgraphs`, `_emit_feedback_constraints`, `_emit_decoupling_constraints`, `_build_dot_source`.
+- **Phase 6.3 fix**: renamed local `tiers` → `_tiers` in `_build_dot_source` to remove parameter shadowing.
+- **Phase 6.2 fix**: renamed `_extend_power_only_refs` → `_partition_power_unit_refs`; returns `(power_only_refs, signal_refs)` tuple instead of mutating in-place.
+- `graphviz_layout.py`: 1113 → 728 lines. Removed `import re`, `from itertools import combinations`, `deque`, `CAPACITOR_PREFIXES` import. Added `from .gv_dot_builder import ...` in top-level import block.
+- `GRAPHVIZ_LAYOUT_TODO.md`: Phase 2, 6.2, 6.3 boxes ticked.
+- Committed `59a683e`.
+
+### Checks
+- ruff: clean on both files (1 import-sort auto-fixed)
+- mypy: "Success: no issues found in 2 source files"
+- pytest (35 tests across TestBuildDotSourceSignalFlow, TestFindDecouplingCaps, TestDecouplingCapCoLocation, TestNetWeights, TestAssignBfsTiers, TestGraphvizLayoutCacheHelpers): 35 passed
+
+### Refactor TODO state
+- ✅ Phase 1: `gv_cache.py` extracted (commit `86b01d1`)
+- ✅ Phase 2: `gv_dot_builder.py` extracted (commit `59a683e`)
+- ✅ Phase 6.2: `_partition_power_unit_refs` returns tuple (done during Phase 2)
+- ✅ Phase 6.3: `_tiers` local var in `_build_dot_source` (done during Phase 2)
+- ⬜ Phase 3: extract `gv_snap.py` (snap/parse functions + coordinate transforms)
+- ⬜ Phases 4–8: remaining work
+
+### Notes
+- `_assign_bfs_tiers` is test-only (BFS-from-connector-seed); production uses `_assign_tiers` (longest-path). Both kept; documented difference in module docstring.
+- DOT edge bug found+fixed during extraction: downstream component lines were missing `net_id -> ` prefix.
+
+---
 
 ### What changed
 - Created `kicad-pcb/src/kicad_pcb/gv_cache.py` (~100 lines): extracted `_CACHE_FORMAT_VERSION`, `_layout_cache_key`, `_load_layout_cache`, `_save_layout_cache` from `graphviz_layout.py`.
