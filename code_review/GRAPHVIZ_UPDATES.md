@@ -455,16 +455,29 @@ or deleted.
 
 #### 4.1 — Audit the remaining orphaned functions in `layout.py`
 
-- [ ] For each function listed below, confirm whether it is called from anything
+- [x] For each function listed below, confirm whether it is called from anything
   other than tests or `compute_signal_flow_layout()`:
-  - `compute_signal_flow_layout()` itself — only called from test files
-  - `_recursive_halving()` — called only from `compute_sds_columns()` (still
-    used ✓) and `compute_signal_flow_layout()` — verify
-  - `_rh_recurse()` — called only from `_recursive_halving()` — verify
-  - `_barycentric_sort()` — called only from `compute_signal_flow_layout()`
-    (will be promoted in Improvement 2)
-  - `count_wire_crossings()` — used in tests; promoted in Improvement 2
-  - `build_signal_adjacency()` — used in tests; promoted in Improvement 2
+  - `compute_signal_flow_layout()` itself — **TEST-ONLY ORPHAN**: called from
+    `kicad-pcb/tests/unit/test_layout.py` and `tests/unit/test_phase6_coverage.py`
+    (~14 call sites across two files); not reachable from any production code.
+    → See 4.2 for disposition.
+  - `_recursive_halving()` — **LIVE**: called by `compute_sds_columns()` (line
+    395 in `layout.py`), which is used in production via
+    `graphviz_layout/__init__.py:230`. Also called from `compute_signal_flow_layout`.
+  - `_rh_recurse()` — **LIVE**: called only by `_recursive_halving()` (lines 344,
+    369, 370), which is live via `compute_sds_columns` → production.
+  - `barycentric_sort()` — **LIVE**: imported by `snap.py` (production
+    `_remediate_crossings`); also called from `compute_signal_flow_layout`.
+  - `count_wire_crossings()` — **LIVE**: imported by `snap.py` (production
+    `_remediate_crossings`) and `lint/sch.py` (LAY lint rule); also called from
+    `compute_signal_flow_layout` and tests.
+  - `build_signal_adjacency()` — **LIVE**: imported by `snap.py` (production
+    `_remediate_crossings`) and `lint/sch.py`; also used in tests.
+
+  **Summary**: `compute_signal_flow_layout()` is the sole production orphan.
+  All other functions under review are live — directly or transitively reachable
+  from the Graphviz pipeline (`graphviz_layout/__init__.py`) or the lint pipeline
+  (`lint/sch.py`).
 
 #### 4.2 — Decide fate of `compute_signal_flow_layout()`
 
