@@ -517,9 +517,9 @@ or deleted.
 
 #### 4.4 — Final lint/type-check pass
 
-- [ ] `ruff check kicad-pcb/src` — zero errors.
-- [ ] `mypy kicad-pcb/src` — zero new errors.
-- [ ] `cd kicad-pcb && python -m pytest` — all tests pass.
+- [x] `ruff check kicad-pcb/src` — zero errors. **All checks passed.**
+- [x] `mypy kicad-pcb/src` — zero new errors. **Success: no issues found in 62 source files.**
+- [x] `cd kicad-pcb && python -m pytest` — all tests pass. **102 passed in 1.62s.**
 
 ---
 
