@@ -1,6 +1,16 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T21:32:34Z_
+_Last updated: 2026-03-04T21:44:21Z_
+
+---
+
+## 2026-03-04T21:44:21Z — 4.4 final lint/type-check/test pass committed
+
+- `ruff check kicad-pcb/src` → `All checks passed!` (exit 0)
+- `mypy kicad-pcb/src` → `Success: no issues found in 62 source files` (exit 0)
+- `pytest kicad-pcb/tests` → `102 passed in 1.62s` (exit 0)
+- `GRAPHVIZ_UPDATES.md` 4.4 checkboxes marked `[x]` with actual output.
+- Commit: `ee060c4` — pushed to master.
 
 ---
 
@@ -22,7 +32,7 @@ _Last updated: 2026-03-04T21:32:34Z_
 ### 4.4 — Final quality pass
 - `ruff check kicad-pcb/src kicad-pcb/tests` → **All checks passed**
 - `mypy kicad-pcb/src` → **Success: no issues found in 62 source files**
-- `pytest kicad-pcb/tests` → **102 passed in 1.52s**
+- `pytest kicad-pcb/tests` → **102 passed in 1.62s**
 
 ### Remaining untracked deletions in `code_review/`
 - `code_review/OpenClaw_Managed.kicad_sch` — deleted (not staged)
