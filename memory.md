@@ -2637,3 +2637,27 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 
 ### Final test count
 **104 passing** (up from 89 after R3); 0 lint errors.
+
+## 2025-07-16T00:00:00Z - WALK_THRU.md written
+- Wrote `code_review/WALK_THRU.md` (590 lines) — comprehensive codebase walkthrough.
+- Covers: Circuit IR JSON format, new-from-netlist & apply-netlist workflows, tier assignment DAG algorithm, graphviz + heuristic layout pipelines, sexpr layer, SchematicDoc, transactional pipeline, lint rules (SCH/LAY/PCB), manufacturing export, full module map, and end-to-end CLI example.
+- All code snippets were taken from actual source files (grep/read), not generated from memory.
+
+## 2026-03-04T00:00:00Z - GRAPHVIZ_UPDATES.md TODO written
+- Created `code_review/GRAPHVIZ_UPDATES.md` — comprehensive TODO for three Graphviz pipeline improvements.
+- Improvement 1: `_center_ics_in_columns()` snap pass — re-sort column members so ICs sit at midpoint flanked by passives.
+- Improvement 2: `_remediate_crossings()` snap pass — measure crossing ratio post-snap and run barycentric re-sort loop (up to 10 sweeps, threshold 0.30).
+- Improvement 3: Use `compute_affinity_groups()` (previously dead code) to emit affinity-ordered nodes in DOT `{rank=same}` subgraphs.
+- Cleanup section (4): audit orphaned functions in `layout.py`; decide fate of `compute_signal_flow_layout()`; promote `_barycentric_sort` to public.
+- Recommended implementation order: 3 → 1 → (4.3) → 2 → (4.1-4.2).
+- Key files involved: `layout.py`, `graphviz_layout/__init__.py`, `graphviz_layout/dot_builder.py`, `graphviz_layout/snap.py`, test files in `tests/unit/`.
+
+## 2026-03-04T01:00:00Z - Improvement 1 (IC centering in columns) implemented
+- Added `_center_ics_in_columns()` function to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
+- Function groups components by x-column, splits into ic_refs/halo_other/plain_other buckets, interleaves as `plain[:mid] + halo[:mid] + ics + halo[mid:] + plain[mid:]`, then assigns the existing sorted y-slots to the new order.
+- Power symbols (`#PWR`/`#FLG`) are excluded from reordering.
+- Wired into `_apply_post_layout_snaps()` BEFORE `_post_snap_decoupling_caps()` (so caps are re-anchored to centered ICs) and BEFORE `_deoverlap_positions()`.
+- Pipeline order is now: ... _compact_y_gap → _center_ics_in_columns → _post_snap_decoupling_caps → deoverlap_positions.
+- Updated module docstring and `_apply_post_layout_snaps()` docstring to document step 6.
+- Added 12 unit tests in `tests/unit/test_phase4_layout.py::TestCenterICsInColumns` covering: center position, multiple ICs, passives-only column, halo flanking, empty dict, single component, power symbol exclusion, non-mutation, independent columns, x/rot preservation, halo=None.
+- All 212 tests in test_phase4_layout.py pass; all 102 kicad-pcb tests pass; ruff clean.
