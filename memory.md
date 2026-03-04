@@ -2725,3 +2725,31 @@ So the minimum value that allows any sorting is 2; default is 3.
 - Improvements 1 and 2 complete, committed to master.
 - GRAPHVIZ_UPDATES.md: 2.1–2.6, 4.3 all [x]; 2.4 pipeline-wiring [x].
 - Next: Improvement 3 (affinity-ordered nodes in DOT source) or Cleanup 4.
+
+## 2026-03-04T05:00:00Z - Improvement 3 fully complete; commit 5ec70a3 pushed
+
+### What was implemented (3.2–3.5)
+- `_emit_tier_subgraphs(lines, tier_groups, affinity_order=None)`: new optional
+  param; uses affinity_order[tier_val] list when present, falls back to
+  sorted(members) for backward-compatibility.
+- `_build_dot_source(..., affinity_order=None)`: threads affinity_order kwarg
+  down to _emit_tier_subgraphs.
+- `graphviz_layout/__init__.py`: imports compute_affinity_groups; computes
+  affinity_order after _tiers; passes to _build_dot_source. Cache invalidated
+  automatically via sha256(dot_source).
+- `layout.py`: compute_affinity_groups docstring updated — no longer dead code.
+- Import fix: compute_affinity_groups placed before compute_orientations
+  alphabetically (ruff I001).
+
+### 3.6 tests added
+- `_two_same_tier_ir()`: helper — J1(tier 0) → A_R+Z_R(tier 1, rank=same) → J2(tier 2)
+- `_extract_rank_same_refs(dot_src)`: helper to extract ref list from first rank=same block
+- `test_build_dot_source_with_affinity_order_uses_specified_order`: confirms
+  affinity_order={1:["Z_R","A_R"]} puts Z_R before A_R in rank=same block
+- `test_build_dot_source_without_affinity_order_emits_alphabetical`: confirms
+  fallback alphabetical order (A_R, Z_R)
+- All 9 TestBuildDotSourceSignalFlow tests pass.
+
+### Pending
+- 4.1, 4.2, 4.4: audit orphaned functions in layout.py; decide fate of
+  compute_signal_flow_layout(); final mypy pass.
