@@ -73,6 +73,7 @@ of which earlier pass introduced it.
 
 from __future__ import annotations
 
+import logging
 import math
 from collections import defaultdict
 from collections.abc import Mapping
@@ -85,6 +86,8 @@ from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
 from ..layout import ComponentAnnotation as _ComponentAnnotation
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Connector-classification helpers (used by _snap_connectors_to_ic_y)
@@ -437,6 +440,68 @@ def _snap_feedback_components(
     return result
 
 
+def _snap_opamp_halo(
+    positions: dict[str, tuple[float, float, float | None]],
+    halo: Mapping[str, str],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Pull halo members that drifted from their anchor IC back into alignment.
+
+    After :func:`_snap_feedback_components` and other passes, a halo member
+    may have been displaced to a different x-column from its anchor IC.
+    This pass detects drift (|halo_x - anchor_x| > 1.0 mm) and moves the
+    halo member back to ``anchor_x``, distributing multiple halo members
+    alternately above and below the anchor at multiples of ``GRID_ROW_MM``:
+
+    * index 0 → ``anchor_y - GRID_ROW_MM`` (above)
+    * index 1 → ``anchor_y + GRID_ROW_MM`` (below)
+    * index 2 → ``anchor_y - 2 \u00d7 GRID_ROW_MM`` (two rows above)
+    * …
+
+    Components absent from *positions* are silently skipped.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions from the previous snap pass.
+    halo:
+        ``{halo_ref: anchor_ic_ref}`` from
+        :func:`~kicad_pcb.layout._compute_opamp_halo`.
+    """
+    if not halo:
+        return positions
+
+    result = dict(positions)
+
+    # Group halo members per anchor IC so we can distribute them.
+    by_anchor: dict[str, list[str]] = defaultdict(list)
+    for halo_ref, anchor_ref in halo.items():
+        if halo_ref in result and anchor_ref in result:
+            by_anchor[anchor_ref].append(halo_ref)
+
+    for anchor_ref, halo_refs in by_anchor.items():
+        anchor_x, anchor_y, _ = result[anchor_ref]
+        for i, halo_ref in enumerate(sorted(halo_refs)):
+            halo_x, halo_y, halo_rot = result[halo_ref]
+            if abs(halo_x - anchor_x) <= 1.0:
+                continue  # Still in the same column; no correction needed.
+            # Distribute alternately above/below the anchor IC.
+            level = i // 2 + 1
+            sign = -1 if (i % 2 == 0) else 1  # even → above (y decreases in KiCad)
+            new_y = round(anchor_y + sign * level * GRID_ROW_MM, 2)
+            _log.debug(
+                "halo snap: %r drifted to x=%.2f, returning to anchor %r x=%.2f y %.2f → %.2f",
+                halo_ref,
+                halo_x,
+                anchor_ref,
+                anchor_x,
+                halo_y,
+                new_y,
+            )
+            result[halo_ref] = (round(anchor_x, 2), new_y, halo_rot)
+
+    return result
+
+
 def _post_snap_decoupling_caps(
     positions: dict[str, tuple[float, float, float | None]],
     decoupling_map: dict[str, str],
@@ -527,6 +592,147 @@ def _apply_stereo_split(
             cx, cy, cr = result[curr_ref]
             if cy - py < _STEREO_DEOVERLAP_MIN_MM:
                 result[curr_ref] = (cx, round(py + _STEREO_DEOVERLAP_MIN_MM, 2), cr)
+
+    return result
+
+
+def _post_stereo_barycentric(  # noqa: PLR0912
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    channels: Mapping[str, str],
+    *,
+    passes: int = 2,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Apply barycentric vertical re-ordering within each stereo channel band.
+
+    After :func:`_apply_stereo_split` compresses L/R components into the top
+    and bottom page halves, wire crossings can increase within each band.  This
+    pass reduces intra-channel crossings by performing a two-pass barycentric
+    sweep on each band independently:
+
+    * For each channel band (``"L"`` and ``"R"``) collect the refs and group
+      them by x-column (using their snapped x-coordinate as the key).
+    * Run *passes* sweeps of left→right and right→left barycentric sorting,
+      where the *row ordering* of a ref within its x-column is determined by
+      the average y-position of its signal-adjacent neighbours in the adjacent
+      column.
+    * After sorting, re-assign the original sorted y-values of each column to
+      the newly ordered refs (preserving the y-spacing, only swapping *which*
+      ref occupies which row).
+
+    Refs classified as ``"mono"`` (or absent from *channels*) are not moved.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions ``{ref: (x, y, rot)}``.
+    ir:
+        Circuit IR used to build signal-net adjacency for weight computation.
+    channels:
+        ``{ref: channel}`` from
+        :func:`~kicad_pcb.layout.detect_stereo_channels`.
+    passes:
+        Number of full L→R + R→L sweeps.  Default is 2.
+
+    Returns
+    -------
+    dict[str, tuple[float, float, float | None]]
+        Updated positions dict.  Only L/R-channel refs may have their y
+        modified; x and rotation are always preserved.
+    """
+    # Fast-path: no stereo → nothing to do.
+    if not any(v in ("L", "R") for v in channels.values()):
+        return positions
+
+    # Build signal adjacency from the circuit IR (power nets excluded).
+    sig_adj: dict[str, set[str]] = defaultdict(set)
+    for net in ir.nets:
+        if _is_power_net(net.name):
+            continue
+        pin_refs = [p.ref for p in net.pins]
+        for ri in pin_refs:
+            for rj in pin_refs:
+                if ri != rj:
+                    sig_adj[ri].add(rj)
+
+    result = dict(positions)
+
+    for band_ch in ("L", "R"):
+        band_refs = [r for r, ch in channels.items() if ch == band_ch]
+        if not band_refs:
+            continue
+
+        # Group by x-column (exact snapped x-coordinate as key).
+        by_x: dict[float, list[str]] = defaultdict(list)
+        for ref in band_refs:
+            by_x[result[ref][0]].append(ref)
+
+        sorted_xs = sorted(by_x)
+        if len(sorted_xs) < 2:
+            # Only one column in this band — nothing to cross-sort.
+            continue
+
+        # Establish initial row ordering within each x-column: ascending y.
+        for x in sorted_xs:
+            by_x[x].sort(key=lambda r: result[r][1])
+
+        # ref → x column (fixed within this band pass).
+        ref_to_x: dict[str, float] = {ref: result[ref][0] for ref in band_refs}
+
+        def _row_map_stereo() -> dict[str, int]:
+            return {ref: i for x in sorted_xs for i, ref in enumerate(by_x[x])}
+
+        def _avg_nbr_row_stereo(
+            ref: str,
+            target_x: float,
+            row_map: dict[str, int],
+        ) -> float:
+            nbrs = [r for r in sig_adj.get(ref, set()) if ref_to_x.get(r) == target_x]
+            if nbrs:
+                return sum(row_map[r] for r in nbrs) / len(nbrs)
+            # No cross-col neighbour: use own row as neutral weight.
+            return float(row_map.get(ref, 0))
+
+        for _ in range(passes):
+            # Pass 1: left → right.
+            rm = _row_map_stereo()
+            for i, x in enumerate(sorted_xs):
+                if i == 0:
+                    by_x[x].sort(key=lambda r: (0.0, r))
+                    for j, ref in enumerate(by_x[x]):
+                        rm[ref] = j
+                else:
+                    prev_x = sorted_xs[i - 1]
+                    by_x[x].sort(
+                        key=lambda r, _px=prev_x, _rm=rm: (  # type: ignore[misc]  # mypy cannot infer lambda default-arg types
+                            _avg_nbr_row_stereo(r, _px, _rm),
+                            r,
+                        )
+                    )
+                    for j, ref in enumerate(by_x[x]):
+                        rm[ref] = j
+
+            # Pass 2: right → left.
+            rm = _row_map_stereo()
+            for i in range(len(sorted_xs) - 2, -1, -1):
+                x = sorted_xs[i]
+                next_x = sorted_xs[i + 1]
+                by_x[x].sort(
+                    key=lambda r, _nx=next_x, _rm=rm: (  # type: ignore[misc]  # mypy cannot infer lambda default-arg types
+                        _avg_nbr_row_stereo(r, _nx, _rm),
+                        r,
+                    )
+                )
+                for j, ref in enumerate(by_x[x]):
+                    rm[ref] = j
+
+        # Re-assign y-values: extract the canonical sorted y-values for each
+        # x-column and assign them to the barycentric-ordered refs.
+        for x in sorted_xs:
+            sorted_ys = sorted(result[r][1] for r in by_x[x])
+            for ref, new_y in zip(by_x[x], sorted_ys):
+                rx, _ry, rrot = result[ref]
+                result[ref] = (rx, new_y, rrot)
 
     return result
 
@@ -667,6 +873,71 @@ def _compact_y_gap(
 
 
 # ---------------------------------------------------------------------------
+# Connector I/O x-bound enforcement (Rule 0)
+# ---------------------------------------------------------------------------
+
+
+def _enforce_connector_x_bounds(
+    positions: dict[str, tuple[float, float, float | None]],
+    roles: Mapping[str, str],
+    *,
+    origin_x: float = ORIGIN_X,
+    page_max_x: float = PAGE_MAX_X,
+    grid: float = 1.27,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Clamp connector x-coordinates to their designated page region.
+
+    Input connectors are clamped to the left 25 % of the usable page width;
+    output connectors are clamped to the right 75 %-to-100 % of that width.
+    Both bounds are grid-snapped to the KiCad 50-mil grid.
+
+    This is a belt-and-suspenders guarantee that the left → right signal-flow
+    convention holds even when Graphviz edge cases misplace a connector (e.g.
+    when two connectors have the same hop distance to the nearest IC and the
+    alphabetical tiebreak selects the wrong one as the seed).
+
+    Only the x-coordinate is adjusted; y and rotation are preserved.
+    Components absent from *positions* or with role ``"unknown"`` are skipped.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions from a previous snap pass.
+    roles:
+        ``{ref: "input" | "output" | "unknown"}`` from
+        :func:`~kicad_pcb.tier.classify_connector_roles`.
+    origin_x:
+        Left edge of the usable schematic area (default :data:`ORIGIN_X`).
+    page_max_x:
+        Right edge of the usable schematic area (default :data:`PAGE_MAX_X`).
+    grid:
+        KiCad snap grid in mm (default 1.27 — 50 mil).
+    """
+    if not roles:
+        return positions
+
+    usable_w = page_max_x - origin_x
+    # Snap boundaries to grid so clamped positions land on-grid.
+    input_x_limit = round(round((origin_x + usable_w * 0.25) / grid) * grid, 4)
+    output_x_limit = round(round((origin_x + usable_w * 0.75) / grid) * grid, 4)
+
+    result = dict(positions)
+    for ref, role in roles.items():
+        if ref not in result:
+            continue
+        x, y, rot = result[ref]
+        if role == "input" and x > input_x_limit:
+            new_x = input_x_limit
+            _log.debug("snap: clamping input connector %r x %.2f → %.2f", ref, x, new_x)
+            result[ref] = (new_x, y, rot)
+        elif role == "output" and x < output_x_limit:
+            new_x = output_x_limit
+            _log.debug("snap: clamping output connector %r x %.2f → %.2f", ref, x, new_x)
+            result[ref] = (new_x, y, rot)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
 
@@ -679,36 +950,46 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     annotations: dict[str, _ComponentAnnotation],
     channels: Mapping[str, str],
     decoupling_map: dict[str, str],
+    roles: Mapping[str, str] | None = None,
+    halo: Mapping[str, str] | None = None,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
 
-    The eight passes must run in the order shown — see the module docstring
-    for the rationale behind each ordering constraint:
+    The passes must run in the order shown — see the module docstring for the
+    ordering rationale:
 
     1. :func:`snap_positions` — quantise to the KiCad 50-mil grid.
     2. :func:`_snap_power_symbols` — clamp ``#PWR``/``#FLG`` to top/bottom row.
-    2b. :func:`_snap_connectors_to_ic_y` — pull each connector's y to the median
-        y of its signal-net neighbours, preventing connectors from floating far
-        above or below the main circuit body (Rule 2).
-    3. :func:`_snap_feedback_components` — pull feedback passives above anchor IC
-       (skipped when *feedback_refs* is empty).
+    2b. :func:`_enforce_connector_x_bounds` — clamp input/output connectors
+        to the left/right 25 % of the page (skipped when *roles* is ``None``).
+    2c. :func:`_snap_connectors_to_ic_y` — pull each connector's y to the
+        median y of its signal-net neighbours (Rule 2).
+    3. :func:`_snap_feedback_components` — pull feedback passives above anchor
+       IC (skipped when *feedback_refs* is empty).
+    3b. :func:`_snap_opamp_halo` — pull halo members back to their anchor
+        IC's column when they have drifted (skipped when *halo* is ``None``).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
        (skipped when no L or R channel is present in *channels*).
-    5. :func:`_compact_y_gap` — collapse the largest vertical gap in the layout
-       for non-power-symbol components so the circuit appears as one connected
-       region rather than two separate clusters.
-    6. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their IC
-       (skipped when *decoupling_map* is empty).
-    7. :func:`_deoverlap_positions` — push any remaining grid collisions apart so
-       no two components share the same (x, y) cell.
+    4b. :func:`_post_stereo_barycentric` — reduce intra-channel crossings after
+       the stereo split by applying a two-pass barycentric sort within each
+       channel band (R3-3; skipped when no L/R channels present).
+    5. :func:`_compact_y_gap` — collapse the largest vertical gap.
+    6. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
+       IC (skipped when *decoupling_map* is empty).
+    7. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
+    if roles:
+        result = _enforce_connector_x_bounds(result, roles)
     result = _snap_connectors_to_ic_y(result, ir)
     if feedback_refs:
         result = _snap_feedback_components(result, annotations, ir)
+    if halo:
+        result = _snap_opamp_halo(result, halo)
     if any(v in ("L", "R") for v in channels.values()):
         result = _apply_stereo_split(result, channels)
+        result = _post_stereo_barycentric(result, ir, channels)
     result = _compact_y_gap(result, ir)
     if decoupling_map:
         result = _post_snap_decoupling_caps(result, decoupling_map)

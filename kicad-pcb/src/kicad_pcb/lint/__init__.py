@@ -13,13 +13,14 @@ from __future__ import annotations
 
 from .defs import LINT_SUGGESTIONS, LintError, LintIssue, LintSeverity
 from .pcb import lint_pcb
-from .sch import lint_schematic, lint_schematic_layout
+from .sch import lint_layout_wire_crossings, lint_schematic, lint_schematic_layout
 
 __all__ = [
     "LintError",
     "LintIssue",
     "LintSeverity",
     "LINT_SUGGESTIONS",
+    "lint_layout_wire_crossings",
     "lint_pcb",
     "lint_schematic",
     "lint_schematic_layout",

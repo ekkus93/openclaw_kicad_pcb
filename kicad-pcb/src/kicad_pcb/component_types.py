@@ -48,6 +48,7 @@ POWER_NET_PREFIXES: tuple[str, ...] = (
     "V-",
     "VBAT",
     "VREF",
+    "0V",  # numeric zero-volt ground alias (e.g. 0V, 0V0)
 )
 
 #: Pre-compiled full-match regex for power/ground net names.
@@ -57,6 +58,65 @@ POWER_NET_PATTERN: re.Pattern[str] = re.compile(
     r"[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
     re.IGNORECASE,
 )
+
+# ---------------------------------------------------------------------------
+# GND net-name normalisation (Rule 5)
+# ---------------------------------------------------------------------------
+
+#: Case-insensitive set of net-name aliases that all denote ground / 0-volt.
+#: Used by :func:`normalize_gnd_net_name` to normalise schematic IR net names
+#: to the canonical ``"GND"`` string before they reach any layout or writer
+#: consumer.
+#:
+#: .. note::
+#:     ``VSS`` is conventionally the negative CMOS supply.  It is included
+#:     here because in single-supply audio circuits it is invariably tied to
+#:     the ground plane.  If needed, remove it from this set for multi-supply
+#:     designs.
+GND_ALIASES: frozenset[str] = frozenset(
+    {
+        "0V",
+        "0V0",
+        "0",
+        "GROUND",
+        "EARTH",
+        "GND",
+        "AGND",
+        "PGND",
+        "DGND",
+        "SGND",
+        "VSS",
+    }
+)
+
+
+def normalize_gnd_net_name(name: str) -> str:
+    """Return ``"GND"`` when *name* is a known ground alias; otherwise unchanged.
+
+    Matching is case-insensitive and leading/trailing whitespace is stripped
+    before the lookup.  The canonical output is always the uppercase string
+    ``"GND"``.
+
+    This function is the single authoritative place where ground net aliases
+    are collapsed.  All IR ingestion paths should call it on raw net names so
+    that every downstream consumer (tier assignment, layout, dot builder,
+    schematic writer) sees ``"GND"`` instead of ``"0V"`` or other aliases.
+
+    Examples::
+
+        >>> normalize_gnd_net_name("0V")
+        'GND'
+        >>> normalize_gnd_net_name("GROUND")
+        'GND'
+        >>> normalize_gnd_net_name("net_audio_in")
+        'net_audio_in'
+        >>> normalize_gnd_net_name("  gnd  ")
+        'GND'
+    """
+    if name.strip().upper() in GND_ALIASES:
+        return "GND"
+    return name
+
 
 # ---------------------------------------------------------------------------
 # Layout spacing constants (in millimetres, matching KiCad's internal grid)

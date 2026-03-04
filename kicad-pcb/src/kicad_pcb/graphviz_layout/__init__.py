@@ -41,11 +41,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..circuit_ir import CircuitIR
 
+from ..layout import _compute_opamp_halo as _compute_opamp_halo_layout
 from ..layout import compute_orientations as _compute_orientations
+from ..layout import compute_sds_columns as _compute_sds_columns
+from ..layout import compute_signal_distance_scores as _compute_signal_distance_scores
 from ..layout import detect_stereo_channels as _detect_stereo_channels
 from ..layout import find_feedback_paths as _find_feedback_paths
 from ..tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
 from ..tier import assign_tiers as _assign_tiers
+from ..tier import classify_connector_roles as _classify_connector_roles
 from .cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
 from .dot_builder import (
     _assign_bfs_tiers,
@@ -72,6 +76,7 @@ from .snap import (
     _gv_to_kicad,
     _parse_plain_positions,
     _post_snap_decoupling_caps,
+    _post_stereo_barycentric,
     _snap_feedback_components,
     _snap_power_symbols,
     snap_positions,
@@ -211,8 +216,17 @@ class GraphvizLayoutEngine:
 
         # Detect feedback components (passives that form back-edges).
         _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir)
-        annotations = _find_feedback_paths(ir, _tiers)
+        _roles = _classify_connector_roles(refs, _tiers)
+        annotations = _find_feedback_paths(ir, _tiers, roles=_roles or None)
         feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
+
+        # Compute op-amp halo membership for DOT rank constraints (R4-5)
+        # and the post-layout snap pass (R4-4).
+        halo = _compute_opamp_halo_layout(ir, annotations, _tiers)
+
+        # R2-3: compute SDS-derived column indices to feed rank subgraphs.
+        sds_scores = _compute_signal_distance_scores(ir, _roles)
+        sds_cols = _compute_sds_columns(refs, sds_scores)
 
         # Detect multi-unit IC groups; extract power units for cluster_power.
         _unit_groups = _assign_ic_units_to_tiers(ir, _tiers)
@@ -228,6 +242,9 @@ class GraphvizLayoutEngine:
             feedback_refs=feedback_refs or None,
             power_unit_refs=_power_unit_refs or None,
             tiers=_tiers,
+            connector_roles=_roles or None,
+            halo=halo or None,
+            sds_cols=sds_cols or None,
         )
         cache_key = _layout_cache_key(dot_source)
 
@@ -277,6 +294,8 @@ class GraphvizLayoutEngine:
             annotations=annotations,
             channels=channels,
             decoupling_map=decoupling_map,
+            roles=_roles or None,
+            halo=halo or None,
         )
 
         # Compute component orientations (rotation in degrees) from signal topology
@@ -284,7 +303,7 @@ class GraphvizLayoutEngine:
         _plain_positions: dict[str, tuple[float, float]] = {
             ref: (x, y) for ref, (x, y, _) in result.items()
         }
-        _orientations = _compute_orientations(ir, _plain_positions, _tiers)
+        _orientations = _compute_orientations(ir, _plain_positions, _tiers, roles=_roles or None)
         result = {
             ref: (x, y, float(_orientations.get(ref, 0))) for ref, (x, y, _) in result.items()
         }
@@ -407,6 +426,7 @@ layout_cache_key = _layout_cache_key
 load_layout_cache = _load_layout_cache
 parse_plain_positions = _parse_plain_positions
 post_snap_decoupling_caps = _post_snap_decoupling_caps
+post_stereo_barycentric = _post_stereo_barycentric
 save_layout_cache = _save_layout_cache
 snap_feedback_components = _snap_feedback_components
 snap_power_symbols = _snap_power_symbols

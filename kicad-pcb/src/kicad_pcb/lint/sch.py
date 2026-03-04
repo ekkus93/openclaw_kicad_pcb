@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from typing import TYPE_CHECKING
 
+from ..layout import build_signal_adjacency, count_wire_crossings
 from ..sexpr.nodes import ListNode, StringNode
 from ..sexpr.utils import find_all, find_first, walk
 from .defs import _ERR, _WARN, LintIssue
@@ -36,7 +38,10 @@ from .helpers import (
     _symbol_lib_id,
 )
 
-__all__ = ["lint_schematic", "lint_schematic_layout"]
+if TYPE_CHECKING:
+    from ..circuit_ir import CircuitIR
+
+__all__ = ["lint_schematic", "lint_schematic_layout", "lint_layout_wire_crossings"]
 
 # ---------------------------------------------------------------------------
 # Module-level constants
@@ -462,4 +467,45 @@ def lint_schematic_layout(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912
                 )
             )
 
+    return issues
+
+
+def lint_layout_wire_crossings(
+    positions: dict[str, tuple[float, float]],
+    ir: CircuitIR,
+) -> list[LintIssue]:
+    """LAY007: warn when signal-wire crossing density exceeds 50 %.
+
+    Parameters
+    ----------
+    positions:
+        Mapping ``{ref: (x_mm, y_mm)}`` from
+        :func:`~kicad_pcb.layout.compute_signal_flow_layout`.
+    ir:
+        Parsed :class:`~kicad_pcb.ir.CircuitIR`; used to build the signal
+        adjacency graph.
+
+    Returns
+    -------
+    list[LintIssue]
+        A single LAY007 WARNING when crossings exceed half the total signal
+        wires, otherwise an empty list.
+    """
+    issues: list[LintIssue] = []
+    adj = build_signal_adjacency(ir)
+    total_wires = sum(len(v) for v in adj.values()) // 2
+    if total_wires == 0:
+        return issues
+    crossings = count_wire_crossings(positions, adj)
+    if crossings > 0.5 * total_wires:
+        issues.append(
+            LintIssue(
+                _WARN,
+                "LAY007",
+                f"Layout has {crossings} wire crossing(s) across "
+                f"{total_wires} signal wire(s) "
+                f"(ratio {crossings / total_wires:.0%} > 50%)",
+                path="layout/positions",
+            )
+        )
     return issues

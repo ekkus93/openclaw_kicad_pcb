@@ -31,6 +31,7 @@ import re
 from collections.abc import Sequence
 from pathlib import Path
 
+from .component_types import normalize_gnd_net_name as _normalize_gnd_net_name
 from .errors import UserError
 from .sch_doc import SchematicDoc, read_lib_symbol_pins
 from .sexpr.nodes import ListNode, StringNode
@@ -98,7 +99,7 @@ def collect_existing_net_names(doc: SchematicDoc) -> frozenset[str]:
             and len(item.items) >= 2
             and isinstance(item.items[1], StringNode)
         ):
-            names.add(item.items[1].value)
+            names.add(_normalize_gnd_net_name(item.items[1].value))
     return frozenset(names)
 
 

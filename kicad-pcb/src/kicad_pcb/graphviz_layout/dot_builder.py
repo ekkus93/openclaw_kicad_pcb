@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import re
 from collections import deque
+from collections.abc import Mapping
 from itertools import combinations
 from typing import TYPE_CHECKING
 
@@ -330,6 +331,34 @@ def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> Non
     lines.append("  }")
 
 
+def _emit_halo_constraints(
+    lines: list[str],
+    halo: dict[str, str],
+) -> None:
+    """Append rank=same and invisible-edge constraints for op-amp halo members.
+
+    For each ``{halo_ref: anchor_ic_ref}`` pair emits:
+
+    * An invisible directed edge ``halo_ref \u2192 anchor_ic_ref
+      [style=invis, weight=10, constraint=false]`` to pull the halo member
+      toward the IC without ranking it at a different position.
+    * A ``{ rank=same; ic_id; halo_id }`` subgraph so Graphviz places both
+      in the same column.
+    """
+    # Invisible pull-toward edges (constraint=false so they don't shift ranks).
+    for halo_ref, anchor_ref in sorted(halo.items()):
+        halo_id = _safe_id(halo_ref)
+        anchor_id = _safe_id(anchor_ref)
+        lines.append(f"  {halo_id} -> {anchor_id} [style=invis, weight=10, constraint=false];")
+    # Same-rank subgraphs to co-locate each halo member with its anchor IC.
+    for halo_ref, anchor_ref in sorted(halo.items()):
+        lines.append("  {")
+        lines.append("    rank=same;")
+        lines.append(f"    {_safe_id(anchor_ref)};")
+        lines.append(f"    {_safe_id(halo_ref)};")
+        lines.append("  }")
+
+
 def _emit_decoupling_constraints(
     lines: list[str],
     decoupling_map: dict[str, str],
@@ -354,18 +383,59 @@ def _emit_decoupling_constraints(
         lines.append("  }")
 
 
+def _emit_connector_rank_constraints(
+    lines: list[str],
+    connector_roles: Mapping[str, str],
+) -> None:
+    """Emit explicit ``rank=source`` / ``rank=sink`` subgraphs for connectors.
+
+    This is belt-and-suspenders on top of the tier-based rank subgraphs:
+    even if the longest-path DP and tier-forcing in :func:`assign_tiers`
+    already place connectors in the correct tier groups, explicitly marking
+    them as ``source`` / ``sink`` reinforces the constraint directly in the
+    DOT graph.  Graphviz treats duplicate rank constraints as merged, so
+    including a connector in both a tier group and a connector constraint is
+    safe and idempotent.
+
+    Parameters
+    ----------
+    lines:
+        DOT source lines accumulated so far (appended to in-place).
+    connector_roles:
+        ``{ref: "input" | "output" | "unknown"}`` from
+        :func:`~kicad_pcb.tier.classify_connector_roles`.
+    """
+    inputs = sorted(ref for ref, role in connector_roles.items() if role == "input")
+    outputs = sorted(ref for ref, role in connector_roles.items() if role == "output")
+    if inputs:
+        lines.append("  {")
+        lines.append("    rank=source;")
+        for ref in inputs:
+            lines.append(f"    {_safe_id(ref)};")
+        lines.append("  }")
+    if outputs:
+        lines.append("  {")
+        lines.append("    rank=sink;")
+        for ref in outputs:
+            lines.append(f"    {_safe_id(ref)};")
+        lines.append("  }")
+
+
 # ---------------------------------------------------------------------------
 # Top-level DOT source builder
 # ---------------------------------------------------------------------------
 
 
-def _build_dot_source(
+def _build_dot_source(  # noqa: PLR0912, PLR0913
     ir: CircuitIR,
     *,
     decoupling_map: dict[str, str] | None = None,
     feedback_refs: set[str] | None = None,
     power_unit_refs: set[str] | None = None,
     tiers: dict[str, int] | None = None,
+    connector_roles: Mapping[str, str] | None = None,
+    halo: dict[str, str] | None = None,
+    sds_cols: dict[str, int] | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -424,12 +494,16 @@ def _build_dot_source(
     # accidentally using the potentially-None parameter after this point.
     _tiers = tiers if tiers is not None else _assign_tiers(ir)
 
-    # Group signal-connected refs by tier.
+    # Group signal-connected refs by column.  When SDS-derived column indices
+    # are provided they replace tier-based ranking so Graphviz spreads
+    # components according to signal-flow position rather than longest-path
+    # tier depth.  Fall back to tier-based grouping when sds_cols is absent.
+    _col_source: dict[str, int] = sds_cols if sds_cols is not None else _tiers
     tier_groups: dict[int, list[str]] = {}
     for ref in refs:
         if ref in power_only_refs:
             continue
-        tier_groups.setdefault(_tiers.get(ref, 0), []).append(ref)
+        tier_groups.setdefault(_col_source.get(ref, 0), []).append(ref)
 
     # Emit component nodes.
     for ref in refs:
@@ -439,6 +513,11 @@ def _build_dot_source(
     # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
     # rank=same for all intermediate tiers.
     _emit_tier_subgraphs(lines, tier_groups)
+
+    # Reinforce connector source/sink constraints (belt-and-suspenders on top
+    # of the tier subgraphs; merged/idempotent if already in the correct tier).
+    if connector_roles:
+        _emit_connector_rank_constraints(lines, connector_roles)
 
     # Emit net nodes + directional edges.
     # For each signal net, sort pins by ascending BFS tier so edges flow
@@ -480,6 +559,11 @@ def _build_dot_source(
     # disrupt the power cluster.
     if feedback_refs:
         _emit_feedback_constraints(lines, feedback_refs)
+
+    # Op-amp halo: rank=same + pull-toward edges co-locate feedback network
+    # passives in the same DOT column as their anchor IC.
+    if halo:
+        _emit_halo_constraints(lines, halo)
 
     lines.append("}")
     return "\n".join(lines)
