@@ -31,7 +31,7 @@ import logging
 import re
 from collections import deque
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from .component_types import (
     ORIGIN_X_MM,
@@ -46,10 +46,16 @@ __all__ = [
     "assign_tiers",
     "assign_ic_units_to_tiers",
     "choose_seed_connector",
+    "classify_connector_roles",
+    "ConnectorRole",
     "IcUnitGroup",
     "TIER_SPACING_MM",
     "ORIGIN_X_MM",
 ]
+
+#: I/O role for a connector: ``"input"`` (signal source), ``"output"``
+#: (signal sink), or ``"unknown"`` (cannot be determined from topology).
+ConnectorRole = Literal["input", "output", "unknown"]
 
 _log = logging.getLogger(__name__)
 
@@ -425,6 +431,58 @@ def _choose_seed_connector(
 
 
 # ---------------------------------------------------------------------------
+# Step 4c — Connector I/O role classification (Rule 0)
+# ---------------------------------------------------------------------------
+
+
+def _classify_connector_roles(
+    refs: list[str],
+    tiers: dict[str, int],
+) -> dict[str, ConnectorRole]:
+    """Return the I/O role for each connector ref based on its tier position.
+
+    Uses the tier values from :func:`_longest_path_dp` to classify connectors
+    as *input* (signal source) or *output* (signal sink):
+
+    * **input** — connector at tier ``0``; it is the BFS seed and sits at the
+      leftmost position in the signal-flow layout.
+    * **output** — connector at ``max_tier`` (where ``max_tier > 0``); it is
+      the farthest-downstream component and belongs on the right edge of the
+      schematic.
+    * **unknown** — connector at any intermediate tier (not 0, not max_tier),
+      or when ``max_tier == 0`` and the circuit is a single-tier graph.
+
+    Parameters
+    ----------
+    refs:
+        All component references in the circuit.
+    tiers:
+        ``{ref: tier_index}`` from :func:`_longest_path_dp`.
+
+    Returns
+    -------
+    dict[str, ConnectorRole]
+        One entry per connector ref in *refs*.
+        Non-connector refs are not included in the result.
+    """
+    connectors = [r for r in refs if component_type(r) == "connector"]
+    if not connectors:
+        return {}
+
+    max_tier = max(tiers.values(), default=0)
+    result: dict[str, ConnectorRole] = {}
+    for ref in connectors:
+        t = tiers.get(ref, 0)
+        if t == max_tier and max_tier > 0:
+            result[ref] = "output"
+        elif t == 0:
+            result[ref] = "input"
+        else:
+            result[ref] = "unknown"
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -474,7 +532,32 @@ def assign_tiers(ir: CircuitIR) -> dict[str, int]:
     _break_cycles(refs, succ, pred, pair_count)
 
     # Step 4: longest-path DP.
-    return _longest_path_dp(refs, succ, pred)
+    lp_tiers = _longest_path_dp(refs, succ, pred)
+
+    # Step 4c: classify connector I/O roles and enforce tier pinning (Rule 0).
+    # Output connectors are forced to max_tier; input connectors to tier 0.
+    # In a correctly processed circuit the DP already achieves this; the
+    # forcing guards against edge cases (e.g. single-hop output pats, ties).
+    roles = _classify_connector_roles(refs, lp_tiers)
+    max_tier = max(lp_tiers.values(), default=0)
+    for ref, role in roles.items():
+        if role == "output" and lp_tiers.get(ref, 0) != max_tier:
+            _log.debug(
+                "tier: forcing %r to output tier %d (was %d)",
+                ref,
+                max_tier,
+                lp_tiers[ref],
+            )
+            lp_tiers[ref] = max_tier
+        elif role == "input" and lp_tiers.get(ref, 0) != 0:
+            _log.debug(
+                "tier: forcing %r to input tier 0 (was %d)",
+                ref,
+                lp_tiers[ref],
+            )
+            lp_tiers[ref] = 0
+
+    return lp_tiers
 
 
 def assign_ic_units_to_tiers(
@@ -551,3 +634,6 @@ def assign_ic_units_to_tiers(
 
 #: Public alias for :func:`_choose_seed_connector`.
 choose_seed_connector = _choose_seed_connector
+
+#: Public alias for :func:`_classify_connector_roles`.
+classify_connector_roles = _classify_connector_roles

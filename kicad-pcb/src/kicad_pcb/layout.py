@@ -7,9 +7,11 @@ components end up adjacent to each other.
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import defaultdict, deque
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -19,6 +21,10 @@ if TYPE_CHECKING:
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
+from .tier import assign_tiers as _assign_tiers_tier
+from .tier import classify_connector_roles as _classify_connector_roles_tier
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Page dimensions (mm) — must match lint.py _LAY_PAGE_MAX_X / _LAY_PAGE_MAX_Y.
@@ -58,6 +64,9 @@ _SOURCE_PREFIXES: tuple[str, ...] = _CONNECTOR_PREFIXES_CT
 
 # Hard cap on BFS depth to prevent runaway on pathological inputs.
 _MAX_COLS: int = 20
+
+# Maximum number of remediation barycentric sweeps (R6-2).
+_MAX_REMEDIATION_SWEEPS: int = 3
 
 # Op-amp / IC prefixes — kept at standard 0° orientation (inputs left, out right).
 # Imported from component_types to avoid duplication.
@@ -163,24 +172,448 @@ def _bfs_columns(
     return col
 
 
+#: Sentinel BFS distance for components unreachable from a connector direction.
+_SDS_SENTINEL: int = 1000
+
+
+def _bfs_distances(
+    adjacency: dict[str, set[str]],
+    seeds: list[str],
+) -> dict[str, int]:
+    """Return BFS distances from *seeds* over *adjacency*.
+
+    Unreachable nodes are absent from the result.
+    """
+    dist: dict[str, int] = {}
+    queue: deque[str] = deque()
+    for s in seeds:
+        if s not in dist:
+            dist[s] = 0
+            queue.append(s)
+    while queue:
+        ref = queue.popleft()
+        d = dist[ref]
+        for nbr in adjacency.get(ref, set()):
+            if nbr not in dist:
+                dist[nbr] = d + 1
+                queue.append(nbr)
+    return dist
+
+
+def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0912
+    """Return ``{cap_ref: ic_ref}`` for bypass/decoupling capacitors.
+
+    Mirrors :func:`~kicad_pcb.graphviz_layout.dot_builder._find_decoupling_caps`
+    but uses :func:`_is_power_net_layout` so the two passes agree on net
+    classification.
+    """
+    ref_to_nets: dict[str, list[str]] = {}
+    net_to_refs: dict[str, list[str]] = {}
+    for net in ir.nets:
+        for pin in net.pins:
+            ref_to_nets.setdefault(pin.ref, []).append(net.name)
+            net_to_refs.setdefault(net.name, []).append(pin.ref)
+
+    result: dict[str, str] = {}
+    for comp in ir.components:
+        if not comp.ref.upper().startswith("C"):
+            continue
+        nets_for_cap = ref_to_nets.get(comp.ref, [])
+        signal_nets = [n for n in nets_for_cap if not _is_power_net_layout(n)]
+        power_nets = [n for n in nets_for_cap if _is_power_net_layout(n)]
+        if len(signal_nets) != 1 or not power_nets:
+            continue
+        signal_net = signal_nets[0]
+        for neighbor_ref in net_to_refs.get(signal_net, []):
+            if neighbor_ref == comp.ref:
+                continue
+            neighbor_upper = neighbor_ref.upper()
+            if any(neighbor_upper.startswith(p) for p in _CONNECTOR_PREFIXES_CT):
+                continue
+            if neighbor_upper.startswith("C"):
+                continue
+            result[comp.ref] = neighbor_ref
+            break
+    return result
+
+
+def compute_signal_distance_scores(
+    ir: CircuitIR,
+    roles: Mapping[str, str],
+) -> dict[str, float]:
+    """Compute Signal Distance Score (SDS) for every component in *ir*.
+
+    The SDS captures where a component sits in the signal chain:
+    0.0 = at the input, 1.0 = at the output, 0.5 = mid-chain.
+
+    Algorithm
+    ---------
+    1. Build the undirected signal-only adjacency graph.
+    2. BFS from all *input* connectors to obtain *d_in* (distance to the
+       nearest input).
+    3. BFS from all *output* connectors to obtain *d_out* (distance to the
+       nearest output).
+    4. ``SDS(c) = d_in / (d_in + d_out)``.
+       * Unreachable components use a sentinel distance of
+         :data:`_SDS_SENTINEL` = 1000.
+       * When both distances are 0 (isolated or single-component), SDS = 0.5.
+    5. Power-only decoupling caps inherit the SDS of their anchor IC.
+
+    Parameters
+    ----------
+    ir:
+        Circuit IR.
+    roles:
+        ``{connector_ref: role}`` where role is ``"input"``, ``"output"``,
+        or ``"unknown"``; as returned by
+        :func:`~kicad_pcb.tier.classify_connector_roles`.
+
+    Returns
+    -------
+    dict[str, float]
+        ``{ref: sds}`` for every component.  Values in ``[0.0, 1.0]``
+        except for degenerate cases (both distances 0) which return 0.5.
+    """
+    sig_adj = _build_signal_adjacency(ir)
+
+    input_seeds = [r for r, role in roles.items() if role == "input"]
+    output_seeds = [r for r, role in roles.items() if role == "output"]
+
+    d_in = _bfs_distances(sig_adj, input_seeds)
+    d_out = _bfs_distances(sig_adj, output_seeds)
+
+    result: dict[str, float] = {}
+    for comp in ir.components:
+        ref = comp.ref
+        di = d_in.get(ref, _SDS_SENTINEL)
+        do = d_out.get(ref, _SDS_SENTINEL)
+        if di == 0 and do == 0:
+            result[ref] = 0.5
+        else:
+            result[ref] = di / (di + do)
+
+    # Power-only decoupling caps inherit SDS from their anchor IC.
+    for cap_ref, ic_ref in _find_decoupling_caps_layout(ir).items():
+        if ic_ref in result:
+            result[cap_ref] = result[ic_ref]
+
+    return result
+
+
+def _recursive_halving(  # noqa: PLR0913
+    refs: list[str],
+    sds: dict[str, float],
+    x_lo: float,
+    x_hi: float,
+    *,
+    max_per_col: int = MAX_ROWS_PER_COL,
+    grid_col_mm: float = GRID_COL_MM,
+) -> dict[str, int]:
+    """Assign column indices by recursively halving the SDS-sorted component set.
+
+    Components are sorted by :data:`SDS` score and split at the median.
+    Each half is recursively assigned to the lower or upper part of the
+    current spatial band ``[x_lo, x_hi)``.
+
+    Recursion stops when the group is small enough (``len ≤ max_per_col``) or
+    the band is narrower than one grid column (``x_hi − x_lo < grid_col_mm``).
+    At the base case all *refs* in the slice receive the column index
+    corresponding to *x_lo*.
+
+    Parameters
+    ----------
+    refs:
+        All component references to assign.
+    sds:
+        ``{ref: sds_score}`` as returned by :func:`compute_signal_distance_scores`.
+    x_lo, x_hi:
+        Left and right edges (mm) of the spatial band available for this
+        recursive call.  The caller should pass ``ORIGIN_X`` and
+        ``ORIGIN_X + _MAX_COLS * GRID_COL_MM`` for the top-level call.
+    max_per_col:
+        Maximum number of components allowed in one column before forcing a
+        split.  Defaults to :data:`MAX_ROWS_PER_COL`.
+    grid_col_mm:
+        Width of one schematic column in mm.  Defaults to :data:`GRID_COL_MM`.
+
+    Returns
+    -------
+    dict[str, int]
+        ``{ref: col_index}`` where *col_index* = ``round((x_lo - ORIGIN_X) /
+        grid_col_mm)`` at the base-case leaf.
+    """
+    result: dict[str, int] = {}
+    _rh_recurse(refs, sds, x_lo, x_hi, max_per_col, grid_col_mm, result)
+    return result
+
+
+def _rh_recurse(  # noqa: PLR0913
+    refs: list[str],
+    sds: dict[str, float],
+    x_lo: float,
+    x_hi: float,
+    max_per_col: int,
+    grid_col_mm: float,
+    out: dict[str, int],
+) -> None:
+    """Recursive worker for :func:`_recursive_halving`."""
+    if not refs:
+        return
+    col_idx = round((x_lo - ORIGIN_X) / grid_col_mm)
+    band = x_hi - x_lo
+    if len(refs) <= max_per_col or band < grid_col_mm:
+        for r in refs:
+            out[r] = col_idx
+        return
+    sorted_refs = sorted(refs, key=lambda r: (sds.get(r, 0.5), r))
+    mid = len(sorted_refs) // 2
+    x_mid = (x_lo + x_hi) / 2
+    _rh_recurse(sorted_refs[:mid], sds, x_lo, x_mid, max_per_col, grid_col_mm, out)
+    _rh_recurse(sorted_refs[mid:], sds, x_mid, x_hi, max_per_col, grid_col_mm, out)
+
+
+def compute_sds_columns(
+    refs: list[str],
+    sds: dict[str, float],
+) -> dict[str, int]:
+    """Convert SDS scores to column indices via :func:`_recursive_halving`.
+
+    This is the public entry-point that wires in the standard page constants
+    (:data:`ORIGIN_X`, :data:`_MAX_COLS`, :data:`GRID_COL_MM`,
+    :data:`MAX_ROWS_PER_COL`) so callers do not need to repeat them.
+
+    Parameters
+    ----------
+    refs:
+        All component references.
+    sds:
+        ``{ref: sds_score}`` from :func:`compute_signal_distance_scores`.
+
+    Returns
+    -------
+    dict[str, int]
+        ``{ref: col_index}`` — monotone in SDS order.
+    """
+    return _recursive_halving(
+        refs,
+        sds,
+        ORIGIN_X,
+        ORIGIN_X + _MAX_COLS * GRID_COL_MM,
+        max_per_col=MAX_ROWS_PER_COL,
+        grid_col_mm=GRID_COL_MM,
+    )
+
+
+def build_signal_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
+    """Return the undirected signal-net adjacency graph for *ir*.
+
+    Power nets are excluded so only signal paths influence the result.
+    Public wrapper for the internal :func:`_build_signal_adjacency`.
+    """
+    return _build_signal_adjacency(ir)
+
+
+def count_wire_crossings(
+    positions: dict[str, tuple[float, float]],
+    adjacency: dict[str, set[str]],
+) -> int:
+    """Count wire crossings in a schematic layout using the endpoint inversion heuristic.
+
+    Two wires ``(A, B)`` and ``(C, D)`` are considered to **cross** when
+    their left endpoints (lower x) are in opposite vertical order relative
+    to their right endpoints, as defined by:
+
+    * ``x(A) < x(C)`` and ``y(A) > y(C)`` (left-endpoint row inversion), OR
+    * ``x(A) < x(C)`` and ``y(B) > y(D)`` (right-endpoint row inversion)
+
+    Same-column adjacency (``x(A) == x(C)``) is excluded.
+
+    Parameters
+    ----------
+    positions:
+        ``{ref: (x_mm, y_mm)}`` for all components.
+    adjacency:
+        Undirected signal-net adjacency ``{ref: {neighbour_ref, …}}``.
+        Only signal-net neighbours should be included (power nets excluded).
+
+    Returns
+    -------
+    int
+        Total number of crossing wire pairs.  Returns 0 for layouts with
+        fewer than 2 edges.
+    """
+    # Build deduplicated edge list, each edge normalised (left, right) by x, then y.
+    seen: set[tuple[str, str]] = set()
+    edges: list[tuple[str, str]] = []
+    for a, nbrs in adjacency.items():
+        if a not in positions:
+            continue
+        for b in nbrs:
+            if b not in positions:
+                continue
+            key = (min(a, b), max(a, b))
+            if key not in seen:
+                seen.add(key)
+                xa, ya = positions[a]
+                xb, yb = positions[b]
+                # Normalize: left = lower x; ties broken by lower y.
+                if (xa, ya) <= (xb, yb):
+                    edges.append((a, b))
+                else:
+                    edges.append((b, a))
+
+    n = len(edges)
+    if n < 2:
+        return 0
+
+    crossings = 0
+    for i in range(n):
+        la, ra = edges[i]
+        xl, yl = positions[la]
+        xr, yr = positions[ra]
+        for j in range(i + 1, n):
+            lc, rc = edges[j]
+            xcl, ycl = positions[lc]
+            xcr, ycr = positions[rc]
+            if xl < xcl and (yl > ycl or yr > ycr):
+                # Edge i is left of edge j; row order inverted → crossing.
+                crossings += 1
+            elif xcl < xl and (ycl > yl or ycr > yr):
+                # Edge j is left of edge i; row order inverted → crossing.
+                crossings += 1
+            # xl == xcl: same column — excluded per spec.
+
+    return crossings
+
+
+def _barycentric_sort(
+    by_col: dict[int, list[str]],
+    adjacency: dict[str, set[str]],
+    *,
+    passes: int = 2,
+) -> dict[int, list[str]]:
+    """Return a copy of *by_col* with each column\'s member list sorted to minimise
+    wire crossings using a two-pass barycentric sweep.
+
+    Each full sweep consists of two direction passes:
+
+    * **Pass 1 (left → right):** for each column ``k > 0``, sort members by
+      the average row-index of their signal-adjacent neighbours in column
+      ``k-1``.  Updates are sequential so column ``k`` sees the already-sorted
+      order of column ``k-1``.
+    * **Pass 2 (right → left):** symmetrically sort each column ``k <
+      max_col`` by the average row-index of neighbours in column ``k+1``.
+
+    The *row-index* of a component is its position (0-based) in the
+    current column list, which changes as each column is sorted.
+
+    When a component has no signal-adjacent neighbour in the reference column,
+    its own current row-index is used as a neutral fallback so it stays
+    stable relative to components that do have cross-column neighbours.
+
+    Parameters
+    ----------
+    by_col:
+        ``{col_index: [ref, …]}`` — initial column membership and ordering.
+        The value lists are used to determine the initial row order only;
+        the returned dict contains fresh sorted copies.
+    adjacency:
+        Undirected signal-net adjacency ``{ref: {neighbour_ref, …}}``.
+        Power-net neighbours should be excluded by the caller.
+    passes:
+        Number of full sweeps (each sweep = one L→R pass + one R→L pass).
+        Default is 2.
+
+    Returns
+    -------
+    dict[int, list[str]]
+        ``{col_index: [ref, …]}`` — same keys as *by_col* but with each
+        list sorted to reduce crossings.
+    """
+    if not by_col:
+        return {}
+
+    sorted_cols = sorted(by_col)
+    result: dict[int, list[str]] = {k: list(v) for k, v in by_col.items()}
+
+    # ref → column index (static — only ordering within cols changes).
+    ref_to_col: dict[str, int] = {ref: k for k, members in result.items() for ref in members}
+
+    def _row_map() -> dict[str, int]:
+        return {ref: i for k in sorted_cols for i, ref in enumerate(result[k])}
+
+    def _avg_nbr_row(
+        ref: str,
+        target_col: int,
+        row_map: dict[str, int],
+    ) -> float:
+        nbrs = [r for r in adjacency.get(ref, set()) if ref_to_col.get(r) == target_col]
+        if nbrs:
+            return sum(row_map[r] for r in nbrs) / len(nbrs)
+        # No cross-col neighbour: use own row index for a stable neutral weight.
+        return float(row_map.get(ref, 0))
+
+    for _ in range(passes):
+        # Pass 1: left → right.
+        rm = _row_map()
+        for i, k in enumerate(sorted_cols):
+            if i == 0:
+                # Column 0 has no left neighbour — skip in L→R pass.
+                # It will be sorted in the R→L pass using col1 as the reference,
+                # so subsequent sweeps see the R→L-improved col0 ordering.
+                continue
+            prev_k = sorted_cols[i - 1]
+            result[k].sort(
+                key=lambda r, _pk=prev_k, _rm=rm: (_avg_nbr_row(r, _pk, _rm), r)  # type: ignore[misc]  # mypy cannot infer lambda default-arg types
+            )
+            for j, ref in enumerate(result[k]):
+                rm[ref] = j
+
+        # Pass 2: right → left.
+        rm = _row_map()
+        for i in range(len(sorted_cols) - 2, -1, -1):
+            k = sorted_cols[i]
+            next_k = sorted_cols[i + 1]
+            result[k].sort(
+                key=lambda r, _nk=next_k, _rm=rm: (_avg_nbr_row(r, _nk, _rm), r)  # type: ignore[misc]  # mypy cannot infer lambda default-arg types
+            )
+            for j, ref in enumerate(result[k]):
+                rm[ref] = j
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 
-def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
+def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
+    ir: CircuitIR,
+    halo: dict[str, str] | None = None,
+    roles: Mapping[str, str] | None = None,
+) -> dict[str, tuple[float, float]]:
     """Return ``{ref: (x, y)}`` placements for all components in *ir*.
 
     Algorithm
     ---------
     1. Build an undirected adjacency graph keyed on reference designators.
        Two components are adjacent when they share at least one net.
-    2. BFS from connector/source nodes (refs whose prefix matches
-       :data:`_SOURCE_PREFIXES`) to assign a *column* index (= BFS depth,
-       capped at :data:`_MAX_COLS`) to every component.  If no connector
-       refs exist the most-connected component is used as seed.
-    3. Within each column, sort components by their average neighbour column
-       to reduce wire crossings.
+    2. Assign column indices via one of two strategies:
+
+       * **SDS recursive halving** (R2) — used when *roles* contains at
+         least one input and one output connector.  Computes a Signal
+         Distance Score for each component via BFS from input and output
+         connectors, then assigns columns by recursively halving the
+         SDS-sorted list.
+       * **BFS fallback** — used when *roles* is ``None`` or lacks a
+         required connector type.  A WARNING is logged when *roles* is
+         provided but incomplete.
+
+    3. Within each column, sort components using a two-pass barycentric sweep
+       (:func:`_barycentric_sort`) to reduce wire crossings: pass 1 sorts
+       left-to-right using neighbours' row positions in the previous column;
+       pass 2 sorts right-to-left using the next column.
     4. Map ``(column, row)`` pairs to ``(x, y)`` mm coordinates.
 
     Components not reachable from any seed are placed one column past the
@@ -200,7 +633,29 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
         # Fall back to the most-connected node as seed.
         seeds = [max(refs, key=lambda r: len(adjacency.get(r, set())))]
 
-    col = _bfs_columns(refs, adjacency, seeds)
+    # R2-2: prefer SDS-based recursive halving when connector roles are known;
+    # fall back to BFS when roles are missing or incomplete (R2-4).
+    if roles is not None:
+        input_refs = [r for r, role in roles.items() if role == "input"]
+        output_refs = [r for r, role in roles.items() if role == "output"]
+        if not input_refs or not output_refs:
+            _log.warning(
+                "SDS fallback: missing %s connector(s); using BFS column assignment.",
+                "input" if not input_refs else "output",
+            )
+            col = _bfs_columns(refs, adjacency, seeds)
+        else:
+            sds_scores = compute_signal_distance_scores(ir, roles)
+            col = _recursive_halving(
+                refs,
+                sds_scores,
+                ORIGIN_X,
+                ORIGIN_X + _MAX_COLS * GRID_COL_MM,
+                max_per_col=MAX_ROWS_PER_COL,
+                grid_col_mm=GRID_COL_MM,
+            )
+    else:
+        col = _bfs_columns(refs, adjacency, seeds)
 
     # --- Post-BFS: co-locate power-only passives with their anchor IC -------
     # A decoupling capacitor (or similar passive) that connects *only* through
@@ -231,16 +686,58 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
         col[r] = min(anchor_col + 1, max_bfs_col)
     # -------------------------------------------------------------------------
 
-    # Sort within each column by average-neighbour-column to cut crossings.
+    # R4-2: force halo members into the same column as their anchor IC so
+    # the feedback network shares a visual column with the op-amp stage.
+    if halo:
+        for halo_ref, anchor_ref in halo.items():
+            if halo_ref in col and anchor_ref in col:
+                old_col = col[halo_ref]
+                new_col = col[anchor_ref]
+                if old_col != new_col:
+                    _log.debug(
+                        "halo: forcing %r column %d \u2192 %d (anchor %r)",
+                        halo_ref,
+                        old_col,
+                        new_col,
+                        anchor_ref,
+                    )
+                    col[halo_ref] = new_col
+
+    # R3-2: two-pass barycentric sort across all columns to reduce wire crossings.
     by_col: dict[int, list[str]] = defaultdict(list)
     for r, c in col.items():
         by_col[c].append(r)
 
-    def _avg_nbr_col(ref: str) -> float:
-        nbrs = adjacency.get(ref, set())
-        if not nbrs:
-            return 0.0
-        return sum(col.get(n, 0) for n in nbrs) / len(nbrs)
+    # Use signal-only adjacency for barycentric weights (power nets excluded).
+    by_col = _barycentric_sort(by_col, sig_adj)
+
+    # R6-2: crossing remediation — if crossing ratio ≥ 0.30, run up to
+    # _MAX_REMEDIATION_SWEEPS total barycentric sweeps.
+    _total_sig_wires = sum(len(v) for v in sig_adj.values()) // 2
+    if _total_sig_wires > 0:
+        for _sweep in range(_MAX_REMEDIATION_SWEEPS):
+            _tentative: dict[str, tuple[float, float]] = {
+                ref: (ORIGIN_X + ci * GRID_COL_MM, ORIGIN_Y + ri * GRID_ROW_MM)
+                for ci, mems in by_col.items()
+                for ri, ref in enumerate(mems)
+            }
+            _crossings = count_wire_crossings(_tentative, sig_adj)
+            _ratio = _crossings / _total_sig_wires
+            _log.debug(
+                "R6: sweep %d crossings=%d wires=%d ratio=%.2f",
+                _sweep + 1,
+                _crossings,
+                _total_sig_wires,
+                _ratio,
+            )
+            if _ratio < 0.30 or _sweep == _MAX_REMEDIATION_SWEEPS - 1:
+                break
+            _log.debug(
+                "R6: ratio %.2f >= 0.30; running remediation sweep %d",
+                _ratio,
+                _sweep + 2,
+            )
+            by_col = _barycentric_sort(by_col, sig_adj)
 
     # Assign coordinates, wrapping tall BFS-columns into sub-columns so the
     # layout stays within a single A4 page.  Each BFS-column occupies at
@@ -253,13 +750,27 @@ def compute_signal_flow_layout(ir: CircuitIR) -> dict[str, tuple[float, float]]:
     positions: dict[str, tuple[float, float]] = {}
     visual_col = 0
     for c_num, members in sorted(by_col.items()):
-        members.sort(key=_avg_nbr_col)
+        # Members are already in barycentric order; IC-centring (R4-3) then
+        # re-interleaves them so op-amps land in the visual middle of the column.
         # Centre op-amps: split into IC refs and others, interleave so ICs
         # occupy the middle rows of the column.
         ic_refs = [r for r in members if any(r.upper().startswith(p) for p in _OP_AMP_PREFIXES)]
         other_refs = [r for r in members if r not in set(ic_refs)]
-        mid = len(other_refs) // 2
-        ordered = other_refs[:mid] + ic_refs + other_refs[mid:]
+        # R4-3: halo members sit immediately adjacent to the IC; non-halo
+        # others are pushed to the column edges so the feedback network
+        # wraps tightly around the op-amp symbol.
+        _halo_set = set(halo) if halo else set()
+        halo_other = [r for r in other_refs if r in _halo_set]
+        plain_other = [r for r in other_refs if r not in _halo_set]
+        mid_plain = len(plain_other) // 2
+        mid_halo = len(halo_other) // 2
+        ordered = (
+            plain_other[:mid_plain]
+            + halo_other[:mid_halo]
+            + ic_refs
+            + halo_other[mid_halo:]
+            + plain_other[mid_plain:]
+        )
         num_sub = max(1, math.ceil(len(ordered) / MAX_ROWS_PER_COL))
         for idx, ref in enumerate(ordered):
             sub = idx // MAX_ROWS_PER_COL
@@ -379,10 +890,11 @@ def _series_passive_rotation(
     return 90 if total_dy > total_dx else 0
 
 
-def compute_orientations(
+def compute_orientations(  # noqa: PLR0912
     ir: CircuitIR,
     positions: dict[str, tuple[float, float]],
     tiers: dict[str, int] | None = None,
+    roles: Mapping[str, str] | None = None,
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
@@ -399,12 +911,18 @@ def compute_orientations(
         tier 0 → 0° (input, pins point right); max tier → 180° (output,
         pins point left toward the circuit).  When *None*, all connectors
         default to 0°.
+    roles:
+        Optional ``{ref: "input" | "output" | "unknown"}`` from
+        :func:`~kicad_pcb.tier.classify_connector_roles`.  When provided,
+        role takes precedence over tier for connector orientation: ``"output"``
+        → 180°; ``"input"`` / ``"unknown"`` → 0°.
 
     Rules (applied in priority order)
     -----------------------------------
     * **Connectors** (J/CON/P/SJ/TJ):
-      - With *tiers*: tier 0 → 0°; max tier → 180°; intermediate → 0°.
-      - Without *tiers*: always 0°.
+      - With *roles*: ``"output"`` → 180°; ``"input"`` / ``"unknown"`` → 0°.
+      - With *tiers* (fallback): tier 0 → 0°; max tier → 180°; intermediate → 0°.
+      - Without either: always 0°.
     * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
       left and output on the right, which is correct for the usual KiCad symbols.
     * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1 signal-net
@@ -446,9 +964,11 @@ def compute_orientations(
         ref = comp.ref
         upper = ref.upper()
 
-        # Connectors: 0° for input (tier 0), 180° for output (max tier).
+        # Connectors: prefer role-based orientation; fall back to tier-based.
         if any(upper.startswith(pfx) for pfx in _SOURCE_PREFIXES):
-            if tiers is not None and _max_tier > 0:
+            if roles is not None and ref in roles:
+                result[ref] = 180 if roles[ref] == "output" else 0
+            elif tiers is not None and _max_tier > 0:
                 result[ref] = 180 if tiers.get(ref, 0) == _max_tier else 0
             else:
                 result[ref] = 0
@@ -483,14 +1003,21 @@ class ComponentAnnotation:
     feedback:
         ``True`` when the component has been identified as a feedback
         (back-edge) element by :func:`find_feedback_paths`.
+    sds:
+        Signal Distance Score in ``[0.0, 1.0]``:  0.0 = at the input
+        connector, 1.0 = at the output connector, 0.5 = mid-chain or
+        unknown.  Populated by :func:`find_feedback_paths` when *roles*
+        are supplied.
     """
 
     feedback: bool = False
+    sds: float = 0.5
 
 
 def find_feedback_paths(
     ir: CircuitIR,
     tiers: dict[str, int],
+    roles: Mapping[str, str] | None = None,
 ) -> dict[str, ComponentAnnotation]:
     """Detect passive components that act as feedback (back-edge) connections.
 
@@ -574,6 +1101,110 @@ def find_feedback_paths(
                 break
 
         result[ref] = ComponentAnnotation(feedback=is_feedback)
+
+    # R1-3: populate SDS scores when connector roles are provided.
+    if roles:
+        sds_scores = compute_signal_distance_scores(ir, roles)
+        for ref in list(result):
+            result[ref] = ComponentAnnotation(
+                feedback=result[ref].feedback,
+                sds=sds_scores.get(ref, 0.5),
+            )
+
+    return result
+
+
+def _compute_opamp_halo(  # noqa: PLR0912
+    ir: CircuitIR,
+    annotations: dict[str, ComponentAnnotation],
+    tiers: dict[str, int],
+) -> dict[str, str]:
+    """Detect passive components that belong to an op-amp's halo network.
+
+    A component is a **halo member** when ALL of the following hold:
+
+    1. It is a passive (``R``, ``C``, or ``L`` prefix).
+    2. ``annotations[ref].feedback is True`` (back-edge topology detected by
+       :func:`find_feedback_paths`), **OR** all of its signal-net neighbours
+       belong to exactly one IC and there are no other (non-IC) signal
+       neighbours (*exclusive IC coupling*).
+    3. It does *not* connect to any power net (not a shunt/bypass component).
+
+    For each qualifying component the anchor IC is chosen as the IC in the
+    signal neighbourhood that is closest in tier distance (alphabetical
+    tiebreak).
+
+    Parameters
+    ----------
+    ir:
+        Circuit IR.
+    annotations:
+        Per-component annotations from :func:`find_feedback_paths`.
+    tiers:
+        ``{ref: tier_index}`` from :func:`~kicad_pcb.tier.assign_tiers`.
+        Used to choose the closest-tier anchor when multiple ICs are
+        signal-adjacent to the halo candidate.
+
+    Returns
+    -------
+    dict[str, str]
+        ``{halo_ref: anchor_ic_ref}`` — one entry per halo member.  Empty
+        when the circuit has no op-amp halo topology.
+    """
+    # Build set of refs that appear on any power net (condition 3).
+    power_refs: set[str] = set()
+    for net in ir.nets:
+        if _is_power_net_layout(net.name):
+            for pin in net.pins:
+                power_refs.add(pin.ref)
+
+    # Build signal-net neighbour sets per component.
+    sig_nbrs: dict[str, set[str]] = defaultdict(set)
+    for net in ir.nets:
+        if _is_power_net_layout(net.name):
+            continue
+        pin_refs_net = [p.ref for p in net.pins]
+        for ref_i in pin_refs_net:
+            for ref_j in pin_refs_net:
+                if ref_i != ref_j:
+                    sig_nbrs[ref_i].add(ref_j)
+
+    result: dict[str, str] = {}
+    for comp in ir.components:
+        ref = comp.ref
+        upper = ref.upper()
+
+        # Condition 1: must be a passive (R, C, L).
+        if not any(upper.startswith(p) for p in _PASSIVE_PREFIXES):
+            continue
+
+        # Condition 3: must not appear on any power net.
+        if ref in power_refs:
+            continue
+
+        nbrs = sig_nbrs.get(ref, set())
+        ic_set = {n for n in nbrs if any(n.upper().startswith(p) for p in _OP_AMP_PREFIXES)}
+        if not ic_set:
+            continue  # No IC anchor available.
+
+        # Condition 2a: feedback annotation from find_feedback_paths.
+        ann = annotations.get(ref)
+        is_feedback = ann is not None and ann.feedback
+
+        # Condition 2b: exclusive IC coupling — all signal neighbours are a
+        # single IC with no other components mixed in.
+        non_ic_nbrs = nbrs - ic_set
+        is_exclusive = len(ic_set) == 1 and not non_ic_nbrs
+
+        if not (is_feedback or is_exclusive):
+            continue
+
+        # Choose anchor IC: closest in tier distance, alphabetical tiebreak.
+        anchor = min(
+            ic_set,
+            key=lambda n: (abs(tiers.get(n, 0) - tiers.get(ref, 0)), n),
+        )
+        result[ref] = anchor
 
     return result
 
@@ -662,15 +1293,31 @@ class HeuristicLayoutEngine:
     not supported (always returns ``None`` for the third tuple element).
     """
 
+    def __init__(self) -> None:
+        # R6-3: track crossing count from the last layout so callers and
+        # lint rules can inspect it without re-running the full engine.
+        self.last_crossing_count: int = 0
+
     def compute_symbol_positions(
         self,
         ir: CircuitIR,
     ) -> dict[str, tuple[float, float, float | None]]:
         """Delegate to :func:`compute_signal_flow_layout`.
 
+        Pre-computes op-amp halo membership (R4) so the BFS column assignment
+        and intra-column row ordering co-locate feedback network passives with
+        their anchor IC.
+
         Returns ``{ref: (x_mm, y_mm, None)}`` — rotation is always ``None``.
         """
-        raw = compute_signal_flow_layout(ir)
+        refs = sorted(c.ref for c in ir.components)
+        _tiers = _assign_tiers_tier(ir)
+        _roles = _classify_connector_roles_tier(refs, _tiers)
+        annotations = find_feedback_paths(ir, _tiers, roles=_roles or None)
+        halo = _compute_opamp_halo(ir, annotations, _tiers)
+        raw = compute_signal_flow_layout(ir, halo=halo or None, roles=_roles or None)
+        # R6-3: store crossing count for external inspection / lint.
+        self.last_crossing_count = count_wire_crossings(raw, _build_signal_adjacency(ir))
         return {ref: (x, y, None) for ref, (x, y) in raw.items()}
 
     def __repr__(self) -> str:  # pragma: no cover

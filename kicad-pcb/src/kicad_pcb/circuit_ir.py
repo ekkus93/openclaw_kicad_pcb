@@ -6,8 +6,9 @@ import json
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from .component_types import normalize_gnd_net_name as _normalize_gnd_net_name
 from .errors import ErrorCode, UserError
 
 
@@ -28,6 +29,19 @@ class NetIR(BaseModel):
 
     name: str = Field(min_length=1)
     pins: list[PinRefIR] = Field(min_length=1)
+
+    @field_validator("name", mode="after")
+    @classmethod
+    def _normalize_gnd_alias(cls, v: str) -> str:
+        """Collapse GND / 0V / GROUND / … aliases to the canonical ``"GND"``.
+
+        This runs after Pydantic has stripped whitespace (``str_strip_whitespace=True``)
+        and validated that the string is non-empty.  The normalisation happens
+        at the earliest possible IR-construction boundary so every consumer
+        (tier assignment, layout engine, router, schematic writer) always
+        receives ``"GND"`` instead of ``"0V"`` or other aliases.
+        """
+        return _normalize_gnd_net_name(v)
 
 
 class ComponentIR(BaseModel):

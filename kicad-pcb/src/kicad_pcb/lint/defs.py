@@ -129,4 +129,8 @@ LINT_SUGGESTIONS: dict[str, str] = {
         "Add net labels or wires to connect isolated wire islands, "
         "or verify that all schematic sections are intentionally separate sheets."
     ),
+    "LAY007": (
+        "Reduce wire crossings by re-running the layout or adjusting component "
+        "placement order; check signal-flow ordering."
+    ),
 }
