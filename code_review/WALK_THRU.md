@@ -257,7 +257,7 @@ silently producing a lower-quality layout.
 
 ### 8.1 DOT graph construction (`dot_builder.py`)
 
-`_build_dot_source(ir, tiers, connector_roles)` builds a Graphviz DOT description:
+`_build_dot_source(ir, tiers, connector_roles, affinity_order)` builds a Graphviz DOT description:
 
 * Each IC or connector is a node.
 * Signal nets become edges.
@@ -267,6 +267,13 @@ silently producing a lower-quality layout.
   positions them nearby.
 * Feedback paths get their own cluster so the backwards arrow is rendered
   without crossing the forward-signal spine.
+* **Affinity ordering:** before calling `_build_dot_source()`, `__init__.py`
+  calls `compute_affinity_groups(ir, tiers)` from `layout.py`.  The resulting
+  `dict[int, list[str]]` (tier → refs sorted by coupling strength to the
+  previous tier) is passed as `affinity_order` and forwarded to
+  `_emit_tier_subgraphs()`, which emits nodes within each `{rank=same}` block
+  in affinity order instead of alphabetical order.  This gives `dot` a better
+  starting point and reduces crossings before any snap pass runs.
 
 ### 8.2 Calling `dot` (`graphviz_layout/__init__.py`)
 
@@ -289,19 +296,34 @@ sequence of deterministic snap passes:
 1. `snap_positions()` — align every component to the `30.48 mm × 20.32 mm` grid.
 2. `_snap_power_symbols()` — move `VCC` / `GND` power flags adjacent to the pin
    they label.
-3. `_snap_connectors_to_ic_y()` — vertically align connectors to the IC row they
+3. `_enforce_connector_x_bounds()` — clamp input/output connectors to the
+   leftmost/rightmost column so they never appear inside the signal spine
+   (conditional on `roles` being available).
+4. `_snap_connectors_to_ic_y()` — vertically align connectors to the IC row they
    connect to.
-4. `_snap_feedback_components()` — pull feedback-path components below the main
+5. `_snap_feedback_components()` — pull feedback-path components below the main
    signal row so back-arrows are unambiguous.
-5. `_apply_stereo_split()` — if two signal channels are detected as stereo
+6. `_snap_opamp_halo()` — pull halo members (bypass caps, bias resistors) back to
+   their anchor IC after any prior pass has moved the IC (conditional on `halo`
+   being provided).
+7. `_apply_stereo_split()` — if two signal channels are detected as stereo
    (identical topology, different net suffixes), place them on separate rows.
-6. `_post_stereo_barycentric()` — within each row, re-order by barycentric weight
+8. `_post_stereo_barycentric()` — within each row, re-order by barycentric weight
    to minimise wire crossings.
-7. `_compact_y_gap()` — collapse empty rows.
-8. `_post_snap_decoupling_caps()` — move decoupling caps immediately below the
-   IC pin they decouple.
-9. `_deoverlap_positions()` — final pass to push apart any components that still
-   share a grid cell.
+9. `_compact_y_gap()` — collapse empty rows.
+10. `_center_ics_in_columns()` — re-sort each column so ICs land at the vertical
+    midpoint with passive components above and below (interleaved
+    `plain_other[:mid] + halo_other[:mid] + ic_refs + halo_other[mid:] +
+    plain_other[mid:]`).  Always runs; no-op when no ICs are present.
+11. `_post_snap_decoupling_caps()` — move decoupling caps immediately below the
+    IC pin they decouple (runs after IC centering so it sees the ICs' final
+    centred y-values).
+12. `_deoverlap_positions()` — push apart any components that still share a grid
+    cell.
+13. `_remediate_crossings()` — measure the signal-wire crossing ratio; if it
+    meets or exceeds the threshold (default 0.30), apply up to
+    `max_sweeps` iterations of `barycentric_sort` to reduce crossings, then
+    re-runs `_deoverlap_positions()` internally.  Always runs as the final pass.
 
 ### 8.4 Orientation
 
