@@ -1,10 +1,10 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T00:30:00Z_
+_Last updated: 2026-03-04T21:32:34Z_
 
 ---
 
-## 2026-03-05T00:30:00Z — Cleanup 4.2 decision + 4.4 final quality pass
+## 2026-03-04T21:30:44Z — Cleanup 4.2 decision + 4.4 final quality pass
 
 ### 4.2 — Fate of `compute_signal_flow_layout()`
 - **Decision: Option A — keep as test-harness reference.**
