@@ -3,7 +3,6 @@
 Covers:
 - 4.1  LayoutEngine Protocol factory (make_layout_engine)
 - 4.2  NoneLayoutEngine: returns origin for every component
-- 4.3  HeuristicLayoutEngine: positions are spread out; all refs returned
 - 4.4  Router 2-pin direct route: wire segments emitted, no labels
 - 4.5  Router hub route (3-pin): centroid junction emitted, no labels
 - 4.6  Router power-net: GlobalLabelPlacement per pin, no local labels
@@ -36,10 +35,9 @@ import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.component_types import component_type
+from kicad_pcb.graphviz_layout.snap import _center_ics_in_columns
 from kicad_pcb.layout import (
-    MIN_SEPARATION_MM,
     ComponentAnnotation,
-    HeuristicLayoutEngine,
     StereoChannel,
     compute_affinity_groups,
     compute_orientations,
@@ -153,138 +151,6 @@ class TestLayoutEngineFactory:
         monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: None)
         with pytest.raises(RuntimeError, match="dot.*not found"):
             make_layout_engine()
-
-
-# ---------------------------------------------------------------------------
-# 4.3  HeuristicLayoutEngine — positions are distinct
-# ---------------------------------------------------------------------------
-
-
-class TestHeuristicLayoutEngine:
-    def test_all_refs_returned(self) -> None:
-        ir = _minimal_ir(refs=["R1", "R2", "C1"])
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        assert set(positions.keys()) == {"R1", "R2", "C1"}
-
-    def test_positions_are_spread_out(self) -> None:
-        """Heuristic engine must not collapse all components to one point."""
-        ir = _minimal_ir(
-            refs=["R1", "R2", "R3"],
-            nets=[
-                {
-                    "name": "NET1",
-                    "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}],
-                },
-                {
-                    "name": "NET2",
-                    "pins": [{"ref": "R2", "pin": "2"}, {"ref": "R3", "pin": "1"}],
-                },
-            ],
-        )
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        coords = [(positions[r][0], positions[r][1]) for r in ["R1", "R2", "R3"]]
-        # At least two distinct x or y values.
-        assert len({c[0] for c in coords}) > 1 or len({c[1] for c in coords}) > 1
-
-
-# ---------------------------------------------------------------------------
-# 4.3b HeuristicLayoutEngine — guaranteed overlap-free (LAY003 never fires)
-# ---------------------------------------------------------------------------
-
-
-class TestHeuristicLayoutNoOverlap:
-    """Verify heuristic grid spacing prevents LAY003 for any reasonable IR.
-
-    The heuristic engine places symbols on a GRID_COL_MM × GRID_ROW_MM grid.
-    LAY003 fires only when both |Δx| and |Δy| are below 10.16 mm (2 × 5.08 mm
-    half-bounding-box, see lint.py).  GRID_ROW_MM = MIN_SEPARATION_MM =
-    20.32 mm > 10.16 mm, so adjacent positions within a column are always
-    overlap-free.  GRID_COL_MM = 30.48 mm also exceeds the threshold.
-    """
-
-    @staticmethod
-    def _symbols_body(positions: dict[str, tuple[float, float, float | None]]) -> str:
-        """Build a schematic body string with one uniquely-UUID'd symbol per position."""
-        parts = []
-        for i, (_ref, pos) in enumerate(sorted(positions.items())):
-            uuid = f"00000000-0000-0000-0000-{i:012d}"
-            parts.append(f'(symbol (lib_id "Device:R") (at {pos[0]} {pos[1]} 0) (uuid "{uuid}"))')
-        return "\n".join(parts)
-
-    def test_min_separation_exceeds_lay003_threshold(self) -> None:
-        """MIN_SEPARATION_MM must be strictly greater than the LAY003 overlap threshold.
-
-        LAY003 fires when abs(dx) < 2*5.08 = 10.16 mm AND abs(dy) < 10.16 mm.
-        MIN_SEPARATION_MM must exceed this to guarantee overlap-free layouts.
-        """
-        lay003_overlap_threshold_mm = 10.16  # 2 × _LAY_SYMBOL_HALF_SIZE_MM from lint.py
-        assert lay003_overlap_threshold_mm < MIN_SEPARATION_MM, (
-            f"MIN_SEPARATION_MM ({MIN_SEPARATION_MM}) must exceed "
-            f"LAY003 threshold ({lay003_overlap_threshold_mm})"
-        )
-
-    def test_linear_chain_no_overlap(self) -> None:
-        """15-component chain must not produce any LAY003 warnings."""
-        refs = [f"R{i}" for i in range(1, 16)]
-        nets = [
-            {
-                "name": f"N{i}",
-                "pins": [{"ref": f"R{i}", "pin": "2"}, {"ref": f"R{i + 1}", "pin": "1"}],
-            }
-            for i in range(1, 15)
-        ]
-        ir = _minimal_ir(refs=refs, nets=nets)
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        root = _sch(self._symbols_body(positions))
-        assert "LAY003" not in _codes(lint_schematic_layout(root))
-
-    def test_amp_topology_no_overlap(self) -> None:
-        """A 13-component amplifier IR must not produce any LAY003 warnings."""
-        refs = ["J1", "R1", "R2", "R3", "R4", "R5", "C1", "C2", "C3", "C4", "U1", "U2", "R6"]
-        nets = [
-            {"name": "IN", "pins": [{"ref": "J1", "pin": "1"}, {"ref": "R1", "pin": "1"}]},
-            {
-                "name": "N1",
-                "pins": [
-                    {"ref": "R1", "pin": "2"},
-                    {"ref": "U1", "pin": "2"},
-                    {"ref": "R2", "pin": "1"},
-                ],
-            },
-            {
-                "name": "N2",
-                "pins": [
-                    {"ref": "U1", "pin": "6"},
-                    {"ref": "C1", "pin": "1"},
-                    {"ref": "R3", "pin": "1"},
-                ],
-            },
-            {"name": "N3", "pins": [{"ref": "R3", "pin": "2"}, {"ref": "U2", "pin": "2"}]},
-            {"name": "OUT", "pins": [{"ref": "U2", "pin": "6"}, {"ref": "R4", "pin": "1"}]},
-            {
-                "name": "FB",
-                "pins": [
-                    {"ref": "R2", "pin": "2"},
-                    {"ref": "R5", "pin": "1"},
-                    {"ref": "U1", "pin": "3"},
-                ],
-            },
-            {
-                "name": "FB2",
-                "pins": [
-                    {"ref": "R6", "pin": "1"},
-                    {"ref": "U2", "pin": "3"},
-                    {"ref": "R4", "pin": "2"},
-                ],
-            },
-            {"name": "C1N2", "pins": [{"ref": "C1", "pin": "2"}, {"ref": "C2", "pin": "1"}]},
-            {"name": "C3N", "pins": [{"ref": "C3", "pin": "1"}, {"ref": "U1", "pin": "4"}]},
-            {"name": "C4N", "pins": [{"ref": "C4", "pin": "1"}, {"ref": "U2", "pin": "4"}]},
-        ]
-        ir = _minimal_ir(refs=refs, nets=nets)
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        root = _sch(self._symbols_body(positions))
-        assert "LAY003" not in _codes(lint_schematic_layout(root))
 
 
 # ---------------------------------------------------------------------------
@@ -3031,3 +2897,186 @@ class TestPhase8WireRouting:
     def test_symbol_half_size_mm_constant_is_5_08(self) -> None:
         """SYMBOL_HALF_SIZE_MM must be 5.08 mm (200 mil = one KiCad grid unit)."""
         assert SYMBOL_HALF_SIZE_MM == 5.08  # exact constant — no approx needed
+
+
+class TestCenterICsInColumns:
+    """Unit tests for the _center_ics_in_columns snap pass."""
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _pos(
+        entries: dict[str, tuple[float, float]],
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Build a positions dict from {ref: (x, y)} with rot=None."""
+        return {ref: (x, y, None) for ref, (x, y) in entries.items()}
+
+    @staticmethod
+    def _y_order(
+        positions: dict[str, tuple[float, float, float | None]], column_x: float
+    ) -> list[str]:
+        """Return refs in a column (given x) sorted by ascending y."""
+        return sorted(
+            [r for r, (x, _y, _rot) in positions.items() if x == column_x],
+            key=lambda r: positions[r][1],
+        )
+
+    # ------------------------------------------------------------------
+    # Core ordering tests
+    # ------------------------------------------------------------------
+
+    def test_ic_lands_at_middle_of_three_ref_column(self) -> None:
+        """Single IC in a 3-ref column must occupy the middle y-slot."""
+        # x=10: three refs at y=10, 20, 30 — U1 is the IC
+        positions = self._pos({"R1": (10.0, 10.0), "U1": (10.0, 20.0), "R2": (10.0, 30.0)})
+        result = _center_ics_in_columns(positions)
+
+        ordered = self._y_order(result, 10.0)
+        ic_idx = ordered.index("U1")
+        assert ic_idx == 1, f"IC should be at index 1 (middle), got {ic_idx}"
+
+    def test_ic_lands_at_middle_of_five_ref_column(self) -> None:
+        """Single IC in a 5-ref column must be at index 2 (middle)."""
+        positions = self._pos(
+            {
+                "R1": (10.0, 10.0),
+                "R2": (10.0, 20.0),
+                "U1": (10.0, 30.0),
+                "R3": (10.0, 40.0),
+                "R4": (10.0, 50.0),
+            }
+        )
+        result = _center_ics_in_columns(positions)
+        ordered = self._y_order(result, 10.0)
+        ic_idx = ordered.index("U1")
+        assert ic_idx == 2, f"IC should be at index 2 (middle of 5), got {ic_idx}"
+
+    def test_two_ics_in_four_ref_column_land_in_middle_pair(self) -> None:
+        """Two ICs in a 4-ref column must occupy the two middle y-slots."""
+        positions = self._pos(
+            {
+                "R1": (10.0, 10.0),
+                "U1": (10.0, 20.0),
+                "U2": (10.0, 30.0),
+                "R2": (10.0, 40.0),
+            }
+        )
+        result = _center_ics_in_columns(positions)
+        ordered = self._y_order(result, 10.0)
+        ic_indices = {ordered.index("U1"), ordered.index("U2")}
+        assert ic_indices == {1, 2}, f"Both ICs should be at indices 1,2; got {ic_indices}"
+
+    def test_column_with_only_passives_is_unchanged(self) -> None:
+        """A column with no ICs must be returned with original positions."""
+        positions = self._pos({"R1": (10.0, 10.0), "C1": (10.0, 20.0), "R2": (10.0, 30.0)})
+        result = _center_ics_in_columns(positions)
+        assert result == positions, "All-passive column must be unchanged"
+
+    def test_halo_members_flank_ic(self) -> None:
+        """Halo members must appear immediately adjacent to the IC."""
+        # 4-ref column: plain_other=[R1,R2], halo_other=[C_fb], ic_refs=[U1]
+        # Expected order: R1, C_fb, U1, R2  (or R2, C_fb, U1, R1)
+        # plain_other[:1] + halo_other[:0 since mid=0] + [U1] + halo_other[0:] + plain_other[1:]
+        # With 1 halo member: mid_halo=0
+        # ordered = plain_other[:1] + [] + [U1] + [C_fb] + plain_other[1:]
+        # = [R1, U1, C_fb, R2]
+        positions = self._pos(
+            {
+                "R1": (10.0, 10.0),
+                "C_fb": (10.0, 20.0),
+                "U1": (10.0, 30.0),
+                "R2": (10.0, 40.0),
+            }
+        )
+        halo = {"C_fb": "U1"}
+        result = _center_ics_in_columns(positions, halo=halo)
+        ordered = self._y_order(result, 10.0)
+        u1_idx = ordered.index("U1")
+        cfb_idx = ordered.index("C_fb")
+        assert abs(u1_idx - cfb_idx) == 1, (
+            f"Halo member C_fb should be adjacent to U1; got order {ordered}"
+        )
+
+    # ------------------------------------------------------------------
+    # Edge / boundary cases
+    # ------------------------------------------------------------------
+
+    def test_empty_positions_returns_empty(self) -> None:
+        """Empty input must return empty dict without error."""
+        result = _center_ics_in_columns({})
+        assert result == {}
+
+    def test_single_component_column_unchanged(self) -> None:
+        """A single-component column (IC or passive) must be returned unchanged."""
+        positions = self._pos({"U1": (10.0, 10.0)})
+        result = _center_ics_in_columns(positions)
+        assert result == positions
+
+    def test_power_symbols_excluded_from_reordering(self) -> None:
+        """#PWR and #FLG symbols must not participate in column reordering."""
+        positions = self._pos(
+            {
+                "#PWR01": (10.0, 5.0),
+                "R1": (10.0, 10.0),
+                "U1": (10.0, 20.0),
+                "R2": (10.0, 30.0),
+            }
+        )
+        result = _center_ics_in_columns(positions)
+        # Power symbol must stay at its original position.
+        assert result["#PWR01"] == (10.0, 5.0, None)
+        # Regular components still get reordered.
+        ordered = self._y_order(result, 10.0)
+        # U1 should be in the middle of the 3 regular refs (indices 1 out of 0,1,2)
+        regular = [r for r in ordered if not r.startswith("#")]
+        assert regular.index("U1") == 1, f"IC not centred: {regular}"
+
+    def test_input_dict_not_mutated(self) -> None:
+        """The original positions dict must not be modified in-place."""
+        positions = self._pos({"R1": (10.0, 10.0), "U1": (10.0, 20.0), "R2": (10.0, 30.0)})
+        original = dict(positions)
+        _center_ics_in_columns(positions)
+        assert positions == original
+
+    def test_multiple_columns_only_reorders_ic_columns(self) -> None:
+        """Columns without ICs must be unchanged; IC columns must be centred."""
+        positions = self._pos(
+            {
+                # Column x=10: has IC — should reorder
+                "R1": (10.0, 10.0),
+                "U1": (10.0, 20.0),
+                "R2": (10.0, 30.0),
+                # Column x=50: no ICs — must be unchanged
+                "C1": (50.0, 10.0),
+                "C2": (50.0, 20.0),
+            }
+        )
+        result = _center_ics_in_columns(positions)
+        # Passive-only column at x=50 must be untouched.
+        assert result["C1"] == (50.0, 10.0, None)
+        assert result["C2"] == (50.0, 20.0, None)
+        # IC column at x=10: U1 must be at the middle y-slot.
+        ordered_10 = self._y_order(result, 10.0)
+        assert ordered_10.index("U1") == 1
+
+    def test_x_and_rotation_are_preserved(self) -> None:
+        """x-coordinate and rotation must not be changed by this pass."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (10.0, 10.0, 90.0),
+            "U1": (10.0, 20.0, 0.0),
+            "R2": (10.0, 30.0, 270.0),
+        }
+        result = _center_ics_in_columns(positions)
+        for ref, (x, _y, rot) in result.items():
+            assert x == 10.0, f"{ref}: x changed"
+            orig_rot = positions[ref][2]
+            assert rot == orig_rot, f"{ref}: rotation changed from {orig_rot} to {rot}"
+
+    def test_no_halo_kwarg_behaves_identically_to_none(self) -> None:
+        """Calling without halo= must give the same result as halo=None."""
+        positions = self._pos({"R1": (10.0, 10.0), "U1": (10.0, 20.0), "R2": (10.0, 30.0)})
+        result_no_kw = _center_ics_in_columns(positions)
+        result_none = _center_ics_in_columns(positions, halo=None)
+        assert result_no_kw == result_none

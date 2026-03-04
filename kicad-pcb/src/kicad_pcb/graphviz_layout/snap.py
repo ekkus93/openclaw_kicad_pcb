@@ -56,8 +56,9 @@ is:
 3. :func:`_snap_feedback_components` (if any feedback refs exist)
 4. :func:`_apply_stereo_split` (if any L/R channels exist)
 5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
-6. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
-7. :func:`_deoverlap_positions` (always; final guard against grid collisions)
+6. :func:`_center_ics_in_columns` (always; no-op when no ICs present)
+7. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
+8. :func:`_deoverlap_positions` (always; final guard against grid collisions)
 
 Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
 refs are already at their fixed rows before connectors compute their median.
@@ -67,6 +68,8 @@ Stereo split runs after feedback snap so that feedback-adjusted y values are
 used as the input to channel compression.
 ``_compact_y_gap`` runs before decoupling caps so that bypass-cap y positions
 are relative to the compacted IC y values.
+``_center_ics_in_columns`` runs before decoupling caps so that bypass caps
+are re-snapped relative to the ICs' newly-centred positions.
 ``_deoverlap_positions`` runs last so it resolves every collision regardless
 of which earlier pass introduced it.
 """
@@ -524,6 +527,84 @@ def _post_snap_decoupling_caps(
     return result
 
 
+def _center_ics_in_columns(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    halo: Mapping[str, str] | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Re-sort each x-column so ICs sit at the vertical midpoint.
+
+    Within each column, non-power components are split into three buckets:
+
+    * **ic_refs** — ICs (``_is_ic_ref`` returns True).
+    * **halo_other** — non-IC components that are op-amp halo members (i.e.
+      present as a key in the *halo* mapping).
+    * **plain_other** — everything else (passives, connectors, etc.).
+
+    Each bucket is sorted ascending by current y-coordinate to preserve
+    relative ordering within the bucket.  Refs are then interleaved as::
+
+        plain_other[:mid] + halo_other[:mid] + ic_refs
+            + halo_other[mid:] + plain_other[mid:]
+
+    so ICs end up at the vertical centre with halo members flanking them and
+    plain passives at the outer edges.  This mirrors the ordering that the
+    former ``HeuristicLayoutEngine`` applied and gives schematics a more
+    structured, readable appearance.
+
+    Columns that contain no ICs are returned unchanged.  Power symbols
+    (``#PWR`` / ``#FLG``) are excluded from reordering and kept at their
+    original positions.
+
+    The existing sorted y-values of each column are used as target slots —
+    no new y-coordinates are introduced; only the *assignment* of refs to
+    slots changes.  Run this pass **before** :func:`_post_snap_decoupling_caps`
+    so that bypass caps are re-anchored to the ICs' newly-centred y values.
+    """
+    halo_keys: frozenset[str] = frozenset(halo) if halo else frozenset()
+
+    by_x: dict[float, list[str]] = defaultdict(list)
+    for ref, (x, _y, _rot) in positions.items():
+        if ref.startswith("#"):  # skip #PWR / #FLG symbols
+            continue
+        by_x[x].append(ref)
+
+    result = dict(positions)
+    for group in by_x.values():
+        if len(group) < 2:
+            continue
+        # Only bother reordering columns that contain at least one IC.
+        if not any(_is_ic_ref(r) for r in group):
+            continue
+
+        # Sort ascending by y then ref to get stable, well-defined slots.
+        group_sorted = sorted(group, key=lambda r: (positions[r][1], r))
+        y_slots = [positions[r][1] for r in group_sorted]
+
+        # Partition into buckets.
+        ic_refs = [r for r in group_sorted if _is_ic_ref(r)]
+        other = [r for r in group_sorted if not _is_ic_ref(r)]
+        halo_other = [r for r in other if r in halo_keys]
+        plain_other = [r for r in other if r not in halo_keys]
+
+        mid_plain = len(plain_other) // 2
+        mid_halo = len(halo_other) // 2
+        ordered = (
+            plain_other[:mid_plain]
+            + halo_other[:mid_halo]
+            + ic_refs
+            + halo_other[mid_halo:]
+            + plain_other[mid_plain:]
+        )
+
+        # Assign each ref in the interleaved order to the sorted y-slots.
+        for ref, y in zip(ordered, y_slots):
+            x, _old_y, rot = result[ref]
+            result[ref] = (x, y, rot)
+
+    return result
+
+
 def _apply_stereo_split(
     positions: dict[str, tuple[float, float, float | None]],
     channels: Mapping[str, str],
@@ -974,9 +1055,12 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
        the stereo split by applying a two-pass barycentric sort within each
        channel band (R3-3; skipped when no L/R channels present).
     5. :func:`_compact_y_gap` — collapse the largest vertical gap.
-    6. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
+    6. :func:`_center_ics_in_columns` — re-sort each column so ICs land at the
+       vertical midpoint with passives above and below (always runs; no-op
+       when no column contains an IC).
+    7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
        IC (skipped when *decoupling_map* is empty).
-    7. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
+    8. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
@@ -991,6 +1075,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _apply_stereo_split(result, channels)
         result = _post_stereo_barycentric(result, ir, channels)
     result = _compact_y_gap(result, ir)
+    result = _center_ics_in_columns(result, halo=halo)
     if decoupling_map:
         result = _post_snap_decoupling_caps(result, decoupling_map)
     # Build canonical skip-pairs from the decoupling map so that intentional
