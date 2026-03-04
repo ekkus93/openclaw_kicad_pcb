@@ -481,11 +481,25 @@ or deleted.
 
 #### 4.2 — Decide fate of `compute_signal_flow_layout()`
 
-- [ ] Option A: Keep it in `layout.py` as a reference / testing utility and add
+- [x] Option A: Keep it in `layout.py` as a reference / testing utility and add
   a docstring note: "Not used by the production pipeline; kept for algorithm
   reference and test coverage."
-- [ ] Option B: Delete it and remove the tests that directly invoke it.
-- [ ] Make the decision, document it in a brief code comment, and apply.
+  **Decision: Option A chosen.** Rationale:
+  - `TestHeuristicFeedbackPlacement`, `TestHeuristicLRChannelLayout`,
+    `TestOpAmpCentering`, `TestDecouplingCapPlacement`, and
+    `TestComputeSignalFlowLayoutWithRoles` all test algorithm properties (column
+    ordering, IC centering, L/R symmetry, decoupling-cap snap) directly in pure
+    Python without requiring the Graphviz binary.  Rewriting them to go through
+    `GraphvizLayoutEngine` would add binary dependency, caching overhead, and
+    make the assertions less direct.
+  - The function is a compact, complete reference implementation of every layout
+    rule (SDS + recursive halving + barycentric sort + IC centering + crossing
+    remediation).  Keeping it as a test harness preserves algorithm coverage.
+  - No lint warnings; no maintenance burden from keeping it.
+  **Action taken**: Added `.. note::` block to docstring stating it is not used
+  by the production pipeline and explaining its role as a test harness.
+- [ ] ~~Option B: Delete it and remove the tests that directly invoke it.~~
+  _Rejected — see rationale above._
 
 #### 4.3 — Promote `_barycentric_sort()` (needed for Improvement 2)
 

@@ -593,6 +593,15 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
 ) -> dict[str, tuple[float, float]]:
     """Return ``{ref: (x, y)}`` placements for all components in *ir*.
 
+    .. note::
+        **Not used by the production pipeline.**  The live layout engine is
+        :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.  This
+        function is kept as a self-contained algorithm reference and test
+        harness: it implements every layout rule (SDS recursive halving,
+        barycentric crossing reduction, IC centering, decoupling-cap snap)
+        in pure Python without requiring a Graphviz binary, making it
+        convenient for unit-testing algorithm properties in isolation.
+
     Algorithm
     ---------
     1. Build an undirected adjacency graph keyed on reference designators.
