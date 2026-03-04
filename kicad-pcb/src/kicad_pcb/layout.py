@@ -484,7 +484,7 @@ def count_wire_crossings(
     return crossings
 
 
-def _barycentric_sort(
+def barycentric_sort(
     by_col: dict[int, list[str]],
     adjacency: dict[str, set[str]],
     *,
@@ -707,7 +707,7 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
         by_col[c].append(r)
 
     # Use signal-only adjacency for barycentric weights (power nets excluded).
-    by_col = _barycentric_sort(by_col, sig_adj)
+    by_col = barycentric_sort(by_col, sig_adj)
 
     # R6-2: crossing remediation — if crossing ratio ≥ 0.30, run up to
     # _MAX_REMEDIATION_SWEEPS total barycentric sweeps.
@@ -735,7 +735,7 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
                 _ratio,
                 _sweep + 2,
             )
-            by_col = _barycentric_sort(by_col, sig_adj)
+            by_col = barycentric_sort(by_col, sig_adj)
 
     # Assign coordinates, wrapping tall BFS-columns into sub-columns so the
     # layout stays within a single A4 page.  Each BFS-column occupies at

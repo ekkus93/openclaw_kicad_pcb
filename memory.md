@@ -2661,3 +2661,23 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - Updated module docstring and `_apply_post_layout_snaps()` docstring to document step 6.
 - Added 12 unit tests in `tests/unit/test_phase4_layout.py::TestCenterICsInColumns` covering: center position, multiple ICs, passives-only column, halo flanking, empty dict, single component, power symbol exclusion, non-mutation, independent columns, x/rot preservation, halo=None.
 - All 212 tests in test_phase4_layout.py pass; all 102 kicad-pcb tests pass; ruff clean.
+
+## 2026-03-04T02:00:00Z - Improvement 2.1 studied; 2.2+4.3 completed
+
+### Study findings (2.1 — measure + sort algorithm)
+- `count_wire_crossings(positions, adjacency)` takes **2-tuples** `(x, y)` — NOT 3-tuples. Must strip `rot` before calling: `{r: (x, y) for r, (x, y, _) in positions.items()}`.
+- `barycentric_sort(by_col, adjacency, *, passes=2) -> dict[int, list[str]]` — keys are **integer column indices** (not x-mm). Must bucket refs by `round((x - ORIGIN_X) / GRID_COL_MM)`.
+- `_MAX_REMEDIATION_SWEEPS = 3` (not 10 as the old TODO said). `max_sweeps` default in `_remediate_crossings` should be 3.
+- `build_signal_adjacency(ir)` is the public wrapper, already exported from `layout.py`.
+- Threshold 0.30 hardcoded in heuristic; new pass makes it configurable with default 0.30.
+- `ir: CircuitIR` already in `_apply_post_layout_snaps()` signature — no change needed there.
+- `GRID_COL_MM = 30.48` in `layout.py`; snap.py has no GRID_COL_MM (its GRID_ROW_MM = 7.62 symbol height, different from layout.py's 20.32 row pitch).
+- `TestComputeAffinityGroups` (3 tests) already existed in `test_phase4_layout.py` — written in a prior session.
+- `count_wire_crossings` unit tests already in `kicad-pcb/tests/unit/test_layout.py` from R6 work.
+
+### Code changes (2.2 + 4.3 — promote barycentric_sort, deferred imports)
+- Renamed `_barycentric_sort` → `barycentric_sort` (public) in `layout.py` (definition + 2 call sites within `compute_signal_flow_layout`).
+- Updated `kicad-pcb/tests/unit/test_layout.py`: import renamed; all 8 call sites updated; isort fixed by ruff.
+- 4 imports for `snap.py` (`GRID_COL_MM`, `barycentric_sort`, `build_signal_adjacency`, `count_wire_crossings`) will be added in step 2.3 alongside the function body (to avoid `# noqa: F401` suppressions).
+- `GRAPHVIZ_UPDATES.md` updated: 2.2 all [x]; 4.3 all [x]; 2.1 all [x]; 2.3 notes updated with correct types and aliases.
+- All tests pass; ruff clean on layout.py, snap.py, test_layout.py.
