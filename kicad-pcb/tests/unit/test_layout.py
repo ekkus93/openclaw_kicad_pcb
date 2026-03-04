@@ -30,9 +30,9 @@ from kicad_pcb.layout import (
     GRID_COL_MM,
     ORIGIN_X,
     ComponentAnnotation,
-    _barycentric_sort,
     _compute_opamp_halo,
     _recursive_halving,
+    barycentric_sort,
     build_signal_adjacency,
     compute_signal_distance_scores,
     compute_signal_flow_layout,
@@ -700,7 +700,7 @@ class TestBarycentricSort:
             "B": {"C"},
             "C": {"B"},
         }
-        result = _barycentric_sort(by_col, adj, passes=1)
+        result = barycentric_sort(by_col, adj, passes=1)
 
         # Col 0 is the L→R anchor (not sorted in L→R pass); unchanged.
         assert result[0] == ["A", "B"]
@@ -717,20 +717,20 @@ class TestBarycentricSort:
             "B": {"D"},
             "D": {"B"},
         }
-        result = _barycentric_sort(by_col, adj, passes=1)
+        result = barycentric_sort(by_col, adj, passes=1)
 
         assert result[0] == ["A", "B"]
         assert result[1] == ["C", "D"]
 
     def test_empty_by_col_returns_empty(self):
         """Empty input produces empty output."""
-        assert _barycentric_sort({}, {}, passes=2) == {}
+        assert barycentric_sort({}, {}, passes=2) == {}
 
     def test_single_column_unchanged(self):
         """A single column has no adjacent reference; list is not reordered."""
         by_col: dict[int, list[str]] = {0: ["C", "A", "B"]}
         adj: dict[str, set[str]] = {"A": {"B"}, "B": {"A"}}
-        result = _barycentric_sort(by_col, adj, passes=2)
+        result = barycentric_sort(by_col, adj, passes=2)
 
         # L→R skips col 0 (no left neighbour).
         # R→L: range(max-2, -1) = range(-1, -1) is empty — nothing sorts col 0.
@@ -745,8 +745,8 @@ class TestBarycentricSort:
             "B": {"C"},
             "C": {"B"},
         }
-        result1 = _barycentric_sort(by_col, adj, passes=1)
-        result2 = _barycentric_sort(result1, adj, passes=1)
+        result1 = barycentric_sort(by_col, adj, passes=1)
+        result2 = barycentric_sort(result1, adj, passes=1)
 
         assert result2[0] == result1[0]
         assert result2[1] == result1[1]
@@ -777,7 +777,7 @@ class TestBarycentricSort:
             "E": {"D"},
             "F": {"C"},
         }
-        result = _barycentric_sort(by_col, adj, passes=2)
+        result = barycentric_sort(by_col, adj, passes=2)
 
         # Col 0: B at row 0, A at row 1 (R→L preserves this).
         assert result[0] == ["B", "A"]
@@ -800,7 +800,7 @@ class TestBarycentricSort:
             "E": {"C"},
             "F": {"D"},
         }
-        result = _barycentric_sort(by_col, adj, passes=2)
+        result = barycentric_sort(by_col, adj, passes=2)
 
         # Col 1: C's weight = row(A in col0) = 0; D's weight = row(B in col0) = 1.
         assert result[1] == ["C", "D"]

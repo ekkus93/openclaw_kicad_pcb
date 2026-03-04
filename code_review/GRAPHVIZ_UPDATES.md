@@ -130,106 +130,157 @@ columns to reduce them.
 
 #### 2.1 — Understand the measurement and sort algorithm
 
-- [ ] Read `count_wire_crossings()` in `layout.py` — understand the return type
+- [x] Read `count_wire_crossings()` in `layout.py` — understand the return type
   (int = total crossing count) and its `sig_adj` argument.
-- [ ] Read `_barycentric_sort()` in `layout.py` — understand the return type
+  **Return type: `int`. Signature: `(positions: dict[str, tuple[float, float]],
+  adjacency: dict[str, set[str]]) -> int`.
+  IMPORTANT: takes 2-tuples `(x, y)`, NOT 3-tuples. Snap.py positions are
+  `(x, y, rot)` — must strip `rot` before calling (e.g. `{r: (x, y) for r, (x, y, _) in positions.items()}`).**
+- [x] Read `_barycentric_sort()` in `layout.py` — understand the return type
   (`dict[int, list[str]]` = `{col: [ref, …]}`) and how it re-sorts columns
   using the barycentres of connected neighbours.
-- [ ] Read `_MAX_REMEDIATION_SWEEPS` constant near the top of `layout.py` —
+  **Signature: `(by_col: dict[int, list[str]], adjacency: dict[str, set[str]], *, passes: int = 2) -> dict[int, list[str]]`.
+  Keys are integer column INDICES, not x-mm values.
+  Snap.py will need to bucket refs by column index (not raw x) before calling.
+  Two-pass sweep: L→R then R→L per pass. Returns a fresh dict (input not mutated).**
+- [x] Read `_MAX_REMEDIATION_SWEEPS` constant near the top of `layout.py` —
   confirm value (currently 10).
-- [ ] Understand the `sig_adj` structure: `dict[str, set[str]]` built by
+  **Actual value: `_MAX_REMEDIATION_SWEEPS = 3` (not 10 — the TODO was wrong). The `max_sweeps` parameter in the new snap pass should default to 3.**
+- [x] Understand the `sig_adj` structure: `dict[str, set[str]]` built by
   `build_signal_adjacency()`.
-- [ ] Determine what "crossing ratio" threshold to use: the heuristic used
+  **`build_signal_adjacency(ir)` is the public wrapper for `_build_signal_adjacency()`.
+  Returns `{ref: {neighbour_refs}}` over signal nets only (power nets excluded).
+  Already exported from `layout.py`; tested in `test_layout.py`.**
+- [x] Determine what "crossing ratio" threshold to use: the heuristic used
   `_crossings / _total_sig_wires ≥ 0.30`.  Decide whether to keep this
   threshold or make it configurable.
+  **Decision: make it configurable via `crossing_ratio_threshold: float = 0.30` parameter
+  (matching the existing heuristic default). The denominator is
+  `sum(len(v) for v in sig_adj.values()) // 2`; guard against zero.**
 
 #### 2.2 — Export the needed helpers from `layout.py`
 
-- [ ] Check whether `_barycentric_sort()` is currently private (underscore
+- [x] Check whether `_barycentric_sort()` is currently private (underscore
   prefix).  If so, decide: rename to `barycentric_sort()` (public) or keep
   private and import with the underscore name in `snap.py`.
-- [ ] Add the following to the import block in `snap.py`:
+  **Decision: rename to `barycentric_sort` (public) — done as part of Cleanup 4.3.
+  Call sites in `layout.py` updated; tests in `test_layout.py` updated; ruff clean.
+  See 4.3 below which is now partially complete.**
+- [x] Add the following to the import block in `snap.py`:
   ```python
-  from ..layout import _barycentric_sort
-  from ..layout import build_signal_adjacency
-  from ..layout import count_wire_crossings
+  from ..layout import GRID_COL_MM as _GRID_COL_MM
+  from ..layout import barycentric_sort as _barycentric_sort
+  from ..layout import build_signal_adjacency as _build_signal_adjacency
+  from ..layout import count_wire_crossings as _count_wire_crossings
   ```
-- [ ] Add these to the re-export list in `graphviz_layout/__init__.py` imports
+  **Deferred to 2.3: these imports are unused until `_remediate_crossings` is
+  implemented; adding them forward would require `# noqa: F401` suppressions
+  which violate the anti-paperclip rules. They will be added in 2.3 alongside
+  the function body.**
+- [x] Add these to the re-export list in `graphviz_layout/__init__.py` imports
   from snap if needed (only if they need to be externally visible — probably
   not).
+  **Confirmed: not needed externally — `_remediate_crossings` is called from
+  within `_apply_post_layout_snaps()` in `snap.py` only.**
 
 #### 2.3 — Implement `_remediate_crossings()` in `snap.py`
 
-- [ ] Add the function signature:
+- [x] Add the function signature:
   ```python
   def _remediate_crossings(
       positions: dict[str, tuple[float, float, float | None]],
       ir: CircuitIR,
       *,
-      max_sweeps: int = 10,
+      max_sweeps: int = 3,
       crossing_ratio_threshold: float = 0.30,
-      grid: float = 1.27,
+      skip_pairs: frozenset[tuple[str, str]] = frozenset(),
   ) -> dict[str, tuple[float, float, float | None]]:
   ```
-- [ ] Build `sig_adj = build_signal_adjacency(ir)`.
-- [ ] Count total signal wire count (denominator): number of edges in `sig_adj`
+  **Note: `grid` param dropped (y-slots are reused from existing snapped positions—no re-snap needed). `skip_pairs` added to thread decoupling-cap co-location pairs through to the inner `_deoverlap_positions` call.**
+- [x] Build `sig_adj = build_signal_adjacency(ir)`.
+- [x] Count total signal wire count (denominator): number of edges in `sig_adj`
   divided by 2 (undirected).  Use `sum(len(v) for v in sig_adj.values()) // 2`.
   Guard against division by zero (return positions unchanged if zero wires).
-- [ ] Group `positions` into `by_col: dict[int, list[str]]` using column x
-  indices (same bucketing logic as `_center_ics_in_columns`).
-- [ ] Loop up to `max_sweeps` times:
-  1. Compute `crossing_count = count_wire_crossings(positions, sig_adj)`.
-  2. Compute `ratio = crossing_count / total_sig_wires`.
-  3. If `ratio < crossing_ratio_threshold` or on the last iteration, break.
-  4. `by_col = _barycentric_sort(by_col, sig_adj)`.
-  5. Rebuild `positions` from `by_col` preserving existing y-spacing and x
-     coordinates; snap to `grid`.
-- [ ] After the loop, re-run `_deoverlap_positions()` since reordering may have
+- [x] Group `positions` into `by_col: dict[int, list[str]]` using **integer column
+  indices** (not raw x-mm): `col_idx = round((x - ORIGIN_X) / GRID_COL_MM)`.
+  Import `ORIGIN_X` and `GRID_COL_MM` from `..layout`.
+  **Power symbols (`#PWR`/`#FLG`) excluded from bucketing and never moved.**
+  **Added 4 imports to `snap.py`: `GRID_COL_MM as _GRID_COL_MM`,
+  `barycentric_sort as _barycentric_sort`, `build_signal_adjacency as _build_signal_adjacency`,
+  `count_wire_crossings as _count_wire_crossings`.**
+- [x] Loop up to `max_sweeps` times:
+  1. Build 2-tuple positions for crossing count:
+     `pos2 = {r: (x, y) for r, (x, y, _) in positions.items()}`.
+     (`count_wire_crossings` takes `dict[str, tuple[float, float]]` — no rotation.)
+  2. Compute `crossing_count = count_wire_crossings(pos2, sig_adj)`.
+  3. Compute `ratio = crossing_count / total_sig_wires`.
+  4. If `ratio < crossing_ratio_threshold` or on the last iteration, break.
+  5. `by_col = _barycentric_sort(dict(by_col), sig_adj)`. (`_barycentric_sort` is the snap.py alias for the public `barycentric_sort` imported from `layout.py`.)
+  6. Rebuild `positions` from `by_col`: each column's members get the same
+     x as before; y-slots are redistributed by row index in new sorted order;
+     rotation is preserved from the current positions dict.
+     **No grid-snapping step: existing y-values are already snapped.**
+- [x] After the loop, re-run `_deoverlap_positions(skip_pairs=skip_pairs)` since reordering may have
   introduced new overlaps.
-- [ ] Return the updated positions dict.
+- [x] Return the updated positions dict.
 
 #### 2.4 — Wire `_remediate_crossings()` into the pipeline
 
-- [ ] In `snap.py` `_apply_post_layout_snaps()`, add the call **as the second-
-  to-last step**, after `_deoverlap_positions()` and only if
-  `_remediate_crossings` changed positions (compare before/after to avoid a
-  redundant deoverlap).
+- [x] In `snap.py` `_apply_post_layout_snaps()`, add the call **as the final
+  step**, after `_deoverlap_positions()`.
+  **Done: `result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)`
+  added as the final line. `decouple_skip` threads the decoupling-cap pair set
+  through so the inner deoverlap respects intentional co-locations.**
   Canonical pipeline order after this change:
   1. `snap_positions` (grid snap)
   2. `_snap_power_symbols`
-  3. `_snap_connectors_to_ic_y`
-  4. `_snap_feedback_components`
-  5. `_apply_stereo_split` (conditional)
-  6. `_post_stereo_barycentric` (conditional)
-  7. `_compact_y_gap`
-  8. `_post_snap_decoupling_caps`
-  9. `_center_ics_in_columns` ← from Improvement 1
-  10. `_deoverlap_positions`
-  11. `_remediate_crossings` ← new, includes its own inner deoverlap
-- [ ] Add `ir: CircuitIR` to `_apply_post_layout_snaps()` signature if it is not
+  2b. `_enforce_connector_x_bounds` (conditional on `roles`)
+  2c. `_snap_connectors_to_ic_y`
+  3. `_snap_feedback_components` (conditional)
+  3b. `_snap_opamp_halo` (conditional)
+  4. `_apply_stereo_split` (conditional)
+  4b. `_post_stereo_barycentric` (conditional)
+  5. `_compact_y_gap`
+  6. `_center_ics_in_columns` ← from Improvement 1
+  7. `_post_snap_decoupling_caps` (conditional)
+  8. `_deoverlap_positions`
+  9. `_remediate_crossings` ← new, includes its own inner deoverlap
+- [x] Add `ir: CircuitIR` to `_apply_post_layout_snaps()` signature if it is not
   already present — needed to build `sig_adj`.  Check the current signature in
   `snap.py` line ~945.
-- [ ] Update the call site in `graphviz_layout/__init__.py` to pass `ir`.
+  **Already present: `ir: CircuitIR` is the second positional parameter.**
+- [x] Update the call site in `graphviz_layout/__init__.py` to pass `ir`.
+  **`ir` is already passed to `_apply_post_layout_snaps()` — no change needed.**
 
 #### 2.5 — Write tests
 
-- [ ] Add `TestRemediateCrossings` class in
+- [x] Add `TestRemediateCrossings` class in
   [`tests/unit/test_phase4_layout.py`](../tests/unit/test_phase4_layout.py).
-- [ ] Test: two-column circuit with obvious crossing (components in wrong column
+  **13 tests added (details below).**
+- [x] Test: two-column circuit with obvious crossing (components in wrong column
   order) → crossings reduced after one sweep.
-- [ ] Test: circuit with ratio < threshold → returned unchanged (no sweep runs).
-- [ ] Test: circuit with zero signal wires → returned unchanged without error.
-- [ ] Test: `max_sweeps=1` → exits after exactly one sweep regardless of ratio.
-- [ ] Test: already-optimal layout → positions unchanged after `_remediate_crossings`.
-- [ ] Add a `count_wire_crossings` unit test in
+  **Note: `count_wire_crossings` excludes same-column-start edges by design, so
+  a 3-column layout is required. `R1(col0)→R2(col2)` crosses `R3(col1)→R4(col2)`,
+  detected because left endpoints are at different x (30.48 < 60.96).**
+- [x] Test: circuit with ratio < threshold → returned unchanged (no sweep runs).
+  **Used `crossing_ratio_threshold=1.0`; ratio=0.5 < 1.0 → immediate return.**
+- [x] Test: circuit with zero signal wires → returned unchanged without error.
+  **Used single-component nets (no signal adjacency) → total_sig_wires=0 guard.**
+- [x] Test: `max_sweeps=1` → exits on first iteration without sorting (break fires
+  before the sort because `sweep == max_sweeps - 1 == 0`). Also added
+  `max_sweeps=2` test which allows one sort pass and does fix the crossing.
+- [x] Test: already-optimal layout → positions unchanged after `_remediate_crossings`.
+- [x] Add a `count_wire_crossings` unit test in
   [`kicad-pcb/tests/unit/test_layout.py`](../kicad-pcb/tests/unit/test_layout.py)
   that constructs a known 2×2 crossing case and asserts the count is 1.
+  **Pre-existing from R6 work; requirement was already satisfied when this TODO was written.**
 
 #### 2.6 — Verify with existing golden / regression tests
 
-- [ ] Run `pytest tests/unit/test_golden.py` — confirm no regressions and update
+- [x] Run `pytest tests/unit/test_golden.py` — confirm no regressions and update
   goldens if crossing reduction changes expected positions.
-- [ ] Run the full test suite: `cd kicad-pcb && python -m pytest && cd ..`
+  **All 14 golden tests pass; no fixture updates required.**
+- [x] Run the full test suite: all unit tests pass (exit 0).
 
 ---
 
@@ -258,7 +309,7 @@ emits nodes in affinity order rather than alphabetical order.
 
 #### 3.1 — Study `compute_affinity_groups()` and DOT emission code
 
-- [ ] Read `compute_affinity_groups()` in `layout.py` lines 784–860.  Note:
+- [x] Read `compute_affinity_groups()` in `layout.py` lines 784–860.  Note:
   - Input: `ir: CircuitIR`, `tiers: dict[str, int]` (ref → tier index).
   - Output: `dict[int, list[str]]` (tier index → refs in affinity order).
   - Tier 0 is sorted alphabetically as a stable base.
@@ -320,13 +371,15 @@ emits nodes in affinity order rather than alphabetical order.
 
 #### 3.6 — Write tests
 
-- [ ] Add `TestComputeAffinityGroups` class in
+- [x] Add `TestComputeAffinityGroups` class in
   [`tests/unit/test_phase4_layout.py`](../tests/unit/test_phase4_layout.py)
   (it likely already has some coverage from prior history — check first).
-- [ ] Test: two-tier circuit where tier 1 has two components, one with high
+  **Added: 3 tests (`test_affinity_groups_returns_sorted_refs`,
+  `test_first_tier_alphabetical`, `test_isolated_component_gets_stable_position`).**
+- [x] Test: two-tier circuit where tier 1 has two components, one with high
   affinity to tier 0 → high-affinity component is listed first.
-- [ ] Test: tier 0 → alphabetical sort regardless of signal nets.
-- [ ] Test: component with no signal nets → affinity = 0; still included in
+- [x] Test: tier 0 → alphabetical sort regardless of signal nets.
+- [x] Test: component with no signal nets → affinity = 0; still included in
   output.
 - [ ] Test: `_build_dot_source()` with `affinity_order` set → DOT string emits
   refs in specified order within each `{rank=same}` block.
@@ -376,11 +429,17 @@ or deleted.
 
 #### 4.3 — Promote `_barycentric_sort()` (needed for Improvement 2)
 
-- [ ] Rename `_barycentric_sort` → `barycentric_sort` (remove underscore) if it
+- [x] Rename `_barycentric_sort` → `barycentric_sort` (remove underscore) if it
   will be imported from outside `layout.py`.
-- [ ] Update all call sites (in `compute_signal_flow_layout` and new `snap.py`
+  **Done in step 2.2: renamed in `layout.py` definition and both internal call
+  sites in `compute_signal_flow_layout`.**
+- [x] Update all call sites (in `compute_signal_flow_layout` and new `snap.py`
   code) to use the new name.
-- [ ] Update tests that reference the old private name.
+  **`layout.py` internal calls updated. `snap.py` imports `barycentric_sort as _barycentric_sort`
+  (added in 2.3 alongside `_remediate_crossings` implementation).**
+- [x] Update tests that reference the old private name.
+  **`kicad-pcb/tests/unit/test_layout.py`: import and all 8 call sites updated
+  from `_barycentric_sort` → `barycentric_sort`; ruff import-sort fixed; tests pass.**
 
 #### 4.4 — Final lint/type-check pass
 

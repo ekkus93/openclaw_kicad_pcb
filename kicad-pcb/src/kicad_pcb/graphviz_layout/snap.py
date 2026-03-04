@@ -59,6 +59,7 @@ is:
 6. :func:`_center_ics_in_columns` (always; no-op when no ICs present)
 7. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
 8. :func:`_deoverlap_positions` (always; final guard against grid collisions)
+9. :func:`_remediate_crossings` (always; includes its own inner deoverlap)
 
 Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
 refs are already at their fixed rows before connectors compute their median.
@@ -72,6 +73,9 @@ are relative to the compacted IC y values.
 are re-snapped relative to the ICs' newly-centred positions.
 ``_deoverlap_positions`` runs last so it resolves every collision regardless
 of which earlier pass introduced it.
+``_remediate_crossings`` runs after deoverlap as a final sweep: it measures the
+crossing ratio and iteratively applies barycentric column-sort if the ratio
+exceeds the threshold, then re-runs deoverlap to fix any new collisions.
 """
 
 from __future__ import annotations
@@ -88,7 +92,11 @@ if TYPE_CHECKING:
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
+from ..layout import GRID_COL_MM as _GRID_COL_MM
 from ..layout import ComponentAnnotation as _ComponentAnnotation
+from ..layout import barycentric_sort as _barycentric_sort
+from ..layout import build_signal_adjacency as _build_signal_adjacency
+from ..layout import count_wire_crossings as _count_wire_crossings
 
 _log = logging.getLogger(__name__)
 
@@ -1019,6 +1027,109 @@ def _enforce_connector_x_bounds(
 
 
 # ---------------------------------------------------------------------------
+# Crossing remediation sweep
+# ---------------------------------------------------------------------------
+
+
+def _remediate_crossings(
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    max_sweeps: int = 3,
+    crossing_ratio_threshold: float = 0.30,
+    skip_pairs: frozenset[tuple[str, str]] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Reduce wire crossings re-introduced by snap passes via barycentric re-sort.
+
+    Graphviz minimises edge crossings before any snap pass runs, but
+    connector y-snapping, stereo splitting, IC-centring, and deoverlap can
+    all re-introduce crossings.  This pass:
+
+    1. Builds the signal adjacency graph from *ir* (power nets excluded).
+    2. Computes ``ratio = crossings / total_signal_wires``.
+    3. If ``ratio ≥ crossing_ratio_threshold``, sorts columns with a two-pass
+       barycentric sweep and rebuilds y-slots, then goes back to step 2.
+    4. Repeats up to *max_sweeps* times, breaking early when the ratio drops
+       below the threshold or the budget is exhausted.
+    5. Re-runs :func:`_deoverlap_positions` to fix any new grid collisions
+       introduced by the reordering.
+
+    Power symbols (``#PWR`` / ``#FLG``) are excluded from column bucketing
+    and are never moved.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions ``(x, y, rot)`` for all components.
+    ir:
+        Circuit IR used to build the signal adjacency graph.
+    max_sweeps:
+        Maximum barycentric sweeps to run (default 3, matching
+        ``_MAX_REMEDIATION_SWEEPS`` in ``layout.py``).
+    crossing_ratio_threshold:
+        Crossing ratio below which no further sweep is attempted (default 0.30).
+    skip_pairs:
+        Passed through to the inner :func:`_deoverlap_positions` call so that
+        intentional co-locations (e.g. decoupling caps) are preserved.
+
+    Returns
+    -------
+    dict[str, tuple[float, float, float | None]]
+        Updated positions dict.  Input is not mutated.
+    """
+    sig_adj = _build_signal_adjacency(ir)
+    total_sig_wires = sum(len(v) for v in sig_adj.values()) // 2
+    if total_sig_wires == 0:
+        return positions
+
+    # Bucket non-power refs by integer column index.
+    by_col: dict[int, list[str]] = defaultdict(list)
+    for ref, (x, _y, _rot) in positions.items():
+        if ref.startswith("#"):  # exclude #PWR / #FLG — already at fixed rows
+            continue
+        col_idx = round((x - ORIGIN_X) / _GRID_COL_MM)
+        by_col[col_idx].append(ref)
+
+    result = dict(positions)
+
+    for sweep in range(max_sweeps):
+        # count_wire_crossings takes 2-tuples; strip rotation.
+        pos2: dict[str, tuple[float, float]] = {r: (x, y) for r, (x, y, _) in result.items()}
+        crossing_count = _count_wire_crossings(pos2, sig_adj)
+        ratio = crossing_count / total_sig_wires
+        _log.debug(
+            "remediate_crossings: sweep %d crossings=%d wires=%d ratio=%.2f",
+            sweep + 1,
+            crossing_count,
+            total_sig_wires,
+            ratio,
+        )
+        if ratio < crossing_ratio_threshold or sweep == max_sweeps - 1:
+            break
+
+        # Sort columns to reduce crossings.
+        by_col = _barycentric_sort(dict(by_col), sig_adj)
+
+        # Rebuild positions: within each column, redistribute current sorted
+        # y-slots across the new barycentric ref order.  x and rotation are
+        # preserved per-ref (refs within a column may have slightly different x
+        # values from Graphviz; we keep each ref's own x unchanged).
+        new_result = dict(result)
+        for col_refs in by_col.values():
+            if len(col_refs) < 2:
+                continue
+            y_slots = sorted(result[r][1] for r in col_refs)
+            for ref, new_y in zip(col_refs, y_slots):
+                x, _old_y, rot = result[ref]
+                new_result[ref] = (x, new_y, rot)
+        result = new_result
+
+    # Re-run deoverlap: barycentric sort may co-locate refs within a column.
+    result = _deoverlap_positions(result, skip_pairs=skip_pairs)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
 
@@ -1061,6 +1172,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
        IC (skipped when *decoupling_map* is empty).
     8. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
+    9. :func:`_remediate_crossings` — measure crossing ratio; if ≥ 0.30 apply
+       barycentric column-sort sweeps (up to 3) then re-run deoverlap.
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
@@ -1084,4 +1197,5 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         (min(cap, ic), max(cap, ic)) for cap, ic in decoupling_map.items()
     )
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
+    result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
     return result
