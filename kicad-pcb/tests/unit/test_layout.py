@@ -30,7 +30,6 @@ from kicad_pcb.layout import (
     GRID_COL_MM,
     ORIGIN_X,
     ComponentAnnotation,
-    HeuristicLayoutEngine,
     _barycentric_sort,
     _compute_opamp_halo,
     _recursive_halving,
@@ -939,26 +938,3 @@ class TestCountWireCrossings:
         adj = build_signal_adjacency(ir)
         assert "R2" in adj.get("R1", set())
         assert "R1" in adj.get("R2", set())
-
-    def test_heuristic_engine_last_crossing_count_default(self) -> None:
-        """last_crossing_count starts at 0 before any layout run."""
-        engine = HeuristicLayoutEngine()
-        assert engine.last_crossing_count == 0
-
-    def test_heuristic_engine_last_crossing_count_set_after_run(self) -> None:
-        """last_crossing_count is a non-negative int after compute_symbol_positions."""
-        engine = HeuristicLayoutEngine()
-        ir = _make_ir(
-            [
-                ("R1", "Device:R", "10k"),
-                ("R2", "Device:R", "10k"),
-                ("U1", "Amplifier_Operational:TL071", "TL071"),
-            ],
-            [
-                ("SIG1", [("R1", "1"), ("U1", "2")]),
-                ("SIG2", [("R2", "1"), ("U1", "3")]),
-            ],
-        )
-        engine.compute_symbol_positions(ir)
-        assert isinstance(engine.last_crossing_count, int)
-        assert engine.last_crossing_count >= 0

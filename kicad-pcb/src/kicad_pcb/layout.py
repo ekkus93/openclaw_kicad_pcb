@@ -21,8 +21,6 @@ if TYPE_CHECKING:
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
-from .tier import assign_tiers as _assign_tiers_tier
-from .tier import classify_connector_roles as _classify_connector_roles_tier
 
 _log = logging.getLogger(__name__)
 
@@ -1278,47 +1276,3 @@ def detect_stereo_channels(
             result[ref] = "mono"
 
     return result
-
-
-# ---------------------------------------------------------------------------
-# LayoutEngine wrapper (satisfies layout_engine.LayoutEngine Protocol)
-# ---------------------------------------------------------------------------
-
-
-class HeuristicLayoutEngine:
-    """BFS signal-flow layout engine; requires no external tools.
-
-    Wraps :func:`compute_signal_flow_layout` to satisfy the
-    :class:`~kicad_pcb.layout_engine.LayoutEngine` Protocol.  Rotation is
-    not supported (always returns ``None`` for the third tuple element).
-    """
-
-    def __init__(self) -> None:
-        # R6-3: track crossing count from the last layout so callers and
-        # lint rules can inspect it without re-running the full engine.
-        self.last_crossing_count: int = 0
-
-    def compute_symbol_positions(
-        self,
-        ir: CircuitIR,
-    ) -> dict[str, tuple[float, float, float | None]]:
-        """Delegate to :func:`compute_signal_flow_layout`.
-
-        Pre-computes op-amp halo membership (R4) so the BFS column assignment
-        and intra-column row ordering co-locate feedback network passives with
-        their anchor IC.
-
-        Returns ``{ref: (x_mm, y_mm, None)}`` — rotation is always ``None``.
-        """
-        refs = sorted(c.ref for c in ir.components)
-        _tiers = _assign_tiers_tier(ir)
-        _roles = _classify_connector_roles_tier(refs, _tiers)
-        annotations = find_feedback_paths(ir, _tiers, roles=_roles or None)
-        halo = _compute_opamp_halo(ir, annotations, _tiers)
-        raw = compute_signal_flow_layout(ir, halo=halo or None, roles=_roles or None)
-        # R6-3: store crossing count for external inspection / lint.
-        self.last_crossing_count = count_wire_crossings(raw, _build_signal_adjacency(ir))
-        return {ref: (x, y, None) for ref, (x, y) in raw.items()}
-
-    def __repr__(self) -> str:  # pragma: no cover
-        return "HeuristicLayoutEngine()"
