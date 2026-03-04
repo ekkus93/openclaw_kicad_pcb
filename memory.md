@@ -1,6 +1,50 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-03T21:00:00Z_
+_Last updated: 2026-03-04T00:00:00Z_
+
+---
+
+## 2026-03-04T00:00:00Z — Layout improvement rules (CODE_REVIEW6_TODO.md)
+
+### Context
+Reviewed generated `ne5532_headphone_amp_left.kicad_sch` / `OpenClaw_Managed.kicad_sch`.
+Identified several schematic readability problems and designed 6 concrete improvement rules.
+
+### Problems identified
+1. Output connector (headphone jack) lands on the left instead of the right.
+2. Column of passives partially covers the op-amp.
+3. Many `0V` labels where a `GND` power symbol should be used.
+4. Excessive wire crossings.
+
+### Six rules designed
+| Rule | Name | Key files |
+|------|------|-----------|
+| R0 | I/O Connector Role Detection | `tier.py`, `graphviz_layout/snap.py` |
+| R1 | Signal-Distance Score (SDS) | `layout.py` |
+| R2 | Recursive Halving | `layout.py`, `gv_dot_builder.py` |
+| R3 | Two-Pass Barycentric Vertical Sort | `layout.py`, `graphviz_layout/snap.py` |
+| R4 | Op-Amp Halo (feedback network colocation) | `layout.py`, `graphviz_layout/snap.py` |
+| R5 | GND / 0V Net Normalisation | `component_types.py`, `circuit_ir.py`, `sch_doc/` |
+| R6 | Wire Crossing Budget | `layout.py`, `lint/` |
+
+### Key design decisions
+- SDS (signal-distance score) = `d_in / (d_in + d_out)` gives a 0–1 continuous
+  position signal that is the basis of recursive halving (R2).
+- Recursive halving replaces flat BFS column assignment; columns derived from
+  median SDS bisection at each level.
+- Op-amp halo = passives whose ONLY signal connections are to a single IC's pins
+  (feedback/gain network); these are forced into the IC's column.
+- `0V` / `GROUND` / `EARTH` aliases → canonical `GND` at IR ingestion time.
+- Connector role is determined by topological position in the DAG (before vs. after
+  all ICs), not just by hop distance to an IC.
+
+### Recommended implementation priority
+R0 (headphone fix) → R5 (GND labels) → R4 (halo) → R1+R2 (SDS+halving) →
+R3 (barycentric) → R6 (crossing budget) → INT (integration tests)
+
+### TODO file
+`code_review/CODE_REVIEW6_TODO.md` — full task breakdown with subtasks, file
+locations, and function signatures.
 
 ---
 
@@ -2401,3 +2445,195 @@ TestDotSpacing, TestLayoutScale). All passing.
 
 ### Final state: 1628 tests, all passing.
 
+
+---
+
+## 2026-03-05T00:00:00Z — Rule 0 implementation complete (connector I/O role detection)
+
+### Summary
+Implemented Rule 0 ("I/O connector role detection + X-bound enforcement") from CODE_REVIEW6_TODO.md.
+All 6 sub-tasks (R0-1 through R0-6) completed; 6 new unit tests pass, ruff clean.
+
+### Files modified
+- **tier.py** (R0-1 + R0-2): Added `ConnectorRole` type alias, `_classify_connector_roles()`, updated `assign_tiers()` to force output→max_tier, input→0.
+- **graphviz_layout/snap.py** (R0-3): Added `_enforce_connector_x_bounds()` (input ≤ 25% page, output ≥ 75% page); added `roles` param to `_apply_post_layout_snaps()`.
+- **graphviz_layout/__init__.py** (R0-3 wiring): Computes `_roles` after `_tiers`; passes `connector_roles`/`roles` to dot_builder, snap, and orientations.
+- **layout.py** (R0-4): Added `roles` param to `compute_orientations()`; role takes precedence over tier for connector orientation.
+- **graphviz_layout/dot_builder.py** (R0-5): Added `_emit_connector_rank_constraints()` (rank=source/sink); added `connector_roles` param to `_build_dot_source()`.
+- **tests/unit/test_tier.py** (R0-6 — NEW FILE): 6 tests covering classify and tier-forcing logic.
+
+### Key model field notes
+- `PinRefIR.unit` is `str | None` (not int)
+- `CircuitIR.version` is `str`
+- `CircuitIR.options` is `OptionsIR | None` (not dict)
+Use `unit=None` and `version="1"` in test helpers.
+
+### Remaining work
+Rules 1–5 not yet started. Next priority: Rule 5 (GND normalisation) or Rule 4 (op-amp halo).
+
+---
+
+## 2026-03-05T01:00:00Z — Rule 5 implementation complete (GND / 0V net normalisation)
+
+### Summary
+Implemented Rule 5 ("GND / 0V net normalisation") from CODE_REVIEW6_TODO.md.
+All 7 sub-tasks (R5-1 through R5-7) completed; 47 new tests pass (53 total), ruff clean.
+
+### Files modified
+- **`kicad-pcb/src/kicad_pcb/component_types.py`** (R5-1 + R5-2 + R5-5):
+  - Added `GND_ALIASES: frozenset[str]` — canonical set of ground net-name aliases (0V, 0V0, GROUND, EARTH, AGND, PGND, DGND, SGND, VSS, GND)
+  - Added `normalize_gnd_net_name(name: str) -> str` — case-insensitive lookup; returns "GND" for any alias, original string otherwise
+  - Added `"0V"` to `POWER_NET_PREFIXES` tuple (was already in `POWER_NET_PATTERN` regex but missing from prefix tuple)
+
+- **`kicad-pcb/src/kicad_pcb/circuit_ir.py`** (R5-3):
+  - Imported `field_validator` from pydantic, `normalize_gnd_net_name` from component_types
+  - Added `@field_validator("name", mode="after")` on `NetIR` — normalises GND aliases at IR construction time (before any downstream consumer)
+
+- **`kicad-pcb/src/kicad_pcb/preflight.py`** (R5-4):
+  - Imported `normalize_gnd_net_name`
+  - Applied normalisation in `collect_existing_net_names()` so existing 0V labels in a schematic are treated as GND for deduplication
+
+### R5-6 note
+The router (`router.py`) already emits `global_label` nodes (not plain `label` nodes) for power nets via `_is_power_net_name()`. After R5-3, `net.name` is always "GND" instead of "0V", so the emitted KiCad global label automatically reads "GND". No additional changes to the writer were needed.
+
+### New test files
+- **`kicad-pcb/tests/unit/test_component_types.py`**: 28 tests — GND_ALIASES, normalize_gnd_net_name, POWER_NET_PREFIXES
+- **`kicad-pcb/tests/unit/test_circuit_ir.py`**: 19 tests — NetIR normalization, CircuitIR multi-net, JSON roundtrip
+
+### VSS note
+VSS is included in GND_ALIASES following the TODO spec. In multi-supply circuits VSS can be the negative rail (not ground). Remove from GND_ALIASES if this causes issues in non-audio designs.
+
+## 2026-03-04T00:00:00Z - Rule 4 (Op-Amp Halo) implemented
+- `_compute_opamp_halo(ir, annotations, tiers) → dict[str, str]` added to `layout.py`
+  - Halo criteria: passive (R/C/L) + (feedback=True OR exclusive-IC coupling) + no power-net pin
+  - Anchor = closest-tier IC in signal neighbourhood; alphabetical tiebreak
+- `compute_signal_flow_layout(ir, halo=None)` updated to apply R4-2 column override and R4-3 row ordering
+  - R4-2: halo members forced to anchor IC's BFS column after power-only passive adjustment
+  - R4-3: within IC column, halo members placed immediately adjacent to IC; other passives pushed to edges
+- `HeuristicLayoutEngine.compute_symbol_positions()` now pre-computes tiers + annotations + halo
+- `_snap_opamp_halo(positions, halo)` added to `graphviz_layout/snap.py`
+  - Fires after `_snap_feedback_components`; corrects x-column drift > 1 mm
+  - Multiple halo members distributed alternately above/below anchor at multiples of GRID_ROW_MM
+- `_apply_post_layout_snaps()` gains `halo: Mapping[str, str] | None = None` parameter
+- `_emit_halo_constraints(lines, halo)` added to `dot_builder.py`
+  - Emits `{rank=same; ic; halo_ref}` + invisible pull-toward edges (constraint=false)
+- `_build_dot_source()` gains `halo` parameter; calls `_emit_halo_constraints` when non-None
+- `GraphvizLayoutEngine.compute_symbol_positions()` computes halo and passes to DOT builder + snap
+- 18 new unit tests in `tests/unit/test_layout.py`; total suite: 71 passing
+- Note: `_recursive_halving()` (R2) not yet implemented — R4-2 column override applied in `compute_signal_flow_layout()` for now; easy to move to `_recursive_halving()` when R2 is done
+
+## 2026-03-04T00:00:00Z - Rules 1 and 2 (SDS + Recursive Halving) implemented
+
+### R1: Signal Distance Score
+- `_SDS_SENTINEL = 1000` constant added to `layout.py`
+- `_bfs_distances(adjacency, seeds) -> dict[str, int]` — pure BFS, unreachable nodes absent
+- `_find_decoupling_caps_layout(ir) -> dict[str, str]` — mirrors dot_builder version using `_is_power_net_layout`
+- `compute_signal_distance_scores(ir, roles) -> dict[str, float]` — public function:
+  - BFS from input connectors → d_in; BFS from output connectors → d_out
+  - SDS = d_in / (d_in + d_out); 0.5 when both are 0 (isolated)
+  - Power-only decoupling caps inherit their anchor IC's SDS
+- `ComponentAnnotation` gains `sds: float = 0.5` field
+- `find_feedback_paths(ir, tiers, roles=None)` — optional `roles` param; calls `compute_signal_distance_scores` and replaces all annotation SDS values when roles provided
+- Import added: `from .tier import classify_connector_roles as _classify_connector_roles_tier`
+
+### R2: Recursive Halving column assignment
+- `_rh_recurse(...)` — recursive worker (private)
+- `_recursive_halving(refs, sds, x_lo, x_hi, *, max_per_col, grid_col_mm) -> dict[str, int]` — public:
+  - Sort by (sds, ref), split at median, recurse with halved x-band
+  - Base: len ≤ max_per_col OR (x_hi - x_lo) < grid_col_mm → assign col_idx = round((x_lo - ORIGIN_X) / grid_col_mm)
+- `compute_sds_columns(refs, sds) -> dict[str, int]` — public wrapper with page constants wired in
+- `compute_signal_flow_layout(ir, halo=None, roles=None)` — new `roles` param:
+  - When roles has ≥1 input and ≥1 output connector: compute SDS + call `_recursive_halving`
+  - Fallback to `_bfs_columns` with WARNING log when connector types missing (R2-4)
+- `HeuristicLayoutEngine.compute_symbol_positions()` — now computes `_roles = _classify_connector_roles_tier(refs, _tiers)` and passes to `find_feedback_paths` and `compute_signal_flow_layout`
+
+### dot_builder.py change (R2-3)
+- `_build_dot_source(...)` gains `sds_cols: dict[str, int] | None = None` parameter
+- When `sds_cols` is provided, uses it as `_col_source` instead of `_tiers` for building tier_groups (DOT rank subgraphs)
+
+### graphviz_layout/__init__.py wiring
+- Imports added: `compute_sds_columns as _compute_sds_columns`, `compute_signal_distance_scores as _compute_signal_distance_scores`
+- After `_roles` computed: `sds_scores = _compute_signal_distance_scores(ir, _roles)` + `sds_cols = _compute_sds_columns(refs, sds_scores)`
+- `_find_feedback_paths` called with `roles=_roles or None`
+- `_build_dot_source` called with `sds_cols=sds_cols or None`
+
+### Tests
+- 11 new tests added to `tests/unit/test_layout.py`:
+  - `TestComputeSignalDistanceScores`: 5 tests (linear chain, decoupling cap inherit, no connectors, annotation populated, annotation default)
+  - `TestRecursiveHalving`: 4 tests (8 distinct monotone cols, small group → col 0, degenerate SDS, empty refs)
+  - `TestComputeSignalFlowLayoutWithRoles`: 2 tests (left-to-right order preserved, fallback warning)
+- **Total suite: 82 passing**
+
+### Column index arithmetic note (banker's rounding)
+With ORIGIN_X=GRID_COL_MM=30.48 and _MAX_COLS=20, a 3-level recursion on 8 components (max_per_col=1) yields col indices: 0, 2, 5, 8, 10, 12, 15, 18. Python's `round()` uses banker's rounding (round half to even), e.g. round(2.5)=2, round(7.5)=8, round(12.5)=12, round(17.5)=18.
+
+## 2026-03-04T00:00:00Z - Rule 3 (Two-Pass Barycentric Sort) implemented
+
+### R3-1 + R3-2: _barycentric_sort in layout.py
+- `_barycentric_sort(by_col, adjacency, *, passes=2) -> dict[int, list[str]]` added to `layout.py`
+- Two-pass sweep: each full pass = one L→R sort + one R→L sort
+  - L→R pass: for each col k>0, sort members by avg row-index of signal-adjacent neighbours in col k-1
+  - R→L pass: for each col k<max, sort members by avg row-index of signal-adjacent neighbours in col k+1
+  - Row-index = 0-based position in current column list (updated sequentially)
+  - Fallback: if no cross-col neighbour, use own current row index (stable neutral weight)
+  - Tiebreak: alphabetical by ref for determinism
+- Replaced single-pass `members.sort(key=_avg_nbr_col)` in `compute_signal_flow_layout()` with `by_col = _barycentric_sort(by_col, sig_adj)` 
+- `sig_adj` (signal-only adjacency) passed to keep power nets excluded from barycentric weights
+
+### R3-3: _post_stereo_barycentric in snap.py
+- `_post_stereo_barycentric(positions, ir, channels, *, passes=2)` added to `snap.py`  (`# noqa: PLR0912` for branch count)
+- After `_apply_stereo_split` compresses L/R into page halves, this pass reduces intra-channel crossings:
+  - Splits refs by channel "L" and "R"; mono refs untouched
+  - Groups refs by exact snapped x-coordinate as column key
+  - Runs passes × (L→R + R→L) barycentric sorts within each channel band independently
+  - Re-assigns original sorted y-values to newly ordered refs (preserves y-spacing, swaps occupants)
+- Wired into `_apply_post_layout_snaps()` as step 4b immediately after `_apply_stereo_split`
+- Guarded by `if any(v in ("L", "R") for v in channels.values())`
+- Exported via `__init__.py` as `post_stereo_barycentric = _post_stereo_barycentric`
+
+### R3-4: Tests
+- `TestBarycentricSort` added to `tests/unit/test_layout.py`
+- Tests: crossing eliminated (2 cols, 2 refs each), second pass improves on one pass, single column no-op, empty input no-crash
+- **Total suite: 89 passing**
+
+### Implementation note
+`compute_signal_flow_layout` builds signal adjacency via `_build_signal_adjacency(ir)`, stored as `sig_adj`. This same adjacency is passed to `_barycentric_sort`. The function signature dropped `positions_x: dict[str, float]` from the R3-1 spec (it was unused — barycentric ordering uses row-index within current list, not mm coordinates).
+
+
+---
+
+## 2026-03-04T12:00:00Z — Rule 6 (Wire Crossing Budget) complete
+
+### What was implemented
+All R6 work targeted `layout.py`, `lint/`, and tests.
+
+**R6-1: `count_wire_crossings` + `build_signal_adjacency` (layout.py)**
+- `_MAX_REMEDIATION_SWEEPS: int = 3` constant added after `_MAX_COLS`
+- `build_signal_adjacency(ir)` — public wrapper for `_build_signal_adjacency`
+- `count_wire_crossings(positions, adjacency) -> int` — O(E²) endpoint-inversion heuristic:
+  - Deduplicates edges; normalises each as (left, right) by (x, then y)
+  - For pairs, checks if left endpoints straddle different x values and either endpoint pair reverses vertical order
+  - Same-column pairs (xl == xcl) excluded per spec
+  - Final form uses `if xl < xcl and (yl > ycl or yr > ycr)` / `elif xcl < xl and (ycl > yl or ycr > yr)` to stay within PLR0912 limit of 12 branches
+
+**R6-2: Remediation loop in `compute_signal_flow_layout`**
+- After `by_col = _barycentric_sort(by_col, sig_adj)`, added loop up to `_MAX_REMEDIATION_SWEEPS` total
+- If `crossings / total_wires >= 0.30`, runs another barycentric sweep and logs at DEBUG
+- Stops when ratio < 0.30 or sweep budget exhausted
+- `sig_adj` already in scope from earlier in the function
+
+**R6-3: `HeuristicLayoutEngine` + LAY007**
+- `HeuristicLayoutEngine.__init__(self)` added with `self.last_crossing_count: int = 0`
+- `compute_symbol_positions` now sets `self.last_crossing_count = count_wire_crossings(raw, _build_signal_adjacency(ir))` before returning
+- `lint/defs.py`: `"LAY007"` suggestion added after `"LAY005"`
+- `lint/sch.py`: Added `from ..layout import build_signal_adjacency, count_wire_crossings`, TYPE_CHECKING import for `CircuitIR`, new `lint_layout_wire_crossings(positions, ir) -> list[LintIssue]`; LAY007 fires when `crossings > 0.5 * total_wires`
+- `lint/__init__.py`: `lint_layout_wire_crossings` added to imports and `__all__`
+
+**R6-4: Tests**
+- `TestCountWireCrossings` (10 tests) appended to `tests/unit/test_layout.py`
+  - Covers: empty adj, single edge, parallel wires, crossed wires (→ 1), same-column exclusion, missing ref skipped, 3-way crossing, `build_signal_adjacency` symmetry, `HeuristicLayoutEngine.last_crossing_count` default + set-after-run
+- New `tests/unit/test_lint.py` with `TestLintLayoutWireCrossings` (5 tests)
+  - Covers: LAY007 in LINT_SUGGESTIONS, no signal nets, 50% threshold (no fire), >50% fires, parallel layout no fire
+
+### Final test count
+**104 passing** (up from 89 after R3); 0 lint errors.
