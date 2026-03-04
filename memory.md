@@ -1,6 +1,14 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T21:44:21Z_
+_Last updated: 2026-03-04T21:46:00Z_
+
+---
+
+## 2026-03-04T21:46:00Z — Remove stale schematic files from code_review/
+
+- Deleted `code_review/OpenClaw_Managed.kicad_sch`, `code_review/ne5532_headphone_amp_left.kicad_sch`, `code_review/ne5532_headphone_amp_left_schematic.zip`.
+- Working tree is now clean.
+- Commit: `6a72af0` — pushed to master.
 
 ---
 
