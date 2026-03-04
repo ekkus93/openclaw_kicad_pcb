@@ -1,6 +1,35 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T21:18:44Z_
+_Last updated: 2026-03-05T00:30:00Z_
+
+---
+
+## 2026-03-05T00:30:00Z — Cleanup 4.2 decision + 4.4 final quality pass
+
+### 4.2 — Fate of `compute_signal_flow_layout()`
+- **Decision: Option A — keep as test-harness reference.**
+- Added `.. note::` block to its docstring in `layout.py` explaining it is not
+  used by the production pipeline (`GraphvizLayoutEngine` is live) but is kept
+  as a self-contained algorithm reference and test harness (pure Python, no
+  Graphviz binary required).
+- ~14 call sites across `TestHeuristicFeedbackPlacement`,
+  `TestHeuristicLRChannelLayout`, `TestOpAmpCentering`,
+  `TestDecouplingCapPlacement`, `TestComputeSignalFlowLayoutWithRoles` would
+  need full rewrites if deleted, with no production benefit.
+- `GRAPHVIZ_UPDATES.md` 4.2 checkboxes updated with full rationale.
+- Commit: `7b86086` — pushed to master.
+
+### 4.4 — Final quality pass
+- `ruff check kicad-pcb/src kicad-pcb/tests` → **All checks passed**
+- `mypy kicad-pcb/src` → **Success: no issues found in 62 source files**
+- `pytest kicad-pcb/tests` → **102 passed in 1.52s**
+
+### Remaining untracked deletions in `code_review/`
+- `code_review/OpenClaw_Managed.kicad_sch` — deleted (not staged)
+- `code_review/ne5532_headphone_amp_left.kicad_sch` — deleted (not staged)
+- `code_review/ne5532_headphone_amp_left_schematic.zip` — deleted (not staged)
+  These are pre-existing deletions unrelated to cleanup work; user needs to
+  decide whether to commit or restore them.
 
 ---
 
