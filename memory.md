@@ -1,10 +1,10 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T00:00:00Z_
+_Last updated: 2026-03-04T21:18:44Z_
 
 ---
 
-## 2026-03-04T00:00:00Z — Layout improvement rules (CODE_REVIEW6_TODO.md)
+## 2026-03-04T18:39:46Z — Layout improvement rules (CODE_REVIEW6_TODO.md)
 
 ### Context
 Reviewed generated `ne5532_headphone_amp_left.kicad_sch` / `OpenClaw_Managed.kicad_sch`.
@@ -48,7 +48,7 @@ locations, and function signatures.
 
 ---
 
-## 2026-03-03T21:00:00Z — session integration tests for cmd_new_from_netlist (commit 6c88ef6)
+## 2026-03-03T18:57:34Z — session integration tests for cmd_new_from_netlist (commit 6c88ef6)
 
 ### Gap closed
 - Existing netlist tests always pass `out_dir` explicitly → entire session code
@@ -73,7 +73,7 @@ locations, and function signatures.
 
 ---
 
-## 2026-03-03T20:30:00Z — session test isolation + stale-session auto-clear (commit 6925dec)
+## 2026-03-03T18:45:44Z — session test isolation + stale-session auto-clear (commit 6925dec)
 
 ### Root cause: test pollution (hundreds of dirs in ~/kicad-projects/sessions/)
 - `test_session.py` fixture monkeypatched `cfg_mod.get_sessions_base_dir` but
@@ -103,7 +103,7 @@ locations, and function signatures.
 
 ---
 
-## 2026-03-03T19:30:00Z — empty managed schematic bug fixed (commit 916f990)
+## 2026-03-03T18:16:08Z — empty managed schematic bug fixed (commit 916f990)
 
 ### Root cause discovered from session log
 - OpenClaw bot was generating schematics where `OpenClaw_Managed.kicad_sch` was
@@ -140,7 +140,7 @@ locations, and function signatures.
 
 ---
 
-## 2026-03-03T17:10:00Z — layout quality fixes committed (commit 2e191ac)
+## 2026-03-03T17:00:29Z — layout quality fixes committed (commit 2e191ac)
 
 ### Python environment (authoritative — always use these)
 - **Venv**: `/home/ubo/work/openclaw_kicad_pcb/.venv/bin/python3` (Python 3.11.2)
@@ -173,7 +173,7 @@ locations, and function signatures.
 
 ---
 
-## 2026-03-03T12:30:00Z — lint.py refactor started (Phase 1 complete)
+## 2026-03-03T11:56:02Z — lint.py refactor started (Phase 1 complete)
 
 ### Context
 New refactor: `lint.py` (971 lines, 3 rule domains) → 4 focused modules + thin facade.
@@ -206,7 +206,7 @@ lint.py            # thin facade         (~30 lines)
 
 ---
 
-## 2026-03-03T11:45:00Z — GRAPHVIZ_LAYOUT_TODO.md refactor complete (all 8 phases)
+## 2026-03-03T11:39:43Z — GRAPHVIZ_LAYOUT_TODO.md refactor complete (all 8 phases)
 
 ### Summary
 The full `graphviz_layout.py` refactor is now complete. The 1198-line monolith has been split into 4 focused modules. All checks pass.
@@ -231,7 +231,7 @@ The full `graphviz_layout.py` refactor is now complete. The 1198-line monolith h
 
 ---
 
-## 2026-03-03T10:10:00Z — refactor: Phase 2 — extract gv_dot_builder.py (+ 6.2 + 6.3 fixes)
+## 2026-03-03T09:46:11Z — refactor: Phase 2 — extract gv_dot_builder.py (+ 6.2 + 6.3 fixes)
 
 ### What changed
 - Created `kicad-pcb/src/kicad_pcb/gv_dot_builder.py` (477 lines): extracted all DOT builder functions from `graphviz_layout.py` — `_is_connector`, `_is_capacitor`, `_find_decoupling_caps`, `_assign_bfs_tiers`, `_safe_id`, `_tier_rank_keyword`, `_compute_net_weights`, `_emit_tier_subgraphs`, `_emit_feedback_constraints`, `_emit_decoupling_constraints`, `_build_dot_source`.
@@ -2362,7 +2362,7 @@ Phase 1 (Documentation and Command Surface Accuracy) completed in full.
 - All Phase 8 checkboxes ticked. Refactoring TODO fully resolved.
 - Commit chain: 291a143 → 15dd276 → 9e257ba → e453ced → 153ad09 → (Phase 8 commit).
 
-## 2026-03-04T00:00:00Z — commands/netlist.py refactoring DONE (all 5 phases)
+## 2026-03-03T14:44:46Z — commands/netlist.py refactoring DONE (all 5 phases)
 
 ### Summary
 909-line `commands/netlist.py` split into 4 focused modules. All checks pass.
@@ -2503,7 +2503,7 @@ The router (`router.py`) already emits `global_label` nodes (not plain `label` n
 ### VSS note
 VSS is included in GND_ALIASES following the TODO spec. In multi-supply circuits VSS can be the negative rail (not ground). Remove from GND_ALIASES if this causes issues in non-audio designs.
 
-## 2026-03-04T00:00:00Z - Rule 4 (Op-Amp Halo) implemented
+## 2026-03-04T18:39:36Z - Rule 4 (Op-Amp Halo) implemented
 - `_compute_opamp_halo(ir, annotations, tiers) → dict[str, str]` added to `layout.py`
   - Halo criteria: passive (R/C/L) + (feedback=True OR exclusive-IC coupling) + no power-net pin
   - Anchor = closest-tier IC in signal neighbourhood; alphabetical tiebreak
@@ -2522,7 +2522,7 @@ VSS is included in GND_ALIASES following the TODO spec. In multi-supply circuits
 - 18 new unit tests in `tests/unit/test_layout.py`; total suite: 71 passing
 - Note: `_recursive_halving()` (R2) not yet implemented — R4-2 column override applied in `compute_signal_flow_layout()` for now; easy to move to `_recursive_halving()` when R2 is done
 
-## 2026-03-04T00:00:00Z - Rules 1 and 2 (SDS + Recursive Halving) implemented
+## 2026-03-04T18:39:36Z - Rules 1 and 2 (SDS + Recursive Halving) implemented
 
 ### R1: Signal Distance Score
 - `_SDS_SENTINEL = 1000` constant added to `layout.py`
@@ -2567,7 +2567,7 @@ VSS is included in GND_ALIASES following the TODO spec. In multi-supply circuits
 ### Column index arithmetic note (banker's rounding)
 With ORIGIN_X=GRID_COL_MM=30.48 and _MAX_COLS=20, a 3-level recursion on 8 components (max_per_col=1) yields col indices: 0, 2, 5, 8, 10, 12, 15, 18. Python's `round()` uses banker's rounding (round half to even), e.g. round(2.5)=2, round(7.5)=8, round(12.5)=12, round(17.5)=18.
 
-## 2026-03-04T00:00:00Z - Rule 3 (Two-Pass Barycentric Sort) implemented
+## 2026-03-04T18:39:36Z - Rule 3 (Two-Pass Barycentric Sort) implemented
 
 ### R3-1 + R3-2: _barycentric_sort in layout.py
 - `_barycentric_sort(by_col, adjacency, *, passes=2) -> dict[int, list[str]]` added to `layout.py`
@@ -2643,7 +2643,7 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - Covers: Circuit IR JSON format, new-from-netlist & apply-netlist workflows, tier assignment DAG algorithm, graphviz + heuristic layout pipelines, sexpr layer, SchematicDoc, transactional pipeline, lint rules (SCH/LAY/PCB), manufacturing export, full module map, and end-to-end CLI example.
 - All code snippets were taken from actual source files (grep/read), not generated from memory.
 
-## 2026-03-04T00:00:00Z - GRAPHVIZ_UPDATES.md TODO written
+## 2026-03-04T20:11:37Z - GRAPHVIZ_UPDATES.md TODO written
 - Created `code_review/GRAPHVIZ_UPDATES.md` — comprehensive TODO for three Graphviz pipeline improvements.
 - Improvement 1: `_center_ics_in_columns()` snap pass — re-sort column members so ICs sit at midpoint flanked by passives.
 - Improvement 2: `_remediate_crossings()` snap pass — measure crossing ratio post-snap and run barycentric re-sort loop (up to 10 sweeps, threshold 0.30).
@@ -2652,7 +2652,7 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - Recommended implementation order: 3 → 1 → (4.3) → 2 → (4.1-4.2).
 - Key files involved: `layout.py`, `graphviz_layout/__init__.py`, `graphviz_layout/dot_builder.py`, `graphviz_layout/snap.py`, test files in `tests/unit/`.
 
-## 2026-03-04T01:00:00Z - Improvement 1 (IC centering in columns) implemented
+## 2026-03-04T20:11:20Z - Improvement 1 (IC centering in columns) implemented
 - Added `_center_ics_in_columns()` function to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
 - Function groups components by x-column, splits into ic_refs/halo_other/plain_other buckets, interleaves as `plain[:mid] + halo[:mid] + ics + halo[mid:] + plain[mid:]`, then assigns the existing sorted y-slots to the new order.
 - Power symbols (`#PWR`/`#FLG`) are excluded from reordering.
@@ -2662,7 +2662,7 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - Added 12 unit tests in `tests/unit/test_phase4_layout.py::TestCenterICsInColumns` covering: center position, multiple ICs, passives-only column, halo flanking, empty dict, single component, power symbol exclusion, non-mutation, independent columns, x/rot preservation, halo=None.
 - All 212 tests in test_phase4_layout.py pass; all 102 kicad-pcb tests pass; ruff clean.
 
-## 2026-03-04T02:00:00Z - Improvement 2.1 studied; 2.2+4.3 completed
+## 2026-03-04T20:11:37Z - Improvement 2.1 studied; 2.2+4.3 completed
 
 ### Study findings (2.1 — measure + sort algorithm)
 - `count_wire_crossings(positions, adjacency)` takes **2-tuples** `(x, y)` — NOT 3-tuples. Must strip `rot` before calling: `{r: (x, y) for r, (x, y, _) in positions.items()}`.
@@ -2682,7 +2682,7 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - `GRAPHVIZ_UPDATES.md` updated: 2.2 all [x]; 4.3 all [x]; 2.1 all [x]; 2.3 notes updated with correct types and aliases.
 - All tests pass; ruff clean on layout.py, snap.py, test_layout.py.
 
-## 2026-03-04T03:00:00Z - Improvement 2 fully complete; commit c26ae9b pushed
+## 2026-03-04T20:51:44Z - Improvement 2 fully complete; commit c26ae9b pushed
 
 ### What was implemented
 - `_remediate_crossings(positions, ir, *, max_sweeps=3, crossing_ratio_threshold=0.30,
@@ -2726,7 +2726,7 @@ So the minimum value that allows any sorting is 2; default is 3.
 - GRAPHVIZ_UPDATES.md: 2.1–2.6, 4.3 all [x]; 2.4 pipeline-wiring [x].
 - Next: Improvement 3 (affinity-ordered nodes in DOT source) or Cleanup 4.
 
-## 2026-03-04T05:00:00Z - Improvement 3 fully complete; commit 5ec70a3 pushed
+## 2026-03-04T21:18:44Z - Improvement 3 fully complete; commit 5ec70a3 pushed
 
 ### What was implemented (3.2–3.5)
 - `_emit_tier_subgraphs(lines, tier_groups, affinity_order=None)`: new optional
