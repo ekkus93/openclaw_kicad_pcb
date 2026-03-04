@@ -2681,3 +2681,47 @@ All R6 work targeted `layout.py`, `lint/`, and tests.
 - 4 imports for `snap.py` (`GRID_COL_MM`, `barycentric_sort`, `build_signal_adjacency`, `count_wire_crossings`) will be added in step 2.3 alongside the function body (to avoid `# noqa: F401` suppressions).
 - `GRAPHVIZ_UPDATES.md` updated: 2.2 all [x]; 4.3 all [x]; 2.1 all [x]; 2.3 notes updated with correct types and aliases.
 - All tests pass; ruff clean on layout.py, snap.py, test_layout.py.
+
+## 2026-03-04T03:00:00Z - Improvement 2 fully complete; commit c26ae9b pushed
+
+### What was implemented
+- `_remediate_crossings(positions, ir, *, max_sweeps=3, crossing_ratio_threshold=0.30,
+  skip_pairs=frozenset())` added to `snap.py` as step 9 of the snap pipeline.
+- Called from `_apply_post_layout_snaps` as the last step:
+  `result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)`.
+- Key bug fixed: inner `_deoverlap_positions` call must pass `skip_pairs` — without
+  it, the decoupling-cap co-location invariant is violated.
+- `barycentric_sort` rename (from 2.2): fully committed.
+
+### count_wire_crossings crossing geometry insight
+The heuristic **excludes** same-column-start edges (`xl == xcl`). A simple
+2-column A→B / C→D layout where both edges start at col0 registers 0 crossings.
+For a detectable crossing, edges must start from different columns (3-column layout):
+  - `R1(col0, y=10) → R2(col2, y=30.48)` and `R3(col1, y=30.48) → R4(col2, y=10)`
+  - `xl=30.48 < xcl=60.96` and `yr=30.48 > ycr=10` → 1 crossing detected.
+
+### max_sweeps semantics
+The loop breaks with `sweep == max_sweeps - 1` BEFORE the sort runs.
+- `max_sweeps=1`: break fires at sweep=0 (first iteration), no sort ever runs.
+- `max_sweeps=2`: one sort pass runs (sweep=0), then break at sweep=1.
+So the minimum value that allows any sorting is 2; default is 3.
+
+### Tests added (13 total in TestRemediateCrossings)
+- test_crossing_eliminated_after_one_sweep (3-column geometry)
+- test_y_slots_are_preserved_not_created
+- test_x_and_rotation_are_preserved
+- test_all_refs_present_in_result
+- test_already_optimal_layout_unchanged
+- test_below_threshold_returns_immediately (threshold=1.0)
+- test_zero_signal_wires_returns_unchanged
+- test_empty_positions_returns_empty (uses valid minimal IR, empty positions={})
+- test_max_sweeps_one_skips_sorting (crossing remains)
+- test_max_sweeps_two_allows_one_sort_pass (crossing fixed)
+- test_power_symbols_excluded_and_preserved
+- test_input_dict_not_mutated
+- test_single_component_per_column_unchanged
+
+### Current status
+- Improvements 1 and 2 complete, committed to master.
+- GRAPHVIZ_UPDATES.md: 2.1–2.6, 4.3 all [x]; 2.4 pipeline-wiring [x].
+- Next: Improvement 3 (affinity-ordered nodes in DOT source) or Cleanup 4.
