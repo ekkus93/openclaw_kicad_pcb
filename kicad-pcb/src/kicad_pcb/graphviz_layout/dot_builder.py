@@ -271,8 +271,23 @@ def _compute_net_weights(signal_nets: list) -> dict[str, int]:
 def _emit_tier_subgraphs(
     lines: list[str],
     tier_groups: dict[int, list[str]],
+    affinity_order: dict[int, list[str]] | None = None,
 ) -> None:
-    """Emit ``{ rank=... }`` subgraphs for each tier into *lines*."""
+    """Emit ``{ rank=... }`` subgraphs for each tier into *lines*.
+
+    Parameters
+    ----------
+    lines:
+        DOT source lines accumulated so far (appended in-place).
+    tier_groups:
+        ``{tier_index: [ref, …]}`` — all signal-connected refs grouped by tier.
+    affinity_order:
+        Optional ``{tier_index: [ref, …]}`` from :func:`~kicad_pcb.layout.compute_affinity_groups`.
+        When supplied, refs within each ``{rank=same}`` block are emitted in
+        affinity order (highest coupling to the previous tier first) instead of
+        alphabetical order.  Falls back to alphabetical for any tier absent from
+        the dict.
+    """
     sorted_tier_vals = sorted(tier_groups)
     n_tiers = len(sorted_tier_vals)
     for i, tier_val in enumerate(sorted_tier_vals):
@@ -280,7 +295,11 @@ def _emit_tier_subgraphs(
         rank_kw = _tier_rank_keyword(i, n_tiers)
         lines.append("  {")
         lines.append(f"    rank={rank_kw};")
-        for ref in sorted(members):
+        if affinity_order is not None and tier_val in affinity_order:
+            ref_list = affinity_order[tier_val]
+        else:
+            ref_list = sorted(members)
+        for ref in ref_list:
             lines.append(f"    {_safe_id(ref)};")
         lines.append("  }")
 
@@ -436,6 +455,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913
     connector_roles: Mapping[str, str] | None = None,
     halo: dict[str, str] | None = None,
     sds_cols: dict[str, int] | None = None,
+    affinity_order: dict[int, list[str]] | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -512,7 +532,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913
 
     # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
     # rank=same for all intermediate tiers.
-    _emit_tier_subgraphs(lines, tier_groups)
+    _emit_tier_subgraphs(lines, tier_groups, affinity_order=affinity_order)
 
     # Reinforce connector source/sink constraints (belt-and-suspenders on top
     # of the tier subgraphs; merged/idempotent if already in the correct tier).

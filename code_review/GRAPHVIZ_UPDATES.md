@@ -313,61 +313,100 @@ emits nodes in affinity order rather than alphabetical order.
   - Input: `ir: CircuitIR`, `tiers: dict[str, int]` (ref → tier index).
   - Output: `dict[int, list[str]]` (tier index → refs in affinity order).
   - Tier 0 is sorted alphabetically as a stable base.
-- [ ] Read `_emit_tier_subgraphs()` in
+  - Tiers 1..N: refs sorted by `sum(_affinity(ref, p) for p in prev_tier_members)`,
+    descending; alphabetical tiebreak. `_affinity(A,B) = shared_signal_nets / min(|nets_A|, |nets_B|)`.
+  - Power nets excluded from affinity calculation (`_is_power_net_layout`).
+- [x] Read `_emit_tier_subgraphs()` in
   [`kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py`](../kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py)
   lines 271–313 — understand how it currently emits `{rank=same; ref1; ref2;
   …}` blocks and what arguments it takes.
-- [ ] Read `_build_dot_source()` in `dot_builder.py` lines 429–570 — understand
+  **Signature: `(lines: list[str], tier_groups: dict[int, list[str]]) -> None`.**
+  **The alphabetical `sorted(members)` at line 283 is the exact target to replace.**
+  After the change it must use `affinity_order[tier_val]` when present.
+- [x] Read `_build_dot_source()` in `dot_builder.py` lines 429–570 — understand
   the full function signature and where `_emit_tier_subgraphs` is called.
-- [ ] Determine the current ref declaration order inside each `{rank=same}` —
+  **Current signature (relevant kwargs):**
+  ```python
+  def _build_dot_source(
+      ir: CircuitIR,
+      *,
+      decoupling_map: dict[str, str] | None = None,
+      feedback_refs: set[str] | None = None,
+      power_unit_refs: set[str] | None = None,
+      tiers: dict[str, int] | None = None,
+      connector_roles: Mapping[str, str] | None = None,
+      halo: dict[str, str] | None = None,
+      sds_cols: dict[str, int] | None = None,
+  ) -> str:
+  ```
+  **`_emit_tier_subgraphs(lines, tier_groups)` is called at line 533 (approximately).**
+  **Adding `affinity_order` as another optional kwarg and threading it
+  through to `_emit_tier_subgraphs` is the minimal change.**
+- [x] Determine the current ref declaration order inside each `{rank=same}` —
   find the `sorted(...)` call that produces alphabetical order and note its
   line number.
+  **Line 283 in `dot_builder.py`: `for ref in sorted(members):` — this is the
+  sole place to change. Replace with the affinity-ordered list when available.**
+
+**Call site in `__init__.py`:**
+- `_tiers` is computed at line 218: `_tiers = self._tiers if self._tiers is not None else _assign_tiers(ir)`.
+- `_build_dot_source(...)` is called at line 239, already receives `tiers=_tiers`.
+- `compute_affinity_groups` is **not** currently imported or called; needs to be
+  added as a new import and called after `_tiers` is computed.
+- Cache invalidation is automatic: the cache key is `sha256(dot_source)`, which
+  changes whenever the emitted ref order changes.
 
 #### 3.2 — Add `affinity_order` parameter to `_emit_tier_subgraphs()`
 
-- [ ] Add an optional parameter:
+- [x] Add an optional parameter:
   ```python
   affinity_order: dict[int, list[str]] | None = None,
   ```
   to `_emit_tier_subgraphs()`.
-- [ ] Inside `_emit_tier_subgraphs()`, when emitting the `{rank=same; …}` block
+- [x] Inside `_emit_tier_subgraphs()`, when emitting the `{rank=same; …}` block
   for a tier, use `affinity_order[tier_index]` as the ref list if present,
   otherwise fall back to the existing sorted order.
-- [ ] Preserve the existing fallback so callers that don't pass `affinity_order`
+  **Implementation: `if affinity_order is not None and tier_val in affinity_order: ref_list = affinity_order[tier_val]` else `ref_list = sorted(members)`.**
+- [x] Preserve the existing fallback so callers that don't pass `affinity_order`
   are unaffected.
 
 #### 3.3 — Add `affinity_order` parameter to `_build_dot_source()`
 
-- [ ] Add:
+- [x] Add:
   ```python
   affinity_order: dict[int, list[str]] | None = None,
   ```
   to `_build_dot_source()`.
-- [ ] Thread the value through to `_emit_tier_subgraphs()`.
+- [x] Thread the value through to `_emit_tier_subgraphs()`.
 
 #### 3.4 — Compute affinity order in `__init__.py` and pass it to DOT builder
 
-- [ ] In `graphviz_layout/__init__.py`, import `compute_affinity_groups`:
+- [x] In `graphviz_layout/__init__.py`, import `compute_affinity_groups`:
   ```python
   from ..layout import compute_affinity_groups as _compute_affinity_groups
   ```
-- [ ] After computing `_tiers` (already done early in
+- [x] After computing `_tiers` (already done early in
   `compute_symbol_positions`), call:
   ```python
   affinity_order = _compute_affinity_groups(ir, _tiers)
   ```
-- [ ] Pass `affinity_order=affinity_order` to `_build_dot_source()`.
-- [ ] Confirm the cache key still captures `affinity_order` implicitly — the
+- [x] Pass `affinity_order=affinity_order` to `_build_dot_source()`.
+- [x] Confirm the cache key still captures `affinity_order` implicitly — the
   cache key is `sha256(dot_source)` so as long as the DOT source changes when
   affinity order changes, the cache is automatically invalidated.
+  **Confirmed: cache key is derived from the full DOT source string, which
+  now contains affinity-ordered refs. Cache is invalidated automatically.**
 
 #### 3.5 — Remove "dead code" marker / add docstring note
 
-- [ ] `compute_affinity_groups()` in `layout.py` was previously dead.  Now that
+- [x] `compute_affinity_groups()` in `layout.py` was previously dead.  Now that
   it is used, remove any dead-code comments and ensure the docstring accurately
   says it is used by the Graphviz pipeline.
-- [ ] The ruff/mypy lint suite should still pass — run `ruff check` and
+  **Done: docstring updated to state it is used by `graphviz_layout/__init__.py`
+  and explains the benefit (gives `dot` a better starting ordering).**
+- [x] The ruff/mypy lint suite should still pass — run `ruff check` and
   `mypy kicad-pcb/src` after changes.
+  **`ruff check kicad-pcb/src tests` — All checks passed. Full test suite — all pass.**
 
 #### 3.6 — Write tests
 

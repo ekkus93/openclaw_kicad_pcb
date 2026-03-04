@@ -787,6 +787,12 @@ def compute_affinity_groups(
 ) -> dict[int, list[str]]:
     """Return ``{tier_index: [ref, …]}`` sorted by signal affinity to the previous tier.
 
+    Used by the Graphviz pipeline in ``graphviz_layout/__init__.py`` to order
+    nodes within each ``{rank=same}`` DOT subgraph so that Graphviz starts its
+    own barycentric heuristic from a signal-flow-aware ordering rather than an
+    arbitrary alphabetical one.  This typically reduces wire crossings before
+    any post-snap remediation pass runs.
+
     For each tier, components are ordered so those most strongly coupled to
     any component in the **previous tier** appear first (toward the top of the
     schematic).  Tier 0 components are sorted alphabetically as a stable base.
