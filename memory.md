@@ -1,6 +1,14 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T21:46:00Z_
+_Last updated: 2026-03-04T21:48:38Z_
+
+---
+
+## 2026-03-04T21:48:38Z — Update WALK_THRU.md for improvements 1–3
+
+- Section 8.1: added affinity ordering paragraph explaining `compute_affinity_groups()` call in `__init__.py` and its role in improving DOT source quality.
+- Section 8.3: expanded snap pass list from 9 to 13 steps; added `_enforce_connector_x_bounds` (step 3), `_snap_opamp_halo` (step 6), `_center_ics_in_columns` (step 10), and `_remediate_crossings` (step 13).
+- Commit: `bf71d07` — pushed to master.
 
 ---
 
