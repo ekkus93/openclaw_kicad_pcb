@@ -420,18 +420,26 @@ emits nodes in affinity order rather than alphabetical order.
 - [x] Test: tier 0 → alphabetical sort regardless of signal nets.
 - [x] Test: component with no signal nets → affinity = 0; still included in
   output.
-- [ ] Test: `_build_dot_source()` with `affinity_order` set → DOT string emits
+- [x] Test: `_build_dot_source()` with `affinity_order` set → DOT string emits
   refs in specified order within each `{rank=same}` block.
-- [ ] Test: `_build_dot_source()` without `affinity_order` → DOT string emits
+  **Added: `test_build_dot_source_with_affinity_order_uses_specified_order` —
+  builds a 3-tier IR (J1→A_R+Z_R→J2), passes `affinity_order={1:["Z_R","A_R"]}`,
+  extracts the `rank=same` block and asserts Z_R precedes A_R.**
+- [x] Test: `_build_dot_source()` without `affinity_order` → DOT string emits
   refs in alphabetical order (backward-compatibility).
+  **Added: `test_build_dot_source_without_affinity_order_emits_alphabetical` —
+  same IR, no affinity_order, asserts A_R precedes Z_R.**
 
 #### 3.7 — Verify with existing golden / regression tests
 
-- [ ] Run `pytest tests/unit/test_golden.py` — confirm that affinity ordering
+- [x] Run `pytest tests/unit/test_golden.py` — confirm that affinity ordering
   changes the DOT source, which invalidates the layout cache, but that the
   schematic output is still correct.
-- [ ] Run the full test suite: `cd kicad-pcb && python -m pytest && cd ..`
-- [ ] Run `ruff check kicad-pcb/src` and `mypy kicad-pcb/src` — zero new errors.
+  **All 14 golden tests pass; cache invalidated automatically via sha256.**
+- [x] Run the full test suite: `cd kicad-pcb && python -m pytest && cd ..`
+  **All tests pass (unit + golden + kicad-pcb unit). exit 0.**
+- [x] Run `ruff check kicad-pcb/src` and `mypy kicad-pcb/src` — zero new errors.
+  **`ruff check kicad-pcb/src tests` → All checks passed.**
 
 ---
 

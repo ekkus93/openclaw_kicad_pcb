@@ -1400,6 +1400,89 @@ class TestBuildDotSourceSignalFlow:
         val_str = ranksep_lines[0].split("=")[1].strip().rstrip(";")
         assert float(val_str) >= 1.5, f"ranksep too small: {val_str}"
 
+    def test_build_dot_source_with_affinity_order_uses_specified_order(self) -> None:
+        """affinity_order overrides alphabetical ordering within rank=same blocks."""
+        # Three-tier circuit: J1 (tier 0, connector) → A_R and Z_R (tier 1,
+        # rank=same) → J2 (tier 2, connector).  Reverse-alphabetical affinity
+        # order for tier 1 should put Z_R before A_R in the DOT output.
+        ir = _two_same_tier_ir()
+        affinity_order = {1: ["Z_R", "A_R"]}
+        src = _gv_mod.build_dot_source(ir, affinity_order=affinity_order)
+        same_block_refs = _extract_rank_same_refs(src)
+        assert same_block_refs == [
+            "Z_R",
+            "A_R",
+        ], f"Expected Z_R before A_R with affinity_order; got {same_block_refs}"
+
+    def test_build_dot_source_without_affinity_order_emits_alphabetical(self) -> None:
+        """Without affinity_order the fallback sorts refs alphabetically per tier."""
+        ir = _two_same_tier_ir()
+        src = _gv_mod.build_dot_source(ir)
+        same_block_refs = _extract_rank_same_refs(src)
+        assert same_block_refs == [
+            "A_R",
+            "Z_R",
+        ], f"Expected alphabetical A_R, Z_R without affinity_order; got {same_block_refs}"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for TestBuildDotSourceSignalFlow (affinity_order tests)
+# ---------------------------------------------------------------------------
+
+
+def _two_same_tier_ir() -> CircuitIR:
+    """Three-tier circuit; A_R and Z_R are both in tier 1 (rank=same).
+
+    Topology:
+      J1 → NET_A → A_R ─┐
+      J1 → NET_Z → Z_R ─┴─ NET_OUT → J2
+    """
+    components = [
+        ComponentIR(ref="J1", symbol="Device:Conn", value="Input"),
+        ComponentIR(ref="A_R", symbol="Device:R", value="10k"),
+        ComponentIR(ref="Z_R", symbol="Device:R", value="10k"),
+        ComponentIR(ref="J2", symbol="Device:Conn", value="Output"),
+    ]
+    nets = [
+        NetIR(
+            name="NET_A",
+            pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="A_R", pin="1")],
+        ),
+        NetIR(
+            name="NET_Z",
+            pins=[PinRefIR(ref="J1", pin="2"), PinRefIR(ref="Z_R", pin="1")],
+        ),
+        NetIR(
+            name="NET_OUT",
+            pins=[
+                PinRefIR(ref="A_R", pin="2"),
+                PinRefIR(ref="Z_R", pin="2"),
+                PinRefIR(ref="J2", pin="1"),
+            ],
+        ),
+    ]
+    return CircuitIR(version="1", components=components, nets=nets)
+
+
+def _extract_rank_same_refs(dot_src: str) -> list[str]:
+    """Return the list of component refs inside the first rank=same subgraph block."""
+    lines = dot_src.splitlines()
+    same_idx: int | None = None
+    for i, ln in enumerate(lines):
+        if "rank=same" in ln:
+            same_idx = i
+            break
+    assert same_idx is not None, "No rank=same block found in DOT source"
+    refs: list[str] = []
+    for ln in lines[same_idx + 1 :]:
+        stripped = ln.strip()
+        if stripped == "}":
+            break
+        # Exclude lines that are only directives (rank=…, etc.)
+        if stripped and not stripped.startswith("rank"):
+            refs.append(stripped.rstrip(";"))
+    return refs
+
 
 # ---------------------------------------------------------------------------
 # Phase 3 — Decoupling cap co-location (Rule §5)
