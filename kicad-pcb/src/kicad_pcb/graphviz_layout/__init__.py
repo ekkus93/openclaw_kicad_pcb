@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from ..circuit_ir import CircuitIR
 
 from ..layout import _compute_opamp_halo as _compute_opamp_halo_layout
+from ..layout import compute_affinity_groups as _compute_affinity_groups
 from ..layout import compute_orientations as _compute_orientations
 from ..layout import compute_sds_columns as _compute_sds_columns
 from ..layout import compute_signal_distance_scores as _compute_signal_distance_scores
@@ -236,6 +237,9 @@ class GraphvizLayoutEngine:
 
         # Build DOT source up-front so we can derive the cache key.
         # Pass pre-computed tiers so _build_dot_source skips a redundant assign_tiers call.
+        # Compute affinity order so _emit_tier_subgraphs emits nodes in signal-flow
+        # coupling order rather than alphabetical order, giving dot a better start.
+        affinity_order = _compute_affinity_groups(ir, _tiers)
         dot_source = _build_dot_source(
             ir,
             decoupling_map=decoupling_map,
@@ -245,6 +249,7 @@ class GraphvizLayoutEngine:
             connector_roles=_roles or None,
             halo=halo or None,
             sds_cols=sds_cols or None,
+            affinity_order=affinity_order,
         )
         cache_key = _layout_cache_key(dot_source)
 
