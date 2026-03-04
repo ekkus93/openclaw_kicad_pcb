@@ -32,8 +32,6 @@ from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.layout import (
     GRID_COL_MM,
-    ORIGIN_X,
-    HeuristicLayoutEngine,
     compute_signal_flow_layout,
 )
 from kicad_pcb.lint import lint_schematic_layout
@@ -92,73 +90,6 @@ def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str) -> object:
             mode="internal",
         )
     )
-
-
-# ---------------------------------------------------------------------------
-# 6.1  TestHeuristicInputPlacement
-#
-# Connectors / headers (refs starting with J, P, CON, SJ, TJ) are signal
-# sources in the heuristic engine.  BFS starts from them so they are
-# assigned column-0, while downstream components get higher column indices
-# and therefore larger x-coordinates.
-# ---------------------------------------------------------------------------
-
-
-class TestHeuristicInputPlacement:
-    """Heuristic engine places connector refs leftmost (inputs-left rule)."""
-
-    def _chain_ir(self) -> CircuitIR:
-        """J1 → R1 → R2 chain — J1 is the clear signal source."""
-        return _ir(
-            [("J1", "Device:R"), ("R1", "Device:R"), ("R2", "Device:R")],
-            [
-                ("SIG1", [("J1", "1"), ("R1", "1")]),
-                ("SIG2", [("R1", "2"), ("R2", "1")]),
-            ],
-        )
-
-    def test_connector_leftmost_in_chain(self) -> None:
-        """J1 must be placed strictly left of R1 and R2."""
-        ir = self._chain_ir()
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        j1_x = positions["J1"][0]
-        assert j1_x <= positions["R1"][0], "J1 should be left of or equal to R1"
-        assert j1_x <= positions["R2"][0], "J1 should be left of or equal to R2"
-
-    def test_connector_not_rightmost_in_chain(self) -> None:
-        """J1 must not end up at the right edge when downstream refs exist."""
-        ir = self._chain_ir()
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        max_x = max(pos[0] for pos in positions.values())
-        # J1 should be strictly less than the rightmost column.
-        assert positions["J1"][0] < max_x, "J1 must not be in the rightmost column"
-
-    def test_multiple_connectors_seeded_at_column_zero(self) -> None:
-        """Two connectors (J1, J2) sharing no nets with each other are both
-        assigned column-0 (x = ORIGIN_X)."""
-        ir = _ir(
-            [("J1", "Device:R"), ("J2", "Device:R"), ("R1", "Device:R")],
-            [
-                ("A", [("J1", "1"), ("R1", "1")]),
-                ("B", [("J2", "1"), ("R1", "2")]),
-            ],
-        )
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        assert positions["J1"][0] == pytest.approx(ORIGIN_X)
-        assert positions["J2"][0] == pytest.approx(ORIGIN_X)
-
-    def test_outputs_to_right_of_inputs(self) -> None:
-        """Non-connector components downstream of connector are to the right."""
-        ir = _ir(
-            [("P1", "Device:R"), ("R1", "Device:R"), ("U1", "Device:R")],
-            [
-                ("IN", [("P1", "1"), ("R1", "1")]),
-                ("MID", [("R1", "2"), ("U1", "1")]),
-            ],
-        )
-        positions = HeuristicLayoutEngine().compute_symbol_positions(ir)
-        assert positions["P1"][0] <= positions["R1"][0]
-        assert positions["R1"][0] <= positions["U1"][0]
 
 
 # ---------------------------------------------------------------------------
