@@ -11,12 +11,12 @@ priority chain so that users can override the default system path at any level:
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import ErrorCode, UserError
 from .models import ProjectRef, SessionRef
 
 # ---------------------------------------------------------------------------
@@ -173,8 +173,12 @@ def get_current_project() -> ProjectRef | None:
             with CURRENT_PROJECT_FILE.open(encoding="utf-8") as f:
                 data = json.load(f)
             return ProjectRef.from_dict(data)
-        except (json.JSONDecodeError, OSError, KeyError):
-            pass
+        except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError) as exc:
+            raise UserError(
+                f"Failed to load current project state from '{CURRENT_PROJECT_FILE}': {exc}",
+                code=ErrorCode.IO_ERROR,
+                details={"path": str(CURRENT_PROJECT_FILE)},
+            ) from exc
     return None
 
 
@@ -202,12 +206,22 @@ def get_current_session() -> SessionRef | None:
             with CURRENT_SESSION_FILE.open(encoding="utf-8") as f:
                 data = json.load(f)
             ref = SessionRef.from_dict(data)
-        except (json.JSONDecodeError, OSError, KeyError):
-            return None
+        except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError) as exc:
+            raise UserError(
+                f"Failed to load current session state from '{CURRENT_SESSION_FILE}': {exc}",
+                code=ErrorCode.IO_ERROR,
+                details={"path": str(CURRENT_SESSION_FILE)},
+            ) from exc
         if not ref.path.exists():
             # Session directory was deleted; clean up the stale marker.
-            with contextlib.suppress(OSError):
+            try:
                 CURRENT_SESSION_FILE.unlink()
+            except OSError as exc:
+                raise UserError(
+                    f"Failed to clear stale session marker '{CURRENT_SESSION_FILE}': {exc}",
+                    code=ErrorCode.IO_ERROR,
+                    details={"path": str(CURRENT_SESSION_FILE)},
+                ) from exc
             return None
         return ref
     return None

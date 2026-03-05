@@ -10,6 +10,7 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
+    cmd_fix_netlist,
     cmd_info_sch,
     cmd_new_from_netlist,
     resolve_schematic_paths,
@@ -44,6 +45,40 @@ def _write_ir(path: Path) -> None:
         "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]}],
     }
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_fix_netlist_raises_when_symbol_index_init_fails(tmp_path: Path, monkeypatch) -> None:
+    """A5: fix-netlist must fail fast if SymbolIndex construction fails."""
+    netlist_path = tmp_path / "ir.json"
+    _write_ir(netlist_path)
+    output_path = tmp_path / "ir.fixed.json"
+
+    class _BrokenSymbolIndex:
+        def __init__(
+            self,
+            *,
+            symbols_dir: Path | None = None,
+            fallback_dirs: list[Path] | None = None,
+        ) -> None:
+            del symbols_dir, fallback_dirs
+            raise UserError(
+                "symbol index init failed",
+                code=ErrorCode.SYMBOL_DIR_MISSING,
+            )
+
+    monkeypatch.setattr("kicad_pcb.commands.netlist.SymbolIndex", _BrokenSymbolIndex)
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_fix_netlist(
+            Namespace(
+                netlist=str(netlist_path),
+                symbols_dir=str(tmp_path / "symbols"),
+                output=str(output_path),
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+    assert not output_path.exists()
 
 
 # ---------------------------------------------------------------------------

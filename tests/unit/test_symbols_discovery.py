@@ -36,6 +36,7 @@ from kicad_pcb.config import (
     get_symbols_dir_config,
     set_symbols_dir_config,
 )
+from kicad_pcb.errors import ErrorCode, UserError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -423,6 +424,69 @@ class TestCmdAddComponentSymbolDir:
         cmd_add_component(args)
 
         assert captured["pins_dir"] == sym_dir
+
+    def test_raises_when_no_symbols_dir_can_be_resolved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            "kicad_pcb.commands.sch.discover_symbols_dir",
+            lambda *, explicit=None: None,
+        )
+
+        sch_file = tmp_path / "board.kicad_sch"
+        sch_file.write_text("(kicad_sch)", encoding="utf-8")
+        project = MagicMock()
+        project.sch_file = sch_file
+        project.name = "test"
+        monkeypatch.setattr("kicad_pcb.commands.sch.get_current_project", lambda: project)
+
+        args = SimpleNamespace(
+            lib_sym="Device:R",
+            ref="R1",
+            value="10k",
+            footprint=None,
+            symbols_dir=None,
+            dry_run=False,
+        )
+
+        with pytest.raises(UserError) as exc_info:
+            cmd_add_component(args)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+
+    def test_raises_when_symbol_pins_not_found(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        sym_dir = _make_sym_dir(tmp_path)
+        monkeypatch.setattr(
+            "kicad_pcb.commands.sch.discover_symbols_dir",
+            lambda *, explicit=None: SymbolsDir(sym_dir, "explicit"),
+        )
+        monkeypatch.setattr(
+            "kicad_pcb.commands.sch.read_lib_symbol_pins",
+            lambda *args, **kwargs: [],
+        )
+
+        sch_file = tmp_path / "board.kicad_sch"
+        sch_file.write_text("(kicad_sch)", encoding="utf-8")
+        project = MagicMock()
+        project.sch_file = sch_file
+        project.name = "test"
+        monkeypatch.setattr("kicad_pcb.commands.sch.get_current_project", lambda: project)
+
+        args = SimpleNamespace(
+            lib_sym="Device:Nope",
+            ref="R1",
+            value="10k",
+            footprint=None,
+            symbols_dir=str(sym_dir),
+            dry_run=False,
+        )
+
+        with pytest.raises(UserError) as exc_info:
+            cmd_add_component(args)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------

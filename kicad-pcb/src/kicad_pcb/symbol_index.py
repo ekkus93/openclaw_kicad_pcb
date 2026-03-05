@@ -134,8 +134,15 @@ class SymbolIndex:
                                 ),
                             },
                         )
-                except OSError:
-                    pass
+                except OSError as exc:
+                    raise UserError(
+                        f"Failed to read symbol library while probing '{symbol_id}': {exc}",
+                        code=ErrorCode.IO_ERROR,
+                        details={
+                            "symbol": symbol_id,
+                            "lib_file": str(lib_file),
+                        },
+                    ) from exc
 
         raise UserError(
             f"Symbol not found in libraries: {symbol_id}",

@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from kicad_pcb.errors import ParseError
+from kicad_pcb.errors import ErrorCode, ParseError, UserError
 from kicad_pcb.sch_doc import (
     SchematicDoc,
     make_label_node,
@@ -711,6 +711,27 @@ class TestReadLibSymbolPins:
         # Pins are inside (symbol "R_1_1") sub-symbol
         assert "1" in pins
         assert "2" in pins
+
+    def test_raises_parse_error_for_malformed_library(self, tmp_path: Path) -> None:
+        lib = tmp_path / "Device.kicad_sym"
+        lib.write_text("(kicad_symbol_lib (version 20230121)")
+
+        with pytest.raises(ParseError, match="Failed to parse symbol library"):
+            read_lib_symbol_pins("Device", "R", symbols_dir=tmp_path)
+
+    def test_raises_user_error_for_library_read_failure(self, tmp_path: Path, monkeypatch) -> None:
+        lib = tmp_path / "Device.kicad_sym"
+        lib.write_text(MINIMAL_LIB_SYM)
+
+        def _raise_oserror(path: Path):
+            raise OSError(f"permission denied: {path}")
+
+        monkeypatch.setattr("kicad_pcb.lib_symbol._parse_lib_file", _raise_oserror)
+
+        with pytest.raises(UserError) as exc_info:
+            read_lib_symbol_pins("Device", "R", symbols_dir=tmp_path)
+
+        assert exc_info.value.code == ErrorCode.IO_ERROR
 
 
 # ---------------------------------------------------------------------------

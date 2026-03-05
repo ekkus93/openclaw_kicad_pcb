@@ -51,3 +51,31 @@ def test_symbol_index_raises_symbol_dir_missing_when_no_dirs(
     assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
     assert "searched_candidates" in exc_info.value.details
     assert "hint" in exc_info.value.details
+
+
+def test_symbol_index_raises_io_error_when_declaration_probe_read_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lib_file = tmp_path / "TestLib.kicad_sym"
+    lib_file.write_text("(kicad_symbol_lib (version 20230121) (generator test))", encoding="utf-8")
+
+    index = SymbolIndex(symbols_dir=tmp_path)
+
+    monkeypatch.setattr(si_mod, "read_lib_symbol_pins", lambda *args, **kwargs: [])
+
+    original_read_text = Path.read_text
+
+    def _read_text_raise(self: Path, *args, **kwargs) -> str:
+        if self == lib_file:
+            raise OSError("permission denied")
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", _read_text_raise)
+
+    with pytest.raises(UserError) as exc_info:
+        index.get_pins("TestLib:R")
+
+    assert exc_info.value.code == ErrorCode.IO_ERROR
+    assert exc_info.value.details["symbol"] == "TestLib:R"
+    assert exc_info.value.details["lib_file"] == str(lib_file)

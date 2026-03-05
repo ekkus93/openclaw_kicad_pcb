@@ -801,13 +801,13 @@ class TestGraphvizLayoutEngineCache:
 
         monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
 
+        before_json = {p.resolve() for p in Path().iterdir() if p.suffix == ".json"}
         engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")  # no cache_path
         engine.compute_symbol_positions(ir)
 
-        # No cache files should have appeared in cwd.
-        assert not any(p.suffix == ".json" for p in Path().iterdir()), (
-            "unexpected .json file created in cwd"
-        )
+        after_json = {p.resolve() for p in Path().iterdir() if p.suffix == ".json"}
+        created_json = sorted(str(p) for p in (after_json - before_json))
+        assert not created_json, f"unexpected .json file created in cwd: {created_json}"
 
 
 # ---------------------------------------------------------------------------
