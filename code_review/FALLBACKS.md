@@ -77,6 +77,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 14. Power symbol insertion fallback to global label (API contract)
 	- [kicad-pcb/src/kicad_pcb/sch_doc/__init__.py](../kicad-pcb/src/kicad_pcb/sch_doc/__init__.py#L380-L410)
 	- Behavior: `add_power_symbol(...) -> False` if symbol def unavailable; caller may fallback to global label.
+	- Status: ✅ Addressed on 2026-03-05 — `write_routing(..., strict=True)` now fails fast with `UserError(SYMBOL_NOT_FOUND)` when `power:<net>` cannot be resolved; default non-strict mode preserves global-label fallback.
 
 15. Symbol directory discovery fallback chain (explicit → env → config → platform)
 	- [kicad-pcb/src/kicad_pcb/config.py](../kicad-pcb/src/kicad_pcb/config.py#L84-L120)
