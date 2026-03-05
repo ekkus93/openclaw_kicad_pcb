@@ -165,9 +165,9 @@ Choose one implementation path:
 ## Phase 7 — UX knobs (Optional but useful)
 
 ### 7.1 Add/confirm CLI flag to control layout engine and routing style
-- [ ] `--layout auto|graphviz|heuristic|none`
-- [ ] `--routing bus|hub|labels` (optional; default bus)
-- [ ] `--validate none|syntax|lint|kicad|full`
+- [x] `--layout auto|graphviz|heuristic|none` *(commit 746c6ce: `HeuristicLayoutEngine` added; `_resolve_layout()` wired into `_sch_apply.py` and CLI)*
+- [x] `--routing bus|hub|labels` *(commit 746c6ce: `_resolve_routing()` → `use_bus` bool; default `bus`)*
+- [x] `--validate none|syntax|lint|kicad|full` *(commit 746c6ce: `_resolve_mode()` expanded; `--mode` kept as deprecated alias)*
 - [x] `--strict` (treat warnings as errors) *(implemented in `cli.py`)*
 - [x] `--dry-run` (no commit; validate only) *(implemented in `cli.py`)*
 
