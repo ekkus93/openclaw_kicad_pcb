@@ -1,8 +1,23 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T20:52:05Z_
+_Last updated: 2026-03-05T22:12:20Z_
 
----
+
+## 2026-03-05T22:12:20Z — Completed fallback audit item B12 (SDS roles strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/layout.py`:
+  - added `strict: bool = False` to `compute_signal_flow_layout(...)`.
+  - when `roles` are provided but missing input/output connectors, strict mode now raises `UserError(code=IR_SEMANTIC_INVALID)` with role details.
+  - default non-strict mode remains unchanged: logs warning and falls back to BFS column assignment.
+- Updated `tests/unit/test_phase6_coverage.py`:
+  - added `TestSdsFallbackPolicy.test_incomplete_roles_warns_and_falls_back_to_bfs_non_strict`.
+  - added `TestSdsFallbackPolicy.test_incomplete_roles_raise_in_strict_mode`.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 12 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/layout.py tests/unit/test_phase6_coverage.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase6_coverage.py -k "SdsFallbackPolicy"`
+
 
 ## 2026-03-05T20:52:05Z — Completed fallback audit item B11 (router strict unknown-pin fail-fast)
 

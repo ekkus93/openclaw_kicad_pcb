@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
+from .errors import ErrorCode, UserError
 
 _log = logging.getLogger(__name__)
 
@@ -590,6 +591,7 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
     ir: CircuitIR,
     halo: dict[str, str] | None = None,
     roles: Mapping[str, str] | None = None,
+    strict: bool = False,
 ) -> dict[str, tuple[float, float]]:
     """Return ``{ref: (x, y)}`` placements for all components in *ir*.
 
@@ -616,6 +618,10 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
        * **BFS fallback** — used when *roles* is ``None`` or lacks a
          required connector type.  A WARNING is logged when *roles* is
          provided but incomplete.
+
+             When *strict* is ``True``, incomplete roles are treated as a
+             configuration error and raise :class:`~kicad_pcb.errors.UserError`
+             instead of falling back to BFS.
 
     3. Within each column, sort components using a two-pass barycentric sweep
        (:func:`_barycentric_sort`) to reduce wire crossings: pass 1 sorts
@@ -646,6 +652,16 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
         input_refs = [r for r, role in roles.items() if role == "input"]
         output_refs = [r for r, role in roles.items() if role == "output"]
         if not input_refs or not output_refs:
+            if strict:
+                missing_role = "input" if not input_refs else "output"
+                raise UserError(
+                    "SDS layout requires both input and output connector roles in strict mode",
+                    code=ErrorCode.IR_SEMANTIC_INVALID,
+                    details={
+                        "missing_role": missing_role,
+                        "roles": dict(roles),
+                    },
+                )
             _log.warning(
                 "SDS fallback: missing %s connector(s); using BFS column assignment.",
                 "input" if not input_refs else "output",

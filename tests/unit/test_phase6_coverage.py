@@ -23,6 +23,7 @@ Covers gaps not filled by test_phase4_layout.py:
 from __future__ import annotations
 
 import json
+import logging
 from argparse import Namespace
 from pathlib import Path
 
@@ -30,6 +31,7 @@ import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.layout import (
     GRID_COL_MM,
     compute_signal_flow_layout,
@@ -1154,6 +1156,44 @@ class TestDecouplingCapPlacement:
             f"C1 (x={c1_x:.2f}) is more than one column past the rightmost "
             f"signal component (x={max_signal_x:.2f})."
         )
+
+
+class TestSdsFallbackPolicy:
+    def _simple_ir(self) -> CircuitIR:
+        return _ir(
+            [
+                ("J1", "Device:Connector"),
+                ("R1", "Device:R"),
+                ("J2", "Device:Connector"),
+            ],
+            [
+                ("N1", [("J1", "1"), ("R1", "1")]),
+                ("N2", [("R1", "2"), ("J2", "1")]),
+            ],
+        )
+
+    def test_incomplete_roles_warns_and_falls_back_to_bfs_non_strict(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        ir = self._simple_ir()
+        roles = {"J1": "input"}  # missing output role on purpose
+
+        with caplog.at_level(logging.WARNING, logger="kicad_pcb.layout"):
+            positions = compute_signal_flow_layout(ir, roles=roles)
+
+        assert set(positions.keys()) == {"J1", "R1", "J2"}
+        assert any("SDS fallback" in rec.message for rec in caplog.records)
+
+    def test_incomplete_roles_raise_in_strict_mode(self) -> None:
+        ir = self._simple_ir()
+        roles = {"J1": "input"}  # missing output role on purpose
+
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir, roles=roles, strict=True)
+
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_role"] == "output"
 
 
 # ---------------------------------------------------------------------------
