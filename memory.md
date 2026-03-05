@@ -1,8 +1,18 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T09:19:42Z_
+_Last updated: 2026-03-05T09:34:30Z_
 
 ---
+
+## 2026-03-05T09:34:30Z — Phase 6.2 complete: TestKiCadCLIERC added
+
+- Added `TestKiCadCLIERC` class to `tests/integration/test_phase6_integration.py` with 3 tests:
+  - `test_erc_exits_zero_on_divider_schematic` — ERC runs without crashing on divider IR
+  - `test_erc_no_error_violations_on_divider_schematic` — JSON report has zero error-severity violations
+  - `test_erc_exits_zero_on_chain_schematic` — ERC and zero errors on 3-component chain IR
+- Uses `--format json --severity-error` flags; does NOT use `--exit-code-violations` (passive components may have unconnected-pin warnings, not errors).
+- All 3 tests pass in 9.67 s on kicad-cli 9.0.7 (Flatpak, home_tmp).
+- Updated module docstring and Phase 6.2 checkbox in COPILOT_TODO_READABLE_SCHEMATICS.md.
 
 ## 2026-03-05T09:19:42Z — copilot-instructions.md: anti-fabrication rule added to Memory file section
 

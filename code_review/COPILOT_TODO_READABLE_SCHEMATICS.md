@@ -157,8 +157,9 @@ Choose one implementation path:
 - [x] Store the resulting `.kicad_sch` as a golden output. *(`tests/fixtures/regressions/headphone_amp_golden_layout.kicad_sch`)*
 
 ### 6.2 Optional integration test with KiCad CLI
-- [ ] If `kicad-cli` is installed in CI/dev:
-  - [ ] run `kicad-cli sch erc` on the generated schematic and require success.
+- [x] If `kicad-cli` is installed in CI/dev:
+  - [x] run `kicad-cli sch erc` on the generated schematic and require success.
+    *(TestKiCadCLIERC: 3 tests in test_phase6_integration.py — exits 0, zero error violations)*
 
 ---
 
