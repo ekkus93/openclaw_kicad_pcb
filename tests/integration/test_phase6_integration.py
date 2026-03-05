@@ -1,5 +1,8 @@
 """Phase 6 — Integration tests: Graphviz end-to-end layout + kicad-cli validation.
 
+6.2  TestKiCadCLIERC: kicad-cli sch erc must exit 0 with no error-level violations
+     on generated schematics.  Skipped if ``kicad-cli`` is not on PATH.
+
 6.4  Integration tests
     - TestGraphvizEndToEnd  : full IR → GraphvizLayoutEngine → managed schematic
       pipeline, verifying non-overlapping positions and schema parsability.
@@ -292,4 +295,115 @@ class TestKiCadCLINetlistExport:
         )
         assert proc.returncode == 0, (
             f"kicad-cli failed on 3-component chain (exit {proc.returncode}):\n{proc.stderr}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 6.2  TestKiCadCLIERC
+#
+# kicad-cli sch erc must exit 0 on generated schematics, and the JSON report
+# must contain zero error-severity violations.
+# Uses home_tmp so paths are inside the Flatpak sandbox boundary.
+# ---------------------------------------------------------------------------
+
+
+@requires_kicad
+class TestKiCadCLIERC:
+    """Generated schematic passes kicad-cli ERC (no error-level violations)."""
+
+    def test_erc_exits_zero_on_divider_schematic(self, home_tmp: Path) -> None:
+        """cmd_new_from_netlist + kicad-cli sch erc must exit 0 on divider IR."""
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERC", layout="heuristic")
+        sch_path = result.managed_schematic_path
+        assert sch_path.exists(), f"Managed schematic not created at {sch_path}"
+
+        erc_out = home_tmp / "erc_report.json"
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli,
+                "sch",
+                "erc",
+                "--format",
+                "json",
+                "--severity-error",
+                "--output",
+                str(erc_out),
+                str(sch_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli sch erc crashed (exit {proc.returncode}):\n{proc.stderr}\n{proc.stdout}"
+        )
+        assert erc_out.exists(), "kicad-cli did not produce ERC report"
+
+    def test_erc_no_error_violations_on_divider_schematic(self, home_tmp: Path) -> None:
+        """ERC JSON report for divider IR must contain zero error-severity violations."""
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERCJ", layout="heuristic")
+        sch_path = result.managed_schematic_path
+
+        erc_out = home_tmp / "erc_violations.json"
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli,
+                "sch",
+                "erc",
+                "--format",
+                "json",
+                "--severity-error",
+                "--output",
+                str(erc_out),
+                str(sch_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli sch erc failed (exit {proc.returncode}):\n{proc.stderr}"
+        )
+        report = json.loads(erc_out.read_text(encoding="utf-8"))
+        violations = report.get("violations", [])
+        errors = [v for v in violations if v.get("severity") == "error"]
+        assert not errors, (
+            f"kicad-cli ERC found {len(errors)} error-level violation(s):\n"
+            + "\n".join(str(e) for e in errors)
+        )
+
+    def test_erc_exits_zero_on_chain_schematic(self, home_tmp: Path) -> None:
+        """kicad-cli sch erc must exit 0 on a three-component chain IR."""
+        result = _new_from_netlist(home_tmp, _CHAIN_IR, name="ChainERC", layout="heuristic")
+        sch_path = result.managed_schematic_path
+
+        erc_out = home_tmp / "chain_erc.json"
+        kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
+        proc = subprocess.run(
+            [
+                kicad_cli,
+                "sch",
+                "erc",
+                "--format",
+                "json",
+                "--severity-error",
+                "--output",
+                str(erc_out),
+                str(sch_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, (
+            f"kicad-cli sch erc failed on chain IR (exit {proc.returncode}):\n{proc.stderr}"
+        )
+        report = json.loads(erc_out.read_text(encoding="utf-8"))
+        violations = report.get("violations", [])
+        errors = [v for v in violations if v.get("severity") == "error"]
+        assert not errors, (
+            f"kicad-cli ERC found {len(errors)} error-level violation(s) in chain:\n"
+            + "\n".join(str(e) for e in errors)
         )
