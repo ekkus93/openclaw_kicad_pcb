@@ -67,6 +67,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 12. SDS-to-BFS layout fallback when connector roles incomplete
 	- [kicad-pcb/src/kicad_pcb/layout.py](../kicad-pcb/src/kicad_pcb/layout.py#L616-L655)
 	- Behavior: logs warning and uses BFS column assignment.
+	- Status: ✅ Addressed on 2026-03-05 — `compute_signal_flow_layout(..., strict=True)` now fails fast with `UserError(IR_SEMANTIC_INVALID)` when connector roles are incomplete; default non-strict mode preserves warning + BFS fallback.
 
 13. Orientation fallback when engine provides no rotation
 	- [kicad-pcb/src/kicad_pcb/commands/_sch_apply.py](../kicad-pcb/src/kicad_pcb/commands/_sch_apply.py#L416-L425)
