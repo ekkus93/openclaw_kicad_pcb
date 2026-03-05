@@ -12,15 +12,15 @@ This TODO list is the implementation plan for **Issue: Make generated schematics
   - [x] `tests/fixtures/regressions/headphone_amp_current_layout.kicad_sch` *(placed under `regressions/` rather than the proposed `schematics/` path)*
 - [x] Add a small README describing why it is "unusable":
   - [x] `tests/fixtures/regressions/README.md` exists and documents the baseline issues
-- [ ] Add helper code to load this fixture and compute stats (x-columns, label count, lint results).
+- [x] Add helper code to load this fixture and compute stats (x-columns, label count, lint results). *(`schematic_metrics.py` + 28 unit tests, commit `892dbfe`)*
 
 ### 0.2 Add acceptance-metrics helpers (used by tests)
-- [ ] Implement `schematic_metrics.py` (or similar) with functions:
-  - [ ] `count_distinct_x_columns(doc, tolerance_mm=0.5) -> int`
-  - [ ] `count_global_labels(doc, text="GND") -> int`
-  - [ ] `run_layout_lints(doc) -> list[LintIssue]`
-  - [ ] `wire_stub_ratio(doc, stub_len_mm=5.08, tol=0.2) -> float`
-- [ ] Add unit tests for these helpers using small synthetic schematics.
+- [x] Implement `schematic_metrics.py` with functions:
+  - [x] `count_distinct_x_columns(doc, tolerance_mm=0.5) -> int`
+  - [x] `count_global_labels(doc, text="GND") -> int`
+  - [x] `run_layout_lints(doc) -> list[LintIssue]`
+  - [x] `wire_stub_ratio(doc, stub_len_mm=5.08, tol=0.2) -> float`
+- [x] Add unit tests for these helpers using small synthetic schematics. *(28 tests in `tests/unit/test_schematic_metrics.py`)*
 
 ---
 
