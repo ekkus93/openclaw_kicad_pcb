@@ -462,7 +462,7 @@ error messages and can be suppressed per-project with a config file.
 | LAY001 | WARNING | Same net label placed more than 3 times (prefer wires) |
 | LAY002 | WARNING | Short stub wire + label that could be a direct wire connection |
 | LAY003 | ERROR | Two symbols share the same grid cell (overlapping placement) |
-| LAY004 | WARNING | A symbol is outside the A4 printable area (0–297 × 0–210 mm) |
+| LAY004 | ERROR | A symbol is outside the page printable area (0–420 × 0–297 mm) |
 | LAY005 | WARNING | Wire island — a group of wires has no net label and no pin |
 | LAY007 | WARNING | Signal-wire crossing ratio exceeds 50 % |
 

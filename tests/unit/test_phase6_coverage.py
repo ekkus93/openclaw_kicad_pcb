@@ -1158,8 +1158,8 @@ class TestBusStyleSpineRoute:
         # Bus style should produce junctions (T-intersections on the spine).
         assert bus_routing.junctions, "Bus routing must produce junctions at spine T-intersections."
 
-    def test_route_nets_use_bus_default_false(self) -> None:
-        """use_bus defaults to False — hub routing used by default."""
+    def test_route_nets_use_bus_default_true(self) -> None:
+        """use_bus defaults to True — spine/bus routing used by default."""
         ir = CircuitIR(
             version="test-1.0",
             components=[
@@ -1184,10 +1184,10 @@ class TestBusStyleSpineRoute:
             ("R3", "2"): (50.0, 50.0, 180.0),
         }
         default_routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
-        explicit_hub = route_nets(ir=ir, pin_endpoints=pin_endpoints, use_bus=False)
+        explicit_bus = route_nets(ir=ir, pin_endpoints=pin_endpoints, use_bus=True)
         assert {(s.x1, s.y1, s.x2, s.y2) for s in default_routing.wires} == {
-            (s.x1, s.y1, s.x2, s.y2) for s in explicit_hub.wires
-        }
+            (s.x1, s.y1, s.x2, s.y2) for s in explicit_bus.wires
+        }, "Default routing should match use_bus=True (spine/bus routing)."
 
 
 # ---------------------------------------------------------------------------

@@ -1004,7 +1004,8 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
 
     A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets:
      - VCC  (power)  → expected to get a global_label (power routing)
-     - MID  (2-pin)  → R1-pin2 and R2-pin1 are adjacent; router must emit
+     - MID  (2-pin)  → R1-pin2 and R2-pin1 are adjacent-tier (tier distance=1)
+                       and within the 200 mm manhattan cap; router must emit
                        an L-shaped wire, NOT a net label
      - GND  (power)  → expected to get a global_label (power routing)
 
@@ -1096,8 +1097,6 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
 
     # 4 stub wires (VCC stub, GND stub, R1-pin2 stub, R2-pin1 stub) + at least
     # one L-route bridge = minimum 5 wire segments for a direct-wire routing.
-    # Stub-only would produce 4 wires + a MID label, which assertion 1 already
-    # catches — so reaching here means direct routing fired.
     assert len(all_wire_segments) >= 5, (  # noqa: PLR2004
         f"Expected ≥5 wire segments for direct-wire routing; found {len(all_wire_segments)}. "
         "The router may not have emitted an L-route bridge between R1 and R2."

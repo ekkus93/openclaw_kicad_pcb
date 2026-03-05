@@ -35,7 +35,15 @@ import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.component_types import component_type
-from kicad_pcb.graphviz_layout.snap import _center_ics_in_columns, _remediate_crossings
+from kicad_pcb.graphviz_layout.snap import (
+    ORIGIN_X,
+    ORIGIN_Y,
+    PAGE_MAX_X,
+    PAGE_MAX_Y,
+    _center_ics_in_columns,
+    _clamp_to_page,
+    _remediate_crossings,
+)
 from kicad_pcb.layout import (
     ComponentAnnotation,
     StereoChannel,
@@ -499,12 +507,12 @@ class TestLAY004:
         root = _sch(_symbol_at(-1.0, 50.0))
         assert "LAY004" in _codes(lint_schematic_layout(root))
 
-    def test_x_beyond_a4_errors(self) -> None:
-        root = _sch(_symbol_at(300.0, 50.0))
+    def test_x_beyond_page_errors(self) -> None:
+        root = _sch(_symbol_at(450.0, 50.0))
         assert "LAY004" in _codes(lint_schematic_layout(root))
 
-    def test_y_beyond_a4_errors(self) -> None:
-        root = _sch(_symbol_at(100.0, 215.0))
+    def test_y_beyond_page_errors(self) -> None:
+        root = _sch(_symbol_at(100.0, 310.0))
         assert "LAY004" in _codes(lint_schematic_layout(root))
 
     def test_severity_is_error(self) -> None:
@@ -2904,7 +2912,7 @@ class TestPhase8WireRouting:
         )
 
     def test_long_wire_adjacent_tier_gets_label(self) -> None:
-        """Adjacent tier (distance=1) but wire > MAX_DIRECT_WIRE_MM → label route."""
+        """Adjacent tier (distance=1) but wire > MAX_DIRECT_DIST_MM → label route."""
         ir = _make_ir(
             [("R1", "Device:R"), ("R2", "Device:R")],
             [("NET1", [("R1", "1"), ("R2", "1")])],
@@ -2912,7 +2920,7 @@ class TestPhase8WireRouting:
         tiers = {"R1": 0, "R2": 1}  # distance = 1 (adjacent)
         pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
             ("R1", "1"): (30.0, 100.0, 0.0),
-            ("R2", "1"): (200.0, 100.0, 180.0),  # ≈160 mm direct — exceeds 30 mm
+            ("R2", "1"): (250.0, 100.0, 180.0),  # ≈220 mm — exceeds MAX_DIRECT_DIST_MM (200 mm)
         }
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, tiers=tiers)
         assert len(routing.labels) == 2, (
@@ -3436,3 +3444,80 @@ class TestRemediateCrossings:
         # Each column has one component; no reordering possible.
         assert result["R1"][0] == pytest.approx(_COL0_X)
         assert result["R2"][0] == pytest.approx(_COL1_X)
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 (readable schematics) — _clamp_to_page
+# ---------------------------------------------------------------------------
+
+
+class TestClampToPage:
+    """Unit tests for _clamp_to_page() — final pass that prevents LAY004."""
+
+    def test_positions_inside_bounds_unchanged(self) -> None:
+        """Positions already inside the A4 area must pass through unmodified."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (100.0, 100.0, 0.0),
+            "U1": (150.0, 80.0, None),
+        }
+        result = _clamp_to_page(positions)
+        assert result["R1"] == pytest.approx((100.0, 100.0, 0.0))
+        assert result["U1"][0] == pytest.approx(150.0)
+        assert result["U1"][1] == pytest.approx(80.0)
+        assert result["U1"][2] is None
+
+    def test_x_beyond_max_clamped(self) -> None:
+        """x > PAGE_MAX_X must be clamped to PAGE_MAX_X."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (PAGE_MAX_X + 50.0, 100.0, 0.0),
+        }
+        result = _clamp_to_page(positions)
+        assert result["R1"][0] == pytest.approx(PAGE_MAX_X)
+        assert result["R1"][1] == pytest.approx(100.0)
+
+    def test_y_beyond_max_clamped(self) -> None:
+        """y > PAGE_MAX_Y must be clamped to PAGE_MAX_Y."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (100.0, PAGE_MAX_Y + 30.0, 90.0),
+        }
+        result = _clamp_to_page(positions)
+        assert result["R1"][1] == pytest.approx(PAGE_MAX_Y)
+        assert result["R1"][0] == pytest.approx(100.0)
+
+    def test_x_below_origin_clamped(self) -> None:
+        """x < ORIGIN_X must be clamped to ORIGIN_X."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (ORIGIN_X - 20.0, 100.0, None),
+        }
+        result = _clamp_to_page(positions)
+        assert result["R1"][0] == pytest.approx(ORIGIN_X)
+
+    def test_y_below_origin_clamped(self) -> None:
+        """y < ORIGIN_Y must be clamped to ORIGIN_Y."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (100.0, ORIGIN_Y - 10.0, 0.0),
+        }
+        result = _clamp_to_page(positions)
+        assert result["R1"][1] == pytest.approx(ORIGIN_Y)
+
+    def test_rotation_preserved(self) -> None:
+        """Rotation must be unchanged even when x or y is clamped."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (PAGE_MAX_X + 5.0, PAGE_MAX_Y + 5.0, 180.0),
+        }
+        result = _clamp_to_page(positions)
+        assert result["U1"][2] == pytest.approx(180.0)
+
+    def test_input_not_mutated(self) -> None:
+        """The input dict must not be modified in-place."""
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (PAGE_MAX_X + 1.0, 100.0, 0.0),
+        }
+        original_x = positions["R1"][0]
+        _clamp_to_page(positions)
+        assert positions["R1"][0] == original_x
+
+    def test_empty_positions_returns_empty(self) -> None:
+        """Empty input must produce an empty output without error."""
+        result = _clamp_to_page({})
+        assert result == {}

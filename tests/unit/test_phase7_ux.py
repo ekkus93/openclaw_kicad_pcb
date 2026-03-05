@@ -11,7 +11,8 @@ Covers two main areas:
 7.2  Graphviz mandatory (no silent fallback)
     - TestGraphvizFailsLoud     : ``GraphvizLayoutEngine`` raises
       ``RuntimeError`` when ``dot`` fails or returns no positions.
-    - TestWriteSymbolsThreeTuple: ``_write_symbols`` returns a 3-tuple.
+    - TestWriteSymbolsFourTuple: ``_write_symbols`` returns a 4-tuple
+      (positions, endpoints, missing, raw_layout).
     - TestGraphvizRequiredEndToEnd: end-to-end: when ``make_layout_engine``
       returns an engine with a broken ``dot`` path, ``_write_symbols`` raises
       ``RuntimeError`` (no silent warn/fallback).
@@ -193,11 +194,11 @@ class TestGraphvizFailsLoud:
 # ---------------------------------------------------------------------------
 
 
-class TestWriteSymbolsThreeTuple:
-    """_write_symbols must return a 3-tuple (positions, endpoints, missing)."""
+class TestWriteSymbolsFourTuple:
+    """_write_symbols must return a 4-tuple (positions, endpoints, missing, raw_layout)."""
 
-    def test_returns_three_elements(self, tmp_path: Path) -> None:
-        """The return value of _write_symbols is a 3-element tuple."""
+    def test_returns_four_elements(self, tmp_path: Path) -> None:
+        """The return value of _write_symbols is a 4-element tuple."""
         from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
         from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
         from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
@@ -240,8 +241,8 @@ class TestWriteSymbolsThreeTuple:
         )
 
         assert isinstance(result, tuple), "Expected a tuple return value"
-        assert len(result) == 3, f"Expected 3-tuple, got {len(result)}-tuple"
-        _positions, _endpoints, _missing = result
+        assert len(result) == 4, f"Expected 4-tuple, got {len(result)}-tuple"
+        _positions, _endpoints, _missing, _raw_layout = result
 
 
 # ---------------------------------------------------------------------------

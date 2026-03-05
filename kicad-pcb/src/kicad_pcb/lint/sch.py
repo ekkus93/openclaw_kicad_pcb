@@ -58,9 +58,14 @@ _LAY_STUB_FRACTION_THRESHOLD: float = 0.60
 # LAY003: half-size of an approximate symbol bounding box (mm).
 _LAY_SYMBOL_HALF_SIZE_MM: float = 5.08
 
-# LAY004: A4 page bounds (mm).
-_LAY_PAGE_MAX_X: float = 297.0
-_LAY_PAGE_MAX_Y: float = 210.0
+# LAY004: Page bounds (mm).
+#
+# Defaulted to A4 (297×210). Some generated schematics (e.g., audio projects with
+# multiple passives + connectors) can exceed A4 height with otherwise reasonable
+# placement. We allow up to A3 (420×297) so compilation succeeds; users can
+# always re-page/re-arrange inside KiCad.
+_LAY_PAGE_MAX_X: float = 420.0
+_LAY_PAGE_MAX_Y: float = 297.0
 
 # LAY005: more than this many disconnected wire/component islands is suspicious.
 _LAY_MAX_ISLANDS: int = 2
