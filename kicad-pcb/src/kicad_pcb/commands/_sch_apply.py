@@ -241,6 +241,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             project_name=project.name,
             stats=stats,
             engine=_engine,
+            strict=request.strict,
         )
         _tiers = assign_tiers(ir)
         routing = route_nets(
@@ -380,6 +381,7 @@ def _write_symbols(  # noqa: PLR0913
     stats: dict[str, int],
     engine: LayoutEngine | None = None,
     cache_path: Path | None = None,
+    strict: bool = False,
 ) -> tuple[
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
@@ -419,6 +421,15 @@ def _write_symbols(  # noqa: PLR0913
     # None, in which case we fall back to the standalone compute_orientations call.
     _need_fallback_orientations = any(pos[2] is None for pos in raw_layout.values())
     if _need_fallback_orientations:
+        if strict:
+            missing_rotation_refs = sorted(
+                ref for ref, (_x, _y, rot) in raw_layout.items() if rot is None
+            )
+            raise UserError(
+                "Layout engine returned missing symbol rotations in strict mode",
+                code=ErrorCode.IR_SEMANTIC_INVALID,
+                details={"refs_missing_rotation": missing_rotation_refs},
+            )
         tiers: dict[str, int] = assign_tiers(ir)
         orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
     else:
