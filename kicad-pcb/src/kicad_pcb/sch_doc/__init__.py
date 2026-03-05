@@ -39,6 +39,7 @@ from .nodes import (
     make_junction_node,
     make_label_node,
     make_managed_sheet_node,
+    make_power_symbol_node,
     make_symbol_node,
     make_text_node,
     make_wire_node,
@@ -51,6 +52,7 @@ __all__ = [
     "make_junction_node",
     "make_label_node",
     "make_managed_sheet_node",
+    "make_power_symbol_node",
     "make_symbol_node",
     "make_text_node",
     "make_wire_node",
@@ -365,6 +367,63 @@ class SchematicDoc:
         self._insert_before_sheet_instances(
             make_global_label_node(name, x, y, label_uuid, angle=angle, shape=shape)
         )
+
+    def add_power_symbol(  # noqa: PLR0913
+        self,
+        net_name: str,
+        x: float,
+        y: float,
+        sym_uuid: str,
+        pin_uuid: str,
+        ref: str,
+        project_name: str,
+        *,
+        angle: int = 0,
+        symbols_dir: Path | None = None,
+    ) -> bool:
+        """Embed and place a KiCad power symbol (e.g. ``power:GND``).
+
+        Looks up ``power:<net_name>`` in the KiCad symbol library, embeds the
+        definition in ``lib_symbols``, and adds a placed instance at *(x, y)*.
+
+        Parameters
+        ----------
+        net_name:     Net name, e.g. ``"GND"`` — also determines the lib lookup
+                      (``power:GND``) and the placed symbol's ``Value``.
+        x, y:         Placement coordinates in mm.  The symbol's pin is here;
+                      a stub wire should end at this point.
+        sym_uuid:     UUID for the placed symbol instance.
+        pin_uuid:     UUID for the pin node inside the placed instance.
+        ref:          Reference string, typically ``"#PWRnn"``.
+        project_name: KiCad project name (for the ``(instances …)`` block).
+        angle:        Symbol rotation in degrees CCW (default 0).
+        symbols_dir:  Path to ``.kicad_sym`` files.  ``None`` uses the system
+                      default (``/usr/share/kicad/symbols``).
+
+        Returns
+        -------
+        bool
+            ``True`` when the symbol was found and placed successfully.
+            ``False`` when the symbol is not in the library — caller should
+            fall back to a ``global_label``.
+        """
+        sym_def = read_lib_symbol_def_flat("power", net_name, symbols_dir=symbols_dir)
+        if sym_def is None:
+            return False
+        self.embed_lib_symbol(sym_def)
+        node = make_power_symbol_node(
+            f"power:{net_name}",
+            net_name,
+            ref,
+            x,
+            y,
+            sym_uuid,
+            pin_uuid,
+            project_name,
+            angle=angle,
+        )
+        self._insert_before_sheet_instances(node)
+        return True
 
     # ------------------------------------------------------------------
     # Layout query

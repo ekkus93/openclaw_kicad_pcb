@@ -31,6 +31,7 @@ __all__ = [
     "make_junction_node",
     "make_label_node",
     "make_managed_sheet_node",
+    "make_power_symbol_node",
     "make_symbol_node",
     "make_text_node",
     "make_wire_node",
@@ -249,6 +250,66 @@ def make_global_label_node(  # noqa: PLR0913
         L(atom("uuid"), string(label_uuid)),
         _make_intersheet_prop(),
     )
+
+
+def make_power_symbol_node(  # noqa: PLR0913
+    lib_id: str,
+    value: str,
+    ref: str,
+    x: float,
+    y: float,
+    sym_uuid: str,
+    pin_uuid: str,
+    project_name: str,
+    *,
+    angle: int = 0,
+) -> ListNode:
+    """Build a placed KiCad power-symbol instance ``(symbol …)`` node.
+
+    Power symbols (``power:GND``, ``power:VCC``, etc.) are placed at *(x, y)*
+    with their single connection pin at the origin.  A stub wire should end at
+    *(x, y)* to make the electrical connection.
+
+    Parameters
+    ----------
+    lib_id:       Full KiCad library reference, e.g. ``"power:GND"``.
+    value:        Net name (also the symbol ``Value`` property), e.g. ``"GND"``.
+    ref:          Reference in ``#PWRnn`` form for this placed instance.
+    x, y:         Placement coordinates in mm.  The symbol's pin is at this point.
+    sym_uuid:     UUID string for the placed symbol instance.
+    pin_uuid:     UUID string for the pin inside the placed instance.
+    project_name: KiCad project name (for the ``(instances …)`` annotation).
+    angle:        Symbol rotation in degrees CCW (default 0).
+    """
+    items: list[Node] = [
+        atom("symbol"),
+        L(atom("lib_id"), string(lib_id)),
+        L(atom("at"), fnum(x, 2), fnum(y, 2), atom(str(angle))),
+        L(atom("unit"), atom("1")),
+        L(atom("exclude_from_sim"), atom("yes")),
+        L(atom("in_bom"), atom("no")),
+        L(atom("on_board"), atom("no")),
+        L(atom("uuid"), string(sym_uuid)),
+        _make_property("Reference", ref, x, y - 1.524, hide=True),
+        _make_property("Value", value, x, y + 1.524),
+        _make_property("Footprint", "", x, y, hide=True),
+        _make_property("Datasheet", "~", x, y, hide=True),
+        L(atom("pin"), string("1"), L(atom("uuid"), string(pin_uuid))),
+        L(
+            atom("instances"),
+            L(
+                atom("project"),
+                string(project_name),
+                L(
+                    atom("path"),
+                    string("/"),
+                    L(atom("reference"), string(ref)),
+                    L(atom("unit"), atom("1")),
+                ),
+            ),
+        ),
+    ]
+    return ListNode(tuple(items), NO_POS)
 
 
 @dataclass(frozen=True)
