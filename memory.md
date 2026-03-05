@@ -1,8 +1,125 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T17:00:00Z_
+_Last updated: 2026-03-05T18:34:58Z_
 
 ---
+
+## 2026-03-05T18:34:58Z — Full post-A10 verification pass succeeded
+
+- Ran full repository checks after completing A1–A10 fallback remediations:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check /home/ubo/work/openclaw_kicad_pcb`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb mypy /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests`
+- Results:
+  - Ruff: all checks passed.
+  - Mypy: success, no issues in 63 source files.
+  - Pytest: full suite passed.
+
+## 2026-03-05T18:23:43Z — Completed fallback audit item A10 (config/session load fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/config.py`:
+  - `get_current_project` now raises `UserError(code=IO_ERROR)` on malformed/unreadable current-project state instead of returning `None`.
+  - `get_current_session` now raises `UserError(code=IO_ERROR)` on malformed/unreadable current-session state instead of returning `None`.
+  - stale current-session marker cleanup (`unlink`) now raises `UserError(code=IO_ERROR)` on failure instead of suppressing errors.
+- Updated `tests/unit/test_session.py`:
+  - added malformed current-session state regression test.
+  - added stale marker unlink failure regression test.
+  - added malformed current-project state regression test.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_session.py` passed.
+
+## 2026-03-05T18:18:57Z — Completed fallback audit item A9 (add-component fail-fast, no default pins)
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/sch.py`:
+  - removed fallback to hardcoded symbol directory when discovery fails.
+  - `cmd_add_component` now raises `UserError(code=SYMBOL_DIR_MISSING)` if no symbol library directory resolves.
+  - removed warning/default pin fallback (`["1", "2"]`); now raises `UserError(code=SYMBOL_NOT_FOUND)` when symbol pins cannot be resolved.
+- Updated `tests/unit/test_symbols_discovery.py`:
+  - added `test_raises_when_no_symbols_dir_can_be_resolved`.
+  - added `test_raises_when_symbol_pins_not_found`.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_symbols_discovery.py -k "TestCmdAddComponentSymbolDir"` passed.
+
+## 2026-03-05T18:12:05Z — Completed fallback audit item A8 (search-symbols grep fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/search.py`:
+  - removed silent grep→Python fallback behavior in `_grep_matching_files`.
+  - grep timeout/exec/command-failure paths now raise `UserError(code=IO_ERROR)` with directory/error details.
+- Updated `tests/unit/test_symbol_cache.py`:
+  - added `TestGrepMatchingFiles.test_grep_timeout_raises_user_error`.
+  - added `TestGrepMatchingFiles.test_grep_exec_failure_raises_user_error`.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_symbol_cache.py` passed.
+
+## 2026-03-05T18:08:49Z — Completed fallback audit item A7 (SymbolIndex declaration-scan read fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/symbol_index.py`:
+  - replaced declaration-scan `except OSError: pass` with explicit `UserError(code=IO_ERROR)`.
+  - new error now includes `symbol` and `lib_file` context for debugging.
+- Updated `tests/unit/test_symbol_index.py`:
+  - added `test_symbol_index_raises_io_error_when_declaration_probe_read_fails` to assert read failures are surfaced, not treated as not-found.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_symbol_index.py` passed.
+
+## 2026-03-05T18:06:09Z — Fixed 3 verification failures (mypy + 2 tests) and revalidated full suite
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/preview.py`:
+  - replaced direct `import cairosvg` with `importlib.import_module("cairosvg")` in optional PNG conversion path.
+  - resolved mypy `import-untyped` error in `cmd_preview_schematic`.
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`:
+  - kept `_clamp_to_page` contract unchanged (pure bounds clamp).
+  - in `_apply_post_layout_snaps`, final clamp now uses grid-safe page maxima (floor-to-grid) so boundary positions remain on 1.27 mm grid.
+  - fixed integration grid regression (`J_OUT` off-grid at page boundary).
+- Updated `tests/unit/test_phase4_layout.py`:
+  - hardened `test_no_cache_path_does_not_write` to compare newly-created `.json` files (before/after diff) instead of assuming cwd has no JSON files.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check /home/ubo/work/openclaw_kicad_pcb` passed.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb mypy /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src` passed.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q /home/ubo/work/openclaw_kicad_pcb/tests` passed (full suite).
+
+## 2026-03-05T17:23:04Z — Completed fallback audit item A6 (library parse/read fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/lib_symbol.py`:
+  - `_resolve_sym_chain` now returns `None` only for true missing library files.
+  - parse failures now raise `ParseError` with library path context.
+  - read failures now raise `UserError(code=IO_ERROR)` with file path details.
+  - updated public helper docstrings to state parse/read failures are raised, not treated as “not found”.
+- Updated `tests/unit/test_sch_doc.py`:
+  - added malformed-library regression test (`ParseError` expected).
+  - added read-failure regression test (`UserError(IO_ERROR)` expected).
+  - validated nearby baseline behavior remains: missing dir/symbol still returns empty pin lists.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q ... -k "TestReadLibSymbolPins and (malformed_library or library_read_failure or returns_empty_for_missing_symbol or returns_empty_for_missing_dir)"` passed.
+
+## 2026-03-05T17:18:38Z — Completed fallback audit item A5 (fix-netlist SymbolIndex fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/netlist.py`:
+  - removed `contextlib.suppress(UserError)` around `SymbolIndex` construction in `cmd_fix_netlist`.
+  - when `--symbols-dir` is provided and index construction fails, command now propagates the error (fail-fast).
+- Updated `tests/unit/test_netlist_commands.py`:
+  - added `test_fix_netlist_raises_when_symbol_index_init_fails` to assert `UserError` propagation and no output file write on init failure.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check ...` passed for modified files.
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q ... -k "fix_netlist_raises_when_symbol_index_init_fails"` passed.
+
+## 2026-03-05T17:13:37Z — Completed fallback audit item A4 (autofix pin lookup exception handling)
+
+- Updated `kicad-pcb/src/kicad_pcb/ir/autofix.py`:
+  - removed broad `except Exception` around `symbol_index.get_pins`.
+  - now catches `UserError` only, records explicit alias-layer lookup failure in `remaining_errors`.
+  - unexpected exceptions now propagate (fail-fast).
+- Added focused tests in `tests/unit/test_ir_autofix.py`:
+  - user-level pin lookup failure is surfaced in `remaining_errors`.
+  - unexpected runtime lookup failure is not swallowed.
+  - successful lookup still applies alias correction (`PLUS` -> `1`).
+- Validation:
+  - `uv run ruff check` passed.
+  - `uv run pytest -q tests/unit/test_ir_autofix.py` passed.
 
 ## 2026-03-05T17:00:00Z — Completed fallback audit item A3 (adapter output/report fail-fast)
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 from pathlib import Path
 
@@ -209,8 +208,7 @@ def cmd_fix_netlist(args) -> FixNetlistResult:
     # stays fast by default; the auto-detect path can scan very large library files.
     symbol_index: SymbolIndex | None = None
     if symbols_dir is not None:
-        with contextlib.suppress(UserError):
-            symbol_index = SymbolIndex(symbols_dir=symbols_dir)
+        symbol_index = SymbolIndex(symbols_dir=symbols_dir)
 
     # Run all fix layers
     outcome = autofix_circuit_ir(raw, symbol_index=symbol_index)

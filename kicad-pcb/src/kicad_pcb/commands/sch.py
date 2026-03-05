@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import SymbolsDir, discover_symbols_dir, get_current_project
-from ..errors import UserError
+from ..errors import ErrorCode, UserError
 from ..fs import _new_uuid
 from ..models import ComponentSpec, NetLabelSpec, WireSegment
 from ..pipeline import mutate_and_validate_sch
@@ -52,14 +52,29 @@ def cmd_add_component(args) -> AddComponentResult:
     # Resolve symbol library directory: explicit flag > env var > config > platform.
     explicit_path = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
     sym_dir_result: SymbolsDir | None = discover_symbols_dir(explicit=explicit_path)
-    sym_dir = sym_dir_result.path if sym_dir_result is not None else KICAD_SYMBOLS_DIR
+    if sym_dir_result is None:
+        raise UserError(
+            "No KiCad symbol libraries found. Cannot add component.",
+            code=ErrorCode.SYMBOL_DIR_MISSING,
+            details={
+                "hint": (
+                    "Set KICAD_SYMBOLS_DIR, configure symbols_dir, or pass --symbols-dir <path>."
+                ),
+            },
+        )
+    sym_dir = sym_dir_result.path
 
     pin_nums = read_lib_symbol_pins(spec.lib_name, spec.sym_name, symbols_dir=sym_dir)
     if not pin_nums:
-        print(f"Warning: Symbol '{spec.lib_sym}' not found in {sym_dir}")
-        print("   Using default pins [1, 2]. Edit footprint assignment in KiCad.")
-        print("   Hint: set KICAD_SYMBOLS_DIR or --symbols-dir to point to your library.")
-        pin_nums = ["1", "2"]
+        raise UserError(
+            f"Symbol not found in library: {spec.lib_sym}",
+            code=ErrorCode.SYMBOL_NOT_FOUND,
+            details={
+                "symbol": spec.lib_sym,
+                "symbols_dir": str(sym_dir),
+                "hint": "Check symbol name/case and selected symbols directory.",
+            },
+        )
 
     # Load the symbol definition before the pipeline so we can embed it.
     # read_lib_symbol_def_flat merges extends ancestors into a single self-

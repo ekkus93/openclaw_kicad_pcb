@@ -1324,5 +1324,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     result = _spread_x_columns(result)
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
-    result = _clamp_to_page(result)
+    # Use grid-safe max bounds so final clamped coordinates stay on the
+    # 1.27 mm KiCad grid even at the right/bottom page edges.
+    grid = 1.27
+    grid_max_x = round(math.floor(PAGE_MAX_X / grid) * grid, 4)
+    grid_max_y = round(math.floor(PAGE_MAX_Y / grid) * grid, 4)
+    result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result

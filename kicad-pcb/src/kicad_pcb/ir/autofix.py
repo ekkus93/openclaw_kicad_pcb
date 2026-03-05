@@ -19,6 +19,7 @@ import copy
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..errors import UserError
 from ..symbol_index import SymbolIndex
 
 # ---------------------------------------------------------------------------
@@ -220,8 +221,9 @@ def _fix_pin_aliases(
     for _sid in set(sym_by_ref.values()):
         try:
             pin_cache[_sid] = symbol_index.get_pins(_sid)
-        except Exception:
-            pin_cache[_sid] = set()  # unknown symbol; skip alias fix for it
+        except UserError as exc:
+            pin_cache[_sid] = set()  # lookup failed; pin alias fix cannot proceed for this symbol
+            errors.append(f'symbol "{_sid}" pin lookup failed: {exc}')
 
     # Walk nets and fix wrong pins in-place
     for net in result.get("nets", []):

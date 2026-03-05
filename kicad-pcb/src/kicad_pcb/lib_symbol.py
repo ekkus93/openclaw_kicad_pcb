@@ -20,7 +20,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from .errors import ParseError
+from .errors import ErrorCode, ParseError, UserError
 from .sexpr.builder import string
 from .sexpr.nodes import NO_POS, ListNode, Node, StringNode
 from .sexpr.parser import parse_file
@@ -201,8 +201,8 @@ def _resolve_sym_chain(
 ) -> tuple[ListNode, list[str], bool] | None:
     """Load a ``.kicad_sym`` file and walk the ``extends`` chain for *sym_name*.
 
-    Returns ``(lib_root, chain, complete)`` or ``None`` if the file cannot be
-    found or parsed.
+    Returns ``(lib_root, chain, complete)`` or ``None`` if the library file is
+    not found.
 
     * ``lib_root``  — parsed root of the ``.kicad_sym`` file.
     * ``chain``     — symbol names in derived-first order (``sym_name`` first).
@@ -219,8 +219,14 @@ def _resolve_sym_chain(
         return None
     try:
         lib_root = _parse_lib_file(lib_file)
-    except (ParseError, OSError):
-        return None
+    except ParseError as exc:
+        raise ParseError(f"Failed to parse symbol library '{lib_file}': {exc}") from exc
+    except OSError as exc:
+        raise UserError(
+            f"Failed to read symbol library '{lib_file}': {exc}",
+            code=ErrorCode.IO_ERROR,
+            details={"path": str(lib_file)},
+        ) from exc
     chain: list[str] = []
     visited: set[str] = set()
     current: str | None = sym_name
@@ -260,8 +266,8 @@ def read_lib_symbol_def(
         :func:`read_lib_symbol_def_flat` so the full inheritance tree is
         present in the schematic's ``lib_symbols`` section.
 
-    Returns ``None`` when the library file or symbol is not found, or if the
-    file cannot be parsed.
+    Returns ``None`` when the library file or symbol is not found.
+    Raises on library parse/read failures.
 
     Parameters
     ----------
@@ -306,7 +312,8 @@ def read_lib_symbol_def_chain(
     ``"lib_name:BaseName"`` form required by KiCad schematics.
 
     Returns an empty list when the library file or root symbol cannot be
-    found or the extends chain is broken.
+    found or the extends chain is broken. Raises on library parse/read
+    failures.
 
     Parameters
     ----------
@@ -377,7 +384,7 @@ def read_lib_symbol_def_flat(
     resolve when opening a schematic file.
 
     Returns ``None`` when the library or symbol cannot be found, or when
-    the extends chain is broken.
+    the extends chain is broken. Raises on library parse/read failures.
     """
     chain = read_lib_symbol_def_chain(lib_name, sym_name, symbols_dir=symbols_dir)
     if not chain:
@@ -420,8 +427,9 @@ def read_lib_symbol_pins(
     """Return deduplicated pin number strings for a library symbol.
 
     Returns an empty list when the library file, symbol, or pin data is not
-    available.  The search is performed on the full AST subtree of the symbol,
-    so sub-unit pins are included without any character-window heuristics.
+    available. Raises on library parse/read failures. The search is performed
+    on the full AST subtree of the symbol, so sub-unit pins are included
+    without any character-window heuristics.
 
     Parameters
     ----------
@@ -468,6 +476,7 @@ def read_lib_symbol_pin_at(
       symbol body; wire extensions should point in the **opposite** direction.
 
     Returns an empty dict when the library file or symbol cannot be found.
+    Raises on library parse/read failures.
 
     Parameters
     ----------

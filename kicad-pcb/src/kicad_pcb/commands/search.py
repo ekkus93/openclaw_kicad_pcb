@@ -147,15 +147,17 @@ def _score(match_kws: list[str], sym_id: str, description: str) -> int:
 def _grep_matching_files(sym_dir: Path, match_kws: list[str]) -> list[Path]:
     """Return library files in *sym_dir* that contain at least one keyword.
 
-    Uses ``grep -li`` (case-insensitive file-list mode) for speed when
-    available, falling back to a Python read-and-search if grep is absent.
+    Uses ``grep -li`` (case-insensitive file-list mode) for speed.
     Only ``.kicad_sym`` files are considered.
+
+    Fail-fast behavior: grep command failures/timeouts are surfaced as
+    :class:`UserError` instead of silently degrading to slower fallback scans.
     """
     all_files = list(sym_dir.glob("*.kicad_sym"))
     if not all_files:
         return []
 
-    # Try grep first — orders of magnitude faster than Python I/O for many files
+    # grep pre-screen — orders of magnitude faster than Python I/O for many files
     try:
         # Build a single alternation pattern so grep only runs once
         pattern = "|".join(re.escape(kw) for kw in match_kws)
@@ -168,20 +170,32 @@ def _grep_matching_files(sym_dir: Path, match_kws: list[str]) -> list[Path]:
         )
         if result.returncode in (0, 1):  # 0 = found, 1 = no match
             return [Path(p) for p in result.stdout.splitlines() if p.endswith(".kicad_sym")]
-    except (OSError, subprocess.TimeoutExpired):
-        pass
-
-    # Fallback: Python-based scan
-    pre = re.compile("|".join(re.escape(kw) for kw in match_kws), re.IGNORECASE)
-    matched: list[Path] = []
-    for f in all_files:
-        try:
-            raw = f.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        if pre.search(raw):
-            matched.append(f)
-    return matched
+        raise UserError(
+            f"grep failed while scanning symbol libraries in '{sym_dir}'",
+            code=ErrorCode.IO_ERROR,
+            details={
+                "path": str(sym_dir),
+                "returncode": result.returncode,
+                "stderr": result.stderr.strip(),
+            },
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise UserError(
+            f"grep timed out while scanning symbol libraries in '{sym_dir}'",
+            code=ErrorCode.IO_ERROR,
+            details={
+                "path": str(sym_dir),
+                "timeout_seconds": 10,
+            },
+        ) from exc
+    except OSError as exc:
+        raise UserError(
+            f"failed to execute grep while scanning symbol libraries in '{sym_dir}': {exc}",
+            code=ErrorCode.IO_ERROR,
+            details={
+                "path": str(sym_dir),
+            },
+        ) from exc
 
 
 def _parse_file_to_cached(lib_file: Path) -> list[CachedSymbol]:

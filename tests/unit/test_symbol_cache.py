@@ -11,17 +11,20 @@ Covers:
 
 from __future__ import annotations
 
+import subprocess
 import time
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from kicad_pcb.commands.search import (
+    _grep_matching_files,
     _parse_file_to_cached,
     _scan_dir_with_cache,
     cmd_build_symbol_index,
     cmd_search_symbols,
 )
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.symbol_cache import CachedSymbol, SymbolCache
 
 # ---------------------------------------------------------------------------
@@ -229,6 +232,38 @@ class TestScanDirWithCache:
         empty_dir.mkdir()
         cache = SymbolCache(db_path=tmp_path / "cache.db")
         assert _scan_dir_with_cache(empty_dir, ["anything"], cache) == []
+
+
+class TestGrepMatchingFiles:
+    def test_grep_timeout_raises_user_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        sym_dir, _ = _make_sym_dir(tmp_path)
+
+        def _run_timeout(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd="grep", timeout=10)
+
+        monkeypatch.setattr(subprocess, "run", _run_timeout)
+
+        with pytest.raises(UserError) as exc_info:
+            _grep_matching_files(sym_dir, ["testcomp"])
+
+        assert exc_info.value.code == ErrorCode.IO_ERROR
+
+    def test_grep_exec_failure_raises_user_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        sym_dir, _ = _make_sym_dir(tmp_path)
+
+        def _run_oserror(*args, **kwargs):
+            raise OSError("grep unavailable")
+
+        monkeypatch.setattr(subprocess, "run", _run_oserror)
+
+        with pytest.raises(UserError) as exc_info:
+            _grep_matching_files(sym_dir, ["testcomp"])
+
+        assert exc_info.value.code == ErrorCode.IO_ERROR
 
 
 # ---------------------------------------------------------------------------

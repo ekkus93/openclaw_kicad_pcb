@@ -11,8 +11,13 @@ import kicad_pcb.commands.session as session_mod
 import kicad_pcb.config as cfg_mod
 import pytest
 from kicad_pcb.commands.session import cmd_close_session, cmd_new_session, cmd_session_info
-from kicad_pcb.config import clear_current_session, get_current_session, set_current_session
-from kicad_pcb.errors import UserError
+from kicad_pcb.config import (
+    clear_current_session,
+    get_current_project,
+    get_current_session,
+    set_current_session,
+)
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import SessionRef
 from kicad_pcb.results import NewSessionResult, SessionInfoResult
 
@@ -177,6 +182,55 @@ def test_get_current_session_returns_none_for_missing_dir(session_env: Path, tmp
 
     assert result is None
     assert not cfg_mod.CURRENT_SESSION_FILE.exists()
+
+
+def test_get_current_session_malformed_state_raises(session_env: Path) -> None:
+    cfg_mod.CURRENT_SESSION_FILE.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(UserError) as exc_info:
+        get_current_session()
+
+    assert exc_info.value.code == ErrorCode.IO_ERROR
+
+
+def test_get_current_session_stale_marker_unlink_failure_raises(
+    session_env: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    uid = uuid.uuid4().hex
+    missing_dir = tmp_path / "gone"
+    ref = SessionRef(name="stale", uuid=uid, path=missing_dir, created="", description="")
+    set_current_session(ref)
+
+    original_unlink = Path.unlink
+
+    def _unlink_raise(self: Path, *args, **kwargs) -> None:
+        if self == cfg_mod.CURRENT_SESSION_FILE:
+            raise OSError("permission denied")
+        original_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", _unlink_raise)
+
+    with pytest.raises(UserError) as exc_info:
+        get_current_session()
+
+    assert exc_info.value.code == ErrorCode.IO_ERROR
+
+
+def test_get_current_project_malformed_state_raises(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_file = tmp_path / "current_project.json"
+    monkeypatch.setattr(cfg_mod, "CURRENT_PROJECT_FILE", project_file)
+
+    project_file.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(UserError) as exc_info:
+        get_current_project()
+
+    assert exc_info.value.code == ErrorCode.IO_ERROR
 
 
 # ---------------------------------------------------------------------------

@@ -25,30 +25,37 @@ This inventory lists every fallback/suppression path found during the audit, gro
 4. Autofix pin-alias stage swallows pin lookup exceptions
    - [kicad-pcb/src/kicad_pcb/ir/autofix.py](../kicad-pcb/src/kicad_pcb/ir/autofix.py#L214-L228)
    - Behavior: broad `except Exception` sets pin set empty and skips alias fix for that symbol.
+	- Status: ✅ Addressed on 2026-03-05 — now catches only `UserError` and reports lookup failures in `remaining_errors`; unexpected exceptions propagate (fail-fast).
 
 5. fix-netlist suppresses symbol index construction failures
    - [kicad-pcb/src/kicad_pcb/commands/netlist.py](../kicad-pcb/src/kicad_pcb/commands/netlist.py#L207-L215)
    - Behavior: `with contextlib.suppress(UserError)` continues with `symbol_index=None`, reducing fix capability.
+	- Status: ✅ Addressed on 2026-03-05 — `cmd_fix_netlist` now fails fast when `SymbolIndex` construction fails (no `UserError` suppression).
 
 6. Library parse/read failure treated as symbol-not-found signal
    - [kicad-pcb/src/kicad_pcb/lib_symbol.py](../kicad-pcb/src/kicad_pcb/lib_symbol.py#L197-L226)
    - Behavior: parse/read exceptions return `None`, conflating I/O/parse failures with missing symbols.
+	- Status: ✅ Addressed on 2026-03-05 — library parse/read failures now raise explicit errors; only true missing library/symbol paths return `None`/empty values.
 
 7. SymbolIndex declaration scan ignores file read errors
    - [kicad-pcb/src/kicad_pcb/symbol_index.py](../kicad-pcb/src/kicad_pcb/symbol_index.py#L130-L138)
    - Behavior: `except OSError: pass` while probing for declared symbol headers.
+	- Status: ✅ Addressed on 2026-03-05 — declaration-scan read failures now raise `UserError(IO_ERROR)` with symbol and library path context.
 
 8. search-symbols grep fallback + unreadable file skip
    - [kicad-pcb/src/kicad_pcb/commands/search.py](../kicad-pcb/src/kicad_pcb/commands/search.py#L157-L199)
    - Behavior: grep failures/timeouts silently fall back to Python scan; unreadable files are skipped.
+	- Status: ✅ Addressed on 2026-03-05 — grep pre-screen failures/timeouts now raise explicit `UserError(IO_ERROR)`; silent fallback scan path removed.
 
 9. add-component defaults to fallback symbol dir and default pins
    - [kicad-pcb/src/kicad_pcb/commands/sch.py](../kicad-pcb/src/kicad_pcb/commands/sch.py#L23-L66)
    - Behavior: when symbol missing, warns and uses pins `["1", "2"]`.
+	- Status: ✅ Addressed on 2026-03-05 — `cmd_add_component` now fails fast on unresolved symbol directory (`SYMBOL_DIR_MISSING`) and missing symbol pins (`SYMBOL_NOT_FOUND`), no default-pin fallback.
 
 10. Config/session load returns `None` on malformed state
 	- [kicad-pcb/src/kicad_pcb/config.py](../kicad-pcb/src/kicad_pcb/config.py#L194-L211)
 	- Behavior: malformed/IO issues return `None`; stale session marker unlink errors suppressed.
+	- Status: ✅ Addressed on 2026-03-05 — malformed current project/session state now raises `UserError(IO_ERROR)`; stale session marker unlink failures are surfaced as `UserError(IO_ERROR)`.
 
 ## B) Explicit Functional Fallbacks (intentional behavior)
 
