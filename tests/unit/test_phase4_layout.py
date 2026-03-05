@@ -60,6 +60,7 @@ from kicad_pcb.lint import LINT_SUGGESTIONS, LintSeverity, lint_schematic_layout
 from kicad_pcb.router import (
     MAX_DIRECT_WIRE_MM,
     SYMBOL_HALF_SIZE_MM,
+    LabelPolicy,
     WireSegment,
     _hub_route,
     _is_power_net_name,
@@ -372,7 +373,9 @@ class TestRouteNetsHighFanout:
     def test_high_fanout_emits_global_labels(self) -> None:
         ir, endpoints = self._make_ir_and_endpoints()
         routing = route_nets(ir=ir, pin_endpoints=endpoints)
-        assert len(routing.global_labels) == 8
+        # DEFAULT_LABEL_POLICY caps global labels at max_global_labels_per_net=4
+        # (Phase 2.3: label duplication limits).  Use LabelPolicy(999) to bypass.
+        assert len(routing.global_labels) == 4
 
     def test_high_fanout_no_local_labels(self) -> None:
         ir, endpoints = self._make_ir_and_endpoints()
@@ -3663,4 +3666,128 @@ class TestSpreadXColumns:
         assert distinct_x_count >= expected_min, (
             f"Expected >= {expected_min} x-columns from {n_sym} identical-x symbols, "
             f"got {distinct_x_count}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.3 — Label duplication limits (LabelPolicy)
+# ---------------------------------------------------------------------------
+
+
+class TestLabelPolicy:
+    """Unit tests for :class:`LabelPolicy` and the ``policy`` param of :func:`route_nets`.
+
+    Routing path notes used by fixture design
+    -----------------------------------------
+    * **Hub** fires when ``3 ≤ len(known) ≤ 6`` **and** ``not unknown``.  A net
+      with any unknown pins bypasses hub → falls to label-fallback.
+    * **High-degree** fires when ``len(known) > 6`` (regardless of unknown).
+    * **Label-fallback**: emits one :class:`NetLabel` per known pin (capped by
+      ``policy.max_labels_per_net``) and one per unknown pin (always).
+    """
+
+    # ------------------------------------------------------------------
+    # Label-fallback (known-pin cap)
+    # ------------------------------------------------------------------
+
+    def test_default_policy_caps_known_pin_labels_at_two(self) -> None:
+        """Label-fallback: 4 known + 1 unknown → default policy caps known at 2.
+
+        Without the policy gate the loop would emit 4 known labels + 1 unknown = 5.
+        With ``DEFAULT_LABEL_POLICY`` (max=2) it should emit 2 known + 1 unknown = 3.
+        """
+        # 4 known (R1–R4) + 1 unknown (R5 absent from pin_endpoints).
+        # Hub is bypassed because ``unknown`` is non-empty.
+        # High-degree is bypassed because len(known)=4 ≤ 6.
+        ir = _make_ir(
+            [(f"R{i}", "Device:R") for i in range(1, 6)],
+            [("SIG", [(f"R{i}", "1") for i in range(1, 6)])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            (f"R{i}", "1"): (float(i * 10), 0.0, 0.0) for i in range(1, 5)
+        }  # R5 absent → unknown
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
+        # Default policy: 2 known labels + 1 unknown label = 3 total.
+        assert len(routing.labels) == 3, (
+            f"Expected 3 labels (2 capped known + 1 unknown); got {routing.labels}"
+        )
+
+    def test_custom_policy_max_one_known_label(self) -> None:
+        """policy(max_labels_per_net=1): 4 known + 1 unknown → 1 known + 1 unknown = 2."""
+        ir = _make_ir(
+            [(f"R{i}", "Device:R") for i in range(1, 6)],
+            [("SIG", [(f"R{i}", "1") for i in range(1, 6)])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            (f"R{i}", "1"): (float(i * 10), 0.0, 0.0) for i in range(1, 5)
+        }  # R5 absent → unknown
+        policy = LabelPolicy(max_labels_per_net=1)
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, policy=policy)
+        assert len(routing.labels) == 2, (
+            f"Expected 2 labels (1 capped known + 1 unknown); got {routing.labels}"
+        )
+
+    def test_unlimited_policy_emits_all_labels(self) -> None:
+        """policy(max_labels_per_net=999): all 4 known + 1 unknown = 5 labels emitted."""
+        ir = _make_ir(
+            [(f"R{i}", "Device:R") for i in range(1, 6)],
+            [("SIG", [(f"R{i}", "1") for i in range(1, 6)])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            (f"R{i}", "1"): (float(i * 10), 0.0, 0.0) for i in range(1, 5)
+        }  # R5 absent → unknown
+        policy = LabelPolicy(max_labels_per_net=999)
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, policy=policy)
+        assert len(routing.labels) == 5, (
+            f"Expected 5 labels (4 known + 1 unknown, unlimited); got {routing.labels}"
+        )
+
+    def test_two_pin_label_fallback_unaffected_by_default_policy(self) -> None:
+        """2 far-apart known pins → 2 labels; default max=2 does not reduce this."""
+        ir = _make_ir(
+            [("R1", "Device:R"), ("R2", "Device:R")],
+            [("NET1", [("R1", "1"), ("R2", "1")])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("R1", "1"): (30.0, 100.0, 0.0),
+            ("R2", "1"): (250.0, 100.0, 180.0),  # 220 mm > MAX_DIRECT_DIST_MM (200 mm)
+        }
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
+        assert len(routing.labels) == 2, (
+            f"Default policy should leave 2-pin fallback unchanged; got {routing.labels}"
+        )
+
+    # ------------------------------------------------------------------
+    # High-degree global-label cap
+    # ------------------------------------------------------------------
+
+    def test_high_degree_global_labels_capped_at_default_four(self) -> None:
+        """8-pin non-power net (degree>6 → global-label path): default policy caps at 4."""
+        # 8 components, all in pin_endpoints (all known).  Non-power name → global labels.
+        ir = _make_ir(
+            [(f"R{i}", "Device:R") for i in range(1, 9)],
+            [("SIG", [(f"R{i}", "1") for i in range(1, 9)])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            (f"R{i}", "1"): (float(i * 10), 0.0, 0.0) for i in range(1, 9)
+        }
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
+        # Default policy: max_global_labels_per_net=4.
+        assert len(routing.global_labels) == 4, (
+            f"Expected 4 global labels (default cap); got {routing.global_labels}"
+        )
+
+    def test_high_degree_custom_global_label_policy(self) -> None:
+        """policy(max_global_labels_per_net=2): 8-pin net emits only 2 GlobalLabelPlacements."""
+        ir = _make_ir(
+            [(f"R{i}", "Device:R") for i in range(1, 9)],
+            [("SIG", [(f"R{i}", "1") for i in range(1, 9)])],
+        )
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            (f"R{i}", "1"): (float(i * 10), 0.0, 0.0) for i in range(1, 9)
+        }
+        policy = LabelPolicy(max_global_labels_per_net=2)
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, policy=policy)
+        assert len(routing.global_labels) == 2, (
+            f"Expected 2 global labels (custom cap=2); got {routing.global_labels}"
         )
