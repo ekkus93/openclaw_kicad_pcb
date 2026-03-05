@@ -1,6 +1,35 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T00:15:23Z_
+_Last updated: 2026-03-05T14:00:00Z_
+
+---
+
+## 2026-03-05T14:00:00Z — Phase 2.3 LabelPolicy committed (902cc75)
+
+**Commit:** `902cc75` — master, 3 files, 192 insertions, 12 deletions.
+
+### What was implemented
+
+**`LabelPolicy` frozen dataclass** added to `router.py` after `_HUB_MAX_DEGREE = 6`:
+- `max_labels_per_net: int = 2` — caps known-pin `NetLabel` emission in label-fallback path.
+- `max_global_labels_per_net: int = 4` — caps known-pin `GlobalLabelPlacement` in high-degree path.
+- `DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()` singleton.
+- Power nets are intentionally uncapped in both paths.
+- Unknown pins always receive a label (no physical wire; label = only connection).
+
+**`route_nets()` updated** — new `policy: LabelPolicy = DEFAULT_LABEL_POLICY` keyword param (backward-compatible).
+
+**Tests** — `TestLabelPolicy` (6 tests) in `test_phase4_layout.py`:
+1. Default policy caps known labels at 2 (4 known + 1 unknown → 3 total).
+2. Custom policy max=1 (4 known + 1 unknown → 2 total).
+3. Unlimited policy (all 5 emitted).
+4. 2-pin far-apart unchanged (still 2 labels).
+5. High-degree default cap = 4 global labels.
+6. High-degree custom cap = 2 global labels.
+
+`TestRouteNetsHighFanout.test_high_fanout_emits_global_labels` updated: `== 8` → `== 4` (new capped default).
+
+`COPILOT_TODO_READABLE_SCHEMATICS.md` Phase 2.3 checkboxes all ticked.
 
 ---
 
