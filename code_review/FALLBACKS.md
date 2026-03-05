@@ -72,6 +72,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 13. Orientation fallback when engine provides no rotation
 	- [kicad-pcb/src/kicad_pcb/commands/_sch_apply.py](../kicad-pcb/src/kicad_pcb/commands/_sch_apply.py#L416-L425)
 	- Behavior: computes orientations separately if layout tuples include `None` rotation.
+	- Status: ✅ Addressed on 2026-03-05 — `_write_symbols(..., strict=True)` now fails fast with `UserError(IR_SEMANTIC_INVALID)` when layout rotations are missing; default non-strict mode preserves orientation recompute fallback.
 
 14. Power symbol insertion fallback to global label (API contract)
 	- [kicad-pcb/src/kicad_pcb/sch_doc/__init__.py](../kicad-pcb/src/kicad_pcb/sch_doc/__init__.py#L380-L410)

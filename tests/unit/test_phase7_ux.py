@@ -42,8 +42,10 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._sch_apply import _resolve_layout, _resolve_mode, _resolve_routing
 from kicad_pcb.commands.netlist import _ApplyNetlistRequest, cmd_new_from_netlist
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout import GraphvizLayoutEngine
 from kicad_pcb.pipeline import ValidationMode
+from kicad_pcb.symbol_index import SymbolIndex
 
 pytestmark = pytest.mark.unit
 
@@ -257,6 +259,102 @@ class TestWriteSymbolsFourTuple:
         assert isinstance(result, tuple), "Expected a tuple return value"
         assert len(result) == 4, f"Expected 4-tuple, got {len(result)}-tuple"
         _positions, _endpoints, _missing, _raw_layout = result
+
+    def test_strict_raises_when_layout_rotation_missing(self) -> None:
+        """Strict mode must fail fast when the layout engine returns None rotation."""
+        from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
+        from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
+        from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
+        from kicad_pcb.sexpr.nodes import ListNode  # noqa: PLC0415
+
+        minimal_sch = (
+            "(kicad_sch (version 20230121) (generator eeschema)\n"
+            '  (uuid "00000000-0000-0000-0000-000000000001")\n'
+            '  (paper "A4"))\n'
+        )
+        root = _parse(minimal_sch)
+        assert isinstance(root, ListNode)
+        doc = SchematicDoc(root)
+
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="R1", symbol="Device:R")],
+            nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
+        )
+        index = SymbolIndex(symbols_dir=_FIXTURES_DIR if _FIXTURES_DIR.exists() else None)
+        stats: dict = {
+            "symbols": 0,
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        class _NoneRotationEngine:
+            def compute_symbol_positions(self, _ir: CircuitIR):
+                return {"R1": (10.0, 20.0, None)}
+
+        with pytest.raises(UserError) as exc_info:
+            _write_symbols(
+                doc=doc,
+                ir=ir,
+                symbol_index=index,
+                project_name="test",
+                stats=stats,
+                engine=_NoneRotationEngine(),
+                strict=True,
+            )
+
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["refs_missing_rotation"] == ["R1"]
+
+    def test_non_strict_still_allows_orientation_fallback(self) -> None:
+        """Default mode keeps the existing compute_orientations fallback behavior."""
+        from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
+        from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
+        from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
+        from kicad_pcb.sexpr.nodes import ListNode  # noqa: PLC0415
+
+        minimal_sch = (
+            "(kicad_sch (version 20230121) (generator eeschema)\n"
+            '  (uuid "00000000-0000-0000-0000-000000000001")\n'
+            '  (paper "A4"))\n'
+        )
+        root = _parse(minimal_sch)
+        assert isinstance(root, ListNode)
+        doc = SchematicDoc(root)
+
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="R1", symbol="Device:R")],
+            nets=[NetIR(name="N1", pins=[PinRefIR(ref="R1", pin="1")])],
+        )
+        index = SymbolIndex(symbols_dir=_FIXTURES_DIR if _FIXTURES_DIR.exists() else None)
+        stats: dict = {
+            "symbols": 0,
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        class _NoneRotationEngine:
+            def compute_symbol_positions(self, _ir: CircuitIR):
+                return {"R1": (10.0, 20.0, None)}
+
+        result = _write_symbols(
+            doc=doc,
+            ir=ir,
+            symbol_index=index,
+            project_name="test",
+            stats=stats,
+            engine=_NoneRotationEngine(),
+        )
+
+        assert isinstance(result, tuple)
+        assert len(result) == 4
 
 
 # ---------------------------------------------------------------------------

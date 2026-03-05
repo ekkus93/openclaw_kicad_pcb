@@ -1,6 +1,23 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T22:12:20Z_
+_Last updated: 2026-03-05T22:34:10Z_
+
+
+## 2026-03-05T22:34:10Z — Completed fallback audit item B13 (orientation strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - added `strict: bool = False` to `_write_symbols(...)`.
+  - when layout engine returns `None` rotations, strict mode now raises `UserError(code=IR_SEMANTIC_INVALID)` with `refs_missing_rotation`.
+  - default non-strict mode preserves existing fallback to `compute_orientations(...)`.
+  - `_build_managed_mutator` now passes `request.strict` into `_write_symbols(...)`.
+- Updated `tests/unit/test_phase7_ux.py`:
+  - added strict-mode regression test for missing layout rotations in `_write_symbols`.
+  - added non-strict regression test ensuring orientation fallback still works.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 13 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase7_ux.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase7_ux.py -k "TestWriteSymbolsFourTuple"`
 
 
 ## 2026-03-05T22:12:20Z — Completed fallback audit item B12 (SDS roles strict fail-fast)
