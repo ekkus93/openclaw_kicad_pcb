@@ -7,7 +7,7 @@ This TODO list is the implementation plan for **Issue: Make generated schematics
 ## Phase 0 — Fixtures and Baselines (Do first)
 
 ### 0.1 Add the headphone-amp schematic regression fixture
-- [ ] Add fixture directory: `tests/fixtures/schematics/`
+- [x] Add fixture directory: `tests/fixtures/schematics/` *(fixtures placed under `tests/fixtures/regressions/` instead)*
 - [x] Add the current broken/unusable schematic output:
   - [x] `tests/fixtures/regressions/headphone_amp_current_layout.kicad_sch` *(placed under `regressions/` rather than the proposed `schematics/` path)*
 - [x] Add a small README describing why it is "unusable":
