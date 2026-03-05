@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from .sch_doc import SchematicDoc
 
 from .component_types import is_power_net as _is_power_net_name
+from .errors import ErrorCode, UserError
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -396,6 +397,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     tiers: dict[str, int] | None = None,
     positions: dict[str, tuple[float, float, float | None]] | None = None,
     policy: LabelPolicy = DEFAULT_LABEL_POLICY,
+    strict: bool = False,
 ) -> NetRouting:
     """Compute routing decisions for all nets in *ir*.
 
@@ -453,6 +455,9 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         labels are emitted per net.  Defaults to
         :data:`DEFAULT_LABEL_POLICY` (2 local labels per net, 4 global
         labels per high-degree net).
+    strict:
+        When ``True``, unknown pin endpoints are treated as an error instead
+        of falling back to off-canvas stub+label/symbol routing.
 
     Returns a :class:`NetRouting` with all decisions.
     """
@@ -465,6 +470,22 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             (p, pin_endpoints[(p.ref, p.pin)]) for p in pins if (p.ref, p.pin) in pin_endpoints
         ]
         unknown = [p for p in pins if (p.ref, p.pin) not in pin_endpoints]
+
+        if strict and unknown:
+            raise UserError(
+                f"Cannot route net '{net.name}' with unknown pin endpoints in strict mode",
+                code=ErrorCode.PIN_INVALID,
+                details={
+                    "net_name": net.name,
+                    "missing_pins": [
+                        {
+                            "ref": pin.ref,
+                            "pin": pin.pin,
+                        }
+                        for pin in unknown
+                    ],
+                },
+            )
 
         is_power = _is_power_net_name(net.name)
 

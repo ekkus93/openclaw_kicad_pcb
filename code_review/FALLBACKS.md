@@ -62,6 +62,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 11. Router fallback strategies (label/global-label/off-canvas)
 	- [kicad-pcb/src/kicad_pcb/router.py](../kicad-pcb/src/kicad_pcb/router.py#L427-L583)
 	- Behavior: non-power nets may fall back from direct/hub/spine to label route; unknown pins go off-canvas with labels.
+	- Status: ✅ Addressed on 2026-03-05 — strict mode now fails fast on unknown pin endpoints (`PIN_INVALID`) instead of off-canvas fallback; non-strict mode keeps existing explicit label/global-label routing behavior.
 
 12. SDS-to-BFS layout fallback when connector roles incomplete
 	- [kicad-pcb/src/kicad_pcb/layout.py](../kicad-pcb/src/kicad_pcb/layout.py#L616-L655)

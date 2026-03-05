@@ -249,6 +249,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             tiers=_tiers,
             positions=raw_layout,
             use_bus=_resolve_routing(request.routing_name),
+            strict=request.strict,
         )
         write_routing(
             doc=doc,

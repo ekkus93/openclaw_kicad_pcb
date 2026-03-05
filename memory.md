@@ -1,8 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T18:34:58Z_
+_Last updated: 2026-03-05T20:52:05Z_
 
 ---
+
+## 2026-03-05T20:52:05Z — Completed fallback audit item B11 (router strict unknown-pin fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py`:
+  - added `strict: bool = False` to `route_nets(...)`.
+  - in strict mode, unknown pin endpoints now raise `UserError(code=PIN_INVALID)` with net/pin details instead of off-canvas fallback.
+  - non-strict behavior remains unchanged for existing label/global-label routing strategies.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - propagated `request.strict` into `route_nets(...)` so `apply-netlist --strict` enforces this routing policy.
+- Updated `tests/unit/test_phase4_layout.py`:
+  - added `TestRouteNetsStrictMode.test_strict_mode_raises_for_unknown_pin_endpoints`.
+  - added `TestRouteNetsStrictMode.test_non_strict_mode_keeps_offcanvas_fallback_for_unknown_pins`.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 11 as addressed with strict-mode fail-fast behavior.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check --fix tests/unit/test_phase4_layout.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/router.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase4_layout.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase4_layout.py -k "RouteNetsStrictMode or TestRouteNetsHighFanout or TestRouteNetsPower or TestRouteNetsDirect or TestRouteNetsHub"`
 
 ## 2026-03-05T18:34:58Z — Full post-A10 verification pass succeeded
 
