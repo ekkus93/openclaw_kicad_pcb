@@ -1,8 +1,14 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T09:10:51Z_
+_Last updated: 2026-03-05T09:19:42Z_
 
 ---
+
+## 2026-03-05T09:19:42Z — copilot-instructions.md: anti-fabrication rule added to Memory file section
+
+- User called out fabricated timestamps in memory.md entries.
+- Added explicit rule to `.github/copilot-instructions.md`: **NEVER fabricate or guess timestamps**; always run `date -u +"%Y-%m-%dT%H:%M:%SZ"` immediately before writing an entry, or `git log -1 --format="%aI" <hash>` for commit-specific times.
+- User preference: do not wait to be told twice about this; get the real time from the system every time.
 
 ## 2026-03-05T08:18:24Z — Phase 6.1 golden acceptance criteria committed (148fdfe)
 
