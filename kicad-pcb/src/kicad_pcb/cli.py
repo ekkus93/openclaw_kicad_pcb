@@ -676,6 +676,14 @@ def main() -> None:  # noqa: PLR0912 PLR0915
                 suggestion = LINT_SUGGESTIONS.get(issue.code)
                 if suggestion:
                     print(f"       💡 {suggestion}")
+            # If any layout issue (LAY*) was reported, add a generic layout hint.
+            lay_codes = {i.code for i in exc.issues if i.code.startswith("LAY")}
+            if lay_codes:
+                print(
+                    "  💡 Tip: layout issues can often be improved by switching engines:\n"
+                    "       apply-netlist --layout graphviz   # Graphviz automatic placement\n"
+                    "       apply-netlist --layout heuristic  # pure-Python fallback"
+                )
         sys.exit(1)
     except KiCadError as exc:
         if getattr(args, "output_json", False):

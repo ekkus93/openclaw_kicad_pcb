@@ -173,12 +173,12 @@ Choose one implementation path:
 - [x] `--dry-run` (no commit; validate only) *(implemented in `cli.py`)*
 
 ### 7.2 Diagnostics improvements
-- [ ] If Graphviz fails:
-  - [ ] include stderr excerpt
-  - [ ] report fallback used (heuristic)
-- [ ] On lint failure:
-  - [ ] print lint codes and affected refs/nets
-  - [ ] recommend switching layout or adjusting thresholds
+- [x] If Graphviz fails:
+  - [x] include stderr excerpt *(RuntimeError message from `_run_dot` already includes `stderr[:400]`; propagated via `GRAPHVIZ_LAYOUT_FALLBACK` warning `details.reason`)*
+  - [x] report fallback used (heuristic) *(`GRAPHVIZ_LAYOUT_FALLBACK` warning emitted in both `_resolve_layout` auto-fallback and `_build_managed_mutator._mutate` late-failure path)*
+- [x] On lint failure:
+  - [x] print lint codes and affected refs/nets *(existing — `[CODE] message` with coordinates; LAY001/LAY002 already include net name / wire counts)*
+  - [x] recommend switching layout or adjusting thresholds *(LAY001–LAY004 suggestions now mention `--layout graphviz`; `cli.py` appends engine-switching tip for any LAY* failure)*
 
 ---
 
