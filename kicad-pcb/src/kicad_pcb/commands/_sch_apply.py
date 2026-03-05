@@ -262,6 +262,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             # The project's component symbols_dir is unrelated to power.kicad_sym.
             symbols_dir=None,
             project_name=project.name,
+            strict=request.strict,
         )
 
         # Post-mutation AST invariants: a non-empty IR must produce symbols in

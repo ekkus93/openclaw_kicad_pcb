@@ -1,6 +1,24 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T22:34:10Z_
+_Last updated: 2026-03-05T22:40:24Z_
+
+
+## 2026-03-05T22:40:24Z — Completed fallback audit item B14 (power symbol strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py`:
+  - added `strict: bool = False` to `write_routing(...)`.
+  - when `doc.add_power_symbol(...)` returns `False`, strict mode now raises `UserError(code=SYMBOL_NOT_FOUND)` with power symbol details.
+  - default non-strict mode preserves global-label fallback behavior.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - propagated `request.strict` into `write_routing(...)` so apply-netlist strict mode enforces power-symbol resolution.
+- Updated `tests/unit/test_phase4_layout.py`:
+  - added `test_write_routing_strict_raises_when_power_symbol_missing`.
+  - kept existing non-strict fallback coverage (`test_write_routing_power_symbol_fallback_to_global_label`).
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 14 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/router.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase4_layout.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase4_layout.py -k "power_symbol_fallback_to_global_label or strict_raises_when_power_symbol_missing"`
 
 
 ## 2026-03-05T22:34:10Z — Completed fallback audit item B13 (orientation strict fail-fast)

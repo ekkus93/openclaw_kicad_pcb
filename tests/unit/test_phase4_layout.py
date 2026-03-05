@@ -4011,6 +4011,35 @@ class TestPhase3PowerSymbols:
         assert stats["power_symbols"] == 0, "Expected 0 successful power symbols"
         assert stats["global_labels"] == 1, "Expected global_label fallback"
 
+    def test_write_routing_strict_raises_when_power_symbol_missing(self, tmp_path: Path) -> None:
+        """Strict mode must fail fast when a power symbol cannot be resolved."""
+        doc = _make_sch_doc()
+        routing = NetRouting()
+        routing.power_symbols.append(PowerSymbolPlacement("NOT_A_REAL_NET_XYZ", 50.0, 80.0))
+        stats: dict[str, int] = {
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "power_symbols": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        with pytest.raises(UserError) as exc_info:
+            write_routing(
+                doc=doc,
+                routing=routing,
+                new_uuid=_next_test_uuid,
+                stats=stats,
+                symbols_dir=tmp_path,
+                strict=True,
+            )
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_NOT_FOUND
+        assert exc_info.value.details["symbol"] == "power:NOT_A_REAL_NET_XYZ"
+        assert stats["global_labels"] == 0
+        assert stats["power_symbols"] == 0
+
     def test_write_routing_multiple_power_nets(self) -> None:
         """Multiple power symbol placements all embedded and placed correctly."""
         doc = _make_sch_doc()

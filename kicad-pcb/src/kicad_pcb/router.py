@@ -620,6 +620,7 @@ def write_routing(  # noqa: PLR0913
     stats: dict[str, int],
     symbols_dir: Path | None = None,
     project_name: str = "project",
+    strict: bool = False,
 ) -> None:
     """Emit *routing* decisions into the schematic document *doc*.
 
@@ -640,6 +641,9 @@ def write_routing(  # noqa: PLR0913
     project_name:
         KiCad project name embedded in power-symbol ``(instances …)``
         annotations.  Defaults to ``"project"``.
+    strict:
+        When ``True``, missing power-library symbols are treated as errors
+        instead of falling back to ``global_label`` insertion.
     """
     for seg in routing.wires:
         doc.add_wire(seg.x1, seg.y1, seg.x2, seg.y2, new_uuid())
@@ -671,6 +675,15 @@ def write_routing(  # noqa: PLR0913
             symbols_dir=symbols_dir,
         )
         if not success:
+            if strict:
+                raise UserError(
+                    f"Power symbol not found in library: power:{ps.net_name}",
+                    code=ErrorCode.SYMBOL_NOT_FOUND,
+                    details={
+                        "symbol": f"power:{ps.net_name}",
+                        "net_name": ps.net_name,
+                    },
+                )
             # Fallback: global_label when power symbol is not in the library.
             doc.add_global_label(
                 ps.net_name, ps.x, ps.y, new_uuid(), angle=ps.angle, shape="passive"
