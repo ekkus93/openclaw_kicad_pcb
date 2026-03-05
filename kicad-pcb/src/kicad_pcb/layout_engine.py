@@ -44,9 +44,12 @@ Public API
 ----------
 :class:`LayoutEngine`             — structural Protocol every engine must satisfy.
 :class:`NoneLayoutEngine`         — no-op engine (places all at a fixed origin).
+:class:`HeuristicLayoutEngine`    — pure-Python signal-flow engine; no Graphviz required.
 :func:`make_layout_engine`        — factory; always returns a
                                     :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.
                                     Raises :class:`RuntimeError` if ``dot`` is not found.
+:func:`make_auto_layout_engine`   — factory that tries Graphviz first and falls back to
+                                    :class:`HeuristicLayoutEngine` when ``dot`` is absent.
 :func:`make_layout_engine_with_ir` — convenience wrapper that pre-computes tiers from
                                     a :class:`~kicad_pcb.circuit_ir.CircuitIR` so the
                                     engine skips a redundant ``assign_tiers`` call.
@@ -111,6 +114,35 @@ class NoneLayoutEngine:
 
 
 # ---------------------------------------------------------------------------
+# Built-in: HeuristicLayoutEngine
+# ---------------------------------------------------------------------------
+
+
+class HeuristicLayoutEngine:
+    """Pure-Python signal-flow layout engine that requires no Graphviz binary.
+
+    Delegates to :func:`~kicad_pcb.layout.compute_signal_flow_layout` which
+    implements SDS recursive halving, barycentric crossing reduction, and
+    decoupling-cap snap entirely in Python.  Rotation information is not
+    computed by the underlying function, so all components are returned with
+    ``rotation=None`` and orientation is determined by the downstream
+    :func:`~kicad_pcb.layout.compute_orientations` fallback in
+    :func:`~kicad_pcb.commands._sch_apply._write_symbols`.
+
+    This engine is useful when ``dot`` is not installed or when
+    ``--layout heuristic`` is explicitly requested.
+    """
+
+    def compute_symbol_positions(
+        self, ir: CircuitIR
+    ) -> dict[str, tuple[float, float, float | None]]:
+        from .layout import compute_signal_flow_layout  # noqa: PLC0415
+
+        raw = compute_signal_flow_layout(ir)
+        return {ref: (x, y, None) for ref, (x, y) in raw.items()}
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -151,6 +183,28 @@ def make_layout_engine(
             "Set the GRAPHVIZ_DOT environment variable or install graphviz, then retry."
         )
     return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path, tiers=tiers)
+
+
+def make_auto_layout_engine(
+    *,
+    seed: int = 7,
+    cache_path: Path | None = None,
+    tiers: dict[str, int] | None = None,
+) -> LayoutEngine:
+    """Return the best available layout engine.
+
+    Tries :func:`make_layout_engine` (Graphviz) first.  If ``dot`` is not
+    installed, falls back silently to :class:`HeuristicLayoutEngine`.
+
+    Parameters
+    ----------
+    seed, cache_path, tiers:
+        Forwarded to :func:`make_layout_engine` when Graphviz is available.
+    """
+    try:
+        return make_layout_engine(seed=seed, cache_path=cache_path, tiers=tiers)
+    except RuntimeError:
+        return HeuristicLayoutEngine()
 
 
 def make_layout_engine_with_ir(

@@ -15,7 +15,12 @@ from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
-from ..layout_engine import make_layout_engine
+from ..layout_engine import (
+    HeuristicLayoutEngine,
+    LayoutEngine,
+    NoneLayoutEngine,
+    make_layout_engine,
+)
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult
@@ -70,6 +75,8 @@ class _ApplyNetlistRequest:
     dry_run: bool
     backup: bool = False
     strict: bool = False
+    layout_name: str | None = None
+    routing_name: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -225,13 +232,17 @@ def _build_managed_mutator(  # noqa: PLR0913
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
 
+        _engine = _resolve_layout(
+            request.layout_name,
+            cache_path=project.path / "openclaw_layout_cache.json",
+        )
         symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
             doc=doc,
             ir=ir,
             symbol_index=symbol_index,
             project_name=project.name,
             stats=stats,
-            cache_path=project.path / "openclaw_layout_cache.json",
+            engine=_engine,
         )
         _tiers = assign_tiers(ir)
         routing = route_nets(
@@ -239,7 +250,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             pin_endpoints=pin_endpoints,
             tiers=_tiers,
             positions=raw_layout,
-            use_bus=True,
+            use_bus=_resolve_routing(request.routing_name),
         )
         write_routing(
             doc=doc,
@@ -368,6 +379,7 @@ def _write_symbols(  # noqa: PLR0913
     symbol_index: SymbolIndex,
     project_name: str,
     stats: dict[str, int],
+    engine: LayoutEngine | None = None,
     cache_path: Path | None = None,
 ) -> tuple[
     dict[str, tuple[float, float]],
@@ -396,7 +408,8 @@ def _write_symbols(  # noqa: PLR0913
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
     symbol_defs_missing: set[str] = set()
 
-    engine = make_layout_engine(cache_path=cache_path)
+    if engine is None:
+        engine = make_layout_engine(cache_path=cache_path)
     raw_layout = engine.compute_symbol_positions(ir)
     # Build plain (x, y) map for coordinate lookup and orientation computation.
     layout: dict[str, tuple[float, float]] = {
@@ -469,17 +482,89 @@ def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: Symb
 
 
 def _resolve_mode(mode_name: str | None, *, default: ValidationMode) -> ValidationMode:
+    """Map a mode/validate flag string to a :class:`~kicad_pcb.pipeline.ValidationMode`.
+
+    Accepted values
+    ---------------
+    ``none``                 → :attr:`~ValidationMode.NONE`
+    ``syntax``               → :attr:`~ValidationMode.SYNTAX`
+    ``lint`` / ``internal``  → :attr:`~ValidationMode.LINT`  (``internal`` is legacy)
+    ``kicad``                → :attr:`~ValidationMode.KICAD`
+    ``full``                 → :attr:`~ValidationMode.FULL`
+    """
     if mode_name is None:
         return default
     raw = mode_name.strip().lower()
+    if raw == "none":
+        return ValidationMode.NONE
+    if raw == "syntax":
+        return ValidationMode.SYNTAX
     if raw in {"internal", "syntax_lint", "lint"}:
         return ValidationMode.LINT
     if raw == "kicad":
         return ValidationMode.KICAD
+    if raw == "full":
+        return ValidationMode.FULL
     raise UserError(
         f"Unknown mode '{mode_name}'",
         code=ErrorCode.USER_ERROR,
-        details={"allowed": ["internal", "kicad"]},
+        details={"allowed": ["none", "syntax", "lint", "kicad", "full"]},
+    )
+
+
+def _resolve_layout(
+    layout_name: str | None,
+    *,
+    cache_path: Path | None = None,
+) -> LayoutEngine:
+    """Return the layout engine requested by *layout_name*.
+
+    Accepted values
+    ---------------
+    ``auto`` / ``None``  — try Graphviz; fall back to :class:`HeuristicLayoutEngine`
+                           when ``dot`` is not installed.
+    ``graphviz``         — :func:`make_layout_engine`; raises if ``dot`` is absent.
+    ``heuristic``        — :class:`HeuristicLayoutEngine` (pure Python, no Graphviz).
+    ``none``             — :class:`NoneLayoutEngine` (all symbols at fixed origin;
+                           useful for debugging / skeleton generation).
+    """
+    name = (layout_name or "auto").strip().lower()
+    if name in {"auto", "graphviz"}:
+        try:
+            return make_layout_engine(cache_path=cache_path)
+        except RuntimeError:
+            if name == "graphviz":
+                raise
+            # auto: fall back gracefully
+            return HeuristicLayoutEngine()
+    if name == "heuristic":
+        return HeuristicLayoutEngine()
+    if name == "none":
+        return NoneLayoutEngine()
+    raise UserError(
+        f"Unknown layout engine '{layout_name}'",
+        code=ErrorCode.USER_ERROR,
+        details={"allowed": ["auto", "graphviz", "heuristic", "none"]},
+    )
+
+
+def _resolve_routing(routing_name: str | None) -> bool:
+    """Return ``use_bus`` bool from *routing_name*.
+
+    Accepted values
+    ---------------
+    ``bus`` / ``hub`` / ``None``  — spine/hub routing (``use_bus=True``, default).
+    ``labels``                    — label-stub routing (``use_bus=False``).
+    """
+    name = (routing_name or "bus").strip().lower()
+    if name in {"bus", "hub"}:
+        return True
+    if name == "labels":
+        return False
+    raise UserError(
+        f"Unknown routing style '{routing_name}'",
+        code=ErrorCode.USER_ERROR,
+        details={"allowed": ["bus", "hub", "labels"]},
     )
 
 
