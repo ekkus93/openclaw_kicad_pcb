@@ -18,14 +18,19 @@ Covers two main areas:
     - TestCLINewFlags           : ``apply-netlist`` and ``new-from-netlist``
       expose ``--layout``, ``--routing``, and ``--validate``.
 
-7.2  Graphviz mandatory (no silent fallback)
+7.2  Graphviz diagnostics
     - TestGraphvizFailsLoud     : ``GraphvizLayoutEngine`` raises
       ``RuntimeError`` when ``dot`` fails or returns no positions.
     - TestWriteSymbolsFourTuple: ``_write_symbols`` returns a 4-tuple
       (positions, endpoints, missing, raw_layout).
     - TestGraphvizRequiredEndToEnd: end-to-end: when ``make_layout_engine``
       returns an engine with a broken ``dot`` path, ``_write_symbols`` raises
-      ``RuntimeError`` (no silent warn/fallback).
+      ``RuntimeError`` (no silent fallback at the ``_write_symbols`` level).
+    - TestResolveLayoutDiagnostics: ``_resolve_layout()`` emits a structured
+      ``GRAPHVIZ_LAYOUT_FALLBACK`` warning when the auto fallback is taken;
+      late runtime failures in auto mode also emit the warning and fall back.
+    - TestLintSuggestions       : LAY001–LAY004 suggestions mention
+      ``--layout graphviz``.
 """
 
 from __future__ import annotations
@@ -313,11 +318,14 @@ class TestGraphvizRequiredEndToEnd:
                 cache_path=None,
             )
 
-    def test_no_fallback_warning_code(self, tmp_path: Path) -> None:
-        """No GRAPHVIZ_LAYOUT_FALLBACK warning ever appears in results."""
+    def test_no_fallback_warning_when_graphviz_succeeds(self, tmp_path: Path) -> None:
+        """When Graphviz is available and succeeds, GRAPHVIZ_LAYOUT_FALLBACK is absent."""
         result = _new_from_netlist(tmp_path, _minimal_ir_payload())
         codes = [w.get("code") for w in result.warnings]  # type: ignore[attr-defined]
-        assert "GRAPHVIZ_LAYOUT_FALLBACK" not in codes
+        assert "GRAPHVIZ_LAYOUT_FALLBACK" not in codes, (
+            "GRAPHVIZ_LAYOUT_FALLBACK should only appear when Graphviz falls back; "
+            "it must not appear when Graphviz completes successfully."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -515,3 +523,100 @@ class TestCLINewFlags:
         parser = cli_mod.build_parser()
         ns = parser.parse_args(["apply-netlist", "--netlist", "x.json"])
         assert ns.validate is None
+
+
+# ---------------------------------------------------------------------------
+# 7.2  _resolve_layout diagnostics
+# ---------------------------------------------------------------------------
+
+
+class TestResolveLayoutDiagnostics:
+    """_resolve_layout emits GRAPHVIZ_LAYOUT_FALLBACK when auto falls back."""
+
+    def test_auto_dot_missing_emits_fallback_warning(self) -> None:
+        """When dot is absent, _resolve_layout('auto') appends GRAPHVIZ_LAYOUT_FALLBACK."""
+        warnings: list[dict] = []
+        with patch(
+            "kicad_pcb.commands._sch_apply.make_layout_engine",
+            side_effect=RuntimeError("dot not found"),
+        ):
+            engine = _resolve_layout("auto", warnings=warnings)
+        assert isinstance(engine, HeuristicLayoutEngine)
+        assert len(warnings) == 1
+        assert warnings[0]["code"] == "GRAPHVIZ_LAYOUT_FALLBACK"
+        assert "heuristic" in str(warnings[0]["message"]).lower()
+        assert warnings[0]["details"]["engine_used"] == "heuristic"  # type: ignore[index]
+
+    def test_auto_dot_missing_no_warnings_param_does_not_crash(self) -> None:
+        """When warnings is None (omitted), auto fallback works without crashing."""
+        with patch(
+            "kicad_pcb.commands._sch_apply.make_layout_engine",
+            side_effect=RuntimeError("dot not found"),
+        ):
+            engine = _resolve_layout("auto")  # no warnings param
+        assert isinstance(engine, HeuristicLayoutEngine)
+
+    def test_graphviz_explicit_dot_missing_does_not_emit_warning(self) -> None:
+        """Explicit --layout graphviz raises RuntimeError; warnings list stays empty."""
+        warnings: list[dict] = []
+        with (
+            patch(
+                "kicad_pcb.commands._sch_apply.make_layout_engine",
+                side_effect=RuntimeError("dot not found"),
+            ),
+            pytest.raises(RuntimeError),
+        ):
+            _resolve_layout("graphviz", warnings=warnings)
+        assert warnings == [], "No warning should be emitted for explicit --layout graphviz failure"
+
+    def test_auto_fallback_warning_includes_reason(self) -> None:
+        """The fallback warning details include the original failure reason."""
+        warnings: list[dict] = []
+        reason = "dot binary not found: some specific path"
+        with patch(
+            "kicad_pcb.commands._sch_apply.make_layout_engine",
+            side_effect=RuntimeError(reason),
+        ):
+            _resolve_layout("auto", warnings=warnings)
+        assert reason in str(warnings[0]["details"]["reason"])  # type: ignore[index]
+
+    def test_late_graphviz_failure_auto_mode_emits_fallback_warning(self, tmp_path: Path) -> None:
+        """When Graphviz is found but fails during layout computation (auto mode),
+        cmd_new_from_netlist falls back to heuristic and emits GRAPHVIZ_LAYOUT_FALLBACK."""
+        # Patch GraphvizLayoutEngine.compute_symbol_positions to simulate a
+        # runtime subprocess crash (dot found but exits non-zero).
+        from kicad_pcb.graphviz_layout import GraphvizLayoutEngine  # noqa: PLC0415
+
+        with patch.object(
+            GraphvizLayoutEngine,
+            "compute_symbol_positions",
+            side_effect=RuntimeError("dot exited with code 1: parse error"),
+        ):
+            result = _new_from_netlist(tmp_path, _minimal_ir_payload(), layout="auto")
+
+        codes = [w.get("code") for w in result.warnings]  # type: ignore[attr-defined]
+        assert "GRAPHVIZ_LAYOUT_FALLBACK" in codes, (
+            f"Expected GRAPHVIZ_LAYOUT_FALLBACK in warnings; got {codes}"
+        )
+        all_warnings: list[dict] = list(result.warnings)  # type: ignore[attr-defined]
+        fallback_warn = next(w for w in all_warnings if w.get("code") == "GRAPHVIZ_LAYOUT_FALLBACK")
+        assert "heuristic" in str(fallback_warn["message"]).lower()
+
+
+# ---------------------------------------------------------------------------
+# 7.2  Lint suggestions mention --layout graphviz
+# ---------------------------------------------------------------------------
+
+
+class TestLintSuggestions:
+    """LAY001–LAY004 suggestions in LINT_SUGGESTIONS reference --layout graphviz."""
+
+    @pytest.mark.parametrize("code", ["LAY001", "LAY002", "LAY003", "LAY004"])
+    def test_lay_suggestion_mentions_graphviz(self, code: str) -> None:
+        """Each layout lint code's suggestion should mention --layout graphviz."""
+        from kicad_pcb.lint import LINT_SUGGESTIONS  # noqa: PLC0415
+
+        suggestion = LINT_SUGGESTIONS.get(code, "")
+        assert "graphviz" in suggestion.lower(), (
+            f"{code} suggestion should mention '--layout graphviz'; got: {suggestion!r}"
+        )

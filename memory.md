@@ -1,8 +1,21 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T09:34:30Z_
+_Last updated: 2026-03-05T10:26:36Z_
 
 ---
+
+## 2026-03-05T10:26:36Z — Phase 7.2 complete: diagnostics improvements
+
+**Files changed:**
+- `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` — added `import logging` + `_log`; `_resolve_layout` now accepts `warnings: list[dict] | None` and emits structured `GRAPHVIZ_LAYOUT_FALLBACK` warning when auto-mode falls back; `_build_managed_mutator._mutate` passes `warnings` to `_resolve_layout` AND wraps `_write_symbols` in a try/except for late runtime Graphviz failures (auto mode falls back + warns, graphviz mode re-raises).
+- `kicad-pcb/src/kicad_pcb/lint/defs.py` — LAY001–LAY004 `LINT_SUGGESTIONS` now append "Try '--layout graphviz' for better automatic placement/de-overlap/computation."
+- `kicad-pcb/src/kicad_pcb/cli.py` — `LintError` display block now appends a layout-switching tip (`apply-netlist --layout graphviz / --layout heuristic`) when any LAY* code is present.
+- `tests/unit/test_phase7_ux.py` — removed stale `test_no_fallback_warning_code`; renamed to `test_no_fallback_warning_when_graphviz_succeeds`; added `TestResolveLayoutDiagnostics` (5 tests) and `TestLintSuggestions` (4 parametrized tests).
+
+**Design decisions:**
+- `--layout auto` (default): silent Graphviz fallback becomes a surfaced warning, not an error.
+- `--layout graphviz` (explicit): RuntimeError propagates as before.
+- All 714 unit tests pass.
 
 ## 2026-03-05T09:34:30Z — Phase 6.2 complete: TestKiCadCLIERC added
 

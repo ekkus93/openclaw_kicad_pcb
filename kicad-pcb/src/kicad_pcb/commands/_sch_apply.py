@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import math
 import shutil
 from collections.abc import Callable
@@ -40,6 +41,8 @@ from ._project import minimal_schematic_text
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
 MIN_COMPONENT_PLACEMENT_RATIO = 0.8
+
+_log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -235,15 +238,53 @@ def _build_managed_mutator(  # noqa: PLR0913
         _engine = _resolve_layout(
             request.layout_name,
             cache_path=project.path / "openclaw_layout_cache.json",
+            warnings=warnings,
         )
-        symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
-            doc=doc,
-            ir=ir,
-            symbol_index=symbol_index,
-            project_name=project.name,
-            stats=stats,
-            engine=_engine,
-        )
+        _layout_name = (request.layout_name or "auto").strip().lower()
+        try:
+            symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
+                doc=doc,
+                ir=ir,
+                symbol_index=symbol_index,
+                project_name=project.name,
+                stats=stats,
+                engine=_engine,
+            )
+        except RuntimeError as _layout_exc:
+            # Late Graphviz failure: dot was available at engine-selection time
+            # but the subprocess failed during layout computation.  For
+            # ``--layout auto`` fall back to heuristic and report the event;
+            # for explicit ``--layout graphviz`` re-raise so the caller gets a
+            # clear error.
+            if _layout_name != "auto":
+                raise
+            _reason = str(_layout_exc)
+            _log.warning(
+                "Graphviz layout failed at runtime (%s); falling back to heuristic.",
+                _reason,
+            )
+            warnings.append(
+                {
+                    "code": "GRAPHVIZ_LAYOUT_FALLBACK",
+                    "message": (
+                        f"Graphviz layout failed at runtime: {_reason}. "
+                        "Falling back to heuristic layout."
+                    ),
+                    "details": {
+                        "engine_requested": "auto",
+                        "engine_used": "heuristic",
+                        "reason": _reason,
+                    },
+                }
+            )
+            symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
+                doc=doc,
+                ir=ir,
+                symbol_index=symbol_index,
+                project_name=project.name,
+                stats=stats,
+                engine=HeuristicLayoutEngine(),
+            )
         _tiers = assign_tiers(ir)
         routing = route_nets(
             ir=ir,
@@ -516,13 +557,16 @@ def _resolve_layout(
     layout_name: str | None,
     *,
     cache_path: Path | None = None,
+    warnings: list[dict[str, object]] | None = None,
 ) -> LayoutEngine:
     """Return the layout engine requested by *layout_name*.
 
     Accepted values
     ---------------
     ``auto`` / ``None``  — try Graphviz; fall back to :class:`HeuristicLayoutEngine`
-                           when ``dot`` is not installed.
+                           when ``dot`` is not installed.  Emits a
+                           ``GRAPHVIZ_LAYOUT_FALLBACK`` warning into *warnings*
+                           when the fallback is taken.
     ``graphviz``         — :func:`make_layout_engine`; raises if ``dot`` is absent.
     ``heuristic``        — :class:`HeuristicLayoutEngine` (pure Python, no Graphviz).
     ``none``             — :class:`NoneLayoutEngine` (all symbols at fixed origin;
@@ -532,10 +576,30 @@ def _resolve_layout(
     if name in {"auto", "graphviz"}:
         try:
             return make_layout_engine(cache_path=cache_path)
-        except RuntimeError:
+        except RuntimeError as exc:
             if name == "graphviz":
                 raise
-            # auto: fall back gracefully
+            # auto: fall back gracefully, but surface a diagnostic warning.
+            reason = str(exc)
+            _log.warning(
+                "Graphviz layout unavailable (%s); falling back to heuristic layout.",
+                reason,
+            )
+            if warnings is not None:
+                warnings.append(
+                    {
+                        "code": "GRAPHVIZ_LAYOUT_FALLBACK",
+                        "message": (
+                            f"Graphviz layout unavailable: {reason}. "
+                            "Falling back to heuristic layout."
+                        ),
+                        "details": {
+                            "engine_requested": "auto",
+                            "engine_used": "heuristic",
+                            "reason": reason,
+                        },
+                    }
+                )
             return HeuristicLayoutEngine()
     if name == "heuristic":
         return HeuristicLayoutEngine()
