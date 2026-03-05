@@ -1,8 +1,53 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T10:26:36Z_
+_Last updated: 2026-03-05T16:04:42Z_
 
 ---
+
+## 2026-03-05T16:04:42Z — Removed redundant `--layout` CLI arg entirely
+
+- User requested complete removal of `--layout` since Graphviz is the only supported path.
+- Updated `kicad-pcb/src/kicad_pcb/cli.py`:
+  - removed `--layout` arg from `apply-netlist` parser.
+  - removed `--layout` arg from `new-from-netlist` parser.
+  - updated lint failure tip to avoid any `--layout` flag guidance.
+- Updated `kicad-pcb/src/kicad_pcb/lint/defs.py` to remove stale “Try '--layout graphviz'” suggestions.
+- Updated `tests/unit/test_phase7_ux.py` for parser/test/docs consistency:
+  - removed `--layout` acceptance cases.
+  - replaced default-layout assertion with `layout` attribute absence assertion.
+  - updated lint suggestion assertions to ensure no `--layout` mentions.
+- Validation: `ruff check` clean and phase-7 unit tests pass.
+
+## 2026-03-05T16:01:03Z — CLI layout options restricted to graphviz-only
+
+- User requested strict, debuggable layout behavior and explicitly rejected heuristic options/fallback ambiguity.
+- Updated `kicad-pcb/src/kicad_pcb/cli.py`:
+  - `apply-netlist --layout` choices now `['graphviz']` with default `graphviz`.
+  - `new-from-netlist --layout` choices now `['graphviz']` with default `graphviz`.
+  - Lint-error layout tip no longer recommends switching engines; now references fail-fast graphviz reruns.
+- Updated parser tests in `tests/unit/test_phase7_ux.py` to match graphviz-only choice/default.
+- Validation: `ruff check` clean; `tests/unit/test_phase7_ux.py` passes.
+
+## 2026-03-05T15:55:45Z — User requires fail-fast behavior (no hidden Graphviz fallbacks)
+
+- User explicitly requested no fallback masking: “one way and it has to work; fallbacks hide errors.”
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` to remove Graphviz→heuristic fallback paths:
+  - `_resolve_layout("auto")` now behaves like strict Graphviz and raises on Graphviz/dot failures.
+  - Removed late runtime fallback in `_build_managed_mutator._mutate`; Graphviz runtime failures now raise directly.
+- Updated `tests/unit/test_phase7_ux.py` to assert fail-fast behavior in auto mode and removed fallback-warning expectations.
+- Validation: `ruff check` clean and phase-7 unit tests pass after changes.
+
+## 2026-03-05T15:49:01Z — Debugged OpenClaw KiCad generation issue (env + netlist pins)
+
+- Reproduced the reported failure path and found first blocker: bot runtime used `python3` interpreter without project deps (`ModuleNotFoundError: pydantic`). `uv run` resolves this.
+- Found second blocker in user netlist: non-numeric pin aliases on `Q1` (`E/B/C`) for `Transistor_BJT:2N3904`; compiler expects pin numbers (`1/2/3`).
+- `fix-netlist` resolved connector aliases (`J1/J2`), but not transistor aliases (`Q1`), so manually normalized `Q1` pins in `headphone_amp_left_netlist.fixed.json`.
+- Confirmed performance bottleneck with full `--symbols-dir /usr/share/kicad/symbols` on this host; created a minimal symbols dir (`symbols_min`) with only required `.kicad_sym` libs to avoid apparent hangs.
+- Successfully generated output under `/home/ubo/kicad-projects/sessions/headphone_amp_ne5532_af037c37/ne5532_headphone_amp_left/` including:
+  - `ne5532_headphone_amp_left.kicad_sch`
+  - `OpenClaw_Managed.kicad_sch`
+  - `managed_preview.jpg` (via `kicad-cli sch export svg` + `cairosvg` + `Pillow` conversion)
+  - bundled `ne5532_headphone_amp_left_deliverables.zip` with both schematics + JPG.
 
 ## 2026-03-05T10:26:36Z — Phase 7.2 complete: diagnostics improvements
 
