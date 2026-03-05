@@ -2870,3 +2870,24 @@ So the minimum value that allows any sorting is 2; default is 3.
 - Phase 0.1 "stats helper" → done
 - Phase 0.2 all items → done
 - `COPILOT_TODO_READABLE_SCHEMATICS.md` updated with [x] for Phase 0.2
+
+---
+
+## 2026-03-05T03:00:00Z — Phase 4.3 _spread_x_columns implemented and committed
+
+**Commit:** (pending push)
+
+### What was implemented
+
+**`kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`** — new private function:
+- `_spread_x_columns(positions, *, max_per_column=3, col_step_mm=25.4) -> dict`
+  - Detects x-columns with > max_per_column symbols (column collapse after grid snap)
+  - Splits overloaded columns into n_cols = ceil(count/max_per_column) sub-columns
+  - Sub-columns spaced col_step_mm=25.4mm (20 × 1.27 grid steps) centered on original x
+  - Symbols sorted by ascending y before partitioning (preserves tier ordering)
+  - Grid-snaps new x to 1.27mm and clamps to [ORIGIN_X, PAGE_MAX_X]
+  - Returns new dict; input not mutated
+- Inserted as step 8 in `_apply_post_layout_snaps`, immediately before `_deoverlap_positions` (now step 9)
+
+**`tests/unit/test_phase4_layout.py`** — added `TestSpreadXColumns` with 10 tests:
+- empty, small-col-unchanged, 6-syms→2-subcols, 9-syms→3-subcols, y-order-preserved, rotation-unchanged, input-not-mutated, clamped-to-page-bounds, different-cols-untouched, N-symbols-produce-N-columns (Phase 4.3 acceptance test)

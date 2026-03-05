@@ -31,6 +31,10 @@ raw node positions:
      layout for non-power-symbol components so the circuit appears as one
      connected region (fixes the "split circuit" artifact that arises when
      isolated source-tier connectors land far from the amp body).
+   * :func:`_spread_x_columns` — when > *max_per_column* symbols share the
+     same x-coordinate after grid-snapping, split them into sub-columns
+     spaced 25.4 mm apart (centered on the original column x), preserving
+     the tier-ordered y-sort within each group.
    * :func:`_deoverlap_positions` — push any components that share the
      same grid cell apart after all previous snaps complete (fixes grid
      collisions introduced by snapping or compression).
@@ -58,8 +62,9 @@ is:
 5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
 6. :func:`_center_ics_in_columns` (always; no-op when no ICs present)
 7. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
-8. :func:`_deoverlap_positions` (always; final guard against grid collisions)
-9. :func:`_remediate_crossings` (always; includes its own inner deoverlap)
+8. :func:`_spread_x_columns` (always; spreads overloaded x-columns into sub-columns)
+9. :func:`_deoverlap_positions` (always; final guard against grid collisions after X-spread)
+10. :func:`_remediate_crossings` (always; includes its own inner deoverlap)
 
 Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
 refs are already at their fixed rows before connectors compute their median.
@@ -71,8 +76,10 @@ used as the input to channel compression.
 are relative to the compacted IC y values.
 ``_center_ics_in_columns`` runs before decoupling caps so that bypass caps
 are re-snapped relative to the ICs' newly-centred positions.
-``_deoverlap_positions`` runs last so it resolves every collision regardless
-of which earlier pass introduced it.
+``_spread_x_columns`` runs before ``_deoverlap_positions`` so that the
+Y deoverlap operates on already-spread columns rather than tall stacks.
+``_deoverlap_positions`` runs after X-spread to resolve any residual Y
+collisions regardless of which earlier pass introduced them.
 ``_remediate_crossings`` runs after deoverlap as a final sweep: it measures the
 crossing ratio and iteratively applies barycentric column-sort if the ratio
 exceeds the threshold, then re-runs deoverlap to fix any new collisions.
@@ -827,6 +834,89 @@ def _post_stereo_barycentric(  # noqa: PLR0912
 
 
 # ---------------------------------------------------------------------------
+# X-column spread  (Phase 4.3 — prevent column collapse)
+# ---------------------------------------------------------------------------
+
+
+def _spread_x_columns(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    max_per_column: int = 3,
+    col_step_mm: float = 25.4,  # 1000 mil — exactly 20 × 1.27 mm grid steps
+    origin_x: float = ORIGIN_X,
+    page_max_x: float = PAGE_MAX_X,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Spread overloaded x-columns into multiple sub-columns.
+
+    After grid-snapping, several symbols may collapse to exactly the same
+    x-coordinate.  If left uncorrected, :func:`_deoverlap_positions` can only
+    push them apart vertically, producing a tall and unreadable single stack.
+    This pass detects *overloaded* x-columns — those containing more than
+    *max_per_column* symbols — and redistributes the excess symbols into
+    adjacent sub-columns spaced *col_step_mm* apart, centred on the original
+    x-coordinate.
+
+    Within each overloaded column the symbols are sorted by ascending y (then
+    by ref for determinism) before partitioning.  Because the Graphviz→KiCad
+    y-coordinate encodes tier depth (source tier → small y, load tier → large
+    y), this sort order preserves the left-to-right tier ordering that the
+    signal-flow layout algorithm establishes.
+
+    This pass must run **before** :func:`_deoverlap_positions` so that the
+    Y deoverlap benefits from the reduced per-column density.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions after all specialised snap passes (grid-snapped).
+    max_per_column:
+        Maximum number of symbols allowed in one x-column before spreading
+        begins.  Columns with ≤ *max_per_column* symbols are left untouched.
+        Default: 3.
+    col_step_mm:
+        Horizontal distance between adjacent sub-columns.  Should be a
+        multiple of the 1.27 mm KiCad grid; the default 25.4 mm (1000 mil)
+        equals exactly 20 grid steps.
+    origin_x:
+        Left page bound; sub-column x values are clamped to this value.
+    page_max_x:
+        Right page bound; sub-column x values are clamped to this value.
+
+    Returns
+    -------
+    dict
+        A new positions dict with overloaded columns split into sub-columns.
+        Symbols in non-overloaded columns are returned unchanged.
+    """
+    _GRID: float = 1.27
+
+    by_x: dict[float, list[str]] = defaultdict(list)
+    for ref, (x, _y, _r) in positions.items():
+        by_x[x].append(ref)
+
+    result = dict(positions)
+    for x, group in by_x.items():
+        if len(group) <= max_per_column:
+            continue
+        # Sort by ascending y then ref name for a stable, tier-preserving order.
+        group.sort(key=lambda r: (result[r][1], r))
+        n_cols = math.ceil(len(group) / max_per_column)
+        half = (n_cols - 1) / 2.0
+        for col_idx in range(n_cols):
+            offset = (col_idx - half) * col_step_mm
+            raw_x = x + offset
+            # Grid-snap then clamp to page bounds.
+            new_x: float = round(round(raw_x / _GRID) * _GRID, 4)
+            new_x = max(origin_x, min(page_max_x, new_x))
+            start = col_idx * max_per_column
+            end = min(start + max_per_column, len(group))
+            for ref in group[start:end]:
+                _cx, cy, cr = result[ref]
+                result[ref] = (new_x, cy, cr)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # General deoverlap and y-gap compact
 # ---------------------------------------------------------------------------
 
@@ -1201,10 +1291,13 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
        when no column contains an IC).
     7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
        IC (skipped when *decoupling_map* is empty).
-    8. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
-    9. :func:`_remediate_crossings` — measure crossing ratio; if ≥ 0.30 apply
-       barycentric column-sort sweeps (up to 3) then re-run deoverlap.
-    10. :func:`_clamp_to_page` — clamp every position to the A4 printable area
+    8. :func:`_spread_x_columns` — split overloaded x-columns (> 3 symbols at
+       the same x) into sub-columns spaced 25.4 mm apart so the Y deoverlap
+       does not produce unreadable vertical stacks.
+    9. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
+    10. :func:`_remediate_crossings` — measure crossing ratio; if ≥ 0.30 apply
+        barycentric column-sort sweeps (up to 3) then re-run deoverlap.
+    11. :func:`_clamp_to_page` — clamp every position to the A4 printable area
         (``ORIGIN_X..PAGE_MAX_X`` × ``ORIGIN_Y..PAGE_MAX_Y``); prevents LAY004.
     """
     result = snap_positions(result)
@@ -1228,6 +1321,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     decouple_skip: frozenset[tuple[str, str]] = frozenset(
         (min(cap, ic), max(cap, ic)) for cap, ic in decoupling_map.items()
     )
+    result = _spread_x_columns(result)
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
     result = _clamp_to_page(result)
