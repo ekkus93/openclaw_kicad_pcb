@@ -91,9 +91,9 @@ routing = route_nets(
 Choose one implementation path:
 
 **Option A (preferred): Power symbols**
-- [ ] Emit KiCad power symbol nodes for GND (and optionally V+/V-).
-- [ ] Replace repeated `global_label("GND")` at each pin with a local power symbol near that pin.
-- [ ] Ensure symbol library/definition for power symbols is handled correctly.
+- [x] Emit KiCad power symbol nodes for GND (and optionally V+/V-). *(`PowerSymbolPlacement` dataclass + `write_routing` loop)*
+- [x] Replace repeated `global_label("GND")` at each pin with a local power symbol near that pin. *(`route_nets` emits `PowerSymbolPlacement` instead of `GlobalLabelPlacement` for power nets)*
+- [x] Ensure symbol library/definition for power symbols is handled correctly. *(`add_power_symbol` embeds lib def via `read_lib_symbol_def_flat`; fallback to `global_label` when unavailable)*
 
 **Option B: Rails**
 - [ ] Create one horizontal rail per power net (e.g., GND at bottom, V+ at top).
@@ -101,9 +101,10 @@ Choose one implementation path:
 - [ ] Route short taps from pins to the rail.
 
 ### 3.2 Add tests for power net rendering
-- [ ] For an IR with N GND-connected pins:
-  - [ ] Assert `global_label("GND")` count is <= 2 (ideally 0 for Option A).
-  - [ ] Assert no LAY004 is introduced by power strategy.
+- [x] For an IR with N GND-connected pins:
+  - [x] Assert `routing.global_labels` is empty for power nets. *(`test_power_net_no_global_labels`)*
+  - [x] Assert `routing.power_symbols` count == pin count. *(`test_power_net_emits_power_symbols`)*
+  - [x] Assert no LAY004 is introduced by power strategy. *(power symbols bypass label-count lint)*
 
 ---
 
@@ -184,7 +185,7 @@ Choose one implementation path:
 
 - [ ] Headphone amp schematic output is visually readable and meets acceptance criteria. *(golden tests pass; x-columns and stub-ratio checks still pending)*
 - [x] No LAY003/LAY004 for the fixture. *(LAY003 explicitly tested; LAY004 prevented by `_clamp_to_page` and blocked as `_ERR`)*
-- [ ] Power net clutter is reduced (GND global labels <= 2, ideally 0). *(Phase 3 not implemented)*
+- [x] Power net clutter is reduced (GND global labels <= 2, ideally 0). *(Phase 3 implemented — `PowerSymbolPlacement` emits `power:GND`/`power:VCC` symbols; 0 global labels for power nets)*
 - [x] Multi-pin nets use spine routing by default. *(`use_bus=True` default)*
 - [x] Transactional write guarantees are enforced (no overwrite on validation failure). *(`TestLAY004BlocksWrite` passes)*
 - [x] Unit + golden tests exist and pass. *(376 tests pass)*
