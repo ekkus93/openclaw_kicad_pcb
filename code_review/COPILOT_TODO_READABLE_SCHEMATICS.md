@@ -76,10 +76,10 @@ routing = route_nets(
 - [x] Add unit tests: with tiers/positions present, router avoids routing lines through symbol bounding boxes. *(`test_no_body_crossings_after_routing`)*
 
 ### 2.3 Add label duplication limits
-- [ ] Add a policy object or constants:
-  - [ ] max labels per net (default 1, power nets handled separately)
-  - [ ] max duplicate label count per sheet for "semantic signals" (optional)
-- [ ] Enforce the policy in router output generation.
+- [x] Add a policy object or constants:
+  - [x] max labels per net (default 2, power nets uncapped; `LabelPolicy.max_labels_per_net`)
+  - [x] max global labels per net for high-degree routes (default 4; `LabelPolicy.max_global_labels_per_net`)
+- [x] Enforce the policy in router output generation (`route_nets(..., policy=DEFAULT_LABEL_POLICY)`). *(`router.py`, `test_phase4_layout.py::TestLabelPolicy`)*
 
 ---
 

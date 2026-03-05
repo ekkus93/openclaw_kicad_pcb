@@ -10,8 +10,10 @@ approach.
 
 Public API
 ----------
-:func:`route_nets`     — compute routing decisions for all nets in a CircuitIR.
-:func:`write_routing`  — emit computed decisions into a SchematicDoc.
+:func:`route_nets`       — compute routing decisions for all nets in a CircuitIR.
+:func:`write_routing`    — emit computed decisions into a SchematicDoc.
+:class:`LabelPolicy`     — policy dataclass controlling label deduplication.
+:data:`DEFAULT_LABEL_POLICY` — default policy (max 2 local labels, 4 global per net).
 """
 
 from __future__ import annotations
@@ -49,6 +51,38 @@ SYMBOL_HALF_SIZE_MM: float = 5.08
 # Nets with degree > this threshold fall back to global-label style (avoids
 # spaghetti wiring for busses and power rails).
 _HUB_MAX_DEGREE: int = 6
+
+
+@dataclass(frozen=True)
+class LabelPolicy:
+    """Policy controlling label deduplication in :func:`route_nets`.
+
+    Capping labels per net reduces schematic clutter and keeps the LAY001
+    lint rule (warn when a label appears > 3 times) from triggering on
+    high-fanout signal nets.
+
+    Attributes
+    ----------
+    max_labels_per_net:
+        Maximum number of local :class:`NetLabel` nodes emitted for any
+        single non-power net falling through to the label-route fallback.
+        Pins beyond this limit still receive a stub wire and bind marker;
+        only the visible label is suppressed.  Default: ``2`` (one label
+        per connection endpoint, the minimum KiCad requires for
+        schematic connectivity).
+    max_global_labels_per_net:
+        Maximum number of :class:`GlobalLabelPlacement` nodes emitted for
+        a single *non-power* high-degree net (see :data:`_HUB_MAX_DEGREE`).
+        Power nets are deliberately uncapped — every GND/VCC pin must carry
+        its own global label until Phase 3's power-rail strategy replaces
+        them.  Default: ``4``.
+    """
+
+    max_labels_per_net: int = 2
+    max_global_labels_per_net: int = 4
+
+
+DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()
 
 
 def _tier_distance(ref_a: str, ref_b: str, tiers: dict[str, int]) -> int:
@@ -335,13 +369,14 @@ def _spine_route(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def route_nets(  # noqa: PLR0912, PLR0915
+def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     *,
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
     use_bus: bool = True,
     tiers: dict[str, int] | None = None,
     positions: dict[str, tuple[float, float, float | None]] | None = None,
+    policy: LabelPolicy = DEFAULT_LABEL_POLICY,
 ) -> NetRouting:
     """Compute routing decisions for all nets in *ir*.
 
@@ -393,6 +428,12 @@ def route_nets(  # noqa: PLR0912, PLR0915
         Optional ``{ref: (x, y, rotation)}`` layout position map.  When
         supplied, wire segments that cross component bounding boxes are
         automatically rerouted via :func:`detect_body_crossings`.
+
+    policy:
+        Label deduplication policy; controls how many local and global
+        labels are emitted per net.  Defaults to
+        :data:`DEFAULT_LABEL_POLICY` (2 local labels per net, 4 global
+        labels per high-degree net).
 
     Returns a :class:`NetRouting` with all decisions.
     """
@@ -475,15 +516,20 @@ def route_nets(  # noqa: PLR0912, PLR0915
             continue
 
         # ----------------------------------------------------------------
-        # High-degree non-power → global label per pin
+        # High-degree non-power → global label per pin (capped by policy)
         # ----------------------------------------------------------------
         if len(known) > _HUB_MAX_DEGREE:
+            global_label_count = 0
             for pin_ref, (wx, wy, wa) in known:
                 ex, ey = _stub_end(wx, wy, wa)
                 label_angle = int((wa + 180) % 360)
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.global_labels.append(GlobalLabelPlacement(net.name, ex, ey, label_angle))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                if global_label_count < policy.max_global_labels_per_net:
+                    routing.global_labels.append(
+                        GlobalLabelPlacement(net.name, ex, ey, label_angle)
+                    )
+                    global_label_count += 1
             for pin_ref in unknown:
                 wx, wy = -1200.0, fallback_y
                 ex, ey = wx + WIRE_EXTEND_MM, wy
@@ -495,20 +541,27 @@ def route_nets(  # noqa: PLR0912, PLR0915
 
         # ----------------------------------------------------------------
         # Label route (classic fallback: stub + local net label per pin)
+        # Labels are capped at policy.max_labels_per_net to reduce clutter.
+        # Stub wires and bind markers are always emitted (every pin).
         # ----------------------------------------------------------------
+        label_count = 0
         for pin_ref, (wx, wy, wa) in known:
             ex, ey = _stub_end(wx, wy, wa)
             label_angle = int((wa + 180) % 360)
             routing.wires.append(WireSegment(wx, wy, ex, ey))
-            routing.labels.append(NetLabel(net.name, ex, ey, label_angle))
             routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+            if label_count < policy.max_labels_per_net:
+                routing.labels.append(NetLabel(net.name, ex, ey, label_angle))
+                label_count += 1
 
         for pin_ref in unknown:
             wx, wy = -1200.0, fallback_y
             ex, ey = wx + WIRE_EXTEND_MM, wy
             routing.wires.append(WireSegment(wx, wy, ex, ey))
-            routing.labels.append(NetLabel(net.name, ex, ey, 0))
             routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+            # Off-canvas unknown pins always get a label regardless of policy
+            # (they have no physical wire connection; the label IS their connection).
+            routing.labels.append(NetLabel(net.name, ex, ey, 0))
             fallback_y -= 10.0
 
     # ----------------------------------------------------------------
