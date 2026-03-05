@@ -452,27 +452,27 @@ class TestLAY003:
 
 
 # ---------------------------------------------------------------------------
-# LAY004 — symbol outside A4 page bounds (0–297 × 0–210 mm)
+# LAY004 — symbol outside page bounds
 # ---------------------------------------------------------------------------
 
 
 class TestLAY004:
-    def test_symbol_inside_a4_is_clean(self) -> None:
+    def test_symbol_inside_bounds_is_clean(self) -> None:
         root = _sch(_sym_at(100, 100))
         assert "LAY004" not in _codes(lint_schematic_layout(root))
 
     def test_symbol_outside_x_bound_is_error(self) -> None:
-        # x=300 > 297 → LAY004 ERROR.
-        root = _sch(_sym_at(300, 100))
+        # x=450 > 420 → LAY004 ERROR.
+        root = _sch(_sym_at(450, 100))
         assert "LAY004" in _err_codes(lint_schematic_layout(root))
 
     def test_symbol_outside_y_bound_is_error(self) -> None:
-        # y=220 > 210 → LAY004 ERROR.
-        root = _sch(_sym_at(100, 220))
+        # y=310 > 297 → LAY004 ERROR.
+        root = _sch(_sym_at(100, 310))
         assert "LAY004" in _err_codes(lint_schematic_layout(root))
 
     def test_symbol_at_origin_is_clean(self) -> None:
-        # (0, 0) is exactly on the boundary — the check is 0.0 <= x <= 297.0 → clean.
+        # (0, 0) is exactly on the boundary → clean.
         root = _sch(_sym_at(0, 0))
         assert "LAY004" not in _codes(lint_schematic_layout(root))
 

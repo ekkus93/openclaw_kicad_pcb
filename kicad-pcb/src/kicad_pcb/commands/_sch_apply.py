@@ -224,7 +224,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
 
-        symbol_positions, pin_endpoints, symbol_defs_missing = _write_symbols(
+        symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
             doc=doc,
             ir=ir,
             symbol_index=symbol_index,
@@ -232,7 +232,14 @@ def _build_managed_mutator(  # noqa: PLR0913
             stats=stats,
             cache_path=project.path / "openclaw_layout_cache.json",
         )
-        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
+        _tiers = assign_tiers(ir)
+        routing = route_nets(
+            ir=ir,
+            pin_endpoints=pin_endpoints,
+            tiers=_tiers,
+            positions=raw_layout,
+            use_bus=True,
+        )
         write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
 
         # Post-mutation AST invariants: a non-empty IR must produce symbols in
@@ -355,10 +362,11 @@ def _write_symbols(  # noqa: PLR0913
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
     set[str],
+    dict[str, tuple[float, float, float | None]],
 ]:
     """Place all symbols from *ir* into *doc*.
 
-    Returns a triple of:
+    Returns a 4-tuple of:
     * ``symbol_positions``  — ``{ref: (x, y)}`` placed-symbol origins.
     * ``pin_endpoints``     — ``{(ref, pin_num): (x, y, angle)}`` actual
       pin connection-point coordinates in schematic space, derived from the
@@ -368,6 +376,9 @@ def _write_symbols(  # noqa: PLR0913
       toward the symbol body** — wire stubs extend in the opposite direction.
     * ``symbol_defs_missing`` — set of symbol ids whose library def was
       not found (embedded as best-effort empty stubs).
+    * ``raw_layout``        — ``{ref: (x, y, rotation)}`` full layout positions
+      (including rotation) as returned by the layout engine; used by the router
+      for body-crossing avoidance.
     """
     symbol_positions: dict[str, tuple[float, float]] = {}
     # (ref, pin_number) -> (schematic_x, schematic_y, pin_angle)
@@ -428,7 +439,7 @@ def _write_symbols(  # noqa: PLR0913
 
         stats["symbols"] += 1
 
-    return symbol_positions, pin_endpoints, symbol_defs_missing
+    return symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout
 
 
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:

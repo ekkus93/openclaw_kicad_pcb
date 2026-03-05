@@ -2,8 +2,11 @@
 
 Routes 2-pin nets directly with L-shaped wire segments when both pins
 are known and within :data:`MAX_DIRECT_DIST_MM` (Manhattan distance,
-stub-end to stub-end).  All other nets fall back to the classic
-wire-stub + net-label-per-pin approach.
+stub-end to stub-end).  For nets with 3–:data:`_HUB_MAX_DEGREE` pins the
+default strategy is spine routing (bus-style wire with T-junction taps),
+which produces cleaner schematics than the per-pin stub+label fallback.
+All other nets fall back to the classic wire-stub + net-label-per-pin
+approach.
 
 Public API
 ----------
@@ -336,7 +339,7 @@ def route_nets(  # noqa: PLR0912, PLR0915
     *,
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
-    use_bus: bool = False,
+    use_bus: bool = True,
     tiers: dict[str, int] | None = None,
     positions: dict[str, tuple[float, float, float | None]] | None = None,
 ) -> NetRouting:
@@ -350,11 +353,12 @@ def route_nets(  # noqa: PLR0912, PLR0915
     * **Direct route** — exactly 2 known pins.  Routing condition (Rule §4):
 
       * When *tiers* is provided: direct route is used only when the
-        tier distance between the two pins is ≤ 1 **and** the resulting
-        L-route length is ≤ :data:`MAX_DIRECT_WIRE_MM`.  All other 2-pin
-        nets fall back to label route to avoid cross-tier spaghetti.
-      * When *tiers* is ``None`` (default): falls back to the legacy
-        Manhattan-distance cap (:data:`MAX_DIRECT_DIST_MM`).
+        tier distance between the two pins is ≤ 1 **and** the Manhattan
+        distance is ≤ :data:`MAX_DIRECT_DIST_MM`.  The tier-distance guard
+        prevents cross-tier spaghetti; the Manhattan cap prevents wire runs
+        so long they become unreadable.
+      * When *tiers* is ``None`` (default): the tier guard is skipped;
+        only the Manhattan-distance cap (:data:`MAX_DIRECT_DIST_MM`) applies.
 
       No net labels are emitted for direct routes.
     * **Hub route** — 3–:data:`_HUB_MAX_DEGREE` known pins, all endpoints
@@ -434,11 +438,11 @@ def route_nets(  # noqa: PLR0912, PLR0915
             ex0, ey0 = _stub_end(wx0, wy0, wa0)
             ex1, ey1 = _stub_end(wx1, wy1, wa1)
             if tiers is not None:
-                # Rule §4: use tier distance + wire length guard.
+                # Rule §4: tier distance ≤ 1 guards signal-flow adjacency;
+                # manhattan cap (MAX_DIRECT_DIST_MM) guards physical wire length,
+                # matching the behaviour of the non-tier path.
                 tdist = _tier_distance(p0.ref, p1.ref, tiers)
-                l_segs = _l_route(ex0, ey0, ex1, ey1)
-                wire_len = sum(math.hypot(s.x2 - s.x1, s.y2 - s.y1) for s in l_segs)
-                can_direct = tdist <= 1 and wire_len <= MAX_DIRECT_WIRE_MM
+                can_direct = tdist <= 1 and _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM
             else:
                 can_direct = _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM
             if can_direct:

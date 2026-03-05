@@ -563,3 +563,46 @@ class TestLintError:
 
         with pytest.raises(KiCadError):
             mutate_and_validate_sch(sch_file, _dup)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — LAY004 must block writes (transactional no-overwrite)
+# ---------------------------------------------------------------------------
+
+
+class TestLAY004BlocksWrite:
+    """Regression: a symbol placed outside A4 bounds must raise LintError and
+    must not overwrite the original file."""
+
+    def test_lay004_raises_lint_error(self, sch_file: Path) -> None:
+        """LAY004 (ERROR severity) must raise LintError under LINT mode."""
+
+        def _place_out_of_bounds(doc: SchematicDoc) -> None:
+            # Add a symbol placed at x=450 (beyond page x-bound) to trigger LAY004.
+            sym_node = parse("(symbol (at 450 100 0))")
+            doc.root = ListNode(doc.root.items + (sym_node,), doc.root.pos)
+
+        with pytest.raises(LintError) as exc_info:
+            mutate_and_validate_sch(
+                sch_file,
+                _place_out_of_bounds,
+                mode=ValidationMode.LINT,
+            )
+
+        codes = [issue.code for issue in exc_info.value.issues]
+        assert "LAY004" in codes
+
+    def test_lay004_does_not_overwrite_original(self, sch_file: Path) -> None:
+        """Original file must be unchanged when LAY004 aborts the write."""
+        original_content = sch_file.read_text()
+
+        def _place_out_of_bounds(doc: SchematicDoc) -> None:
+            sym_node = parse("(symbol (at 450 100 0))")
+            doc.root = ListNode(doc.root.items + (sym_node,), doc.root.pos)
+
+        with pytest.raises(LintError):
+            mutate_and_validate_sch(sch_file, _place_out_of_bounds)
+
+        assert sch_file.read_text() == original_content, (
+            "File was overwritten despite LAY004 error — transactional contract violated"
+        )

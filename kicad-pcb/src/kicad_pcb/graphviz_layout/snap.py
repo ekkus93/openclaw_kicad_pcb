@@ -1130,6 +1130,36 @@ def _remediate_crossings(
 
 
 # ---------------------------------------------------------------------------
+# Page-bounds clamp
+# ---------------------------------------------------------------------------
+
+
+def _clamp_to_page(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    min_x: float = ORIGIN_X,
+    min_y: float = ORIGIN_Y,
+    max_x: float = PAGE_MAX_X,
+    max_y: float = PAGE_MAX_Y,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Clamp every position so it stays within the printable A4 area.
+
+    Snap passes (connector snaps, stereo split, deoverlap, crossing
+    remediation) can push individual components outside the page bounds,
+    which triggers LAY004.  This pass runs last to guarantee no position
+    violates the page boundary.
+
+    Only x and y are modified; rotation is always preserved.
+    """
+    out: dict[str, tuple[float, float, float | None]] = {}
+    for ref, (x, y, rot) in positions.items():
+        cx = max(min_x, min(max_x, x))
+        cy = max(min_y, min(max_y, y))
+        out[ref] = (cx, cy, rot)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
 
@@ -1174,6 +1204,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     8. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
     9. :func:`_remediate_crossings` — measure crossing ratio; if ≥ 0.30 apply
        barycentric column-sort sweeps (up to 3) then re-run deoverlap.
+    10. :func:`_clamp_to_page` — clamp every position to the A4 printable area
+        (``ORIGIN_X..PAGE_MAX_X`` × ``ORIGIN_Y..PAGE_MAX_Y``); prevents LAY004.
     """
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
@@ -1198,4 +1230,5 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     )
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
+    result = _clamp_to_page(result)
     return result
