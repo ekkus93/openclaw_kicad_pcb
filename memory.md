@@ -2849,3 +2849,24 @@ So the minimum value that allows any sorting is 2; default is 3.
 ### Pending
 - 4.1, 4.2, 4.4: audit orphaned functions in layout.py; decide fate of
   compute_signal_flow_layout(); final mypy pass.
+
+---
+
+## 2026-03-05T02:00:00Z — Phase 0.2 schematic_metrics module implemented and committed
+
+**Commit:** `892dbfe` — pushed to master (2 new files, +513 lines).
+
+### What was implemented
+
+**`kicad-pcb/src/kicad_pcb/schematic_metrics.py`** — 4 public helpers:
+- `count_distinct_x_columns(doc, tolerance_mm=0.5) -> int`: buckets symbol x-coords with `int(x/tol)` → count non-empty buckets
+- `count_global_labels(doc, text="GND") -> int`: walks AST via `walk(doc.root)`, counts `(global_label "text" …)` nodes
+- `run_layout_lints(doc) -> list[LintIssue]`: thin wrapper around `lint_schematic_layout(doc.root)`
+- `wire_stub_ratio(doc, stub_len_mm=5.08, tol=0.2) -> float`: uses `_collect_wire_segments`, counts wires with Euclidean length <= stub_len_mm+tol
+
+**`tests/unit/test_schematic_metrics.py`** — 28 unit tests across 5 classes.
+
+### TODO checkpoint
+- Phase 0.1 "stats helper" → done
+- Phase 0.2 all items → done
+- `COPILOT_TODO_READABLE_SCHEMATICS.md` updated with [x] for Phase 0.2
