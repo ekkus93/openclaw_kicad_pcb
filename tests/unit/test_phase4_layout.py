@@ -37,6 +37,7 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._project import minimal_schematic_text
 from kicad_pcb.component_types import component_type
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout.snap import (
     ORIGIN_X,
     ORIGIN_Y,
@@ -404,6 +405,47 @@ class TestRouteNetsHighFanout:
         ir, endpoints = self._make_ir_and_endpoints()
         routing = route_nets(ir=ir, pin_endpoints=endpoints)
         assert all(g.name == "DATABUS" for g in routing.global_labels)
+
+
+class TestRouteNetsStrictMode:
+    def test_strict_mode_raises_for_unknown_pin_endpoints(self) -> None:
+        ir = _minimal_ir(
+            refs=["R1", "R2"],
+            nets=[
+                {
+                    "name": "SIG",
+                    "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}],
+                }
+            ],
+        )
+        endpoints = {
+            ("R1", "1"): (10.0, 20.0, 0.0),
+        }
+
+        with pytest.raises(UserError) as exc_info:
+            route_nets(ir=ir, pin_endpoints=endpoints, strict=True)
+
+        assert exc_info.value.code == ErrorCode.PIN_INVALID
+        assert exc_info.value.details["net_name"] == "SIG"
+
+    def test_non_strict_mode_keeps_offcanvas_fallback_for_unknown_pins(self) -> None:
+        ir = _minimal_ir(
+            refs=["R1", "R2"],
+            nets=[
+                {
+                    "name": "SIG",
+                    "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}],
+                }
+            ],
+        )
+        endpoints = {
+            ("R1", "1"): (10.0, 20.0, 0.0),
+        }
+
+        routing = route_nets(ir=ir, pin_endpoints=endpoints)
+
+        assert len(routing.labels) >= 1
+        assert any(marker.ref == "R2" and marker.pin == "1" for marker in routing.bind_markers)
 
 
 # ---------------------------------------------------------------------------
