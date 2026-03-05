@@ -129,6 +129,7 @@ def _apply_netlist_to_project(
         "wires": 0,
         "labels": 0,
         "global_labels": 0,
+        "power_symbols": 0,
         "junctions": 0,
         "binding_markers": 0,
     }
@@ -240,7 +241,14 @@ def _build_managed_mutator(  # noqa: PLR0913
             positions=raw_layout,
             use_bus=True,
         )
-        write_routing(doc=doc, routing=routing, new_uuid=_new_uuid, stats=stats)
+        write_routing(
+            doc=doc,
+            routing=routing,
+            new_uuid=_new_uuid,
+            stats=stats,
+            symbols_dir=symbol_index.directories[0] if symbol_index.directories else None,
+            project_name=project.name,
+        )
 
         # Post-mutation AST invariants: a non-empty IR must produce symbols in
         # the managed sheet. Check the live AST, not the stats counters.

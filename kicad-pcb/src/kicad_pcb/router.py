@@ -10,10 +10,11 @@ approach.
 
 Public API
 ----------
-:func:`route_nets`       — compute routing decisions for all nets in a CircuitIR.
-:func:`write_routing`    — emit computed decisions into a SchematicDoc.
-:class:`LabelPolicy`     — policy dataclass controlling label deduplication.
-:data:`DEFAULT_LABEL_POLICY` — default policy (max 2 local labels, 4 global per net).
+:func:`route_nets`             — compute routing decisions for all nets in a CircuitIR.
+:func:`write_routing`          — emit computed decisions into a SchematicDoc.
+:class:`LabelPolicy`           — policy dataclass controlling label deduplication.
+:data:`DEFAULT_LABEL_POLICY`   — default policy (max 2 local labels, 4 global per net).
+:class:`PowerSymbolPlacement`  — placed power symbol (GND/VCC etc.), emitted for power nets.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ import json
 import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -73,9 +75,8 @@ class LabelPolicy:
     max_global_labels_per_net:
         Maximum number of :class:`GlobalLabelPlacement` nodes emitted for
         a single *non-power* high-degree net (see :data:`_HUB_MAX_DEGREE`).
-        Power nets are deliberately uncapped — every GND/VCC pin must carry
-        its own global label until Phase 3's power-rail strategy replaces
-        them.  Default: ``4``.
+        Power nets use :class:`PowerSymbolPlacement` instead and are not
+        subject to this cap.  Default: ``4``.
     """
 
     max_labels_per_net: int = 2
@@ -225,13 +226,30 @@ class BindMarker:
 
 @dataclass(frozen=True)
 class GlobalLabelPlacement:
-    """A global-label node placed at *(x, y)*.  Used for power nets and
-    high-degree nets instead of per-pin local labels."""
+    """A global-label node placed at *(x, y)*.  Used for high-degree
+    non-power nets instead of per-pin local labels."""
 
     name: str
     x: float
     y: float
     angle: int
+
+
+@dataclass(frozen=True)
+class PowerSymbolPlacement:
+    """A KiCad power symbol placed at *(x, y)* with a stub wire.
+
+    Used in place of :class:`GlobalLabelPlacement` for power nets (GND,
+    VCC, etc.) when a matching ``power:<net_name>`` library symbol is
+    available.  The symbol's single connection pin is at *(x, y)* — a
+    stub wire should end here.  When the library symbol is unavailable,
+    :func:`write_routing` falls back to a ``global_label`` node.
+    """
+
+    net_name: str  # e.g. "GND"  — also the KiCad Value of the placed symbol
+    x: float
+    y: float
+    angle: int = 0
 
 
 @dataclass(frozen=True)
@@ -249,6 +267,7 @@ class NetRouting:
     wires: list[WireSegment] = field(default_factory=list)
     labels: list[NetLabel] = field(default_factory=list)
     global_labels: list[GlobalLabelPlacement] = field(default_factory=list)
+    power_symbols: list[PowerSymbolPlacement] = field(default_factory=list)
     junctions: list[JunctionPoint] = field(default_factory=list)
     bind_markers: list[BindMarker] = field(default_factory=list)
 
@@ -450,21 +469,20 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         is_power = _is_power_net_name(net.name)
 
         # ----------------------------------------------------------------
-        # Power nets → global label per pin
+        # Power nets → power symbol per pin
         # ----------------------------------------------------------------
         if is_power:
             for pin_ref, (wx, wy, wa) in known:
                 ex, ey = _stub_end(wx, wy, wa)
-                label_angle = int((wa + 180) % 360)
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.global_labels.append(GlobalLabelPlacement(net.name, ex, ey, label_angle))
+                routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
             # Off-canvas fallback for power pins with no known endpoint.
             for pin_ref in unknown:
                 wx, wy = -1200.0, fallback_y
                 ex, ey = wx + WIRE_EXTEND_MM, wy
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.global_labels.append(GlobalLabelPlacement(net.name, ex, ey, 0))
+                routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 fallback_y -= 10.0
             continue
@@ -573,21 +591,34 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     return routing
 
 
-def write_routing(
+def write_routing(  # noqa: PLR0913
     *,
     doc: SchematicDoc,
     routing: NetRouting,
     new_uuid: Callable[[], str],
     stats: dict[str, int],
+    symbols_dir: Path | None = None,
+    project_name: str = "project",
 ) -> None:
     """Emit *routing* decisions into the schematic document *doc*.
 
     Writes wire segments (``(wire …)``), local net labels (``(label …)``),
-    global labels (``(global_label …)``), junction markers
+    global labels (``(global_label …)``), power symbols (``(symbol …)``
+    with ``lib_id`` from the ``power:`` library), junction markers
     (``(junction …)``), and bind markers (hidden ``(text …)`` nodes).
     Updates *stats* counters:
-    ``wires``, ``labels``, ``global_labels``, ``junctions``,
-    ``binding_markers``.
+    ``wires``, ``labels``, ``global_labels``, ``power_symbols``,
+    ``junctions``, ``binding_markers``.
+
+    Parameters
+    ----------
+    symbols_dir:
+        Directory containing ``.kicad_sym`` files.  ``None`` uses the system
+        default (``/usr/share/kicad/symbols``).  Used only when embedding
+        power-library symbols.
+    project_name:
+        KiCad project name embedded in power-symbol ``(instances …)``
+        annotations.  Defaults to ``"project"``.
     """
     for seg in routing.wires:
         doc.add_wire(seg.x1, seg.y1, seg.x2, seg.y2, new_uuid())
@@ -602,6 +633,30 @@ def write_routing(
             glbl.name, glbl.x, glbl.y, new_uuid(), angle=glbl.angle, shape="passive"
         )
         stats["global_labels"] = stats.get("global_labels", 0) + 1
+
+    for idx, ps in enumerate(routing.power_symbols):
+        sym_uuid = new_uuid()
+        pin_uuid = new_uuid()
+        ref = f"#PWR{idx + 1:02d}"
+        success = doc.add_power_symbol(
+            ps.net_name,
+            ps.x,
+            ps.y,
+            sym_uuid,
+            pin_uuid,
+            ref,
+            project_name,
+            angle=ps.angle,
+            symbols_dir=symbols_dir,
+        )
+        if not success:
+            # Fallback: global_label when power symbol is not in the library.
+            doc.add_global_label(
+                ps.net_name, ps.x, ps.y, new_uuid(), angle=ps.angle, shape="passive"
+            )
+            stats["global_labels"] = stats.get("global_labels", 0) + 1
+        else:
+            stats["power_symbols"] = stats.get("power_symbols", 0) + 1
 
     for jpt in routing.junctions:
         doc.add_junction(jpt.x, jpt.y, new_uuid())
