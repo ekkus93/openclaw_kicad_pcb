@@ -2990,3 +2990,43 @@ So the minimum value that allows any sorting is 2; default is 3.
 
 **`tests/unit/test_phase4_layout.py`** — added `TestSpreadXColumns` with 10 tests:
 - empty, small-col-unchanged, 6-syms→2-subcols, 9-syms→3-subcols, y-order-preserved, rotation-unchanged, input-not-mutated, clamped-to-page-bounds, different-cols-untouched, N-symbols-produce-N-columns (Phase 4.3 acceptance test)
+
+---
+
+## 2026-03-05T18:30:00Z — Phase 7.1 CLI flags committed (746c6ce)
+
+**Commit:** `746c6ce` — `feat(Phase 7.1): add --layout, --routing, --validate CLI flags`
+
+### Changes made
+
+**`layout_engine.py`:**
+- `HeuristicLayoutEngine` — wraps `compute_signal_flow_layout()` (pure Python, no `dot` binary); returns `{ref: (x, y, None)}`
+- `make_auto_layout_engine()` — factory: tries Graphviz first, falls back silently to `HeuristicLayoutEngine` when `dot` missing
+
+**`commands/_sch_apply.py`:**
+- `_ApplyNetlistRequest` — extended with `layout_name: str | None = None`, `routing_name: str | None = None`
+- `_resolve_layout(name, *, cache_path)→LayoutEngine` — maps `auto|graphviz|heuristic|none` to engine instances; `auto` silently falls back to heuristic when dot missing; `graphviz` raises `RuntimeError` when dot absent
+- `_resolve_routing(name)→bool` — maps `bus|hub→True`, `labels→False`
+- `_resolve_mode()` — expanded: now handles `none|syntax|lint|kicad|full` (keeps legacy `internal` alias); updated `details.allowed`
+- `_write_symbols()` — new optional `engine: LayoutEngine | None` parameter; engine created internally only when `None` (backward compat)
+- `_build_managed_mutator` — calls `_resolve_layout(request.layout_name, cache_path=...)` and passes `use_bus=_resolve_routing(request.routing_name)` to `route_nets`
+
+**`cli.py`:**
+- `apply-netlist` and `new-from-netlist` now accept `--layout auto|graphviz|heuristic|none` (default: `auto`), `--routing bus|hub|labels` (default: `bus`), `--validate none|syntax|lint|kicad|full` (default: `None`, falls through to `--mode`)
+- `--mode` kept as deprecated alias (defaults: `"internal"` for apply-netlist, `"kicad"` for new-from-netlist)
+- `build_parser()` public alias exposed for test access
+
+**`commands/netlist.py`:**
+- Both `cmd_apply_netlist` and `cmd_new_from_netlist` pass `layout_name=args.layout`, `routing_name=args.routing`
+- `mode_name` prefers `args.validate` (new) over `args.mode` (deprecated)
+
+### Tests added to `test_phase7_ux.py`
+- `TestHeuristicLayoutEngine` — covers all refs, `(x, y, None)` shape
+- `TestResolveLayout` — none/heuristic/auto/graphviz/unknown error cases
+- `TestResolveRouting` — bus/hub/None→True, labels→False, unknown error
+- `TestResolveValidateMode` — all 5+1 legacy modes, None→default, unknown error, allowed-set in error details
+- `TestCLINewFlags` — 10 argparse acceptance parametrize + 3 default-value tests
+
+### Status (COPILOT_TODO_READABLE_SCHEMATICS.md Phase 7)
+- ✅ Phase 7.1 — all three flags implemented and tested
+- ⬜ Phase 7.2 — Graphviz stderr diagnostics + lint code printout (not yet started)
