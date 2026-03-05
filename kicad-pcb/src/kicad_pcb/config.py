@@ -80,29 +80,47 @@ class SymbolsDir:
         return f"{self.path}  (via {self.source})"
 
 
-def discover_symbols_dir(*, explicit: Path | None = None) -> SymbolsDir | None:
+def discover_symbols_dir(
+    *,
+    explicit: Path | None = None,
+    strict: bool = False,
+) -> SymbolsDir | None:
     """Return the first valid symbol library directory and its discovery source.
 
     Search order:
 
     1. *explicit* — caller-supplied path (e.g. from the ``--symbols-dir`` CLI
-       flag).  The directory must exist; if it doesn't, the search continues.
+       flag).  The directory must exist; if it doesn't, the search continues
+       unless *strict* is ``True``.
     2. ``KICAD_SYMBOLS_DIR`` environment variable.
     3. ``symbols_dir`` key in ``~/.kicad-pcb/config.json``.
     4. :data:`SYMBOLS_CANDIDATES` — platform-specific well-known paths.
 
     Returns ``None`` if no existing directory can be found anywhere.
+    In strict mode, raises :class:`UserError` when an explicitly configured
+    source is invalid, or when nothing resolves.
     """
-    # Non-existent explicit path is silently skipped: fall through so callers
-    # get a useful warning from the higher-level code rather than silent None.
-    if explicit is not None and explicit.is_dir():
-        return SymbolsDir(explicit, "explicit")
+    if explicit is not None:
+        if explicit.is_dir():
+            return SymbolsDir(explicit, "explicit")
+        if strict:
+            raise UserError(
+                f"Explicit symbols_dir does not exist: {explicit}",
+                code=ErrorCode.SYMBOL_DIR_MISSING,
+                details={"source": "explicit", "path": str(explicit)},
+            )
 
     env_val = os.environ.get("KICAD_SYMBOLS_DIR")
     if env_val:
         p = Path(env_val)
         if p.is_dir():
             return SymbolsDir(p, "env:KICAD_SYMBOLS_DIR")
+        if strict:
+            raise UserError(
+                f"KICAD_SYMBOLS_DIR does not exist: {p}",
+                code=ErrorCode.SYMBOL_DIR_MISSING,
+                details={"source": "env:KICAD_SYMBOLS_DIR", "path": str(p)},
+            )
 
     cfg = load_config()
     cfg_val = cfg.get("symbols_dir")
@@ -110,10 +128,26 @@ def discover_symbols_dir(*, explicit: Path | None = None) -> SymbolsDir | None:
         p = Path(cfg_val)
         if p.is_dir():
             return SymbolsDir(p, "config")
+        if strict:
+            raise UserError(
+                f"Configured symbols_dir does not exist: {p}",
+                code=ErrorCode.SYMBOL_DIR_MISSING,
+                details={"source": "config", "path": str(p)},
+            )
 
     for candidate in SYMBOLS_CANDIDATES:
         if candidate.is_dir():
             return SymbolsDir(candidate, f"platform:{candidate}")
+
+    if strict:
+        raise UserError(
+            "No KiCad symbol libraries found.",
+            code=ErrorCode.SYMBOL_DIR_MISSING,
+            details={
+                "source": "platform",
+                "searched_candidates": [str(p) for p in SYMBOLS_CANDIDATES],
+            },
+        )
 
     return None
 

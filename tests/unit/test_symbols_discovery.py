@@ -103,6 +103,20 @@ class TestDiscoverExplicit:
         result = discover_symbols_dir(explicit=missing)
         assert result is None
 
+    def test_strict_raises_when_explicit_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("KICAD_SYMBOLS_DIR", "")
+        monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
+        monkeypatch.setattr(cfg_module, "load_config", lambda: {})
+
+        missing = tmp_path / "nonexistent"
+        with pytest.raises(UserError) as exc_info:
+            discover_symbols_dir(explicit=missing, strict=True)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+        assert exc_info.value.details["source"] == "explicit"
+
 
 # ---------------------------------------------------------------------------
 # discover_symbols_dir — environment variable
@@ -130,6 +144,19 @@ class TestDiscoverEnvVar:
 
         result = discover_symbols_dir()
         assert result is None
+
+    def test_strict_raises_when_env_var_nonexistent(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("KICAD_SYMBOLS_DIR", str(tmp_path / "nope"))
+        monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
+        monkeypatch.setattr(cfg_module, "load_config", lambda: {})
+
+        with pytest.raises(UserError) as exc_info:
+            discover_symbols_dir(strict=True)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+        assert exc_info.value.details["source"] == "env:KICAD_SYMBOLS_DIR"
 
     def test_env_var_empty_string_ignored(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -180,6 +207,21 @@ class TestDiscoverConfig:
 
         result = discover_symbols_dir()
         assert result is None
+
+    def test_strict_raises_when_config_symbols_dir_nonexistent(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
+        monkeypatch.setattr(cfg_module, "SYMBOLS_CANDIDATES", ())
+        monkeypatch.setattr(
+            cfg_module, "load_config", lambda: {"symbols_dir": str(tmp_path / "gone")}
+        )
+
+        with pytest.raises(UserError) as exc_info:
+            discover_symbols_dir(strict=True)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+        assert exc_info.value.details["source"] == "config"
 
     def test_config_missing_key_falls_through(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
@@ -237,6 +279,23 @@ class TestDiscoverPlatformCandidates:
 
         result = discover_symbols_dir()
         assert result is None
+
+    def test_strict_all_candidates_missing_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("KICAD_SYMBOLS_DIR", raising=False)
+        monkeypatch.setattr(cfg_module, "load_config", lambda: {})
+        monkeypatch.setattr(
+            cfg_module,
+            "SYMBOLS_CANDIDATES",
+            (tmp_path / "a", tmp_path / "b"),
+        )
+
+        with pytest.raises(UserError) as exc_info:
+            discover_symbols_dir(strict=True)
+
+        assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
+        assert exc_info.value.details["source"] == "platform"
 
 
 # ---------------------------------------------------------------------------

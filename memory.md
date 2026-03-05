@@ -1,6 +1,25 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T22:40:24Z_
+_Last updated: 2026-03-05T22:50:26Z_
+
+
+## 2026-03-05T22:50:26Z — Completed fallback audit item B15 (symbols discovery strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/config.py`:
+  - added `strict: bool = False` to `discover_symbols_dir(...)`.
+  - strict mode now raises `UserError(code=SYMBOL_DIR_MISSING)` for invalid explicit/env/config sources.
+  - strict mode also raises when no platform candidates resolve.
+  - default non-strict mode preserves current fallback-chain behavior.
+- Updated `kicad-pcb/src/kicad_pcb/commands/sch.py` and `kicad-pcb/src/kicad_pcb/commands/patterns.py`:
+  - propagated optional CLI strictness into `discover_symbols_dir(..., strict=...)`.
+- Updated `tests/unit/test_symbols_discovery.py`:
+  - added strict-mode tests for explicit/env/config invalid paths.
+  - added strict-mode test for missing platform candidates.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 15 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/config.py kicad-pcb/src/kicad_pcb/commands/sch.py kicad-pcb/src/kicad_pcb/commands/patterns.py tests/unit/test_symbols_discovery.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_symbols_discovery.py -k "strict_raises or strict_all_candidates_missing"`
 
 
 ## 2026-03-05T22:40:24Z — Completed fallback audit item B14 (power symbol strict fail-fast)

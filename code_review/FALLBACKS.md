@@ -82,6 +82,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 15. Symbol directory discovery fallback chain (explicit → env → config → platform)
 	- [kicad-pcb/src/kicad_pcb/config.py](../kicad-pcb/src/kicad_pcb/config.py#L84-L120)
 	- Behavior: source precedence fallback for locating KiCad symbol libraries.
+	- Status: ✅ Addressed on 2026-03-05 — `discover_symbols_dir(..., strict=True)` now fails fast with `UserError(SYMBOL_DIR_MISSING)` for invalid explicit/env/config sources (or when no platform candidates resolve); default non-strict mode preserves the fallback chain.
 
 16. Graphviz dot discovery fallback chain (bundled → env var → PATH)
 	- [kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py](../kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py#L106-L148)
