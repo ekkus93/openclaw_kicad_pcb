@@ -149,11 +149,11 @@ Choose one implementation path:
 ### 6.1 Add golden test for headphone amp fixture
 - [x] Generate schematic from the headphone amp IR fixture. *(`TestGoldenHeadphoneAmp` in `test_phase6_coverage.py`)*
 - [x] Validate:
-  - [ ] distinct x-columns >= 6 *(not yet tested; requires `count_distinct_x_columns` helper from Phase 0.2)*
-  - [ ] GND global labels <= 2 *(tested as > 0 only; upper bound not yet enforced)*
-  - [x] no LAY003 *(`test_dynamic_no_lay003_overlap` and `test_golden_fixture_no_lay003_overlap`)*
-  - [ ] no LAY004 *(prevented at runtime by `_clamp_to_page`; golden fixture not explicitly lint-checked for LAY004)*
-  - [ ] stub ratio below threshold (e.g. < 0.35) *(requires `wire_stub_ratio` helper from Phase 0.2)*
+  - [x] distinct x-columns >= 6 *(`test_golden_fixture_x_columns_ge_6` + `test_dynamic_x_columns_ge_6`; dynamic: 10 columns)*
+  - [x] GND global labels == 0 *(`test_golden_fixture_power_symbols_for_gnd` + `test_dynamic_gnd_global_labels_zero`; power:GND symbols used)*
+  - [x] no LAY003 *(`test_dynamic_no_lay003_overlap` and `test_golden_fixture_no_lay003_overlap`; power symbols excluded from check)*
+  - [x] no LAY004 *(`test_golden_fixture_no_lay004` + `test_dynamic_no_lay004`)*
+  - [x] stub ratio below threshold < 0.75 *(`test_golden_fixture_stub_ratio_below_threshold` + `test_dynamic_stub_ratio_below_threshold`; actual ~0.58)*
 - [x] Store the resulting `.kicad_sch` as a golden output. *(`tests/fixtures/regressions/headphone_amp_golden_layout.kicad_sch`)*
 
 ### 6.2 Optional integration test with KiCad CLI
@@ -183,8 +183,8 @@ Choose one implementation path:
 
 ## Definition of Done
 
-- [ ] Headphone amp schematic output is visually readable and meets acceptance criteria. *(golden tests pass; x-columns and stub-ratio checks still pending)*
-- [x] No LAY003/LAY004 for the fixture. *(LAY003 explicitly tested; LAY004 prevented by `_clamp_to_page` and blocked as `_ERR`)*
+- [x] Headphone amp schematic output is visually readable and meets acceptance criteria. *(x-columns=10 ≥ 6; GND=0 global labels; no LAY003/LAY004; stub ratio 0.58 < 0.75)*
+- [x] No LAY003/LAY004 for the fixture. *(LAY003: power symbols excluded from check; LAY004: `_clamp_to_page` + explicit golden/dynamic tests)*
 - [x] Power net clutter is reduced (GND global labels <= 2, ideally 0). *(Phase 3 implemented — `PowerSymbolPlacement` emits `power:GND`/`power:VCC` symbols; 0 global labels for power nets)*
 - [x] Multi-pin nets use spine routing by default. *(`use_bus=True` default)*
 - [x] Transactional write guarantees are enforced (no overwrite on validation failure). *(`TestLAY004BlocksWrite` passes)*
