@@ -1,6 +1,38 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T14:00:00Z_
+_Last updated: 2026-03-05T16:00:00Z_
+
+---
+
+## 2026-03-05T16:00:00Z — Phase 3 power symbol strategy committed (01231cc)
+
+**Commits:**
+- `01231cc` — `feat: Phase 3 power symbol strategy — PowerSymbolPlacement replaces GlobalLabelPlacement for power nets` (5 files, 381 insertions, 24 deletions)
+- `73f871a` — `docs: mark Phase 3 power symbol tasks complete in TODO`
+
+### What was implemented
+
+**`PowerSymbolPlacement` frozen dataclass** added to `router.py` (after `GlobalLabelPlacement`):
+- Fields: `net_name: str`, `x: float`, `y: float`, `angle: int = 0`
+- Replaces `GlobalLabelPlacement` for power nets in `route_nets()`
+
+**`NetRouting.power_symbols`** — new `list[PowerSymbolPlacement]` field (between `global_labels` and `junctions`)
+
+**`route_nets()` power branch** — emits `PowerSymbolPlacement` per pin (stub wire + power symbol); was `GlobalLabelPlacement`
+
+**`write_routing()`** — two new optional kwargs `symbols_dir: Path | None = None`, `project_name: str = "project"` (`# noqa: PLR0913`); new loop over `power_symbols`: calls `doc.add_power_symbol()`, falls back to `global_label`/`stats["global_labels"]` when lib unavailable
+
+**`make_power_symbol_node()`** in `sch_doc/nodes.py` — builds KiCad `symbol` s-expr with `in_bom=no`, `on_board=no`, `exclude_from_sim=yes`, pin `"1"` at origin
+
+**`SchematicDoc.add_power_symbol()`** in `sch_doc/__init__.py` — embeds `power:<net_name>` lib def via `read_lib_symbol_def_flat`; returns `False` (triggers fallback) when not found
+
+**`_sch_apply.py`** — `stats["power_symbols"] = 0`; `write_routing()` called with `symbols_dir` and `project_name`
+
+**Tests** in `test_phase4_layout.py`:
+- `TestRouteNetsPower` updated: `test_power_net_emits_power_symbols`, `test_power_symbols_net_name_matches`, `test_power_net_no_global_labels`
+- `TestPhase3PowerSymbols` (6 tests): dataclass defaults/angle, lib embed, instance placement, fallback to global_label, multiple power nets
+
+All 258 tests in `test_phase4_layout.py` pass.
 
 ---
 
