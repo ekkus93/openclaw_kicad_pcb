@@ -174,12 +174,6 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Validation level; overrides --mode when given (default: lint)",
     )
     p_apply.add_argument(
-        "--layout",
-        choices=["auto", "graphviz", "heuristic", "none"],
-        default="auto",
-        help="Layout engine: auto, graphviz, heuristic (pure-Python), none (default: auto)",
-    )
-    p_apply.add_argument(
         "--routing",
         choices=["bus", "hub", "labels"],
         default="bus",
@@ -217,12 +211,6 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         choices=["none", "syntax", "lint", "kicad", "full"],
         default=None,
         help="Validation level; overrides --mode when given (default: kicad)",
-    )
-    p_new_netlist.add_argument(
-        "--layout",
-        choices=["auto", "graphviz", "heuristic", "none"],
-        default="auto",
-        help="Layout engine: auto, graphviz, heuristic (pure-Python), none (default: auto)",
     )
     p_new_netlist.add_argument(
         "--routing",
@@ -680,9 +668,8 @@ def main() -> None:  # noqa: PLR0912 PLR0915
             lay_codes = {i.code for i in exc.issues if i.code.startswith("LAY")}
             if lay_codes:
                 print(
-                    "  💡 Tip: layout issues can often be improved by switching engines:\n"
-                    "       apply-netlist --layout graphviz   # Graphviz automatic placement\n"
-                    "       apply-netlist --layout heuristic  # pure-Python fallback"
+                    "  💡 Tip: layout issues are fail-fast; "
+                    "fix the reported issue and re-run apply-netlist/new-from-netlist."
                 )
         sys.exit(1)
     except KiCadError as exc:

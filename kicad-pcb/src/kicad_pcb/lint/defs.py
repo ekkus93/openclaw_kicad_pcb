@@ -112,22 +112,22 @@ LINT_SUGGESTIONS: dict[str, str] = {
     "LAY001": (
         "Reduce repeated net labels by connecting symbols with wires "
         "instead of placing the same label stub more than 3 times. "
-        "Try '--layout graphviz' for better automatic placement."
+        "Re-run apply-netlist/new-from-netlist after fixing net connectivity hints."
     ),
     "LAY002": (
         "Replace short stub wires + labels with direct wire connections between symbols "
         "to improve schematic readability. "
-        "Try '--layout graphviz' for better automatic placement."
+        "Re-run apply-netlist/new-from-netlist after reducing label-stub usage."
     ),
     "LAY003": (
         "Move overlapping symbols apart by re-running 'apply-netlist' "
         "or manually repositioning them in KiCad's schematic editor. "
-        "Try '--layout graphviz' for improved automatic de-overlap."
+        "Then re-run validation to confirm overlap is resolved."
     ),
     "LAY004": (
         "Move the symbol inside the A4 page area (0\u2013297 \u00d7 0\u2013210 mm). "
         "Re-run 'apply-netlist' to recompute positions from the netlist. "
-        "Try '--layout graphviz' if positions are consistently out-of-bounds."
+        "If needed, adjust netlist structure to reduce extreme placement constraints."
     ),
     "LAY005": (
         "Add net labels or wires to connect isolated wire islands, "
