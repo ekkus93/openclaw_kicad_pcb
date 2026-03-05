@@ -246,7 +246,10 @@ def _build_managed_mutator(  # noqa: PLR0913
             routing=routing,
             new_uuid=_new_uuid,
             stats=stats,
-            symbols_dir=symbol_index.directories[0] if symbol_index.directories else None,
+            # Power symbols come from the KiCad system library; pass None so
+            # resolve_symbol_dirs() auto-discovers /usr/share/kicad/symbols.
+            # The project's component symbols_dir is unrelated to power.kicad_sym.
+            symbols_dir=None,
             project_name=project.name,
         )
 

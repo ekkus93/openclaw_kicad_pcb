@@ -37,6 +37,12 @@ from kicad_pcb.layout import (
 from kicad_pcb.lint import lint_schematic_layout
 from kicad_pcb.router import route_nets
 from kicad_pcb.sch_doc import SchematicDoc
+from kicad_pcb.schematic_metrics import (
+    count_distinct_x_columns,
+    count_global_labels,
+    run_layout_lints,
+    wire_stub_ratio,
+)
 from kicad_pcb.sexpr import parse as _parse_sexpr
 from kicad_pcb.sexpr.nodes import ListNode
 
@@ -558,6 +564,13 @@ _BASELINE_LABEL_COUNT = 16
 _BASELINE_GLOBAL_LABEL_COUNT = 0
 _BASELINE_JUNCTION_COUNT = 0
 
+# Acceptance-criteria thresholds (Phase 6.1):
+#   x-columns  : >= 6 ensures signal-flow horizontal spreading
+#   stub_ratio : < 0.75 regression guard against pure label-stub mode
+#                (0.35 is aspirational; current spine+power layout ~0.58)
+_MIN_X_COLUMNS = 6
+_WIRE_STUB_RATIO_THRESHOLD = 0.75
+
 
 def _count_nodes(root, key: str) -> int:
     """Recursively count all ListNode children with the given key."""
@@ -633,14 +646,38 @@ class TestGoldenHeadphoneAmp:
             "The baseline had 16 — this is a regression."
         )
 
-    def test_golden_fixture_has_global_labels(self) -> None:
-        """The golden file uses global labels for power/high-degree nets (GND etc.)."""
-        content = _HEADPHONE_AMP_GOLDEN_PATH.read_text(encoding="utf-8")
-        root = _parse_sexpr(content.rstrip("\n"))
-        gl_count = _count_nodes(root, "global_label")
-        assert gl_count > _BASELINE_GLOBAL_LABEL_COUNT, (
-            f"Golden has {gl_count} global labels; expected >0. "
-            "GND (degree-6) should be represented as global labels."
+    def test_golden_fixture_power_symbols_for_gnd(self) -> None:
+        """The golden file uses power:GND symbols for GND — no GND global labels (Phase 3)."""
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        gnd_labels = count_global_labels(doc, text="GND")
+        assert gnd_labels == 0, (
+            f"Golden has {gnd_labels} GND global labels; expected 0. "
+            "Phase 3 replaces GND global labels with power:GND symbols."
+        )
+
+    def test_golden_fixture_x_columns_ge_6(self) -> None:
+        """The golden file has >= 6 distinct x-columns (signal-flow horizontal spread)."""
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        x_cols = count_distinct_x_columns(doc)
+        assert x_cols >= _MIN_X_COLUMNS, (
+            f"Golden has {x_cols} x-columns; expected >= {_MIN_X_COLUMNS}. "
+            "Components should be spread horizontally for readability."
+        )
+
+    def test_golden_fixture_no_lay004(self) -> None:
+        """The golden file has no LAY004 symbol-out-of-bounds violations."""
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        issues = run_layout_lints(doc)
+        lay004 = [i for i in issues if i.code == "LAY004"]
+        assert not lay004, f"LAY004 out-of-bounds in golden fixture: {lay004}"
+
+    def test_golden_fixture_stub_ratio_below_threshold(self) -> None:
+        """Golden stub ratio < 0.75: spine+power routing beats pure label-stub style."""
+        doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
+        ratio = wire_stub_ratio(doc)
+        assert ratio < _WIRE_STUB_RATIO_THRESHOLD, (
+            f"Golden stub ratio {ratio:.3f} >= {_WIRE_STUB_RATIO_THRESHOLD}. "
+            "Pure label-stub routing approaches 1.0; spine routing should be lower."
         )
 
     def test_golden_fixture_has_junctions(self) -> None:
@@ -706,15 +743,14 @@ class TestGoldenHeadphoneAmp:
             f"Baseline had {_BASELINE_LABEL_COUNT}."
         )
 
-    def test_dynamic_better_than_baseline_global_labels(self, tmp_path: Path) -> None:
-        """Generated schematic uses more global labels than the baseline (>0)."""
+    def test_dynamic_power_symbols_for_gnd(self, tmp_path: Path) -> None:
+        """Generated schematic uses power:GND symbols — zero GND global labels (Phase 3)."""
         result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpGL")
-        content = result.managed_schematic_path.read_text(encoding="utf-8")
-        root = _parse_sexpr(content.rstrip("\n"))
-        gl_count = _count_nodes(root, "global_label")
-        assert gl_count > _BASELINE_GLOBAL_LABEL_COUNT, (
-            f"Generated schematic has {gl_count} global labels; "
-            f"expected >{_BASELINE_GLOBAL_LABEL_COUNT}."
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        gnd_labels = count_global_labels(doc, text="GND")
+        assert gnd_labels == 0, (
+            f"Generated schematic has {gnd_labels} GND global labels; expected 0. "
+            "Phase 3 replaces GND global labels with power:GND symbols."
         )
 
     def test_dynamic_has_junctions(self, tmp_path: Path) -> None:
@@ -751,6 +787,44 @@ class TestGoldenHeadphoneAmp:
         result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpParse")
         doc = SchematicDoc.load(result.managed_schematic_path)
         assert doc is not None
+
+    # -- Acceptance criteria (Phase 6.1) -----------------------------------
+
+    def test_dynamic_x_columns_ge_6(self, tmp_path: Path) -> None:
+        """Generated schematic has >= 6 distinct x-columns (signal-flow spread)."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpXCols")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        x_cols = count_distinct_x_columns(doc)
+        assert x_cols >= _MIN_X_COLUMNS, (
+            f"Generated schematic has {x_cols} x-columns; expected >= {_MIN_X_COLUMNS}."
+        )
+
+    def test_dynamic_gnd_global_labels_zero(self, tmp_path: Path) -> None:
+        """Generated schematic has 0 GND global labels after Phase 3 power symbols."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpGndLbl")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        gnd = count_global_labels(doc, text="GND")
+        assert gnd == 0, (
+            f"Generated schematic has {gnd} GND global labels; expected 0 with power symbols."
+        )
+
+    def test_dynamic_no_lay004(self, tmp_path: Path) -> None:
+        """Generated schematic has no LAY004 symbol-out-of-bounds violations."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpLAY4")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        issues = run_layout_lints(doc)
+        lay004 = [i for i in issues if i.code == "LAY004"]
+        assert not lay004, f"LAY004 out-of-bounds in generated schematic: {lay004}"
+
+    def test_dynamic_stub_ratio_below_threshold(self, tmp_path: Path) -> None:
+        """Generated stub ratio < 0.75: spine+power routing beats pure label-stub style."""
+        result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpStub")
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        ratio = wire_stub_ratio(doc)
+        assert ratio < _WIRE_STUB_RATIO_THRESHOLD, (
+            f"Generated stub ratio {ratio:.3f} >= {_WIRE_STUB_RATIO_THRESHOLD}. "
+            "Pure label-stub routing approaches 1.0; spine routing should be lower."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -865,12 +939,13 @@ class TestGoldenAudioBlock:
         )
 
     def test_has_global_labels_for_gnd(self, tmp_path: Path) -> None:
-        """GND (degree-4 power net) must produce at least one global label."""
+        """GND (degree-4 power net) must produce power:GND symbols (Phase 3)."""
         result = _new_from_netlist(tmp_path, _AUDIO_BLOCK_IR, name="AudioBlockGL")
-        content = result.managed_schematic_path.read_text(encoding="utf-8")
-        root = _parse_sexpr(content.rstrip("\n"))
-        assert _count_nodes(root, "global_label") > 0, (
-            "GND is a degree-4 power net and should be represented as global labels."
+        doc = SchematicDoc.load(result.managed_schematic_path)
+        gnd_labels = count_global_labels(doc, text="GND")
+        assert gnd_labels == 0, (
+            f"GND should use power symbols (0 global labels); found {gnd_labels}. "
+            "Phase 3 replaces GND global labels with power:GND symbols."
         )
 
     def test_has_junctions_for_t_junctions(self, tmp_path: Path) -> None:
