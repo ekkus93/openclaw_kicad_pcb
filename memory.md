@@ -1,10 +1,10 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T16:00:00Z_
+_Last updated: 2026-03-05T09:10:51Z_
 
 ---
 
-## 2026-03-05T17:30:00Z — Phase 6.1 golden acceptance criteria committed (148fdfe)
+## 2026-03-05T08:18:24Z — Phase 6.1 golden acceptance criteria committed (148fdfe)
 
 **Commits:**
 - `148fdfe` — `feat(Phase 6.1): golden acceptance criteria — x-columns, stub-ratio, GND power symbols, no LAY003/004`
@@ -42,7 +42,7 @@ Golden fixture regenerated: 357 tests pass in impacted files.
 
 ---
 
-## 2026-03-05T16:00:00Z — Phase 3 power symbol strategy committed (01231cc)
+## 2026-03-05T07:39:39Z — Phase 3 power symbol strategy committed (01231cc)
 
 **Commits:**
 - `01231cc` — `feat: Phase 3 power symbol strategy — PowerSymbolPlacement replaces GlobalLabelPlacement for power nets` (5 files, 381 insertions, 24 deletions)
@@ -74,7 +74,7 @@ All 258 tests in `test_phase4_layout.py` pass.
 
 ---
 
-## 2026-03-05T14:00:00Z — Phase 2.3 LabelPolicy committed (902cc75)
+## 2026-03-05T06:36:53Z — Phase 2.3 LabelPolicy committed (902cc75)
 
 **Commit:** `902cc75` — master, 3 files, 192 insertions, 12 deletions.
 
@@ -2993,7 +2993,7 @@ So the minimum value that allows any sorting is 2; default is 3.
 
 ---
 
-## 2026-03-05T18:30:00Z — Phase 7.1 CLI flags committed (746c6ce)
+## 2026-03-05T09:08:45Z — Phase 7.1 CLI flags committed (746c6ce)
 
 **Commit:** `746c6ce` — `feat(Phase 7.1): add --layout, --routing, --validate CLI flags`
 
