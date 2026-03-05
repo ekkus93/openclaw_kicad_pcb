@@ -4,6 +4,44 @@ _Last updated: 2026-03-05T16:00:00Z_
 
 ---
 
+## 2026-03-05T17:30:00Z — Phase 6.1 golden acceptance criteria committed (148fdfe)
+
+**Commits:**
+- `148fdfe` — `feat(Phase 6.1): golden acceptance criteria — x-columns, stub-ratio, GND power symbols, no LAY003/004`
+- `d22f8f8` — `docs: mark Phase 6.1 acceptance criteria complete in TODO`
+
+### Bug fixes discovered and patched
+
+**`_sch_apply.py` — wrong `symbols_dir` for power symbols:**
+`write_routing` was called with `symbols_dir=symbol_index.directories[0]` (project component symbols dir), which meant `read_lib_symbol_def_flat("power", "GND", ...)` failed to find `power.kicad_sym` → fell back to `global_label`. Fixed to `symbols_dir=None` so auto-discovery uses `/usr/share/kicad/symbols`.
+
+**`lint/sch.py` — power symbols triggered spurious LAY003/LAY004:**
+Added `_is_power_symbol(node)` helper (checks `in_bom=no` + `on_board=no`); `sym_positions` now skips power symbols before LAY003 and LAY004 checks. Added `AtomNode` to imports.
+
+**Three pre-existing tests updated to reflect Phase 3 power symbol strategy:**
+- `test_netlist_commands.py::test_wires_connect_at_pin_endpoints`: skip `#PWR*` refs
+- `test_netlist_commands.py::test_direct_wiring_not_all_label_only`: check `power:VCC`/`power:GND` lib ids instead of global labels
+- `test_phase6_coverage.py::TestGoldenAudioBlock::test_has_global_labels_for_gnd`: asserts 0 GND global labels
+
+### New tests added to `TestGoldenHeadphoneAmp` (8 total)
+
+Golden fixture (static):
+- `test_golden_fixture_power_symbols_for_gnd` — GND global labels == 0
+- `test_golden_fixture_x_columns_ge_6` — x_columns >= 6 (actual: 10)
+- `test_golden_fixture_no_lay004` — no LAY004 violations
+- `test_golden_fixture_stub_ratio_below_threshold` — stub_ratio < 0.75 (actual: 0.58)
+
+Dynamic generation:
+- `test_dynamic_power_symbols_for_gnd` — GND global labels == 0
+- `test_dynamic_x_columns_ge_6` — x_columns >= 6
+- `test_dynamic_gnd_global_labels_zero` — GND global labels == 0
+- `test_dynamic_no_lay004` — no LAY004
+- `test_dynamic_stub_ratio_below_threshold` — stub_ratio < 0.75
+
+Golden fixture regenerated: 357 tests pass in impacted files.
+
+---
+
 ## 2026-03-05T16:00:00Z — Phase 3 power symbol strategy committed (01231cc)
 
 **Commits:**
