@@ -693,12 +693,33 @@ class TestGraphvizLayoutCacheHelpers:
         )
         assert _gv_mod.load_layout_cache(cache_file, "k") is None
 
-    def test_save_cache_silently_ignores_permission_error(self, tmp_path: Path) -> None:
-        """save_layout_cache must not raise even if the file cannot be written."""
+    def test_save_cache_permission_error_raises(self, tmp_path: Path) -> None:
+        """save_layout_cache must fail fast when the file cannot be written."""
         cache_file: Path = tmp_path / "layout.json"
-        with patch("pathlib.Path.write_text", side_effect=PermissionError("read-only")):
-            # Should not raise.
+        with (
+            patch("pathlib.Path.write_text", side_effect=PermissionError("read-only")),
+            pytest.raises(RuntimeError, match="Failed to write layout cache"),
+        ):
             _gv_mod.save_layout_cache(cache_file, "k", {"R1": (1.0, 2.0, None)})
+
+    def test_load_cache_invalid_json_raises(self, tmp_path: Path) -> None:
+        """Invalid cache JSON must raise RuntimeError (no silent cache bypass)."""
+        cache_file: Path = tmp_path / "layout.json"
+        cache_file.write_text("{not-json", encoding="utf-8")
+
+        with pytest.raises(RuntimeError, match="Invalid JSON in layout cache"):
+            _gv_mod.load_layout_cache(cache_file, "k")
+
+    def test_load_cache_invalid_positions_shape_raises(self, tmp_path: Path) -> None:
+        """Malformed positions payload must raise RuntimeError."""
+        cache_file: Path = tmp_path / "layout.json"
+        cache_file.write_text(
+            json.dumps({"version": 1, "key": "k", "positions": {"R1": "bad"}}),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(RuntimeError, match="Invalid layout cache entry"):
+            _gv_mod.load_layout_cache(cache_file, "k")
 
 
 # ---------------------------------------------------------------------------

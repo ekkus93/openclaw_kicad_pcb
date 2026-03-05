@@ -217,7 +217,7 @@ class TestKiCadCLINetlistExport:
 
     def test_divider_schematic_exportable(self, home_tmp: Path) -> None:
         """cmd_new_from_netlist → managed schematic → kicad-cli sch export exits 0."""
-        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerKC", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerKC", layout="graphviz")
         sch_path = result.managed_schematic_path
         assert sch_path.exists(), f"Managed schematic not created at {sch_path}"
 
@@ -246,7 +246,7 @@ class TestKiCadCLINetlistExport:
 
     def test_divider_schematic_lists_components_in_netlist(self, home_tmp: Path) -> None:
         """kicad-cli netlist export from IR contains both R1 and R2."""
-        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerKCL", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerKCL", layout="graphviz")
         sch_path = result.managed_schematic_path
 
         netlist_out = home_tmp / "netlist.xml"
@@ -273,7 +273,7 @@ class TestKiCadCLINetlistExport:
 
     def test_three_component_chain_exportable(self, home_tmp: Path) -> None:
         """A three-component IR chain passes kicad-cli netlist export."""
-        result = _new_from_netlist(home_tmp, _CHAIN_IR, name="ChainKC", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _CHAIN_IR, name="ChainKC", layout="graphviz")
 
         netlist_out = home_tmp / "chain_netlist.xml"
         kicad_cli = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
@@ -313,7 +313,7 @@ class TestKiCadCLIERC:
 
     def test_erc_exits_zero_on_divider_schematic(self, home_tmp: Path) -> None:
         """cmd_new_from_netlist + kicad-cli sch erc must exit 0 on divider IR."""
-        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERC", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERC", layout="graphviz")
         sch_path = result.managed_schematic_path
         assert sch_path.exists(), f"Managed schematic not created at {sch_path}"
 
@@ -342,7 +342,7 @@ class TestKiCadCLIERC:
 
     def test_erc_no_error_violations_on_divider_schematic(self, home_tmp: Path) -> None:
         """ERC JSON report for divider IR must contain zero error-severity violations."""
-        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERCJ", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _DIVIDER_IR, name="DividerERCJ", layout="graphviz")
         sch_path = result.managed_schematic_path
 
         erc_out = home_tmp / "erc_violations.json"
@@ -376,7 +376,7 @@ class TestKiCadCLIERC:
 
     def test_erc_exits_zero_on_chain_schematic(self, home_tmp: Path) -> None:
         """kicad-cli sch erc must exit 0 on a three-component chain IR."""
-        result = _new_from_netlist(home_tmp, _CHAIN_IR, name="ChainERC", layout="heuristic")
+        result = _new_from_netlist(home_tmp, _CHAIN_IR, name="ChainERC", layout="graphviz")
         sch_path = result.managed_schematic_path
 
         erc_out = home_tmp / "chain_erc.json"

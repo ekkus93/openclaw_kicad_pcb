@@ -7,8 +7,6 @@ Covers two main areas:
       that is passed to ``mutate_and_validate_sch``.
     - TestCLIParsers            : ``apply-netlist``, ``new-from-netlist``,
       ``compile-netlist``, and ``add-component`` all expose ``--strict``.
-    - TestHeuristicLayoutEngine : ``HeuristicLayoutEngine`` satisfies the
-      ``LayoutEngine`` protocol and produces ``(x, y, None)`` placements.
     - TestResolveLayout         : ``_resolve_layout()`` maps flag strings to
       engine instances; unknown names raise ``UserError``.
     - TestResolveRouting        : ``_resolve_routing()`` maps flag strings to
@@ -45,7 +43,6 @@ from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._sch_apply import _resolve_layout, _resolve_mode, _resolve_routing
 from kicad_pcb.commands.netlist import _ApplyNetlistRequest, cmd_new_from_netlist
 from kicad_pcb.graphviz_layout import GraphvizLayoutEngine
-from kicad_pcb.layout_engine import HeuristicLayoutEngine, NoneLayoutEngine
 from kicad_pcb.pipeline import ValidationMode
 
 pytestmark = pytest.mark.unit
@@ -327,76 +324,24 @@ class TestGraphvizRequiredEndToEnd:
         )
 
 
-# ---------------------------------------------------------------------------
-# 7.1  New CLI flags — layout / routing / validate
-# ---------------------------------------------------------------------------
-
-
-class TestHeuristicLayoutEngine:
-    """HeuristicLayoutEngine satisfies LayoutEngine and produces correct shapes."""
-
-    def _make_ir(self) -> CircuitIR:
-        return CircuitIR(
-            version="1",
-            components=[
-                ComponentIR(ref="R1", symbol="Device:R"),
-                ComponentIR(ref="C1", symbol="Device:C"),
-            ],
-            nets=[
-                NetIR(
-                    name="NET_A",
-                    pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="C1", pin="1")],
-                ),
-                NetIR(
-                    name="NET_B",
-                    pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="C1", pin="2")],
-                ),
-            ],
-        )
-
-    def test_returns_all_refs(self) -> None:
-        """compute_symbol_positions covers every component in the IR."""
-        engine = HeuristicLayoutEngine()
-        ir = self._make_ir()
-        positions = engine.compute_symbol_positions(ir)
-        assert set(positions) == {"R1", "C1"}
-
-    def test_positions_are_three_tuples_with_none_rotation(self) -> None:
-        """Each value is (x, y, None) — heuristic engine provides no rotation."""
-        engine = HeuristicLayoutEngine()
-        ir = self._make_ir()
-        positions = engine.compute_symbol_positions(ir)
-        for ref, pos in positions.items():
-            assert len(pos) == 3, f"{ref}: expected 3-tuple, got {len(pos)}-tuple"
-            assert pos[2] is None, f"{ref}: rotation should be None, got {pos[2]}"
-
-
 class TestResolveLayout:
-    """_resolve_layout() maps CLI layout flag values to engine instances."""
+    """_resolve_layout() accepts graphviz-only values and fails otherwise."""
 
-    def test_none_flag_returns_none_engine(self) -> None:
-        engine = _resolve_layout("none")
-        assert isinstance(engine, NoneLayoutEngine)
-
-    def test_heuristic_flag_returns_heuristic_engine(self) -> None:
-        engine = _resolve_layout("heuristic")
-        assert isinstance(engine, HeuristicLayoutEngine)
-
-    def test_none_default_falls_back_gracefully(self) -> None:
-        """None (no flag given) behaves like 'auto': returns some valid engine."""
+    def test_none_default_returns_graphviz_engine(self) -> None:
+        """None (no flag given) resolves to Graphviz."""
         from kicad_pcb.layout_engine import LayoutEngine  # noqa: PLC0415
 
         engine = _resolve_layout(None)
         assert isinstance(engine, LayoutEngine)
 
-    def test_auto_raises_when_dot_missing(self) -> None:
-        """'auto' must fail fast when dot is unavailable (no silent fallback)."""
+    def test_none_default_raises_when_dot_missing(self) -> None:
+        """Default (None) fails fast when dot is unavailable."""
         _side_fx = RuntimeError("dot not found")
         with (
             patch("kicad_pcb.commands._sch_apply.make_layout_engine", side_effect=_side_fx),
             pytest.raises(RuntimeError, match="dot not found"),
         ):
-            _resolve_layout("auto")
+            _resolve_layout(None)
 
     def test_graphviz_raises_when_dot_missing(self) -> None:
         """'graphviz' must raise RuntimeError when dot is unavailable."""
@@ -529,10 +474,10 @@ class TestCLINewFlags:
 
 
 class TestResolveLayoutFailFast:
-    """_resolve_layout in auto mode fails fast when Graphviz is unavailable."""
+    """_resolve_layout fails fast when Graphviz is unavailable."""
 
-    def test_auto_dot_missing_raises(self) -> None:
-        """When dot is absent, _resolve_layout('auto') raises RuntimeError."""
+    def test_none_default_dot_missing_raises(self) -> None:
+        """When dot is absent, default _resolve_layout(None) raises RuntimeError."""
         with (
             patch(
                 "kicad_pcb.commands._sch_apply.make_layout_engine",
@@ -540,10 +485,10 @@ class TestResolveLayoutFailFast:
             ),
             pytest.raises(RuntimeError, match="dot not found"),
         ):
-            _resolve_layout("auto")
+            _resolve_layout(None)
 
     def test_graphviz_explicit_dot_missing_raises(self) -> None:
-        """Explicit --layout graphviz also raises RuntimeError when dot is missing."""
+        """Explicit graphviz also raises RuntimeError when dot is missing."""
         with (
             patch(
                 "kicad_pcb.commands._sch_apply.make_layout_engine",
@@ -553,8 +498,8 @@ class TestResolveLayoutFailFast:
         ):
             _resolve_layout("graphviz")
 
-    def test_late_graphviz_failure_auto_mode_raises(self, tmp_path: Path) -> None:
-        """When Graphviz fails during layout computation in auto mode,
+    def test_late_graphviz_failure_default_mode_raises(self, tmp_path: Path) -> None:
+        """When Graphviz fails during layout computation in default mode,
         cmd_new_from_netlist raises RuntimeError (no heuristic fallback)."""
         from kicad_pcb.graphviz_layout import GraphvizLayoutEngine  # noqa: PLC0415
 
@@ -566,7 +511,7 @@ class TestResolveLayoutFailFast:
             ),
             pytest.raises(RuntimeError, match="dot exited with code 1"),
         ):
-            _new_from_netlist(tmp_path, _minimal_ir_payload(), layout="auto")
+            _new_from_netlist(tmp_path, _minimal_ir_payload())
 
 
 # ---------------------------------------------------------------------------

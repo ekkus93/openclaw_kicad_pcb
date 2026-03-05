@@ -157,11 +157,13 @@ def require_capability(version: KiCadVersion | None, cap: CliCapability) -> None
     """Raise :class:`~kicad_pcb.errors.ToolError` when *version* is below the
     minimum required for *cap*.
 
-    Silently passes when:
+    Passes when:
 
-    * *version* is ``None`` (could not be detected — benefit of the doubt).
     * *cap* has no entry in :data:`CAPABILITY_MAP` (assumed always available).
     * *version* meets or exceeds the minimum.
+
+    Fails fast when *version* is ``None`` so capability checks are never
+    silently skipped due to undetected tool versions.
 
     Args:
         version: The detected :class:`KiCadVersion`, or ``None`` if unknown.
@@ -172,7 +174,11 @@ def require_capability(version: KiCadVersion | None, cap: CliCapability) -> None
             and a download link, if *version* is known to be too old.
     """
     if version is None:
-        return
+        raise ToolError(
+            f"Cannot verify kicad-cli capability '{cap.value}' because the installed version "
+            "could not be detected.\n"
+            "Run `kicad-cli --version` and ensure it returns a valid X.Y.Z version."
+        )
     min_ver = CAPABILITY_MAP.get(cap)
     if min_ver is None:
         return  # not in map → assumed available in all supported versions

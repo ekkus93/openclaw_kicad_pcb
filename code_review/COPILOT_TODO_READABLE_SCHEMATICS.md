@@ -166,7 +166,7 @@ Choose one implementation path:
 ## Phase 7 — UX knobs (Optional but useful)
 
 ### 7.1 Add/confirm CLI flag to control layout engine and routing style
-- [x] `--layout auto|graphviz|heuristic|none` *(commit 746c6ce: `HeuristicLayoutEngine` added; `_resolve_layout()` wired into `_sch_apply.py` and CLI)*
+- [x] Layout resolution is Graphviz-only (`_resolve_layout(None|"graphviz")`); non-graphviz values are rejected. *(`_sch_apply.py` now allows only `graphviz`; no heuristic/auto/none path)*
 - [x] `--routing bus|hub|labels` *(commit 746c6ce: `_resolve_routing()` → `use_bus` bool; default `bus`)*
 - [x] `--validate none|syntax|lint|kicad|full` *(commit 746c6ce: `_resolve_mode()` expanded; `--mode` kept as deprecated alias)*
 - [x] `--strict` (treat warnings as errors) *(implemented in `cli.py`)*
@@ -174,11 +174,11 @@ Choose one implementation path:
 
 ### 7.2 Diagnostics improvements
 - [x] If Graphviz fails:
-  - [x] include stderr excerpt *(RuntimeError message from `_run_dot` already includes `stderr[:400]`; propagated via `GRAPHVIZ_LAYOUT_FALLBACK` warning `details.reason`)*
-  - [x] report fallback used (heuristic) *(`GRAPHVIZ_LAYOUT_FALLBACK` warning emitted in both `_resolve_layout` auto-fallback and `_build_managed_mutator._mutate` late-failure path)*
+  - [x] include stderr excerpt *(RuntimeError message from `_run_dot` includes `stderr[:400]`; propagated to caller in fail-fast mode)*
+  - [x] fail fast without fallback *(no heuristic fallback path; Graphviz errors surface directly)*
 - [x] On lint failure:
   - [x] print lint codes and affected refs/nets *(existing — `[CODE] message` with coordinates; LAY001/LAY002 already include net name / wire counts)*
-  - [x] recommend switching layout or adjusting thresholds *(LAY001–LAY004 suggestions now mention `--layout graphviz`; `cli.py` appends engine-switching tip for any LAY* failure)*
+  - [x] recommend threshold/routing/placement fixes (no engine-switch guidance) *(LAY suggestions avoid removed `--layout` flag and focus on corrective actions)*
 
 ---
 

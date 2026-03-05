@@ -32,6 +32,7 @@ from typing import Protocol, runtime_checkable
 
 from .compat import CliCapability, KiCadVersion, parse_version
 from .compat import require_capability as _check_capability
+from .errors import ToolError
 
 # ---------------------------------------------------------------------------
 # RunResult — typed subprocess outcome
@@ -307,23 +308,40 @@ class KicadCliAdapter:
     def _run(self, args: list[str], *, capture: bool = True) -> RunResult:
         return self._runner.run([self._cli, *args], capture=capture)
 
-    def _read_json(self, path: Path) -> dict | None:
-        """Read *path* as JSON via the injected fs; return ``None`` on failure."""
+    def _read_json(self, path: Path, *, required: bool = False) -> dict | None:
+        """Read *path* as JSON via the injected fs.
+
+        Returns ``None`` only when the file is optional and missing.
+        Raises :class:`ToolError` for malformed/unreadable required JSON.
+        """
         if not self._fs.exists(path):
+            if required:
+                raise ToolError(f"Expected JSON output file was not written: {path}")
             return None
         try:
-            return json.loads(self._fs.read_text(path))
-        except (json.JSONDecodeError, OSError):
-            return None
+            parsed = json.loads(self._fs.read_text(path))
+        except json.JSONDecodeError as exc:
+            raise ToolError(f"Malformed JSON output at {path}: {exc}") from exc
+        except OSError as exc:
+            raise ToolError(f"Failed to read JSON output at {path}: {exc}") from exc
+        if not isinstance(parsed, dict):
+            raise ToolError(f"Invalid JSON output at {path}: expected object root")
+        return parsed
 
-    def _read_text_safe(self, path: Path) -> str:
-        """Read *path* as text via the injected fs; return empty string on failure."""
+    def _read_text_output(self, path: Path, *, required: bool = False) -> str:
+        """Read *path* as text via the injected fs.
+
+        Returns ``""`` only when the file is optional and missing.
+        Raises :class:`ToolError` for missing/unreadable required output.
+        """
         if not self._fs.exists(path):
+            if required:
+                raise ToolError(f"Expected output file was not written: {path}")
             return ""
         try:
             return self._fs.read_text(path)
-        except OSError:
-            return ""
+        except OSError as exc:
+            raise ToolError(f"Failed to read output file {path}: {exc}") from exc
 
     # ------------------------------------------------------------------
     # Version
@@ -333,15 +351,19 @@ class KicadCliAdapter:
     def detected_version(self) -> KiCadVersion | None:
         """Lazily detect and cache the installed kicad-cli version.
 
-        Returns ``None`` when the version cannot be parsed (e.g. kicad-cli is
-        not installed, or a :class:`FakeRunner` returns an empty string).  This
-        is intentional: callers that cannot determine the version do not fail.
+        Returns ``None`` when the version output is empty or unparseable.
+        Runtime failures while invoking ``kicad-cli --version`` are propagated
+        to the caller.
         """
         if self._detected_version is None:
-            with contextlib.suppress(Exception):
-                r = self._run(["--version"])
-                raw = (r.stdout.strip() or r.stderr.strip()).splitlines()[0]
-                self._detected_version = parse_version(raw)
+            r = self._run(["--version"])
+            output = r.stdout.strip() or r.stderr.strip()
+            if output:
+                raw = output.splitlines()[0]
+                try:
+                    self._detected_version = parse_version(raw)
+                except ValueError:
+                    self._detected_version = None
         return self._detected_version
 
     def require_capability(self, cap: CliCapability) -> None:
@@ -349,8 +371,7 @@ class KicadCliAdapter:
         kicad-cli does not support *cap*.
 
         Delegates to :func:`~kicad_pcb.compat.require_capability` with the
-        lazily-detected version.  When the version is unknown (``None``),
-        the check is skipped and the request proceeds.
+        lazily-detected version.
         """
         _check_capability(self.detected_version, cap)
 
@@ -380,7 +401,8 @@ class KicadCliAdapter:
                 str(pcb_file),
             ]
         )
-        return result, self._read_json(output_file)
+        report = self._read_json(output_file, required=result.ok)
+        return result, report
 
     def erc(self, sch_file: Path, output_file: Path) -> tuple[RunResult, dict | None]:
         """Run schematic electrical rules check.
@@ -399,7 +421,8 @@ class KicadCliAdapter:
                 str(sch_file),
             ]
         )
-        return result, self._read_json(output_file)
+        report = self._read_json(output_file, required=result.ok)
+        return result, report
 
     # ------------------------------------------------------------------
     # Export commands
@@ -470,7 +493,7 @@ class KicadCliAdapter:
         )
         lines: list[str] = []
         if result.ok:
-            content = self._read_text_safe(output_file)
+            content = self._read_text_output(output_file, required=True)
             if content:
                 lines = content.splitlines()
         return result, lines
@@ -495,7 +518,7 @@ class KicadCliAdapter:
         )
         content = ""
         if result.ok:
-            content = self._read_text_safe(output_file)
+            content = self._read_text_output(output_file, required=True)
         return result, content
 
     def export_pos(self, pcb_file: Path, output_file: Path) -> tuple[RunResult, list[str]]:
@@ -521,7 +544,7 @@ class KicadCliAdapter:
         )
         lines: list[str] = []
         if result.ok:
-            content = self._read_text_safe(output_file)
+            content = self._read_text_output(output_file, required=True)
             if content:
                 lines = content.splitlines()
         return result, lines
