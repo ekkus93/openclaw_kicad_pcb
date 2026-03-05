@@ -1,6 +1,47 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-04T21:48:38Z_
+_Last updated: 2026-03-05T00:15:23Z_
+
+---
+
+## 2026-03-05T00:15:23Z — Readable schematics Phases 1–2–4–5 implemented and committed
+
+**Commit:** `1fb3554` — pushed to master (11 files, +230/−49 lines).
+
+### What was implemented
+
+**Phase 1 — route_nets argument threading (`_sch_apply.py`)**
+- `_write_symbols()` return type changed from 3-tuple to 4-tuple: adds `raw_layout` (the raw Graphviz positions before snap passes).
+- Call site now calls `assign_tiers(ir)` and passes `tiers`, `positions=raw_layout`, `use_bus=True` to `route_nets()`.
+
+**Phase 2 — spine routing as default (`router.py`)**
+- `use_bus` parameter default changed `False → True`.
+- Hub nets (3–6 pins, non-power) now use spine routing by default for cleaner bus-style visuals.
+
+**Phase 4 — page clamp (`snap.py`)**
+- `_clamp_to_page(positions)` added as final step (step 14) in `_apply_post_layout_snaps()`.
+- Prevents LAY004 by clamping all symbol positions within `ORIGIN_X/Y..PAGE_MAX_X/Y` bounds before writing.
+
+**Phase 5 — LAY004 regression test (`test_pipeline.py`)**
+- `TestLAY004BlocksWrite` class with 2 tests: LAY004 raises `LintError` under LINT mode; original file is NOT overwritten when LAY004 aborts.
+
+### Router fix (adjacent-tier 2-pin routing)
+- `tiers` path for 2-pin direct routing changed from `tdist <= 1 AND wire_len <= MAX_DIRECT_WIRE_MM (70mm)` to `tdist <= 1 AND manhattan <= MAX_DIRECT_DIST_MM (200mm)`.
+- The 70mm cap was too strict, causing some previously-direct-wired nets (e.g. headphone amp golden test) to be label-routed.
+- `MAX_DIRECT_WIRE_MM` constant kept at 70.0 but is no longer used in the active routing path.
+
+### Page bounds change (user-initiated)
+- `lint/sch.py`: `_LAY_PAGE_MAX_X = 420.0`, `_LAY_PAGE_MAX_Y = 297.0` (was 297.0 × 210.0).
+- WALK_THRU.md LAY004 row updated: severity ERROR (was WARNING), bounds "(0–420 × 0–297 mm)".
+
+### Tests updated
+- `tests/unit/test_lint.py::TestLAY004`: out-of-bounds values 300/220 → 450/310.
+- `tests/unit/test_phase4_layout.py`: `TestClampToPage` (8 tests) added; `TestLAY004` renamed `test_*_page_*`; `test_long_wire_adjacent_tier_gets_label` updated to use 220mm distance.
+- `tests/unit/test_phase6_coverage.py::TestBusStyleSpineRoute`: `test_route_nets_use_bus_default_false` renamed/updated to `test_route_nets_use_bus_default_true`.
+- `tests/unit/test_phase7_ux.py`: `TestWriteSymbolsThreeTuple` → `TestWriteSymbolsFourTuple` (4-tuple, 4-element assertion).
+- `tests/unit/test_netlist_commands.py::test_direct_wiring_not_all_label_only`: docstring updated; assertions unchanged after router fix (MID still direct-wired at 143mm < 200mm).
+
+### Final status: ALL 376 tests pass, ruff lint clean, mypy clean.
 
 ---
 
