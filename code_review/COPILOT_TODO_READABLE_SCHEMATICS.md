@@ -122,10 +122,10 @@ Choose one implementation path:
 - [x] Run snap pipeline and assert all points are within bounds. *(`TestClampToPage`, 8 tests)*
 
 ### 4.3 Improve deoverlap to spread across X (avoid column collapse)
-- [ ] If deoverlap is currently pushing mostly in Y, adjust to:
-  - [ ] prefer spreading in X first when many symbols share near-identical x
-  - [ ] preserve tier ordering while spreading
-- [ ] Add test: a set of symbols with identical x must produce >= N x-columns after deoverlap.
+- [x] If deoverlap is currently pushing mostly in Y, adjust to:
+  - [x] prefer spreading in X first when many symbols share near-identical x *(`_spread_x_columns()` in `snap.py`, runs before `_deoverlap_positions`)*
+  - [x] preserve tier ordering while spreading *(symbols sorted by y before partitioning)*
+- [x] Add test: a set of symbols with identical x must produce >= N x-columns after deoverlap. *(`TestSpreadXColumns.test_identical_x_produces_at_least_n_columns`)*
 
 ---
 
