@@ -51,7 +51,10 @@ def cmd_add_component(args) -> AddComponentResult:
 
     # Resolve symbol library directory: explicit flag > env var > config > platform.
     explicit_path = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
-    sym_dir_result: SymbolsDir | None = discover_symbols_dir(explicit=explicit_path)
+    sym_dir_result: SymbolsDir | None = discover_symbols_dir(
+        explicit=explicit_path,
+        strict=bool(getattr(args, "strict", False)),
+    )
     if sym_dir_result is None:
         raise UserError(
             "No KiCad symbol libraries found. Cannot add component.",

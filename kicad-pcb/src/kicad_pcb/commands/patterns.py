@@ -70,7 +70,10 @@ def cmd_apply_pattern(args) -> ApplyPatternResult:  # noqa: ANN001 — argparse 
 
     # Resolve symbol library directory (same strategy as cmd_add_component).
     explicit_path = Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None
-    sym_dir_result: SymbolsDir | None = discover_symbols_dir(explicit=explicit_path)
+    sym_dir_result: SymbolsDir | None = discover_symbols_dir(
+        explicit=explicit_path,
+        strict=bool(getattr(args, "strict", False)),
+    )
     sym_dir: Path | None = sym_dir_result.path if sym_dir_result is not None else None
 
     dry_run: bool = getattr(args, "dry_run", False)
