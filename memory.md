@@ -1,8 +1,86 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T16:04:42Z_
+_Last updated: 2026-03-05T17:00:00Z_
 
 ---
+
+## 2026-03-05T17:00:00Z — Completed fallback audit item A3 (adapter output/report fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/adapters.py`:
+  - replaced silent `_read_json`/`_read_text_safe` behavior with fail-fast output readers.
+  - successful `drc/erc` now require readable valid JSON reports; otherwise raise `ToolError`.
+  - successful `export_bom/export_netlist/export_pos` now require readable output files; otherwise raise `ToolError`.
+- Updated `tests/unit/test_adapters.py`:
+  - missing/malformed output tests now assert `ToolError` on success paths.
+  - adjusted `export_step` return-value tests to inject a concrete KiCad version after A2 gating changes.
+- Validation:
+  - `uv run ruff check` on modified files passed.
+  - `uv run pytest -q tests/unit/test_adapters.py -k "KicadCliAdapterReturnValues"` passed.
+
+## 2026-03-05T16:52:03Z — Completed fallback audit item A2 (capability gating fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/compat.py`:
+  - `require_capability(None, cap)` now raises `ToolError` instead of silently passing.
+- Updated `kicad-pcb/src/kicad_pcb/adapters.py`:
+  - removed broad suppression in `detected_version` path;
+  - version parse failures return `None`, but `require_capability` now fail-fast on unknown version.
+- Updated `tests/unit/test_compat.py` expectations:
+  - unknown-version capability checks now assert `ToolError`.
+- Validation:
+  - `uv run ruff check` on modified files passed.
+  - `uv run pytest -q tests/unit/test_compat.py` passed.
+
+## 2026-03-05T16:47:51Z — Completed fallback audit item A1 (Graphviz cache fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` so cache read/parse/shape/write failures raise `RuntimeError` instead of being silently ignored.
+- Kept normal cache misses (`file missing`, key/version mismatch) as `None` returns.
+- Updated `tests/unit/test_phase4_layout.py` cache-helper tests:
+  - permission error now expected to raise;
+  - invalid JSON and malformed positions now expected to raise.
+- Validation:
+  - `uv run ruff check` on modified files passed.
+  - `uv run pytest -q tests/unit/test_phase4_layout.py -k "TestGraphvizLayoutCacheHelpers"` passed.
+  - Note: broader `-k cache` run still includes one pre-existing cwd-sensitive assertion unrelated to A1.
+
+## 2026-03-05T16:41:54Z — Added full fallback audit inventory document
+
+- Created `code_review/FALLBACKS.md` content with a comprehensive fallback/suppression inventory across `kicad-pcb/src/kicad_pcb/**`.
+- Grouped findings into: potentially silent fallbacks, explicit functional fallbacks, cleanup suppressions, and non-runtime formatting fallbacks.
+- Added a suggested review order prioritizing high-risk silent fallback paths first.
+
+## 2026-03-05T16:30:11Z — Updated TODO doc to match graphviz-only policy
+
+- Edited `code_review/COPILOT_TODO_READABLE_SCHEMATICS.md` Phase 7 text to remove stale `--layout auto|graphviz|heuristic|none` claim.
+- Replaced fallback-warning language with fail-fast wording (no heuristic fallback path).
+- Updated lint-diagnostics note to avoid engine-switch suggestions referencing removed `--layout` flag.
+
+## 2026-03-05T16:28:14Z — Enforced graphviz-only layout resolution
+
+- Updated `_resolve_layout()` in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` to accept only `None|graphviz` (resolved to Graphviz engine).
+- Removed `none` and `auto` layout option handling and set user-error `allowed` list to `['graphviz']`.
+- Updated `tests/unit/test_phase7_ux.py` to remove `none/auto` resolver expectations and assert default (`None`) fail-fast behavior.
+- Updated `tests/integration/test_phase6_integration.py` to replace stale `layout="heuristic"` calls with `layout="graphviz"`.
+- Validation: `uv run pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase7_ux.py` passed.
+
+## 2026-03-05T16:22:19Z — Reviewed TODO status vs current Graphviz-only code
+
+- Audited `code_review/COPILOT_TODO_READABLE_SCHEMATICS.md` against live source/tests.
+- Confirmed Phase 7.1 line claiming `--layout auto|graphviz|heuristic|none` is stale: CLI no longer defines `--layout`; runtime accepts `auto|graphviz|none` only.
+- Confirmed Phase 7.2 fallback claims are stale: no `GRAPHVIZ_LAYOUT_FALLBACK` warning in source and no heuristic fallback path.
+- Found stale integration tests still passing `layout="heuristic"` in `tests/integration/test_phase6_integration.py`.
+- Core readability work (Phases 0–6) remains implemented in Graphviz pipeline with deterministic post-layout heuristics.
+
+## 2026-03-05T16:12:58Z — Removed `HeuristicLayoutEngine` and related fallback API
+
+- Per user directive, deleted `HeuristicLayoutEngine` class from `kicad-pcb/src/kicad_pcb/layout_engine.py`.
+- Removed `make_auto_layout_engine()` fallback factory from `layout_engine.py`.
+- Updated `_resolve_layout()` in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - removed heuristic import/branch.
+  - allowed values now `auto|graphviz|none`.
+- Updated `tests/unit/test_phase7_ux.py`:
+  - removed heuristic-engine imports/tests.
+  - removed `_resolve_layout("heuristic")` expectation.
+- Validation: `ruff check` clean; `tests/unit/test_phase7_ux.py` passes.
 
 ## 2026-03-05T16:04:42Z — Removed redundant `--layout` CLI arg entirely
 

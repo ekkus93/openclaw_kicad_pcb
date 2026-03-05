@@ -131,10 +131,12 @@ class TestCapabilityMap:
 
 
 class TestRequireCapability:
-    def test_none_version_always_passes(self) -> None:
-        """Unknown version → no error (benefit of the doubt)."""
-        require_capability(None, CliCapability.DRC_JSON_REPORT)
-        require_capability(None, CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
+    def test_none_version_raises(self) -> None:
+        """Unknown version must fail fast so capability checks are never skipped."""
+        with pytest.raises(ToolError, match="Cannot verify kicad-cli capability"):
+            require_capability(None, CliCapability.DRC_JSON_REPORT)
+        with pytest.raises(ToolError, match="Cannot verify kicad-cli capability"):
+            require_capability(None, CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
 
     def test_sufficient_version_passes(self) -> None:
         require_capability(KiCadVersion(9, 0, 7), CliCapability.DRC_JSON_REPORT)
@@ -225,10 +227,11 @@ class TestKicadCliAdapterRequireCapability:
         with pytest.raises(ToolError, match="8.0.0"):
             adapter.require_capability(CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
 
-    def test_unknown_version_no_error(self) -> None:
-        """When version cannot be detected, capability checks must not block."""
+    def test_unknown_version_raises(self) -> None:
+        """When version cannot be detected, capability checks fail fast."""
         adapter = KicadCliAdapter(runner=FakeRunner({}))  # returns empty string
-        adapter.require_capability(CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
+        with pytest.raises(ToolError, match="Cannot verify kicad-cli capability"):
+            adapter.require_capability(CliCapability.PCB_EXPORT_STEP_NO_UNSPECIFIED)
 
     def test_export_step_gates_on_version(self) -> None:
         """export_step must raise ToolError for kicad-cli < 8.0."""

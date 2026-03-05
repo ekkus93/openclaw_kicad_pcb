@@ -16,9 +16,7 @@ from ..fs import _atomic_write, _new_uuid
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
 from ..layout_engine import (
-    HeuristicLayoutEngine,
     LayoutEngine,
-    NoneLayoutEngine,
     make_layout_engine,
 )
 from ..models import ProjectRef
@@ -521,23 +519,15 @@ def _resolve_layout(
 
     Accepted values
     ---------------
-    ``auto`` / ``None``  — Graphviz layout (mandatory). Raises if ``dot`` is unavailable.
-    ``graphviz``         — :func:`make_layout_engine`; raises if ``dot`` is absent.
-    ``heuristic``        — :class:`HeuristicLayoutEngine` (pure Python, no Graphviz).
-    ``none``             — :class:`NoneLayoutEngine` (all symbols at fixed origin;
-                           useful for debugging / skeleton generation).
+    ``None`` / ``graphviz`` — :func:`make_layout_engine`; raises if ``dot`` is absent.
     """
-    name = (layout_name or "auto").strip().lower()
-    if name in {"auto", "graphviz"}:
+    name = (layout_name or "graphviz").strip().lower()
+    if name == "graphviz":
         return make_layout_engine(cache_path=cache_path)
-    if name == "heuristic":
-        return HeuristicLayoutEngine()
-    if name == "none":
-        return NoneLayoutEngine()
     raise UserError(
         f"Unknown layout engine '{layout_name}'",
         code=ErrorCode.USER_ERROR,
-        details={"allowed": ["auto", "graphviz", "heuristic", "none"]},
+        details={"allowed": ["graphviz"]},
     )
 
 

@@ -16,6 +16,8 @@ from kicad_pcb.adapters import (
     RunResult,
     SubprocessRunner,
 )
+from kicad_pcb.compat import KiCadVersion
+from kicad_pcb.errors import ToolError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -457,12 +459,11 @@ class TestKicadCliAdapterReturnValues:
         assert "violations" in report
         assert len(report["violations"]) == 1
 
-    def test_drc_returns_none_report_if_file_missing(self):
+    def test_drc_missing_report_if_success_raises(self):
         runner = FakeRunner({"pcb drc": RunResult(0, "", "")})
         cli = KicadCliAdapter(runner=runner, fs=FakeFs())
-        result, report = cli.drc(PCB, PROJ / "drc_report.json")
-        assert result.ok
-        assert report is None
+        with pytest.raises(ToolError, match="Expected JSON output file was not written"):
+            cli.drc(PCB, PROJ / "drc_report.json")
 
     def test_drc_passes_through_failure_returncode(self):
         runner = FakeRunner({"pcb drc": RunResult(1, "", "fatal error")})
@@ -541,14 +542,14 @@ class TestKicadCliAdapterReturnValues:
         content = "A" * 500
         runner = FakeRunner({"pcb export": RunResult(0, "", "")})
         fs = FakeFs(files={str(step_path): content})
-        cli = KicadCliAdapter(runner=runner, fs=fs)
+        cli = KicadCliAdapter(runner=runner, fs=fs, version=KiCadVersion(9, 0, 0))
         result, size = cli.export_step(PCB, step_path)
         assert result.ok
         assert size == 500
 
     def test_export_step_size_zero_if_not_written(self):
         runner = FakeRunner({"pcb export": RunResult(0, "", "")})
-        cli = KicadCliAdapter(runner=runner, fs=FakeFs())
+        cli = KicadCliAdapter(runner=runner, fs=FakeFs(), version=KiCadVersion(9, 0, 0))
         result, size = cli.export_step(PCB, PROJ / "board.step")
         assert result.ok
         assert size == 0
@@ -569,12 +570,32 @@ class TestKicadCliAdapterReturnValues:
         assert result.ok
         assert "KiCad" in result.stdout
 
-    def test_drc_invalid_json_returns_none(self):
-        """Malformed JSON in output file results in None report, not an exception."""
+    def test_drc_invalid_json_raises(self):
+        """Malformed JSON in output file must raise ToolError (fail-fast)."""
         report_path = PROJ / "drc_report.json"
         runner = FakeRunner({"pcb drc": RunResult(0, "", "")})
         fs = FakeFs(files={str(report_path): "not valid json{"})
         cli = KicadCliAdapter(runner=runner, fs=fs)
-        result, report = cli.drc(PCB, report_path)
-        assert result.ok
-        assert report is None
+        with pytest.raises(ToolError, match="Malformed JSON output"):
+            cli.drc(PCB, report_path)
+
+    def test_export_bom_missing_output_if_success_raises(self):
+        bom_path = PROJ / "bom.csv"
+        runner = FakeRunner({"sch export": RunResult(0, "", "")})
+        cli = KicadCliAdapter(runner=runner, fs=FakeFs())
+        with pytest.raises(ToolError, match="Expected output file was not written"):
+            cli.export_bom(SCH, bom_path)
+
+    def test_export_netlist_missing_output_if_success_raises(self):
+        net_path = PROJ / "board.net"
+        runner = FakeRunner({"sch export": RunResult(0, "", "")})
+        cli = KicadCliAdapter(runner=runner, fs=FakeFs())
+        with pytest.raises(ToolError, match="Expected output file was not written"):
+            cli.export_netlist(SCH, net_path)
+
+    def test_export_pos_missing_output_if_success_raises(self):
+        pos_path = PROJ / "board-pos.csv"
+        runner = FakeRunner({"pcb export": RunResult(0, "", "")})
+        cli = KicadCliAdapter(runner=runner, fs=FakeFs())
+        with pytest.raises(ToolError, match="Expected output file was not written"):
+            cli.export_pos(PCB, pos_path)
