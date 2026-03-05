@@ -897,7 +897,7 @@ def test_circuit_fidelity_multi_component_testlib(tmp_path: Path) -> None:
     _check_circuit_fidelity(ir_data, managed_doc)
 
 
-def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
+def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR0912
     """P1: wires in the managed schematic start at the actual library pin endpoints.
 
     Before the P1 fix, _write_nets used arbitrary symbol-relative offsets
@@ -987,8 +987,12 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:
                 expected_endpoints[(ref, pin_num)] = (round(sx + rpx, 2), round(sy + rpy, 2))
 
     # Verify every expected pin endpoint has a wire starting there.
+    # Skip power symbols (#PWR* refs) — they are placed at stub ends and do
+    # not need outgoing wires of their own.
     missing: list[str] = []
     for (ref, pin), (ex, ey) in sorted(expected_endpoints.items()):
+        if ref.startswith("#"):
+            continue  # power symbol — no outgoing wire expected
         if (ex, ey) not in wire_starts:
             missing.append(f"{ref} pin {pin}: expected wire start at ({ex}, {ey})")
 
@@ -1003,19 +1007,19 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
     """Router: a 2-pin net within routing range must be wired directly, not via label.
 
     A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets:
-     - VCC  (power)  → expected to get a global_label (power routing)
+     - VCC  (power)  → gets a power:VCC symbol (Phase 3 strategy)
      - MID  (2-pin)  → R1-pin2 and R2-pin1 are adjacent-tier (tier distance=1)
                        and within the 200 mm manhattan cap; router must emit
                        an L-shaped wire, NOT a net label
-     - GND  (power)  → expected to get a global_label (power routing)
+     - GND  (power)  → gets a power:GND symbol (Phase 3 strategy)
 
     Assertions
     ----------
     1. No ``(label "MID" …)`` node exists in the managed schematic.
     2. At least 5 wire segments are present (4 pin stubs + ≥1 L-route bridge) —
        a direct-wire bridge was actually generated between R1 and R2.
-    3. ``(global_label "VCC" …)`` and ``(global_label "GND" …)`` exist —
-       power net routing is intact.
+    3. ``power:VCC`` and ``power:GND`` symbol instances exist (Phase 3) —
+       power net routing uses symbols, not global labels.
     """
     ir_path = tmp_path / "divider.json"
     ir_path.write_text(
@@ -1102,23 +1106,24 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
         "The router may not have emitted an L-route bridge between R1 and R2."
     )
 
-    # Assertion 3: Single-pin power nets must get global_label nodes (power routing),
-    # not local net labels.  The new router recognises VCC/GND as power nets and
-    # emits (global_label …) via doc.add_global_label rather than (label …).
-    global_label_names: set[str] = set()
+    # Assertion 3 (Phase 3): Single-pin power nets must get power symbol nodes
+    # (power:VCC / power:GND), not local labels or global labels.
+    power_lib_ids: set[str] = set()
     for node in walk(managed_doc.root):
+        if not (isinstance(node, ListNode) and node.key == "symbol"):
+            continue
+        lib_id_node = find_first(node, "lib_id")
         if (
-            isinstance(node, ListNode)
-            and node.key == "global_label"
-            and len(node.items) >= 2  # noqa: PLR2004
-            and isinstance(node.items[1], StringNode)
+            lib_id_node is not None
+            and len(lib_id_node.items) >= 2  # noqa: PLR2004
+            and isinstance(lib_id_node.items[1], StringNode)
         ):
-            global_label_names.add(node.items[1].value)
-    assert "VCC" in global_label_names, (
-        f"Expected global_label for power net 'VCC'; found: {sorted(global_label_names)}"
+            power_lib_ids.add(lib_id_node.items[1].value)
+    assert "power:VCC" in power_lib_ids, (
+        f"Expected power:VCC symbol for power net 'VCC'; lib_ids found: {sorted(power_lib_ids)}"
     )
-    assert "GND" in global_label_names, (
-        f"Expected global_label for power net 'GND'; found: {sorted(global_label_names)}"
+    assert "power:GND" in power_lib_ids, (
+        f"Expected power:GND symbol for power net 'GND'; lib_ids found: {sorted(power_lib_ids)}"
     )
 
 

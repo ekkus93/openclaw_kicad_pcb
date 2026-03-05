@@ -25,7 +25,7 @@ from collections import Counter
 from typing import TYPE_CHECKING
 
 from ..layout import build_signal_adjacency, count_wire_crossings
-from ..sexpr.nodes import ListNode, StringNode
+from ..sexpr.nodes import AtomNode, ListNode, StringNode
 from ..sexpr.utils import find_all, find_first, walk
 from .defs import _ERR, _WARN, LintIssue
 from .helpers import (
@@ -82,6 +82,28 @@ _SCH_LABEL_KEYS: frozenset[str] = frozenset(
 # ---------------------------------------------------------------------------
 # Module-level union-find helpers (Phase 5.3 — lifted out of lint_schematic_layout)
 # ---------------------------------------------------------------------------
+
+
+def _is_power_symbol(node: ListNode) -> bool:
+    """Return True when *node* is a KiCad power symbol.
+
+    Power symbols (e.g. ``power:GND``, ``power:VCC``) carry ``(in_bom no)``
+    and ``(on_board no)`` as direct children.  They are intentionally small and
+    placed right at pin-stub ends, so they must be excluded from LAY003/LAY004
+    checks that use the full component bounding box.
+    """
+    in_bom_no = False
+    on_board_no = False
+    for child in node.items:
+        if not isinstance(child, ListNode) or len(child.items) < 2:
+            continue
+        if not isinstance(child.items[1], AtomNode):
+            continue
+        if child.key == "in_bom" and child.items[1].value == "no":
+            in_bom_no = True
+        elif child.key == "on_board" and child.items[1].value == "no":
+            on_board_no = True
+    return in_bom_no and on_board_no
 
 
 def _uf_find(parent: list[int], i: int) -> int:
@@ -345,10 +367,15 @@ def lint_schematic_layout(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912
     # ----------------------------------------------------------------
     # Collect symbol positions
     # Phase 5.4 — use _float_from_atom instead of bare float() + type: ignore
+    # Power symbols (in_bom no, on_board no) are excluded: they are tiny and
+    # intentionally placed at pin-stub ends — applying the component bounding
+    # box to them produces spurious LAY003/LAY004 false positives.
     # ----------------------------------------------------------------
     sym_positions: list[tuple[float, float]] = []
     for node in items:
         if not isinstance(node, ListNode) or node.key != "symbol":
+            continue
+        if _is_power_symbol(node):
             continue
         at_node = find_first(node, "at")
         if at_node is None or len(at_node.items) < 3:
