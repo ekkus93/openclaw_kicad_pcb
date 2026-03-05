@@ -157,11 +157,13 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
         _ApplyNetlistRequest(
             netlist_path=Path(args.netlist),
             symbols_dir=Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None,
-            mode_name=getattr(args, "mode", None),
+            mode_name=getattr(args, "validate", None) or getattr(args, "mode", None),
             force=bool(getattr(args, "force", False)),
             dry_run=bool(getattr(args, "dry_run", False)),
             backup=bool(getattr(args, "backup", False)),
             strict=bool(getattr(args, "strict", False)),
+            layout_name=getattr(args, "layout", None),
+            routing_name=getattr(args, "routing", None),
         ),
     )
 
@@ -363,10 +365,12 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         _ApplyNetlistRequest(
             netlist_path=netlist_path,  # may be the auto-fixed path
             symbols_dir=Path(args.symbols_dir) if getattr(args, "symbols_dir", None) else None,
-            mode_name=getattr(args, "mode", "kicad"),
+            mode_name=getattr(args, "validate", None) or getattr(args, "mode", "kicad"),
             force=True,
             dry_run=False,
             strict=bool(getattr(args, "strict", False)),
+            layout_name=getattr(args, "layout", None),
+            routing_name=getattr(args, "routing", None),
         ),
     )
 

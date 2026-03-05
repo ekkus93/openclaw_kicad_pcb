@@ -165,7 +165,25 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--mode",
         choices=["internal", "kicad"],
         default="internal",
-        help="Validation mode (default: internal)",
+        help="Validation mode — deprecated, prefer --validate (default: internal)",
+    )
+    p_apply.add_argument(
+        "--validate",
+        choices=["none", "syntax", "lint", "kicad", "full"],
+        default=None,
+        help="Validation level; overrides --mode when given (default: lint)",
+    )
+    p_apply.add_argument(
+        "--layout",
+        choices=["auto", "graphviz", "heuristic", "none"],
+        default="auto",
+        help="Layout engine: auto, graphviz, heuristic (pure-Python), none (default: auto)",
+    )
+    p_apply.add_argument(
+        "--routing",
+        choices=["bus", "hub", "labels"],
+        default="bus",
+        help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
     )
     p_apply.add_argument("--force", action="store_true", help="Adopt non-owned schematic")
     p_apply.add_argument("--dry-run", action="store_true", help="Validate without writing")
@@ -192,7 +210,25 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--mode",
         choices=["internal", "kicad"],
         default="kicad",
-        help="Validation mode (default: kicad)",
+        help="Validation mode — deprecated, prefer --validate (default: kicad)",
+    )
+    p_new_netlist.add_argument(
+        "--validate",
+        choices=["none", "syntax", "lint", "kicad", "full"],
+        default=None,
+        help="Validation level; overrides --mode when given (default: kicad)",
+    )
+    p_new_netlist.add_argument(
+        "--layout",
+        choices=["auto", "graphviz", "heuristic", "none"],
+        default="auto",
+        help="Layout engine: auto, graphviz, heuristic (pure-Python), none (default: auto)",
+    )
+    p_new_netlist.add_argument(
+        "--routing",
+        choices=["bus", "hub", "labels"],
+        default="bus",
+        help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
     )
     p_new_netlist.add_argument(
         "--no-auto-fix",
@@ -574,6 +610,11 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     p_fp.set_defaults(func=cmd_format_pcb)
 
     return parser
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Public alias for :func:`_build_parser`; used by tests and tooling."""
+    return _build_parser()
 
 
 def main() -> None:  # noqa: PLR0912 PLR0915
