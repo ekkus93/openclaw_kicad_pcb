@@ -126,10 +126,12 @@ This inventory lists every fallback/suppression path found during the audit, gro
 23. Serializer inline-vs-block formatting fallback
 	- [kicad-pcb/src/kicad_pcb/sexpr/serializer.py](../kicad-pcb/src/kicad_pcb/sexpr/serializer.py#L44-L52)
 	- Behavior: formatting choice only.
+	- Status: ✅ Reviewed on 2026-03-06 — no runtime fallback bug. Inline-vs-block switching is deterministic presentation logic (`_MAX_INLINE` budget) and preserves AST semantics via parse/serialize round-trip tests.
 
 24. Numeric parsing defaults in AST introspection
 	- [kicad-pcb/src/kicad_pcb/sch_doc/__init__.py](../kicad-pcb/src/kicad_pcb/sch_doc/__init__.py#L100-L111)
 	- Behavior: parse helpers return prior/default value for malformed numeric atoms.
+	- Status: ✅ Addressed on 2026-03-06 — `_parse_float_atom(...)` now fails fast with `ParseError` for non-atom/non-numeric `(at ...)` coordinate values instead of silently reusing defaults; added regression coverage in `tests/unit/test_sch_doc.py` and `tests/unit/test_schematic_metrics.py`.
 
 ---
 
