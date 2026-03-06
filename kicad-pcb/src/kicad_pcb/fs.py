@@ -92,6 +92,25 @@ def _check_sexp(content: str, root: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _cleanup_temp_file(path: Path, original_error: Exception, *, stage: str) -> None:
+    """Best-effort temp cleanup that preserves *original_error* as primary.
+
+    Suppresses race-style ``FileNotFoundError`` only. Other cleanup failures are
+    attached to the original exception as notes.
+    """
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+    except OSError as cleanup_error:
+        cleanup_note = f"Temporary file cleanup failed after {stage}: {path} ({cleanup_error})"
+        add_note = getattr(original_error, "add_note", None)
+        if callable(add_note):
+            add_note(cleanup_note)
+        else:
+            setattr(original_error, "cleanup_note", cleanup_note)
+
+
 def _write_temp_text(directory: Path, suffix: str, content: str) -> Path:
     """Write *content* to a new sibling temp file; flush+fsync; return its path.
 
@@ -107,9 +126,8 @@ def _write_temp_text(directory: Path, suffix: str, content: str) -> Path:
             f.write(content)
             f.flush()
             os.fsync(f.fileno())
-    except Exception:
-        with contextlib.suppress(OSError):
-            Path(tmp).unlink()
+    except Exception as exc:
+        _cleanup_temp_file(Path(tmp), exc, stage="temp-write error")
         raise
     return Path(tmp)
 
@@ -150,9 +168,8 @@ def _atomic_write(
     tmp = _write_temp_text(path.parent, ".tmp", content)
     try:
         tmp.replace(path)
-    except Exception:
-        with contextlib.suppress(OSError):
-            tmp.unlink()
+    except Exception as exc:
+        _cleanup_temp_file(tmp, exc, stage="atomic replace error")
         raise
     # Best-effort directory fsync for POSIX durability of the directory entry.
     with contextlib.suppress(OSError, AttributeError):

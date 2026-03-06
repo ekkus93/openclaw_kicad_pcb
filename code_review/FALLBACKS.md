@@ -108,6 +108,8 @@ This inventory lists every fallback/suppression path found during the audit, gro
 
 20. atomic write temp cleanup suppression (error is re-raised)
 	- [kicad-pcb/src/kicad_pcb/fs.py](../kicad-pcb/src/kicad_pcb/fs.py#L99-L160)
+	- Behavior: suppresses temp-file cleanup races while preserving original write/replace failures.
+	- Status: ✅ Addressed on 2026-03-06 — `_cleanup_temp_file(...)` now suppresses only `FileNotFoundError` during temp cleanup in `_write_temp_text(...)` / `_atomic_write(...)`; non-race `OSError` cleanup failures are attached as notes on the original exception, which remains the raised error.
 
 21. pipeline temp-file cleanup suppression in `finally`
 	- [kicad-pcb/src/kicad_pcb/pipeline.py](../kicad-pcb/src/kicad_pcb/pipeline.py#L393-L424)
