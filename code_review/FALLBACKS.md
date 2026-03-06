@@ -103,6 +103,8 @@ This inventory lists every fallback/suppression path found during the audit, gro
 
 19. apply-netlist cleanup suppresses unlink race only, then re-raises original failure
 	- [kicad-pcb/src/kicad_pcb/commands/_sch_apply.py](../kicad-pcb/src/kicad_pcb/commands/_sch_apply.py#L162-L172)
+	- Behavior: suppresses concurrent-delete cleanup race while preserving the original apply failure.
+	- Status: ✅ Addressed on 2026-03-06 — `_cleanup_new_managed_file(...)` now suppresses only `FileNotFoundError` cleanup races, annotates non-race `OSError` cleanup failures on the original exception, and always re-raises the original failure.
 
 20. atomic write temp cleanup suppression (error is re-raised)
 	- [kicad-pcb/src/kicad_pcb/fs.py](../kicad-pcb/src/kicad_pcb/fs.py#L99-L160)

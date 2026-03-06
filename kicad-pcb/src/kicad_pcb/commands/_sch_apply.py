@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import math
 import shutil
 from collections.abc import Callable
@@ -38,6 +37,29 @@ from ._project import minimal_schematic_text
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
 MIN_COMPONENT_PLACEMENT_RATIO = 0.8
+
+
+def _cleanup_new_managed_file(managed_sch_path: Path, original_error: Exception) -> None:
+    """Best-effort cleanup for a newly-created managed schematic after failure.
+
+    Suppresses race-style missing-file errors only. Other cleanup errors are
+    attached to *original_error* so the primary failure remains the raised
+    exception.
+    """
+    try:
+        managed_sch_path.unlink(missing_ok=True)
+    except FileNotFoundError:
+        return
+    except OSError as cleanup_error:
+        cleanup_note = (
+            "Managed-sheet cleanup failed after apply-netlist error: "
+            f"{managed_sch_path} ({cleanup_error})"
+        )
+        add_note = getattr(original_error, "add_note", None)
+        if callable(add_note):
+            add_note(cleanup_note)
+        else:
+            setattr(original_error, "cleanup_note", cleanup_note)
 
 
 # ---------------------------------------------------------------------------
@@ -159,15 +181,14 @@ def _apply_netlist_to_project(
             backup=request.backup,
             strict=request.strict,
         )
-    except Exception:
+    except Exception as exc:
         # If the managed schematic was newly created as an empty stub and the
         # mutation failed, remove it so that the project is left in a clean state.
         # A subsequent retry will reinitialise the file from scratch.
-        # Suppress OSError so a filesystem race (e.g. concurrent deletion) does
-        # not shadow the original exception.
+        # Suppress only race-style missing-file errors so they do not shadow
+        # the original exception; surface other cleanup failures as notes.
         if managed_was_absent and not request.dry_run:
-            with contextlib.suppress(OSError):
-                managed_sch_path.unlink(missing_ok=True)
+            _cleanup_new_managed_file(managed_sch_path, exc)
         raise
 
     if request.dry_run:
