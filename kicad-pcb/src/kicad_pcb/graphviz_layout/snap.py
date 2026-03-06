@@ -99,6 +99,7 @@ if TYPE_CHECKING:
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
+from ..errors import ErrorCode, UserError
 from ..layout import GRID_COL_MM as _GRID_COL_MM
 from ..layout import ComponentAnnotation as _ComponentAnnotation
 from ..layout import barycentric_sort as _barycentric_sort
@@ -405,6 +406,8 @@ def _snap_feedback_components(
     positions: dict[str, tuple[float, float, float | None]],
     annotations: dict[str, _ComponentAnnotation],
     ir: CircuitIR,
+    *,
+    strict: bool = False,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Place feedback components visually above their nearest IC/connector anchor.
 
@@ -436,18 +439,15 @@ def _snap_feedback_components(
             continue
 
         # Find an anchor in the signal-net neighbourhood.  Prefer IC/connector
-        # over passive neighbours; fall back to any positioned neighbour.
-        anchor_y: float | None = None
-        priority_nbrs = sorted(comp_nbrs.get(ref, []))
-        for nbr in priority_nbrs:  # IC/connector pass
-            if any(nbr.upper().startswith(pfx) for pfx in _anchor_prefixes) and nbr in result:
-                anchor_y = result[nbr][1]
-                break
-        if anchor_y is None:
-            for nbr in priority_nbrs:  # fallback: any positioned neighbour
-                if nbr in result:
-                    anchor_y = result[nbr][1]
-                    break
+        # over passive neighbours; fall back to any positioned neighbour in
+        # non-strict mode.
+        anchor_y = _resolve_feedback_anchor_y(
+            ref=ref,
+            neighbors=sorted(comp_nbrs.get(ref, [])),
+            positions=result,
+            anchor_prefixes=_anchor_prefixes,
+            strict=strict,
+        )
 
         if anchor_y is None:
             continue
@@ -456,6 +456,39 @@ def _snap_feedback_components(
         result[ref] = (x, round(anchor_y - GRID_ROW_MM, 2), rot)
 
     return result
+
+
+def _resolve_feedback_anchor_y(
+    *,
+    ref: str,
+    neighbors: list[str],
+    positions: dict[str, tuple[float, float, float | None]],
+    anchor_prefixes: tuple[str, ...],
+    strict: bool,
+) -> float | None:
+    """Resolve preferred y-anchor for a feedback component.
+
+    Prefers IC/connector neighbors. In non-strict mode, falls back to any
+    positioned neighbor. In strict mode, raises when only fallback neighbors
+    are available.
+    """
+    for nbr in neighbors:
+        if any(nbr.upper().startswith(pfx) for pfx in anchor_prefixes) and nbr in positions:
+            return positions[nbr][1]
+
+    positioned_nbrs = [nbr for nbr in neighbors if nbr in positions]
+    if strict and positioned_nbrs:
+        raise UserError(
+            "Feedback component has no IC/connector anchor",
+            code=ErrorCode.IR_SEMANTIC_INVALID,
+            details={
+                "ref": ref,
+                "positioned_neighbors": positioned_nbrs,
+            },
+        )
+    if positioned_nbrs:
+        return positions[positioned_nbrs[0]][1]
+    return None
 
 
 def _snap_opamp_halo(
@@ -1264,6 +1297,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     decoupling_map: dict[str, str],
     roles: Mapping[str, str] | None = None,
     halo: Mapping[str, str] | None = None,
+    strict: bool = False,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
 
@@ -1306,7 +1340,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _enforce_connector_x_bounds(result, roles)
     result = _snap_connectors_to_ic_y(result, ir)
     if feedback_refs:
-        result = _snap_feedback_components(result, annotations, ir)
+        result = _snap_feedback_components(result, annotations, ir, strict=strict)
     if halo:
         result = _snap_opamp_halo(result, halo)
     if any(v in ("L", "R") for v in channels.values()):

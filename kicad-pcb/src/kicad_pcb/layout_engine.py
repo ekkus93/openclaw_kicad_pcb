@@ -120,6 +120,7 @@ def make_layout_engine(
     seed: int = 7,
     cache_path: Path | None = None,
     tiers: dict[str, int] | None = None,
+    strict: bool = False,
 ) -> LayoutEngine:
     """Return a :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.
 
@@ -144,13 +145,19 @@ def make_layout_engine(
     """
     from .graphviz_layout import GraphvizLayoutEngine, find_dot_binary  # noqa: PLC0415
 
-    dot = find_dot_binary()
+    dot = find_dot_binary(strict=strict)
     if not dot:
         raise RuntimeError(
             "Graphviz 'dot' binary not found.  "
             "Set the GRAPHVIZ_DOT environment variable or install graphviz, then retry."
         )
-    return GraphvizLayoutEngine(dot_path=dot, seed=seed, cache_path=cache_path, tiers=tiers)
+    return GraphvizLayoutEngine(
+        dot_path=dot,
+        seed=seed,
+        cache_path=cache_path,
+        tiers=tiers,
+        strict=strict,
+    )
 
 
 def make_layout_engine_with_ir(
@@ -158,6 +165,7 @@ def make_layout_engine_with_ir(
     *,
     seed: int = 7,
     cache_path: Path | None = None,
+    strict: bool = False,
 ) -> LayoutEngine:
     """Return a :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine` with pre-computed tiers.
 
@@ -183,4 +191,9 @@ def make_layout_engine_with_ir(
     from .tier import assign_tiers  # noqa: PLC0415
 
     precomputed_tiers = assign_tiers(ir)
-    return make_layout_engine(seed=seed, cache_path=cache_path, tiers=precomputed_tiers)
+    return make_layout_engine(
+        seed=seed,
+        cache_path=cache_path,
+        tiers=precomputed_tiers,
+        strict=strict,
+    )

@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..circuit_ir import CircuitIR
 
+from ..errors import ErrorCode, UserError
 from ..layout import _compute_opamp_halo as _compute_opamp_halo_layout
 from ..layout import compute_affinity_groups as _compute_affinity_groups
 from ..layout import compute_orientations as _compute_orientations
@@ -103,7 +104,7 @@ _MAX_ATTEMPTS = 2
 _BUNDLED_DOT_PATH: Path = Path(__file__).parent / "bin" / "dot"
 
 
-def find_dot_binary() -> str | None:
+def find_dot_binary(*, strict: bool = False) -> str | None:
     """Locate the ``dot`` binary used for Graphviz layout.
 
     Search order:
@@ -121,13 +122,20 @@ def find_dot_binary() -> str | None:
         return str(_BUNDLED_DOT_PATH)
     # 2. GRAPHVIZ_DOT environment variable.
     env_val = os.environ.get("GRAPHVIZ_DOT", "").strip()
-    if env_val and Path(env_val).is_file() and os.access(env_val, os.X_OK):
-        return env_val
+    if env_val:
+        if Path(env_val).is_file() and os.access(env_val, os.X_OK):
+            return env_val
+        if strict:
+            raise UserError(
+                "GRAPHVIZ_DOT must point to an executable file",
+                code=ErrorCode.TOOL_ERROR,
+                details={"GRAPHVIZ_DOT": env_val},
+            )
     # 3. System PATH.
     return shutil.which("dot")
 
 
-def find_dot_source() -> tuple[str, str] | None:
+def find_dot_source(*, strict: bool = False) -> tuple[str, str] | None:
     """Return ``(path, source)`` for the resolved ``dot`` binary.
 
     *source* is one of ``"bundled"``, ``"GRAPHVIZ_DOT"``, or ``"PATH"``.
@@ -136,8 +144,15 @@ def find_dot_source() -> tuple[str, str] | None:
     if _BUNDLED_DOT_PATH.is_file() and os.access(_BUNDLED_DOT_PATH, os.X_OK):
         return str(_BUNDLED_DOT_PATH), "bundled"
     env_val = os.environ.get("GRAPHVIZ_DOT", "").strip()
-    if env_val and Path(env_val).is_file() and os.access(env_val, os.X_OK):
-        return env_val, "GRAPHVIZ_DOT"
+    if env_val:
+        if Path(env_val).is_file() and os.access(env_val, os.X_OK):
+            return env_val, "GRAPHVIZ_DOT"
+        if strict:
+            raise UserError(
+                "GRAPHVIZ_DOT must point to an executable file",
+                code=ErrorCode.TOOL_ERROR,
+                details={"GRAPHVIZ_DOT": env_val},
+            )
     path = shutil.which("dot")
     if path:
         return path, "PATH"
@@ -171,6 +186,7 @@ class GraphvizLayoutEngine:
         seed: int = 7,
         cache_path: Path | None = None,
         tiers: dict[str, int] | None = None,
+        strict: bool = False,
     ) -> None:
         self._dot = dot_path
         self._scale = scale
@@ -178,6 +194,7 @@ class GraphvizLayoutEngine:
         self._seed = seed
         self._cache_path = cache_path
         self._tiers = tiers
+        self._strict = strict
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -301,6 +318,7 @@ class GraphvizLayoutEngine:
             decoupling_map=decoupling_map,
             roles=_roles or None,
             halo=halo or None,
+            strict=self._strict,
         )
 
         # Compute component orientations (rotation in degrees) from signal topology

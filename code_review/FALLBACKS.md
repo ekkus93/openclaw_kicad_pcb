@@ -87,10 +87,12 @@ This inventory lists every fallback/suppression path found during the audit, gro
 16. Graphviz dot discovery fallback chain (bundled → env var → PATH)
 	- [kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py](../kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py#L106-L148)
 	- Behavior: binary discovery precedence, not execution fallback.
+	- Status: ✅ Addressed on 2026-03-06 — `find_dot_binary(..., strict=True)` / `find_dot_source(..., strict=True)` now fail fast with `UserError(TOOL_ERROR)` when `GRAPHVIZ_DOT` is set but invalid; default non-strict mode preserves bundled → env → PATH discovery chain.
 
 17. Connector anchor fallback within feedback snap pass
 	- [kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py](../kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py#L439-L447)
 	- Behavior: prefers IC/connector anchor, then falls back to any positioned neighbour.
+	- Status: ✅ Addressed on 2026-03-06 — `_snap_feedback_components(..., strict=True)` now fails fast with `UserError(IR_SEMANTIC_INVALID)` when feedback refs have only non-IC/connector positioned neighbours; default non-strict mode preserves fallback to the first positioned neighbour.
 
 18. Connector-seed fallback in tier selection
 	- [kicad-pcb/src/kicad_pcb/tier.py](../kicad-pcb/src/kicad_pcb/tier.py#L388-L393)
