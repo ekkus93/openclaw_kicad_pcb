@@ -1,6 +1,43 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T17:32:45Z_
+_Last updated: 2026-03-06T17:55:07Z_
+
+
+## 2026-03-06T17:55:07Z — Completed fallback audit item B22 (STEP export file-size stat suppression policy)
+
+- Updated `kicad-pcb/src/kicad_pcb/adapters.py`:
+  - `export_step(...)` no longer broadly suppresses `OSError` when reading output file size.
+  - size stat now suppresses only `FileNotFoundError` race cases (returns `size=0`).
+  - non-race `OSError` from `stat_size` now raises `ToolError` with output-path context.
+- Updated `tests/unit/test_adapters.py`:
+  - added `test_export_step_size_zero_on_stat_race_missing_file`.
+  - added `test_export_step_non_race_stat_error_raises_tool_error`.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 22 as addressed with race-only suppression and non-race stat failure surfacing.
+- Validation:
+  - `uv run ruff check kicad-pcb/src/kicad_pcb/adapters.py tests/unit/test_adapters.py`
+  - `uv run mypy kicad-pcb/src/kicad_pcb/adapters.py`
+  - `uv run pytest -q tests/unit/test_adapters.py -k "export_step"`
+
+
+## 2026-03-06T17:49:33Z — Completed fallback audit item B21 (pipeline temp cleanup suppression policy)
+
+- Updated `kicad-pcb/src/kicad_pcb/pipeline.py`:
+  - added `_cleanup_validation_temp_file(path, primary_error, stage)` helper.
+  - `_kicad_validate_sch(...)` and `_kicad_validate_pcb(...)` no longer broadly suppress cleanup errors in `finally`.
+  - cleanup now suppresses only `FileNotFoundError` race cases.
+  - non-race cleanup `OSError` failures attach notes to primary ERC/DRC exceptions (preserving original failure), or raise directly when no primary validation error exists.
+- Updated `tests/unit/test_pipeline.py`:
+  - added ERC-path test asserting non-race cleanup errors do not shadow primary `ToolError` and are surfaced via notes.
+  - added ERC-path test asserting non-race cleanup error raises when validation has no primary failure.
+  - added DRC-path test asserting non-race cleanup errors do not shadow primary `ToolError` and are surfaced via notes.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 21 as addressed with race-only suppression and primary-error preservation semantics.
+- Validation:
+  - `uv run ruff check kicad-pcb/src/kicad_pcb/pipeline.py tests/unit/test_pipeline.py`
+  - `uv run mypy kicad-pcb/src/kicad_pcb/pipeline.py`
+  - `uv run pytest -q tests/unit/test_pipeline.py -k "cleanup_non_race_error"`
+  - `uv run pytest -q tests/unit/test_pipeline.py`
 
 
 ## 2026-03-06T17:32:45Z — Completed fallback audit item B20 (atomic-write temp cleanup suppression policy)

@@ -554,6 +554,45 @@ class TestKicadCliAdapterReturnValues:
         assert result.ok
         assert size == 0
 
+    def test_export_step_size_zero_on_stat_race_missing_file(self):
+        step_path = PROJ / "board.step"
+        runner = FakeRunner({"pcb export": RunResult(0, "", "")})
+
+        class _RaceFs(FakeFs):
+            def exists(self, path: Path) -> bool:
+                if path == step_path:
+                    return True
+                return super().exists(path)
+
+            def stat_size(self, path: Path) -> int:
+                if path == step_path:
+                    raise FileNotFoundError("simulated concurrent delete")
+                return super().stat_size(path)
+
+        cli = KicadCliAdapter(runner=runner, fs=_RaceFs(), version=KiCadVersion(9, 0, 0))
+        result, size = cli.export_step(PCB, step_path)
+        assert result.ok
+        assert size == 0
+
+    def test_export_step_non_race_stat_error_raises_tool_error(self):
+        step_path = PROJ / "board.step"
+        runner = FakeRunner({"pcb export": RunResult(0, "", "")})
+
+        class _BrokenStatFs(FakeFs):
+            def exists(self, path: Path) -> bool:
+                if path == step_path:
+                    return True
+                return super().exists(path)
+
+            def stat_size(self, path: Path) -> int:
+                if path == step_path:
+                    raise PermissionError("simulated stat permission denied")
+                return super().stat_size(path)
+
+        cli = KicadCliAdapter(runner=runner, fs=_BrokenStatFs(), version=KiCadVersion(9, 0, 0))
+        with pytest.raises(ToolError, match="Failed to stat STEP export output"):
+            cli.export_step(PCB, step_path)
+
     def test_export_pos_returns_lines(self):
         pos_path = PROJ / "board-pos.csv"
         runner = FakeRunner({"pcb export": RunResult(0, "", "")})

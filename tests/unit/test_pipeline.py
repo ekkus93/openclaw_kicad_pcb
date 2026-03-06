@@ -359,6 +359,75 @@ class TestMutateSchKicadMode:
         mutate_and_validate_sch(sch_file, lambda doc: None, mode=ValidationMode.KICAD, cli=None)
         assert sch_file.exists()
 
+    def test_cleanup_non_race_error_preserves_primary_tool_error(
+        self,
+        sch_file: Path,
+        monkeypatch,
+    ) -> None:
+        """Cleanup failures in finally must not shadow an ERC ToolError."""
+        original_content = sch_file.read_text()
+        cli = _FakeCli(erc_response=(RunResult(1, "", "ERC failed"), None))
+        original_unlink = Path.unlink
+
+        def _unlink_permission(self: Path, *, missing_ok: bool = False) -> None:
+            del missing_ok
+            if (
+                self.parent == sch_file.parent
+                and self != sch_file
+                and (self.name.endswith(".kicad_sch") or self.name.endswith(".erc.json"))
+            ):
+                raise PermissionError("simulated cleanup permission denied")
+            return original_unlink(self)
+
+        monkeypatch.setattr(Path, "unlink", _unlink_permission)
+
+        with pytest.raises(ToolError, match="ERC") as exc_info:
+            mutate_and_validate_sch(
+                sch_file,
+                lambda doc: None,
+                mode=ValidationMode.KICAD,
+                cli=cli,  # type: ignore[arg-type]
+            )
+
+        notes = getattr(exc_info.value, "__notes__", [])
+        cleanup_note = getattr(exc_info.value, "cleanup_note", "")
+        assert any("Validation temp cleanup failed" in note for note in notes) or (
+            "Validation temp cleanup failed" in cleanup_note
+        )
+        assert sch_file.read_text() == original_content
+
+    def test_cleanup_non_race_error_raises_when_no_primary_error(
+        self,
+        sch_file: Path,
+        monkeypatch,
+    ) -> None:
+        """Without a primary validation error, non-race cleanup errors must surface."""
+        original_content = sch_file.read_text()
+        cli = _FakeCli(erc_response=(RunResult(0, "", ""), None))
+        original_unlink = Path.unlink
+
+        def _unlink_permission(self: Path, *, missing_ok: bool = False) -> None:
+            del missing_ok
+            if (
+                self.parent == sch_file.parent
+                and self != sch_file
+                and (self.name.endswith(".kicad_sch") or self.name.endswith(".erc.json"))
+            ):
+                raise PermissionError("simulated cleanup permission denied")
+            return original_unlink(self)
+
+        monkeypatch.setattr(Path, "unlink", _unlink_permission)
+
+        with pytest.raises(PermissionError, match="simulated cleanup permission denied"):
+            mutate_and_validate_sch(
+                sch_file,
+                lambda doc: None,
+                mode=ValidationMode.KICAD,
+                cli=cli,  # type: ignore[arg-type]
+            )
+
+        assert sch_file.read_text() == original_content
+
 
 # ---------------------------------------------------------------------------
 # mutate_and_validate_sch — backup
@@ -514,6 +583,43 @@ class TestMutatePcbKicadMode:
             pcb_file_with_outline, lambda doc: None, mode=ValidationMode.KICAD, cli=None
         )
         assert pcb_file_with_outline.exists()
+
+    def test_cleanup_non_race_error_preserves_primary_tool_error(
+        self,
+        pcb_file_with_outline: Path,
+        monkeypatch,
+    ) -> None:
+        """Cleanup failures in finally must not shadow a DRC ToolError."""
+        original_content = pcb_file_with_outline.read_text()
+        cli = _FakeCli(drc_response=(RunResult(1, "", "DRC failed"), None))
+        original_unlink = Path.unlink
+
+        def _unlink_permission(self: Path, *, missing_ok: bool = False) -> None:
+            del missing_ok
+            if (
+                self.parent == pcb_file_with_outline.parent
+                and self != pcb_file_with_outline
+                and (self.name.endswith(".kicad_pcb") or self.name.endswith(".drc.json"))
+            ):
+                raise PermissionError("simulated cleanup permission denied")
+            return original_unlink(self)
+
+        monkeypatch.setattr(Path, "unlink", _unlink_permission)
+
+        with pytest.raises(ToolError, match="DRC") as exc_info:
+            mutate_and_validate_pcb(
+                pcb_file_with_outline,
+                lambda doc: None,
+                mode=ValidationMode.KICAD,
+                cli=cli,  # type: ignore[arg-type]
+            )
+
+        notes = getattr(exc_info.value, "__notes__", [])
+        cleanup_note = getattr(exc_info.value, "cleanup_note", "")
+        assert any("Validation temp cleanup failed" in note for note in notes) or (
+            "Validation temp cleanup failed" in cleanup_note
+        )
+        assert pcb_file_with_outline.read_text() == original_content
 
 
 # ---------------------------------------------------------------------------
