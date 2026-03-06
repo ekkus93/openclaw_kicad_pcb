@@ -244,7 +244,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             engine=_engine,
             strict=request.strict,
         )
-        _tiers = assign_tiers(ir)
+        _tiers = assign_tiers(ir, strict=request.strict)
         routing = route_nets(
             ir=ir,
             pin_endpoints=pin_endpoints,
@@ -412,7 +412,7 @@ def _write_symbols(  # noqa: PLR0913
     symbol_defs_missing: set[str] = set()
 
     if engine is None:
-        engine = make_layout_engine(cache_path=cache_path)
+        engine = make_layout_engine(cache_path=cache_path, strict=strict)
     raw_layout = engine.compute_symbol_positions(ir)
     # Build plain (x, y) map for coordinate lookup and orientation computation.
     layout: dict[str, tuple[float, float]] = {
@@ -432,7 +432,7 @@ def _write_symbols(  # noqa: PLR0913
                 code=ErrorCode.IR_SEMANTIC_INVALID,
                 details={"refs_missing_rotation": missing_rotation_refs},
             )
-        tiers: dict[str, int] = assign_tiers(ir)
+        tiers: dict[str, int] = assign_tiers(ir, strict=strict)
         orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
     else:
         orientations = {ref: int(pos[2]) for ref, pos in raw_layout.items() if pos[2] is not None}

@@ -38,6 +38,7 @@ from .component_types import (
     TIER_SPACING_MM,
     component_type,
 )
+from .errors import ErrorCode, UserError
 
 if TYPE_CHECKING:  # pragma: no cover
     from .circuit_ir import CircuitIR, NetIR
@@ -146,6 +147,8 @@ def _type_order(ref: str) -> int:
 def _undirected_bfs(
     refs: list[str],
     signal_nets: list[NetIR],
+    *,
+    strict: bool = False,
 ) -> dict[str, int]:
     """Return ``{ref: bfs_distance}`` seeded from the alphabetically-first connector.
 
@@ -170,7 +173,7 @@ def _undirected_bfs(
 
     # Seed: connector with maximum hop-distance to nearest IC (prefers input
     # connector; falls back to alphabetically-first connector when equidistant).
-    seeds = [_choose_seed_connector(refs, signal_nets)]
+    seeds = [_choose_seed_connector(refs, signal_nets, strict=strict)]
 
     tier: dict[str, int] = {}
     queue: deque[str] = deque()
@@ -347,6 +350,8 @@ def _longest_path_dp(
 def _choose_seed_connector(
     refs: list[str],
     signal_nets: list[NetIR],
+    *,
+    strict: bool = False,
 ) -> str:
     """Return the connector ref most suitable as the BFS seed (input connector).
 
@@ -390,6 +395,12 @@ def _choose_seed_connector(
 
     ics = {r for r in refs if component_type(r) == "ic"}
     if not ics:
+        if strict:
+            raise UserError(
+                "Cannot determine connector seed without IC components in strict mode",
+                code=ErrorCode.IR_SEMANTIC_INVALID,
+                details={"connectors": connectors},
+            )
         return connectors[0]  # no ICs — fall back to alphabetical
 
     # Build undirected signal adjacency.
@@ -487,7 +498,7 @@ def _classify_connector_roles(
 # ---------------------------------------------------------------------------
 
 
-def assign_tiers(ir: CircuitIR) -> dict[str, int]:
+def assign_tiers(ir: CircuitIR, *, strict: bool = False) -> dict[str, int]:
     """Return ``{ref: tier_index}`` for every component in *ir*.
 
     The tier index determines the left-to-right column in the auto-placement
@@ -523,7 +534,7 @@ def assign_tiers(ir: CircuitIR) -> dict[str, int]:
     ]
 
     # Step 1: preliminary BFS tiers for direction inference.
-    bfs_tiers = _undirected_bfs(refs, signal_nets)
+    bfs_tiers = _undirected_bfs(refs, signal_nets, strict=strict)
 
     # Step 2: directed graph.
     succ, pred, pair_count = _build_directed_graph(refs, signal_nets, bfs_tiers)

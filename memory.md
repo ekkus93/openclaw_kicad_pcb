@@ -1,6 +1,26 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T00:51:09Z_
+_Last updated: 2026-03-06T01:59:33Z_
+
+
+## 2026-03-06T01:59:33Z — Completed fallback audit item B18 (connector-seed strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/tier.py`:
+  - added `strict: bool = False` to `_choose_seed_connector(...)`, `_undirected_bfs(...)`, and `assign_tiers(...)`.
+  - strict mode now raises `UserError(code=IR_SEMANTIC_INVALID)` when connector seed selection would fall back to alphabetical due to missing IC components.
+  - default non-strict mode preserves existing alphabetical connector fallback.
+- Updated strict propagation call paths:
+  - `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`: pass strict into `assign_tiers(...)` and `make_layout_engine(...)` when engine is built internally.
+  - `kicad-pcb/src/kicad_pcb/layout_engine.py`: `make_layout_engine_with_ir(...)` now passes strict into `assign_tiers(...)`.
+  - `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`: Graphviz engine tier computation now calls `assign_tiers(..., strict=self._strict)`.
+- Updated tests in `tests/unit/test_layout_rules.py`:
+  - added strict-mode regression test for `_choose_seed_connector(..., strict=True)` with no ICs.
+  - added strict-mode regression test for `assign_tiers(..., strict=True)` with no ICs.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 18 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/tier.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py kicad-pcb/src/kicad_pcb/layout_engine.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_layout_rules.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_layout_rules.py -k "strict_raises_without_ics or assign_tiers_strict_raises_without_ics or falls_back_to_alphabetical_without_ics"`
 
 
 ## 2026-03-06T00:51:09Z — Completed fallback audit item B17 (feedback anchor strict fail-fast)

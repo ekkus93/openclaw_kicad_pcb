@@ -454,7 +454,7 @@ class TestCmdAddComponentSymbolDir:
         # Make discover_symbols_dir return our tmp sym_dir.
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.discover_symbols_dir",
-            lambda *, explicit=None: SymbolsDir(sym_dir, "env:KICAD_SYMBOLS_DIR"),
+            lambda *, explicit=None, strict=False: SymbolsDir(sym_dir, "env:KICAD_SYMBOLS_DIR"),
         )
 
         sch_file = tmp_path / "board.kicad_sch"
@@ -489,7 +489,7 @@ class TestCmdAddComponentSymbolDir:
     ) -> None:
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.discover_symbols_dir",
-            lambda *, explicit=None: None,
+            lambda *, explicit=None, strict=False: None,
         )
 
         sch_file = tmp_path / "board.kicad_sch"
@@ -519,7 +519,7 @@ class TestCmdAddComponentSymbolDir:
         sym_dir = _make_sym_dir(tmp_path)
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.discover_symbols_dir",
-            lambda *, explicit=None: SymbolsDir(sym_dir, "explicit"),
+            lambda *, explicit=None, strict=False: SymbolsDir(sym_dir, "explicit"),
         )
         monkeypatch.setattr(
             "kicad_pcb.commands.sch.read_lib_symbol_pins",
