@@ -97,6 +97,7 @@ This inventory lists every fallback/suppression path found during the audit, gro
 18. Connector-seed fallback in tier selection
 	- [kicad-pcb/src/kicad_pcb/tier.py](../kicad-pcb/src/kicad_pcb/tier.py#L388-L393)
 	- Behavior: when no ICs are present, chooses alphabetically-first connector.
+	- Status: ✅ Addressed on 2026-03-06 — `_choose_seed_connector(..., strict=True)` / `assign_tiers(..., strict=True)` now fail fast with `UserError(IR_SEMANTIC_INVALID)` when no IC exists for connector-seed inference; default non-strict mode preserves alphabetical connector fallback.
 
 ## C) Suppression Used for Cleanup/Resilience (re-raises or non-behavioral)
 

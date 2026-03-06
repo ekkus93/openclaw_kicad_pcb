@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout.dot_builder import _build_dot_source
 from kicad_pcb.graphviz_layout.snap import (
     SCALE_MM_PER_GV,
@@ -121,6 +122,18 @@ class TestChooseSeedConnector:
         seed = _choose_seed_connector(refs, nets)
         assert seed == "J1"  # alphabetically first
 
+    def test_strict_raises_without_ics(self) -> None:
+        """Strict mode fails fast when connector seed would fall back without ICs."""
+        ir = _ir(
+            components=[("J2", "Connector:J"), ("J1", "Connector:J"), ("R1", "Device:R")],
+            nets=[("net1", [("J1", "T"), ("R1", "1")]), ("net2", [("J2", "T"), ("R1", "2")])],
+        )
+        refs = [c.ref for c in ir.components]
+        nets = [n for n in ir.nets if len(n.pins) >= 2]
+        with pytest.raises(UserError, match="without IC components") as exc_info:
+            _choose_seed_connector(refs, nets, strict=True)
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+
     def test_no_connectors_returns_any_ref(self) -> None:
         """With no connectors, returns the only ref available."""
         ir = _ir(
@@ -169,6 +182,16 @@ class TestAssignTiersDirectionality:
             f"U1A (opamp) should be between J1 tier={j1_tier} and J2 tier={j2_tier}, "
             f"but U1A is at tier={u1a_tier}. Full tiers: {tiers}"
         )
+
+    def test_assign_tiers_strict_raises_without_ics(self) -> None:
+        """Strict assign_tiers fails fast when no IC exists for connector-seed inference."""
+        ir = _ir(
+            components=[("J2", "Connector:J"), ("J1", "Connector:J"), ("R1", "Device:R")],
+            nets=[("net1", [("J1", "T"), ("R1", "1")]), ("net2", [("J2", "T"), ("R1", "2")])],
+        )
+        with pytest.raises(UserError, match="without IC components") as exc_info:
+            assign_tiers(ir, strict=True)
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
 
 
 # ---------------------------------------------------------------------------

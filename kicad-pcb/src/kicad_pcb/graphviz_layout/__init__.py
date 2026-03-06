@@ -233,7 +233,7 @@ class GraphvizLayoutEngine:
         decoupling_map = _find_decoupling_caps(ir)
 
         # Detect feedback components (passives that form back-edges).
-        _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir)
+        _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir, strict=self._strict)
         _roles = _classify_connector_roles(refs, _tiers)
         annotations = _find_feedback_paths(ir, _tiers, roles=_roles or None)
         feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}

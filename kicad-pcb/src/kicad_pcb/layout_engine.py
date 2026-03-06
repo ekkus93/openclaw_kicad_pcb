@@ -190,7 +190,7 @@ def make_layout_engine_with_ir(
     """
     from .tier import assign_tiers  # noqa: PLC0415
 
-    precomputed_tiers = assign_tiers(ir)
+    precomputed_tiers = assign_tiers(ir, strict=strict)
     return make_layout_engine(
         seed=seed,
         cache_path=cache_path,
