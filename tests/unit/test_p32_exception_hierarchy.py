@@ -32,6 +32,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import kicad_pcb
+import kicad_pcb.fs as fs_mod
 import pytest
 from kicad_pcb.errors import (
     DocLintError,
@@ -43,7 +44,7 @@ from kicad_pcb.errors import (
     SExprTokenizeError,
     ToolError,
 )
-from kicad_pcb.fs import _check_sexp
+from kicad_pcb.fs import _atomic_write, _check_sexp, _write_temp_text
 from kicad_pcb.sexpr.parser import parse, parse_file
 from kicad_pcb.sexpr.tokenizer import tokenize
 
@@ -195,6 +196,99 @@ class TestDocSyntaxError:
     def test_isinstance_parse_error(self) -> None:
         exc = DocSyntaxError("bad file")
         assert isinstance(exc, ParseError)
+
+
+# ===========================================================================
+# 4b. Atomic-write temp cleanup suppression policy
+# ===========================================================================
+
+
+class TestAtomicWriteTempCleanup:
+    """Temp cleanup suppresses only race-style missing file cases.
+
+    Non-race cleanup failures are attached as notes while the original write
+    or replace error remains the raised exception.
+    """
+
+    def test_write_temp_text_cleanup_error_is_noted_on_original(
+        self,
+        monkeypatch,
+        tmp_path: Path,
+    ) -> None:
+        original_fdopen = fs_mod.os.fdopen
+        original_unlink = Path.unlink
+
+        def _fdopen_fail(*args: object, **kwargs: object):
+            file_obj = original_fdopen(*args, **kwargs)
+
+            class _FailOnWrite:
+                def write(self, data: str) -> int:
+                    del data
+                    raise OSError("simulated write failure")
+
+                def flush(self) -> None: ...
+
+                def fileno(self) -> int:
+                    return file_obj.fileno()  # type: ignore[union-attr]
+
+                def __enter__(self) -> _FailOnWrite:
+                    return self
+
+                def __exit__(self, *args: object) -> None:
+                    file_obj.__exit__(*args)  # type: ignore[union-attr]
+
+            return _FailOnWrite()
+
+        def _unlink_permission(self: Path, *, missing_ok: bool = False) -> None:
+            del missing_ok
+            if self.suffix == ".tmp":
+                raise PermissionError("simulated cleanup permission denied")
+            return original_unlink(self)
+
+        monkeypatch.setattr(fs_mod.os, "fdopen", _fdopen_fail)
+        monkeypatch.setattr(Path, "unlink", _unlink_permission)
+
+        with pytest.raises(OSError, match="simulated write failure") as exc_info:
+            _write_temp_text(tmp_path, ".tmp", "payload")
+
+        notes = getattr(exc_info.value, "__notes__", [])
+        cleanup_note = getattr(exc_info.value, "cleanup_note", "")
+        assert any("Temporary file cleanup failed" in note for note in notes) or (
+            "Temporary file cleanup failed" in cleanup_note
+        )
+
+    def test_atomic_write_replace_cleanup_error_is_noted_on_original(
+        self,
+        monkeypatch,
+        tmp_path: Path,
+    ) -> None:
+        target = tmp_path / "out.kicad_sch"
+        original_replace = Path.replace
+        original_unlink = Path.unlink
+
+        def _replace_fail(self: Path, target_path: Path) -> Path:
+            del target_path
+            if self.suffix == ".tmp":
+                raise RuntimeError("simulated replace failure")
+            return original_replace(self, target)
+
+        def _unlink_permission(self: Path, *, missing_ok: bool = False) -> None:
+            del missing_ok
+            if self.suffix == ".tmp":
+                raise PermissionError("simulated cleanup permission denied")
+            return original_unlink(self)
+
+        monkeypatch.setattr(Path, "replace", _replace_fail)
+        monkeypatch.setattr(Path, "unlink", _unlink_permission)
+
+        with pytest.raises(RuntimeError, match="simulated replace failure") as exc_info:
+            _atomic_write(target, "(kicad_sch (version 20230121))", "kicad_sch")
+
+        notes = getattr(exc_info.value, "__notes__", [])
+        cleanup_note = getattr(exc_info.value, "cleanup_note", "")
+        assert any("Temporary file cleanup failed" in note for note in notes) or (
+            "Temporary file cleanup failed" in cleanup_note
+        )
 
 
 # ===========================================================================

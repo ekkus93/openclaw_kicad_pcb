@@ -1,6 +1,24 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T11:59:02Z_
+_Last updated: 2026-03-06T17:32:45Z_
+
+
+## 2026-03-06T17:32:45Z — Completed fallback audit item B20 (atomic-write temp cleanup suppression policy)
+
+- Updated `kicad-pcb/src/kicad_pcb/fs.py`:
+  - added `_cleanup_temp_file(path, original_error, stage=...)` helper for temp cleanup behavior.
+  - `_write_temp_text(...)` and `_atomic_write(...)` now suppress only `FileNotFoundError` during temp-file cleanup.
+  - non-race cleanup `OSError` failures are attached to the original exception (`add_note` when available, fallback `cleanup_note` attribute).
+  - original write/replace exceptions remain the raised errors.
+- Updated `tests/unit/test_p32_exception_hierarchy.py`:
+  - added `TestAtomicWriteTempCleanup.test_write_temp_text_cleanup_error_is_noted_on_original`.
+  - added `TestAtomicWriteTempCleanup.test_atomic_write_replace_cleanup_error_is_noted_on_original`.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 20 as addressed with race-only suppression and original-error preservation semantics.
+- Validation:
+  - `uv run ruff check kicad-pcb/src/kicad_pcb/fs.py tests/unit/test_p32_exception_hierarchy.py`
+  - `uv run mypy kicad-pcb/src/kicad_pcb/fs.py`
+  - `uv run pytest -q tests/unit/test_p32_exception_hierarchy.py -k "AtomicWriteTempCleanup"`
 
 
 ## 2026-03-06T11:59:02Z — Completed fallback audit item B19 (apply-netlist cleanup suppression policy)
