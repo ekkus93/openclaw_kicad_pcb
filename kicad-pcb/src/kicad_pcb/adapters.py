@@ -22,7 +22,6 @@ for unit testing without a real KiCad installation or real filesystem::
 
 from __future__ import annotations
 
-import contextlib
 import fnmatch
 import json
 import subprocess
@@ -572,8 +571,14 @@ class KicadCliAdapter:
         )
         size = 0
         if result.ok and self._fs.exists(output_file):
-            with contextlib.suppress(OSError):
+            try:
                 size = self._fs.stat_size(output_file)
+            except FileNotFoundError:
+                size = 0
+            except OSError as exc:
+                raise ToolError(
+                    f"Failed to stat STEP export output: {output_file} ({exc})"
+                ) from exc
         return result, size
 
     # ------------------------------------------------------------------

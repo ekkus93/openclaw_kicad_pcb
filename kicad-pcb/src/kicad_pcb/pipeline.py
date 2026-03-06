@@ -32,7 +32,6 @@ Usage
 
 from __future__ import annotations
 
-import contextlib
 import difflib
 import logging
 import time
@@ -65,6 +64,33 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+def _cleanup_validation_temp_file(
+    path: Path,
+    *,
+    primary_error: Exception | None,
+    stage: str,
+) -> None:
+    """Cleanup helper for KiCad validation temp artifacts.
+
+    Suppresses race-style ``FileNotFoundError`` only. For non-race cleanup
+    failures, preserves *primary_error* by attaching a note; otherwise raises
+    the cleanup error.
+    """
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+    except OSError as cleanup_error:
+        if primary_error is None:
+            raise
+        cleanup_note = f"Validation temp cleanup failed after {stage}: {path} ({cleanup_error})"
+        add_note = getattr(primary_error, "add_note", None)
+        if callable(add_note):
+            add_note(cleanup_note)
+        else:
+            setattr(primary_error, "cleanup_note", cleanup_note)
 
 
 # ---------------------------------------------------------------------------
@@ -392,14 +418,24 @@ def _kicad_validate_sch(
     # a .tmp extension causes "Failed to load schematic".
     tmp_sch = _write_temp_text(original_path.parent, ".kicad_sch", content)
     tmp_report = tmp_sch.with_suffix(tmp_report_suffix)
+    primary_error: Exception | None = None
     try:
         result, report = cli.erc(tmp_sch, tmp_report)
         _check_kicad_result(result, report, validation_name="ERC", operation=operation)
+    except Exception as exc:
+        primary_error = exc
+        raise
     finally:
-        with contextlib.suppress(OSError):
-            tmp_sch.unlink()
-        with contextlib.suppress(OSError):
-            tmp_report.unlink()
+        _cleanup_validation_temp_file(
+            tmp_sch,
+            primary_error=primary_error,
+            stage="ERC validation",
+        )
+        _cleanup_validation_temp_file(
+            tmp_report,
+            primary_error=primary_error,
+            stage="ERC validation",
+        )
 
 
 def _kicad_validate_pcb(
@@ -414,14 +450,24 @@ def _kicad_validate_pcb(
     # kicad-cli requires the .kicad_pcb extension to load the file correctly.
     tmp_pcb = _write_temp_text(original_path.parent, ".kicad_pcb", content)
     tmp_report = tmp_pcb.with_suffix(tmp_report_suffix)
+    primary_error: Exception | None = None
     try:
         result, report = cli.drc(tmp_pcb, tmp_report)
         _check_kicad_result(result, report, validation_name="DRC", operation=operation)
+    except Exception as exc:
+        primary_error = exc
+        raise
     finally:
-        with contextlib.suppress(OSError):
-            tmp_pcb.unlink()
-        with contextlib.suppress(OSError):
-            tmp_report.unlink()
+        _cleanup_validation_temp_file(
+            tmp_pcb,
+            primary_error=primary_error,
+            stage="DRC validation",
+        )
+        _cleanup_validation_temp_file(
+            tmp_report,
+            primary_error=primary_error,
+            stage="DRC validation",
+        )
 
 
 def _check_kicad_result(

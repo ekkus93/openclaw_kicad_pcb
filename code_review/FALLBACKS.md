@@ -113,9 +113,13 @@ This inventory lists every fallback/suppression path found during the audit, gro
 
 21. pipeline temp-file cleanup suppression in `finally`
 	- [kicad-pcb/src/kicad_pcb/pipeline.py](../kicad-pcb/src/kicad_pcb/pipeline.py#L393-L424)
+	- Behavior: suppresses temp-file cleanup races while preserving primary ERC/DRC failures.
+	- Status: ✅ Addressed on 2026-03-06 — pipeline KiCad validation cleanup now suppresses only `FileNotFoundError`; non-race cleanup `OSError` failures attach notes to primary ERC/DRC exceptions when present, or are raised directly when no primary validation error exists.
 
 22. STEP export file-size stat suppression (result still returned)
 	- [kicad-pcb/src/kicad_pcb/adapters.py](../kicad-pcb/src/kicad_pcb/adapters.py#L548-L553)
+	- Behavior: suppresses race-style missing-file size checks while surfacing non-race stat failures.
+	- Status: ✅ Addressed on 2026-03-06 — `export_step(...)` now suppresses only `FileNotFoundError` when reading STEP output size; non-race `OSError` from `stat_size` raises `ToolError` with output path context.
 
 ## D) Not a runtime fallback bug (kept for completeness)
 
