@@ -233,6 +233,7 @@ def _build_managed_mutator(  # noqa: PLR0913
         _engine = _resolve_layout(
             request.layout_name,
             cache_path=project.path / "openclaw_layout_cache.json",
+            strict=request.strict,
         )
         symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
             doc=doc,
@@ -527,6 +528,7 @@ def _resolve_layout(
     layout_name: str | None,
     *,
     cache_path: Path | None = None,
+    strict: bool = False,
 ) -> LayoutEngine:
     """Return the layout engine requested by *layout_name*.
 
@@ -536,7 +538,7 @@ def _resolve_layout(
     """
     name = (layout_name or "graphviz").strip().lower()
     if name == "graphviz":
-        return make_layout_engine(cache_path=cache_path)
+        return make_layout_engine(cache_path=cache_path, strict=strict)
     raise UserError(
         f"Unknown layout engine '{layout_name}'",
         code=ErrorCode.USER_ERROR,

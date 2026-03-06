@@ -1,6 +1,50 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-05T22:50:26Z_
+_Last updated: 2026-03-06T00:51:09Z_
+
+
+## 2026-03-06T00:51:09Z — Completed fallback audit item B17 (feedback anchor strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`:
+  - added `strict: bool = False` to `_snap_feedback_components(...)` and `_apply_post_layout_snaps(...)`.
+  - extracted `_resolve_feedback_anchor_y(...)` to centralize anchor selection.
+  - strict mode now raises `UserError(code=IR_SEMANTIC_INVALID)` when a feedback component has only non-IC/connector positioned neighbors (would otherwise use fallback anchor).
+  - default non-strict mode preserves existing fallback behavior to any positioned neighbor.
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`:
+  - `GraphvizLayoutEngine` now stores `strict` and forwards it to `_apply_post_layout_snaps(..., strict=...)`.
+- Updated `kicad-pcb/src/kicad_pcb/layout_engine.py`:
+  - `make_layout_engine(...)` now forwards `strict` into `GraphvizLayoutEngine` construction.
+- Updated tests in `tests/unit/test_phase4_layout.py`:
+  - added strict/non-strict regression coverage for feedback-anchor fallback behavior in post-layout snaps.
+  - added factory regression ensuring `make_layout_engine(strict=True)` propagates strictness.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 17 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py kicad-pcb/src/kicad_pcb/layout_engine.py tests/unit/test_phase4_layout.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase4_layout.py -k "TestApplyPostLayoutSnaps or test_make_layout_engine_forwards_strict"`
+
+
+## 2026-03-06T00:07:49Z — Completed fallback audit item B16 (Graphviz discovery strict fail-fast)
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`:
+  - added `strict: bool = False` to `find_dot_binary(...)` and `find_dot_source(...)`.
+  - strict mode now raises `UserError(code=TOOL_ERROR)` when `GRAPHVIZ_DOT` is set but not an executable file.
+  - default non-strict mode preserves discovery fallback behavior (bundled → env var → PATH).
+- Updated `kicad-pcb/src/kicad_pcb/layout_engine.py`:
+  - added `strict: bool = False` to `make_layout_engine(...)` and `make_layout_engine_with_ir(...)`.
+  - strictness is forwarded to `find_dot_binary(...)`.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - `_resolve_layout(...)` now accepts `strict` and forwards it to `make_layout_engine(...)`.
+  - `_build_managed_mutator(...)` now passes `request.strict` into `_resolve_layout(...)`.
+- Updated tests:
+  - `tests/unit/test_phase4_layout.py`: added strict/non-strict `GRAPHVIZ_DOT` discovery tests and updated `find_dot_binary` stubs for the new keyword arg.
+  - `tests/unit/test_phase7_ux.py`: added regression test asserting `_resolve_layout(..., strict=True)` forwards strict to engine factory.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 16 as addressed with strict-mode fail-fast semantics.
+- Validation:
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py kicad-pcb/src/kicad_pcb/layout_engine.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase4_layout.py tests/unit/test_phase7_ux.py`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase4_layout.py -k "TestFindDotSource or TestLayoutEngineFactory"`
+  - `uv run --project /home/ubo/work/openclaw_kicad_pcb pytest -q tests/unit/test_phase7_ux.py -k "TestResolveLayout"`
 
 
 ## 2026-03-05T22:50:26Z — Completed fallback audit item B15 (symbols discovery strict fail-fast)

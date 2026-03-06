@@ -168,9 +168,22 @@ class TestLayoutEngineFactory:
 
     def test_raises_when_dot_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """make_layout_engine() raises RuntimeError when dot is absent."""
-        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: None)
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda **_kwargs: None)
         with pytest.raises(RuntimeError, match="dot.*not found"):
             make_layout_engine()
+
+    def test_strict_raises_when_graphviz_dot_env_invalid(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """strict mode raises when GRAPHVIZ_DOT is set but invalid."""
+        fake_path_dot = tmp_path / "dot"
+        fake_path_dot.write_text("#!/bin/sh\n")
+        fake_path_dot.chmod(0o755)
+        monkeypatch.setenv("GRAPHVIZ_DOT", str(tmp_path / "missing-dot"))
+        monkeypatch.setattr(_gv_mod.shutil, "which", lambda _cmd: str(fake_path_dot))
+        with pytest.raises(UserError, match="GRAPHVIZ_DOT") as exc_info:
+            make_layout_engine(strict=True)
+        assert exc_info.value.code == ErrorCode.TOOL_ERROR
 
 
 # ---------------------------------------------------------------------------
@@ -901,7 +914,7 @@ class TestGraphvizLayoutSeed:
     def test_make_layout_engine_forwards_seed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """make_layout_engine passes seed= to GraphvizLayoutEngine."""
         monkeypatch.setenv("GRAPHVIZ_DOT", "/usr/bin/dot")
-        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda **_kwargs: "/usr/bin/dot")
         engine = make_layout_engine(seed=99)
         assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
         assert engine._seed == 99  # noqa: SLF001
@@ -911,10 +924,17 @@ class TestGraphvizLayoutSeed:
     ) -> None:
         """make_layout_engine passes cache_path= to GraphvizLayoutEngine."""
         cache_file: Path = tmp_path / "c.json"
-        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda: "/usr/bin/dot")
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda **_kwargs: "/usr/bin/dot")
         engine = make_layout_engine(cache_path=cache_file)
         assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
         assert engine._cache_path == cache_file  # noqa: SLF001
+
+    def test_make_layout_engine_forwards_strict(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """make_layout_engine passes strict= to GraphvizLayoutEngine."""
+        monkeypatch.setattr(_gv_mod, "find_dot_binary", lambda **_kwargs: "/usr/bin/dot")
+        engine = make_layout_engine(strict=True)
+        assert isinstance(engine, _gv_mod.GraphvizLayoutEngine)
+        assert engine._strict is True  # noqa: SLF001
 
 
 # ---------------------------------------------------------------------------
@@ -968,6 +988,35 @@ class TestFindDotSource:
         path, source = result
         assert path == str(fake_dot)
         assert source == "PATH"
+
+    def test_invalid_env_var_falls_back_to_path_non_strict(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Invalid GRAPHVIZ_DOT falls back to PATH in default (non-strict) mode."""
+        monkeypatch.setenv("GRAPHVIZ_DOT", str(tmp_path / "missing-dot"))
+        bundled = tmp_path / "no_bundled"
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        fake_dot = tmp_path / "dot"
+        fake_dot.write_text("#!/bin/sh\n")
+        fake_dot.chmod(0o755)
+        monkeypatch.setattr(_gv_mod.shutil, "which", lambda _cmd: str(fake_dot))
+
+        result = _gv_mod.find_dot_source()
+        assert result is not None
+        path, source = result
+        assert path == str(fake_dot)
+        assert source == "PATH"
+
+    def test_invalid_env_var_raises_in_strict_mode(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Invalid GRAPHVIZ_DOT raises in strict mode instead of falling back."""
+        monkeypatch.setenv("GRAPHVIZ_DOT", str(tmp_path / "missing-dot"))
+        bundled = tmp_path / "no_bundled"
+        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        with pytest.raises(UserError, match="GRAPHVIZ_DOT") as exc_info:
+            _gv_mod.find_dot_source(strict=True)
+        assert exc_info.value.code == ErrorCode.TOOL_ERROR
 
     def test_bundled_binary_first(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Bundled binary is used first when present; source is 'bundled'."""
@@ -2937,6 +2986,72 @@ class TestApplyPostLayoutSnaps:
         assert result["R1"][1] == pytest.approx(positions["R1"][1])
         # Connector J1 is snapped to R1's y by _snap_connectors_to_ic_y (Rule 2).
         assert result["J1"][1] == pytest.approx(76.20)
+
+    def test_feedback_falls_back_to_any_neighbor_non_strict(self) -> None:
+        """Non-strict mode preserves fallback from IC/connector anchor to any neighbor."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R_FB", symbol="Device:R", value="100k"),
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+            ],
+            nets=[
+                NetIR(name="N1", pins=[PinRefIR(ref="R_FB", pin="1"), PinRefIR(ref="R1", pin="1")]),
+                NetIR(name="N2", pins=[PinRefIR(ref="R_FB", pin="2"), PinRefIR(ref="R2", pin="1")]),
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R_FB": (50.8, 120.0, None),
+            "R1": (50.8, 80.0, None),
+            "R2": (76.2, 100.0, None),
+        }
+        annotations = {"R_FB": ComponentAnnotation(feedback=True)}
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs={"R_FB"},
+            annotations=annotations,
+            channels={"R_FB": "mono", "R1": "mono", "R2": "mono"},
+            decoupling_map={},
+        )
+        anchor_y_after_grid = round(round(80.0 / 1.27) * 1.27, 2)
+        expected_y = round(anchor_y_after_grid - _gv_mod.GRID_ROW_MM, 2)
+        assert result["R_FB"][1] == pytest.approx(expected_y)
+
+    def test_feedback_fallback_raises_in_strict_mode(self) -> None:
+        """Strict mode raises when a feedback component has no IC/connector anchor."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R_FB", symbol="Device:R", value="100k"),
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+            ],
+            nets=[
+                NetIR(name="N1", pins=[PinRefIR(ref="R_FB", pin="1"), PinRefIR(ref="R1", pin="1")]),
+                NetIR(name="N2", pins=[PinRefIR(ref="R_FB", pin="2"), PinRefIR(ref="R2", pin="1")]),
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R_FB": (50.8, 120.0, None),
+            "R1": (50.8, 80.0, None),
+            "R2": (76.2, 100.0, None),
+        }
+        annotations = {"R_FB": ComponentAnnotation(feedback=True)}
+
+        with pytest.raises(UserError, match="no IC/connector anchor") as exc_info:
+            _gv_mod.apply_post_layout_snaps(
+                positions,
+                ir,
+                feedback_refs={"R_FB"},
+                annotations=annotations,
+                channels={"R_FB": "mono", "R1": "mono", "R2": "mono"},
+                decoupling_map={},
+                strict=True,
+            )
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
 
 
 # ---------------------------------------------------------------------------

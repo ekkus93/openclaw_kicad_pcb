@@ -456,6 +456,11 @@ class TestResolveLayout:
         with pytest.raises(UserError, match="Unknown layout engine"):
             _resolve_layout("banana")
 
+    def test_strict_flag_is_forwarded_to_make_layout_engine(self) -> None:
+        with patch("kicad_pcb.commands._sch_apply.make_layout_engine") as mocked_factory:
+            _resolve_layout("graphviz", strict=True)
+        mocked_factory.assert_called_once_with(cache_path=None, strict=True)
+
 
 class TestResolveRouting:
     """_resolve_routing() maps CLI routing flag values to use_bus bool."""
