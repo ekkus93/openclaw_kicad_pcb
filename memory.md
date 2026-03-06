@@ -1,6 +1,23 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T01:59:33Z_
+_Last updated: 2026-03-06T11:59:02Z_
+
+
+## 2026-03-06T11:59:02Z — Completed fallback audit item B19 (apply-netlist cleanup suppression policy)
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`:
+  - extracted cleanup behavior into `_cleanup_new_managed_file(managed_sch_path, original_error)`.
+  - cleanup now suppresses only `FileNotFoundError` (concurrent-delete race) during managed-sheet unlink.
+  - non-race `OSError` cleanup failures are attached as notes to the original exception (`add_note` when available, fallback `cleanup_note` attribute otherwise).
+  - the original apply failure is always re-raised after cleanup handling.
+- Updated `tests/unit/test_netlist_commands.py`:
+  - retained end-to-end regression test ensuring race-style unlink cleanup is suppressed and the original error is re-raised.
+  - updated non-race cleanup test to target `_cleanup_new_managed_file(...)` directly and assert annotation behavior.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 19 as addressed with race-only suppression and original-failure preservation semantics.
+- Validation:
+  - `uv run pytest tests/unit/test_netlist_commands.py -k cleanup`
+  - `uv run ruff check kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_netlist_commands.py`
 
 
 ## 2026-03-06T01:59:33Z — Completed fallback audit item B18 (connector-seed strict fail-fast)

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.commands._sch_apply import _cleanup_new_managed_file
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
     cmd_fix_netlist,
@@ -428,6 +429,80 @@ def test_apply_netlist_dry_run_emits_no_write_warning(
 
     # Pipeline must NOT have modified the managed schematic file in dry-run mode.
     assert managed_sch_path.read_text(encoding="utf-8") == content_before
+
+
+def test_apply_netlist_cleanup_suppresses_race_unlink_error_and_reraises_original(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Cleanup suppresses race-like missing-file unlink errors, then re-raises original failure."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    def _boom(*_args, **_kwargs):
+        raise RuntimeError("apply exploded")
+
+    monkeypatch.setattr("kicad_pcb.commands._sch_apply.mutate_and_validate_sch", _boom)
+
+    path_cls = type(project_dir)
+    original_unlink = path_cls.unlink
+
+    def _unlink_race(self: Path, *, missing_ok: bool = False):
+        if self.name == "OpenClaw_Managed.kicad_sch":
+            raise FileNotFoundError("simulated concurrent delete")
+        return original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(path_cls, "unlink", _unlink_race)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(RuntimeError, match="apply exploded") as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    assert getattr(exc_info.value, "__notes__", []) == []
+
+
+def test_cleanup_new_managed_file_non_race_error_is_noted(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Non-race unlink failures are attached to the original exception as notes."""
+    managed_sch = tmp_path / "OpenClaw_Managed.kicad_sch"
+    managed_sch.write_text("(kicad_sch)", encoding="utf-8")
+    original_error = RuntimeError("apply exploded")
+
+    path_cls = type(managed_sch)
+    original_unlink = path_cls.unlink
+
+    def _unlink_permission(self: Path, *, missing_ok: bool = False):
+        if self.name == "OpenClaw_Managed.kicad_sch":
+            raise PermissionError("simulated permission denied")
+        return original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(path_cls, "unlink", _unlink_permission)
+
+    _cleanup_new_managed_file(managed_sch, original_error)
+
+    notes = getattr(original_error, "__notes__", [])
+    cleanup_note = getattr(original_error, "cleanup_note", "")
+    assert any("Managed-sheet cleanup failed" in note for note in notes) or (
+        "Managed-sheet cleanup failed" in cleanup_note
+    )
 
 
 def test_apply_netlist_requires_at_least_80_percent_components_placed(
