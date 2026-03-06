@@ -100,13 +100,20 @@ def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
     return None
 
 
-def _parse_float_atom(node: Node, *, default: float) -> float:
-    """Parse a float from an :class:`AtomNode`, returning *default* on failure."""
+def _parse_float_atom(node: Node) -> float:
+    """Parse a float from an :class:`AtomNode`.
+
+    Raises :class:`ParseError` when the node is not an atom or the atom value
+    is not numeric.
+    """
     if not isinstance(node, AtomNode):
-        return default
-    with contextlib.suppress(ValueError):
+        raise ParseError("Malformed symbol (at ...) coordinate: expected numeric atom")
+    try:
         return float(node.value)
-    return default
+    except ValueError as exc:
+        raise ParseError(
+            f"Malformed symbol (at ...) coordinate: expected numeric atom, got {node.value!r}"
+        ) from exc
 
 
 def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
@@ -139,8 +146,8 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
         elif child.key == "unit" and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
             unit = child.items[1].value
         elif child.key == "at" and len(child.items) >= 3:
-            x = _parse_float_atom(child.items[1], default=x)
-            y = _parse_float_atom(child.items[2], default=y)
+            x = _parse_float_atom(child.items[1])
+            y = _parse_float_atom(child.items[2])
         elif child.key == "property" and len(child.items) >= 3:
             name_node = child.items[1]
             value_node = child.items[2]

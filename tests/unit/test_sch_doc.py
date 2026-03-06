@@ -254,6 +254,40 @@ class TestNextComponentPosition:
 
 
 # ---------------------------------------------------------------------------
+# list_symbols
+# ---------------------------------------------------------------------------
+
+
+class TestListSymbols:
+    def test_returns_symbol_metadata(self) -> None:
+        doc = _doc_from(SCH_WITH_SYMBOL)
+
+        symbols = doc.list_symbols()
+
+        assert len(symbols) == 1
+        assert symbols[0]["ref"] == "R1"
+        assert symbols[0]["x"] == pytest.approx(50.8)
+        assert symbols[0]["y"] == pytest.approx(76.2)
+
+    def test_raises_parse_error_for_malformed_symbol_at_coordinate(self) -> None:
+        malformed = """\
+(kicad_sch (version 20230121) (generator test)
+  (lib_symbols)
+  (symbol (lib_id "Device:R") (at not-a-number 76.20 0) (unit 1)
+    (uuid "sym-uuid-1")
+    (property "Reference" "R1" (at 52.07 74.93 0))
+    (property "Value" "10k" (at 52.07 77.47 0))
+  )
+  (sheet_instances (path "/" (page "1")))
+)
+"""
+        doc = _doc_from(malformed)
+
+        with pytest.raises(ParseError, match="Malformed symbol"):
+            doc.list_symbols()
+
+
+# ---------------------------------------------------------------------------
 # add_symbol
 # ---------------------------------------------------------------------------
 

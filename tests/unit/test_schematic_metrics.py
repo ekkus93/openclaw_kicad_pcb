@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from kicad_pcb.errors import ParseError
 from kicad_pcb.lint.sch import LintIssue
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
@@ -125,6 +126,20 @@ class TestCountDistinctXColumns:
         )
         doc = _doc(body)
         assert count_distinct_x_columns(doc, tolerance_mm=10.0) == 2
+
+    def test_raises_parse_error_for_malformed_symbol_coordinates(self) -> None:
+        body = " ".join(
+            [
+                '(symbol (lib_id "Device:R") (at not-a-number 50.0 0) '
+                '(uuid "00000000-0000-0000-0000-000000000001") '
+                '(property "Reference" "R1" (at 0 0 0)) '
+                '(property "Value" "1k" (at 0 0 0)))'
+            ]
+        )
+        doc = _doc(body)
+
+        with pytest.raises(ParseError, match="Malformed symbol"):
+            count_distinct_x_columns(doc)
 
 
 # ---------------------------------------------------------------------------

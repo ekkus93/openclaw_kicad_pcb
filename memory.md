@@ -1,6 +1,47 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T17:55:07Z_
+_Last updated: 2026-03-06T18:34:46Z_
+
+
+## 2026-03-06T18:34:46Z — Full verification pass completed after item 24
+
+- Ran full repository lint/type/test gates successfully:
+  - `uv run ruff check /home/ubo/work/openclaw_kicad_pcb`
+  - `uv run mypy /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src`
+  - `uv run pytest -q /home/ubo/work/openclaw_kicad_pcb/tests`
+- Results:
+  - Ruff: all checks passed.
+  - Mypy: success, no issues in 63 source files.
+  - Pytest: full suite passed.
+
+
+## 2026-03-06T18:17:10Z — Completed fallback audit item D24 (numeric parsing defaults in AST introspection)
+
+- Updated `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py`:
+  - `_parse_float_atom(...)` now fails fast with `ParseError` for malformed/non-numeric symbol `(at ...)` coordinate atoms.
+  - removed silent fallback behavior that previously reused prior/default coordinate values.
+- Updated `tests/unit/test_sch_doc.py`:
+  - added `TestListSymbols` coverage for normal symbol metadata extraction.
+  - added regression asserting malformed `(at ...)` coordinates raise `ParseError` in `list_symbols()`.
+- Updated `tests/unit/test_schematic_metrics.py`:
+  - added regression asserting malformed symbol coordinates propagate `ParseError` through `count_distinct_x_columns(...)`.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 24 as addressed with fail-fast parsing semantics and test coverage references.
+- Validation:
+  - `uv run pytest -q tests/unit/test_sch_doc.py tests/unit/test_schematic_metrics.py`
+  - `uv run ruff check kicad-pcb/src/kicad_pcb/sch_doc/__init__.py tests/unit/test_sch_doc.py tests/unit/test_schematic_metrics.py`
+  - `uv run mypy kicad-pcb/src/kicad_pcb/sch_doc/__init__.py`
+
+
+## 2026-03-06T18:08:10Z — Reviewed fallback audit item B23 (serializer inline-vs-block formatting)
+
+- Reviewed `kicad-pcb/src/kicad_pcb/sexpr/serializer.py` inline-vs-block behavior.
+- Determination: no runtime fallback bug; this is deterministic formatting policy (`_MAX_INLINE` budget) and does not suppress operational errors.
+- No code changes required in serializer logic.
+- Updated `code_review/FALLBACKS.md`:
+  - marked item 23 as reviewed and accepted as formatting-only behavior.
+- Validation:
+  - `uv run pytest -q tests/unit/test_sexpr_serializer.py`
 
 
 ## 2026-03-06T17:55:07Z — Completed fallback audit item B22 (STEP export file-size stat suppression policy)
