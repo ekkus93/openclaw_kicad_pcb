@@ -1,5 +1,13 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-10T11:11:45Z - Phase 6.3 LAY011 lint implemented and stabilized
+
+- Implemented `lint_local_direct_wiring` (LAY011) in `kicad-pcb/src/kicad_pcb/lint/sch.py` to flag over-routed nearby 2-pin nets.
+- Added helper decomposition for maintainability/lint compliance: symbol position extraction, bind marker parsing, connectivity traversal, net segment mapping, and power-net filtering.
+- Root-cause fix: `PinRefIR` uses `.ref` (not `.component`), which resolved false negatives where LAY011 emitted no issues.
+- Added `tests/unit/test_phase6_local_direct_wiring.py` with 8 focused tests covering direct/no-warning, over-routed warning, distance threshold, power-net skip, and multi-net behavior.
+- Validation: `ruff format`, `ruff check`, and `pytest tests/unit/test_phase6_local_direct_wiring.py` all passed.
+
 ## 2026-03-10T03:59:19Z - Phase 1.2 Complete: Block Zone Integration
 
 Completed Phase 1.2 of CODE_REVIEW6 schematic readability improvements. Block detection now influences layout through a new post-layout snap pass.
