@@ -1,5 +1,34 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-10T03:59:19Z - Phase 1.2 Complete: Block Zone Integration
+
+Completed Phase 1.2 of CODE_REVIEW6 schematic readability improvements. Block detection now influences layout through a new post-layout snap pass.
+
+**Implementation:**
+- Added `_snap_block_zones()` function in `graphviz_layout/snap.py` (pass 3c in snap sequence)
+- Biases components toward their designated zones:
+  - POWER_ENTRY/DECOUPLING → top (y closer to origin)
+  - INPUT/PRECONDITIONING → left (x closer to origin)  
+  - OUTPUT → right (x closer to page_max)
+  - OPAMP_CORE/FEEDBACK → no adjustment (center is fine)
+- Integrated into `_apply_post_layout_snaps()` with new `block_layout` parameter
+- Runs after halo snap, before stereo split/compaction
+- Gentle nudging approach: only adjusts if components are far from zone
+
+**Testing:**
+- Added `test_block_zone_snapping()` unit test
+- All 46 tests passing (15 block detection + 2 baseline + 29 metrics)
+- Code quality: ruff and mypy clean
+
+**Commit:** 68bfff9 "feat: Phase 1.2 - integrate block zones into layout engine"
+
+**Status:** Phase 1 (Functional Block Detection and Layout) COMPLETE
+- ✅ Phase 1.1: Block classification heuristics
+- ✅ Phase 1.2: Layout zone integration  
+- ✅ Phase 1.3: Block detection tests
+
+**Next:** Phase 2 (Reduce Local Crowding and Improve White Space)
+
 _Last updated: 2026-03-10T03:17:57Z_
 
 
