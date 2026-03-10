@@ -24,12 +24,20 @@ Crowding checks (Phase 2)
 :func:`lint_layout_wire_crossings` — LAY007
     Detect excessive wire crossing density (signal flow optimization).
 
+Wire quality checks (Phase 6)
+------------------------------
+:func:`lint_wire_quality` — LAY009, LAY010
+    Detect excessive short wire segments and over-routed local connections
+    (Phase 6.2 CODE_REVIEW6 roadmap). Flags nets with too many short jogs
+    and simple connections using unnecessary routing complexity.
+
 Both functions take the root :class:`~kicad_pcb.sexpr.nodes.ListNode`
 produced by parsing a ``.kicad_sch`` file.
 """
 
 from __future__ import annotations
 
+import json
 import math
 from collections import Counter
 from typing import TYPE_CHECKING
@@ -58,6 +66,7 @@ __all__ = [
     "lint_schematic_layout",
     "lint_layout_crowding",
     "lint_layout_wire_crossings",
+    "lint_wire_quality",
 ]
 
 # ---------------------------------------------------------------------------
@@ -97,6 +106,16 @@ _LAY_CROWDING_THRESHOLD: int = 6
 # LAY008: minimum inter-block spacing in mm. Blocks closer than this
 # distance trigger insufficient spacing warnings (Phase 2.4).
 _LAY_MIN_BLOCK_SPACING_MM: float = 20.0
+
+# LAY009: excessive short wire jogs threshold. If a net has this fraction
+# or more of its wire segments shorter than _LAY_SHORT_WIRE_THRESHOLD_MM,
+# flag it as having too many short jogs (Phase 6.2).
+_LAY_SHORT_WIRE_FRACTION_THRESHOLD: float = 0.50  # 50% of segments short
+_LAY_SHORT_WIRE_THRESHOLD_MM: float = 5.0  # 5mm = short wire threshold
+
+# LAY010: over-routed local connection thresholds. A 2-pin net with more
+# than this many segments is considered over-routed (Phase 6.2).
+_LAY_MAX_SEGMENTS_TWO_PIN: int = 4  # 2 stubs + 2 routing segments is reasonable
 
 # Phase 5.5 — frozenset, defined at module level so it is not recreated on
 # every call to lint_schematic.
@@ -652,6 +671,144 @@ def lint_layout_crowding(
                         f"({min_distance:.1f}mm, minimum {_LAY_MIN_BLOCK_SPACING_MM}mm); "
                         "increase inter-block spacing for clarity.",
                         path="kicad_sch/symbol",
+                    )
+                )
+
+    return issues
+
+
+def lint_wire_quality(
+    doc: SchematicDoc,
+    ir: CircuitIR,
+) -> list[LintIssue]:
+    """LAY009 & LAY010: warn about excessive short wire jogs and over-routed connections.
+
+    Detects when nets have too many short wire segments (excessive jogs)
+    or when simple 2-pin connections use unnecessarily complex routing.
+
+    Parameters
+    ----------
+    doc:
+        Schematic document :class:`~kicad_pcb.kicad_sch.SchematicDoc`.
+    ir:
+        Parsed :class:`~kicad_pcb.circuit_ir.CircuitIR`; used to identify
+        nets and their pin counts.
+
+    Returns
+    -------
+    list[LintIssue]
+        LAY009 and/or LAY010 WARNINGs for nets with excessive short segments
+        or over-routed local connections, otherwise an empty list.
+    """
+    issues: list[LintIssue] = []
+
+    # Collect all wire segments from the schematic
+    segs = _collect_wire_segments(doc.root.items)
+
+    # Build a mapping of wire segments to nets using bind markers
+    # Bind markers are in format: "OpenClaw:bind={json}"
+    bind_markers: dict[str, list[tuple[float, float]]] = {}  # {net_name: [(x, y), ...]}
+    for node in walk(doc.root):
+        if not (isinstance(node, ListNode) and node.key == "text"):
+            continue
+        if len(node.items) >= 2 and isinstance(node.items[1], StringNode):
+            text = node.items[1].value
+            # Parse bind marker format: "OpenClaw:bind={...}"
+            if text.startswith("OpenClaw:bind="):
+                try:
+                    bind_json = text[len("OpenClaw:bind=") :]
+                    bind_data = json.loads(bind_json)
+                    net_name = bind_data.get("net_name", "")
+                    # Get position from the bind marker (it's placed at the pin location)
+                    at_node = find_first(node, "at")
+                    if at_node and len(at_node.items) >= 3:
+                        x = _float_from_atom(at_node.items[1])
+                        y = _float_from_atom(at_node.items[2])
+                        if x is not None and y is not None:
+                            if net_name not in bind_markers:
+                                bind_markers[net_name] = []
+                            # Store rounded coordinates for matching
+                            bind_markers[net_name].append((round(x, 2), round(y, 2)))
+                except (json.JSONDecodeError, ValueError, KeyError):
+                    pass
+
+    # For each net, collect all wire segments where either endpoint matches a bind marker position
+    # This is a heuristic since we don't have explicit wire-to-net mapping in the schematic
+    net_segments: dict[str, list[tuple[float, float, float, float]]] = {}
+
+    for net_name, positions in bind_markers.items():
+        # For each wire segment, check if either endpoint is close to any bind marker for this net
+        for x1, y1, x2, y2 in segs:
+            x1r, y1r, x2r, y2r = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)
+            # Check if either endpoint matches a bind marker position (within tolerance)
+            matches = False
+            for bx, by in positions:
+                if (abs(x1r - bx) < 5.0 and abs(y1r - by) < 5.0) or (
+                    abs(x2r - bx) < 5.0 and abs(y2r - by) < 5.0
+                ):
+                    matches = True
+                    break
+
+            if matches:
+                if net_name not in net_segments:
+                    net_segments[net_name] = []
+                # Avoid duplicates
+                if (x1, y1, x2, y2) not in net_segments[net_name]:
+                    net_segments[net_name].append((x1, y1, x2, y2))
+
+    # -------------------------------------------------------------------------
+    # LAY009 — excessive short wire jogs (per net)
+    # -------------------------------------------------------------------------
+    for net_name, segments in net_segments.items():
+        if not segments or len(segments) < 3:
+            continue
+
+        # Count short segments in this net
+        short_count = 0
+        for x1, y1, x2, y2 in segments:
+            length = math.hypot(x2 - x1, y2 - y1)
+            if length <= _LAY_SHORT_WIRE_THRESHOLD_MM:
+                short_count += 1
+
+        # Check if too many segments are short
+        short_fraction = short_count / len(segments)
+        if short_fraction >= _LAY_SHORT_WIRE_FRACTION_THRESHOLD:
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY009",
+                    f"Net '{net_name}' has {short_count}/{len(segments)} short wire segments "
+                    f"({short_fraction:.0%}) below {_LAY_SHORT_WIRE_THRESHOLD_MM}mm; "
+                    "consider simplifying routing or using more direct connections.",
+                    path="kicad_sch/wire",
+                )
+            )
+
+    # -------------------------------------------------------------------------
+    # LAY010 — over-routed local connection (2-pin nets with too many segments)
+    # -------------------------------------------------------------------------
+    for net in ir.nets:
+        # Skip power nets (they typically use hub/spine routing)
+        if net.name.upper() in {"GND", "VCC", "V+", "V-", "+5V", "+3.3V", "+12V", "-12V"}:
+            continue
+
+        # Only check 2-pin nets (local connections)
+        if len(net.pins) == 2:
+            segments = net_segments.get(net.name, [])
+            if len(segments) > _LAY_MAX_SEGMENTS_TWO_PIN:
+                # Calculate total wire length
+                total_length = sum(math.hypot(x2 - x1, y2 - y1) for x1, y1, x2, y2 in segments)
+
+                issues.append(
+                    LintIssue(
+                        _WARN,
+                        "LAY010",
+                        f"Net '{net.name}' is a 2-pin connection but uses "
+                        f"{len(segments)} wire segments "
+                        f"(threshold {_LAY_MAX_SEGMENTS_TWO_PIN}, "
+                        f"total length {total_length:.1f}mm); "
+                        "consider using more direct routing for local connections.",
+                        path="kicad_sch/wire",
                     )
                 )
 
