@@ -31,6 +31,11 @@ Wire quality checks (Phase 6)
     (Phase 6.2 CODE_REVIEW6 roadmap). Flags nets with too many short jogs
     and simple connections using unnecessary routing complexity.
 
+:func:`lint_local_direct_wiring` — LAY011
+    Detect nearby 2-pin nets that could have been wired directly but weren't
+    (Phase 6.3 CODE_REVIEW6 roadmap). Prefers simple local connections over
+    unnecessarily complex routing.
+
 Both functions take the root :class:`~kicad_pcb.sexpr.nodes.ListNode`
 produced by parsing a ``.kicad_sch`` file.
 """
@@ -67,6 +72,7 @@ __all__ = [
     "lint_layout_crowding",
     "lint_layout_wire_crossings",
     "lint_wire_quality",
+    "lint_local_direct_wiring",
 ]
 
 # ---------------------------------------------------------------------------
@@ -116,6 +122,12 @@ _LAY_SHORT_WIRE_THRESHOLD_MM: float = 5.0  # 5mm = short wire threshold
 # LAY010: over-routed local connection thresholds. A 2-pin net with more
 # than this many segments is considered over-routed (Phase 6.2).
 _LAY_MAX_SEGMENTS_TWO_PIN: int = 4  # 2 stubs + 2 routing segments is reasonable
+
+# LAY011: local direct wiring preference. A 2-pin net where both pins are
+# within this Manhattan distance should prefer direct routing instead of
+# multi-segment routing through long trunks (Phase 6.3).
+_LAY_LOCAL_DIRECT_DIST_MM: float = 150.0  # ~5.9 inches (nearby = roughly same block)
+_LAY_LOCAL_DIRECT_MIN_SEGMENTS: int = 3  # 3+ segments suggests over-routing
 
 # Phase 5.5 — frozenset, defined at module level so it is not recreated on
 # every call to lint_schematic.
@@ -811,5 +823,176 @@ def lint_wire_quality(
                         path="kicad_sch/wire",
                     )
                 )
+
+    return issues
+
+
+def _extract_symbol_positions(doc: SchematicDoc) -> dict[str, tuple[float, float]]:
+    comp_positions: dict[str, tuple[float, float]] = {}
+    for sym_meta in doc.list_symbols():
+        if not isinstance(sym_meta.get("ref"), str):
+            continue
+        if not isinstance(sym_meta.get("x"), int | float):
+            continue
+        if not isinstance(sym_meta.get("y"), int | float):
+            continue
+        ref = sym_meta["ref"]
+        x = float(sym_meta["x"])
+        y = float(sym_meta["y"])
+        comp_positions[ref] = (x, y)
+    return comp_positions
+
+
+def _collect_bind_markers(doc: SchematicDoc) -> dict[str, list[tuple[float, float]]]:
+    bind_markers: dict[str, list[tuple[float, float]]] = {}
+    for node in walk(doc.root):
+        if not (isinstance(node, ListNode) and node.key == "text"):
+            continue
+        if len(node.items) < 2 or not isinstance(node.items[1], StringNode):
+            continue
+
+        text = node.items[1].value
+        if not text.startswith("OpenClaw:bind="):
+            continue
+
+        try:
+            bind_data = json.loads(text[len("OpenClaw:bind=") :])
+        except (json.JSONDecodeError, ValueError, TypeError):
+            continue
+
+        net_name = bind_data.get("net_name")
+        if not isinstance(net_name, str) or not net_name:
+            continue
+
+        at_node = find_first(node, "at")
+        if at_node is None or len(at_node.items) < 3:
+            continue
+
+        x = _float_from_atom(at_node.items[1])
+        y = _float_from_atom(at_node.items[2])
+        if x is None or y is None:
+            continue
+
+        bind_markers.setdefault(net_name, []).append((round(x, 2), round(y, 2)))
+
+    return bind_markers
+
+
+def _connected_segments_from_positions(
+    segs: list[tuple[float, float, float, float]],
+    bind_positions: list[tuple[float, float]],
+) -> list[tuple[float, float, float, float]]:
+    visited: set[tuple[float, float, float, float]] = set()
+    queue: list[tuple[float, float]] = list(bind_positions)
+    connected_segs: list[tuple[float, float, float, float]] = []
+
+    while queue:
+        current_x, current_y = queue.pop(0)
+        current_pos = (round(current_x, 2), round(current_y, 2))
+
+        for x1, y1, x2, y2 in segs:
+            seg_tuple = (x1, y1, x2, y2)
+            if seg_tuple in visited:
+                continue
+
+            p1 = (round(x1, 2), round(y1, 2))
+            p2 = (round(x2, 2), round(y2, 2))
+            endpoint: tuple[float, float] | None = None
+
+            if abs(p1[0] - current_pos[0]) < 0.1 and abs(p1[1] - current_pos[1]) < 0.1:
+                endpoint = p2
+            elif abs(p2[0] - current_pos[0]) < 0.1 and abs(p2[1] - current_pos[1]) < 0.1:
+                endpoint = p1
+
+            if endpoint is None:
+                continue
+
+            connected_segs.append(seg_tuple)
+            visited.add(seg_tuple)
+            if endpoint not in queue and endpoint not in bind_positions:
+                queue.append(endpoint)
+
+    return connected_segs
+
+
+def _build_net_segments(
+    segs: list[tuple[float, float, float, float]],
+    bind_markers: dict[str, list[tuple[float, float]]],
+) -> dict[str, list[tuple[float, float, float, float]]]:
+    net_segments: dict[str, list[tuple[float, float, float, float]]] = {}
+    for net_name, bind_positions in bind_markers.items():
+        if not bind_positions:
+            continue
+        connected = _connected_segments_from_positions(segs, bind_positions)
+        if connected:
+            net_segments[net_name] = connected
+    return net_segments
+
+
+def _is_power_net_name(net_name: str) -> bool:
+    return net_name.upper() in {"GND", "VCC", "V+", "V-", "+5V", "+3.3V", "+12V", "-12V"}
+
+
+def lint_local_direct_wiring(doc: SchematicDoc, ir: CircuitIR) -> list[LintIssue]:
+    """
+    LAY011: Detect nearby 2-pin nets that could/should use direct routing.
+
+    Phase 6.3 concern: if two pins are within `_LAY_LOCAL_DIRECT_DIST_MM` Manhattan
+    distance (roughly same block), they should prefer direct L-routing instead of
+    multi-segment routing through long trunks or hubs.
+
+    Returns list of LintIssue for 2-pin connections that are routed with too many
+    segments for their physical proximity.
+    """
+    issues: list[LintIssue] = []
+    segs = _collect_wire_segments(doc.root.items)
+    if not segs:
+        return issues
+
+    try:
+        comp_positions = _extract_symbol_positions(doc)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return issues
+
+    bind_markers = _collect_bind_markers(doc)
+    net_segments = _build_net_segments(segs, bind_markers)
+
+    for net in ir.nets:
+        if _is_power_net_name(net.name):
+            continue
+        if len(net.pins) != 2:
+            continue
+
+        segments = net_segments.get(net.name, [])
+        if len(segments) < _LAY_LOCAL_DIRECT_MIN_SEGMENTS:
+            continue
+
+        try:
+            pin1 = net.pins[0]
+            pin2 = net.pins[1]
+            if pin1.ref not in comp_positions or pin2.ref not in comp_positions:
+                continue
+
+            x1, y1 = comp_positions[pin1.ref]
+            x2, y2 = comp_positions[pin2.ref]
+            manhattan_dist = abs(x2 - x1) + abs(y2 - y1)
+            if manhattan_dist > _LAY_LOCAL_DIRECT_DIST_MM:
+                continue
+
+            total_length = sum(math.hypot(sx2 - sx1, sy2 - sy1) for sx1, sy1, sx2, sy2 in segments)
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY011",
+                    f"Net '{net.name}' connects nearby pins "
+                    f"({manhattan_dist:.0f}mm apart) but uses "
+                    f"{len(segments)} wire segments "
+                    f"(length {total_length:.1f}mm); "
+                    "prefer simple L-routing for local connections to avoid trunk congestion.",
+                    path="kicad_sch/wire",
+                )
+            )
+        except (AttributeError, TypeError, KeyError):
+            continue
 
     return issues
