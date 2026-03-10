@@ -524,9 +524,17 @@ Symbol orientation should support function and reading flow, not just fit routin
 - **Integration verified**: All 284 layout integration tests pass ✅
 
 ### 9.3 Add tests for orientation sanity
-- [ ] Assert connectors are oriented consistently at edges.
-- [ ] Assert the op-amp orientation matches the preferred convention.
-- [ ] Add spot checks for passive orientation consistency within a block.
+- [x] Assert connectors are oriented consistently at edges.
+- [x] Assert the op-amp orientation matches the preferred convention.
+- [x] Add spot checks for passive orientation consistency within a block.
+
+**Tests Added (Phase 9.3)**:
+- Created `tests/unit/test_phase9_sanity.py` with 10 unit tests covering:
+  - `TestConnectorOrientationAtPageEdges` (3 tests): input connector 0°, primary output connector 180°, secondary-path connectors unconstrained
+  - `TestOpAmpOrientationStability` (3 tests): op-amps always 0°, stable across multiple placements, consistent in multi-stage circuits
+  - `TestPassiveConsistencyWithinBlocks` (3 tests): feedback passives consistent within role, input-stage passives consistent, mixed roles do not interfere
+  - `TestOrientationCoherence` (1 integration test): realistic stereo headphone amp orientation sanity end-to-end
+- **All 10 tests pass** ✅
 
 ---
 
@@ -579,7 +587,7 @@ Make readability improvements measurable and regression-resistant.
 12. [x] Phase 8 — page composition balancing ✅ **COMPLETE**
 13. [x] Phase 9.1 — define orientation conventions by part role ✅ **COMPLETE**
 14. [x] Phase 9.2 — normalize similar part presentation ✅ **COMPLETE**
-15. [ ] Phase 9.3 — add tests for orientation sanity
+15. [x] Phase 9.3 — add tests for orientation sanity ✅ **COMPLETE**
 16. [ ] Phase 10 — validation, golden tests, and human review loop
 
 ---
