@@ -56,8 +56,10 @@ from itertools import combinations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
 
+from ..block_detection import BlockRole
 from ..component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
@@ -445,7 +447,7 @@ def _emit_connector_rank_constraints(
 # ---------------------------------------------------------------------------
 
 
-def _build_dot_source(  # noqa: PLR0912, PLR0913
+def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     ir: CircuitIR,
     *,
     decoupling_map: dict[str, str] | None = None,
@@ -456,6 +458,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913
     halo: dict[str, str] | None = None,
     sds_cols: dict[str, int] | None = None,
     affinity_order: dict[int, list[str]] | None = None,
+    block_layout: BlockLayout | None = None,
 ) -> str:
     """Build a Graphviz DOT source string for *ir* with signal-flow directionality.
 
@@ -475,6 +478,9 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913
       supplied, each ``{cap → ic}`` pair gets an invisible zero-weight edge
       (``style=invis, weight=10``) and a ``{rank=same; ic; cap}`` subgraph to
       pull the cap into the same Graphviz column as its associated IC.
+    * **Block-based node sizing** (Phase 2.2): if *block_layout* is supplied,
+      connector blocks (INPUT/OUTPUT) receive wider node dimensions to improve
+      spacing and reduce visual crowding in pin-dense regions.
     """
     lines: list[str] = [
         "digraph sch {",
@@ -526,9 +532,23 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913
         tier_groups.setdefault(_col_source.get(ref, 0), []).append(ref)
 
     # Emit component nodes.
+    # Phase 2.2: Use block role to adjust node size for improved spacing.
     for ref in refs:
         safe = _safe_id(ref)
-        lines.append(f'  {safe} [label="{ref}", shape=box];')
+        # Determine node dimensions based on block role (if block layout provided).
+        if block_layout and ref in block_layout.assignments:
+            role = block_layout.assignments[ref].role
+            # Connector blocks (INPUT/OUTPUT) are pin-dense; give them extra width.
+            # Op-amp core/feedback blocks get slightly larger sizing for clarity.
+            if role in {BlockRole.INPUT, BlockRole.OUTPUT}:
+                width, height = 1.0, 0.6
+            elif role in {BlockRole.OPAMP_CORE, BlockRole.FEEDBACK}:
+                width, height = 0.9, 0.55
+            else:
+                width, height = 0.8, 0.5  # Default for POWER, PASSTHROUGH, UNASSIGNED
+        else:
+            width, height = 0.8, 0.5  # Default sizing when no block info
+        lines.append(f'  {safe} [label="{ref}", shape=box, width={width}, height={height}];')
 
     # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
     # rank=same for all intermediate tiers.
