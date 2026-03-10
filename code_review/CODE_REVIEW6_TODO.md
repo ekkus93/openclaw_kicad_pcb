@@ -460,10 +460,37 @@ Use the page like a human drafter would: balanced, readable, and not awkwardly e
 Symbol orientation should support function and reading flow, not just fit routing.
 
 ### 9.1 Define orientation conventions by part role
-- [ ] Resistors/caps in signal flow should tend to align with flow direction.
-- [ ] Connectors should face inward from page edges.
-- [ ] Op-amps should use a stable preferred orientation.
-- [ ] Power/decoupling parts may have a different convention if it improves clarity.
+- [x] Resistors/caps in signal flow should tend to align with flow direction.
+  - **Implemented**: Series passives prefer horizontal (0°) via position heuristic.
+  - **Implemented**: Shunt passives prefer vertical (90°) via power-pin detection.
+  - **Implemented**: Feedback passives prefer vertical (90°) when near op-amp column via block role.
+- [x] Connectors should face inward from page edges.
+  - **Implemented**: Input connectors (tier 0) → 0° (face right)
+  - **Implemented**: Output connectors (max tier) → 180° (face left toward circuit)
+  - **Implemented**: Role-based override for explicit connector direction control
+- [x] Op-amps should use a stable preferred orientation.
+  - **Implemented**: All op-amps always 0° (inputs left, output right)
+  - **Benefit**: Enables rapid pattern recognition across multiple schematics
+- [x] Power/decoupling parts may have a different convention if it improves clarity.
+  - **Implemented**: Shunt passives (both signal and power pins) use 90° to show
+    vertical connection from signal to power rail
+
+**Implementation Details**:
+- Enhanced `compute_orientations()` in `layout.py` with Phase 9.1 docstring
+- Added comprehensive convention documentation and cross-references
+- All conventions apply based on component type (prefix), pin topology, and optional block role
+
+**Tests Added (Phase 9.1)**:
+- Created `tests/unit/test_phase9_orientation.py` with 16 unit tests covering:
+  - `TestSeriesPassiveOrientations` (2 tests): series R/C prefer horizontal
+  - `TestShuntPassiveOrientations` (3 tests): bypass, pull-up, decoupling prefer vertical
+  - `TestFeedbackPassiveOrientations` (2 tests): feedback components prefer vertical near op-amp
+  - `TestConnectorOrientations` (3 tests): input/output/role-based connector directions
+  - `TestOpAmpOrientations` (1 test): op-amps always 0°
+  - `TestInputStagePassiveOrientations` (2 tests): input/preconditioning passives prefer horizontal
+  - `TestOutputStagePassiveOrientations` (1 test): output passives prefer horizontal
+  - `TestConsistencyWithinRoles` (2 tests): similar components in same role have consistent orientations
+- **All 16 tests pass** ✅
 
 ### 9.2 Normalize similar part presentation
 - [ ] Similar passives in the same stage should not appear arbitrarily rotated.
@@ -520,11 +547,13 @@ Make readability improvements measurable and regression-resistant.
 7. [x] Phase 3.3 — main signal path identification ✅ **COMPLETE**
 8. [x] Phase 4 — clean up op-amp neighborhood (4.1-4.4 complete) ✅ **COMPLETE**
 9. [x] Phase 5 — reduce ground/power clutter (5.1 complete with spatial clustering) ✅ **COMPLETE**
-10. [ ] Phase 6 — wire simplification
-11. [ ] Phase 7 — improve input/output staging
-12. [ ] Phase 8 — page composition balancing
-13. [ ] Phase 9 — orientation consistency
-14. [ ] Phase 10 — golden tests and human-review loop
+10. [x] Phase 6 — reduce short joggy wires / over-routed connections ✅ **COMPLETE**
+11. [x] Phase 7 — improve input/output block staging ✅ **COMPLETE**
+12. [x] Phase 8 — page composition balancing ✅ **COMPLETE**
+13. [x] Phase 9.1 — define orientation conventions by part role ✅ **COMPLETE**
+14. [ ] Phase 9.2 — normalize similar part presentation
+15. [ ] Phase 9.3 — add tests for orientation sanity
+16. [ ] Phase 10 — validation, golden tests, and human review loop
 
 ---
 

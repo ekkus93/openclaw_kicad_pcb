@@ -944,6 +944,16 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
+    **Phase 9.1 — Orientation Conventions by Part Role**
+
+    Component orientations support both function and reading flow. This function
+    implements conventions that ensure schematics read like human-drafted circuits:
+    - Resistors/capacitors in signal flow align with flow direction (horizontal
+      for series, vertical for shunt/feedback).
+    - Connectors face inward toward the circuit (input at 0°, output at 180°).
+    - Op-amps maintain stable preferred orientation (0°: inputs left, output right).
+    - Power/decoupling components orientations improve clarity (vertical for shunt).
+
     Parameters
     ----------
     ir:
@@ -965,38 +975,55 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
     block_layout:
         Optional :class:`~kicad_pcb.block_detection.BlockLayout` with functional
         block role assignments.  When provided, passive orientation is influenced
-        by block role to support signal flow direction (Phase 4.3).
+        by block role to support signal flow direction (Phase 4.3 / Phase 9.1).
 
     Rules (applied in priority order)
     -----------------------------------
-    * **Connectors** (J/CON/P/SJ/TJ):
-      - With *roles*: ``"output"`` → 180°; ``"input"`` / ``"unknown"`` → 0°.
-      - With *tiers* (fallback): tier 0 → 0°; max tier → 180°; intermediate → 0°.
+    * **Connectors** (J/CON/P/SJ/TJ) — *Phase 9.1: Face inward*:
+      - With *roles*: ``"output"`` → 180° (face left);
+        ``"input"`` / ``"unknown"`` → 0° (face right).
+      - With *tiers* (fallback): tier 0 → 0°; max tier → 180°;
+        intermediate → 0°.
       - Without either: always 0°.
-    * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
-      left and output on the right, which is correct for the usual KiCad symbols.
-    * **Passives — block-role-aware** (R/C/L with *block_layout*):
-      - Feedback role near op-amp: prefer 90° (vertical) when positioned in same
-        column as op-amp (supports vertical feedback path).
-      - Input/preconditioning/output roles: prefer 0° (horizontal) to support
-        left-to-right signal flow unless position heuristic strongly disagrees.
+    * **Op-amps / ICs** (U/IC/OA) — *Phase 9.1: Stable orientation*:
+      Always 0° — standard orientation keeps inputs on the left and output on
+      the right, enabling rapid pattern recognition across schematics.
+    * **Passives — block-role-aware** (R/C/L with *block_layout*) —
+      *Phase 9.1*:
+      - **Feedback role near op-amp**: prefer 90° (vertical) when positioned
+        in same column as op-amp (supports vertical feedback loop).
+      - **Input/preconditioning/output roles**: prefer 0° (horizontal) to
+        support left-to-right signal flow unless position heuristic strongly
+        disagrees.
       - Falls through to shunt topology or position heuristic when block role
         is absent or indeterminate.
-    * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1 signal-net
-      pin): 90°.  A bypass capacitor, pull-up, or pull-down resistor straddles a
-      power rail and the signal path, so a vertical (90°) orientation visually
-      shows the connection from signal wire down to the rail.
+    * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1
+      signal-net pin) — *Phase 9.1: Show vertical connection*:
+      90° (vertical) — bypass capacitors, pull-ups, pull-downs straddle power
+      and signal. Vertical orientation visually shows the connection from
+      signal wire down to the power rail.
     * **Passives — position heuristic** (R/C/L with all pins on signal nets):
-      90° when the sum of |Δy| to signal-net neighbours exceeds the sum of |Δx|;
-      otherwise 0°.  This orients in-column feedback or coupling components to
-      match the dominant wire direction.
-    * **Diodes** (D*): always 0° (anode left, cathode right for forward-biased
-      series placement).
+      90° when the sum of |Δy| to signal-net neighbours exceeds the sum of
+      |Δx|; otherwise 0°.  This orients in-column feedback or coupling
+      components to match the dominant wire direction.
+    * **Diodes** (D*) — *Forward-bias series placement*:
+      Always 0° (anode left, cathode right).
     * **Default**: 0°.
 
     Power / ground nets (identified by :func:`_is_power_net_layout`) are excluded
     from the position-based neighbour calculation so they do not bias series
     passives.  They ARE used for the shunt-topology check above.
+
+    See Also
+    --------
+    tests/unit/test_phase9_orientation.py
+        Phase 9.1 orientation convention tests. Validates that:
+        - Series passives prefer horizontal (0°) orientations
+        - Shunt passives prefer vertical (90°) orientations
+        - Feedback components near op-amps prefer vertical
+        - Connectors face inward (0° for input, 180° for output)
+        - Op-amps maintain consistent 0° orientation
+        - Similar passives in same role have consistent orientations
     """
     # Pre-compute shunt topology: which refs have power-net pins / signal-net pins.
     power_pin_refs, signal_pin_refs = _classify_passive_pins(ir)
