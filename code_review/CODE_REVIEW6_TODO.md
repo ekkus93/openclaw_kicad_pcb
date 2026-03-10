@@ -333,13 +333,22 @@ Connections should be simpler, cleaner, and less mechanically jagged.
 - [x] Added 9 tests in test_phase6_wire_quality_lints.py (all passing)
 
 ### 6.3 Prefer local direct wiring where possible
-- [ ] If two nearby components can be connected with a simpler local route, prefer that over a jog-heavy route.
-- [ ] Avoid unnecessarily sending local signals into long trunks.
+- [x] If two nearby components can be connected with a simpler local route, prefer that over a jog-heavy route.
+- [x] Avoid unnecessarily sending local signals into long trunks.
+- [x] Implementation: `lint_local_direct_wiring()` in `lint/sch.py` (`LAY011`)
+  - Flags nearby 2-pin non-power nets (<=150mm Manhattan distance) that use 3+ segments.
+  - Uses bind marker parsing + connected-segment traversal to measure local over-routing.
+- [x] Added 8 tests in `test_phase6_local_direct_wiring.py` (all passing)
 
 ### 6.4 Add tests for wire simplification
-- [ ] Compare short-segment count to baseline.
-- [ ] Require reduction in 5.08mm-ish stub/jog-heavy patterns where not needed.
-- [ ] Ensure simplified routes remain collision-safe.
+- [x] Compare short-segment count to baseline.
+- [x] Require reduction in 5.08mm-ish stub/jog-heavy patterns where not needed.
+- [x] Ensure simplified routes remain collision-safe.
+- [x] Added 3 tests in `test_phase6_wire_simplification.py`:
+  - `test_simplify_reduces_short_segments_vs_unsimplified_baseline`
+  - `test_simplify_keeps_required_5mm_jogs_at_junctions`
+  - `test_route_nets_simplified_wires_remain_collision_safe`
+- [x] `test_phase6_wire_simplification.py` now has 12 passing tests total
 
 ---
 
@@ -349,19 +358,40 @@ Connections should be simpler, cleaner, and less mechanically jagged.
 The input and output sections should visually read as coherent stages.
 
 ### 7.1 Clean up the input block
-- [ ] Place input jack, volume/input network, and related passives as one visually coherent left-side stage.
-- [ ] Ensure the transition from input block to op-amp input is short and understandable.
-- [ ] Avoid mixing unrelated power/support parts into the input block.
+- [x] Place input jack, volume/input network, and related passives as one visually coherent left-side stage.
+- [x] Ensure the transition from input block to op-amp input is short and understandable.
+- [x] Avoid mixing unrelated power/support parts into the input block.
+- [x] Implementation: `_snap_input_stage_cohesion()` in `graphviz_layout/snap.py`
+  - Uses block roles + signal adjacency to detect the local input stage.
+  - Places INPUT connectors and PRECONDITIONING parts into compact left-side lanes relative to the leftmost op-amp.
+  - Pushes non-input roles out of the input lane to preserve stage readability.
+- [x] Added 2 tests in `tests/unit/test_phase4_layout.py`:
+  - `test_input_stage_cohesion_left_to_right_transition`
+  - `test_input_stage_cohesion_avoids_unrelated_role_mixing`
 
 ### 7.2 Clean up the output block
-- [ ] Place output-side parts as one coherent stage on the right.
-- [ ] Ensure the output connector is clearly the terminal of the signal chain.
-- [ ] Avoid placing unrelated support parts around the output connector.
+- [x] Place output-side parts as one coherent stage on the right.
+- [x] Ensure the output connector is clearly the terminal of the signal chain.
+- [x] Avoid placing unrelated support parts around the output connector.
+- [x] Implementation: `_snap_output_stage_cohesion()` in `graphviz_layout/snap.py`
+  - Uses block roles + signal adjacency to detect the local output stage.
+  - Places OUTPUT support and OUTPUT connectors into distinct right-side lanes, keeping connectors as the terminal lane.
+  - Keeps FEEDBACK neighbors near output-side transition without collapsing into connector lane, and evicts unrelated roles from the output lane.
+- [x] Added 2 tests in `tests/unit/test_phase4_layout.py`:
+  - `test_output_stage_cohesion_left_to_right_transition`
+  - `test_output_stage_cohesion_avoids_unrelated_role_mixing`
 
 ### 7.3 Add tests for stage coherence
-- [ ] Assert the input block is compact and left-bounded.
-- [ ] Assert the output block is compact and right-bounded.
-- [ ] Assert stage parts do not significantly overlap block boundaries.
+- [x] Assert the input block is compact and left-bounded.
+- [x] Assert the output block is compact and right-bounded.
+- [x] Assert stage parts do not significantly overlap block boundaries.
+- [x] Added 3 tests in `tests/unit/test_phase4_layout.py`:
+  - `test_stage_coherence_input_block_compact_and_left_bounded`
+  - `test_stage_coherence_output_block_compact_and_right_bounded`
+  - `test_stage_coherence_input_output_boundaries_do_not_overlap`
+- [x] Validation:
+  - `pytest tests/unit/test_phase4_layout.py -k "stage_coherence" -q` (3 passed)
+  - `pytest tests/unit/test_phase4_layout.py -k "input_stage_cohesion or output_stage_cohesion or stage_coherence" -q` (7 passed)
 
 ---
 
