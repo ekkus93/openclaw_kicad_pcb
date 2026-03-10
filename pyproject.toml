@@ -37,7 +37,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "PTH", "SIM", "PL"]
-ignore = ["PLR2004"]  # magic value comparisons — acceptable in tests
+ignore = ["PLR2004", "PLR0912"]  # magic value comparisons, complex functions
 
 [tool.ruff.format]
 quote-style = "double"

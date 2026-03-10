@@ -321,11 +321,16 @@ Connections should be simpler, cleaner, and less mechanically jagged.
 - [x] Added 9 tests in test_phase6_wire_simplification.py
 
 ### 6.2 Add thresholds for excessive short-segment use
-- [ ] Detect when a block or net contains too many tiny wire segments.
-- [ ] Add lint(s), e.g.:
-  - [ ] `LAY008`: excessive short wire jogs
-  - [ ] `LAY009`: over-routed local connection
-- [ ] Use warnings first.
+- [x] Detect when a block or net contains too many tiny wire segments.
+- [x] Add lint(s), e.g.:
+  - [x] `LAY009`: excessive short wire jogs
+  - [x] `LAY010`: over-routed local connection
+- [x] Use warnings first.
+- [x] Implementation: `lint_wire_quality()` in lint/sch.py
+  - LAY009: Flags nets with ≥50% short segments (< 5mm) and ≥3 total segments
+  - LAY010: Flags 2-pin non-power nets with > 4 segments (over-routed)
+  - Uses bind marker parsing to map wires to nets
+- [x] Added 9 tests in test_phase6_wire_quality_lints.py (all passing)
 
 ### 6.3 Prefer local direct wiring where possible
 - [ ] If two nearby components can be connected with a simpler local route, prefer that over a jog-heavy route.
