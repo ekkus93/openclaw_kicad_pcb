@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from kicad_pcb.adapters import RunResult
+from kicad_pcb.adapters import KicadCliAdapter, RunResult
 from kicad_pcb.errors import KiCadError, ParseError, ToolError
 from kicad_pcb.fs import _new_uuid
 from kicad_pcb.lint import LintError, LintIssue
@@ -74,7 +74,7 @@ def pcb_file_with_outline(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-class _FakeCli:
+class _FakeCli(KicadCliAdapter):
     """Injectable KicadCliAdapter stub for unit tests.
 
     Accepts predetermined ``(RunResult, dict | None)`` pairs that will be
@@ -88,6 +88,7 @@ class _FakeCli:
         erc_response: tuple[RunResult, dict | None] | None = None,
         drc_response: tuple[RunResult, dict | None] | None = None,
     ) -> None:
+        super().__init__()
         self._erc: tuple[RunResult, dict | None] = erc_response or (RunResult(0, "", ""), None)
         self._drc: tuple[RunResult, dict | None] = drc_response or (RunResult(0, "", ""), None)
         self.erc_call_count = 0

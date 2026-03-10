@@ -146,4 +146,13 @@ LINT_SUGGESTIONS: dict[str, str] = {
         "Increase inter-block spacing (input/output/amp blocks) to at least 20mm. "
         "Adjust the schematic layout or component assignment to blocks."
     ),
+    "LAY012": (
+        "Redistribute the schematic so the page quadrants are used more evenly. "
+        "Re-run the layout passes or move dense blocks away from the dominant region."
+    ),
+    "LAY013": (
+        "Improve central composition by keeping signal stages out of the title block area, "
+        "bringing the op-amp stage back toward the page center, and avoiding "
+        "vertically collapsed layouts."
+    ),
 }

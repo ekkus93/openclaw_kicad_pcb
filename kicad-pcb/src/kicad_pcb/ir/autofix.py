@@ -17,10 +17,16 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 from ..errors import UserError
-from ..symbol_index import SymbolIndex
+
+
+class _SymbolLookupProtocol(Protocol):
+    """Structural interface for symbol pin lookups used by autofix."""
+
+    def get_pins(self, symbol_id: str) -> set[str]: ...
+
 
 # ---------------------------------------------------------------------------
 # Alias table
@@ -199,7 +205,7 @@ def _fix_net_pin_types(
 
 def _fix_pin_aliases(
     ir_dict: dict[str, Any],
-    symbol_index: SymbolIndex,
+    symbol_index: _SymbolLookupProtocol,
 ) -> tuple[dict[str, Any], list[str], list[str]]:
     """Fix wrong pin names using alias table + library lookup.
 
@@ -278,7 +284,7 @@ class AutofixOutcome:
 def autofix_circuit_ir(
     raw: dict[str, Any],
     *,
-    symbol_index: SymbolIndex | None = None,
+    symbol_index: _SymbolLookupProtocol | None = None,
 ) -> AutofixOutcome:
     """Apply all deterministic fix layers to a raw Circuit IR dict.
 

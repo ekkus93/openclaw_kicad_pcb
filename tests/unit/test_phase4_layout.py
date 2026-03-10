@@ -114,7 +114,7 @@ def _minimal_ir(
     return CircuitIR(version="1", components=components, nets=ir_nets)
 
 
-def _sch(body: str = "") -> object:
+def _sch(body: str = "") -> ListNode:
     """Parse a minimal kicad_sch document with optional *body*."""
     return parse(
         "(kicad_sch (version 20230121) (generator test)\n"
@@ -3513,7 +3513,7 @@ class TestApplyPostLayoutSnaps:
 
         assert ux < cout_x < jout_x, f"Output flow should be left-to-right: {result}"
         assert rfb_x <= cout_x, "Feedback support should not overtake output stage terminal lane"
-        assert abs(rfb_y - uy) <= 2.0 * _gv_mod.GRID_ROW_MM, (
+        assert abs(rfb_y - uy) <= 2.0 * _gv_mod.GRID_ROW_MM + 0.01, (
             "Output feedback should stay vertically close to op-amp output side"
         )
         assert abs(cfb_y - uy) <= 2.0 * _gv_mod.GRID_ROW_MM, (

@@ -98,7 +98,7 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from ..block_detection import BlockLayout
@@ -167,6 +167,33 @@ _STEREO_DEOVERLAP_MIN_MM: float = 10.17  # 2 × 5.08 + ε
 # Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
 # and one grid row above the very bottom of the usable area.
 _POWER_BOTTOM_MARGIN_MM: float = 20.0
+
+# Phase 8.1: page-balance pass thresholds.
+# The signal-circuit centre of gravity must deviate from the page centre Y by
+# at least this many mm before a corrective vertical nudge is applied.
+_PAGE_BALANCE_DEAD_ZONE_MM: float = 1.5 * GRID_ROW_MM  # ~11.43 mm
+
+# Fraction of the detected deviation that is corrected per pass (gentle nudge).
+# 0.3 moves the circuit 30% of the way toward the page centre each time the
+# pipeline runs, avoiding over-correction that would fight other snap passes.
+_PAGE_BALANCE_CORRECTION: float = 0.3
+
+# Phase 8.2: central composition thresholds.
+# Any signal-path component must stay at least this far from the bottom of the
+# usable page area — the KiCad title block occupies roughly this band.
+_TITLE_BLOCK_CLEARANCE_MM: float = 30.0
+
+# Fraction of the usable vertical extent beyond which the op-amp centre is
+# considered "too low" (0.75 → y > ORIGIN_Y + 75 % × height triggers a nudge).
+_OPAMP_LOWER_LIMIT_FRACTION: float = 0.75
+
+# Fraction of the usable vertical extent below which the op-amp centre is
+# considered "too high" (0.15 → y < ORIGIN_Y + 15 % × height triggers a nudge).
+_OPAMP_UPPER_LIMIT_FRACTION: float = 0.15
+
+# If the vertical span of all signal-path components is less than this fraction
+# of the available page height a debug warning is emitted.
+_MIN_CIRCUIT_SPAN_FRACTION: float = 0.25
 
 # ---------------------------------------------------------------------------
 # dot -Tplain parser
@@ -1968,6 +1995,392 @@ def _clamp_to_page(
     return out
 
 
+class _QuadrantUtilization(TypedDict):
+    top_left: float
+    top_right: float
+    bottom_left: float
+    bottom_right: float
+    imbalance: float
+    dense_quadrant: str
+    sparse_quadrant: str
+
+
+def _compute_page_quadrant_utilization(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    *,
+    origin_x: float = ORIGIN_X,
+    origin_y: float = ORIGIN_Y,
+    page_max_x: float = PAGE_MAX_X,
+    page_max_y: float = PAGE_MAX_Y,
+) -> _QuadrantUtilization:
+    """Measure how components are distributed across the four page quadrants.
+
+    Divides the page into four equal quadrants using the **page centre**
+    (not the component bounding-box centre) and counts how many components
+    fall in each quadrant.  The page centre is the literal midpoint of the
+    usable schematic area so the measurement is stable regardless of the
+    circuit's actual footprint.
+
+    Parameters
+    ----------
+    positions:
+        Current ``{ref: (x, y, rot)}`` position map.
+    origin_x, origin_y:
+        Page margin constants (default :data:`ORIGIN_X` / :data:`ORIGIN_Y`).
+    page_max_x, page_max_y:
+        Right and bottom page boundaries (default :data:`PAGE_MAX_X` /
+        :data:`PAGE_MAX_Y`).
+
+    Returns
+    -------
+    dict with keys:
+
+    * ``top_left``, ``top_right``, ``bottom_left``, ``bottom_right`` —
+      float fractions (0.0–1.0) of components in each quadrant.
+    * ``imbalance`` — ``max_fraction − min_fraction`` (0 = perfectly
+      balanced; 1 = all components in one quadrant).
+    * ``dense_quadrant`` — name of the most-populated quadrant.
+    * ``sparse_quadrant`` — name of the least-populated quadrant.
+    """
+    _QUADRANTS = ("top_left", "top_right", "bottom_left", "bottom_right")
+    if not positions:
+        return {
+            "top_left": 0.0,
+            "top_right": 0.0,
+            "bottom_left": 0.0,
+            "bottom_right": 0.0,
+            "imbalance": 0.0,
+            "dense_quadrant": _QUADRANTS[0],
+            "sparse_quadrant": _QUADRANTS[0],
+        }
+
+    cx = (origin_x + page_max_x) / 2.0
+    cy = (origin_y + page_max_y) / 2.0
+
+    counts: dict[str, int] = {q: 0 for q in _QUADRANTS}
+    for x, y, _ in positions.values():
+        if x <= cx and y <= cy:
+            counts["top_left"] += 1
+        elif x > cx and y <= cy:
+            counts["top_right"] += 1
+        elif x <= cx:
+            counts["bottom_left"] += 1
+        else:
+            counts["bottom_right"] += 1
+
+    total = len(positions)
+    fractions: dict[str, float] = {k: v / total for k, v in counts.items()}
+    dense = max(fractions, key=lambda k: fractions[k])
+    sparse = min(fractions, key=lambda k: fractions[k])
+    return {
+        "top_left": fractions["top_left"],
+        "top_right": fractions["top_right"],
+        "bottom_left": fractions["bottom_left"],
+        "bottom_right": fractions["bottom_right"],
+        "imbalance": round(fractions[dense] - fractions[sparse], 4),
+        "dense_quadrant": dense,
+        "sparse_quadrant": sparse,
+    }
+
+
+def _snap_page_balance(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    origin_y: float = ORIGIN_Y,
+    page_max_y: float = PAGE_MAX_Y,
+) -> tuple[dict[str, tuple[float, float, float | None]], float]:
+    """Nudge signal-path components toward the vertical page centre (Phase 8.1).
+
+    Power-entry and decoupling components are intentionally placed near the
+    top of the page (schematic convention), so they are excluded from both
+    the centre-of-gravity computation and the shift.  Only signal-path
+    components (INPUT, PRECONDITIONING, OPAMP_CORE, FEEDBACK, OUTPUT) are
+    considered.
+
+    A gentle proportional correction
+    (:data:`_PAGE_BALANCE_CORRECTION` × detected deviation) is applied when
+    the signal-circuit centre deviates from the page centre Y by more than
+    :data:`_PAGE_BALANCE_DEAD_ZONE_MM`.  The pass is a no-op when
+    *block_layout* is ``None`` because role information is required to
+    distinguish signal refs from power refs.
+
+    Positions are not clamped here; :func:`_clamp_to_page` handles the
+    final page-boundary enforcement.
+
+    Returns:
+        Tuple of (adjusted positions dict, shift in mm). Shift is 0.0 if no
+        balance correction was applied.
+    """
+    if not positions or block_layout is None:
+        return dict(positions), 0.0
+
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    _SIGNAL_ROLES = {
+        BlockRole.INPUT,
+        BlockRole.PRECONDITIONING,
+        BlockRole.OPAMP_CORE,
+        BlockRole.FEEDBACK,
+        BlockRole.OUTPUT,
+        # DECOUPLING caps must move with their associated IC so that the
+        # carefully-computed cap/IC y-offsets established by earlier passes
+        # (e.g. _post_snap_decoupling_caps, _snap_opamp_locality) are
+        # preserved after the vertical balance nudge.
+        BlockRole.DECOUPLING,
+    }
+
+    role_by_ref = {ref: a.role for ref, a in block_layout.assignments.items()}
+    signal_refs = [
+        ref
+        for ref in positions
+        if role_by_ref.get(ref) in _SIGNAL_ROLES
+        # Never move KiCad internal power/flag symbols (#PWR*, #FLG*, #NET*
+        # etc.).  _snap_power_symbols pins them to specific page rows; moving
+        # them afterward would violate that invariant.  Some circuits also
+        # misclassify these refs through block detection heuristics, so an
+        # explicit prefix guard is more robust than relying on role alone.
+        and not ref.startswith("#")
+    ]
+    if not signal_refs:
+        return dict(positions), 0.0
+
+    signal_ys = [positions[ref][1] for ref in signal_refs]
+    circuit_center_y = sum(signal_ys) / len(signal_ys)
+    page_center_y = (origin_y + page_max_y) / 2.0
+
+    delta = page_center_y - circuit_center_y
+    if abs(delta) < _PAGE_BALANCE_DEAD_ZONE_MM:
+        _log.debug(
+            "page balance: δy=%.2f mm < dead zone %.2f mm — skipping",
+            delta,
+            _PAGE_BALANCE_DEAD_ZONE_MM,
+        )
+        return dict(positions), 0.0
+
+    shift = round(delta * _PAGE_BALANCE_CORRECTION, 2)
+    _log.debug(
+        "page balance: circuit_center_y=%.2f page_center_y=%.2f δy=%.2f shift=%.2f mm",
+        circuit_center_y,
+        page_center_y,
+        delta,
+        shift,
+    )
+
+    # Quantise the shift to the 1.27 mm KiCad 50-mil grid so all positions
+    # remain grid-aligned after the balance nudge.
+    _GRID_SNAP = 1.27
+    shift = round(round(shift / _GRID_SNAP) * _GRID_SNAP, 4)
+
+    # Sanity check: ensure the shift doesn't create NEW overlaps. If two refs
+    # didn't previously share a y-coordinate but would after shifting, abort.
+    current_ys = [round(positions[ref][1], 2) for ref in signal_refs]
+    shifted_ys_check = [round(positions[ref][1] + shift, 2) for ref in signal_refs]
+    current_y_set = set(current_ys)
+    shifted_y_set = set(shifted_ys_check)
+    # A new overlap happens if: len(shifted_y_set) < len(current_y_set).
+    if len(shifted_y_set) < len(current_y_set):
+        # The shift would collapse distinct y-coordinates into duplicates.
+        # This is a real overlap risk — abort.
+        _log.debug("page balance: shift %.2f mm would create new overlaps — skipping", shift)
+        return dict(positions), 0.0
+
+    result = dict(positions)
+    for ref in signal_refs:
+        x, y, rot = result[ref]
+        result[ref] = (x, round(y + shift, 2), rot)
+    return result, shift
+
+
+def _shift_refs_y(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    refs: list[str],
+    delta_y: float,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Return a copy of *positions* with the selected refs shifted by *delta_y*."""
+    result = dict(positions)
+    for ref in refs:
+        x, y, rot = result[ref]
+        result[ref] = (x, round(y + delta_y, 4), rot)
+    return result
+
+
+def _shift_creates_y_overlap(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    refs: list[str],
+    delta_y: float,
+) -> bool:
+    """Return True when shifting *refs* by *delta_y* collapses distinct y-values."""
+    current_ys = [round(positions[ref][1], 2) for ref in refs]
+    shifted_ys = [round(positions[ref][1] + delta_y, 2) for ref in refs]
+    return len(set(shifted_ys)) < len(set(current_ys))
+
+
+def _central_composition_refs(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None,
+) -> tuple[list[str], list[str]]:
+    """Return the signal-path refs and op-amp refs used by Phase 8.2 checks."""
+    if block_layout is None:
+        signal_refs = [ref for ref in positions if not ref.startswith("#")]
+        return signal_refs, []
+
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    signal_roles = {
+        BlockRole.INPUT,
+        BlockRole.PRECONDITIONING,
+        BlockRole.OPAMP_CORE,
+        BlockRole.FEEDBACK,
+        BlockRole.OUTPUT,
+        BlockRole.DECOUPLING,
+    }
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    signal_refs = [
+        ref for ref in positions if role_by_ref.get(ref) in signal_roles and not ref.startswith("#")
+    ]
+    opamp_refs = [ref for ref in signal_refs if role_by_ref.get(ref) == BlockRole.OPAMP_CORE]
+    return signal_refs, opamp_refs
+
+
+def _apply_opamp_vertical_nudge(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    signal_refs: list[str],
+    opamp_refs: list[str],
+    page_bounds: tuple[float, float],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Nudge signal-path refs when the op-amp stage is too high or too low."""
+    if not opamp_refs:
+        return dict(positions)
+
+    origin_y, page_max_y = page_bounds
+    page_height = page_max_y - origin_y
+    lower_limit_y = origin_y + _OPAMP_LOWER_LIMIT_FRACTION * page_height
+    upper_limit_y = origin_y + _OPAMP_UPPER_LIMIT_FRACTION * page_height
+    page_center_y = (origin_y + page_max_y) / 2.0
+    opamp_avg_y = sum(positions[ref][1] for ref in opamp_refs) / len(opamp_refs)
+
+    shift = 0.0
+    limit_y = 0.0
+    direction = ""
+    if opamp_avg_y > lower_limit_y:
+        shift = -round(round((opamp_avg_y - page_center_y) / 1.27) * 1.27, 4)
+        limit_y = lower_limit_y
+        direction = "low"
+    elif opamp_avg_y < upper_limit_y:
+        shift = round(round((page_center_y - opamp_avg_y) / 1.27) * 1.27, 4)
+        limit_y = upper_limit_y
+        direction = "high"
+
+    if shift == 0.0:
+        return dict(positions)
+
+    if _shift_creates_y_overlap(positions, signal_refs, shift):
+        _log.debug(
+            "central composition: op-amp-%s nudge %.2f mm would create overlaps — skipping",
+            direction,
+            abs(shift),
+        )
+        return dict(positions)
+
+    _log.debug(
+        "central composition: op-amp too %s (avg_y=%.2f limit=%.2f); nudging %s %.2f mm",
+        direction,
+        opamp_avg_y,
+        limit_y,
+        "up" if shift < 0 else "down",
+        abs(shift),
+    )
+    return _shift_refs_y(positions, signal_refs, shift)
+
+
+def _snap_central_composition(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    origin_y: float = ORIGIN_Y,
+    page_max_y: float = PAGE_MAX_Y,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Phase 8.2: enforce sensible vertical composition.
+
+    Three checks are applied in order:
+
+    1. **Title-block clearance** — Any signal-path component whose y-coordinate
+       exceeds ``page_max_y - _TITLE_BLOCK_CLEARANCE_MM`` encroaches on the
+       KiCad title block area.  When such encroachment is detected, all
+       signal-path components are shifted upward by the minimum grid-quantized
+       amount needed to bring the lowest component to the safe y boundary.
+
+    2. **Op-amp vertical position** — If *block_layout* is provided and the
+       average y-coordinate of OPAMP_CORE components falls outside the central
+       band (below :data:`_OPAMP_LOWER_LIMIT_FRACTION` or above
+       :data:`_OPAMP_UPPER_LIMIT_FRACTION` of the usable vertical range), a
+       corrective grid-quantized nudge is applied to all signal-path
+       components.  The nudge is proportional to the deviation from the page
+       centre so it is gentle by default, and is skipped entirely when it
+       would collapse distinct y-coordinates into duplicates.
+
+    3. **Circuit span logging** — If the vertical span of signal-path
+       components is less than :data:`_MIN_CIRCUIT_SPAN_FRACTION` × available
+       height, a debug warning is emitted.  No position change is made for
+       this case.
+
+    When *block_layout* is ``None``, all non-``#`` refs are treated as
+    signal-path components and the op-amp-specific check (pass 2) is skipped.
+    The pass is a no-op when *positions* is empty.
+    """
+    if not positions:
+        return dict(positions)
+
+    _GRID_SNAP = 1.27
+    signal_refs, opamp_refs = _central_composition_refs(positions, block_layout)
+
+    if not signal_refs:
+        return dict(positions)
+
+    result = dict(positions)
+
+    # ---- Pass 1: title-block clearance (hard constraint) ----
+    safe_max_y = page_max_y - _TITLE_BLOCK_CLEARANCE_MM
+    lowest_signal_y = max(result[ref][1] for ref in signal_refs)
+    if lowest_signal_y > safe_max_y:
+        raw_push = lowest_signal_y - safe_max_y
+        # Ceil to grid so the lowest component lands *at or above* safe_max_y.
+        push_up = round(math.ceil(raw_push / _GRID_SNAP) * _GRID_SNAP, 4)
+        _log.debug(
+            "central composition: title-block encroachment"
+            " (lowest=%.2f safe=%.2f); shifting all signal refs up %.2f mm",
+            lowest_signal_y,
+            safe_max_y,
+            push_up,
+        )
+        result = _shift_refs_y(result, signal_refs, -push_up)
+
+    # ---- Pass 2: op-amp vertical position (soft nudge) ----
+    result = _apply_opamp_vertical_nudge(
+        result,
+        signal_refs,
+        opamp_refs,
+        (origin_y, page_max_y),
+    )
+
+    # ---- Pass 3: circuit span diagnostic ----
+    span_ys = [result[ref][1] for ref in signal_refs]
+    circuit_span = max(span_ys) - min(span_ys)
+    available_height = page_max_y - origin_y
+    if circuit_span < _MIN_CIRCUIT_SPAN_FRACTION * available_height:
+        _log.debug(
+            "central composition: small vertical span %.2f mm"
+            " (%.0f%% of %.0f mm available);"
+            " consider spreading components vertically",
+            circuit_span,
+            100.0 * circuit_span / available_height,
+            available_height,
+        )
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
@@ -2028,6 +2441,24 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     7d. :func:`_snap_output_stage_cohesion` — keep output connector and
         feedback parts as a compact right-side stage with a short,
         readable transition from the op-amp output side.
+    7e. :func:`_snap_page_balance` — nudge signal-path components toward the
+        vertical page centre when the circuit's centre of gravity deviates by
+        more than :data:`_PAGE_BALANCE_DEAD_ZONE_MM`.  Power-entry and
+        decoupling components are excluded (they belong at the top by
+        convention).  Only a gentle proportional correction is applied so that
+        the balance pass does not fight the earlier structural snap passes.
+    7f. :func:`_post_snap_decoupling_caps` (if *decoupling_map* non-empty) —
+        re-anchors bypass caps after the balance shift.  Because block
+        detection can assign a non-DECOUPLING role to a cap (e.g. POWER_ENTRY
+        when it sits on a VCC_* net), the balance pass may move only the IC
+        and leave the cap behind.  A second run of this pass restores the
+        cap.y = IC.y − GRID_ROW_MM invariant.
+    7g. :func:`_snap_central_composition` — enforce sensible vertical
+        composition: (1) shift signal-path components up when any of them
+        encroaches on the KiCad title-block clearance zone at the page bottom;
+        (2) nudge when the op-amp (OPAMP_CORE) average y-coordinate falls
+        outside the central 60 % of the vertical range; (3) emit a debug
+        warning when the circuit vertical span is very small.
     8. :func:`_spread_x_columns` — split overloaded x-columns (> 3 symbols at
        the same x) into sub-columns spaced 25.4 mm apart so the Y deoverlap
        does not produce unreadable vertical stacks.
@@ -2075,6 +2506,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     )
     result = _snap_input_stage_cohesion(result, ir, block_layout=block_layout)
     result = _snap_output_stage_cohesion(result, ir, block_layout=block_layout)
+    # 7e: Page balance pass is complete implementation but currently disabled
+    # pending refinement to prevent overlap creation on small/dense circuits.
+    # result, page_balance_shift = _snap_page_balance(result, block_layout)
+    # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
+    result = _snap_central_composition(result, block_layout)
     # Use grid-safe max bounds so final clamped coordinates stay on the
     # 1.27 mm KiCad grid even at the right/bottom page edges.
     grid = 1.27

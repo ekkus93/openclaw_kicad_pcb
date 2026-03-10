@@ -14,6 +14,7 @@ from __future__ import annotations
 import ast
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 # ---------------------------------------------------------------------------
@@ -179,7 +180,7 @@ class TestWriteTempText:
         """If the write itself fails the temp file must be cleaned up."""
         real_fdopen = os.fdopen
 
-        def failing_fdopen(fd: int, mode: str = "r", **kwargs: object) -> object:
+        def failing_fdopen(fd: int, mode: str = "r", **kwargs: Any) -> object:
             fobj = real_fdopen(fd, mode, **kwargs)
 
             class _FailOnWrite:
@@ -194,7 +195,7 @@ class TestWriteTempText:
                 def __enter__(self) -> _FailOnWrite:
                     return self
 
-                def __exit__(self, *args: object) -> None:
+                def __exit__(self, *args: Any) -> None:
                     fobj.__exit__(*args)  # type: ignore[union-attr]
 
             return _FailOnWrite()

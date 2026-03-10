@@ -158,7 +158,9 @@ class TestAdvisoryWarnings:
         assert "SINGLE_PIN_NET" in codes
 
         found = next(w for w in warnings if w["code"] == "SINGLE_PIN_NET")
-        assert "DANGLING" in found["details"]["nets"]
+        details = found["details"]
+        assert isinstance(details, dict)
+        assert "DANGLING" in details["nets"]
 
     def test_both_warnings_independent(self) -> None:
         """Both COMPONENT_NOT_IN_ANY_NET and SINGLE_PIN_NET can fire together."""

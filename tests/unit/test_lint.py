@@ -21,6 +21,7 @@ from kicad_pcb.lint.sch import (
     _LAY_SYMBOL_HALF_SIZE_MM,
 )
 from kicad_pcb.sexpr import parse
+from kicad_pcb.sexpr.nodes import ListNode
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -42,7 +43,7 @@ def _warn_codes(issues: list[LintIssue]) -> list[str]:
     return [i.code for i in issues if i.severity == _WARN]
 
 
-def _sch(body: str = "") -> object:
+def _sch(body: str = "") -> ListNode:
     """Parse a minimal kicad_sch document with optional *body* appended."""
     return parse(
         f"(kicad_sch (version 20230121) (generator test)\n"
@@ -53,7 +54,7 @@ def _sch(body: str = "") -> object:
     )
 
 
-def _pcb(body: str = "") -> object:
+def _pcb(body: str = "") -> ListNode:
     """Parse a minimal kicad_pcb document with optional *body* appended."""
     return parse(f"(kicad_pcb (version 20230121) (generator test)\n  {body}\n)")
 

@@ -12,10 +12,34 @@ accidentally as refactoring proceeds.
 
 from __future__ import annotations
 
+import importlib
 import re
 from pathlib import Path
+from typing import Protocol, cast
 
-from kiutils.schematic import Schematic
+
+class _KiLibSymbol(Protocol):
+    entryName: str
+    libraryNickname: str
+
+
+class _KiSchematicSymbol(Protocol):
+    entryName: str
+    instances: object
+
+
+class _KiSchematicDoc(Protocol):
+    libSymbols: list[_KiLibSymbol]
+    schematicSymbols: list[_KiSchematicSymbol]
+
+
+def _load_kiutils_schematic(path: Path) -> _KiSchematicDoc:
+    """Load a schematic via kiutils without importing untyped modules at type-check time."""
+    schematic_mod = importlib.import_module("kiutils.schematic")
+    schematic_cls = getattr(schematic_mod, "Schematic")
+    doc = schematic_cls().from_file(str(path))
+    return cast(_KiSchematicDoc, doc)
+
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 WORKING = FIXTURES / "working"
@@ -29,15 +53,15 @@ BROKEN = FIXTURES / "broken"
 
 class TestWorkingFixture:
     def test_loads_with_kiutils(self) -> None:
-        sch = Schematic().from_file(str(WORKING / "SmokeTest_R1.kicad_sch"))
+        sch = _load_kiutils_schematic(WORKING / "SmokeTest_R1.kicad_sch")
         assert sch is not None
 
     def test_has_one_lib_symbol(self) -> None:
-        sch = Schematic().from_file(str(WORKING / "SmokeTest_R1.kicad_sch"))
+        sch = _load_kiutils_schematic(WORKING / "SmokeTest_R1.kicad_sch")
         assert len(sch.libSymbols) == 1
 
     def test_lib_symbol_has_correct_root_name(self) -> None:
-        sch = Schematic().from_file(str(WORKING / "SmokeTest_R1.kicad_sch"))
+        sch = _load_kiutils_schematic(WORKING / "SmokeTest_R1.kicad_sch")
         lib_sym = sch.libSymbols[0]
         assert lib_sym.entryName == "R"
         assert lib_sym.libraryNickname == "Device"
@@ -59,7 +83,7 @@ class TestWorkingFixture:
 
     def test_placed_symbol_has_instances_block(self) -> None:
         """Placed symbols must have an (instances ...) block for netlist export."""
-        sch = Schematic().from_file(str(WORKING / "SmokeTest_R1.kicad_sch"))
+        sch = _load_kiutils_schematic(WORKING / "SmokeTest_R1.kicad_sch")
         # Each schematic symbol should have at least one instance project path
         for sym in sch.schematicSymbols:
             assert sym.instances, f"Symbol {sym.entryName} missing (instances ...) block"
