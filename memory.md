@@ -1,5 +1,18 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-10T21:54:43Z - Phase 10 changes prepared for commit/push
+
+- Working tree includes Phase 10 completion updates in `code_review/CODE_REVIEW6_TODO.md`, new integration tests in `tests/unit/test_phase10_validation.py`, and a new human-review checklist artifact in `tests/fixtures/readability/ne5532_headphone_amp_left_current/PHASE10_HUMAN_REVIEW_CHECKLIST.md`.
+- Validation just before handoff: `ruff check .`, `mypy kicad-pcb/src`, and full `pytest -q` all passed.
+- Ready to commit and push these changes to `master`.
+
+## 2026-03-10T21:37:07Z - Phase 10 validation and review loop completed
+
+- Added `tests/unit/test_phase10_validation.py` with integration checks for golden readability targets, block separation, syntax/lint validation, ERC-path execution with injected CLI adapter, and transactional no-overwrite behavior.
+- Added manual review artifact `tests/fixtures/readability/ne5532_headphone_amp_left_current/PHASE10_HUMAN_REVIEW_CHECKLIST.md`.
+- Updated `code_review/CODE_REVIEW6_TODO.md` to mark Phase 10.1/10.2/10.3 complete, document added tests, and mark Phase 10 complete in implementation order.
+- Validation run: `pytest -q tests/unit/test_phase10_validation.py` passed, `ruff check .` passed, `mypy kicad-pcb/src` passed.
+
 ## 2026-03-10T20:06:14Z - Full repo verification run (ruff, mypy, pytest)
 
 - Executed full quality gates from repo root:
@@ -3930,3 +3943,4 @@ Completed Phase 5.1 of CODE_REVIEW6: Reduce ground and power symbol clutter thro
 - Updated `code_review/CODE_REVIEW6_TODO.md` to mark Phase 9.3 checklist items complete and added a concise test summary for `tests/unit/test_phase9_sanity.py`.
 - Verified quality gates again: `ruff check .` passed, `mypy kicad-pcb/src` passed (64 files), and full `pytest` run completed with exit code 0.
 - Pending repo changes now include the TODO update and regenerated readability fixture baseline at `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch`.
+
