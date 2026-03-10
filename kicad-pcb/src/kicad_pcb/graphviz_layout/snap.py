@@ -94,6 +94,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
 
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
@@ -549,6 +550,102 @@ def _snap_opamp_halo(
                 new_y,
             )
             result[halo_ref] = (round(anchor_x, 2), new_y, halo_rot)
+
+    return result
+
+
+def _snap_block_zones(
+    positions: dict[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+    *,
+    origin_x: float = ORIGIN_X,
+    origin_y: float = ORIGIN_Y,
+    page_max_x: float = PAGE_MAX_X,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Bias component positions toward their designated functional block zones.
+
+    Applies gentle nudges to components based on their BlockRole assignment:
+
+    * **POWER_ENTRY / DECOUPLING** → bias toward top (y closer to origin_y)
+    * **INPUT / PRECONDITIONING** → bias toward left (x closer to origin_x)
+    * **OUTPUT** → bias toward right (x closer to page_max_x)
+    * **OPAMP_CORE / FEEDBACK** → no adjustment (Graphviz center is fine)
+
+    This pass runs after power-symbol and connector snaps but before stereo
+    split and compaction so that block zones influence the initial layout
+    without conflicting with later hard constraints.
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions from the previous snap pass.
+    block_layout:
+        Functional block classification from
+        :func:`~kicad_pcb.block_detection.classify_circuit`.
+    origin_x, origin_y:
+        Page margins (left, top).
+    page_max_x:
+        Right page boundary.
+    """
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    result = dict(positions)
+
+    # Define nudge thresholds: only adjust if component is far from its zone.
+    # These are gentle biases, not hard constraints.
+    LEFT_ZONE_X = origin_x + 80.0  # mm — left third of page
+    RIGHT_ZONE_X = page_max_x - 100.0  # mm — right third of page
+    TOP_ZONE_Y = origin_y + 30.0  # mm — top region for power
+
+    for ref, assignment in block_layout.assignments.items():
+        if ref not in result:
+            continue
+
+        x, y, rot = result[ref]
+        role = assignment.role
+
+        # Bias power and decoupling components toward the top
+        if role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}:
+            if y > TOP_ZONE_Y + 20.0:
+                # Pull up by 1 grid row (7.62mm) if way too low
+                new_y = round(y - GRID_ROW_MM, 2)
+                _log.debug(
+                    "block zone snap: %r (%s) too low (y=%.2f), nudging to %.2f",
+                    ref,
+                    role.value,
+                    y,
+                    new_y,
+                )
+                result[ref] = (x, new_y, rot)
+
+        # Bias input/preconditioning toward left
+        elif role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}:
+            if x > LEFT_ZONE_X + 40.0:
+                # Pull left by ~25mm if too far right
+                new_x = round(x - 25.4, 2)
+                _log.debug(
+                    "block zone snap: %r (%s) too far right (x=%.2f), nudging to %.2f",
+                    ref,
+                    role.value,
+                    x,
+                    new_x,
+                )
+                result[ref] = (x, y, rot)
+
+        # Bias output toward right
+        elif role == BlockRole.OUTPUT and x < RIGHT_ZONE_X - 40.0:
+            # Pull right by ~25mm if too far left
+            new_x = round(x + 25.4, 2)
+            _log.debug(
+                "block zone snap: %r (%s) too far left (x=%.2f), nudging to %.2f",
+                ref,
+                role.value,
+                x,
+                new_x,
+            )
+            result[ref] = (new_x, y, rot)
+
+        # OPAMP_CORE and FEEDBACK: no adjustment (center is fine)
 
     return result
 
@@ -1297,6 +1394,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     decoupling_map: dict[str, str],
     roles: Mapping[str, str] | None = None,
     halo: Mapping[str, str] | None = None,
+    block_layout: BlockLayout | None = None,
     strict: bool = False,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
@@ -1314,6 +1412,9 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
        IC (skipped when *feedback_refs* is empty).
     3b. :func:`_snap_opamp_halo` — pull halo members back to their anchor
         IC's column when they have drifted (skipped when *halo* is ``None``).
+    3c. :func:`_snap_block_zones` — bias components toward their functional
+        block zones (INPUT left, OUTPUT right, POWER top; skipped when
+        *block_layout* is ``None``).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
        (skipped when no L or R channel is present in *channels*).
     4b. :func:`_post_stereo_barycentric` — reduce intra-channel crossings after
@@ -1343,6 +1444,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _snap_feedback_components(result, annotations, ir, strict=strict)
     if halo:
         result = _snap_opamp_halo(result, halo)
+    if block_layout:
+        result = _snap_block_zones(result, block_layout)
     if any(v in ("L", "R") for v in channels.values()):
         result = _apply_stereo_split(result, channels)
         result = _post_stereo_barycentric(result, ir, channels)

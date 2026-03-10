@@ -228,6 +228,13 @@ class GraphvizLayoutEngine:
         if not refs:
             return {}
 
+        # Phase 1.2: Classify components into functional blocks for readability.
+        # Block assignments are computed early so they can influence layout decisions.
+        from ..block_detection import classify_circuit, debug_dump  # noqa: PLC0415
+
+        block_layout = classify_circuit(ir)
+        _log.debug("Block detection complete:\n%s", debug_dump(block_layout))
+
         # Detect decoupling caps before building DOT source so the same map
         # can be used both for invisible-edge constraints and post-layout snap.
         decoupling_map = _find_decoupling_caps(ir)
@@ -318,6 +325,7 @@ class GraphvizLayoutEngine:
             decoupling_map=decoupling_map,
             roles=_roles or None,
             halo=halo or None,
+            block_layout=block_layout,
             strict=self._strict,
         )
 
