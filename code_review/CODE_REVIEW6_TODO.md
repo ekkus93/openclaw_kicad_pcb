@@ -146,9 +146,28 @@ The schematic should visually communicate left-to-right signal flow.
 - [x] Bias/block-specific exceptions are allowed, but should not obscure the main path.
 
 ### 3.2 Improve net routing to reinforce signal direction
-- [ ] Prefer horizontal progression for signal-carrying nets.
-- [ ] Reduce unnecessary vertical detours for main signal paths.
+- [x] Prefer horizontal progression for signal-carrying nets.
+  - **Status**: Already implemented in `_l_route()` (horizontal-first L-routing)
+  - **Validated by**: `test_l_route_horizontal_first()` ✅
+- [x] Reduce unnecessary vertical detours for main signal paths.
+  - **Status**: Already implemented in `_spine_route()` (axis selection via x_span >= y_span)
+  - **Validated by**: `test_spine_route_chooses_horizontal_when_wider()` ✅
 - [ ] Favor local wiring around each block before connecting onward to the next block.
+  - **Status**: Would require block-aware routing (not yet implemented)
+  - **Analysis**: Current routing uses pin endpoints only; block roles not considered in routing decisions
+  - **Future Enhancement**: Could add block_layout parameter to route_nets() to enable block-aware wiring
+
+**Tests Added (Commit d1d792e)**:
+- `test_l_route_horizontal_first`: Validates horizontal-first L-routing
+- `test_l_route_degenerate_segments`: Validates degenerate segment handling
+- `test_spine_route_chooses_horizontal_when_wider`: Validates horizontal spine selection
+- `test_spine_route_chooses_vertical_when_taller`: Validates vertical spine selection
+- `test_spine_route_tie_break_direction`: Validates tie-breaker direction preference
+- `test_circuit_routing_computation_completes`: Integration test with real circuit
+
+**Conclusion**: Current routing architecture already reinforces left-to-right signal flow 
+via horizontal-first L-routing and horizontal-biased spine routing. Block-aware routing 
+would be a future enhancement beyond Phase 3.
 
 ### 3.3 Add explicit “main signal path” identification
 - [ ] Identify the probable primary signal chain from input net(s) to output net(s).
