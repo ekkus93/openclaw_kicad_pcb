@@ -1,6 +1,54 @@
 # kicad-pcb Skill — Memory File
 
-_Last updated: 2026-03-06T18:34:46Z_
+_Last updated: 2026-03-10T03:17:57Z_
+
+
+## 2026-03-10T03:17:57Z — Completed Phase 0: Readability baseline fixture generation
+
+CODE_REVIEW6 readability improvement work started.  Completed Phase 0 (baseline + metrics):
+
+**Phase 0 Implementation:**
+- Created readability fixture directory: `tests/fixtures/readability/ne5532_headphone_amp_left_current/`
+- Generated baseline schematic from canonical headphone amp IR (13 components → 21 symbols with power symbols)
+- Added 5 new readability metrics to `schematic_metrics.py`:
+  - `count_power_symbols()` — counts GND/VCC power flag symbols
+  - `count_short_wire_segments()` — counts jaggy wire segments under threshold
+  - `average_symbol_spacing()` — computes avg nearest-neighbor distance (crowding metric)
+  - `page_region_density()` — measures symbol distribution by quadrant
+- Created baseline generation test (`test_readability_baseline.py`) with regression coverage
+- Documented 14 specific readability problems in baseline README
+
+**Baseline Metrics Captured (before improvements):**
+- X columns: 10 (good horizontal spread)
+- GND labels: 0 (uses power symbols)
+- Power symbols: 0 (note: may be implementation artifact; needs investigation)
+- Wire stub ratio: 0.58 (high — many stubs)
+- Short wires: 91 (jaggy routing)
+- Avg spacing: 12.36 mm
+- Region density: top_right 38%, bottom_right 33%, top_left 29%, bottom_left 0% (unbalanced)
+- Symbol count: 21
+
+**Validation:**
+- All new metrics pass type checking (`mypy`)
+- All new code passes linting (`ruff`)
+- All metrics tests pass (31 tests in `test_schematic_metrics.py` + 2 in `test_readability_baseline.py`)
+
+**Next Steps:**
+Per CODE_REVIEW6_TODO, implement Phases 1-4 as proof-of-concept:
+1. Phase 1: Functional block detection + block layout zones
+2. Phase 2: Reduce crowding / improve whitespace
+3. Phase 3: Strengthen signal flow
+4. Phase 4: Clean up op-amp neighborhood
+
+After Phases 1-4, regenerate baseline and assess improvement before continuing to later phases.
+
+
+## 2026-03-09T20:38:10Z — Refreshed repo overview from README and memory
+
+- Repository purpose: OpenClaw KiCad PCB automation skill that generates and edits KiCad schematic/PCB files through AST-based S-expression tooling rather than regex mutation.
+- Core workflow: Spec or Circuit IR JSON -> deterministic schematic generation (`new-from-netlist` / `apply-netlist`) with ownership markers, preflight validation, linting, and optional `kicad-cli` validation.
+- Layout model: prefers Graphviz `dot` for left-to-right schematic placement, with heuristic fallback when Graphviz is unavailable.
+- Current verified state from prior work: full repo quality gates last passed on 2026-03-06 (`ruff`, `mypy`, full `pytest`).
 
 
 ## 2026-03-06T18:34:46Z — Full verification pass completed after item 24
