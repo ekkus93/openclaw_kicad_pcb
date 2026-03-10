@@ -104,34 +104,34 @@ Make the schematic read as distinct functional blocks rather than a single auto-
 Spread components more intelligently so dense clusters become readable.
 
 ### 2.1 Add regional density checks during layout
-- [ ] Compute local density scores for symbols after placement.
-- [ ] Detect over-dense pockets, especially where many symbols are close in one corner/region.
-- [ ] Add a layout refinement pass that pushes dense clusters apart while preserving block membership.
+- [x] Compute local density scores for symbols after placement.
+- [x] Detect over-dense pockets, especially where many symbols are close in one corner/region.
+- [x] Add a layout refinement pass that pushes dense clusters apart while preserving block membership.
 
 ### 2.2 Improve intra-block spacing
-- [ ] Add minimum spacing rules between symbols within a block.
-- [ ] Add slightly larger spacing for:
-  - [ ] connectors
-  - [ ] active devices
-  - [ ] pots and jacks
-- [ ] Allow denser spacing only for clearly-related passive groups if readability remains acceptable.
+- [x] Add minimum spacing rules between symbols within a block.
+- [x] Add slightly larger spacing for:
+  - [x] connectors
+  - [x] active devices
+  - [x] pots and jacks
+- [x] Allow denser spacing only for clearly-related passive groups if readability remains acceptable.
 
 ### 2.3 Improve inter-block spacing
-- [ ] Enforce minimum separation between major blocks:
-  - [ ] input vs op-amp stage
-  - [ ] op-amp stage vs output block
-  - [ ] signal blocks vs power/decoupling block
-- [ ] Ensure functional blocks do not visually bleed into each other.
+- [x] Enforce minimum separation between major blocks:
+  - [x] input vs op-amp stage
+  - [x] op-amp stage vs output block
+  - [x] signal blocks vs power/decoupling block
+- [x] Ensure functional blocks do not visually bleed into each other.
 
 ### 2.4 Add layout lints for crowding
-- [ ] Add readability lint(s), e.g.:
-  - [ ] `LAY006`: region is too dense
-  - [ ] `LAY007`: insufficient whitespace between functional blocks
-- [ ] Make them warnings first; evaluate whether any should become errors later.
+- [x] Add readability lint(s), e.g.:
+  - [x] `LAY006`: region is too dense (local crowding detection)
+  - [x] `LAY008`: insufficient whitespace between functional blocks (inter-block spacing)
+- [x] Make them warnings first; evaluate whether any should become errors later.
 
 ### 2.5 Add tests for crowding reduction
-- [ ] Verify symbol density in the top-left/center-left region decreases relative to baseline fixture.
-- [ ] Verify average nearest-neighbor symbol spacing improves.
+- [x] Verify symbol density in the top-left/center-left region decreases relative to baseline fixture.
+- [x] Verify average nearest-neighbor symbol spacing improves.
 
 ---
 
@@ -141,9 +141,9 @@ Spread components more intelligently so dense clusters become readable.
 The schematic should visually communicate left-to-right signal flow.
 
 ### 3.1 Strengthen left-to-right placement constraints
-- [ ] Ensure major signal-path blocks are ordered:
-  - [ ] input → preconditioning/volume → op-amp → output
-- [ ] Bias/block-specific exceptions are allowed, but should not obscure the main path.
+- [x] Ensure major signal-path blocks are ordered:
+  - [x] input → preconditioning/volume → op-amp → output
+- [x] Bias/block-specific exceptions are allowed, but should not obscure the main path.
 
 ### 3.2 Improve net routing to reinforce signal direction
 - [ ] Prefer horizontal progression for signal-carrying nets.
@@ -156,9 +156,9 @@ The schematic should visually communicate left-to-right signal flow.
 - [ ] Keep secondary support components near the relevant signal stage without obscuring the main path.
 
 ### 3.4 Add tests for signal-flow clarity
-- [ ] Assert the input connector x-position is left of the op-amp stage.
-- [ ] Assert the output connector x-position is right of the op-amp stage.
-- [ ] Assert the main output coupling/output parts are placed to the right of the op-amp, not interleaved in the left cluster.
+- [x] Assert the input connector x-position is left of the op-amp stage.
+- [x] Assert the output connector x-position is right of the op-amp stage.
+- [x] Assert the main output coupling/output parts are placed to the right of the op-amp, not interleaved in the left cluster.
 
 ---
 
@@ -355,18 +355,20 @@ Make readability improvements measurable and regression-resistant.
 ## Suggested Implementation Order
 
 0. [x] Phase 0 — baseline fixture + metrics helpers ✅ **COMPLETE**
-1. [x] Phase 1.1 — block detection and classification ✅ **COMPLETE** (1.2, 1.3 follow-ups)
-2. [ ] Phase 1.2 — layout engine integration with block zones
-3. [ ] Phase 1.3 — block placement tests and validation
-4. [ ] Phase 2 — reduce crowding / improve whitespace
-5. [ ] Phase 3 — strengthen signal-flow layout
-6. [ ] Phase 4 — clean up op-amp neighborhood
-7. [ ] Phase 6 — wire simplification
-8. [ ] Phase 5 — reduce ground/power clutter
-9. [ ] Phase 7 — improve input/output staging
-10. [ ] Phase 8 — page composition balancing
-11. [ ] Phase 9 — orientation consistency
-12. [ ] Phase 10 — golden tests and human-review loop
+1. [x] Phase 1.1 — block detection and classification ✅ **COMPLETE**
+2. [x] Phase 1.2 — layout engine integration with block zones ✅ **COMPLETE**
+3. [x] Phase 1.3 — block placement tests and validation ✅ **COMPLETE**
+4. [x] Phase 2 — reduce crowding / improve whitespace ✅ **COMPLETE**
+5. [x] Phase 3.1 — strengthen left-to-right placement constraints ✅ **COMPLETE**
+6. [ ] Phase 3.2 — improve net routing for signal direction
+7. [ ] Phase 3.3 — main signal path identification
+8. [ ] Phase 4 — clean up op-amp neighborhood
+9. [ ] Phase 6 — wire simplification
+10. [ ] Phase 5 — reduce ground/power clutter
+11. [ ] Phase 7 — improve input/output staging
+12. [ ] Phase 8 — page composition balancing
+13. [ ] Phase 9 — orientation consistency
+14. [ ] Phase 10 — golden tests and human-review loop
 
 ---
 
