@@ -1,0 +1,15 @@
+{
+  "avg_spacing": 12.363867741647036,
+  "gnd_labels": 0,
+  "power_symbols": 0,
+  "region_density": {
+    "bottom_left": 0.0,
+    "bottom_right": 0.3333333333333333,
+    "top_left": 0.2857142857142857,
+    "top_right": 0.38095238095238093
+  },
+  "short_wires": 91,
+  "symbol_count": 21,
+  "wire_stub_ratio": 0.58,
+  "x_columns": 10
+}
