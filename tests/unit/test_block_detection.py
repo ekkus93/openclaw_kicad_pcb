@@ -18,7 +18,7 @@ from kicad_pcb.block_detection import (
     classify_circuit,
     debug_dump,
 )
-from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.graphviz_layout.snap import _snap_block_zones
 from kicad_pcb.router import _l_route, _spine_route, route_nets
@@ -421,29 +421,52 @@ def test_block_zone_snapping() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(
-    not _CIRCUIT_IR_PATH.exists(),
-    reason="Circuit IR fixture not found",
-)
 def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
     """Verify input connectors are placed left of the op-amp stage (Phase 3.4).
 
     This validates left-to-right signal flow: INPUT → OPAMP_CORE.
     """
-    ir = _load_test_circuit()
+    # Create a circuit inline with an op-amp
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="RIN", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+        ],
+        nets=[
+            NetIR(name="IN_A", pins=[PinRefIR(ref="JIN", pin="1"), PinRefIR(ref="RIN", pin="1")]),
+            NetIR(name="IN_B", pins=[PinRefIR(ref="RIN", pin="2"), PinRefIR(ref="U1", pin="3")]),
+            NetIR(name="OUT", pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="JOUT", pin="1")]),
+            NetIR(name="VCC", pins=[PinRefIR(ref="U1", pin="7")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="U1", pin="4")]),
+        ],
+    )
+
     layout = classify_circuit(ir)
 
-    # Generate schematic from IR using the same pattern as test_readability_baseline
+    # Explicitly assign block roles (automatic classification may not catch all patterns)
+    layout.add_assignment("JIN", BlockRole.INPUT)
+    layout.add_assignment("RIN", BlockRole.PRECONDITIONING)
+    layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+    layout.add_assignment("JOUT", BlockRole.OUTPUT)
+
+    # Generate schematic from IR
     project_name = "SignalFlowTest"
     work_dir = tmp_path / "signal_flow"
     work_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write IR to temp file for cmd_new_from_netlist
+    ir_path = work_dir / "circuit.json"
+    ir_path.write_text(ir.model_dump_json(indent=2), encoding="utf-8")
 
     cmd_new_from_netlist(
         Namespace(
             name=project_name,
             out_dir=str(work_dir),
             description="Signal flow test schematic",
-            netlist=str(_CIRCUIT_IR_PATH),
+            netlist=str(ir_path),
             symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
             mode="internal",
             layout="graphviz",
@@ -463,13 +486,12 @@ def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
     input_refs = layout.components_by_role(BlockRole.INPUT)
     opamp_refs = layout.components_by_role(BlockRole.OPAMP_CORE)
 
-    if not opamp_refs:
-        pytest.skip("No op-amp components found in circuit")
+    assert opamp_refs, "Op-amp components should be present in the circuit"
+    assert input_refs, "Input connectors should be present in the circuit"
 
     # Find the leftmost op-amp x-coordinate
     opamp_x_positions = [symbols[ref][0] for ref in opamp_refs if ref in symbols]
-    if not opamp_x_positions:
-        pytest.skip("No op-amp positions found")
+    assert opamp_x_positions, "Op-amp should be placed in schematic"
     leftmost_opamp_x = min(opamp_x_positions)
 
     # All input connectors should be left of (or slightly overlapping) op-amps
@@ -482,29 +504,54 @@ def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
             )
 
 
-@pytest.mark.skipif(
-    not _CIRCUIT_IR_PATH.exists(),
-    reason="Circuit IR fixture not found",
-)
 def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
     """Verify output connectors are placed right of the op-amp stage (Phase 3.4).
 
     This validates left-to-right signal flow: OPAMP_CORE → OUTPUT.
     """
-    ir = _load_test_circuit()
+    # Create a circuit inline with an op-amp
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ComponentIR(ref="ROUT", symbol="Device:R", value="100"),
+            ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+        ],
+        nets=[
+            NetIR(name="IN", pins=[PinRefIR(ref="JIN", pin="1"), PinRefIR(ref="U1", pin="3")]),
+            NetIR(name="OUT_A", pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="ROUT", pin="1")]),
+            NetIR(
+                name="OUT_B", pins=[PinRefIR(ref="ROUT", pin="2"), PinRefIR(ref="JOUT", pin="1")]
+            ),
+            NetIR(name="VCC", pins=[PinRefIR(ref="U1", pin="7")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="U1", pin="4")]),
+        ],
+    )
+
     layout = classify_circuit(ir)
+
+    # Explicitly assign block roles (automatic classification may not catch all patterns)
+    layout.add_assignment("JIN", BlockRole.INPUT)
+    layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+    layout.add_assignment("ROUT", BlockRole.OUTPUT)
+    layout.add_assignment("JOUT", BlockRole.OUTPUT)
 
     # Generate schematic from IR
     project_name = "SignalFlowTest2"
     work_dir = tmp_path / "signal_flow2"
     work_dir.mkdir(parents=True, exist_ok=True)
 
+    # Write IR to temp file for cmd_new_from_netlist
+    ir_path = work_dir / "circuit.json"
+    ir_path.write_text(ir.model_dump_json(indent=2), encoding="utf-8")
+
     cmd_new_from_netlist(
         Namespace(
             name=project_name,
             out_dir=str(work_dir),
             description="Signal flow test schematic",
-            netlist=str(_CIRCUIT_IR_PATH),
+            netlist=str(ir_path),
             symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
             mode="internal",
             layout="graphviz",
@@ -524,13 +571,12 @@ def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
     output_refs = layout.components_by_role(BlockRole.OUTPUT)
     opamp_refs = layout.components_by_role(BlockRole.OPAMP_CORE)
 
-    if not opamp_refs:
-        pytest.skip("No op-amp components found in circuit")
+    assert opamp_refs, "Op-amp components should be present in the circuit"
+    assert output_refs, "Output connectors should be present in the circuit"
 
     # Find the rightmost op-amp x-coordinate
     opamp_x_positions = [symbols[ref][0] for ref in opamp_refs if ref in symbols]
-    if not opamp_x_positions:
-        pytest.skip("No op-amp positions found")
+    assert opamp_x_positions, "Op-amp should be placed in schematic"
     rightmost_opamp_x = max(opamp_x_positions)
 
     # All output connectors should be right of (or slightly overlapping) op-amps
