@@ -3640,3 +3640,137 @@ So the minimum value that allows any sorting is 2; default is 3.
 ### Status (COPILOT_TODO_READABLE_SCHEMATICS.md Phase 7)
 - ✅ Phase 7.1 — all three flags implemented and tested
 - ⬜ Phase 7.2 — Graphviz stderr diagnostics + lint code printout (not yet started)
+
+---
+
+## 2026-03-10T05:52:48Z — Phase 3.3 main signal path implemented
+
+### Changes made
+- Added `identify_main_signal_path(ir, tiers=None) -> list[str]` to `kicad-pcb/src/kicad_pcb/tier.py`.
+- Path detection now identifies a probable primary chain from input connector to output connector using signal-only graph traversal.
+- Traversal prefers monotonic tier progression and falls back to non-monotonic only if needed.
+- `compute_affinity_groups()` in `kicad-pcb/src/kicad_pcb/layout.py` now prioritizes main-path refs in intra-tier ordering before affinity tie-breaks.
+
+### Tests added
+- `tests/unit/test_layout_rules.py::TestMainSignalPathIdentification::test_identify_main_signal_path_amp_chain`
+- `tests/unit/test_layout_rules.py::TestMainSignalPathIdentification::test_affinity_groups_prioritize_main_path_over_side_branch`
+
+### Validation
+- `python3.11 -m ruff check kicad-pcb/src/kicad_pcb/tier.py kicad-pcb/src/kicad_pcb/layout.py tests/unit/test_layout_rules.py` ✅
+- `python3.11 -m pytest tests/unit/test_layout_rules.py -k "MainSignalPathIdentification or AssignTiersDirectionality" -q` ✅
+- `python3.11 -m pytest tests/unit/test_layout_rules.py tests/unit/test_block_detection.py -q` ✅
+
+### Review TODO status updated
+- Marked all three Phase 3.3 checklist items complete in `code_review/CODE_REVIEW6_TODO.md` with implementation notes and test references.
+
+---
+
+## 2026-03-10T05:59:23Z — Phase 4.1 op-amp-centric placement rules implemented
+
+### Changes made
+- Added `_snap_opamp_locality()` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
+- New pass enforces local op-amp neighborhood readability:
+  - input/preconditioning neighbors biased left of op-amp,
+  - output neighbors biased right of op-amp,
+  - feedback parts kept near the op-amp column,
+  - decoupling caps stacked above op-amp and separated from feedback y-slots.
+- Integrated `_snap_opamp_locality()` into `_apply_post_layout_snaps()` after crossing remediation to preserve final local staging.
+
+### Tests added
+- `tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_local_rules_input_output_feedback_decoupling`
+
+### Validation
+- `python3.11 -m ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py` ✅
+- `python3.11 -m pytest tests/unit/test_phase4_layout.py -k "opamp_local_rules_input_output_feedback_decoupling or TestApplyPostLayoutSnaps" -q` ✅
+- `python3.11 -m pytest tests/unit/test_layout_rules.py tests/unit/test_phase4_layout.py tests/unit/test_block_detection.py -q` ✅
+
+### TODO status update
+- Marked all 4.1 checklist items complete in `code_review/CODE_REVIEW6_TODO.md`.
+- Synced implementation order checklist to show 3.2 and 3.3 complete.
+
+---
+
+## 2026-03-10T06:06:25Z — Phase 4.2 support-role separation implemented
+
+### Changes made
+- Enhanced `_snap_opamp_locality()` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` for explicit support-role clustering.
+- Added role-aware local candidate selection around each op-amp anchor using `BlockRole` and local distance bounds.
+- Implemented distinct role staging:
+  - input/preconditioning support: left of op-amp, upper side-band,
+  - output support: right of op-amp, lower side-band,
+  - feedback support: op-amp column below centerline,
+  - decoupling support: op-amp column above feedback cluster.
+- Preserved decoupling/feedback slot separation to reduce visual mixing.
+
+### Tests added
+- `tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_local_rules_separate_support_roles`
+
+### Validation
+- `python3.11 -m ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py` ✅
+- `python3.11 -m pytest tests/unit/test_phase4_layout.py -k "opamp_local_rules" -q` ✅
+- `python3.11 -m pytest tests/unit/test_phase4_layout.py tests/unit/test_layout_rules.py tests/unit/test_block_detection.py -q` ✅
+
+### TODO status update
+- Marked all Phase 4.2 checklist items complete in `code_review/CODE_REVIEW6_TODO.md`.
+
+## 2026-03-10T06:23:28Z - Phase 4.3: Orientation rules around op-amp stages
+
+**Changes:**
+- Enhanced `compute_orientations()` in `kicad-pcb/src/kicad_pcb/layout.py`:
+  - Added optional `block_layout` parameter (with `BlockLayout` type import)
+  - Added block-role-aware orientation logic for passives:
+    - Feedback components in same column as op-amp prefer vertical (90°)
+    - Input/preconditioning/output stage passives prefer horizontal (0°) for left-to-right flow
+    - Horizontal preference overridden only when vertical dominance ratio >= 1.5
+  - Added noqa PLR0915 for "too many statements" lint
+- Modified `GraphvizLayoutEngine` in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`:
+  - Pass `block_layout=block_layout` to `_compute_orientations()` call
+
+**Tests Added:**
+- `test_opamp_orientation_inputs_left_output_right`: validates op-amp 0° orientation
+- `test_feedback_passive_vertical_near_opamp`: validates feedback passives in op-amp column prefer 90°
+- `test_input_output_passives_prefer_horizontal`: validates input/output stage passives prefer 0°
+
+**Validation:**
+```bash
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_orientation_inputs_left_output_right -xvs
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_feedback_passive_vertical_near_opamp -xvs
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_input_output_passives_prefer_horizontal -xvs
+pytest tests/unit/test_layout_rules.py tests/unit/test_phase4_layout.py tests/unit/test_block_detection.py -q
+ruff check kicad-pcb/src/kicad_pcb/layout.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_phase4_layout.py
+ruff format kicad-pcb/src/kicad_pcb/layout.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_phase4_layout.py
+```
+All tests passing, lints clean.
+
+
+## 2026-03-10T06:27:16Z - Phase 4.4: Op-amp neighborhood quality tests
+
+**Changes:**
+- Added three quality assertion tests to `tests/unit/test_phase4_layout.py`:
+  - `test_opamp_neighborhood_feedback_near_opamp_not_connectors`: validates feedback components are closer to op-amp than to input/output connectors using Euclidean distance measurements
+  - `test_opamp_neighborhood_output_parts_on_output_side`: validates all output-stage components (ROUT, COUT, JOUT) are positioned right of the op-amp (x-coordinate validation)
+  - `test_opamp_neighborhood_decouplers_near_power_not_input`: validates decoupling caps are closer to op-amp than to input network components and aligned to op-amp column for tight power coupling
+
+**Test Design:**
+- Each test creates a realistic op-amp circuit with proper block role assignments
+- Tests validate the results of snap passes from Phases 4.1-4.3
+- Uses Euclidean distance for proximity assertions
+- Validates both absolute positions (x > op-amp.x) and relative distances (dist(A) < dist(B))
+
+**Validation:**
+```bash
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_neighborhood_feedback_near_opamp_not_connectors -xvs
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_neighborhood_output_parts_on_output_side -xvs
+pytest tests/unit/test_phase4_layout.py::TestApplyPostLayoutSnaps::test_opamp_neighborhood_decouplers_near_power_not_input -xvs
+pytest tests/unit/test_layout_rules.py tests/unit/test_phase4_layout.py tests/unit/test_block_detection.py -q
+ruff check tests/unit/test_phase4_layout.py
+ruff format tests/unit/test_phase4_layout.py
+```
+All tests passing, lints clean.
+
+**Phase 4 Status:** Phase 4 (op-amp neighborhood cleanup) is now complete with all four sub-phases implemented:
+- 4.1: Op-amp-centric local placement rules ✅
+- 4.2: Support role differentiation ✅
+- 4.3: Orientation rules around op-amp stages ✅
+- 4.4: Op-amp neighborhood quality tests ✅
+

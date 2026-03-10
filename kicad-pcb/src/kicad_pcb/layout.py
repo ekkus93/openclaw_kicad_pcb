@@ -16,12 +16,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from .block_detection import BlockLayout
     from .circuit_ir import CircuitIR
 
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
 from .errors import ErrorCode, UserError
+from .tier import identify_main_signal_path
 
 _log = logging.getLogger(__name__)
 
@@ -858,6 +860,9 @@ def compute_affinity_groups(
             return 0.0
         return shared / denom
 
+    main_path = identify_main_signal_path(ir, tiers=tiers)
+    main_path_rank = {ref: idx for idx, ref in enumerate(main_path)}
+
     # Group refs by tier.
     tier_groups: dict[int, list[str]] = defaultdict(list)
     for ref, tier in tiers.items():
@@ -869,13 +874,24 @@ def compute_affinity_groups(
         members = tier_groups[tier]
         if i == 0:
             # First tier: stable alphabetical sort — no previous tier to compare.
-            result[tier] = sorted(members)
+            result[tier] = sorted(
+                members,
+                key=lambda r: (0 if r in main_path_rank else 1, main_path_rank.get(r, 10_000), r),
+            )
             continue
         prev_tier = sorted_tiers[i - 1]
         prev_members = result.get(prev_tier, [])
         # Score = sum of affinities to all previous-tier members.
         scores = {ref: sum(_affinity(ref, p) for p in prev_members) for ref in members}
-        result[tier] = sorted(members, key=lambda r: (-scores[r], r))
+        result[tier] = sorted(
+            members,
+            key=lambda r: (
+                0 if r in main_path_rank else 1,
+                main_path_rank.get(r, 10_000),
+                -scores[r],
+                r,
+            ),
+        )
 
     return dict(result)
 
@@ -919,11 +935,12 @@ def _series_passive_rotation(
     return 90 if total_dy > total_dx else 0
 
 
-def compute_orientations(  # noqa: PLR0912
+def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
     ir: CircuitIR,
     positions: dict[str, tuple[float, float]],
     tiers: dict[str, int] | None = None,
     roles: Mapping[str, str] | None = None,
+    block_layout: BlockLayout | None = None,
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
@@ -945,6 +962,10 @@ def compute_orientations(  # noqa: PLR0912
         :func:`~kicad_pcb.tier.classify_connector_roles`.  When provided,
         role takes precedence over tier for connector orientation: ``"output"``
         → 180°; ``"input"`` / ``"unknown"`` → 0°.
+    block_layout:
+        Optional :class:`~kicad_pcb.block_detection.BlockLayout` with functional
+        block role assignments.  When provided, passive orientation is influenced
+        by block role to support signal flow direction (Phase 4.3).
 
     Rules (applied in priority order)
     -----------------------------------
@@ -954,6 +975,13 @@ def compute_orientations(  # noqa: PLR0912
       - Without either: always 0°.
     * **Op-amps / ICs** (U/IC/OA): 0° — standard orientation keeps inputs on the
       left and output on the right, which is correct for the usual KiCad symbols.
+    * **Passives — block-role-aware** (R/C/L with *block_layout*):
+      - Feedback role near op-amp: prefer 90° (vertical) when positioned in same
+        column as op-amp (supports vertical feedback path).
+      - Input/preconditioning/output roles: prefer 0° (horizontal) to support
+        left-to-right signal flow unless position heuristic strongly disagrees.
+      - Falls through to shunt topology or position heuristic when block role
+        is absent or indeterminate.
     * **Passives — shunt topology** (R/C/L with ≥1 power-net pin AND ≥1 signal-net
       pin): 90°.  A bypass capacitor, pull-up, or pull-down resistor straddles a
       power rail and the signal path, so a vertical (90°) orientation visually
@@ -1013,7 +1041,56 @@ def compute_orientations(  # noqa: PLR0912
             if ref in power_pin_refs and ref in signal_pin_refs:
                 result[ref] = 90
                 continue
-            # Position heuristic for pure-signal (series) passives.
+
+            # Block-role-aware orientation (Phase 4.3): support signal flow direction.
+            if block_layout is not None:
+                from .block_detection import BlockRole  # noqa: PLC0415
+
+                role = block_layout.get_role(ref)
+                if role is not None:
+                    # Feedback components: prefer vertical (90°) when positioned in the
+                    # same column as a nearby op-amp (supports vertical feedback path).
+                    if role == BlockRole.FEEDBACK:
+                        # Find nearby op-amps in the same column (within GRID_COL_MM / 2).
+                        if ref in positions:
+                            x, _y = positions[ref]
+                            opamp_refs = [
+                                r
+                                for r in ir.components
+                                if any(r.ref.upper().startswith(p) for p in _OP_AMP_PREFIXES)
+                            ]
+                            for opamp in opamp_refs:
+                                if opamp.ref in positions:
+                                    ox, _oy = positions[opamp.ref]
+                                    if abs(ox - x) < GRID_COL_MM / 2:
+                                        result[ref] = 90
+                                        continue
+                    # Input/preconditioning/output roles: prefer horizontal (0°) to
+                    # support left-to-right signal flow.
+                    elif role in (
+                        BlockRole.INPUT,
+                        BlockRole.PRECONDITIONING,
+                        BlockRole.OUTPUT,
+                    ):
+                        # Default to horizontal unless position heuristic strongly disagrees.
+                        position_rot = _series_passive_rotation(ref, positions, adjacency)
+                        # Only override if position heuristic is weak (sum |Δy| ≈ sum |Δx|).
+                        if ref in positions:
+                            x, y = positions[ref]
+                            total_dx = total_dy = 0.0
+                            for nbr in adjacency.get(ref, []):
+                                if nbr in positions:
+                                    nx, ny = positions[nbr]
+                                    total_dx += abs(nx - x)
+                                    total_dy += abs(ny - y)
+                            # If vertical dominance is weak (ratio < 1.5), use horizontal.
+                            if total_dx > 0 and total_dy / total_dx < 1.5:
+                                result[ref] = 0
+                                continue
+                        result[ref] = position_rot
+                        continue
+
+            # Fallback: position heuristic for pure-signal (series) passives.
             result[ref] = _series_passive_rotation(ref, positions, adjacency)
             continue
 

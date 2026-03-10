@@ -561,6 +561,127 @@ def _snap_opamp_halo(
     return result
 
 
+def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
+    positions: dict[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    annotations: Mapping[str, _ComponentAnnotation],
+    decoupling_map: Mapping[str, str],
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Apply op-amp-centric neighborhood placement refinements.
+
+    Heuristics implemented for readability (Phase 4.1/4.2):
+
+    * input-side components are biased to the left of the op-amp,
+    * output-side components are biased to the right of the op-amp,
+        * feedback components stay close to the op-amp body,
+        * decoupling caps remain near the op-amp and reserved from feedback slots,
+        * support roles are staged in distinct local clusters to avoid visual
+            mixing (feedback vs input-conditioning vs output-support vs decoupling).
+    """
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    if not positions:
+        return positions
+
+    result = dict(positions)
+    adjacency = _build_signal_adjacency(ir)
+
+    ic_refs = sorted(ref for ref in result if _is_ic_ref(ref))
+    if not ic_refs:
+        return result
+
+    role_by_ref: dict[str, BlockRole] = {}
+    if block_layout is not None:
+        role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+
+    for ic_ref in ic_refs:
+        if ic_ref not in result:
+            continue
+        ic_x, ic_y, _ = result[ic_ref]
+
+        signal_neighbors = sorted(r for r in adjacency.get(ic_ref, set()) if r in result)
+        local_role_neighbors = {
+            ref
+            for ref, role in role_by_ref.items()
+            if ref in result
+            and ref != ic_ref
+            and not _is_ic_ref(ref)
+            and role
+            in {
+                BlockRole.INPUT,
+                BlockRole.PRECONDITIONING,
+                BlockRole.FEEDBACK,
+                BlockRole.OUTPUT,
+                BlockRole.DECOUPLING,
+            }
+            and abs(result[ref][0] - ic_x) <= 2.0 * _GRID_COL_MM
+            and abs(result[ref][1] - ic_y) <= 8.0 * GRID_ROW_MM
+        }
+        candidates = sorted(set(signal_neighbors) | local_role_neighbors)
+        input_like: list[str] = []
+        output_like: list[str] = []
+        feedback_like: list[str] = []
+
+        for ref in candidates:
+            role = role_by_ref.get(ref)
+            is_feedback = bool(annotations.get(ref) and annotations[ref].feedback)
+            is_decoupling = decoupling_map.get(ref) == ic_ref
+
+            if is_feedback or role == BlockRole.FEEDBACK:
+                feedback_like.append(ref)
+                continue
+            if is_decoupling or role == BlockRole.DECOUPLING:
+                continue
+            if role in (BlockRole.INPUT, BlockRole.PRECONDITIONING):
+                input_like.append(ref)
+            elif role == BlockRole.OUTPUT:
+                output_like.append(ref)
+
+        # Keep stage input parts on op-amp input side (left), slightly above
+        # center to separate them from output support parts.
+        target_input_x = round(ic_x - _GRID_COL_MM, 2)
+        for idx, ref in enumerate(input_like):
+            x, y, rot = result[ref]
+            offset = idx - (len(input_like) - 1) / 2
+            target_y = round(ic_y - 1.5 * GRID_ROW_MM + offset * GRID_ROW_MM, 2)
+            result[ref] = (min(round(x, 2), target_input_x), target_y, rot)
+
+        # Keep stage output parts on op-amp output side (right), slightly below
+        # center to avoid mixing with input/support clusters.
+        target_output_x = round(ic_x + _GRID_COL_MM, 2)
+        for idx, ref in enumerate(output_like):
+            x, y, rot = result[ref]
+            offset = idx - (len(output_like) - 1) / 2
+            target_y = round(ic_y + 1.5 * GRID_ROW_MM + offset * GRID_ROW_MM, 2)
+            result[ref] = (max(round(x, 2), target_output_x), target_y, rot)
+
+        # Keep decoupling caps above the op-amp (power-pin vicinity).
+        dec_refs = sorted(
+            ref for ref, anchor in decoupling_map.items() if anchor == ic_ref and ref in result
+        )
+        reserved_decoupling_y: set[float] = set()
+        for idx, dec_ref in enumerate(dec_refs):
+            _x, _y, dec_rot = result[dec_ref]
+            dec_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
+            result[dec_ref] = (round(ic_x, 2), dec_y, dec_rot)
+            reserved_decoupling_y.add(dec_y)
+
+        # Keep feedback parts near the op-amp but in a distinct band below
+        # the IC centerline, and avoid decoupling slots.
+        for idx, ref in enumerate(sorted(feedback_like)):
+            _x, _y, rot = result[ref]
+            level = idx + 1
+            fb_y = round(ic_y + level * GRID_ROW_MM, 2)
+            while fb_y in reserved_decoupling_y:
+                level += 1
+                fb_y = round(ic_y + level * GRID_ROW_MM, 2)
+            result[ref] = (round(ic_x, 2), fb_y, rot)
+
+    return result
+
+
 def _snap_block_zones(
     positions: dict[str, tuple[float, float, float | None]],
     block_layout: BlockLayout,
@@ -1573,6 +1694,9 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
        when no column contains an IC).
     7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
        IC (skipped when *decoupling_map* is empty).
+    7b. :func:`_snap_opamp_locality` — enforce op-amp-centric local staging
+        (input-side left, output-side right, feedback near op-amp, decoupling
+        separated from feedback).
     8. :func:`_spread_x_columns` — split overloaded x-columns (> 3 symbols at
        the same x) into sub-columns spaced 25.4 mm apart so the Y deoverlap
        does not produce unreadable vertical stacks.
@@ -1609,6 +1733,15 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     result = _spread_x_columns(result)
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
+    # Re-apply op-amp locality after crossing remediation so op-amp neighborhoods
+    # remain readable in the final coordinates.
+    result = _snap_opamp_locality(
+        result,
+        ir,
+        annotations=annotations,
+        decoupling_map=decoupling_map,
+        block_layout=block_layout,
+    )
     # Use grid-safe max bounds so final clamped coordinates stay on the
     # 1.27 mm KiCad grid even at the right/bottom page edges.
     grid = 1.27

@@ -335,7 +335,9 @@ class GraphvizLayoutEngine:
         _plain_positions: dict[str, tuple[float, float]] = {
             ref: (x, y) for ref, (x, y, _) in result.items()
         }
-        _orientations = _compute_orientations(ir, _plain_positions, _tiers, roles=_roles or None)
+        _orientations = _compute_orientations(
+            ir, _plain_positions, _tiers, roles=_roles or None, block_layout=block_layout
+        )
         result = {
             ref: (x, y, float(_orientations.get(ref, 0))) for ref, (x, y, _) in result.items()
         }

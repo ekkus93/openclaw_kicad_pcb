@@ -170,9 +170,20 @@ via horizontal-first L-routing and horizontal-biased spine routing. Block-aware 
 would be a future enhancement beyond Phase 3.
 
 ### 3.3 Add explicit “main signal path” identification
-- [ ] Identify the probable primary signal chain from input net(s) to output net(s).
-- [ ] Use this path to anchor layout/routing priorities.
-- [ ] Keep secondary support components near the relevant signal stage without obscuring the main path.
+- [x] Identify the probable primary signal chain from input net(s) to output net(s).
+  - **Implemented**: `identify_main_signal_path(ir, tiers=...)` in `kicad_pcb/tier.py`
+  - **Method**: signal-only graph traversal from input connector to downstream output connector,
+    preferring monotonic tier progression to avoid feedback/support loops.
+- [x] Use this path to anchor layout/routing priorities.
+  - **Implemented**: `compute_affinity_groups()` in `kicad_pcb/layout.py` now prioritizes
+    main-path components in intra-tier ordering before applying affinity/tie-break sorting.
+- [x] Keep secondary support components near the relevant signal stage without obscuring the main path.
+  - **Implemented**: side-branch support parts remain in their tier but are ordered after
+    main-path parts, preserving stage locality while improving readability.
+
+**Tests Added (Phase 3.3)**:
+- `test_identify_main_signal_path_amp_chain`: validates deterministic input->op-amp->output chain detection.
+- `test_affinity_groups_prioritize_main_path_over_side_branch`: validates side-branch support parts are de-prioritized behind main-path refs in the same tier.
 
 ### 3.4 Add tests for signal-flow clarity
 - [x] Assert the input connector x-position is left of the op-amp stage.
@@ -187,30 +198,67 @@ would be a future enhancement beyond Phase 3.
 The area around the NE5532 should read like a designed analog stage, not a tangle.
 
 ### 4.1 Add op-amp-centric local placement rules
-- [ ] Place input-side components near op-amp input pins.
-- [ ] Place output-side components near op-amp output pin.
-- [ ] Place feedback components close to the relevant inverting/non-inverting nodes.
-- [ ] Keep decoupling components near power pins, but visually separate from signal feedback parts.
+- [x] Place input-side components near op-amp input pins.
+  - **Implemented**: `_snap_opamp_locality()` in `graphviz_layout/snap.py` biases
+    input/preconditioning neighbors to the left of each op-amp anchor.
+- [x] Place output-side components near op-amp output pin.
+  - **Implemented**: `_snap_opamp_locality()` biases output neighbors to the right
+    of each op-amp anchor.
+- [x] Place feedback components close to the relevant inverting/non-inverting nodes.
+  - **Implemented**: feedback refs are kept in the op-amp column with compact
+    near-op-amp vertical slots.
+- [x] Keep decoupling components near power pins, but visually separate from signal feedback parts.
+  - **Implemented**: decoupling refs are stacked above each op-amp and feedback
+    slot selection avoids decoupling y-slots.
+
+**Tests Added (Phase 4.1)**:
+- `test_opamp_local_rules_input_output_feedback_decoupling` in `tests/unit/test_phase4_layout.py`
+  validates left/right input/output staging, feedback locality, and decoupling
+  separation around an op-amp neighborhood.
 
 ### 4.2 Differentiate support parts by role
-- [ ] Separate:
-  - [ ] feedback resistors/caps
-  - [ ] input resistors/coupling caps
-  - [ ] output coupling/output support parts
-  - [ ] power decoupling capacitors
-- [ ] Use placement rules to keep unlike roles from mixing into the same visual tangle.
+- [x] Separate:
+  - [x] feedback resistors/caps
+  - [x] input resistors/coupling caps
+  - [x] output coupling/output support parts
+  - [x] power decoupling capacitors
+  - **Implemented**: `_snap_opamp_locality()` now stages role-specific clusters:
+    - input/preconditioning support: left of op-amp, upper side-band,
+    - output support: right of op-amp, lower side-band,
+    - feedback support: op-amp column, below centerline,
+    - decoupling support: op-amp column, above feedback cluster.
+- [x] Use placement rules to keep unlike roles from mixing into the same visual tangle.
+  - **Implemented**: role-aware local candidates are grouped by `BlockRole` and
+    assigned distinct side-bands/columns, with decoupling slots reserved away
+    from feedback slots.
+
+**Tests Added (Phase 4.2)**:
+- `test_opamp_local_rules_separate_support_roles` in `tests/unit/test_phase4_layout.py`
+  validates role-specific cluster separation for input, output, feedback, and
+  decoupling support components around an op-amp anchor.
 
 ### 4.3 Add orientation rules around op-amp stages
-- [ ] Orient the op-amp so:
-  - [ ] inputs read from the left
-  - [ ] output reads toward the right
-- [ ] Prefer passive part orientation that supports that local flow.
-- [ ] Avoid rotating passives only to satisfy local routing if it hurts readability.
+- [x] Orient the op-amp so:
+  - [x] inputs read from the left
+  - [x] output reads toward the right
+- [x] Prefer passive part orientation that supports that local flow.
+- [x] Avoid rotating passives only to satisfy local routing if it hurts readability.
+
+**Implementation:** Enhanced `compute_orientations()` in `layout.py` to accept optional `block_layout` parameter:
+- **Op-amps:** maintain 0° orientation (inputs left, output right) — already implemented.
+- **Feedback passives:** prefer vertical (90°) when positioned in same column as nearby op-amp (within `GRID_COL_MM / 2`).
+- **Input/preconditioning/output stage passives:** prefer horizontal (0°) to support left-to-right signal flow unless position heuristic strongly disagrees (vertical dominance ratio < 1.5).
+- **Fallback:** current shunt topology and position heuristic remain for other cases.
 
 ### 4.4 Add tests for op-amp neighborhood quality
-- [ ] Assert feedback components are closer to the op-amp than to connectors.
-- [ ] Assert output-side parts are placed on the output side of U1.
-- [ ] Assert supply decouplers are nearer the power pins than the input network.
+- [x] Assert feedback components are closer to the op-amp than to connectors.
+- [x] Assert output-side parts are placed on the output side of U1.
+- [x] Assert supply decouplers are nearer the power pins than the input network.
+
+**Tests Added (Phase 4.4)**:
+- `test_opamp_neighborhood_feedback_near_opamp_not_connectors`: validates feedback components are closer to op-amp than to input/output connectors using Euclidean distance.
+- `test_opamp_neighborhood_output_parts_on_output_side`: validates all output-stage components (ROUT, COUT, JOUT) are positioned right of the op-amp (x > op-amp.x).
+- `test_opamp_neighborhood_decouplers_near_power_not_input`: validates decoupling caps are closer to op-amp than to input network components and aligned to op-amp column for tight power coupling.
 
 ---
 
@@ -379,9 +427,9 @@ Make readability improvements measurable and regression-resistant.
 3. [x] Phase 1.3 — block placement tests and validation ✅ **COMPLETE**
 4. [x] Phase 2 — reduce crowding / improve whitespace ✅ **COMPLETE**
 5. [x] Phase 3.1 — strengthen left-to-right placement constraints ✅ **COMPLETE**
-6. [ ] Phase 3.2 — improve net routing for signal direction
-7. [ ] Phase 3.3 — main signal path identification
-8. [ ] Phase 4 — clean up op-amp neighborhood
+6. [x] Phase 3.2 — improve net routing for signal direction ✅ **COMPLETE**
+7. [x] Phase 3.3 — main signal path identification ✅ **COMPLETE**
+8. [x] Phase 4 — clean up op-amp neighborhood (4.1-4.4 complete) ✅ **COMPLETE**
 9. [ ] Phase 6 — wire simplification
 10. [ ] Phase 5 — reduce ground/power clutter
 11. [ ] Phase 7 — improve input/output staging
