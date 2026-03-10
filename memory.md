@@ -1,5 +1,19 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-10T20:06:14Z - Full repo verification run (ruff, mypy, pytest)
+
+- Executed full quality gates from repo root:
+  - `ruff check .` (passed)
+  - `mypy kicad-pcb/src` (passed: no issues in 64 files)
+  - `pytest -q` (suite completed to 100% with no failures)
+- Use this command set as the standard quick verification pass for the current codebase state.
+
+## 2026-03-10T19:49:42Z - Phase 9.3 sanity checks stabilized around tier/path behavior
+
+- `tests/unit/test_phase9_sanity.py` now passes with assertions aligned to current connector orientation behavior: output connectors on secondary/non-max-tier paths can remain `0°` while primary max-tier outputs are `180°`.
+- Kept/validated coherence checks for op-amp stability (`0°`), feedback passive intra-channel consistency, input/output coupling cap consistency, and connector orientation validity (`0°` or `180°`).
+- Validation result: `python -m pytest tests/unit/test_phase9*.py -v --tb=no` => **34 passed**.
+
 ## 2026-03-10T15:47:26Z - Phase 8.3 composition lints implemented
 
 - Added `lint_layout_composition()` to `kicad-pcb/src/kicad_pcb/lint/sch.py` and exported it via `kicad_pcb.lint`.
