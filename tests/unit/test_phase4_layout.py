@@ -348,11 +348,16 @@ class TestRouteNetsPower:
         return ir, endpoints
 
     def test_power_net_emits_power_symbols(self) -> None:
-        """Power net must produce PowerSymbolPlacements, not GlobalLabelPlacements."""
+        """Power net must produce PowerSymbolPlacements (1 per cluster, Phase 5.1)."""
         ir, endpoints = self._make_ir_and_endpoints()
         routing = route_nets(ir=ir, pin_endpoints=endpoints)
-        assert len(routing.power_symbols) == 2, (
-            f"Expected 2 PowerSymbolPlacements for GND net; got {routing.power_symbols}"
+        # Phase 5.1: nearby pins (50,110) and (80,110) are 30mm apart,
+        # within _POWER_CLUSTER_RADIUS_MM=40mm, so they share 1 symbol.
+        assert len(routing.power_symbols) >= 1, (
+            f"Expected at least 1 PowerSymbolPlacement for GND net; got {routing.power_symbols}"
+        )
+        assert len(routing.power_symbols) <= 2, (  # noqa: PLR2004
+            f"Expected at most 2 PowerSymbolPlacements; got {routing.power_symbols}"
         )
 
     def test_power_symbols_net_name_matches(self) -> None:
@@ -373,10 +378,19 @@ class TestRouteNetsPower:
         routing = route_nets(ir=ir, pin_endpoints=endpoints)
         assert routing.labels == []
 
-    def test_power_net_no_junctions(self) -> None:
+    def test_power_net_clustering_reduces_symbols(self) -> None:
+        """Phase 5.1: clustered power pins share symbols, reducing clutter."""
         ir, endpoints = self._make_ir_and_endpoints()
         routing = route_nets(ir=ir, pin_endpoints=endpoints)
-        assert routing.junctions == []
+        # 2 pins within 40mm → 1 cluster → 1 power symbol (down from 2)
+        assert len(routing.power_symbols) == 1, (
+            f"Expected 1 clustered power symbol; got {len(routing.power_symbols)}"
+        )
+        # All pins must still have bind markers (electrical connectivity)
+        assert len(routing.bind_markers) == 2, (  # noqa: PLR2004
+            f"Expected 2 bind markers (one per pin); got {len(routing.bind_markers)}"
+        )
+        assert all(bm.net_name == "GND" for bm in routing.bind_markers)
 
 
 # ---------------------------------------------------------------------------

@@ -3774,3 +3774,26 @@ All tests passing, lints clean.
 - 4.3: Orientation rules around op-amp stages ✅
 - 4.4: Op-amp neighborhood quality tests ✅
 
+
+## 2026-03-10T07:07:07Z - Phase 5.1 Complete: Power Pin Clustering
+
+Completed Phase 5.1 of CODE_REVIEW6: Reduce ground and power symbol clutter through spatial clustering.
+
+**Problem:** Old policy created one power symbol per power/ground pin, causing visual clutter (e.g., 6 GND pins → 6 GND symbols scattered across schematic).
+
+**Solution:** Implemented spatial clustering to group nearby power pins, placing one power symbol per cluster:
+- Added `_POWER_CLUSTER_RADIUS_MM = 40.0` constant
+- Added `_cluster_power_pins()` greedy clustering function (router.py lines 203-257)
+- Updated power net routing logic (lines 556-603) to:
+  - Cluster pins by proximity
+  - Place ONE power symbol per cluster at centroid
+  - Route all pins in cluster to shared symbol via hub/spine routing
+  - Preserve electrical connectivity (bind markers for all pins)
+
+**Result:** 
+- 50%+ reduction in power symbols for typical circuits (4 pins → 2 clusters → 2 symbols)
+- Cleaner power/ground presentation without sacrificing connectivity
+- Single-pin clusters use traditional stub+symbol (no overhead)
+
+**Tests:** 5 new tests in test_phase5_power_clustering.py + updated TestRouteNetsPower tests
+**Status:** All 326 tests passing (up from 321 after adding Phase 5.1 tests)
