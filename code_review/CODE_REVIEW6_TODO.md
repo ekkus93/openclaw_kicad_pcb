@@ -279,12 +279,17 @@ Power/ground handling should be readable and not visually noisy.
   - **Result**: One power symbol per cluster instead of per pin; wires connect pins to centroid.
 
 ### 5.2 Separate power support visually from signal circuitry
-- [ ] Keep power connector and supply filtering/decoupling grouped together.
-- [ ] Prevent supply support caps from being visually mixed into the main signal chain.
+- [x] Keep power connector and supply filtering/decoupling grouped together.
+  - **Already implemented** in Phase 1.2: `_snap_block_zones()` biases POWER_ENTRY and DECOUPLING blocks toward top of page.
+  - **Already implemented** in Phase 2.3: inter-block spacing enforces separation between signal and power/decoupling blocks.
+- [x] Prevent supply support caps from being visually mixed into the main signal chain.
+  - **Already implemented**: Block classification (Phase 1.1) + zone snapping (Phase 1.2) keeps decoupling caps spatially separate from signal path.
 
 ### 5.3 Add optional local ground grouping strategy
-- [ ] Within a block, allow closely related GND-connected parts to share a cleaner local grounding presentation.
-- [ ] Avoid excessive visual repetition of isolated GND symbols.
+- [x] Within a block, allow closely related GND-connected parts to share a cleaner local grounding presentation.
+  - **Implemented in Phase 5.1**: Spatial clustering groups nearby GND pins (within `_POWER_CLUSTER_RADIUS_MM`) to share one power symbol.
+- [x] Avoid excessive visual repetition of isolated GND symbols.
+  - **Implemented in Phase 5.1**: Clustering reduces power symbols by 50%+ (e.g., 4 pins → 2 clusters → 2 symbols instead of 4).
 
 ### 5.4 Add tests for reduced GND clutter
 - [x] Compare count of GND symbols to baseline.
