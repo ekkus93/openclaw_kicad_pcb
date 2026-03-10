@@ -9,8 +9,10 @@ from kicad_pcb.errors import ParseError
 from kicad_pcb.lint.sch import LintIssue
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
+    compute_local_density,
     count_distinct_x_columns,
     count_global_labels,
+    detect_dense_clusters,
     run_layout_lints,
     wire_stub_ratio,
 )
@@ -344,3 +346,140 @@ class TestRegressionFixture:
         syms = doc.list_symbols()
         # Allow ±2 for potential power symbols not counted in README baseline.
         assert 11 <= len(syms) <= 20, f"Unexpected symbol count: {len(syms)}"  # noqa: PLR2004
+
+
+# ---------------------------------------------------------------------------
+# TestComputeLocalDensity — Phase 2.1 density computation tests
+# ---------------------------------------------------------------------------
+
+
+class TestComputeLocalDensity:
+    def test_empty_schematic_returns_empty_dict(self) -> None:
+        doc = _doc("")
+        density = compute_local_density(doc)
+        assert density == {}
+
+    def test_single_symbol_has_zero_neighbors(self) -> None:
+        doc = _doc(_make_symbol("R1", 30.0, 50.0))
+        density = compute_local_density(doc, radius_mm=30.0)
+        assert "R1" in density
+        assert density["R1"] == 0.0
+
+    def test_two_symbols_within_radius_see_each_other(self) -> None:
+        # R1 and R2 are 10mm apart (< radius 30mm), so each sees 1 neighbor
+        body = " ".join(
+            [
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 10.0, 0.0),
+            ]
+        )
+        doc = _doc(body)
+        density = compute_local_density(doc, radius_mm=30.0)
+        assert density["R1"] == 1.0
+        assert density["R2"] == 1.0
+
+    def test_two_symbols_outside_radius_see_zero(self) -> None:
+        # R1 and R2 are 50mm apart (> radius 30mm), so neither sees the other
+        body = " ".join(
+            [
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 50.0, 0.0),
+            ]
+        )
+        doc = _doc(body)
+        density = compute_local_density(doc, radius_mm=30.0)
+        assert density["R1"] == 0.0
+        assert density["R2"] == 0.0
+
+    def test_cluster_of_five_symbols(self) -> None:
+        # Five symbols clustered within 20mm radius of origin
+        # Each should see 4 neighbors
+        body = " ".join(
+            [
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 10.0, 0.0),
+                _make_symbol("R3", 0.0, 10.0),
+                _make_symbol("R4", 10.0, 10.0),
+                _make_symbol("R5", 5.0, 5.0),  # center
+            ]
+        )
+        doc = _doc(body)
+        density = compute_local_density(doc, radius_mm=30.0)
+        # R5 is in the center, should see all 4 corners
+        assert density["R5"] == 4.0
+        # Corner symbols see at least 2-3 neighbors (depending on distances)
+        assert density["R1"] >= 2.0
+        assert density["R2"] >= 2.0
+
+
+# ---------------------------------------------------------------------------
+# TestDetectDenseClusters — Phase 2.1 cluster detection tests
+# ---------------------------------------------------------------------------
+
+
+class TestDetectDenseClusters:
+    def test_empty_schematic_returns_empty_list(self) -> None:
+        doc = _doc("")
+        clusters = detect_dense_clusters(doc)
+        assert clusters == []
+
+    def test_no_dense_clusters_below_threshold(self) -> None:
+        # Two symbols 50mm apart, threshold=5, radius=30mm
+        # Neither has 5 neighbors, so no clusters detected
+        body = " ".join(
+            [
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 50.0, 0.0),
+            ]
+        )
+        doc = _doc(body)
+        clusters = detect_dense_clusters(doc, radius_mm=30.0, threshold=5)
+        assert clusters == []
+
+    def test_dense_cluster_detected(self) -> None:
+        # Six symbols clustered tightly (all within 20mm of each other)
+        # Each sees 5 neighbors (threshold=5), so all qualify as dense
+        body = " ".join(
+            [
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 10.0, 0.0),
+                _make_symbol("R3", 0.0, 10.0),
+                _make_symbol("R4", 10.0, 10.0),
+                _make_symbol("R5", 5.0, 5.0),
+                _make_symbol("R6", 5.0, 15.0),
+            ]
+        )
+        doc = _doc(body)
+        clusters = detect_dense_clusters(doc, radius_mm=30.0, threshold=5)
+        assert len(clusters) >= 1, "Expected at least one dense cluster"
+        # Verify result format: (x, y, neighbor_count)
+        for x, y, count in clusters:
+            assert isinstance(x, float)
+            assert isinstance(y, float)
+            assert isinstance(count, int)
+            assert count >= 5  # meets threshold
+
+    def test_clusters_sorted_by_density(self) -> None:
+        # Create two clusters: dense (7 symbols) and less dense (2 symbols)
+        # Dense cluster should appear first in results
+        body = " ".join(
+            [
+                # Dense cluster at origin (7 tightly packed)
+                _make_symbol("R1", 0.0, 0.0),
+                _make_symbol("R2", 5.0, 0.0),
+                _make_symbol("R3", 0.0, 5.0),
+                _make_symbol("R4", 5.0, 5.0),
+                _make_symbol("R5", 2.5, 2.5),
+                _make_symbol("R6", 7.5, 2.5),
+                _make_symbol("R7", 2.5, 7.5),
+                # Sparse pair far away
+                _make_symbol("C1", 200.0, 200.0),
+                _make_symbol("C2", 210.0, 200.0),
+            ]
+        )
+        doc = _doc(body)
+        clusters = detect_dense_clusters(doc, radius_mm=30.0, threshold=3)
+        assert len(clusters) >= 1
+        # First cluster should have highest neighbor count
+        if len(clusters) > 1:
+            assert clusters[0][2] >= clusters[1][2], "Clusters not sorted by density"
