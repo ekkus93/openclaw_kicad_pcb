@@ -446,6 +446,136 @@ def _spine_route(
     return segs, junctions
 
 
+def _simplify_wires(  # noqa: PLR0912
+    wires: list[WireSegment],
+    *,
+    protected_points: set[tuple[float, float]] | None = None,
+) -> list[WireSegment]:
+    """Simplify wire routing by merging consecutive colinear segments.
+
+    Reduces visual clutter by combining wire segments that lie on the same
+    horizontal or vertical line into longer, direct wire runs.  This
+    eliminates unnecessary intermediate junctions and shortens the total
+    wire segment count (Phase 6.1).
+
+    Parameters
+    ----------
+    wires:
+        Input wire segments; order-independent.
+    protected_points:
+        Optional set of (x, y) coordinates that must be preserved as wire
+        start/end points.  Typically pin endpoints.  Segments will not be
+        merged if doing so would eliminate a protected point.
+
+    Returns
+    -------
+    list[WireSegment]
+        Simplified wire list with consecutive colinear segments merged,
+        preserving all protected connection points and junction points.
+
+    Notes
+    -----
+    The algorithm iteratively merges pairs of segments that:
+
+    * Share at least one endpoint.
+    * Lie on the same horizontal line (y₁ = y₂) or vertical line (x₁ = x₂).
+    * The shared endpoint is NOT in the protected set.
+    * The shared endpoint is NOT a junction (degree ≥ 3).
+
+    Merging continues until no more pairs can be combined.  The resulting
+    list typically contains fewer short wire segments and a cleaner visual
+    appearance.
+    """
+    if not wires:
+        return []
+
+    if protected_points is None:
+        protected_points = set()
+
+    segments = list(wires)
+    changed = True
+
+    while changed:
+        changed = False
+        new_segments = []
+        used = set()
+
+        # Build a degree map (how many segments touch each point)
+        degree: dict[tuple[float, float], int] = {}
+        for seg in segments:
+            p1 = (round(seg.x1, 2), round(seg.y1, 2))
+            p2 = (round(seg.x2, 2), round(seg.y2, 2))
+            degree[p1] = degree.get(p1, 0) + 1
+            degree[p2] = degree.get(p2, 0) + 1
+
+        for i, seg1 in enumerate(segments):
+            if i in used:
+                continue
+
+            # Try to find a mergeable partner
+            merged = False
+            for j in range(i + 1, len(segments)):
+                if j in used:
+                    continue
+
+                seg2 = segments[j]
+
+                # Find shared endpoints (rounded to 0.01 mm for floating-point stability)
+                seg1_endpoints = {
+                    (round(seg1.x1, 2), round(seg1.y1, 2)),
+                    (round(seg1.x2, 2), round(seg1.y2, 2)),
+                }
+                seg2_endpoints = {
+                    (round(seg2.x1, 2), round(seg2.y1, 2)),
+                    (round(seg2.x2, 2), round(seg2.y2, 2)),
+                }
+                shared = seg1_endpoints & seg2_endpoints
+
+                if not shared:
+                    continue
+
+                # Don't merge if shared endpoint is protected
+                if any(pt in protected_points for pt in shared):
+                    continue
+
+                # Don't merge if shared endpoint is a junction (degree ≥ 3)
+                if any(degree.get(pt, 0) >= 3 for pt in shared):
+                    continue
+
+                # Check if segments are colinear
+                # Horizontal segments (both have y1 == y2)
+                if seg1.y1 == seg1.y2 and seg2.y1 == seg2.y2 and seg1.y1 == seg2.y1:
+                    # Get all x coordinates
+                    xs = sorted([seg1.x1, seg1.x2, seg2.x1, seg2.x2])
+                    # Merge: use min and max x coordinates
+                    new_segments.append(WireSegment(xs[0], seg1.y1, xs[-1], seg1.y1))
+                    used.add(i)
+                    used.add(j)
+                    merged = True
+                    changed = True
+                    break
+
+                # Vertical segments (both have x1 == x2)
+                elif seg1.x1 == seg1.x2 and seg2.x1 == seg2.x2 and seg1.x1 == seg2.x1:
+                    # Get all y coordinates
+                    ys = sorted([seg1.y1, seg1.y2, seg2.y1, seg2.y2])
+                    # Merge: use min and max y coordinates
+                    new_segments.append(WireSegment(seg1.x1, ys[0], seg1.x1, ys[-1]))
+                    used.add(i)
+                    used.add(j)
+                    merged = True
+                    changed = True
+                    break
+
+            if not merged:
+                new_segments.append(seg1)
+                used.add(i)
+
+        segments = new_segments
+
+    return segments
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -701,6 +831,15 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     # ----------------------------------------------------------------
     if positions is not None:
         routing.wires = detect_body_crossings(routing.wires, positions)
+
+    # ----------------------------------------------------------------
+    # Wire simplification pass (Phase 6.1)
+    # ----------------------------------------------------------------
+    # Protect pin endpoints from being merged away; they are required
+    # connection points for electrical continuity.  Round to 2 decimal
+    # places (0.01 mm precision) to avoid floating-point comparison issues.
+    protected = {(round(x, 2), round(y, 2)) for x, y, _angle in pin_endpoints.values()}
+    routing.wires = _simplify_wires(routing.wires, protected_points=protected)
 
     return routing
 

@@ -8,8 +8,8 @@
     "top_left": 0.2631578947368421,
     "top_right": 0.3157894736842105
   },
-  "short_wires": 84,
+  "short_wires": 80,
   "symbol_count": 19,
-  "wire_stub_ratio": 0.5882352941176471,
+  "wire_stub_ratio": 0.5681818181818182,
   "x_columns": 12
 }
