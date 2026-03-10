@@ -133,8 +133,17 @@ LINT_SUGGESTIONS: dict[str, str] = {
         "Add net labels or wires to connect isolated wire islands, "
         "or verify that all schematic sections are intentionally separate sheets."
     ),
+    "LAY006": (
+        "Reduce local crowding by spreading components in dense regions "
+        "(six or more neighbors within 30mm). "
+        "Re-run the layout engine or manually adjust component positions."
+    ),
     "LAY007": (
         "Reduce wire crossings by re-running the layout or adjusting component "
         "placement order; check signal-flow ordering."
+    ),
+    "LAY008": (
+        "Increase inter-block spacing (input/output/amp blocks) to at least 20mm. "
+        "Adjust the schematic layout or component assignment to blocks."
     ),
 }
