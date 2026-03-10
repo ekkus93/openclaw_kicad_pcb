@@ -493,8 +493,35 @@ Symbol orientation should support function and reading flow, not just fit routin
 - **All 16 tests pass** ✅
 
 ### 9.2 Normalize similar part presentation
-- [ ] Similar passives in the same stage should not appear arbitrarily rotated.
-- [ ] Avoid inconsistent visual grammar where two equivalent passive roles look unrelated.
+- [x] Similar passives in the same stage should not appear arbitrarily rotated.
+- [x] Avoid inconsistent visual grammar where two equivalent passive roles look unrelated.
+
+**Implementation Details**:
+- Implemented `_normalize_passive_orientations_by_role()` function (~140 lines)
+  - Groups passives by BlockRole (FEEDBACK, INPUT, PRECONDITIONING, OUTPUT, etc.)
+  - Counts orientation distribution per role (0° vs 90°)
+  - Determines canonical orientation based on role type:
+    - **FEEDBACK**: Prefer 90° (vertical feedback loop) if majority or all in op-amp column
+    - **INPUT/PRECONDITIONING/OUTPUT**: Prefer 0° (horizontal signal flow)
+  - Applies canonical orientation to all passives in role group for consistency
+- Added `_all_feedback_in_opamp_column()` helper (~25 lines)
+  - Checks if all feedback passives are within same column as op-amp
+  - Supports the feedback-specific normalization decision
+- Integrated normalization into `compute_orientations()` pipeline
+  - Call made after individual orientation assignment, before return
+  - Preserves individual conventions while enforcing role-level consistency
+- Updated `compute_orientations()` docstring to reference Phase 9.2
+
+**Tests Added (Phase 9.2)**:
+- Created `tests/unit/test_phase9_normalization.py` with 8 unit tests covering:
+  - `TestFeedbackPassivesConsistency` (2 tests): all feedback passives align
+  - `TestInputStagePassivesConsistency` (2 tests): input passives align
+  - `TestOutputStagePassivesConsistency` (1 test): output passives align
+  - `TestMixedRoleConsistency` (1 test): different roles can have different consistent alignments
+  - `TestConsistencyPreservation` (2 tests): normalization preserves existing alignment intent
+- **All 8 tests pass** ✅
+- **No regressions**: All 16 Phase 9.1 tests pass ✅
+- **Integration verified**: All 284 layout integration tests pass ✅
 
 ### 9.3 Add tests for orientation sanity
 - [ ] Assert connectors are oriented consistently at edges.
@@ -551,7 +578,7 @@ Make readability improvements measurable and regression-resistant.
 11. [x] Phase 7 — improve input/output block staging ✅ **COMPLETE**
 12. [x] Phase 8 — page composition balancing ✅ **COMPLETE**
 13. [x] Phase 9.1 — define orientation conventions by part role ✅ **COMPLETE**
-14. [ ] Phase 9.2 — normalize similar part presentation
+14. [x] Phase 9.2 — normalize similar part presentation ✅ **COMPLETE**
 15. [ ] Phase 9.3 — add tests for orientation sanity
 16. [ ] Phase 10 — validation, golden tests, and human review loop
 
