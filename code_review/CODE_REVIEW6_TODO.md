@@ -1,431 +1,379 @@
-# Code Review 6 — Layout Rules TODO
+# CODE_REVIEW6_TODO.md
 
-Covers six concrete layout improvement rules derived from schematic analysis of
-`ne5532_headphone_amp_left.kicad_sch` / `OpenClaw_Managed.kicad_sch`.  Each rule
-is broken into actionable tasks with the owning file and the affected function(s)
-noted inline.
+## Objective
 
----
+Improve the readability and drafting quality of generated KiCad schematics so they no longer merely “work,” but also read like a conventional human-drafted circuit diagram.
 
-## Rule 0 — I/O Connector Role Detection
-
-**Problem:** Output connectors (e.g. headphone jack) land on the left because the
-current seed-selection only picks the connector with the most hops to an IC, but
-doesn't classify all connectors as input vs. output and enforce page-edge
-constraints for each type.
-
-### Tasks
-
-- [ ] **R0-1** Add `_classify_connector_roles()` to `tier.py`
-  - Input: `refs`, `signal_nets` (same signature as `_choose_seed_connector`)
-  - Build undirected signal adjacency graph
-  - BFS from every connector; record each connector's hop-distance to every IC
-  - BFS from every IC in the *directed* DAG produced by `assign_tiers()`; a
-    connector that only appears *after* every IC in the DAG is an **output**
-    connector; those appearing *before* or at tier 0 are **input** connectors
-  - Return `dict[str, Literal["input", "output", "unknown"]]`
-
-- [ ] **R0-2** Integrate connector roles into `assign_tiers()` in `tier.py`
-  - After `_longest_path_dp()`, call `_classify_connector_roles()`
-  - Force all output connectors to `tier = max_tier`
-  - Force all input connectors to `tier = 0`
-  - Log each forced reassignment at `DEBUG` level
-
-- [ ] **R0-3** Enforce page-edge X constraints in `graphviz_layout/snap.py`
-  - Add `_enforce_connector_x_bounds()` post-layout snap pass
-  - Input connectors: clamp `x ≤ ORIGIN_X + 0.25 × (PAGE_MAX_X − ORIGIN_X)`
-  - Output connectors: clamp `x ≥ ORIGIN_X + 0.75 × (PAGE_MAX_X − ORIGIN_X)`
-  - Snap clamped x to nearest KiCad grid (1.27 mm)
-  - Run this pass immediately after `_snap_connectors_to_ic_y()` in
-    `GraphvizLayoutEngine.compute_symbol_positions()`
-
-- [ ] **R0-4** Update connector orientation in `layout.py → compute_orientations()`
-  - Currently uses `tiers.get(ref, 0) == _max_tier` to decide 180°
-  - Replace with the role classification from R0-1 so output connectors
-    always get 180° regardless of exact tier number
-  - Keep fallback to tier-based logic when role data is unavailable
-
-- [ ] **R0-5** Update `graphviz_layout/dot_builder.py → _emit_tier_subgraphs()`
-  - Ensure output connectors are emitted in `{ rank=sink }` subgraph
-  - Ensure input connectors are emitted in `{ rank=source }` subgraph
-  - Verify this is consistent with the tier assignments from R0-2
-
-- [ ] **R0-6** Add unit tests for `_classify_connector_roles()`
-  - Test: NE5532 amp circuit → J_headphone classified as output, J_audio_in as input
-  - Test: circuit with no ICs → all connectors classified as unknown
-  - Test: circuit with single connector → classified as input
-  - File: `kicad-pcb/tests/test_tier.py`
+This TODO focuses on the remaining schematic-quality issues in the current `kicad-pcb` skill after the earlier routing/layout improvements. The generated schematic is much better than before, but it still has problems with crowding, block separation, signal-flow clarity, excessive grounding clutter, wire quality, component orientation, and overall page composition.
 
 ---
 
-## Rule 1 — Signal-Distance Score (SDS)
+## Guiding Principles
 
-**Problem:** Components are currently placed by BFS tier alone, which gives equal
-column weight to every hop regardless of whether a component is closer to the input
-or the output end of the chain.  SDS captures this as a continuous 0–1 value.
-
-### Tasks
-
-- [ ] **R1-1** Implement `compute_signal_distance_scores()` in `layout.py`
-  - Signature: `(ir: CircuitIR, roles: dict[str, str]) -> dict[str, float]`
-  - For each component `c` compute:
-    - `d_in(c)` = BFS hop count from `c` to the nearest input connector
-      (signal nets only, power nets excluded)
-    - `d_out(c)` = BFS hop count from `c` to the nearest output connector
-  - `SDS(c) = d_in(c) / (d_in(c) + d_out(c))`
-  - Handle division-by-zero: if `d_in + d_out == 0` set `SDS = 0.5`
-  - Handle unreachable connectors: treat as `d = large_sentinel` (e.g. 1000)
-  - Export as public function (`__all__` entry in `layout.py`)
-
-- [ ] **R1-2** Handle power-only components (decoupling caps, bypass caps)
-  - Components with no signal-net pins inherit the SDS of their associated IC
-  - Use `_find_decoupling_caps()` from `graphviz_layout/dot_builder.py` to
-    identify `{cap_ref: ic_ref}` mappings
-  - After computing SDS for all signal-connected components, copy IC SDS to
-    its decoupling caps
-
-- [ ] **R1-3** Store SDS in `ComponentAnnotation` dataclass in `layout.py`
-  - Add field `sds: float = 0.5` to `ComponentAnnotation`
-  - Populate it from `compute_signal_distance_scores()` inside
-    `find_feedback_paths()` (that function already returns a
-    `dict[str, ComponentAnnotation]`)
-
-- [ ] **R1-4** Add unit tests for SDS computation
-  - Test: linear chain `J_in → R1 → U1 → R2 → J_out`
-    - J_in → SDS ≈ 0.0
-    - R1 → SDS ≈ 0.25
-    - U1 → SDS ≈ 0.5
-    - R2 → SDS ≈ 0.75
-    - J_out → SDS ≈ 1.0
-  - Test: power-only cap inherits its IC's SDS
-  - File: `kicad-pcb/tests/test_layout.py`
+- Optimize for **human readability**, not just electrical correctness.
+- The schematic should communicate:
+  - signal flow,
+  - functional blocks,
+  - local relationships around active devices,
+  - power distribution,
+  - and input/output staging.
+- Prefer **clear drafting conventions** over purely geometric minimization.
+- Add acceptance criteria that are measurable where possible, but keep room for heuristic improvements.
+- Keep changes testable and incremental.
 
 ---
 
-## Rule 2 — Recursive Halving (Hierarchical Column Assignment)
+# Phase 0 — Capture the Current Schematic as Baseline
 
-**Problem:** The current flat BFS column assignment puts the entire passive network
-around a single op-amp into one or two adjacent columns, creating a dense vertical
-stack that partially covers the op-amp symbol.  Recursive halving distributes
-components proportionally across the page width based on their SDS.
+### 0.1 Save the current generated schematic as a readability regression fixture
+- [x] Add the current headphone amp generated schematic as a fixture under:
+  - [x] `tests/fixtures/readability/ne5532_headphone_amp_left_current/`
+- [x] Include:
+  - [x] generated `.kicad_sch` (baseline_generated.kicad_sch)
+  - [x] source IR / netlist JSON used to generate it (circuit_ir.json)
+  - [ ] optional screenshot reference if useful for human review
 
-### Tasks
+### 0.2 Document the current readability failures
+- [x] Add a README next to the fixture describing the current problems:
+  - [x] crowding in upper-left / center-left
+  - [x] weak functional block separation
+  - [x] power/decoupling clutter
+  - [x] too many ground symbols
+  - [x] weak signal-flow readability
+  - [x] too many short jogs/stubs
+  - [x] awkward op-amp neighborhood
+  - [x] uneven page composition
+- [x] Add one short plain-English "before" description that Copilot can use as context.
 
-- [ ] **R2-1** Implement `_recursive_halving()` in `layout.py`
-  - Signature:
-    ```python
-    def _recursive_halving(
-        refs: list[str],
-        sds: dict[str, float],
-        x_lo: float,
-        x_hi: float,
-        *,
-        max_per_col: int = MAX_ROWS_PER_COL,
-        grid_col_mm: float = GRID_COL_MM,
-    ) -> dict[str, int]:  # ref → column index
-    ```
-  - Sort `refs` by SDS (ascending)
-  - Split at the median SDS into `S_left` and `S_right`
-  - Assign `S_left → [x_lo, x_mid]`, `S_right → [x_mid, x_hi]`
-  - Recurse on each half
-  - Stop recursion when `len(refs) ≤ max_per_col` OR band width ≤ `grid_col_mm`
-  - Return a flat `{ref: col_index}` mapping where `col_index` is the count of
-    `GRID_COL_MM`-wide slots from the left edge
-
-- [ ] **R2-2** Replace `_bfs_columns()` usage in `compute_signal_flow_layout()`
-  - After computing SDS (R1-1) and connector roles (R0-1), call
-    `_recursive_halving()` instead of `_bfs_columns()`
-  - Keep `_bfs_columns()` as a private fallback for the
-    `HeuristicLayoutEngine` (no Graphviz) path
-  - Map column indices from `_recursive_halving()` to `x_mm` coordinates
-    using the standard formula `ORIGIN_X + col × GRID_COL_MM`
-
-- [ ] **R2-3** Integrate SDS-derived tiers into `gv_dot_builder.py → _build_dot_source()`
-  - Convert column indices from `_recursive_halving()` into Graphviz
-    `rank=same` subgroup assignments
-  - Components with the same column index go into the same `{ rank=same }` subgraph
-  - This replaces the current longest-path tier directly as the rank source
-
-- [ ] **R2-4** Preserve `assign_tiers()` as the fallback when SDS cannot be computed
-  - SDS computation requires ≥1 input connector and ≥1 output connector
-  - When neither can be found (e.g. circuit has only one connector), fall
-    back gracefully to the existing `assign_tiers()` longest-path algorithm
-  - Log a `WARNING` when the fallback is triggered
-
-- [ ] **R2-5** Add unit tests for recursive halving
-  - Test: 8 components in a linear chain → 8 distinct columns, monotone SDS order
-  - Test: 2 components → each goes into one half
-  - Test: all components at SDS = 0.5 (degenerate) → stable sort, no crash
-  - Test: `max_per_col` limit triggers column wrapping correctly
-  - File: `kicad-pcb/tests/test_layout.py`
+### 0.3 Add baseline readability metrics helpers
+- [x] Add helper functions to quantify readability traits:
+  - [x] symbol density by page region (page_region_density)
+  - [x] count of GND symbols (count_global_labels)
+  - [x] count of short wire segments (count_short_wire_segments)
+  - [x] average symbol spacing (average_symbol_spacing)
+  - [x] power symbols count (count_power_symbols)
+  - [x] empty-space imbalance via quadrant density
+- [x] Keep these metrics approximate but deterministic.
 
 ---
 
-## Rule 3 — Two-Pass Barycentric Vertical Sort
+# Phase 1 — Functional Block Detection and Explicit Block Layout
 
-**Problem:** The current `_avg_nbr_col()` sort is a single left-to-right pass and
-only considers column neighbours, resulting in unnecessary vertical crossings inside
-and between adjacent columns.
+## Goal
+Make the schematic read as distinct functional blocks rather than a single auto-placed cluster.
 
-### Tasks
+### 1.1 Add explicit functional block classification to the IR/layout pipeline
+- [ ] Introduce block classification tags for components/nets:
+  - [ ] input connector block
+  - [ ] input conditioning / volume / bias block
+  - [ ] op-amp gain stage block
+  - [ ] feedback block
+  - [ ] output block
+  - [ ] power entry block
+  - [ ] decoupling / supply support block
+- [ ] Implement classification using:
+  - [ ] component type heuristics (jack, potentiometer, op-amp, resistor, capacitor)
+  - [ ] net name hints (`IN`, `OUT`, `GND`, `V+`, `V-`, etc.)
+  - [ ] graph proximity to active devices and I/O nets
+- [ ] Add a debug output mode that dumps block assignments.
 
-- [ ] **R3-1** Implement `_barycentric_sort()` in `layout.py`
-  - Signature:
-    ```python
-    def _barycentric_sort(
-        by_col: dict[int, list[str]],
-        positions_x: dict[str, float],
-        adjacency: dict[str, set[str]],
-        *,
-        passes: int = 2,
-    ) -> dict[int, list[str]]:
-    ```
-  - **Pass 1 (left-to-right):** for each column `k > 0`, sort by the average
-    y-row of connected components in column `k-1`
-  - **Pass 2 (right-to-left):** for each column `k < max_col`, sort by the
-    average y-row of connected components in column `k+1`
-  - Use signal-net adjacency only (power nets excluded)
-  - Tiebreak: alphabetical by ref for determinism
+### 1.2 Introduce block-level layout zones
+- [ ] Define page zones / anchors for high-level blocks:
+  - [ ] input block on left
+  - [ ] op-amp stage in center
+  - [ ] output block on right
+  - [ ] power/decoupling above or top-left/top-center
+- [ ] Constrain the layout engine so that components remain near their assigned block zone.
+- [ ] Preserve enough flexibility to avoid overlaps and bad routing.
 
-- [ ] **R3-2** Replace single-pass sort in `compute_signal_flow_layout()`
-  - Call `_barycentric_sort()` in place of the current `members.sort(key=_avg_nbr_col)`
-  - Pass the adjacency dict already built in that function
-
-- [ ] **R3-3** Apply barycentric sort after `_apply_stereo_split()` in
-  `graphviz_layout/snap.py`
-  - Stereo split compresses L/R channels vertically; a post-split barycentric
-    pass within each channel half further reduces intra-channel crossings
-  - Add a `_post_stereo_barycentric()` helper that operates on each half
-    independently (top half = L channel coords, bottom half = R channel)
-
-- [ ] **R3-4** Add unit tests
-  - Test: two adjacent columns where the naive sort produces a crossing →
-    barycentric sort eliminates it
-  - Test: second pass further reduces crossings relative to one pass
-  - File: `kicad-pcb/tests/test_layout.py`
+### 1.3 Add tests for block detection and block placement
+- [ ] Unit test block classification for the headphone amp IR.
+- [ ] Assert the op-amp is classified as the core gain-stage block.
+- [ ] Assert the input jack and related parts classify into input-side blocks.
+- [ ] Assert the output jack and output-side components classify into output-side blocks.
+- [ ] Assert power connector and supply capacitors classify into power/supply blocks.
 
 ---
 
-## Rule 4 — Op-Amp Halo (Feedback Network Colocation)
+# Phase 2 — Reduce Local Crowding and Improve White Space
 
-**Problem:** Feedback resistors, gain-setting resistors, and stability capacitors
-(the "halo") currently land in their own BFS columns left or right of the op-amp,
-producing long diagonal wires that cross the main signal path.  They should be
-placed in the same column as the op-amp, stacked above and below it.
+## Goal
+Spread components more intelligently so dense clusters become readable.
 
-### Tasks
+### 2.1 Add regional density checks during layout
+- [ ] Compute local density scores for symbols after placement.
+- [ ] Detect over-dense pockets, especially where many symbols are close in one corner/region.
+- [ ] Add a layout refinement pass that pushes dense clusters apart while preserving block membership.
 
-- [x] **R4-1** Implement `_compute_opamp_halo()` in `layout.py`
-  - Signature:
-    ```python
-    def _compute_opamp_halo(
-        ir: CircuitIR,
-        annotations: dict[str, ComponentAnnotation],
-        tiers: dict[str, int],
-    ) -> dict[str, str]:  # halo_ref → anchor_ic_ref
-    ```
-  - A component is a **halo member** when ALL of the following hold:
-    1. It is a passive (`R`, `C`, `L`)
-    2. `annotations[ref].feedback == True` (back-edge topology), OR its only
-       signal-net connections are to pins of a single IC (no other component
-       appears in any of its signal nets)
-    3. It is not already classified as a shunt/bypass component
-    (i.e. it does not connect to any power net)
-  - For each halo member, record the IC it is tightly coupled to as its anchor
+### 2.2 Improve intra-block spacing
+- [ ] Add minimum spacing rules between symbols within a block.
+- [ ] Add slightly larger spacing for:
+  - [ ] connectors
+  - [ ] active devices
+  - [ ] pots and jacks
+- [ ] Allow denser spacing only for clearly-related passive groups if readability remains acceptable.
 
-- [x] **R4-2** Override column assignment for halo members in `_recursive_halving()`
-  - After the recursive halving produces initial column assignments, iterate
-    over halo members from `_compute_opamp_halo()`
-  - Force each halo member into the same column as its anchor IC
-  - Log each forced column assignment at `DEBUG` level
+### 2.3 Improve inter-block spacing
+- [ ] Enforce minimum separation between major blocks:
+  - [ ] input vs op-amp stage
+  - [ ] op-amp stage vs output block
+  - [ ] signal blocks vs power/decoupling block
+- [ ] Ensure functional blocks do not visually bleed into each other.
 
-- [x] **R4-3** Assign halo rows in `compute_signal_flow_layout()`
-  - Within the op-amp's column, place the op-amp at the vertical centre
-  - Distribute halo members alternately above and below the op-amp:
-    - Prefer placing input-side halo (connected to inverting/non-inverting
-      input pins) **above** the op-amp
-    - Prefer placing output-side halo (connected to output pin) **below**
-  - Use the existing IC-centring logic in the column layout loop as a template
+### 2.4 Add layout lints for crowding
+- [ ] Add readability lint(s), e.g.:
+  - [ ] `LAY006`: region is too dense
+  - [ ] `LAY007`: insufficient whitespace between functional blocks
+- [ ] Make them warnings first; evaluate whether any should become errors later.
 
-- [x] **R4-4** Add a `_snap_opamp_halo()` post-layout snap pass in
-  `graphviz_layout/snap.py`
-  - After `_snap_feedback_components()`, run a second pass that verifies
-    halo members did not drift away from their anchor IC due to other snaps
-  - If any halo member's column differs from its anchor IC after snapping,
-    move it back to `anchor_x` and place it `± GRID_ROW_MM` from `anchor_y`
-  - Insert this pass between `_snap_feedback_components()` and
-    `_apply_stereo_split()` in `GraphvizLayoutEngine.compute_symbol_positions()`
-
-- [x] **R4-5** Update `gv_dot_builder.py → _emit_feedback_constraints()`
-  - Extend the existing feedback cluster to include all halo members (not just
-    feedback-flagged components)
-  - Use invisible edges (`style=invis`) to co-locate halo members at the same
-    rank as their anchor IC in the DOT graph
-
-- [x] **R4-6** Add unit tests
-  - Test: NE5532 inverting amp — R_gain and R_fb are identified as halo, placed
-    in U1's column
-  - Test: component with dual power+signal nets is NOT classified as halo
-  - File: `kicad-pcb/tests/test_layout.py`
+### 2.5 Add tests for crowding reduction
+- [ ] Verify symbol density in the top-left/center-left region decreases relative to baseline fixture.
+- [ ] Verify average nearest-neighbor symbol spacing improves.
 
 ---
 
-## Rule 5 — GND / 0 V Net Normalisation
+# Phase 3 — Make Signal Flow More Obvious
 
-**Problem:** Many nets in the generated schematic carry labels like `0V` instead
-of the standard `GND` power symbol.  This makes the schematic confusing because
-`0V` appears as a plain net label rather than a recognisable power symbol, and ERC
-tools do not link the `0V` nets to the global GND rail.
+## Goal
+The schematic should visually communicate left-to-right signal flow.
 
-### Tasks
+### 3.1 Strengthen left-to-right placement constraints
+- [ ] Ensure major signal-path blocks are ordered:
+  - [ ] input → preconditioning/volume → op-amp → output
+- [ ] Bias/block-specific exceptions are allowed, but should not obscure the main path.
 
-- [ ] **R5-1** Add a `GND_ALIASES` constant to `component_types.py`
-  ```python
-  GND_ALIASES: frozenset[str] = frozenset({
-      "0V", "0V0", "0", "GROUND", "EARTH",
-      "GND", "AGND", "PGND", "DGND", "SGND", "VSS",
-  })
-  ```
-  - Aliases are matched case-insensitively (strip + upper before lookup)
+### 3.2 Improve net routing to reinforce signal direction
+- [ ] Prefer horizontal progression for signal-carrying nets.
+- [ ] Reduce unnecessary vertical detours for main signal paths.
+- [ ] Favor local wiring around each block before connecting onward to the next block.
 
-- [ ] **R5-2** Add `normalize_gnd_net_name()` to `component_types.py`
-  - Signature: `(name: str) -> str`
-  - If `name.strip().upper() in GND_ALIASES` → return `"GND"`
-  - Otherwise return `name` unchanged
-  - Export in `__all__`
+### 3.3 Add explicit “main signal path” identification
+- [ ] Identify the probable primary signal chain from input net(s) to output net(s).
+- [ ] Use this path to anchor layout/routing priorities.
+- [ ] Keep secondary support components near the relevant signal stage without obscuring the main path.
 
-- [ ] **R5-3** Apply normalisation at IR ingestion in `circuit_ir.py`
-  - In the net-construction code (wherever `NetIR` objects are created or
-    their `name` field is set), call `normalize_gnd_net_name()` on the raw
-    name before storing it
-  - This ensures that every downstream consumer (tier assignment, layout,
-    dot builder, schematic writer) sees `"GND"` instead of `"0V"`
-
-- [ ] **R5-4** Apply normalisation in `preflight.py → collect_existing_net_names()`
-  - Normalise GND aliases in the returned frozenset so that existing-net
-    deduplication does not treat `GND` and `0V` as distinct nets
-
-- [ ] **R5-5** Update `component_types.py → POWER_NET_PREFIXES`
-  - Verify `"0V"` is explicitly listed (it currently is in `POWER_NET_PATTERN`
-    but absent from `POWER_NET_PREFIXES`); add if missing
-  - Run existing `is_power_net()` tests to confirm no regression
-
-- [ ] **R5-6** Update schematic writer to emit `GND` power symbol
-  - In `sch_doc/` (writer module), when rendering a net whose normalised name
-    is `"GND"`, emit a KiCad `PWR:GND` global power symbol and its
-    corresponding `#PWR` implicit power pin instead of a plain net label
-  - Use the same code path already used for `VCC`/`VDD` rendering (if any)
-
-- [ ] **R5-7** Add regression tests
-  - Test: `normalize_gnd_net_name("0V")` → `"GND"`
-  - Test: `normalize_gnd_net_name("GROUND")` → `"GND"`
-  - Test: `normalize_gnd_net_name("net_audio_in")` → unchanged
-  - Test: IR built from a netlist with `0V` nets → all `NetIR.name == "GND"`
-  - File: `kicad-pcb/tests/test_component_types.py` and
-    `kicad-pcb/tests/test_circuit_ir.py`
+### 3.4 Add tests for signal-flow clarity
+- [ ] Assert the input connector x-position is left of the op-amp stage.
+- [ ] Assert the output connector x-position is right of the op-amp stage.
+- [ ] Assert the main output coupling/output parts are placed to the right of the op-amp, not interleaved in the left cluster.
 
 ---
 
-## Rule 6 — Wire Crossing Budget
+# Phase 4 — Clean Up the Op-Amp Neighborhood
 
-**Problem:** Even with rules 2 and 3 applied, some crossing may remain (especially
-on feedback and cross-channel wires).  Rule 6 adds a measurement pass that can
-trigger an extra optimisation sweep when crossings are excessive, and exposes
-crossing count as a lintable metric.
+## Goal
+The area around the NE5532 should read like a designed analog stage, not a tangle.
 
-### Tasks
+### 4.1 Add op-amp-centric local placement rules
+- [ ] Place input-side components near op-amp input pins.
+- [ ] Place output-side components near op-amp output pin.
+- [ ] Place feedback components close to the relevant inverting/non-inverting nodes.
+- [ ] Keep decoupling components near power pins, but visually separate from signal feedback parts.
 
-- [ ] **R6-1** Implement `count_wire_crossings()` in `layout.py`
-  - Signature:
-    ```python
-    def count_wire_crossings(
-        positions: dict[str, tuple[float, float]],
-        adjacency: dict[str, set[str]],
-    ) -> int:
-    ```
-  - Two wires `(A, B)` and `(C, D)` **cross** when:
-    - `col(A) < col(C)` and `row(A) > row(C)`, OR
-    - `col(A) < col(C)` and `row(B) > row(D)`
-    (simple column-row order inversion, excludes same-column neighbours)
-  - Return the total crossing count
-  - Export as a public function
+### 4.2 Differentiate support parts by role
+- [ ] Separate:
+  - [ ] feedback resistors/caps
+  - [ ] input resistors/coupling caps
+  - [ ] output coupling/output support parts
+  - [ ] power decoupling capacitors
+- [ ] Use placement rules to keep unlike roles from mixing into the same visual tangle.
 
-- [ ] **R6-2** Trigger remediation pass in `compute_signal_flow_layout()`
-  - After the initial `_barycentric_sort()` (R3), compute
-    `count_wire_crossings()`
-  - **Crossing ratio threshold:** if `crossings / total_wires ≥ 0.30`,
-    run one additional barycentric sweep (full two-pass `_barycentric_sort()`
-    again on the updated row assignments)
-  - Cap at 3 total sweep attempts to avoid an infinite loop
-  - Log the crossing count and whether a remediation sweep was triggered at
-    `DEBUG` level
+### 4.3 Add orientation rules around op-amp stages
+- [ ] Orient the op-amp so:
+  - [ ] inputs read from the left
+  - [ ] output reads toward the right
+- [ ] Prefer passive part orientation that supports that local flow.
+- [ ] Avoid rotating passives only to satisfy local routing if it hurts readability.
 
-- [ ] **R6-3** Expose crossing count in layout analytics / lint
-  - Add `crossing_count: int` to the return value or a side-channel dict
-    in `HeuristicLayoutEngine.compute_symbol_positions()` (store on the
-    engine instance as `self.last_crossing_count`)
-  - In `lint/` (LAY series rules), add **LAY007** rule:
-    `crossing_count > 0.5 × total_wires` → `WARNING "high wire crossing ratio"`
-  - Threshold is lenient (50 %) to fire only on severely tangled layouts
-
-- [ ] **R6-4** Add unit tests
-  - Test: crossing-free layout → `count_wire_crossings()` returns 0
-  - Test: two deliberately crossed wires → returns 1
-  - Test: remediation sweep is triggered when ratio ≥ 0.30
-  - Test: LAY007 fires when crossing ratio > 0.50
-  - File: `kicad-pcb/tests/test_layout.py` and `kicad-pcb/tests/test_lint.py`
+### 4.4 Add tests for op-amp neighborhood quality
+- [ ] Assert feedback components are closer to the op-amp than to connectors.
+- [ ] Assert output-side parts are placed on the output side of U1.
+- [ ] Assert supply decouplers are nearer the power pins than the input network.
 
 ---
 
-## Cross-Rule Integration Tasks
+# Phase 5 — Reduce Ground and Power Clutter
 
-- [ ] **INT-1** Update `GraphvizLayoutEngine.compute_symbol_positions()` snap order
-  - New canonical snap order after all rules are implemented:
-    1. `snap_positions()` (grid)
-    2. `_snap_power_symbols()`
-    3. `_enforce_connector_x_bounds()` ← new (R0-3)
-    4. `_snap_connectors_to_ic_y()`
-    5. `_snap_feedback_components()`
-    6. `_snap_opamp_halo()` ← new (R4-4)
-    7. `_apply_stereo_split()`
-    8. `_post_stereo_barycentric()` ← new (R3-3)
-    9. `_compact_y_gap()`
-    10. `_post_snap_decoupling_caps()`
-    11. `_deoverlap_positions()`
-  - Update the `layout_engine.py` docstring pipeline overview to match
+## Goal
+Power/ground handling should be readable and not visually noisy.
 
-- [ ] **INT-2** Update `layout_engine.py` docstring to describe all six rules
+### 5.1 Reduce the number of ground symbols
+- [ ] Audit current GND placement policy.
+- [ ] Add logic to avoid unnecessary repeated local grounds when a more compact strategy works.
+- [ ] Reuse local ground anchors/rails where appropriate within a block.
 
-- [ ] **INT-3** Wire SDS and connector roles into `GraphvizLayoutEngine`
-  - `GraphvizLayoutEngine.__init__()` already accepts `tiers`; add optional
-    `sds: dict[str, float] | None = None` and
-    `roles: dict[str, str] | None = None` parameters
-  - `make_layout_engine_with_ir()` should pre-compute and pass all three
+### 5.2 Separate power support visually from signal circuitry
+- [ ] Keep power connector and supply filtering/decoupling grouped together.
+- [ ] Prevent supply support caps from being visually mixed into the main signal chain.
 
-- [ ] **INT-4** End-to-end integration test with NE5532 headphone amp IR
-  - File: `kicad-pcb/tests/test_integration_ne5532.py`
-  - Build the circuit IR from the attached schematic fixture
-  - Run `GraphvizLayoutEngine.compute_symbol_positions()`
-  - Assert: output connector (J_headphone) has `x ≥ 0.70 × PAGE_MAX_X`
-  - Assert: input connector (J_audio_in) has `x ≤ 0.30 × PAGE_MAX_X`
-  - Assert: U1A and halo components share the same x column (within 1.27 mm)
-  - Assert: no GND-alias net labels remain (all `== "GND"`)
-  - Assert: `count_wire_crossings()` for the produced layout < 10
+### 5.3 Add optional local ground grouping strategy
+- [ ] Within a block, allow closely related GND-connected parts to share a cleaner local grounding presentation.
+- [ ] Avoid excessive visual repetition of isolated GND symbols.
 
-- [ ] **INT-5** Update `memory.md` with new rules and implementation status
-  - Add an entry summarising which rules have been implemented and any
-    design decisions made during implementation
+### 5.4 Add tests for reduced GND clutter
+- [ ] Compare count of GND symbols to baseline.
+- [ ] Require a measurable reduction or enforce a maximum count target for the headphone amp fixture.
+- [ ] Ensure any reduction does not worsen readability or produce messy long ground wires.
 
 ---
 
-## Priority Order (Recommended Implementation Sequence)
+# Phase 6 — Reduce Short Joggy Wires and Over-Routed Connections
 
-| Priority | Rule | Rationale |
-|----------|------|-----------|
-| 1 | **R0** — I/O connector role | Single function + enforcement; immediately fixes headphone-jack position |
-| 2 | **R5** — GND normalisation | Purely additive; no layout changes; eliminates noisy `0V` labels immediately |
-| 3 | **R4** — Op-amp halo | Collapses the dense passive column; feedback path already partially detected |
-| 4 | **R1** + **R2** — SDS + recursive halving | Structural change; requires R0 roles and replaces column algorithm |
-| 5 | **R3** — Two-pass barycentric | Tuning on top of R2; small isolated change |
-| 6 | **R6** — Crossing budget | Measurement + trigger; depends on R3 being in place |
-| 7 | **INT-1…5** — Integration | Connect all rules; end-to-end test |
+## Goal
+Connections should be simpler, cleaner, and less mechanically jagged.
+
+### 6.1 Add routing simplification pass
+- [ ] After routing, merge/simplify short consecutive orthogonal segments where possible.
+- [ ] Remove unnecessary jogs that do not avoid collisions or improve clarity.
+- [ ] Keep orthogonal routing, but reduce “micro-jogs.”
+
+### 6.2 Add thresholds for excessive short-segment use
+- [ ] Detect when a block or net contains too many tiny wire segments.
+- [ ] Add lint(s), e.g.:
+  - [ ] `LAY008`: excessive short wire jogs
+  - [ ] `LAY009`: over-routed local connection
+- [ ] Use warnings first.
+
+### 6.3 Prefer local direct wiring where possible
+- [ ] If two nearby components can be connected with a simpler local route, prefer that over a jog-heavy route.
+- [ ] Avoid unnecessarily sending local signals into long trunks.
+
+### 6.4 Add tests for wire simplification
+- [ ] Compare short-segment count to baseline.
+- [ ] Require reduction in 5.08mm-ish stub/jog-heavy patterns where not needed.
+- [ ] Ensure simplified routes remain collision-safe.
+
+---
+
+# Phase 7 — Improve Output-Block and Input-Block Staging
+
+## Goal
+The input and output sections should visually read as coherent stages.
+
+### 7.1 Clean up the input block
+- [ ] Place input jack, volume/input network, and related passives as one visually coherent left-side stage.
+- [ ] Ensure the transition from input block to op-amp input is short and understandable.
+- [ ] Avoid mixing unrelated power/support parts into the input block.
+
+### 7.2 Clean up the output block
+- [ ] Place output-side parts as one coherent stage on the right.
+- [ ] Ensure the output connector is clearly the terminal of the signal chain.
+- [ ] Avoid placing unrelated support parts around the output connector.
+
+### 7.3 Add tests for stage coherence
+- [ ] Assert the input block is compact and left-bounded.
+- [ ] Assert the output block is compact and right-bounded.
+- [ ] Assert stage parts do not significantly overlap block boundaries.
+
+---
+
+# Phase 8 — Improve Page Composition and Overall Visual Balance
+
+## Goal
+Use the page like a human drafter would: balanced, readable, and not awkwardly empty or dense.
+
+### 8.1 Add page composition heuristics
+- [ ] Measure page utilization by quadrants/regions.
+- [ ] Detect cases where one region is too dense while another is too empty.
+- [ ] Add a balancing pass that redistributes blocks to better use the page.
+
+### 8.2 Improve central composition
+- [ ] Ensure the visual “center of gravity” of the circuit is sensible:
+  - [ ] op-amp not too low/high
+  - [ ] title block area not encroached
+  - [ ] large empty regions are justified by structure, not accidental layout collapse
+
+### 8.3 Add composition lints
+- [ ] Add readability lint(s), e.g.:
+  - [ ] `LAY010`: poor page balance
+  - [ ] `LAY011`: block composition imbalance
+- [ ] Use these as warnings initially.
+
+### 8.4 Add tests for page composition
+- [ ] Compare page-region utilization to baseline and require improvement.
+- [ ] Ensure no critical block overlaps title block area or hugs page boundaries without reason.
+
+---
+
+# Phase 9 — Improve Component Orientation Consistency
+
+## Goal
+Symbol orientation should support function and reading flow, not just fit routing.
+
+### 9.1 Define orientation conventions by part role
+- [ ] Resistors/caps in signal flow should tend to align with flow direction.
+- [ ] Connectors should face inward from page edges.
+- [ ] Op-amps should use a stable preferred orientation.
+- [ ] Power/decoupling parts may have a different convention if it improves clarity.
+
+### 9.2 Normalize similar part presentation
+- [ ] Similar passives in the same stage should not appear arbitrarily rotated.
+- [ ] Avoid inconsistent visual grammar where two equivalent passive roles look unrelated.
+
+### 9.3 Add tests for orientation sanity
+- [ ] Assert connectors are oriented consistently at edges.
+- [ ] Assert the op-amp orientation matches the preferred convention.
+- [ ] Add spot checks for passive orientation consistency within a block.
+
+---
+
+# Phase 10 — Validation, Golden Tests, and Human Review Loop
+
+## Goal
+Make readability improvements measurable and regression-resistant.
+
+### 10.1 Add golden readability tests for the headphone amp
+- [ ] Generate the headphone amp schematic from IR in tests.
+- [ ] Compare against readability metrics targets:
+  - [ ] reduced local density
+  - [ ] reduced GND clutter
+  - [ ] reduced short wire count
+  - [ ] improved block separation
+  - [ ] improved page balance
+- [ ] Use tolerant metric thresholds rather than exact coordinate matching.
+
+### 10.2 Add a small human-review checklist artifact
+- [ ] Add a markdown checklist used during manual review:
+  - [ ] Can I identify input, gain stage, output, power blocks quickly?
+  - [ ] Can I follow the main signal path quickly?
+  - [ ] Are grounds/power visually controlled?
+  - [ ] Does the op-amp area make sense at a glance?
+- [ ] Keep this checklist alongside fixtures or docs.
+
+### 10.3 Ensure earlier correctness guarantees remain intact
+- [ ] Confirm readability passes do not break:
+  - [ ] syntax validity
+  - [ ] structural lints
+  - [ ] ERC where supported
+  - [ ] transactional no-overwrite guarantees
+
+---
+
+## Suggested Implementation Order
+
+0. [x] Phase 0 — baseline fixture + metrics helpers ✅ **COMPLETE**
+1. [ ] Phase 1 — block detection and block layout zones
+2. [ ] Phase 2 — reduce crowding / improve whitespace
+3. [ ] Phase 3 — strengthen signal-flow layout
+4. [ ] Phase 4 — clean up op-amp neighborhood
+5. [ ] Phase 6 — wire simplification
+6. [ ] Phase 5 — reduce ground/power clutter
+7. [ ] Phase 7 — improve input/output staging
+8. [ ] Phase 8 — page composition balancing
+9. [ ] Phase 9 — orientation consistency
+10. [ ] Phase 10 — golden tests and human-review loop
+
+---
+
+## Definition of Done
+
+The headphone amp schematic should:
+
+- [ ] clearly show input, gain/op-amp, output, and power blocks
+- [ ] avoid dense unreadable clustering in upper-left / center-left
+- [ ] have a clear left-to-right signal story
+- [ ] have a cleaner, more intentional op-amp neighborhood
+- [ ] reduce excessive ground clutter
+- [ ] reduce short joggy wire clutter
+- [ ] use the page in a balanced, human-readable way
+- [ ] still pass existing correctness and validation requirements
