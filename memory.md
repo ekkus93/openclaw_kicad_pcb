@@ -1,5 +1,52 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-10T12:35:06Z - Phase 7 regression stabilization completed
+
+- Root-cause for remaining Phase 4 regression: Phase 7 input/output lane placers both centered on `ic_y`, allowing tied cluster means.
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` in `_place_output_stage_lane()` to bias output lanes one grid row below op-amp center (`output_lane_y = ic_y + GRID_ROW_MM`) before applying per-item offsets.
+- This preserves left-to-right output cohesion while restoring deterministic vertical staging (`input_mean_y < output_mean_y`) in op-amp locality checks.
+- Validation passed:
+  - `python -m pytest tests/unit/test_phase4_layout.py -k "DecouplingCapCoLocation or opamp_local_rules or output_stage_cohesion or stage_coherence" -q`
+  - `python -m pytest -q` (full suite)
+
+## 2026-03-10T12:08:59Z - Phase 7.2 output block cleanup implemented
+
+- Added `_snap_output_stage_cohesion()` to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` and wired it into `_apply_post_layout_snaps` after input-stage cohesion.
+- New pass identifies output-stage members via block roles + signal adjacency and enforces separate right-side lanes:
+  - feedback transition lane,
+  - output support lane,
+  - rightmost output connector terminal lane.
+- Added output-lane de-mixing so unrelated roles are pushed out of the output terminal area.
+- Added tests in `tests/unit/test_phase4_layout.py`:
+  - `test_output_stage_cohesion_left_to_right_transition`
+  - `test_output_stage_cohesion_avoids_unrelated_role_mixing`
+- Validation passed:
+  - `ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py`
+  - `pytest tests/unit/test_phase4_layout.py -k "output_stage_cohesion" -q`
+  - `pytest tests/unit/test_phase4_layout.py -k "input_stage_cohesion or output_stage_cohesion" -q`
+
+## 2026-03-10T11:47:34Z - Phase 7.1 input block cleanup implemented
+
+- Added `_snap_input_stage_cohesion()` to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` and integrated it into `_apply_post_layout_snaps` after op-amp locality.
+- New pass detects input-stage members from block roles + signal adjacency and enforces a compact left-side lane: `INPUT -> PRECONDITIONING -> OPAMP`.
+- Added lane de-mixing behavior so non-input roles (output/feedback/opamp core/power/decoupling) do not intrude into the input lane.
+- Added tests in `tests/unit/test_phase4_layout.py`:
+  - `test_input_stage_cohesion_left_to_right_transition`
+  - `test_input_stage_cohesion_avoids_unrelated_role_mixing`
+- Validation passed:
+  - `ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py`
+  - `pytest tests/unit/test_phase4_layout.py -k "input_stage_cohesion or opamp_local_rules" -q`
+
+## 2026-03-10T11:28:53Z - Phase 6.4 wire simplification test coverage completed
+
+- Added 3 Phase 6.4 tests in `tests/unit/test_phase6_wire_simplification.py`:
+  - `test_simplify_reduces_short_segments_vs_unsimplified_baseline`
+  - `test_simplify_keeps_required_5mm_jogs_at_junctions`
+  - `test_route_nets_simplified_wires_remain_collision_safe`
+- New tests validate baseline-vs-simplified short-segment reduction, preserve required 5.08mm junction jogs, and ensure post-simplification routing avoids component-body interiors.
+- Updated `code_review/CODE_REVIEW6_TODO.md` to mark Phase 6.3 and 6.4 checklist items complete.
+- Validation passed: `pytest tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_local_direct_wiring.py -q` (20 passed).
+
 ## 2026-03-10T11:11:45Z - Phase 6.3 LAY011 lint implemented and stabilized
 
 - Implemented `lint_local_direct_wiring` (LAY011) in `kicad-pcb/src/kicad_pcb/lint/sch.py` to flag over-routed nearby 2-pin nets.

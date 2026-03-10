@@ -6,7 +6,21 @@ merging wire segments that lie on the same horizontal or vertical line.
 
 from __future__ import annotations
 
-from kicad_pcb.router import WireSegment, _simplify_wires
+import math
+
+from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
+from kicad_pcb.router import (
+    SYMBOL_HALF_SIZE_MM,
+    WireSegment,
+    _simplify_wires,
+    _wire_crosses_box,
+    route_nets,
+)
+
+
+def _count_short_segments(wires: list[WireSegment], threshold_mm: float = 5.1) -> int:
+    """Count short wire segments at or below *threshold_mm*."""
+    return sum(1 for seg in wires if math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1) <= threshold_mm)
 
 
 def test_simplify_merges_colinear_horizontal_segments() -> None:
@@ -164,3 +178,77 @@ def test_simplify_floating_point_tolerance() -> None:
     ]
     result = _simplify_wires(wires)
     assert len(result) == 2  # Still no shared endpoint
+
+
+def test_simplify_reduces_short_segments_vs_unsimplified_baseline() -> None:
+    """Simplification should reduce unnecessary 5.08mm jog-heavy patterns."""
+    baseline = [
+        WireSegment(0.0, 0.0, 5.08, 0.0),
+        WireSegment(5.08, 0.0, 10.16, 0.0),
+        WireSegment(10.16, 0.0, 15.24, 0.0),
+        WireSegment(15.24, 0.0, 20.32, 0.0),
+        WireSegment(20.32, 0.0, 20.32, 20.0),
+    ]
+
+    simplified = _simplify_wires(baseline)
+
+    assert _count_short_segments(simplified) < _count_short_segments(baseline)
+    assert len(simplified) < len(baseline)
+
+
+def test_simplify_keeps_required_5mm_jogs_at_junctions() -> None:
+    """5.08mm segments are preserved when they form a required T-junction."""
+    wires = [
+        WireSegment(0.0, 5.08, 5.08, 5.08),
+        WireSegment(5.08, 5.08, 10.16, 5.08),
+        WireSegment(5.08, 0.0, 5.08, 5.08),
+    ]
+
+    simplified = _simplify_wires(wires)
+
+    assert len(simplified) == 3, "T-junction branches must not be merged away"
+    assert _count_short_segments(simplified) == _count_short_segments(wires)
+
+
+def test_route_nets_simplified_wires_remain_collision_safe() -> None:
+    """Route simplification should not reintroduce component-body crossings."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+            ComponentIR(ref="R2", symbol="Device:R", value="1k"),
+        ],
+        nets=[
+            NetIR(
+                name="SIG",
+                pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="R2", pin="1")],
+            )
+        ],
+    )
+
+    pin_endpoints = {
+        ("R1", "1"): (5.0, 0.0, 180.0),
+        ("R2", "1"): (35.0, 0.0, 0.0),
+    }
+    obstacle_x, obstacle_y = 20.0, 0.0
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions={"U_OBS": (obstacle_x, obstacle_y, 0.0)},
+    )
+
+    assert routing.wires, "Expected routed wire segments"
+    # Boundary-touching detour segments are acceptable; they should not
+    # enter the obstacle interior.
+    interior_half = SYMBOL_HALF_SIZE_MM - 0.01
+    for seg in routing.wires:
+        assert not _wire_crosses_box(
+            seg.x1,
+            seg.y1,
+            seg.x2,
+            seg.y2,
+            obstacle_x,
+            obstacle_y,
+            interior_half,
+        )
