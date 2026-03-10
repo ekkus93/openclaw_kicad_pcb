@@ -598,11 +598,18 @@ def _snap_block_zones(
 
     result = dict(positions)
 
-    # Define nudge thresholds: only adjust if component is far from its zone.
-    # These are gentle biases, not hard constraints.
-    LEFT_ZONE_X = origin_x + 80.0  # mm — left third of page
-    RIGHT_ZONE_X = page_max_x - 100.0  # mm — right third of page
-    TOP_ZONE_Y = origin_y + 30.0  # mm — top region for power
+    # Define block zones with stronger separation (Phase 3.1):
+    # * Left zone: origin_x to ~100mm — INPUT / PRECONDITIONING
+    # * Center zone: ~100mm to ~170mm — OPAMP_CORE / FEEDBACK
+    # * Right zone: ~170mm to page_max_x — OUTPUT
+    # * Top zone: origin_y to ~50mm — POWER_ENTRY / DECOUPLING
+    LEFT_ZONE_MAX_X = origin_x + 90.0  # mm — INPUT must stay left of this
+    RIGHT_ZONE_MIN_X = page_max_x - 117.0  # mm — OUTPUT must stay right of this
+    TOP_ZONE_MAX_Y = origin_y + 50.0  # mm — POWER should stay above this
+
+    # Minimum positions to enforce strong separation (Phase 3.1)
+    OUTPUT_MIN_X = origin_x + 140.0  # mm — OUTPUT must be at least this far right
+    INPUT_MAX_X = origin_x + 100.0  # mm — INPUT must not exceed this far right
 
     for ref, assignment in block_layout.assignments.items():
         if ref not in result:
@@ -613,7 +620,7 @@ def _snap_block_zones(
 
         # Bias power and decoupling components toward the top
         if role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}:
-            if y > TOP_ZONE_Y + 20.0:
+            if y > TOP_ZONE_MAX_Y + 20.0:
                 # Pull up by 1 grid row (7.62mm) if way too low
                 new_y = round(y - GRID_ROW_MM, 2)
                 _log.debug(
@@ -625,26 +632,28 @@ def _snap_block_zones(
                 )
                 result[ref] = (x, new_y, rot)
 
-        # Bias input/preconditioning toward left
+        # Strongly bias input/preconditioning toward left (Phase 3.1 fix)
         elif role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}:
-            if x > LEFT_ZONE_X + 40.0:
-                # Pull left by ~25mm if too far right
-                new_x = round(x - 25.4, 2)
+            if x > LEFT_ZONE_MAX_X:
+                # Pull left aggressively; enforce INPUT_MAX_X hard limit
+                new_x = round(max(origin_x + 20.0, min(INPUT_MAX_X, x - 50.8)), 2)
                 _log.debug(
-                    "block zone snap: %r (%s) too far right (x=%.2f), nudging to %.2f",
+                    "block zone snap: %r (%s) too far right (x=%.2f), pulling to %.2f",
                     ref,
                     role.value,
                     x,
                     new_x,
                 )
-                result[ref] = (x, y, rot)
+                result[ref] = (new_x, y, rot)  # FIX: was (x, y, rot) — critical bug!
 
-        # Bias output toward right
-        elif role == BlockRole.OUTPUT and x < RIGHT_ZONE_X - 40.0:
-            # Pull right by ~25mm if too far left
-            new_x = round(x + 25.4, 2)
+        # Strongly bias output toward right (Phase 3.1 enhancement)
+        elif role == BlockRole.OUTPUT and x < RIGHT_ZONE_MIN_X:
+            # Pull right aggressively; enforce OUTPUT_MIN_X hard limit
+            # Use large 80mm nudge to overcome initial clustering
+            new_x = round(max(OUTPUT_MIN_X, x + 80.0), 2)
+            new_x = min(page_max_x - 20.0, new_x)  # Stay within page bounds
             _log.debug(
-                "block zone snap: %r (%s) too far left (x=%.2f), nudging to %.2f",
+                "block zone snap: %r (%s) too far left (x=%.2f), pulling to %.2f",
                 ref,
                 role.value,
                 x,

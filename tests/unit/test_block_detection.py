@@ -546,21 +546,13 @@ def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
     not _CIRCUIT_IR_PATH.exists(),
     reason="Circuit IR fixture not found",
 )
-@pytest.mark.xfail(
-    reason=(
-        "Phase 3.1-3.3 not yet implemented: "
-        "OUTPUT placement needs stronger left-to-right constraints"
-    ),
-    strict=False,
-)
 def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
     """Verify output-side components are not mixed into the left input cluster (Phase 3.4).
 
     Output coupling capacitors and output resistors should be placed to the
     right of the op-amp, not interleaved with input components on the left.
 
-    Expected failure until Phase 3.1 (strengthen left-to-right placement
-    constraints) is implemented.
+    This test validates the Phase 3.1 left-to-right placement constraints.
     """
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
