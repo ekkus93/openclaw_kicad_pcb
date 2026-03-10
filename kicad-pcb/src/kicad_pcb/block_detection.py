@@ -96,6 +96,7 @@ class BlockLayout:
 
 # Heuristics for block classification
 
+
 def _classify_by_reference(ref: str) -> BlockRole | None:
     """Classify based on component reference prefix.
 

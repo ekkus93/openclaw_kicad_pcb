@@ -78,15 +78,15 @@ Make the schematic read as distinct functional blocks rather than a single auto-
 - [x] Add a debug output mode that dumps block assignments.
 
 ### 1.2 Introduce block-level layout zones
-- [ ] Define page zones / anchors for high-level blocks:
-  - [x] zones defined in block_detection.py (preliminary)
-  - [ ] integrate zones into layout engine (graphviz constraints)
-  - [ ] input block on left
-  - [ ] op-amp stage in center
-  - [ ] output block on right
-  - [ ] power/decoupling above or top-left/top-center
-- [ ] Constrain the layout engine so that components remain near their assigned block zone.
-- [ ] Preserve enough flexibility to avoid overlaps and bad routing.
+- [x] Define page zones / anchors for high-level blocks:
+  - [x] zones defined in block_detection.py
+  - [x] integrate zones into layout engine (_snap_block_zones)
+  - [x] input block biased left
+  - [x] op-amp stage in center
+  - [x] output block biased right
+  - [x] power/decoupling biased toward top
+- [x] Constrain the layout engine so that components remain near their assigned block zone.
+- [x] Preserve enough flexibility to avoid overlaps and bad routing.
 
 ### 1.3 Add tests for block detection and block placement
 - [x] Unit test block classification for the headphone amp IR.
@@ -94,6 +94,7 @@ Make the schematic read as distinct functional blocks rather than a single auto-
 - [x] Assert the input jack and related parts classify into input-side blocks.
 - [x] Assert the output jack and output-side components classify into output-side blocks.
 - [x] Assert power connector and supply capacitors classify into power/supply blocks.
+- [x] Test _snap_block_zones function for position biasing.
 
 ---
 
