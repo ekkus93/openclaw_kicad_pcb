@@ -10,15 +10,15 @@ from __future__ import annotations
 import logging
 import math
 import re
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from .block_detection import BlockLayout
     from .circuit_ir import CircuitIR
 
+from .block_detection import BlockLayout, BlockRole
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
@@ -935,6 +935,144 @@ def _series_passive_rotation(
     return 90 if total_dy > total_dx else 0
 
 
+def _normalize_passive_orientations_by_role(
+    orientations: dict[str, int],
+    ir: CircuitIR,
+    block_layout: BlockLayout,
+    positions: dict[str, tuple[float, float]],
+) -> dict[str, int]:
+    """Normalize passive orientations to ensure consistency within block roles.
+
+    **Phase 9.2 — Normalize similar part presentation**
+
+    When multiple passives are assigned to the same block role
+    (e.g., FEEDBACK, INPUT, OUTPUT), they should have consistent visual
+    presentation. This function analyzes orientations assigned to passives
+    in each role and normalizes them to avoid arbitrary rotation differences.
+
+    Algorithm:
+    1. Group passives by their block role.
+    2. For each role group with ≥2 passives:
+       a. Count the orientations assigned: 0° vs 90° vs other.
+       b. Identify the "canonical" orientation for that role:
+          - FEEDBACK: prefer 90° (vertical feedback loop) if most are 90°,
+            else check if all are in op-amp column (then 90°), else 0°.
+          - INPUT/PRECONDITIONING/OUTPUT: prefer 0° (horizontal flow) if
+            most are 0°, else check if layout strongly prefers 90°.
+          - Other roles: no normalization enforced.
+       c. Apply the canonical orientation to all passives in the group
+          (unless there are strong position-based exceptions).
+    3. Return the normalized orientations dict.
+
+    Parameters
+    ----------
+    orientations:
+        ``{ref: rotation_degrees}`` from compute_orientations.
+    ir:
+        Circuit IR (for component inspection).
+    block_layout:
+        BlockLayout with role assignments.
+    positions:
+        ``{ref: (x_mm, y_mm)}`` layout positions.
+
+    Returns
+    -------
+    dict[str, int]
+        Normalized orientations with consistency applied within role groups.
+    """
+    # Group passives by their role.
+    role_groups: dict[BlockRole, list[str]] = {}
+    for ref in orientations:
+        role = block_layout.get_role(ref)
+        if role is None:
+            continue
+        upper = ref.upper()
+        # Only normalize passive prefixes
+        if not any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES):
+            continue
+        if role not in role_groups:
+            role_groups[role] = []
+        role_groups[role].append(ref)
+
+    # Process each role group with ≥2 passives.
+    result = dict(orientations)
+    for role, refs in role_groups.items():
+        if len(refs) < 2:
+            # Single passive in role: no consistency issue.
+            continue
+
+        # Count current orientations in this role group.
+        orientation_counts = Counter(orientations[ref] for ref in refs)
+        most_common_rot, count_most = orientation_counts.most_common(1)[0]
+
+        # Determine canonical orientation based on role.
+        canonical_rot: int | None = None
+
+        if role == BlockRole.FEEDBACK:
+            # Feedback passives should prefer 90° (vertical loop).
+            # If majority are 90°, use 90°.
+            if most_common_rot == 90 or count_most > len(refs) / 2:
+                canonical_rot = 90
+            else:
+                # Check if all feedback passives are in op-amp column.
+                # If yes, enforce 90°.
+                all_in_opamp_col = _all_feedback_in_opamp_column(refs, ir, positions)
+                canonical_rot = 90 if all_in_opamp_col else 0
+
+        elif role in (
+            BlockRole.INPUT,
+            BlockRole.PRECONDITIONING,
+            BlockRole.OUTPUT,
+        ):
+            # Input/preconditioning/output should prefer 0° (horizontal flow).
+            # Default to 0°; position heuristic may disagree, but flow
+            # direction preference overrides for consistent visibility.
+            canonical_rot = 0
+
+        # Apply canonical orientation to all passives in group.
+        if canonical_rot is not None:
+            for ref in refs:
+                result[ref] = canonical_rot
+
+    return result
+
+
+def _all_feedback_in_opamp_column(
+    feedback_refs: list[str],
+    ir: CircuitIR,
+    positions: dict[str, tuple[float, float]],
+) -> bool:
+    """Return True if all feedback passives are in the same column as an op-amp.
+
+    Uses GRID_COL_MM / 2 as the "same column" tolerance.
+    """
+    if not feedback_refs or not positions:
+        return False
+
+    # Get x-coordinates of all feedback passives that have positions.
+    feedback_xs = [positions[ref][0] for ref in feedback_refs if ref in positions]
+    if not feedback_xs:
+        return False
+
+    # Get x-coordinates of all op-amps.
+    opamp_xs = [
+        positions[comp.ref][0]
+        for comp in ir.components
+        if any(comp.ref.upper().startswith(p) for p in _OP_AMP_PREFIXES) and comp.ref in positions
+    ]
+    if not opamp_xs:
+        return False
+
+    # Check if all feedback passives are within GRID_COL_MM/2 of any op-amp.
+    tolerance = GRID_COL_MM / 2
+    for fb_x in feedback_xs:
+        near_opamp = any(abs(fb_x - opamp_x) < tolerance for opamp_x in opamp_xs)
+        if not near_opamp:
+            return False
+
+    return True
+
+
 def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
     ir: CircuitIR,
     positions: dict[str, tuple[float, float]],
@@ -944,7 +1082,7 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
-    **Phase 9.1 — Orientation Conventions by Part Role**
+    **Phase 9.1–9.2 — Orientation Conventions and Normalization**
 
     Component orientations support both function and reading flow. This function
     implements conventions that ensure schematics read like human-drafted circuits:
@@ -953,6 +1091,11 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
     - Connectors face inward toward the circuit (input at 0°, output at 180°).
     - Op-amps maintain stable preferred orientation (0°: inputs left, output right).
     - Power/decoupling components orientations improve clarity (vertical for shunt).
+
+    After computing individual orientations (Phase 9.1), Phase 9.2 normalizes them
+    to ensure similar parts in the same functional role have consistent presentation.
+    For example, all feedback resistors align together, all input coupling caps
+    align together, preventing arbitrary rotation that harms readability.
 
     Parameters
     ----------
@@ -1123,6 +1266,11 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
 
         # Diodes (D*), and all other unmatched components default to 0°.
         result[ref] = 0
+
+    # Phase 9.2: Normalize orientations by role to ensure similar parts
+    # in the same stage have consistent visual presentation.
+    if block_layout is not None:
+        result = _normalize_passive_orientations_by_role(result, ir, block_layout, positions)
 
     return result
 
