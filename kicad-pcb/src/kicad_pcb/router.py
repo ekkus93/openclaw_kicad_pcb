@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .circuit_ir import CircuitIR
+    from .circuit_ir import CircuitIR, PinRefIR
     from .sch_doc import SchematicDoc
 
 from .component_types import is_power_net as _is_power_net_name
@@ -54,6 +54,11 @@ SYMBOL_HALF_SIZE_MM: float = 5.08
 # Nets with degree > this threshold fall back to global-label style (avoids
 # spaghetti wiring for busses and power rails).
 _HUB_MAX_DEGREE: int = 6
+
+# Maximum Euclidean distance (mm) for grouping power pins into a shared
+# power symbol cluster.  Pins within this radius share one power symbol,
+# reducing visual ground/power clutter (Phase 5.1).
+_POWER_CLUSTER_RADIUS_MM: float = 40.0
 
 
 @dataclass(frozen=True)
@@ -191,6 +196,61 @@ def detect_body_crossings(
         if not replaced:
             result.append(seg)
     return result
+
+
+def _cluster_power_pins(
+    pins: list[tuple[PinRefIR, tuple[float, float, float]]],
+    radius: float = _POWER_CLUSTER_RADIUS_MM,
+) -> list[list[tuple[PinRefIR, tuple[float, float, float]]]]:
+    """Group power pins by proximity into clusters sharing a symbol.
+
+    Uses simple greedy clustering: each unclustered pin either joins the
+    nearest existing cluster (if within *radius*) or starts a new cluster.
+
+    Parameters
+    ----------
+    pins:
+        List of ``(pin_ref, (x, y, angle))`` tuples for pins on a power net.
+    radius:
+        Maximum Euclidean distance (mm) for pins to share a cluster.
+
+    Returns
+    -------
+    list[list[tuple]]
+        List of clusters, where each cluster is a list of pin tuples.
+
+    Notes
+    -----
+    Phase 5.1: reduces visual ground/power clutter by placing one power
+    symbol per cluster instead of one per pin.
+    """
+    if not pins:
+        return []
+
+    clusters: list[list[tuple[PinRefIR, tuple[float, float, float]]]] = []
+
+    for pin, (px, py, pangle) in pins:
+        # Find the nearest cluster centroid within radius
+        best_cluster_idx: int | None = None
+        best_dist = float("inf")
+
+        for idx, cluster in enumerate(clusters):
+            # Compute cluster centroid
+            cx = sum(cpx for _, (cpx, _, _) in cluster) / len(cluster)
+            cy = sum(cpy for _, (_, cpy, _) in cluster) / len(cluster)
+            dist = math.hypot(px - cx, py - cy)
+
+            if dist < radius and dist < best_dist:
+                best_dist = dist
+                best_cluster_idx = idx
+
+        # Add to nearest cluster or create new one
+        if best_cluster_idx is not None:
+            clusters[best_cluster_idx].append((pin, (px, py, pangle)))
+        else:
+            clusters.append([(pin, (px, py, pangle))])
+
+    return clusters
 
 
 # ---------------------------------------------------------------------------
@@ -490,15 +550,48 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         is_power = _is_power_net_name(net.name)
 
         # ----------------------------------------------------------------
-        # Power nets → power symbol per pin
+        # Power nets → cluster-based power symbol placement (Phase 5.1)
         # ----------------------------------------------------------------
         if is_power:
-            for pin_ref, (wx, wy, wa) in known:
-                ex, ey = _stub_end(wx, wy, wa)
-                routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
-                routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
-            # Off-canvas fallback for power pins with no known endpoint.
+            # Cluster known pins by proximity to share power symbols
+            clusters = _cluster_power_pins(known, radius=_POWER_CLUSTER_RADIUS_MM)
+
+            for cluster in clusters:
+                if len(cluster) == 1:
+                    # Single pin: traditional stub + symbol
+                    pin_ref, (wx, wy, wa) = cluster[0]
+                    ex, ey = _stub_end(wx, wy, wa)
+                    routing.wires.append(WireSegment(wx, wy, ex, ey))
+                    routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
+                    routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                else:
+                    # Multiple pins: compute cluster centroid for shared symbol
+                    cx = sum(cpx for _, (cpx, _, _) in cluster) / len(cluster)
+                    cy = sum(cpy for _, (_, cpy, _) in cluster) / len(cluster)
+
+                    # Place ONE power symbol at centroid
+                    routing.power_symbols.append(PowerSymbolPlacement(net.name, cx, cy))
+
+                    # Wire each pin to centroid via hub routing
+                    stub_ends: list[tuple[float, float]] = []
+                    for pin_ref, (wx, wy, wa) in cluster:
+                        ex, ey = _stub_end(wx, wy, wa)
+                        routing.wires.append(WireSegment(wx, wy, ex, ey))
+                        routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                        stub_ends.append((ex, ey))
+
+                    # Add centroid as hub target
+                    stub_ends.append((cx, cy))
+
+                    # Route stubs to centroid via spine/hub
+                    if use_bus:
+                        hub_segs, hub_junctions = _spine_route(stub_ends)
+                    else:
+                        hub_segs, hub_junctions = _hub_route(stub_ends)
+                    routing.wires.extend(hub_segs)
+                    routing.junctions.extend(hub_junctions)
+
+            # Off-canvas fallback for power pins with no known endpoint
             for pin_ref in unknown:
                 wx, wy = -1200.0, fallback_y
                 ex, ey = wx + WIRE_EXTEND_MM, wy

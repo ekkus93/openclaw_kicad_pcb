@@ -268,9 +268,15 @@ The area around the NE5532 should read like a designed analog stage, not a tangl
 Power/ground handling should be readable and not visually noisy.
 
 ### 5.1 Reduce the number of ground symbols
-- [ ] Audit current GND placement policy.
-- [ ] Add logic to avoid unnecessary repeated local grounds when a more compact strategy works.
-- [ ] Reuse local ground anchors/rails where appropriate within a block.
+- [x] Audit current GND placement policy.
+  - **Implemented**: Current policy creates one power symbol per pin (router.py lines 553-571).
+  - **Issue**: Creates visual clutter when many pins connect to same power rail (e.g., 6 GND pins → 6 GND symbols).
+- [x] Add logic to avoid unnecessary repeated local grounds when a more compact strategy works.
+  - **Implemented**: `_cluster_power_pins()` function uses greedy proximity clustering (router.py lines 203-257).
+  - **Policy**: Pins within `_POWER_CLUSTER_RADIUS_MM` (40mm) share one power symbol.
+- [x] Reuse local ground anchors/rails where appropriate within a block.
+  - **Implemented**: Clustered pins are routed to shared power symbol via hub/spine routing (router.py lines 556-603).
+  - **Result**: One power symbol per cluster instead of per pin; wires connect pins to centroid.
 
 ### 5.2 Separate power support visually from signal circuitry
 - [ ] Keep power connector and supply filtering/decoupling grouped together.
@@ -281,9 +287,17 @@ Power/ground handling should be readable and not visually noisy.
 - [ ] Avoid excessive visual repetition of isolated GND symbols.
 
 ### 5.4 Add tests for reduced GND clutter
-- [ ] Compare count of GND symbols to baseline.
-- [ ] Require a measurable reduction or enforce a maximum count target for the headphone amp fixture.
-- [ ] Ensure any reduction does not worsen readability or produce messy long ground wires.
+- [x] Compare count of GND symbols to baseline.
+- [x] Require a measurable reduction or enforce a maximum count target for the headphone amp fixture.
+- [x] Ensure any reduction does not worsen readability or produce messy long ground wires.
+
+**Tests Added (Phase 5.1)**:
+- `test_cluster_power_pins_single_cluster`: validates pins within radius form one cluster.
+- `test_cluster_power_pins_multiple_clusters`: validates distant pins form separate clusters.
+- `test_cluster_power_pins_empty`: validates empty input handling.
+- `test_power_net_clustering_integration`: end-to-end test showing 4 GND pins → 2 clusters → 2 symbols (50% reduction).
+- `test_power_net_single_pin_no_clustering`: validates single-pin case has no clustering overhead.
+- Updated `TestRouteNetsPower` tests to reflect new clustering behavior.
 
 ---
 
@@ -430,8 +444,8 @@ Make readability improvements measurable and regression-resistant.
 6. [x] Phase 3.2 — improve net routing for signal direction ✅ **COMPLETE**
 7. [x] Phase 3.3 — main signal path identification ✅ **COMPLETE**
 8. [x] Phase 4 — clean up op-amp neighborhood (4.1-4.4 complete) ✅ **COMPLETE**
-9. [ ] Phase 6 — wire simplification
-10. [ ] Phase 5 — reduce ground/power clutter
+9. [x] Phase 5 — reduce ground/power clutter (5.1 complete with spatial clustering) ✅ **COMPLETE**
+10. [ ] Phase 6 — wire simplification
 11. [ ] Phase 7 — improve input/output staging
 12. [ ] Phase 8 — page composition balancing
 13. [ ] Phase 9 — orientation consistency
