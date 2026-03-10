@@ -544,29 +544,39 @@ Symbol orientation should support function and reading flow, not just fit routin
 Make readability improvements measurable and regression-resistant.
 
 ### 10.1 Add golden readability tests for the headphone amp
-- [ ] Generate the headphone amp schematic from IR in tests.
-- [ ] Compare against readability metrics targets:
-  - [ ] reduced local density
-  - [ ] reduced GND clutter
-  - [ ] reduced short wire count
-  - [ ] improved block separation
-  - [ ] improved page balance
-- [ ] Use tolerant metric thresholds rather than exact coordinate matching.
+- [x] Generate the headphone amp schematic from IR in tests.
+- [x] Compare against readability metrics targets:
+  - [x] reduced local density
+  - [x] reduced GND clutter
+  - [x] reduced short wire count
+  - [x] improved block separation
+  - [x] improved page balance
+- [x] Use tolerant metric thresholds rather than exact coordinate matching.
 
 ### 10.2 Add a small human-review checklist artifact
-- [ ] Add a markdown checklist used during manual review:
-  - [ ] Can I identify input, gain stage, output, power blocks quickly?
-  - [ ] Can I follow the main signal path quickly?
-  - [ ] Are grounds/power visually controlled?
-  - [ ] Does the op-amp area make sense at a glance?
-- [ ] Keep this checklist alongside fixtures or docs.
+- [x] Add a markdown checklist used during manual review:
+  - [x] Can I identify input, gain stage, output, power blocks quickly?
+  - [x] Can I follow the main signal path quickly?
+  - [x] Are grounds/power visually controlled?
+  - [x] Does the op-amp area make sense at a glance?
+- [x] Keep this checklist alongside fixtures or docs.
 
 ### 10.3 Ensure earlier correctness guarantees remain intact
-- [ ] Confirm readability passes do not break:
-  - [ ] syntax validity
-  - [ ] structural lints
-  - [ ] ERC where supported
-  - [ ] transactional no-overwrite guarantees
+- [x] Confirm readability passes do not break:
+  - [x] syntax validity
+  - [x] structural lints
+  - [x] ERC where supported
+  - [x] transactional no-overwrite guarantees
+
+**Tests Added (Phase 10)**:
+- Added `tests/unit/test_phase10_validation.py` with 7 integration tests covering:
+  - generation from canonical IR fixture,
+  - golden readability metric thresholds (local density, GND/power clutter, short wires, page balance),
+  - block separation thresholds for major stage groups,
+  - syntax + structural lint validation in pipeline `LINT` mode,
+  - ERC path execution in pipeline `KICAD` mode via injectable CLI adapter,
+  - transactional no-overwrite guarantee when a lint error is triggered.
+- Added `tests/fixtures/readability/ne5532_headphone_amp_left_current/PHASE10_HUMAN_REVIEW_CHECKLIST.md` for manual readability review.
 
 ---
 
@@ -588,7 +598,7 @@ Make readability improvements measurable and regression-resistant.
 13. [x] Phase 9.1 — define orientation conventions by part role ✅ **COMPLETE**
 14. [x] Phase 9.2 — normalize similar part presentation ✅ **COMPLETE**
 15. [x] Phase 9.3 — add tests for orientation sanity ✅ **COMPLETE**
-16. [ ] Phase 10 — validation, golden tests, and human review loop
+16. [x] Phase 10 — validation, golden tests, and human review loop ✅ **COMPLETE**
 
 ---
 
