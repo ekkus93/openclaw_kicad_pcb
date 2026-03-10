@@ -7,6 +7,7 @@ identify functional blocks in the headphone amp baseline fixture.
 from __future__ import annotations
 
 import json
+from argparse import Namespace
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,9 @@ from kicad_pcb.block_detection import (
     debug_dump,
 )
 from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.graphviz_layout.snap import _snap_block_zones
+from kicad_pcb.sch_doc import SchematicDoc
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -410,3 +413,212 @@ def test_block_zone_snapping() -> None:
     for ref, (x, y, rot) in result.items():
         assert 30.0 <= x <= 287.0, f"{ref} x out of bounds: {x}"
         assert 50.0 <= y <= 200.0, f"{ref} y out of bounds: {y}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 3.4 — Signal flow clarity tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(
+    not _CIRCUIT_IR_PATH.exists(),
+    reason="Circuit IR fixture not found",
+)
+def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
+    """Verify input connectors are placed left of the op-amp stage (Phase 3.4).
+
+    This validates left-to-right signal flow: INPUT → OPAMP_CORE.
+    """
+    ir = _load_test_circuit()
+    layout = classify_circuit(ir)
+
+    # Generate schematic from IR using the same pattern as test_readability_baseline
+    project_name = "SignalFlowTest"
+    work_dir = tmp_path / "signal_flow"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd_new_from_netlist(
+        Namespace(
+            name=project_name,
+            out_dir=str(work_dir),
+            description="Signal flow test schematic",
+            netlist=str(_CIRCUIT_IR_PATH),
+            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            mode="internal",
+            layout="graphviz",
+            routing="bus",
+            validate="internal",
+            strict=False,
+        )
+    )
+
+    # Load the managed sheet (where symbols are actually placed)
+    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
+    assert managed_sch.exists(), "Managed sheet was not generated"
+    doc = SchematicDoc.load(managed_sch)
+    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+
+    # Get INPUT and OPAMP_CORE component positions
+    input_refs = layout.components_by_role(BlockRole.INPUT)
+    opamp_refs = layout.components_by_role(BlockRole.OPAMP_CORE)
+
+    if not opamp_refs:
+        pytest.skip("No op-amp components found in circuit")
+
+    # Find the leftmost op-amp x-coordinate
+    opamp_x_positions = [symbols[ref][0] for ref in opamp_refs if ref in symbols]
+    if not opamp_x_positions:
+        pytest.skip("No op-amp positions found")
+    leftmost_opamp_x = min(opamp_x_positions)
+
+    # All input connectors should be left of (or slightly overlapping) op-amps
+    for ref in input_refs:
+        if ref in symbols:
+            input_x = symbols[ref][0]
+            assert input_x <= leftmost_opamp_x + 20.0, (
+                f"Input connector {ref} (x={input_x:.1f}) should be left of "
+                f"op-amp stage (x={leftmost_opamp_x:.1f})"
+            )
+
+
+@pytest.mark.skipif(
+    not _CIRCUIT_IR_PATH.exists(),
+    reason="Circuit IR fixture not found",
+)
+def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
+    """Verify output connectors are placed right of the op-amp stage (Phase 3.4).
+
+    This validates left-to-right signal flow: OPAMP_CORE → OUTPUT.
+    """
+    ir = _load_test_circuit()
+    layout = classify_circuit(ir)
+
+    # Generate schematic from IR
+    project_name = "SignalFlowTest2"
+    work_dir = tmp_path / "signal_flow2"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd_new_from_netlist(
+        Namespace(
+            name=project_name,
+            out_dir=str(work_dir),
+            description="Signal flow test schematic",
+            netlist=str(_CIRCUIT_IR_PATH),
+            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            mode="internal",
+            layout="graphviz",
+            routing="bus",
+            validate="internal",
+            strict=False,
+        )
+    )
+
+    # Load the managed sheet
+    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
+    assert managed_sch.exists(), "Managed sheet was not generated"
+    doc = SchematicDoc.load(managed_sch)
+    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+
+    # Get OUTPUT and OPAMP_CORE component positions
+    output_refs = layout.components_by_role(BlockRole.OUTPUT)
+    opamp_refs = layout.components_by_role(BlockRole.OPAMP_CORE)
+
+    if not opamp_refs:
+        pytest.skip("No op-amp components found in circuit")
+
+    # Find the rightmost op-amp x-coordinate
+    opamp_x_positions = [symbols[ref][0] for ref in opamp_refs if ref in symbols]
+    if not opamp_x_positions:
+        pytest.skip("No op-amp positions found")
+    rightmost_opamp_x = max(opamp_x_positions)
+
+    # All output connectors should be right of (or slightly overlapping) op-amps
+    for ref in output_refs:
+        if ref in symbols:
+            output_x = symbols[ref][0]
+            assert output_x >= rightmost_opamp_x - 20.0, (
+                f"Output connector {ref} (x={output_x:.1f}) should be right of "
+                f"op-amp stage (x={rightmost_opamp_x:.1f})"
+            )
+
+
+@pytest.mark.skipif(
+    not _CIRCUIT_IR_PATH.exists(),
+    reason="Circuit IR fixture not found",
+)
+@pytest.mark.xfail(
+    reason=(
+        "Phase 3.1-3.3 not yet implemented: "
+        "OUTPUT placement needs stronger left-to-right constraints"
+    ),
+    strict=False,
+)
+def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
+    """Verify output-side components are not mixed into the left input cluster (Phase 3.4).
+
+    Output coupling capacitors and output resistors should be placed to the
+    right of the op-amp, not interleaved with input components on the left.
+
+    Expected failure until Phase 3.1 (strengthen left-to-right placement
+    constraints) is implemented.
+    """
+    ir = _load_test_circuit()
+    layout = classify_circuit(ir)
+
+    # Generate schematic from IR
+    project_name = "SignalFlowTest3"
+    work_dir = tmp_path / "signal_flow3"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd_new_from_netlist(
+        Namespace(
+            name=project_name,
+            out_dir=str(work_dir),
+            description="Signal flow test schematic",
+            netlist=str(_CIRCUIT_IR_PATH),
+            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            mode="internal",
+            layout="graphviz",
+            routing="bus",
+            validate="internal",
+            strict=False,
+        )
+    )
+
+    # Load the managed sheet
+    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
+    assert managed_sch.exists(), "Managed sheet was not generated"
+    doc = SchematicDoc.load(managed_sch)
+    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+
+    # Get INPUT and OUTPUT component positions
+    input_refs = layout.components_by_role(BlockRole.INPUT)
+    output_refs = layout.components_by_role(BlockRole.OUTPUT)
+
+    if not input_refs or not output_refs:
+        pytest.skip("Missing input or output components")
+
+    # Find the rightmost input x-coordinate
+    input_x_positions = [symbols[ref][0] for ref in input_refs if ref in symbols]
+    if not input_x_positions:
+        pytest.skip("No input positions found")
+    rightmost_input_x = max(input_x_positions)
+
+    # Most output components should be significantly right of input cluster
+    # Allow for some overlap (≤25% of output components in input region)
+    output_in_left_cluster = 0
+    total_output_components = 0
+
+    for ref in output_refs:
+        if ref in symbols:
+            total_output_components += 1
+            output_x = symbols[ref][0]
+            if output_x < rightmost_input_x + 30.0:  # 30mm tolerance
+                output_in_left_cluster += 1
+
+    if total_output_components > 0:
+        left_ratio = output_in_left_cluster / total_output_components
+        assert left_ratio <= 0.25, (
+            f"{left_ratio * 100:.0f}% of output components are in the left cluster "
+            f"(expected ≤25%); output stage should be visually separated"
+        )
