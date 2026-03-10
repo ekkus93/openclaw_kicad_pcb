@@ -274,6 +274,7 @@ class GraphvizLayoutEngine:
             halo=halo or None,
             sds_cols=sds_cols or None,
             affinity_order=affinity_order,
+            block_layout=block_layout,
         )
         cache_key = _layout_cache_key(dot_source)
 
