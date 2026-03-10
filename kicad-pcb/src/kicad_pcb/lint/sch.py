@@ -14,6 +14,16 @@ Readability checks
     (label-stub style, overlapping symbols, isolated wire islands).  Call
     when you want design-quality gating, not just structural validity.
 
+Crowding checks (Phase 2)
+------------------------
+:func:`lint_layout_crowding` — LAY006, LAY008
+    Detect local crowding and insufficient inter-block spacing on generated
+    layouts (Phase 2.4 CODE_REVIEW6 roadmap). Uses block detection and
+    density metrics to enforce spacing standards.
+
+:func:`lint_layout_wire_crossings` — LAY007
+    Detect excessive wire crossing density (signal flow optimization).
+
 Both functions take the root :class:`~kicad_pcb.sexpr.nodes.ListNode`
 produced by parsing a ``.kicad_sch`` file.
 """
@@ -39,9 +49,16 @@ from .helpers import (
 )
 
 if TYPE_CHECKING:
+    from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
+    from ..kicad_sch import SchematicDoc
 
-__all__ = ["lint_schematic", "lint_schematic_layout", "lint_layout_wire_crossings"]
+__all__ = [
+    "lint_schematic",
+    "lint_schematic_layout",
+    "lint_layout_crowding",
+    "lint_layout_wire_crossings",
+]
 
 # ---------------------------------------------------------------------------
 # Module-level constants
@@ -72,6 +89,14 @@ _LAY_MAX_ISLANDS: int = 2
 
 # Stub wire threshold in mm (200 mil). Mirrors router.WIRE_EXTEND_MM.
 _WIRE_STUB_LEN_MM: float = 5.08
+
+# LAY006: local density threshold — symbols with ≥ this many neighbors
+# within 30mm radius trigger crowding warnings (Phase 2.4).
+_LAY_CROWDING_THRESHOLD: int = 6
+
+# LAY008: minimum inter-block spacing in mm. Blocks closer than this
+# distance trigger insufficient spacing warnings (Phase 2.4).
+_LAY_MIN_BLOCK_SPACING_MM: float = 20.0
 
 # Phase 5.5 — frozenset, defined at module level so it is not recreated on
 # every call to lint_schematic.
@@ -540,4 +565,94 @@ def lint_layout_wire_crossings(
                 path="layout/positions",
             )
         )
+    return issues
+
+
+def lint_layout_crowding(
+    doc: SchematicDoc,
+    block_layout: BlockLayout | None = None,
+) -> list[LintIssue]:
+    """LAY006 & LAY008: warn about local crowding and insufficient block spacing.
+
+    Detects when symbols are crowded (local density ≥ 6 neighbors within
+    30mm radius) or when functional blocks are too close together
+    (inter-block spacing < 20mm).
+
+    Parameters
+    ----------
+    doc:
+        Schematic document :class:`~kicad_pcb.kicad_sch.SchematicDoc`.
+    block_layout:
+        Optional functional block classification from
+        :func:`~kicad_pcb.block_detection.classify_circuit`.  When supplied,
+        LAY008 (insufficient block separation) checks are enabled.
+
+    Returns
+    -------
+    list[LintIssue]
+        LAY006 and/or LAY008 WARNINGs for crowded regions or insufficient
+        block spacing, otherwise an empty list.
+    """
+    # Import locally to avoid circular dependency with schematic_metrics.py
+    from ..schematic_metrics import (  # noqa: PLC0415
+        compute_block_separation,
+        compute_local_density,
+    )
+
+    issues: list[LintIssue] = []
+
+    # -------------------------------------------------------------------------
+    # LAY006 — local density check (crowded regions)
+    # -------------------------------------------------------------------------
+    local_density = compute_local_density(doc, radius_mm=30.0)
+    crowded_symbols = [
+        (ref, count) for ref, count in local_density.items() if count >= _LAY_CROWDING_THRESHOLD
+    ]
+    if crowded_symbols:
+        # Sort by density descending so worst crowding is listed first
+        crowded_symbols.sort(key=lambda x: x[1], reverse=True)
+        for ref, count in crowded_symbols[:5]:  # Limit to top 5 for brevity
+            issues.append(
+                LintIssue(
+                    _WARN,
+                    "LAY006",
+                    f"Symbol {ref} is in a crowded region "
+                    f"({count} neighbors within 30mm, threshold {_LAY_CROWDING_THRESHOLD}); "
+                    "consider spreading components or using smaller values.",
+                    path="kicad_sch/symbol",
+                )
+            )
+
+    # -------------------------------------------------------------------------
+    # LAY008 — inter-block spacing check (insufficient separation)
+    # -------------------------------------------------------------------------
+    if block_layout:
+        # Extract symbol positions from doc
+        symbols = doc.list_symbols()
+        positions: dict[str, tuple[float, float, float | None]] = {}
+        for sym in symbols:
+            try:
+                ref = str(sym["ref"])  # type: ignore[arg-type]
+                x = float(sym["x"])  # type: ignore[arg-type]
+                y = float(sym["y"])  # type: ignore[arg-type]
+                rot = sym.get("rot")  # type: ignore[arg-type]
+                rot_float = float(rot) if rot else None  # type: ignore[arg-type]
+                positions[ref] = (x, y, rot_float)
+            except (KeyError, TypeError, ValueError):
+                continue
+
+        block_separation = compute_block_separation(positions, block_layout)
+        for (role_a, role_b), min_distance in block_separation.items():
+            if min_distance < _LAY_MIN_BLOCK_SPACING_MM:
+                issues.append(
+                    LintIssue(
+                        _WARN,
+                        "LAY008",
+                        f"Blocks {role_a.value}–{role_b.value} are too close "
+                        f"({min_distance:.1f}mm, minimum {_LAY_MIN_BLOCK_SPACING_MM}mm); "
+                        "increase inter-block spacing for clarity.",
+                        path="kicad_sch/symbol",
+                    )
+                )
+
     return issues
