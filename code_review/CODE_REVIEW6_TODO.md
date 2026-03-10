@@ -63,22 +63,24 @@ This TODO focuses on the remaining schematic-quality issues in the current `kica
 Make the schematic read as distinct functional blocks rather than a single auto-placed cluster.
 
 ### 1.1 Add explicit functional block classification to the IR/layout pipeline
-- [ ] Introduce block classification tags for components/nets:
-  - [ ] input connector block
-  - [ ] input conditioning / volume / bias block
-  - [ ] op-amp gain stage block
-  - [ ] feedback block
-  - [ ] output block
-  - [ ] power entry block
-  - [ ] decoupling / supply support block
-- [ ] Implement classification using:
-  - [ ] component type heuristics (jack, potentiometer, op-amp, resistor, capacitor)
-  - [ ] net name hints (`IN`, `OUT`, `GND`, `V+`, `V-`, etc.)
-  - [ ] graph proximity to active devices and I/O nets
-- [ ] Add a debug output mode that dumps block assignments.
+- [x] Introduce block classification tags for components/nets:
+  - [x] input connector block
+  - [x] input conditioning / volume / bias block
+  - [x] op-amp gain stage block
+  - [x] feedback block
+  - [x] output block
+  - [x] power entry block
+  - [x] decoupling / supply support block
+- [x] Implement classification using:
+  - [x] component type heuristics (jack, potentiometer, op-amp, resistor, capacitor)
+  - [x] net name hints (`IN`, `OUT`, `GND`, `V+`, `V-`, etc.)
+  - [x] graph proximity to active devices and I/O nets
+- [x] Add a debug output mode that dumps block assignments.
 
 ### 1.2 Introduce block-level layout zones
 - [ ] Define page zones / anchors for high-level blocks:
+  - [x] zones defined in block_detection.py (preliminary)
+  - [ ] integrate zones into layout engine (graphviz constraints)
   - [ ] input block on left
   - [ ] op-amp stage in center
   - [ ] output block on right
@@ -87,11 +89,11 @@ Make the schematic read as distinct functional blocks rather than a single auto-
 - [ ] Preserve enough flexibility to avoid overlaps and bad routing.
 
 ### 1.3 Add tests for block detection and block placement
-- [ ] Unit test block classification for the headphone amp IR.
-- [ ] Assert the op-amp is classified as the core gain-stage block.
-- [ ] Assert the input jack and related parts classify into input-side blocks.
-- [ ] Assert the output jack and output-side components classify into output-side blocks.
-- [ ] Assert power connector and supply capacitors classify into power/supply blocks.
+- [x] Unit test block classification for the headphone amp IR.
+- [x] Assert the op-amp is classified as the core gain-stage block.
+- [x] Assert the input jack and related parts classify into input-side blocks.
+- [x] Assert the output jack and output-side components classify into output-side blocks.
+- [x] Assert power connector and supply capacitors classify into power/supply blocks.
 
 ---
 
@@ -352,16 +354,18 @@ Make readability improvements measurable and regression-resistant.
 ## Suggested Implementation Order
 
 0. [x] Phase 0 — baseline fixture + metrics helpers ✅ **COMPLETE**
-1. [ ] Phase 1 — block detection and block layout zones
-2. [ ] Phase 2 — reduce crowding / improve whitespace
-3. [ ] Phase 3 — strengthen signal-flow layout
-4. [ ] Phase 4 — clean up op-amp neighborhood
-5. [ ] Phase 6 — wire simplification
-6. [ ] Phase 5 — reduce ground/power clutter
-7. [ ] Phase 7 — improve input/output staging
-8. [ ] Phase 8 — page composition balancing
-9. [ ] Phase 9 — orientation consistency
-10. [ ] Phase 10 — golden tests and human-review loop
+1. [x] Phase 1.1 — block detection and classification ✅ **COMPLETE** (1.2, 1.3 follow-ups)
+2. [ ] Phase 1.2 — layout engine integration with block zones
+3. [ ] Phase 1.3 — block placement tests and validation
+4. [ ] Phase 2 — reduce crowding / improve whitespace
+5. [ ] Phase 3 — strengthen signal-flow layout
+6. [ ] Phase 4 — clean up op-amp neighborhood
+7. [ ] Phase 6 — wire simplification
+8. [ ] Phase 5 — reduce ground/power clutter
+9. [ ] Phase 7 — improve input/output staging
+10. [ ] Phase 8 — page composition balancing
+11. [ ] Phase 9 — orientation consistency
+12. [ ] Phase 10 — golden tests and human-review loop
 
 ---
 
