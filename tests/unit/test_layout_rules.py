@@ -25,9 +25,11 @@ from kicad_pcb.graphviz_layout.snap import (
     SCALE_MM_PER_GV,
     _snap_connectors_to_ic_y,
 )
+from kicad_pcb.layout import compute_affinity_groups
 from kicad_pcb.tier import (
     _choose_seed_connector,
     assign_tiers,
+    identify_main_signal_path,
 )
 
 pytestmark = pytest.mark.unit
@@ -192,6 +194,53 @@ class TestAssignTiersDirectionality:
         with pytest.raises(UserError, match="without IC components") as exc_info:
             assign_tiers(ir, strict=True)
         assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+
+
+class TestMainSignalPathIdentification:
+    def test_identify_main_signal_path_amp_chain(self) -> None:
+        """Main path should follow input -> conditioning -> op-amp -> output."""
+        ir = _amp_ir()
+        tiers = assign_tiers(ir)
+
+        path = identify_main_signal_path(ir, tiers=tiers)
+        assert path == ["J2", "C2", "R1", "U1A", "RV1", "J1"], (
+            f"Expected deterministic main signal chain for amp IR; got {path}"
+        )
+
+    def test_affinity_groups_prioritize_main_path_over_side_branch(self) -> None:
+        """Tier ordering should keep main-path refs ahead of support side branches."""
+        ir = _ir(
+            components=[
+                ("C2", "Device:C"),
+                ("C9", "Device:C"),
+                ("J1", "Connector:J"),
+                ("J2", "Connector:J"),
+                ("R1", "Device:R"),
+                ("RV1", "Device:R_Potentiometer"),
+                ("U1A", "Amplifier_Operational:NE5532"),
+            ],
+            nets=[
+                ("in_jack", [("J2", "T"), ("C2", "1")]),
+                ("bias_net", [("C2", "2"), ("R1", "1")]),
+                ("opamp_in", [("R1", "2"), ("U1A", "3")]),
+                # Main output chain plus support branch C9.
+                ("opamp_out", [("U1A", "1"), ("RV1", "1"), ("C9", "1")]),
+                ("out_jack", [("RV1", "2"), ("J1", "T")]),
+                ("GND", [("C9", "2")]),
+            ],
+        )
+
+        tiers = assign_tiers(ir)
+        path = identify_main_signal_path(ir, tiers=tiers)
+        assert path[-2:] == ["RV1", "J1"], f"Unexpected main path suffix: {path}"
+
+        groups = compute_affinity_groups(ir, tiers)
+        tier_of_rv1 = tiers["RV1"]
+        ordered = groups[tier_of_rv1]
+        assert ordered.index("RV1") < ordered.index("C9"), (
+            "Main-path component RV1 should be prioritized before side-branch C9 "
+            f"within tier {tier_of_rv1}: {ordered}"
+        )
 
 
 # ---------------------------------------------------------------------------

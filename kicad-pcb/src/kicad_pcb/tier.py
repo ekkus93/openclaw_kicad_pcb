@@ -45,6 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "assign_tiers",
+    "identify_main_signal_path",
     "assign_ic_units_to_tiers",
     "choose_seed_connector",
     "classify_connector_roles",
@@ -569,6 +570,112 @@ def assign_tiers(ir: CircuitIR, *, strict: bool = False) -> dict[str, int]:
             lp_tiers[ref] = 0
 
     return lp_tiers
+
+
+def identify_main_signal_path(
+    ir: CircuitIR,
+    *,
+    tiers: dict[str, int] | None = None,
+) -> list[str]:
+    """Return the probable primary signal chain as an ordered ref list.
+
+    The path is inferred over non-power signal nets from the connector
+    classified as input (tier 0) to the most downstream output connector.
+    Traversal prefers monotonic tier progression to avoid selecting obvious
+    feedback/support loops as the main forward path.
+
+    Parameters
+    ----------
+    ir:
+        Parsed circuit IR.
+    tiers:
+        Optional precomputed tier mapping from :func:`assign_tiers`.
+
+    Returns
+    -------
+    list[str]
+        Ordered component references representing the probable main signal
+        chain. Returns an empty list when no suitable connector-to-connector
+        signal path can be inferred.
+    """
+    refs = [c.ref for c in ir.components]
+    if not refs:
+        return []
+
+    active_tiers = tiers or assign_tiers(ir)
+    roles = _classify_connector_roles(refs, active_tiers)
+
+    inputs = sorted(r for r, role in roles.items() if role == "input")
+    outputs = sorted(
+        (r for r, role in roles.items() if role == "output"),
+        key=lambda r: (-active_tiers.get(r, 0), r),
+    )
+    if not inputs or not outputs:
+        return []
+
+    start = inputs[0]
+
+    # Build signal-only undirected adjacency (component graph).
+    adj: dict[str, set[str]] = {r: set() for r in refs}
+    ref_set = set(refs)
+    for net in ir.nets:
+        if _is_power_net(net.name) or len(net.pins) < 2:
+            continue
+        pin_refs = [p.ref for p in net.pins if p.ref in ref_set]
+        for idx, a in enumerate(pin_refs):
+            for b in pin_refs[idx + 1 :]:
+                if a == b:
+                    continue
+                adj[a].add(b)
+                adj[b].add(a)
+
+    def _bfs_path(end: str, *, monotonic: bool) -> list[str]:
+        parents: dict[str, str | None] = {start: None}
+        queue: deque[str] = deque([start])
+
+        while queue:
+            node = queue.popleft()
+            if node == end:
+                break
+
+            nbrs = sorted(
+                adj.get(node, set()),
+                key=lambda r: (active_tiers.get(r, 0), r),
+            )
+            node_tier = active_tiers.get(node, 0)
+            for nbr in nbrs:
+                if monotonic and active_tiers.get(nbr, 0) < node_tier:
+                    continue
+                if nbr in parents:
+                    continue
+                parents[nbr] = node
+                queue.append(nbr)
+
+        if end not in parents:
+            return []
+
+        path: list[str] = []
+        cursor: str | None = end
+        while cursor is not None:
+            path.append(cursor)
+            cursor = parents[cursor]
+        path.reverse()
+        return path
+
+    # Try most downstream outputs first, and prefer tier-monotonic paths.
+    for out_ref in outputs:
+        path = _bfs_path(out_ref, monotonic=True)
+        if path:
+            return path
+
+    # Fallback: allow non-monotonic traversal if strict forward traversal
+    # found no path (rare topologies with unavoidable return edges).
+    for out_ref in outputs:
+        path = _bfs_path(out_ref, monotonic=False)
+        if path:
+            return path
+
+    return []
 
 
 def assign_ic_units_to_tiers(
