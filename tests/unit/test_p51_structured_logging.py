@@ -21,6 +21,7 @@ import logging
 import shutil
 import time
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from kicad_pcb.pcb_doc import PcbDoc
@@ -40,12 +41,19 @@ FIXTURES = Path(__file__).parent.parent / "fixtures" / "valid"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
+class _KicadLogRecord(logging.LogRecord):
+    """Typed view of a LogRecord that carries the ``kicad`` structured extra."""
+
+    kicad: dict[str, Any]
+
+
 LOGGER_NAME = "kicad_pcb.pipeline"
 
 
-def _kicad_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+def _kicad_records(caplog: pytest.LogCaptureFixture) -> list[_KicadLogRecord]:
     """Return only records that carry the structured ``kicad`` extra dict."""
-    return [r for r in caplog.records if hasattr(r, "kicad")]
+    return [cast(_KicadLogRecord, r) for r in caplog.records if hasattr(r, "kicad")]
 
 
 def _stages(caplog: pytest.LogCaptureFixture) -> set[str]:
@@ -95,7 +103,7 @@ class TestLogStageHelper:
             _log_stage("read", path=path, mode=ValidationMode.LINT, operation="op", t0=0.0)
         rec = caplog.records[0]
         assert hasattr(rec, "kicad"), "record should have 'kicad' extra attribute"
-        ctx = rec.kicad
+        ctx = cast(_KicadLogRecord, rec).kicad
         assert ctx["stage"] == "read"
         assert ctx["path"] == str(path)
         assert ctx["mode"] == "LINT"
@@ -108,14 +116,14 @@ class TestLogStageHelper:
         t0 = time.perf_counter()
         with caplog.at_level(logging.DEBUG, logger=LOGGER_NAME):
             _log_stage("serialize", path=path, mode=ValidationMode.SYNTAX, operation=None, t0=t0)
-        ctx = caplog.records[0].kicad
+        ctx = cast(_KicadLogRecord, caplog.records[0]).kicad
         assert ctx["elapsed_ms"] >= 0.0
 
     def test_operation_none_allowed(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
         path = tmp_path / "proj.kicad_sch"
         with caplog.at_level(logging.DEBUG, logger=LOGGER_NAME):
             _log_stage("mutate", path=path, mode=ValidationMode.NONE, operation=None, t0=0.0)
-        ctx = caplog.records[0].kicad
+        ctx = cast(_KicadLogRecord, caplog.records[0]).kicad
         assert ctx["operation"] is None
 
     def test_stage_name_in_message(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:

@@ -5,6 +5,7 @@ import math
 from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR
@@ -254,8 +255,8 @@ def _extract_managed_model(managed_path: Path) -> tuple[list[str], list[str]]:
     """Return normalized (sorted refs, sorted symbol_ids) for the managed sheet."""
     doc = SchematicDoc.load(managed_path)
     symbols = doc.list_symbols()
-    refs = sorted(s["ref"] for s in symbols)
-    symbol_ids = sorted(s["symbol_id"] for s in symbols)
+    refs: list[str] = sorted(cast(str, s["ref"]) for s in symbols)
+    symbol_ids: list[str] = sorted(cast(str, s["symbol_id"]) for s in symbols)
     return refs, symbol_ids
 
 
@@ -423,9 +424,11 @@ def test_apply_netlist_dry_run_emits_no_write_warning(
     assert "DRY_RUN_NO_WRITE" in warning_codes, f"Expected DRY_RUN_NO_WRITE in {warning_codes}"
 
     no_write_w = next(w for w in result.warnings if w["code"] == "DRY_RUN_NO_WRITE")
-    assert "symbols_validated" in no_write_w["details"]
-    assert no_write_w["details"]["symbols_validated"] == 1
-    assert "nets_validated" in no_write_w["details"]
+    details_no_write = no_write_w["details"]
+    assert isinstance(details_no_write, dict)
+    assert "symbols_validated" in details_no_write
+    assert details_no_write["symbols_validated"] == 1
+    assert "nets_validated" in details_no_write
 
     # Pipeline must NOT have modified the managed schematic file in dry-run mode.
     assert managed_sch_path.read_text(encoding="utf-8") == content_before
@@ -1075,14 +1078,15 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR091
 
     ir = CircuitIR.load(ir_path)
     layout: dict[str, tuple[float, float]] = {
-        str(sym["ref"]): (float(sym["x"]), float(sym["y"])) for sym in managed_doc.list_symbols()
+        str(sym["ref"]): (cast(float, sym["x"]), cast(float, sym["y"]))
+        for sym in managed_doc.list_symbols()
     }
     orientations = compute_orientations(ir, layout)
 
     expected_endpoints: dict[tuple[str, str], tuple[float, float]] = {}
     for sym in managed_doc.list_symbols():
         ref = str(sym["ref"])
-        sx, sy = float(sym["x"]), float(sym["y"])
+        sx, sy = cast(float, sym["x"]), cast(float, sym["y"])
         rotation = orientations.get(ref, 0)
         if rotation == 0:
             for pin_num, (px, py, _pa) in pin_at.items():

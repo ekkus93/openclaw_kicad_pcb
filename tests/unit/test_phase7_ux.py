@@ -45,6 +45,7 @@ from kicad_pcb.commands.netlist import _ApplyNetlistRequest, cmd_new_from_netlis
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout import GraphvizLayoutEngine
 from kicad_pcb.pipeline import ValidationMode
+from kicad_pcb.results import NewFromNetlistResult
 from kicad_pcb.symbol_index import SymbolIndex
 
 pytestmark = pytest.mark.unit
@@ -67,7 +68,9 @@ def _minimal_ir_payload() -> dict:
     }
 
 
-def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str = "proj", **extra) -> object:
+def _new_from_netlist(
+    tmp_path: Path, ir_payload: dict, *, name: str = "proj", **extra
+) -> NewFromNetlistResult:
     """Run cmd_new_from_netlist in internal mode."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     ir_path = tmp_path / "ir.json"
@@ -513,6 +516,7 @@ class TestResolveValidateMode:
             _resolve_mode("bad", default=ValidationMode.LINT)
         details = exc_info.value.details or {}
         allowed = details.get("allowed", [])
+        assert isinstance(allowed, list)
         assert set(allowed) == {"none", "syntax", "lint", "kicad", "full"}
 
 

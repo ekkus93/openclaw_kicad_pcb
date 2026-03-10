@@ -26,6 +26,7 @@ import json
 import logging
 from argparse import Namespace
 from pathlib import Path
+from typing import cast
 
 import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
@@ -37,6 +38,7 @@ from kicad_pcb.layout import (
     compute_signal_flow_layout,
 )
 from kicad_pcb.lint import lint_schematic_layout
+from kicad_pcb.results import NewFromNetlistResult
 from kicad_pcb.router import route_nets
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
@@ -83,7 +85,7 @@ def _write_ir(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str) -> object:
+def _new_from_netlist(tmp_path: Path, ir_payload: dict, *, name: str) -> NewFromNetlistResult:
     """Run cmd_new_from_netlist in internal mode and return result."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     ir_path = tmp_path / "ir.json"
@@ -306,7 +308,7 @@ class TestGraphvizPositionStability:
 
         def _sch_from_positions(
             pos: dict[str, tuple[float, float, float | None]],
-        ) -> object:
+        ) -> ListNode:
             parts = []
             for i, (ref, (x, y, _)) in enumerate(sorted(pos.items())):
                 uid = f"00000000-0000-0000-0000-{i:012d}"
@@ -585,7 +587,7 @@ def _count_nodes(root, key: str) -> int:
     return n
 
 
-def _new_from_netlist_file(tmp_path: Path, ir_path: Path, *, name: str) -> object:
+def _new_from_netlist_file(tmp_path: Path, ir_path: Path, *, name: str) -> NewFromNetlistResult:
     """Run cmd_new_from_netlist using the headphone amp IR file."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     return cmd_new_from_netlist(
@@ -620,7 +622,7 @@ class TestGoldenHeadphoneAmp:
     def test_golden_fixture_has_all_refs(self) -> None:
         """The stored golden file contains all 13 component refs."""
         doc = SchematicDoc.load(_HEADPHONE_AMP_GOLDEN_PATH)
-        placed = {s["ref"] for s in doc.list_symbols()}
+        placed: set[str] = {cast(str, s["ref"]) for s in doc.list_symbols()}
         expected = {
             "J1",
             "J2",
@@ -707,7 +709,7 @@ class TestGoldenHeadphoneAmp:
         result = _new_from_netlist_file(tmp_path, _HEADPHONE_AMP_IR_PATH, name="HpAmpAll")
         assert result.symbols_added == 13
         doc = SchematicDoc.load(result.managed_schematic_path)
-        placed = {s["ref"] for s in doc.list_symbols()}
+        placed: set[str] = {cast(str, s["ref"]) for s in doc.list_symbols()}
         expected = {
             "J1",
             "J2",
@@ -919,7 +921,7 @@ class TestGoldenAudioBlock:
         result = _new_from_netlist(tmp_path, _AUDIO_BLOCK_IR, name="AudioBlockAll")
         assert result.symbols_added == 8
         doc = SchematicDoc.load(result.managed_schematic_path)
-        placed = {s["ref"] for s in doc.list_symbols()}
+        placed: set[str] = {cast(str, s["ref"]) for s in doc.list_symbols()}
         assert placed >= _AUDIO_BLOCK_REFS, f"Missing refs: {_AUDIO_BLOCK_REFS - placed}"
 
     def test_positions_all_distinct(self, tmp_path: Path) -> None:
@@ -994,7 +996,9 @@ class TestGoldenAudioBlock:
         """
         result = _new_from_netlist(tmp_path, _AUDIO_BLOCK_IR, name="AudioBlockConn")
         doc = SchematicDoc.load(result.managed_schematic_path)
-        symbols = {s["ref"]: s["x"] for s in doc.list_symbols()}
+        symbols: dict[str, float] = {
+            cast(str, s["ref"]): cast(float, s["x"]) for s in doc.list_symbols()
+        }
         resistors_x = [symbols[ref] for ref in ("R1", "R3", "R4", "R5", "R7")]
         max_resistor_x = max(resistors_x)
         assert symbols["J1"] <= max_resistor_x, (

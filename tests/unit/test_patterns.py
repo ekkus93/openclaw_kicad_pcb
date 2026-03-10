@@ -38,7 +38,7 @@ from kicad_pcb.patterns import (
 from kicad_pcb.results import ApplyPatternResult
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import find_all, find_first, parse
-from kicad_pcb.sexpr.nodes import ListNode, StringNode
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -468,7 +468,9 @@ class TestDecouplingCapPattern:
         assert vcc_labels, "VCC label not found in schematic"
         at_node = find_first(vcc_labels[0], "at")
         assert at_node is not None
-        y_val = float(at_node.items[2].value)  # type: ignore[attr-defined]
+        y_item = at_node.items[2]
+        assert isinstance(y_item, (AtomNode, StringNode))
+        y_val = float(y_item.value)
         assert y_val < 76.2, "VCC label should be above the capacitor centre"
 
     def test_gnd_label_placed_below_center(self) -> None:
@@ -486,7 +488,9 @@ class TestDecouplingCapPattern:
         assert gnd_labels, "GND label not found"
         at_node = find_first(gnd_labels[0], "at")
         assert at_node is not None
-        y_val = float(at_node.items[2].value)  # type: ignore[attr-defined]
+        y_item = at_node.items[2]
+        assert isinstance(y_item, (AtomNode, StringNode))
+        y_val = float(y_item.value)
         assert y_val > 76.2, "GND label should be below the capacitor centre"
 
     def test_symbol_added_to_schematic(self) -> None:
@@ -508,7 +512,10 @@ class TestDecouplingCapPattern:
             and item.items[1].value == "GND"
         ]
         at_node = find_first(gnd_labels[0], "at")
-        gnd_y = float(at_node.items[2].value)  # type: ignore[attr-defined]
+        assert at_node is not None
+        gnd_item = at_node.items[2]
+        assert isinstance(gnd_item, (AtomNode, StringNode))
+        gnd_y = float(gnd_item.value)
         assert abs(gnd_y - (comp_y + PIN_OFFSET)) < 1e-9
 
 

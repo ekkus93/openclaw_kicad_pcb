@@ -11,6 +11,8 @@ no subprocesses or real filesystem access required.
 
 from __future__ import annotations
 
+import argparse
+
 import pytest
 from kicad_pcb.cli import _build_parser
 from kicad_pcb.commands.doctor import cmd_doctor
@@ -31,7 +33,7 @@ from kicad_pcb.commands.sch import cmd_add_component, cmd_add_net, cmd_connect
 # ---------------------------------------------------------------------------
 
 
-def _parse(*argv: str) -> object:
+def _parse(*argv: str) -> argparse.Namespace:
     """Parse *argv* via _build_parser() and return the resulting Namespace."""
     return _build_parser().parse_args(list(argv))
 

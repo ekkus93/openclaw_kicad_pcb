@@ -30,6 +30,7 @@ Contract:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import kicad_pcb
 import kicad_pcb.fs as fs_mod
@@ -218,7 +219,7 @@ class TestAtomicWriteTempCleanup:
         original_fdopen = fs_mod.os.fdopen
         original_unlink = Path.unlink
 
-        def _fdopen_fail(*args: object, **kwargs: object):
+        def _fdopen_fail(*args: Any, **kwargs: Any):
             file_obj = original_fdopen(*args, **kwargs)
 
             class _FailOnWrite:

@@ -29,6 +29,7 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.lint import lint_schematic_layout
+from kicad_pcb.results import NewFromNetlistResult
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse as _parse_sexpr
 
@@ -74,7 +75,9 @@ def _write_ir(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _new_from_netlist(tmp_dir: Path, ir_payload: dict, *, name: str, layout: str) -> object:
+def _new_from_netlist(
+    tmp_dir: Path, ir_payload: dict, *, name: str, layout: str
+) -> NewFromNetlistResult:
     tmp_dir.mkdir(parents=True, exist_ok=True)
     ir_path = tmp_dir / "ir.json"
     _write_ir(ir_path, ir_payload)

@@ -30,7 +30,7 @@ from kicad_pcb.commands.project import (
 from kicad_pcb.fs import _check_sexp
 from kicad_pcb.lint import LINT_SUGGESTIONS, LintSeverity, lint_pcb, lint_schematic
 from kicad_pcb.sexpr import parse, serialize
-from kicad_pcb.sexpr.nodes import AtomNode, ListNode
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first
 
 pytestmark = pytest.mark.unit
@@ -127,7 +127,9 @@ class TestSchSkeleton:
         root = parse(self._build())
         version = find_first(root, "version")
         assert version is not None
-        assert version.items[1].value == "20230121"
+        v = version.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == "20230121"
 
     def test_uuid_is_embedded(self) -> None:
         content = self._build()
@@ -137,7 +139,9 @@ class TestSchSkeleton:
         root = parse(self._build())
         uuid_node = find_first(root, "uuid")
         assert uuid_node is not None
-        assert uuid_node.items[1].value == self.UUID
+        v = uuid_node.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == self.UUID
 
     def test_lib_symbols_present(self) -> None:
         root = parse(self._build())
@@ -155,7 +159,9 @@ class TestSchSkeleton:
         assert sheet_inst is not None
         path_node = find_first(sheet_inst, "path")
         assert path_node is not None
-        assert path_node.items[1].value == "/"
+        v = path_node.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == "/"
 
     def test_round_trip_stable(self) -> None:
         """serialize → re-parse → re-serialize must produce identical output."""
@@ -207,7 +213,9 @@ class TestPcbSkeleton:
         root = parse(self._build())
         version = find_first(root, "version")
         assert version is not None
-        assert version.items[1].value == "20230121"
+        v = version.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == "20230121"
 
     def test_general_thickness_present(self) -> None:
         root = parse(self._build())
@@ -215,13 +223,17 @@ class TestPcbSkeleton:
         assert general is not None
         thickness = find_first(general, "thickness")
         assert thickness is not None
-        assert thickness.items[1].value == "1.6"
+        v = thickness.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == "1.6"
 
     def test_paper_present(self) -> None:
         root = parse(self._build())
         paper = find_first(root, "paper")
         assert paper is not None
-        assert paper.items[1].value == "A4"
+        v = paper.items[1]
+        assert isinstance(v, (AtomNode, StringNode))
+        assert v.value == "A4"
 
     def test_layers_present(self) -> None:
         root = parse(self._build())
@@ -248,9 +260,12 @@ class TestPcbSkeleton:
     def test_net_zero_present(self) -> None:
         root = parse(self._build())
         net_nodes = find_all(root, "net")
-        assert any(len(n.items) >= 2 and n.items[1].value == "0" for n in net_nodes), (
-            "Net 0 not found in generated PCB skeleton"
-        )
+        assert any(
+            len(n.items) >= 2
+            and isinstance(n.items[1], (AtomNode, StringNode))
+            and n.items[1].value == "0"
+            for n in net_nodes
+        ), "Net 0 not found in generated PCB skeleton"
 
     def test_round_trip_stable(self) -> None:
         """serialize → re-parse → re-serialize must produce identical output."""

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from argparse import Namespace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.block_detection import (
@@ -480,7 +481,9 @@ def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
     managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
     assert managed_sch.exists(), "Managed sheet was not generated"
     doc = SchematicDoc.load(managed_sch)
-    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+    symbols: dict[str, tuple[float, float]] = {
+        cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
+    }
 
     # Get INPUT and OPAMP_CORE component positions
     input_refs = layout.components_by_role(BlockRole.INPUT)
@@ -565,7 +568,9 @@ def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
     managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
     assert managed_sch.exists(), "Managed sheet was not generated"
     doc = SchematicDoc.load(managed_sch)
-    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+    symbols: dict[str, tuple[float, float]] = {
+        cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
+    }
 
     # Get OUTPUT and OPAMP_CORE component positions
     output_refs = layout.components_by_role(BlockRole.OUTPUT)
@@ -628,7 +633,9 @@ def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
     managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
     assert managed_sch.exists(), "Managed sheet was not generated"
     doc = SchematicDoc.load(managed_sch)
-    symbols = {s["ref"]: (s["x"], s["y"]) for s in doc.list_symbols()}
+    symbols: dict[str, tuple[float, float]] = {
+        cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
+    }
 
     # Get INPUT and OUTPUT component positions
     input_refs = layout.components_by_role(BlockRole.INPUT)

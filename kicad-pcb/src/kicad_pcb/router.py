@@ -763,7 +763,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         # Hub route (3 – _HUB_MAX_DEGREE known, no unknown pins)
         # ----------------------------------------------------------------
         if 3 <= len(known) <= _HUB_MAX_DEGREE and not unknown:
-            stub_ends: list[tuple[float, float]] = []
+            stub_ends = []
             for pin_ref, (wx, wy, wa) in known:
                 ex, ey = _stub_end(wx, wy, wa)
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
