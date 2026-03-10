@@ -57,6 +57,8 @@ is:
 1. :func:`snap_positions` (grid)
 2. :func:`_snap_power_symbols`
 2b. :func:`_snap_connectors_to_ic_y` (Rule 2: connector y-alignment)
+2c. :func:`_snap_block_zones` (Phase 1.2: bias toward functional block zones)
+2d. :func:`_apply_density_spreading` (Phase 2.3: reduce local crowding)
 3. :func:`_snap_feedback_components` (if any feedback refs exist)
 4. :func:`_apply_stereo_split` (if any L/R channels exist)
 5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
@@ -70,6 +72,11 @@ Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
 refs are already at their fixed rows before connectors compute their median.
 Connector-y-snap runs before feedback snap so feedback-adjusted y values
 take a correctly-anchored connector y as their starting point.
+Block zone bias and density spreading run before feedback snap so that
+functional block organization and crowding reduction happen early in the
+pipeline, providing a cleaner baseline for specialized adjustments.
+Density spreading runs after block zones so that block assignments are
+respected when distributing dense clusters along the y-axis.
 Stereo split runs after feedback snap so that feedback-adjusted y values are
 used as the input to channel compression.
 ``_compact_y_gap`` runs before decoupling caps so that bypass-cap y positions
@@ -646,6 +653,133 @@ def _snap_block_zones(
             result[ref] = (new_x, y, rot)
 
         # OPAMP_CORE and FEEDBACK: no adjustment (center is fine)
+
+    return result
+
+
+def _apply_density_spreading(  # noqa: PLR0912, PLR0915
+    positions: dict[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    radius_mm: float = 30.0,
+    threshold: int = 5,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Push apart symbols in dense clusters to reduce local crowding (Phase 2.3).
+
+    Identifies spatial hotspots where ≥ *threshold* symbols lie within
+    *radius_mm* of each other, then distributes them along the y-axis to
+    improve readability.  When *block_layout* is supplied, spreading respects
+    functional block boundaries so components don't migrate across blocks.
+
+    This pass runs after :func:`_snap_block_zones` (so block zones are already
+    set) but before :func:`_apply_stereo_split` and :func:`_compact_y_gap` (so
+    spreading doesn't conflict with those specialized layout adjustments).
+
+    Parameters
+    ----------
+    positions:
+        KiCad mm positions from the previous snap pass.
+    block_layout:
+        Optional functional block classification from
+        :func:`~kicad_pcb.block_detection.classify_circuit`.  When supplied,
+        spreading only affects symbols within the same block role.
+    radius_mm:
+        Neighbor search radius (default: 30mm, ~4 KiCad grid cells).
+    threshold:
+        Minimum neighbor count to qualify as a dense cluster (default: 5).
+
+    Returns
+    -------
+    dict[str, tuple[float, float, float | None]]:
+        Updated positions with dense clusters spread vertically.
+    """
+    result = dict(positions)
+    refs = list(positions.keys())
+
+    # Map refs to positions for distance computation
+    pos_map = {ref: (x, y) for ref, (x, y, _) in positions.items()}
+
+    # Compute local density: count neighbors within radius for each symbol
+    density: dict[str, int] = {}
+    radius_sq = radius_mm**2
+    for ref_i in refs:
+        if ref_i not in pos_map:
+            continue
+        x_i, y_i = pos_map[ref_i]
+        neighbors = 0
+        for ref_j in refs:
+            if ref_i == ref_j or ref_j not in pos_map:
+                continue
+            x_j, y_j = pos_map[ref_j]
+            dist_sq = (x_i - x_j) ** 2 + (y_i - y_j) ** 2
+            if dist_sq <= radius_sq:
+                neighbors += 1
+        density[ref_i] = neighbors
+
+    # Identify dense cluster centers (symbols with ≥ threshold neighbors)
+    dense_refs = {ref for ref, count in density.items() if count >= threshold}
+
+    if not dense_refs:
+        return result  # No dense clusters; skip spreading
+
+    # Group dense refs by block role (if layout provided) and x-column
+    # so spreading only affects symbols in the same functional area
+    if block_layout:
+        groups: dict[tuple[str, float], list[str]] = defaultdict(list)
+        for ref in dense_refs:
+            if ref not in block_layout.assignments:
+                continue
+            role = block_layout.assignments[ref].role.value
+            x, _, _ = result[ref]
+            # Round x to ~25mm columns to group symbols in same vertical column
+            col_x = round(x / 25.4) * 25.4
+            groups[(role, col_x)].append(ref)
+    else:
+        # No block layout: group only by x-column
+        groups = defaultdict(list)
+        for ref in dense_refs:
+            x, _, _ = result[ref]
+            col_x = round(x / 25.4) * 25.4
+            groups[("ALL", col_x)].append(ref)
+
+    # Spread each group vertically along y-axis
+    for (role_or_all, col_x), group_refs in groups.items():
+        if len(group_refs) < 2:
+            continue  # Single symbol; no spreading needed
+
+        # Sort by current y position
+        sorted_refs = sorted(group_refs, key=lambda r: result[r][1])
+
+        # Compute target y positions with minimum spacing of 1 grid row
+        min_spacing = GRID_ROW_MM  # 7.62mm
+
+        y_positions: list[float] = []
+        current_y = result[sorted_refs[0]][1]  # Start from first symbol's y
+        for ref in sorted_refs:
+            _, old_y, _ = result[ref]
+            # Enforce minimum spacing from previous symbol
+            if y_positions and current_y < y_positions[-1] + min_spacing:
+                current_y = round(y_positions[-1] + min_spacing, 2)
+            else:
+                current_y = round(old_y, 2)
+            y_positions.append(current_y)
+            current_y += min_spacing  # Advance for next symbol
+
+        # Apply new y positions (keep x and rotation unchanged)
+        for i, ref in enumerate(sorted_refs):
+            x, old_y, rot = result[ref]
+            new_y = y_positions[i]
+            if abs(new_y - old_y) > 0.1:  # Only log when meaningful change
+                _log.debug(
+                    "density spread: %r (%s col=%.1f) y %.2f → %.2f (neighbors=%d)",
+                    ref,
+                    role_or_all,
+                    col_x,
+                    old_y,
+                    new_y,
+                    density[ref],
+                )
+                result[ref] = (x, new_y, rot)
 
     return result
 
@@ -1415,6 +1549,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     3c. :func:`_snap_block_zones` — bias components toward their functional
         block zones (INPUT left, OUTPUT right, POWER top; skipped when
         *block_layout* is ``None``).
+    3d. :func:`_apply_density_spreading` — push apart symbols in dense
+        clusters (≥ 5 neighbors within 30mm) to reduce local crowding;
+        respects block boundaries when *block_layout* is provided (Phase
+        2.3; skipped when *block_layout* is ``None``).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
        (skipped when no L or R channel is present in *channels*).
     4b. :func:`_post_stereo_barycentric` — reduce intra-channel crossings after
@@ -1446,6 +1584,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _snap_opamp_halo(result, halo)
     if block_layout:
         result = _snap_block_zones(result, block_layout)
+        result = _apply_density_spreading(result, block_layout)
     if any(v in ("L", "R") for v in channels.values()):
         result = _apply_stereo_split(result, channels)
         result = _post_stereo_barycentric(result, ir, channels)
