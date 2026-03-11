@@ -211,10 +211,16 @@ Completed on 2026-03-11:
 - Phase 1 debug dumps now expose `power_refs` separately, and the canonical fixture no longer reports missing connector roles or would-trigger-BFS degradation
 
 ### 4.3 Improve diagnostics
-- [ ] When the layout path falls back internally:
-  - [ ] surface a warning or debug note
-  - [ ] explain why
-- [ ] Avoid silent quality regressions.
+- [x] When the layout path falls back internally:
+  - [x] surface a warning or debug note
+  - [x] explain why
+- [x] Avoid silent quality regressions.
+
+Completed on 2026-03-11:
+- added explicit layout diagnostics to the Graphviz debug dump in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`
+- incomplete connector-role inference now emits a warning diagnostic explaining that older layout logic would have degraded to BFS fallback, while non-blocking unknown connectors emit a debug note
+- `compute_signal_flow_layout(...)` in `kicad-pcb/src/kicad_pcb/layout.py` now emits explicit diagnostics when connector roles are omitted: it infers connector-aware SDS placement when possible and otherwise raises instead of generating a degraded schematic
+- added focused coverage in `tests/unit/test_phase1_regression_path.py` and `kicad-pcb/tests/unit/test_layout.py`
 
 ---
 
@@ -347,5 +353,5 @@ The headphone amp schematic should:
 - [x] no longer line up a large fraction of parts in the op-amp column
 - [x] visibly separate input, op-amp, output, and power/support regions
 - [x] keep feedback/support parts near U1 without stacking them all vertically with it
-- [ ] avoid internal fallback-style degradation for the canonical headphone amp fixture
+- [x] avoid internal fallback-style degradation for the canonical headphone amp fixture
 - [x] include regression tests that catch this exact layout collapse in future

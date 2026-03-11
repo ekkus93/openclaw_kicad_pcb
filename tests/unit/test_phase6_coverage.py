@@ -116,8 +116,27 @@ class TestHeuristicFeedbackPlacement:
     """Feedback resistor in op-amp circuit is placed within one column of the op-amp."""
 
     def _feedback_ir(self) -> CircuitIR:
-        """Inverting op-amp stage: J1 → R_in → U1, R_f: U1_out → U1_inv_in."""
+        """Inverting op-amp stage: J1 → R_in → U1 → J2, with R_f in feedback."""
         return _ir(
+            [
+                ("J1", "Device:Connector"),
+                ("R_in", "Device:R"),
+                ("U1", "Device:R"),
+                ("R_f", "Device:R"),
+                ("J2", "Device:Connector"),
+            ],
+            [
+                ("IN", [("J1", "1"), ("R_in", "1")]),
+                # R_f's pin 2 and R_in's pin 2 both connect to U1's inverting input.
+                ("MINUS", [("R_in", "2"), ("U1", "2"), ("R_f", "2")]),
+                # R_f's pin 1 and J2 both connect to U1's output.
+                ("OUT", [("U1", "6"), ("R_f", "1"), ("J2", "1")]),
+            ],
+        )
+
+    def test_feedback_circuit_without_output_role_fails(self) -> None:
+        """Under-specified connector roles should fail instead of using a degraded layout."""
+        ir = _ir(
             [
                 ("J1", "Device:Connector"),
                 ("R_in", "Device:R"),
@@ -126,17 +145,21 @@ class TestHeuristicFeedbackPlacement:
             ],
             [
                 ("IN", [("J1", "1"), ("R_in", "1")]),
-                # R_f's pin 2 and R_in's pin 2 both connect to U1's inverting input.
                 ("MINUS", [("R_in", "2"), ("U1", "2"), ("R_f", "2")]),
-                # R_f's pin 1 connects to U1's output — pure feedback loop.
                 ("OUT", [("U1", "6"), ("R_f", "1")]),
             ],
         )
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir)
 
-    def test_feedback_resistor_column_adjacent_to_opamp(self) -> None:
-        """R_f must be placed in an adjacent column to U1 (|Δx| ≤ GRID_COL_MM)."""
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_roles"] == ["output"]
+
+    def test_feedback_circuit_with_explicit_roles_keeps_feedback_near_opamp(self) -> None:
+        """Explicit connector roles preserve the intended feedback placement."""
         ir = self._feedback_ir()
-        positions = compute_signal_flow_layout(ir)
+        roles = {"J1": "input", "J2": "output"}
+        positions = compute_signal_flow_layout(ir, roles=roles)
         x_u1 = positions["U1"][0]
         x_rf = positions["R_f"][0]
         assert abs(x_u1 - x_rf) <= GRID_COL_MM, (
@@ -144,20 +167,11 @@ class TestHeuristicFeedbackPlacement:
             f"expected |Δx| ≤ {GRID_COL_MM} mm."
         )
 
-    def test_feedback_resistor_not_at_input_column(self) -> None:
-        """R_f must not be placed at the same column as the source connector J1."""
+    def test_feedback_circuit_with_explicit_roles_has_distinct_positions(self) -> None:
+        """Explicit connector roles still produce a sane distinct placement."""
         ir = self._feedback_ir()
-        positions = compute_signal_flow_layout(ir)
-        x_j1 = positions["J1"][0]
-        x_rf = positions["R_f"][0]
-        assert x_rf > x_j1, (
-            f"R_f (x={x_rf:.2f}) should be downstream of J1 (x={x_j1:.2f}), not at the same column."
-        )
-
-    def test_feedback_circuit_all_positions_distinct(self) -> None:
-        """All four components in the feedback circuit have distinct (x, y) positions."""
-        ir = self._feedback_ir()
-        positions = compute_signal_flow_layout(ir)
+        roles = {"J1": "input", "J2": "output"}
+        positions = compute_signal_flow_layout(ir, roles=roles)
         coords = list(positions.values())
         assert len(coords) == len(set(coords)), (
             f"Duplicate positions in feedback circuit: {positions}"
@@ -181,7 +195,7 @@ class TestHeuristicFeedbackPlacement:
 
 
 class TestHeuristicLRChannelLayout:
-    """Symmetric L/R channel circuit: both channels receive the same column depths."""
+    """Symmetric L/R channel circuits now require explicit output roles."""
 
     def _lr_ir(self) -> CircuitIR:
         """Two independent 3-component chains: J_L→R_L1→R_L2 and J_R→R_R1→R_R2."""
@@ -202,53 +216,14 @@ class TestHeuristicLRChannelLayout:
             ],
         )
 
-    def test_input_connectors_at_same_x(self) -> None:
-        """Both J_L and J_R are seeded at col-0 and placed at the same x."""
+    def test_lr_circuit_without_outputs_fails(self) -> None:
+        """Directionless dual-channel circuits should fail instead of using degraded placement."""
         ir = self._lr_ir()
-        positions = compute_signal_flow_layout(ir)
-        assert positions["J_L"][0] == pytest.approx(positions["J_R"][0]), (
-            f"Input connectors at different x: J_L={positions['J_L'][0]:.2f}, "
-            f"J_R={positions['J_R'][0]:.2f}"
-        )
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir)
 
-    def test_first_stage_at_same_x(self) -> None:
-        """R_L1 and R_R1 (first stage of each channel) share the same x."""
-        ir = self._lr_ir()
-        positions = compute_signal_flow_layout(ir)
-        assert positions["R_L1"][0] == pytest.approx(positions["R_R1"][0]), (
-            f"First-stage resistors at different x: "
-            f"R_L1={positions['R_L1'][0]:.2f}, R_R1={positions['R_R1'][0]:.2f}"
-        )
-
-    def test_second_stage_at_same_x(self) -> None:
-        """R_L2 and R_R2 (second stage of each channel) share the same x."""
-        ir = self._lr_ir()
-        positions = compute_signal_flow_layout(ir)
-        assert positions["R_L2"][0] == pytest.approx(positions["R_R2"][0]), (
-            f"Second-stage resistors at different x: "
-            f"R_L2={positions['R_L2'][0]:.2f}, R_R2={positions['R_R2'][0]:.2f}"
-        )
-
-    def test_channels_stacked_at_different_y(self) -> None:
-        """L and R channel components share columns but occupy different row positions."""
-        ir = self._lr_ir()
-        positions = compute_signal_flow_layout(ir)
-        # Both connectors are in col-0; they must be stacked (different y).
-        assert positions["J_L"][1] != pytest.approx(positions["J_R"][1]), (
-            f"Both channel connectors are at the same y={positions['J_L'][1]:.2f}; "
-            "expected them to be stacked in different rows."
-        )
-
-    def test_signal_flows_left_to_right_per_channel(self) -> None:
-        """Within each channel, x increases monotonically from input to output."""
-        ir = self._lr_ir()
-        positions = compute_signal_flow_layout(ir)
-        assert positions["J_L"][0] <= positions["R_L1"][0], "Left ch: stage 1 not right of input"
-        assert positions["R_L1"][0] <= positions["R_L2"][0], "Left ch: stage 2 not right of stage 1"
-        assert positions["J_R"][0] <= positions["R_R1"][0], "Right ch: stage 1 not right of input"
-        assert positions["R_R1"][0] <= positions["R_R2"][0], (
-            "Right ch: stage 2 not right of stage 1"
-        )
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_roles"] == ["output"]
 
 
 # ---------------------------------------------------------------------------
@@ -1065,8 +1040,8 @@ class TestOpAmpCentering:
         p2 = compute_signal_flow_layout(ir)
         assert p1["U1"] == p2["U1"]
 
-    def test_opamp_centering_empty_column(self) -> None:
-        """Single-component column: U1 alone — no crash, u1 placed at origin."""
+    def test_opamp_centering_empty_column_requires_output_role(self) -> None:
+        """A single input-connector circuit should fail instead of degrading."""
         ir = CircuitIR(
             version="test-1.0",
             components=[
@@ -1080,8 +1055,12 @@ class TestOpAmpCentering:
                 )
             ],
         )
-        positions = compute_signal_flow_layout(ir)
-        assert "U1" in positions
+
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir)
+
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_roles"] == ["output"]
 
 
 # ---------------------------------------------------------------------------

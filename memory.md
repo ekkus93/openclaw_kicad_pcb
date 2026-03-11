@@ -1,5 +1,24 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-11T21:33:40Z - GPT-5.4 - Phase 4.3 diagnostics now surface degradation reasons
+
+- Added explicit `diagnostics` records to the Graphviz layout debug dump in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`; incomplete connector-role inference now emits `LAYDBG001` with missing-role/unknown-ref details explaining that older layout logic would have degraded to BFS fallback.
+- Non-blocking unknown connector roles now emit a debug-only diagnostic instead of staying silent, and the engine logs these diagnostics at warning/debug level during layout computation.
+- `compute_signal_flow_layout(...)` in `kicad-pcb/src/kicad_pcb/layout.py` now logs when it uses its explicit BFS fallback because connector roles were not supplied.
+- Added focused coverage in `tests/unit/test_phase1_regression_path.py` and `kicad-pcb/tests/unit/test_layout.py`, then validated with `pytest -q tests/unit/test_phase1_regression_path.py kicad-pcb/tests/unit/test_layout.py -k 'diagnostic or phase1_debug_dump or fallback or roles_none'`, `ruff check ...`, and `mypy kicad-pcb/src`.
+
+## 2026-03-11T21:56:20Z - GPT-5.4 - Narrowed the remaining no-roles BFS path in compute_signal_flow_layout
+
+- `kicad-pcb/src/kicad_pcb/layout.py` no longer drops straight into BFS when `compute_signal_flow_layout(...)` is called without connector roles on circuits where roles can be inferred; it now infers connector roles via `tier.py` and uses SDS recursive halving when both input and output connectors can be recovered.
+- Kept the legacy connector-distance branch only for genuinely directionless reference-layout cases where no usable input/output roles can be inferred, so the pure-Python test harness stays stable without affecting the production Graphviz engine.
+- Updated `kicad-pcb/tests/unit/test_layout.py` and `code_review/CODE_REVIEW7_TODO.md`, then validated with focused pytest coverage plus `ruff check` and `mypy kicad-pcb/src`.
+
+## 2026-03-11T22:01:54Z - GPT-5.4 - Removed degraded no-roles layout generation from compute_signal_flow_layout
+
+- `kicad-pcb/src/kicad_pcb/layout.py` now raises `UserError` when connector roles are omitted and cannot be inferred well enough for SDS, instead of generating a weaker connector-distance schematic.
+- Deleted the remaining `_bfs_columns(...)` fallback helper and updated tests so under-specified reference circuits now assert failure, while well-specified fixtures pass explicit roles or rely on successful inference.
+- Validated with focused pytest on `kicad-pcb/tests/unit/test_layout.py` and `tests/unit/test_phase6_coverage.py`, plus `ruff check` and `mypy kicad-pcb/src`.
+
 ## 2026-03-11T20:58:04Z - GPT-5.4 - Phase 7 regression guardrails added for CODE_REVIEW7
 
 - Added `tests/unit/test_phase7_regression_guardrails.py` to compare the current generator output for `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/circuit_ir.json` against the captured bad snapshot using approximate metrics rather than coordinate diffs.

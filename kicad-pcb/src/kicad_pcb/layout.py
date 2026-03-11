@@ -1,8 +1,8 @@
 """Signal-flow schematic layout for kicad_pcb.
 
 Computes ``{ref: (x, y)}`` placements for Circuit IR components using
-BFS-based column assignment so signals flow left→right and connected
-components end up adjacent to each other.
+connector-aware SDS or tier-derived column assignment so signals flow
+left→right and connected components end up adjacent to each other.
 """
 
 from __future__ import annotations
@@ -23,6 +23,8 @@ from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
 from .errors import ErrorCode, UserError
+from .tier import assign_tiers as _assign_tiers
+from .tier import classify_connector_roles as _classify_connector_roles
 from .tier import identify_main_signal_path
 
 _log = logging.getLogger(__name__)
@@ -103,19 +105,6 @@ def _is_power_net_layout(name: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _build_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
-    """Return undirected adjacency graph ``{ref: {neighbour_refs}}`` from net data."""
-    adjacency: dict[str, set[str]] = defaultdict(set)
-    for net in ir.nets:
-        pin_refs = [p.ref for p in net.pins]
-        for i, r_i in enumerate(pin_refs):
-            for r_j in pin_refs[i + 1 :]:
-                if r_i != r_j:
-                    adjacency[r_i].add(r_j)
-                    adjacency[r_j].add(r_i)
-    return adjacency
-
-
 def _build_signal_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
     """Return adjacency graph built from *signal* nets only (power nets excluded)."""
     adjacency: dict[str, set[str]] = defaultdict(set)
@@ -144,33 +133,6 @@ def _build_power_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
                     adjacency[r_i].add(r_j)
                     adjacency[r_j].add(r_i)
     return adjacency
-
-
-def _bfs_columns(
-    refs: list[str],
-    adjacency: dict[str, set[str]],
-    seeds: list[str],
-) -> dict[str, int]:
-    """Assign BFS column indices to every ref, starting from *seeds*."""
-    col: dict[str, int] = {}
-    queue: deque[str] = deque()
-    for s in seeds:
-        if s not in col:
-            col[s] = 0
-            queue.append(s)
-    while queue:
-        ref = queue.popleft()
-        c = col[ref]
-        for nbr in sorted(adjacency.get(ref, set())):
-            if nbr not in col:
-                col[nbr] = min(c + 1, _MAX_COLS)
-                queue.append(nbr)
-    # Assign unreachable nodes to a floater column past the rightmost BFS col.
-    max_col = max(col.values(), default=0)
-    for r in refs:
-        if r not in col:
-            col[r] = max_col + 1
-    return col
 
 
 #: Sentinel BFS distance for components unreachable from a connector direction.
@@ -608,50 +570,66 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
 
     Algorithm
     ---------
-    1. Build an undirected adjacency graph keyed on reference designators.
-       Two components are adjacent when they share at least one net.
-    2. Assign column indices via one of two strategies:
+    1. Assign column indices via one of two strategies:
 
        * **SDS recursive halving** (R2) — used when *roles* contains at
          least one input and one output connector.  Computes a Signal
          Distance Score for each component via BFS from input and output
          connectors, then assigns columns by recursively halving the
          SDS-sorted list.
-     * **BFS fallback** — used only when *roles* is ``None``.
 
-         Incomplete connector roles are treated as a configuration error
-         and raise :class:`~kicad_pcb.errors.UserError` instead of silently
-         degrading to BFS.
+             * **Inferred connector-aware placement** — used when *roles* is
+                 ``None``. The helper first infers connector roles from
+                 :mod:`kicad_pcb.tier` and uses SDS when that yields both inputs and
+                 outputs. If the circuit still has no usable direction information,
+                 it raises instead of generating a degraded layout.
 
-    3. Within each column, sort components using a two-pass barycentric sweep
+    2. Within each column, sort components using a two-pass barycentric sweep
        (:func:`_barycentric_sort`) to reduce wire crossings: pass 1 sorts
        left-to-right using neighbours' row positions in the previous column;
        pass 2 sorts right-to-left using the next column.
-    4. Map ``(column, row)`` pairs to ``(x, y)`` mm coordinates.
-
-    Components not reachable from any seed are placed one column past the
-    maximum (a "floater" column, typically power or passive symbols with no
-    direct connector path).
+    3. Map ``(column, row)`` pairs to ``(x, y)`` mm coordinates.
     """
     refs = sorted(c.ref for c in ir.components)
     if not refs:
         return {}
 
-    adjacency = _build_adjacency(ir)
-
-    seeds: list[str] = [
-        r for r in refs if any(r.upper().startswith(pfx) for pfx in _SOURCE_PREFIXES)
-    ]
-    if not seeds:
-        # Fall back to the most-connected node as seed.
-        seeds = [max(refs, key=lambda r: len(adjacency.get(r, set())))]
-
     # R2-2: prefer SDS-based recursive halving when connector roles are known.
     # Missing or incomplete roles are a configuration error; the old SDS→BFS
     # degradation path has been removed.
-    if roles is not None:
-        input_refs = [r for r, role in roles.items() if role == "input"]
-        output_refs = [r for r, role in roles.items() if role == "output"]
+    active_roles: Mapping[str, str] | None = roles
+    if active_roles is None:
+        inferred_tiers = _assign_tiers(ir, strict=strict)
+        inferred_roles = _classify_connector_roles(refs, inferred_tiers, ir=ir)
+        inferred_input_refs = [ref for ref, role in inferred_roles.items() if role == "input"]
+        inferred_output_refs = [ref for ref, role in inferred_roles.items() if role == "output"]
+
+        if inferred_input_refs and inferred_output_refs:
+            _log.debug(
+                "layout diagnostic: inferred connector roles in "
+                "compute_signal_flow_layout and avoided BFS fallback"
+            )
+            active_roles = inferred_roles
+        else:
+            raise UserError(
+                "SDS layout requires inferable input and output connector roles",
+                code=ErrorCode.IR_SEMANTIC_INVALID,
+                details={
+                    "missing_roles": [
+                        role
+                        for role, refs_for_role in (
+                            ("input", inferred_input_refs),
+                            ("output", inferred_output_refs),
+                        )
+                        if not refs_for_role
+                    ],
+                    "roles": dict(inferred_roles),
+                },
+            )
+
+    if active_roles is not None:
+        input_refs = [r for r, role in active_roles.items() if role == "input"]
+        output_refs = [r for r, role in active_roles.items() if role == "output"]
         if not input_refs or not output_refs:
             missing_role = "input" if not input_refs else "output"
             raise UserError(
@@ -659,11 +637,11 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
                 code=ErrorCode.IR_SEMANTIC_INVALID,
                 details={
                     "missing_role": missing_role,
-                    "roles": dict(roles),
+                    "roles": dict(active_roles),
                 },
             )
         else:
-            sds_scores = compute_signal_distance_scores(ir, roles)
+            sds_scores = compute_signal_distance_scores(ir, active_roles)
             col = _recursive_halving(
                 refs,
                 sds_scores,
@@ -672,18 +650,17 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
                 max_per_col=MAX_ROWS_PER_COL,
                 grid_col_mm=GRID_COL_MM,
             )
-    else:
-        col = _bfs_columns(refs, adjacency, seeds)
 
-    # --- Post-BFS: co-locate power-only passives with their anchor IC -------
+    # --- Power-only passive anchoring ---------------------------------------
     # A decoupling capacitor (or similar passive) that connects *only* through
-    # power/ground rails has no signal-net neighbours, so BFS places it
+    # power/ground rails has no signal-net neighbours, so naive signal-path
+    # placement can push it
     # arbitrarily far from its associated IC.  We fix this by detecting
     # power-only passives and reassigning their column to sit immediately
     # after the column of their nearest IC (found through power adjacency).
     sig_adj = _build_signal_adjacency(ir)
     pwr_adj = _build_power_adjacency(ir)
-    max_bfs_col = max(col.values(), default=0)
+    max_col = max(col.values(), default=0)
 
     for r in refs:
         upper = r.upper()
@@ -700,9 +677,9 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
         if not ic_neighbors:
             continue
         # Assign to the column immediately after the nearest IC.
-        anchor_col = min(col.get(n, max_bfs_col) for n in ic_neighbors)
-        col[r] = min(anchor_col + 1, max_bfs_col)
-    # -------------------------------------------------------------------------
+        anchor_col = min(col.get(n, max_col) for n in ic_neighbors)
+        col[r] = min(anchor_col + 1, max_col)
+    # ------------------------------------------------------------------------
 
     # R4-2: keep halo members adjacent to their anchor IC instead of forcing
     # exact same-column co-location.
@@ -764,8 +741,8 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
             )
             by_col = barycentric_sort(by_col, sig_adj)
 
-    # Assign coordinates, wrapping tall BFS-columns into sub-columns so the
-    # layout stays within a single A4 page.  Each BFS-column occupies at
+    # Assign coordinates, wrapping tall logical columns into sub-columns so the
+    # layout stays within a single A4 page.  Each logical column occupies at
     # least one visual column; if it has more than MAX_ROWS_PER_COL members
     # it overflows into consecutive additional visual columns.
     #

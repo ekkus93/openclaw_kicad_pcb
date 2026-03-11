@@ -21,6 +21,8 @@ Rule 2 tests verify _recursive_halving() and compute_signal_flow_layout(roles=..
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.errors import ErrorCode, UserError
@@ -691,6 +693,45 @@ class TestComputeSignalFlowLayoutWithRoles:
 
         assert positions["R_FB"][0] != positions["U1"][0]
         assert abs(positions["R_FB"][0] - positions["U1"][0]) == pytest.approx(GRID_COL_MM)
+
+
+class TestComputeSignalFlowLayoutDiagnostics:
+    def test_roles_none_emits_inference_debug_note(self, caplog) -> None:
+        ir = _make_ir(
+            [
+                ("J1", "Connector", "J1"),
+                ("R1", "R", "1k"),
+                ("J2", "Connector", "J2"),
+            ],
+            [
+                ("N1", [("J1", "1"), ("R1", "1")]),
+                ("N2", [("R1", "2"), ("J2", "1")]),
+            ],
+        )
+
+        with caplog.at_level(logging.DEBUG, logger="kicad_pcb.layout"):
+            positions = compute_signal_flow_layout(ir)
+
+        assert set(positions) == {"J1", "J2", "R1"}
+        assert (
+            "inferred connector roles in compute_signal_flow_layout and avoided BFS fallback"
+            in caplog.text
+        )
+
+    def test_roles_none_raises_when_roles_cannot_be_inferred(self) -> None:
+        ir = _make_ir(
+            [
+                ("J1", "Connector", "J1"),
+                ("R1", "R", "1k"),
+            ],
+            [("N1", [("J1", "1"), ("R1", "1")])],
+        )
+
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir)
+
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_roles"] == ["output"]
 
 
 # ---------------------------------------------------------------------------
