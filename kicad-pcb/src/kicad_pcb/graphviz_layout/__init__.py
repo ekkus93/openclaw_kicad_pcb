@@ -150,6 +150,67 @@ def _analyze_legacy_sds_fallback(roles: Mapping[str, str]) -> dict[str, object]:
     }
 
 
+def _build_layout_diagnostics(
+    connector_role_summary: Mapping[str, object],
+) -> list[dict[str, object]]:
+    """Return debug/warning diagnostics for degradation-like layout conditions."""
+    diagnostics: list[dict[str, object]] = []
+    raw_missing_roles = connector_role_summary.get("missing_roles", [])
+    raw_unknown_refs = connector_role_summary.get("unknown_refs", [])
+    missing_roles = (
+        [str(role) for role in raw_missing_roles] if isinstance(raw_missing_roles, list) else []
+    )
+    unknown_refs = (
+        [str(ref) for ref in raw_unknown_refs] if isinstance(raw_unknown_refs, list) else []
+    )
+
+    if missing_roles:
+        diagnostics.append(
+            {
+                "code": "LAYDBG001",
+                "severity": "warning",
+                "message": (
+                    "Connector-role inference is incomplete; older layout logic would have "
+                    "degraded to BFS fallback."
+                ),
+                "details": {
+                    "missing_roles": missing_roles,
+                    "unknown_refs": unknown_refs,
+                    "legacy_mode": connector_role_summary.get("legacy_mode"),
+                },
+            }
+        )
+    elif unknown_refs:
+        diagnostics.append(
+            {
+                "code": "LAYDBG002",
+                "severity": "debug",
+                "message": (
+                    "Some connectors remain unknown, but input/output role detection is still "
+                    "sufficient to keep SDS layout active."
+                ),
+                "details": {
+                    "unknown_refs": unknown_refs,
+                    "legacy_mode": connector_role_summary.get("legacy_mode"),
+                },
+            }
+        )
+
+    return diagnostics
+
+
+def _emit_layout_diagnostics(diagnostics: list[dict[str, object]]) -> None:
+    """Emit layout diagnostics through the module logger."""
+    for diagnostic in diagnostics:
+        code = diagnostic["code"]
+        message = diagnostic["message"]
+        details = diagnostic["details"]
+        if diagnostic["severity"] == "warning":
+            _log.warning("%s: %s details=%s", code, message, details)
+        else:
+            _log.debug("%s: %s details=%s", code, message, details)
+
+
 def _analyze_halo_column_alignment(
     raw_positions: Mapping[str, tuple[float, float, float | None]],
     post_snap_positions: Mapping[str, tuple[float, float, float | None]],
@@ -361,6 +422,8 @@ class GraphvizLayoutEngine:
         sds_scores = _compute_signal_distance_scores(ir, _roles)
         sds_cols = _compute_sds_columns(refs, sds_scores)
         legacy_sds_fallback = _analyze_legacy_sds_fallback(_roles)
+        diagnostics = _build_layout_diagnostics(legacy_sds_fallback)
+        _emit_layout_diagnostics(diagnostics)
 
         # Detect multi-unit IC groups; extract power units for cluster_power.
         _unit_groups = _assign_ic_units_to_tiers(ir, _tiers)
@@ -400,6 +463,7 @@ class GraphvizLayoutEngine:
                             "cache_hit": True,
                             "cache_key": cache_key,
                             "connector_role_summary": legacy_sds_fallback,
+                            "diagnostics": diagnostics,
                             "connector_roles": dict(sorted(_roles.items())),
                             "decoupling_map": dict(sorted(decoupling_map.items())),
                             "dot_path": self._dot,
@@ -487,6 +551,7 @@ class GraphvizLayoutEngine:
                     "cache_hit": False,
                     "cache_key": cache_key,
                     "connector_role_summary": legacy_sds_fallback,
+                    "diagnostics": diagnostics,
                     "connector_roles": dict(sorted(_roles.items())),
                     "decoupling_map": dict(sorted(decoupling_map.items())),
                     "dot_path": self._dot,
