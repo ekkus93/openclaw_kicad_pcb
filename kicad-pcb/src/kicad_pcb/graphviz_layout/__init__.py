@@ -31,10 +31,12 @@ Public API
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -88,6 +90,110 @@ _log = logging.getLogger(__name__)
 
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
+
+
+def _serialize_layout_positions(
+    positions: Mapping[str, tuple[float, float, float | None]],
+) -> dict[str, dict[str, float | None]]:
+    """Return a JSON-friendly mapping for layout position triples."""
+    return {
+        ref: {
+            "x": float(x),
+            "y": float(y),
+            "rotation": None if rotation is None else float(rotation),
+        }
+        for ref, (x, y, rotation) in sorted(positions.items())
+    }
+
+
+def _serialize_block_layout(block_layout: object) -> dict[str, object]:
+    """Return a JSON-friendly view of block assignments and zones."""
+    assignments = getattr(block_layout, "assignments", {})
+    zones = getattr(block_layout, "zones", {})
+    return {
+        "assignments": {
+            ref: {
+                "role": assignment.role.value,
+                "confidence": float(assignment.confidence),
+                "reason": assignment.reason,
+            }
+            for ref, assignment in sorted(assignments.items())
+        },
+        "zones": {
+            role.value: [float(value) for value in zone]
+            for role, zone in sorted(zones.items(), key=lambda item: item[0].value)
+        },
+    }
+
+
+def _analyze_legacy_sds_fallback(roles: Mapping[str, str]) -> dict[str, object]:
+    """Describe whether the legacy layout path would degrade to BFS fallback."""
+    input_refs = sorted(ref for ref, role in roles.items() if role == "input")
+    output_refs = sorted(ref for ref, role in roles.items() if role == "output")
+    power_refs = sorted(ref for ref, role in roles.items() if role == "power")
+    unknown_refs = sorted(ref for ref, role in roles.items() if role == "unknown")
+
+    missing_roles: list[str] = []
+    if not input_refs:
+        missing_roles.append("input")
+    if not output_refs:
+        missing_roles.append("output")
+
+    return {
+        "input_refs": input_refs,
+        "output_refs": output_refs,
+        "power_refs": power_refs,
+        "unknown_refs": unknown_refs,
+        "missing_roles": missing_roles,
+        "would_trigger_legacy_bfs_fallback": bool(missing_roles),
+        "legacy_mode": "bfs_fallback" if missing_roles else "sds_recursive_halving",
+    }
+
+
+def _analyze_halo_column_alignment(
+    raw_positions: Mapping[str, tuple[float, float, float | None]],
+    post_snap_positions: Mapping[str, tuple[float, float, float | None]],
+    halo: Mapping[str, str],
+    *,
+    tolerance_mm: float = 0.5,
+) -> dict[str, dict[str, object]]:
+    """Describe raw vs post-snap column alignment for each halo member."""
+    alignment: dict[str, dict[str, object]] = {}
+    for halo_ref, anchor_ref in sorted(halo.items()):
+        raw_member = raw_positions.get(halo_ref)
+        raw_anchor = raw_positions.get(anchor_ref)
+        post_member = post_snap_positions.get(halo_ref)
+        post_anchor = post_snap_positions.get(anchor_ref)
+
+        raw_dx = None
+        raw_same_column = None
+        if raw_member is not None and raw_anchor is not None:
+            raw_dx = float(raw_member[0] - raw_anchor[0])
+            raw_same_column = abs(raw_dx) <= tolerance_mm
+
+        post_dx = None
+        post_same_column = None
+        if post_member is not None and post_anchor is not None:
+            post_dx = float(post_member[0] - post_anchor[0])
+            post_same_column = abs(post_dx) <= tolerance_mm
+
+        alignment[halo_ref] = {
+            "anchor_ref": anchor_ref,
+            "raw_dx": raw_dx,
+            "raw_same_column": raw_same_column,
+            "post_snap_dx": post_dx,
+            "post_snap_same_column": post_same_column,
+            "moved_to_anchor_x_by_post_snap": (
+                raw_same_column is False and post_same_column is True
+            ),
+        }
+    return alignment
+
+
+def _write_layout_debug_dump(path: Path, payload: dict[str, object]) -> None:
+    """Write the requested layout debug payload to disk."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +291,7 @@ class GraphvizLayoutEngine:
         timeout: float = 10.0,
         seed: int = 7,
         cache_path: Path | None = None,
+        debug_dump_path: Path | None = None,
         tiers: dict[str, int] | None = None,
         strict: bool = False,
     ) -> None:
@@ -193,6 +300,7 @@ class GraphvizLayoutEngine:
         self._timeout = timeout
         self._seed = seed
         self._cache_path = cache_path
+        self._debug_dump_path = debug_dump_path
         self._tiers = tiers
         self._strict = strict
 
@@ -241,7 +349,7 @@ class GraphvizLayoutEngine:
 
         # Detect feedback components (passives that form back-edges).
         _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir, strict=self._strict)
-        _roles = _classify_connector_roles(refs, _tiers)
+        _roles = _classify_connector_roles(refs, _tiers, ir=ir)
         annotations = _find_feedback_paths(ir, _tiers, roles=_roles or None)
         feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
 
@@ -252,6 +360,7 @@ class GraphvizLayoutEngine:
         # R2-3: compute SDS-derived column indices to feed rank subgraphs.
         sds_scores = _compute_signal_distance_scores(ir, _roles)
         sds_cols = _compute_sds_columns(refs, sds_scores)
+        legacy_sds_fallback = _analyze_legacy_sds_fallback(_roles)
 
         # Detect multi-unit IC groups; extract power units for cluster_power.
         _unit_groups = _assign_ic_units_to_tiers(ir, _tiers)
@@ -283,6 +392,32 @@ class GraphvizLayoutEngine:
             cached = _load_layout_cache(self._cache_path, cache_key)
             if cached is not None:
                 _log.debug("Layout cache hit (key %s…); skipping dot.", cache_key[:8])
+                if self._debug_dump_path is not None:
+                    _write_layout_debug_dump(
+                        self._debug_dump_path,
+                        {
+                            "block_layout": _serialize_block_layout(block_layout),
+                            "cache_hit": True,
+                            "cache_key": cache_key,
+                            "connector_role_summary": legacy_sds_fallback,
+                            "connector_roles": dict(sorted(_roles.items())),
+                            "decoupling_map": dict(sorted(decoupling_map.items())),
+                            "dot_path": self._dot,
+                            "dot_source": dot_source,
+                            "feedback_refs": sorted(feedback_refs),
+                            "final_positions": _serialize_layout_positions(cached),
+                            "halo_alignment": _analyze_halo_column_alignment({}, cached, halo),
+                            "halo_map": dict(sorted(halo.items())),
+                            "post_snap_positions": _serialize_layout_positions(cached),
+                            "raw_graphviz_positions": {},
+                            "sds_columns": dict(sorted(sds_cols.items())),
+                            "sds_scores": {
+                                ref: float(score) for ref, score in sorted(sds_scores.items())
+                            },
+                            "seed": self._seed,
+                            "tiers": dict(sorted(_tiers.items())),
+                        },
+                    )
                 return cached
 
         try:
@@ -309,7 +444,7 @@ class GraphvizLayoutEngine:
 
         # Re-key from safe_id → original ref
         safe_to_ref = {_safe_id(r): r for r in refs}
-        result: dict[str, tuple[float, float, float | None]] = {
+        raw_result: dict[str, tuple[float, float, float | None]] = {
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
 
@@ -317,8 +452,8 @@ class GraphvizLayoutEngine:
         # → feedback → stereo split → decoupling caps).  See
         # gv_snap._apply_post_layout_snaps for the ordering rationale.
         channels = _detect_stereo_channels(ir)
-        result = _apply_post_layout_snaps(
-            result,
+        post_snap_result = _apply_post_layout_snaps(
+            raw_result,
             ir,
             feedback_refs=feedback_refs,
             annotations=annotations,
@@ -333,14 +468,46 @@ class GraphvizLayoutEngine:
         # Compute component orientations (rotation in degrees) from signal topology
         # and merge into the result so callers receive (x, y, rotation) triples.
         _plain_positions: dict[str, tuple[float, float]] = {
-            ref: (x, y) for ref, (x, y, _) in result.items()
+            ref: (x, y) for ref, (x, y, _) in post_snap_result.items()
         }
         _orientations = _compute_orientations(
             ir, _plain_positions, _tiers, roles=_roles or None, block_layout=block_layout
         )
-        result = {
-            ref: (x, y, float(_orientations.get(ref, 0))) for ref, (x, y, _) in result.items()
+        result: dict[str, tuple[float, float, float | None]] = {
+            ref: (x, y, float(_orientations.get(ref, 0)))
+            for ref, (x, y, _) in post_snap_result.items()
         }
+
+        if self._debug_dump_path is not None:
+            halo_alignment = _analyze_halo_column_alignment(raw_result, post_snap_result, halo)
+            _write_layout_debug_dump(
+                self._debug_dump_path,
+                {
+                    "block_layout": _serialize_block_layout(block_layout),
+                    "cache_hit": False,
+                    "cache_key": cache_key,
+                    "connector_role_summary": legacy_sds_fallback,
+                    "connector_roles": dict(sorted(_roles.items())),
+                    "decoupling_map": dict(sorted(decoupling_map.items())),
+                    "dot_path": self._dot,
+                    "dot_source": dot_source,
+                    "feedback_refs": sorted(feedback_refs),
+                    "final_positions": _serialize_layout_positions(result),
+                    "forced_same_column_halo_refs": sorted(
+                        halo_ref
+                        for halo_ref, details in halo_alignment.items()
+                        if details["post_snap_same_column"] is True
+                    ),
+                    "halo_alignment": halo_alignment,
+                    "halo_map": dict(sorted(halo.items())),
+                    "post_snap_positions": _serialize_layout_positions(post_snap_result),
+                    "raw_graphviz_positions": _serialize_layout_positions(raw_result),
+                    "sds_columns": dict(sorted(sds_cols.items())),
+                    "sds_scores": {ref: float(score) for ref, score in sorted(sds_scores.items())},
+                    "seed": self._seed,
+                    "tiers": dict(sorted(_tiers.items())),
+                },
+            )
 
         # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
@@ -380,13 +547,25 @@ class GraphvizLayoutEngine:
                     continue
                 raise RuntimeError(f"dot timed out after {self._timeout}s") from exc
 
+            gv_positions = _parse_plain_positions(result.stdout)
             if result.returncode != 0:
+                stderr_lines = [line for line in result.stderr.splitlines() if line.strip()]
+                if (
+                    gv_positions
+                    and stderr_lines
+                    and all(line.startswith("Warning:") for line in stderr_lines)
+                ):
+                    _log.debug(
+                        "dot returned code %d with warning-only stderr; "
+                        "proceeding with parsed positions",
+                        result.returncode,
+                    )
+                    break
                 raise RuntimeError(
                     f"dot exited with code {result.returncode}:\n{result.stderr[:400]}"
                 )
             break
 
-        gv_positions = _parse_plain_positions(result.stdout)
         return _gv_to_kicad(
             gv_positions,
             origin_x=ORIGIN_X,

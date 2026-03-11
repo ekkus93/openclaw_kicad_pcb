@@ -38,6 +38,9 @@ from .component_types import (
     TIER_SPACING_MM,
     component_type,
 )
+from .component_types import (
+    is_power_net as _component_is_power_net,
+)
 from .errors import ErrorCode, UserError
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -57,7 +60,7 @@ __all__ = [
 
 #: I/O role for a connector: ``"input"`` (signal source), ``"output"``
 #: (signal sink), or ``"unknown"`` (cannot be determined from topology).
-ConnectorRole = Literal["input", "output", "unknown"]
+ConnectorRole = Literal["input", "output", "power", "unknown"]
 
 _log = logging.getLogger(__name__)
 
@@ -92,34 +95,9 @@ class IcUnitGroup:
     power_unit: str | None = None
 
 
-# ---------------------------------------------------------------------------
-# Power-net detection (local; avoids import of regex-heavy graphviz_layout)
-# ---------------------------------------------------------------------------
-
-_POWER_NET_STARTS: tuple[str, ...] = (
-    "GND",
-    "VCC",
-    "VDD",
-    "VSS",
-    "PWR",
-    "AGND",
-    "PGND",
-    "DGND",
-    "VBAT",
-    "VREF",
-    "V+",
-    "V-",
-    "+3V",
-    "+5V",
-    "+12V",
-    "-12V",
-)
-
-
 def _is_power_net(name: str) -> bool:
-    """Return ``True`` when *name* looks like a power/ground rail."""
-    upper = name.upper()
-    return any(upper == p or upper.startswith(p) for p in _POWER_NET_STARTS)
+    """Return ``True`` when *name* is recognized as a power/ground rail."""
+    return _component_is_power_net(name)
 
 
 # ---------------------------------------------------------------------------
@@ -442,6 +420,73 @@ def _choose_seed_connector(
     return best
 
 
+def _has_connector_hint(text: str, hints: tuple[str, ...]) -> bool:
+    """Return True when *text* contains any whole-word-ish connector hint."""
+    upper = f" {text.upper().replace('-', ' ').replace('_', ' ')} "
+    return any(hint in upper for hint in hints)
+
+
+def _infer_connector_roles_from_ir(
+    ir: CircuitIR,
+    connectors: list[str],
+) -> dict[str, ConnectorRole]:
+    """Infer connector roles from component metadata and connected net names.
+
+    Topology is still the primary signal-flow signal, but some circuits expose
+    clearer evidence in connector metadata than in the tier graph alone.  This
+    helper recognizes two high-confidence cases that matter for audio fixtures:
+
+    * connectors attached only to power rails are ``"power"``;
+    * connectors whose symbol/value or signal-net names explicitly say
+      ``IN``/``OUT`` are classified accordingly.
+    """
+    input_hints = (" IN ", " INPUT ", " AUDIO IN ", " TRS IN ")
+    output_hints = (" OUT ", " OUTPUT ", " AUDIO OUT ", " TRS OUT ", " HP OUT ")
+
+    def _is_supply_alias(net_name: str) -> bool:
+        upper = net_name.upper()
+        return upper.startswith(("VPLUS", "VMINUS"))
+
+    ref_to_component = {component.ref: component for component in ir.components}
+    ref_to_nets: dict[str, list[str]] = {ref: [] for ref in connectors}
+    for net in ir.nets:
+        for pin in net.pins:
+            if pin.ref in ref_to_nets:
+                ref_to_nets[pin.ref].append(net.name)
+
+    inferred: dict[str, ConnectorRole] = {}
+    for ref in connectors:
+        connected_nets = ref_to_nets.get(ref, [])
+        if not connected_nets:
+            continue
+
+        signal_nets = [
+            net for net in connected_nets if not _is_power_net(net) and not _is_supply_alias(net)
+        ]
+        power_nets = [net for net in connected_nets if _is_power_net(net) or _is_supply_alias(net)]
+        component = ref_to_component.get(ref)
+        metadata = ""
+        if component is not None:
+            metadata = f"{component.symbol} {component.value}"
+
+        if power_nets and not signal_nets:
+            inferred[ref] = "power"
+            continue
+
+        if _has_connector_hint(metadata, output_hints) or any(
+            _has_connector_hint(net, output_hints) for net in signal_nets
+        ):
+            inferred[ref] = "output"
+            continue
+
+        if _has_connector_hint(metadata, input_hints) or any(
+            _has_connector_hint(net, input_hints) for net in signal_nets
+        ):
+            inferred[ref] = "input"
+
+    return inferred
+
+
 # ---------------------------------------------------------------------------
 # Step 4c — Connector I/O role classification (Rule 0)
 # ---------------------------------------------------------------------------
@@ -450,6 +495,8 @@ def _choose_seed_connector(
 def _classify_connector_roles(
     refs: list[str],
     tiers: dict[str, int],
+    *,
+    ir: CircuitIR | None = None,
 ) -> dict[str, ConnectorRole]:
     """Return the I/O role for each connector ref based on its tier position.
 
@@ -461,7 +508,8 @@ def _classify_connector_roles(
     * **output** — connector at ``max_tier`` (where ``max_tier > 0``); it is
       the farthest-downstream component and belongs on the right edge of the
       schematic.
-    * **unknown** — connector at any intermediate tier (not 0, not max_tier),
+        * **power** — connector attached only to power rails.
+        * **unknown** — connector at any intermediate tier (not 0, not max_tier),
       or when ``max_tier == 0`` and the circuit is a single-tier graph.
 
     Parameters
@@ -491,6 +539,10 @@ def _classify_connector_roles(
             result[ref] = "input"
         else:
             result[ref] = "unknown"
+
+    if ir is not None:
+        result.update(_infer_connector_roles_from_ir(ir, connectors))
+
     return result
 
 
@@ -550,7 +602,7 @@ def assign_tiers(ir: CircuitIR, *, strict: bool = False) -> dict[str, int]:
     # Output connectors are forced to max_tier; input connectors to tier 0.
     # In a correctly processed circuit the DP already achieves this; the
     # forcing guards against edge cases (e.g. single-hop output pats, ties).
-    roles = _classify_connector_roles(refs, lp_tiers)
+    roles = _classify_connector_roles(refs, lp_tiers, ir=ir)
     max_tier = max(lp_tiers.values(), default=0)
     for ref, role in roles.items():
         if role == "output" and lp_tiers.get(ref, 0) != max_tier:
@@ -603,7 +655,7 @@ def identify_main_signal_path(
         return []
 
     active_tiers = tiers or assign_tiers(ir)
-    roles = _classify_connector_roles(refs, active_tiers)
+    roles = _classify_connector_roles(refs, active_tiers, ir=ir)
 
     inputs = sorted(r for r, role in roles.items() if role == "input")
     outputs = sorted(

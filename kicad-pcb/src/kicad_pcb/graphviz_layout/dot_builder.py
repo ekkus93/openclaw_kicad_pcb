@@ -356,28 +356,18 @@ def _emit_halo_constraints(
     lines: list[str],
     halo: dict[str, str],
 ) -> None:
-    """Append rank=same and invisible-edge constraints for op-amp halo members.
+    """Append soft invisible-edge affinity constraints for op-amp halo members.
 
-    For each ``{halo_ref: anchor_ic_ref}`` pair emits:
-
-    * An invisible directed edge ``halo_ref \u2192 anchor_ic_ref
-      [style=invis, weight=10, constraint=false]`` to pull the halo member
-      toward the IC without ranking it at a different position.
-    * A ``{ rank=same; ic_id; halo_id }`` subgraph so Graphviz places both
-      in the same column.
+    For each ``{halo_ref: anchor_ic_ref}`` pair emits an invisible directed
+    edge ``halo_ref → anchor_ic_ref [style=invis, weight=6, constraint=false]``
+    to pull the halo member toward the IC without hard-locking both refs into
+    the same Graphviz column.
     """
     # Invisible pull-toward edges (constraint=false so they don't shift ranks).
     for halo_ref, anchor_ref in sorted(halo.items()):
         halo_id = _safe_id(halo_ref)
         anchor_id = _safe_id(anchor_ref)
-        lines.append(f"  {halo_id} -> {anchor_id} [style=invis, weight=10, constraint=false];")
-    # Same-rank subgraphs to co-locate each halo member with its anchor IC.
-    for halo_ref, anchor_ref in sorted(halo.items()):
-        lines.append("  {")
-        lines.append("    rank=same;")
-        lines.append(f"    {_safe_id(anchor_ref)};")
-        lines.append(f"    {_safe_id(halo_ref)};")
-        lines.append("  }")
+        lines.append(f"  {halo_id} -> {anchor_id} [style=invis, weight=6, constraint=false];")
 
 
 def _emit_decoupling_constraints(
@@ -565,7 +555,10 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     for net in signal_nets:
         pin_refs = [p.ref for p in net.pins]
         net_id = "net_" + _safe_id(net.name)
-        lines.append(f'  {net_id} [label="{net.name}", shape=ellipse, width=0.6, height=0.4];')
+        lines.append(
+            f'  {net_id} [label="{net.name}", shape=ellipse, width=0.6, '
+            "height=0.4, fixedsize=false];"
+        )
         # Sort by (tier, ref) for a stable, deterministic ordering.
         sorted_pins = sorted(pin_refs, key=lambda r: (_tiers.get(r, 0), r))
         upstream = sorted_pins[0]

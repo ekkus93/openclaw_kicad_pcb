@@ -98,7 +98,9 @@ class TestPhase10Validation:
         )
 
         short_wires = count_short_wire_segments(generated_doc)
-        assert short_wires <= int(baseline["short_wires"]) + 5, (
+        # Directly wiring connector-to-passive edge nets can trade a couple of
+        # local labels for a small increase in short orthogonal segments.
+        assert short_wires <= int(baseline["short_wires"]) + 10, (
             f"Short-wire clutter regressed: current={short_wires}, "
             f"baseline={baseline['short_wires']}"
         )

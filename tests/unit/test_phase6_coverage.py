@@ -23,7 +23,6 @@ Covers gaps not filled by test_phase4_layout.py:
 from __future__ import annotations
 
 import json
-import logging
 from argparse import Namespace
 from pathlib import Path
 from typing import cast
@@ -1176,18 +1175,15 @@ class TestSdsFallbackPolicy:
             ],
         )
 
-    def test_incomplete_roles_warns_and_falls_back_to_bfs_non_strict(
-        self,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
+    def test_incomplete_roles_raise_even_non_strict(self) -> None:
         ir = self._simple_ir()
         roles = {"J1": "input"}  # missing output role on purpose
 
-        with caplog.at_level(logging.WARNING, logger="kicad_pcb.layout"):
-            positions = compute_signal_flow_layout(ir, roles=roles)
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir, roles=roles)
 
-        assert set(positions.keys()) == {"J1", "R1", "J2"}
-        assert any("SDS fallback" in rec.message for rec in caplog.records)
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_role"] == "output"
 
     def test_incomplete_roles_raise_in_strict_mode(self) -> None:
         ir = self._simple_ir()

@@ -119,6 +119,7 @@ def make_layout_engine(
     *,
     seed: int = 7,
     cache_path: Path | None = None,
+    debug_dump_path: Path | None = None,
     tiers: dict[str, int] | None = None,
     strict: bool = False,
 ) -> LayoutEngine:
@@ -155,6 +156,7 @@ def make_layout_engine(
         dot_path=dot,
         seed=seed,
         cache_path=cache_path,
+        debug_dump_path=debug_dump_path,
         tiers=tiers,
         strict=strict,
     )
@@ -165,6 +167,7 @@ def make_layout_engine_with_ir(
     *,
     seed: int = 7,
     cache_path: Path | None = None,
+    debug_dump_path: Path | None = None,
     strict: bool = False,
 ) -> LayoutEngine:
     """Return a :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine` with pre-computed tiers.
@@ -194,6 +197,7 @@ def make_layout_engine_with_ir(
     return make_layout_engine(
         seed=seed,
         cache_path=cache_path,
+        debug_dump_path=debug_dump_path,
         tiers=precomputed_tiers,
         strict=strict,
     )

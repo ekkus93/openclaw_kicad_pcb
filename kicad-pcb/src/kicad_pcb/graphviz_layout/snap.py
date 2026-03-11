@@ -98,6 +98,7 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
@@ -530,18 +531,12 @@ def _snap_opamp_halo(
     positions: dict[str, tuple[float, float, float | None]],
     halo: Mapping[str, str],
 ) -> dict[str, tuple[float, float, float | None]]:
-    """Pull halo members that drifted from their anchor IC back into alignment.
+    """Normalize halo members into adjacent lanes around their anchor IC.
 
     After :func:`_snap_feedback_components` and other passes, a halo member
-    may have been displaced to a different x-column from its anchor IC.
-    This pass detects drift (|halo_x - anchor_x| > 1.0 mm) and moves the
-    halo member back to ``anchor_x``, distributing multiple halo members
-    alternately above and below the anchor at multiples of ``GRID_ROW_MM``:
-
-    * index 0 → ``anchor_y - GRID_ROW_MM`` (above)
-    * index 1 → ``anchor_y + GRID_ROW_MM`` (below)
-    * index 2 → ``anchor_y - 2 \u00d7 GRID_ROW_MM`` (two rows above)
-    * …
+    may have drifted too far from its anchor IC or landed in the exact same
+    x-column. This pass keeps halo members close to their anchor but places
+    them in adjacent lanes instead of returning them to the anchor x-position.
 
     Components absent from *positions* are silently skipped.
 
@@ -568,24 +563,46 @@ def _snap_opamp_halo(
         anchor_x, anchor_y, _ = result[anchor_ref]
         for i, halo_ref in enumerate(sorted(halo_refs)):
             halo_x, halo_y, halo_rot = result[halo_ref]
-            if abs(halo_x - anchor_x) <= 1.0:
-                continue  # Still in the same column; no correction needed.
+            place_left = i % 2 == 0
+            left_x = round(max(ORIGIN_X, anchor_x - _GRID_COL_MM), 2)
+            right_x = round(min(PAGE_MAX_X, anchor_x + _GRID_COL_MM), 2)
+
+            if halo_x < anchor_x - 1.0:
+                target_x = left_x
+            elif halo_x > anchor_x + 1.0 or left_x == anchor_x:
+                target_x = right_x
+            elif right_x == anchor_x:
+                target_x = left_x
+            else:
+                target_x = left_x if place_left else right_x
+
+            if abs(halo_x - target_x) <= 1.0:
+                continue
+
             # Distribute alternately above/below the anchor IC.
             level = i // 2 + 1
             sign = -1 if (i % 2 == 0) else 1  # even → above (y decreases in KiCad)
             new_y = round(anchor_y + sign * level * GRID_ROW_MM, 2)
             _log.debug(
-                "halo snap: %r drifted to x=%.2f, returning to anchor %r x=%.2f y %.2f → %.2f",
+                "halo snap: %r x=%.2f normalized near anchor %r x=%.2f target_x=%.2f y %.2f → %.2f",
                 halo_ref,
                 halo_x,
                 anchor_ref,
                 anchor_x,
+                target_x,
                 halo_y,
                 new_y,
             )
-            result[halo_ref] = (round(anchor_x, 2), new_y, halo_rot)
+            result[halo_ref] = (target_x, new_y, halo_rot)
 
     return result
+
+
+@dataclass(frozen=True, slots=True)
+class _OpAmpLocalityContext:
+    decoupling_map: Mapping[str, str]
+    halo: Mapping[str, str] | None = None
+    block_layout: BlockLayout | None = None
 
 
 def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
@@ -593,8 +610,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
     ir: CircuitIR,
     *,
     annotations: Mapping[str, _ComponentAnnotation],
-    decoupling_map: Mapping[str, str],
-    block_layout: BlockLayout | None = None,
+    context: _OpAmpLocalityContext,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply op-amp-centric neighborhood placement refinements.
 
@@ -620,8 +636,10 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
         return result
 
     role_by_ref: dict[str, BlockRole] = {}
-    if block_layout is not None:
-        role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    if context.block_layout is not None:
+        role_by_ref = {
+            ref: assignment.role for ref, assignment in context.block_layout.assignments.items()
+        }
 
     for ic_ref in ic_refs:
         if ic_ref not in result:
@@ -650,11 +668,17 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
         input_like: list[str] = []
         output_like: list[str] = []
         feedback_like: list[str] = []
+        halo_like: list[str] = []
 
         for ref in candidates:
             role = role_by_ref.get(ref)
             is_feedback = bool(annotations.get(ref) and annotations[ref].feedback)
-            is_decoupling = decoupling_map.get(ref) == ic_ref
+            is_decoupling = context.decoupling_map.get(ref) == ic_ref
+            is_halo = context.halo is not None and context.halo.get(ref) == ic_ref
+
+            if is_halo:
+                halo_like.append(ref)
+                continue
 
             if is_feedback or role == BlockRole.FEEDBACK:
                 feedback_like.append(ref)
@@ -686,7 +710,9 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
         # Keep decoupling caps above the op-amp (power-pin vicinity).
         dec_refs = sorted(
-            ref for ref, anchor in decoupling_map.items() if anchor == ic_ref and ref in result
+            ref
+            for ref, anchor in context.decoupling_map.items()
+            if anchor == ic_ref and ref in result
         )
         reserved_decoupling_y: set[float] = set()
         for idx, dec_ref in enumerate(dec_refs):
@@ -694,6 +720,27 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             dec_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
             result[dec_ref] = (round(ic_x, 2), dec_y, dec_rot)
             reserved_decoupling_y.add(dec_y)
+
+        # Keep halo members close to the op-amp but one lane off the body
+        # column so coupling/output support does not collapse back onto the IC.
+        target_halo_left_x = round(ic_x - _GRID_COL_MM, 2)
+        target_halo_right_x = round(ic_x + _GRID_COL_MM, 2)
+        for idx, ref in enumerate(sorted(halo_like)):
+            x, _y, rot = result[ref]
+            role = role_by_ref.get(ref)
+            target_x = target_halo_right_x
+            if x < ic_x - 1.0:
+                target_x = target_halo_left_x
+            elif x > ic_x + 1.0:
+                target_x = target_halo_right_x
+            elif role not in (BlockRole.OUTPUT, BlockRole.FEEDBACK):
+                target_x = target_halo_left_x if idx % 2 == 0 else target_halo_right_x
+
+            offset = idx - (len(halo_like) - 1) / 2
+            halo_y = round(ic_y + offset * GRID_ROW_MM, 2)
+            while halo_y in reserved_decoupling_y:
+                halo_y = round(halo_y + GRID_ROW_MM, 2)
+            result[ref] = (target_x, halo_y, rot)
 
         # Keep feedback parts near the op-amp but in a distinct band below
         # the IC centerline, and avoid decoupling slots.
@@ -2412,8 +2459,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         median y of its signal-net neighbours (Rule 2).
     3. :func:`_snap_feedback_components` — pull feedback passives above anchor
        IC (skipped when *feedback_refs* is empty).
-    3b. :func:`_snap_opamp_halo` — pull halo members back to their anchor
-        IC's column when they have drifted (skipped when *halo* is ``None``).
+    3b. :func:`_snap_opamp_halo` — normalize halo members into adjacent lanes
+        near their anchor IC (skipped when *halo* is ``None``).
     3c. :func:`_snap_block_zones` — bias components toward their functional
         block zones (INPUT left, OUTPUT right, POWER top; skipped when
         *block_layout* is ``None``).
@@ -2501,8 +2548,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result,
         ir,
         annotations=annotations,
-        decoupling_map=decoupling_map,
-        block_layout=block_layout,
+        context=_OpAmpLocalityContext(
+            decoupling_map=decoupling_map,
+            halo=halo,
+            block_layout=block_layout,
+        ),
     )
     result = _snap_input_stage_cohesion(result, ir, block_layout=block_layout)
     result = _snap_output_stage_cohesion(result, ir, block_layout=block_layout)

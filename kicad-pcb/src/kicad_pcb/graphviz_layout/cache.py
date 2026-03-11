@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -105,7 +106,7 @@ def _load_layout_cache(
 def _save_layout_cache(
     cache_path: Path,
     cache_key: str,
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
 ) -> None:
     """Persist *positions* to *cache_path*.
 

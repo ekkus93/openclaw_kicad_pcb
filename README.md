@@ -122,9 +122,11 @@ Default: `new-from-netlist` and `compile-netlist` use **`kicad`** (strict); `app
 ## Schematic layout engine (Graphviz)
 
 When generating schematics from a Circuit IR the tool runs a **graph layout
-engine** to place components so that signals flow left → right.  By default
-it uses [Graphviz `dot`](https://graphviz.org) for high-quality positioning;
-if Graphviz is not available it falls back to the built-in heuristic engine.
+engine** to place components so that signals flow left → right. The current
+implementation uses [Graphviz `dot`](https://graphviz.org) for schematic
+placement. There is no heuristic fallback mode documented or intended here:
+if Graphviz is unavailable, layout should be treated as unavailable rather than
+silently downgraded.
 
 ### Installing Graphviz
 
@@ -152,16 +154,12 @@ The discovery order is:
 Run `python scripts/kicad_pcb.py doctor` to see which binary is active and
 its version.
 
-### Selecting a layout engine
+### Layout mode
 
-Pass `--layout` to any generation command:
-
-| Value | Behaviour |
-|-------|-----------|
-| `auto` *(default)* | Graphviz if available, else heuristic |
-| `graphviz` | Graphviz only; error if not found |
-| `heuristic` | BFS-based layout; no external tools required |
-| `none` | No layout; symbols placed at (0, 0) |
+The README previously described heuristic and multi-engine fallback behavior.
+That was incorrect. The intended documented behavior is Graphviz-based layout;
+if Graphviz is unavailable, fix the environment or code path rather than
+falling back to a heuristic placer.
 
 ### Licensing
 

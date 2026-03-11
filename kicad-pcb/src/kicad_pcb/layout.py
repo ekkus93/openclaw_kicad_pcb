@@ -617,13 +617,11 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
          Distance Score for each component via BFS from input and output
          connectors, then assigns columns by recursively halving the
          SDS-sorted list.
-       * **BFS fallback** — used when *roles* is ``None`` or lacks a
-         required connector type.  A WARNING is logged when *roles* is
-         provided but incomplete.
+     * **BFS fallback** — used only when *roles* is ``None``.
 
-             When *strict* is ``True``, incomplete roles are treated as a
-             configuration error and raise :class:`~kicad_pcb.errors.UserError`
-             instead of falling back to BFS.
+         Incomplete connector roles are treated as a configuration error
+         and raise :class:`~kicad_pcb.errors.UserError` instead of silently
+         degrading to BFS.
 
     3. Within each column, sort components using a two-pass barycentric sweep
        (:func:`_barycentric_sort`) to reduce wire crossings: pass 1 sorts
@@ -648,27 +646,22 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
         # Fall back to the most-connected node as seed.
         seeds = [max(refs, key=lambda r: len(adjacency.get(r, set())))]
 
-    # R2-2: prefer SDS-based recursive halving when connector roles are known;
-    # fall back to BFS when roles are missing or incomplete (R2-4).
+    # R2-2: prefer SDS-based recursive halving when connector roles are known.
+    # Missing or incomplete roles are a configuration error; the old SDS→BFS
+    # degradation path has been removed.
     if roles is not None:
         input_refs = [r for r, role in roles.items() if role == "input"]
         output_refs = [r for r, role in roles.items() if role == "output"]
         if not input_refs or not output_refs:
-            if strict:
-                missing_role = "input" if not input_refs else "output"
-                raise UserError(
-                    "SDS layout requires both input and output connector roles in strict mode",
-                    code=ErrorCode.IR_SEMANTIC_INVALID,
-                    details={
-                        "missing_role": missing_role,
-                        "roles": dict(roles),
-                    },
-                )
-            _log.warning(
-                "SDS fallback: missing %s connector(s); using BFS column assignment.",
-                "input" if not input_refs else "output",
+            missing_role = "input" if not input_refs else "output"
+            raise UserError(
+                "SDS layout requires both input and output connector roles",
+                code=ErrorCode.IR_SEMANTIC_INVALID,
+                details={
+                    "missing_role": missing_role,
+                    "roles": dict(roles),
+                },
             )
-            col = _bfs_columns(refs, adjacency, seeds)
         else:
             sds_scores = compute_signal_distance_scores(ir, roles)
             col = _recursive_halving(
@@ -711,20 +704,27 @@ def compute_signal_flow_layout(  # noqa: PLR0912, PLR0915
         col[r] = min(anchor_col + 1, max_bfs_col)
     # -------------------------------------------------------------------------
 
-    # R4-2: force halo members into the same column as their anchor IC so
-    # the feedback network shares a visual column with the op-amp stage.
+    # R4-2: keep halo members adjacent to their anchor IC instead of forcing
+    # exact same-column co-location.
     if halo:
         for halo_ref, anchor_ref in halo.items():
             if halo_ref in col and anchor_ref in col:
                 old_col = col[halo_ref]
-                new_col = col[anchor_ref]
+                anchor_col = col[anchor_ref]
+                if old_col < anchor_col:
+                    new_col = max(anchor_col - 1, 0)
+                elif old_col > anchor_col or anchor_col <= 0:
+                    new_col = anchor_col + 1
+                else:
+                    new_col = anchor_col - 1
                 if old_col != new_col:
                     _log.debug(
-                        "halo: forcing %r column %d \u2192 %d (anchor %r)",
+                        "halo: softening %r column %d \u2192 %d (anchor %r col %d)",
                         halo_ref,
                         old_col,
                         new_col,
                         anchor_ref,
+                        anchor_col,
                     )
                     col[halo_ref] = new_col
 

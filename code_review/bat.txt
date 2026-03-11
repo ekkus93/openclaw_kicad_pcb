@@ -1,0 +1,58 @@
+I had Github Copilot review your CODE REVIEW6 docs. This is what it had to say:
+I've read both documents carefully. This is an excellent, well-structured review and implementation plan. ChatGPT did a thorough job analyzing the schematic quality issues and breaking down the improvement work into concrete, testable phases.
+
+Let me clarify a few key questions before we proceed:
+
+Questions for Clarification
+1. Baseline Fixture - Which Schematic?
+The TODO mentions saving "the current headphone amp generated schematic" as baseline. Should I:
+
+Look for an existing generated schematic in the repo?
+Generate a fresh one from an existing test IR/netlist?
+Or is there a specific test case you'd like me to use as the reference?
+2. Component Role/Block Information in Current IR
+The Circuit IR format shown in the README has components with ref, symbol, value, footprint. Does the current IR format already have:
+
+Any role/function hints (like "input", "feedback", "decoupling")?
+Block membership tags?
+Or is all functional classification purely heuristic based on component types and net names?
+3. Integration Point with Existing Layout Engine
+From the README and memory, the current pipeline uses:
+
+Graphviz dot for layout (with heuristic fallback)
+Tier assignment for left-to-right structure
+Some routing logic
+Should the block-aware improvements:
+
+Extend the Graphviz layout constraints?
+Add a post-Graphviz refinement pass?
+Or modify the heuristic engine primarily?
+4. Scope Priority
+The TODO has 10 phases. Are you expecting:
+
+Full implementation of all phases in sequence?
+A proof-of-concept starting with Phases 0-1?
+Or would you like me to prioritize specific phases based on impact?
+5. Visual Validation
+Since this is about readability, not just correctness, how should we handle visual validation?
+
+Screenshot-based comparison (manual review)?
+Metric-based thresholds only?
+Both?
+My Understanding (What's Clear)
+✅ Goal: Transform electrically-correct but "auto-generated looking" schematics into readable, human-drafted-style circuit diagrams
+
+✅ Approach: Heuristic improvements focused on:
+
+Functional block detection and spatial grouping
+Density/whitespace management
+Signal flow clarity (left→right)
+Op-amp-centric local organization
+Ground/power clutter reduction
+Wire simplification
+Page composition balance
+✅ Testing Strategy: Metric-based regression tests with tolerant thresholds, plus human review checklist
+
+✅ Preservation Requirement: All improvements must maintain existing correctness guarantees (syntax validity, structural lints, transactional safety)
+
+Please let me know which aspects need clarification, and I'll be ready to start implementation!
