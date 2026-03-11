@@ -117,7 +117,19 @@ _GROUND_NET_HINTS = ("GND", "0V", "AGND", "PGND", "DGND")
 _INPUT_NET_HINTS = ("IN", "INPUT", "AUDIO_IN", "LEFT_IN", "RIGHT_IN", "VOL")
 _OUTPUT_NET_HINTS = ("OUT", "OUTPUT", "HP", "HEADPHONE", "BUF")
 _FEEDBACK_NET_HINTS = ("FB", "INV", "NFB")
-_SUPPLY_NET_HINTS = ("VCC", "VDD", "V+", "VPLUS", "SUPPLY", "POWER", "VBAT")
+_SUPPLY_NET_HINTS = (
+    "VCC",
+    "VDD",
+    "V+",
+    "VPLUS",
+    "V-",
+    "VMINUS",
+    "VNEG",
+    "VEE",
+    "SUPPLY",
+    "POWER",
+    "VBAT",
+)
 _DECOUPLING_VALUE_HINTS = ("100N", "10U", "22U", "47U", "100U", "220U")
 
 
@@ -134,7 +146,7 @@ def _signal_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
     """Return component adjacency over signal nets only."""
     adjacency: dict[str, set[str]] = {component.ref: set() for component in ir.components}
     for net in ir.nets:
-        if _is_power_net(net.name) or len(net.pins) < 2:
+        if _is_supply_like_net(net.name) or len(net.pins) < 2:
             continue
         pin_refs = [pin.ref for pin in net.pins]
         for i, ref_a in enumerate(pin_refs):
@@ -171,6 +183,18 @@ def _has_any_hint(net_names: list[str], hints: tuple[str, ...]) -> bool:
     return any(hint in joined for hint in hints)
 
 
+def _is_ground_like_net(net_name: str) -> bool:
+    """Return True when *net_name* looks like a ground net."""
+    upper_name = net_name.upper()
+    return any(hint in upper_name for hint in _GROUND_NET_HINTS)
+
+
+def _is_supply_like_net(net_name: str) -> bool:
+    """Return True for power rails, including common negative-rail aliases."""
+    upper_name = net_name.upper()
+    return _is_power_net(net_name) or any(hint in upper_name for hint in _SUPPLY_NET_HINTS)
+
+
 def _is_operational_core(ref: str, symbol: str) -> bool:
     """Return True when the component is the active op-amp/gain stage."""
     if component_type(ref) == "ic":
@@ -183,24 +207,38 @@ def _is_decoupling_component(ref: str, value: str, connected_nets: list[str]) ->
     if not ref.upper().startswith("C"):
         return False
 
-    power_nets = [net for net in connected_nets if _is_power_net(net)]
-    signal_nets = [net for net in connected_nets if not _is_power_net(net)]
+    power_nets = [net for net in connected_nets if _is_supply_like_net(net)]
+    signal_nets = [net for net in connected_nets if not _is_supply_like_net(net)]
     if not power_nets:
         return False
     if not signal_nets:
         return True
 
+    upper_signal_nets = [net.upper() for net in signal_nets]
+    has_io_like_signal = any(
+        any(hint in net for hint in (*_INPUT_NET_HINTS, *_OUTPUT_NET_HINTS, *_FEEDBACK_NET_HINTS))
+        for net in upper_signal_nets
+    )
+    if has_io_like_signal:
+        return False
+
+    has_supply_like_signal = any(
+        any(hint in net for hint in (*_SUPPLY_NET_HINTS, "VREF", "BIAS", "MID"))
+        for net in upper_signal_nets
+    )
+
     upper_value = value.upper().replace(" ", "")
     if any(hint in upper_value for hint in _DECOUPLING_VALUE_HINTS):
-        return True
-    return len(signal_nets) == 1
+        return has_supply_like_signal
+    return len(signal_nets) == 1 and has_supply_like_signal
 
 
 def _is_supply_support_component(connected_nets: list[str]) -> bool:
     """Return True when the component sits directly on a non-ground supply rail."""
-    upper_nets = [net.upper() for net in connected_nets]
-    has_supply = any(any(hint in net for hint in _SUPPLY_NET_HINTS) for net in upper_nets)
-    has_ground = any(any(hint in net for hint in _GROUND_NET_HINTS) for net in upper_nets)
+    has_supply = any(
+        _is_supply_like_net(net) and not _is_ground_like_net(net) for net in connected_nets
+    )
+    has_ground = any(_is_ground_like_net(net) for net in connected_nets)
     return has_supply and not has_ground
 
 
@@ -276,7 +314,7 @@ def _classify_by_net_names(ref: str, connected_nets: list[str]) -> BlockRole | N
         return BlockRole.OUTPUT
 
     # Power entry: explicitly on power supply rail
-    if any(keyword in net_str for keyword in ("VCC", "V+", "POWER", "SUPPLY")):
+    if any(_is_supply_like_net(net) and not _is_ground_like_net(net) for net in connected_nets):
         return BlockRole.POWER_ENTRY
 
     return None
@@ -351,8 +389,8 @@ def _classify_component(
 ) -> tuple[BlockRole, str, float]:
     """Return ``(role, reason, confidence)`` for one component."""
     connected_nets = context.nets_by_ref.get(component_ref, [])
-    signal_nets = [net for net in connected_nets if not _is_power_net(net)]
-    power_nets = [net for net in connected_nets if _is_power_net(net)]
+    signal_nets = [net for net in connected_nets if not _is_supply_like_net(net)]
+    power_nets = [net for net in connected_nets if _is_supply_like_net(net)]
 
     role: BlockRole | None = None
     reason = ""

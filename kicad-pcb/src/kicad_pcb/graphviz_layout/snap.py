@@ -719,7 +719,12 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
         for idx, dec_ref in enumerate(dec_refs):
             _x, _y, dec_rot = result[dec_ref]
             dec_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
-            result[dec_ref] = (round(ic_x, 2), dec_y, dec_rot)
+            dec_x = round(ic_x, 2)
+            if idx >= 2:
+                side_step = idx - 1
+                side_sign = -1 if idx % 2 == 0 else 1
+                dec_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            result[dec_ref] = (dec_x, dec_y, dec_rot)
             reserved_decoupling_y.add(dec_y)
 
         # Keep halo members close to the op-amp but one lane off the body
@@ -752,7 +757,12 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             while fb_y in reserved_decoupling_y:
                 level += 1
                 fb_y = round(ic_y + level * GRID_ROW_MM, 2)
-            result[ref] = (round(ic_x, 2), fb_y, rot)
+            fb_x = round(ic_x, 2)
+            if idx >= 2:
+                side_step = idx - 1
+                side_sign = -1 if idx % 2 == 0 else 1
+                fb_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            result[ref] = (fb_x, fb_y, rot)
 
     return result
 
@@ -1391,11 +1401,21 @@ def _post_snap_decoupling_caps(
     cap was not returned by Graphviz because it was isolated).
     """
     result = dict(positions)
+    caps_by_ic: dict[str, list[str]] = defaultdict(list)
     for cap_ref, ic_ref in decoupling_map.items():
-        if cap_ref not in result or ic_ref not in result:
-            continue
+        if cap_ref in result and ic_ref in result:
+            caps_by_ic[ic_ref].append(cap_ref)
+
+    for ic_ref, cap_refs in caps_by_ic.items():
         ic_x, ic_y, _ = result[ic_ref]
-        result[cap_ref] = (round(ic_x, 2), round(ic_y - GRID_ROW_MM, 2), None)
+        for idx, cap_ref in enumerate(sorted(cap_refs)):
+            cap_x = round(ic_x, 2)
+            if idx >= 2:
+                side_step = idx - 1
+                side_sign = -1 if idx % 2 == 0 else 1
+                cap_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            cap_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
+            result[cap_ref] = (cap_x, cap_y, None)
     return result
 
 
