@@ -27,6 +27,8 @@ from ..sch_doc import read_lib_symbol_pins
 from ..symbol_cache import CachedSymbol, SymbolCache
 from ..symbol_index import resolve_symbol_dirs
 
+_GREP_TIMEOUT_SECONDS = 30
+
 # ---------------------------------------------------------------------------
 # Helpers for extracting individual symbol blocks from raw library text
 # ---------------------------------------------------------------------------
@@ -157,15 +159,17 @@ def _grep_matching_files(sym_dir: Path, match_kws: list[str]) -> list[Path]:
     if not all_files:
         return []
 
-    # grep pre-screen — orders of magnitude faster than Python I/O for many files
+    # grep pre-screen — orders of magnitude faster than Python I/O for many files.
+    # Search the explicit file list we already enumerated instead of asking grep
+    # to recurse the directory tree again.
     try:
         # Build a single alternation pattern so grep only runs once
         pattern = "|".join(re.escape(kw) for kw in match_kws)
         result = subprocess.run(
-            ["grep", "-ril", "--include=*.kicad_sym", "-E", pattern, str(sym_dir)],
+            ["grep", "-liE", pattern, *(str(path) for path in sorted(all_files))],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=_GREP_TIMEOUT_SECONDS,
             check=False,
         )
         if result.returncode in (0, 1):  # 0 = found, 1 = no match
@@ -185,7 +189,7 @@ def _grep_matching_files(sym_dir: Path, match_kws: list[str]) -> list[Path]:
             code=ErrorCode.IO_ERROR,
             details={
                 "path": str(sym_dir),
-                "timeout_seconds": 10,
+                "timeout_seconds": _GREP_TIMEOUT_SECONDS,
             },
         ) from exc
     except OSError as exc:

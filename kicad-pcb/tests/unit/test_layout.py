@@ -16,15 +16,14 @@ Rule 2 tests verify _recursive_halving() and compute_signal_flow_layout(roles=..
   * Small circuit fits in one column
   * Degenerate SDS=0.5 for all → no crash
   * Roles trigger SDS-based column assignment in full layout
-  * Missing output connector → WARNING + BFS fallback
+    * Missing output connector → fail-fast UserError
 """
 
 from __future__ import annotations
 
-import logging
-
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.layout import (
     _MAX_COLS,
     GRID_COL_MM,
@@ -654,8 +653,8 @@ class TestComputeSignalFlowLayoutWithRoles:
         x_j2, _ = positions["J2"]
         assert x_j1 <= x_u1 <= x_j2, f"Expected x(J1)={x_j1} ≤ x(U1)={x_u1} ≤ x(J2)={x_j2}"
 
-    def test_fallback_warning_without_output_connector(self, caplog: pytest.LogCaptureFixture):
-        """Missing output connector in roles → WARNING logged, layout still produced."""
+    def test_missing_output_connector_raises_without_fallback(self) -> None:
+        """Missing output connector in roles must fail instead of degrading to BFS."""
         ir = _make_ir(
             [
                 ("J1", "Connector", "J1"),
@@ -665,11 +664,33 @@ class TestComputeSignalFlowLayoutWithRoles:
         )
         roles = {"J1": "input"}  # no "output" connector
 
-        with caplog.at_level(logging.WARNING, logger="kicad_pcb.layout"):
-            positions = compute_signal_flow_layout(ir, roles=roles)
+        with pytest.raises(UserError) as exc_info:
+            compute_signal_flow_layout(ir, roles=roles)
 
-        assert any("SDS fallback" in rec.message for rec in caplog.records)
-        assert set(positions.keys()) == {"J1", "R1"}
+        assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+        assert exc_info.value.details["missing_role"] == "output"
+
+    def test_halo_members_are_placed_adjacent_not_same_column(self) -> None:
+        """Halo refs should stay near the anchor IC without sharing its exact x-column."""
+        ir = _make_ir(
+            [
+                ("J1", "Connector", "J1"),
+                ("R_FB", "Device:R", "100k"),
+                ("U1", "Amplifier_Operational:TL071", "TL071"),
+                ("J2", "Connector", "J2"),
+            ],
+            [
+                ("N_in", [("J1", "1"), ("U1", "1")]),
+                ("N_fb", [("R_FB", "1"), ("U1", "2")]),
+                ("N_out", [("U1", "3"), ("J2", "1")]),
+            ],
+        )
+        roles = {"J1": "input", "J2": "output"}
+
+        positions = compute_signal_flow_layout(ir, halo={"R_FB": "U1"}, roles=roles)
+
+        assert positions["R_FB"][0] != positions["U1"][0]
+        assert abs(positions["R_FB"][0] - positions["U1"][0]) == pytest.approx(GRID_COL_MM)
 
 
 # ---------------------------------------------------------------------------

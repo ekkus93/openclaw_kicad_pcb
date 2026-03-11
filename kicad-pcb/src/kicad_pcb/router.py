@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from .circuit_ir import CircuitIR, PinRefIR
     from .sch_doc import SchematicDoc
 
+from .component_types import component_type as _component_type
 from .component_types import is_power_net as _is_power_net_name
 from .errors import ErrorCode, UserError
 
@@ -349,6 +350,17 @@ def _stub_end(wx: float, wy: float, wa: float) -> tuple[float, float]:
 
 def _manhattan(x1: float, y1: float, x2: float, y2: float) -> float:
     return abs(x2 - x1) + abs(y2 - y1)
+
+
+def _is_connector_passive_edge(ref_a: str, ref_b: str) -> bool:
+    """Return True for simple connector-to-passive edge links.
+
+    These 2-pin nets are typically the small input/output links at the circuit
+    boundary. Keep them directly wired even if later tier inference stretches
+    the passive further into the signal path.
+    """
+    pair = {_component_type(ref_a), _component_type(ref_b)}
+    return pair == {"connector", "passive"}
 
 
 def _l_route(ex1: float, ey1: float, ex2: float, ey2: float) -> list[WireSegment]:
@@ -740,14 +752,17 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             p1, (wx1, wy1, wa1) = known[1]
             ex0, ey0 = _stub_end(wx0, wy0, wa0)
             ex1, ey1 = _stub_end(wx1, wy1, wa1)
+            manhattan = _manhattan(ex0, ey0, ex1, ey1)
             if tiers is not None:
                 # Rule §4: tier distance ≤ 1 guards signal-flow adjacency;
                 # manhattan cap (MAX_DIRECT_DIST_MM) guards physical wire length,
                 # matching the behaviour of the non-tier path.
                 tdist = _tier_distance(p0.ref, p1.ref, tiers)
-                can_direct = tdist <= 1 and _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM
+                can_direct = manhattan <= MAX_DIRECT_DIST_MM and (
+                    tdist <= 1 or _is_connector_passive_edge(p0.ref, p1.ref)
+                )
             else:
-                can_direct = _manhattan(ex0, ey0, ex1, ey1) <= MAX_DIRECT_DIST_MM
+                can_direct = manhattan <= MAX_DIRECT_DIST_MM
             if can_direct:
                 routing.wires.append(WireSegment(wx0, wy0, ex0, ey0))
                 routing.wires.append(WireSegment(wx1, wy1, ex1, ey1))

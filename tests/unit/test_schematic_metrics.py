@@ -11,9 +11,12 @@ from kicad_pcb.lint import LINT_SUGGESTIONS
 from kicad_pcb.lint.sch import LintIssue, lint_layout_composition, lint_layout_crowding
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
+    compute_block_role_spread,
     compute_local_density,
     count_distinct_x_columns,
     count_global_labels,
+    count_non_power_symbols_in_same_x_column_as,
+    count_refs_in_same_x_column_as,
     detect_dense_clusters,
     run_layout_lints,
     wire_stub_ratio,
@@ -197,6 +200,75 @@ class TestCountGlobalLabels:
         doc = _doc(body)
         assert count_global_labels(doc, text="GND") == 0
         assert count_global_labels(doc, text="gnd") == 1
+
+
+# ---------------------------------------------------------------------------
+# TestAnchorColumnCrowdingMetrics
+# ---------------------------------------------------------------------------
+
+
+class TestAnchorColumnCrowdingMetrics:
+    def test_count_refs_in_same_x_column_as_anchor(self) -> None:
+        body = " ".join(
+            [
+                _make_symbol("U1", 100.0, 50.0),
+                _make_symbol("R1", 100.0, 70.0),
+                _make_symbol("R2", 100.4, 90.0),
+                _make_symbol("R3", 101.0, 110.0),
+                _make_symbol("C1", 130.0, 60.0),
+            ]
+        )
+        doc = _doc(body)
+
+        assert count_refs_in_same_x_column_as(doc, "U1", tolerance_mm=0.5) == 2
+        assert (
+            count_refs_in_same_x_column_as(
+                doc,
+                "U1",
+                tolerance_mm=0.5,
+                include_anchor=True,
+            )
+            == 3
+        )
+
+    def test_count_refs_in_same_x_column_with_ref_filter(self) -> None:
+        body = " ".join(
+            [
+                _make_symbol("U1", 100.0, 50.0),
+                _make_symbol("R1", 100.0, 70.0),
+                _make_symbol("R2", 100.4, 90.0),
+                _make_symbol("C1", 100.2, 30.0),
+            ]
+        )
+        doc = _doc(body)
+
+        assert (
+            count_refs_in_same_x_column_as(
+                doc,
+                "U1",
+                tolerance_mm=0.5,
+                refs={"R1", "C1"},
+            )
+            == 2
+        )
+
+    def test_non_power_variant_excludes_power_symbols(self) -> None:
+        body = " ".join(
+            [
+                _make_symbol("U1", 100.0, 50.0),
+                _make_symbol("R1", 100.0, 70.0),
+                _make_symbol("#PWR01", 100.0, 30.0),
+            ]
+        )
+        doc = _doc(body)
+
+        assert count_refs_in_same_x_column_as(doc, "U1", tolerance_mm=0.5) == 2
+        assert count_non_power_symbols_in_same_x_column_as(doc, "U1", tolerance_mm=0.5) == 1
+
+    def test_missing_anchor_ref_raises_value_error(self) -> None:
+        doc = _doc(_make_symbol("R1", 10.0, 10.0))
+        with pytest.raises(ValueError, match="Anchor ref not found"):
+            count_refs_in_same_x_column_as(doc, "U1")
 
 
 # ---------------------------------------------------------------------------
@@ -485,6 +557,34 @@ class TestDetectDenseClusters:
         # First cluster should have highest neighbor count
         if len(clusters) > 1:
             assert clusters[0][2] >= clusters[1][2], "Clusters not sorted by density"
+
+
+# ---------------------------------------------------------------------------
+# TestComputeBlockRoleSpread
+# ---------------------------------------------------------------------------
+
+
+class TestComputeBlockRoleSpread:
+    def test_returns_serializable_spread_by_role(self) -> None:
+        block_layout = BlockLayout()
+        block_layout.add_assignment("J1", BlockRole.INPUT)
+        block_layout.add_assignment("R1", BlockRole.INPUT)
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+
+        positions = {
+            "J1": (10.0, 20.0, 0.0),
+            "R1": (20.0, 20.0, 0.0),
+            "U1": (50.0, 40.0, 0.0),
+        }
+
+        spread = compute_block_role_spread(positions, block_layout, tolerance_mm=0.5)
+
+        assert spread["input"]["count"] == 2
+        assert spread["input"]["column_count"] == 2
+        assert spread["input"]["width_mm"] == pytest.approx(10.0)
+        assert spread["input"]["height_mm"] == pytest.approx(0.0)
+        assert spread["opamp_core"]["count"] == 1
+        assert spread["opamp_core"]["width_mm"] == pytest.approx(0.0)
 
 
 # ---------------------------------------------------------------------------

@@ -130,6 +130,34 @@ class TestClassifyConnectorRoles:
         assert roles.get("J3") == "output", f"J3 roles: {roles}"
         assert roles.get("J2") == "unknown", f"J2 roles: {roles}"
 
+    def test_ir_hints_classify_output_and_power_connectors(self) -> None:
+        """IR metadata should upgrade obvious output and power connectors."""
+        ir = _make_ir(
+            components=[
+                ("J1", "Connector:AudioJack3", "3.5mm TRS IN"),
+                ("J2", "Connector:AudioJack3", "3.5mm TRS OUT"),
+                ("J3", "Connector_Generic:Conn_01x03", "+15V / 0V / -15V"),
+                ("U1", "Amplifier_Operational:NE5532", "NE5532"),
+                ("R1", "R", "10k"),
+                ("C1", "C", "10u"),
+            ],
+            nets=[
+                ("LEFT_IN", [("J1", "T"), ("R1", "1")]),
+                ("MID", [("R1", "2"), ("U1", "3")]),
+                ("HP_L_OUT", [("U1", "1"), ("C1", "1"), ("J2", "T")]),
+                ("0V", [("J1", "S"), ("J2", "S"), ("J3", "2"), ("C1", "2")]),
+                ("VPLUS15", [("J3", "1"), ("U1", "8")]),
+                ("VMINUS15", [("J3", "3"), ("U1", "4")]),
+            ],
+        )
+
+        tiers = assign_tiers(ir)
+        roles = classify_connector_roles(list(tiers.keys()), tiers, ir=ir)
+
+        assert roles.get("J1") == "input", f"Expected J1=input, got {roles}"
+        assert roles.get("J2") == "output", f"Expected J2=output, got {roles}"
+        assert roles.get("J3") == "power", f"Expected J3=power, got {roles}"
+
 
 # ---------------------------------------------------------------------------
 # Tests: assign_tiers (Rule 0 tier-forcing)

@@ -1,5 +1,100 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-11T08:29:05Z - GPT-5.4 - Repo-wide Ruff and mypy cleanup completed without suppressions
+
+- Fixed the repo-wide Ruff and mypy failures by tightening Graphviz layout/cache helper types to accept `Mapping[...]`, annotating the oriented layout result with the wider rotation type, and simplifying two branch/argument-count lint hits in `layout.py`, `graphviz_layout/snap.py`, and `schematic_metrics.py` without adding suppressions.
+- `graphviz_layout/snap.py` now uses an internal `_OpAmpLocalityContext` for the post-remediation locality pass, which resolved the lint complaint while keeping the same behavior and required updating the Phase 4 locality test.
+- Cleaned the remaining lint issues in tests and review artifacts: removed unused imports, repaired the Phase 4 crossing fixture after an intermediate malformed edit, wrapped long test/review lines, and let Ruff re-sort the remaining import blocks.
+- Validation passed cleanly: `ruff check .`, `mypy kicad-pcb/src`, and full `pytest -q`.
+
+## 2026-03-11T07:03:02Z - GPT-5.4 - Phase 4 fixed connector roles for the canonical NE5532 fixture
+
+- Phase 4 root cause was that `classify_connector_roles(...)` in `kicad-pcb/src/kicad_pcb/tier.py` only used tier position, so the canonical fixture left `J2` and `J3` ambiguous even though the IR clearly identified an audio output jack and a power connector.
+- Fixed by adding optional IR-aware connector-role inference in `tier.py`: topology still provides the default role, but connector metadata / net-name hints now upgrade obvious `input`, `output`, and `power` connectors. The canonical fixture now classifies `J1=input`, `J2=output`, `J3=power` without altering the existing tier graph.
+- Also fixed a cache-miss-only Graphviz issue exposed by the new connector-role cache key: net nodes in `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` now set `fixedsize=false`, avoiding warning-driven `dot` failures on long net labels.
+- Validation passed: `pytest kicad-pcb/tests/unit/test_tier.py tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py tests/unit/test_phase4_layout.py -k 'connector or phase1 or build_dot_source_uses_soft_halo_affinity_without_rank_same'`.
+
+## 2026-03-11T07:47:06Z - GPT-5.4 - Full-suite regressions fixed after Phase 4 work
+
+- `kicad-pcb/src/kicad_pcb/commands/search.py`: `_grep_matching_files(...)` was timing out on KiCad system symbol trees because it re-recursed the directory with `grep` after already enumerating `*.kicad_sym` files. Fixed by grepping the explicit file list and raising the timeout budget to 30s while preserving fail-fast `UserError` behavior.
+- `kicad-pcb/src/kicad_pcb/router.py`: Phase 6 headphone-amp regression came from tier-gated 2-pin routing. Simple connector-to-passive edge nets (`IN_R`, `OUT_L`) were falling back to local labels when tier inference stretched the passive deeper into the path. Fixed by preserving direct wiring for short connector-to-passive 2-pin links even when tier distance > 1.
+- `tests/unit/test_phase10_validation.py`: the direct-wire change legitimately increased short orthogonal segments in the readability fixture while removing local labels, so the short-wire tolerance was widened from `baseline + 5` to `baseline + 10` without relaxing the other readability guards.
+- Validation passed: targeted failing tests passed, and full `pytest -q` completed cleanly to 100%.
+
+## 2026-03-11T06:46:54Z - GPT-5.4 - Phase 2 halo collapse was being reintroduced by opamp locality
+
+- Phase 2 same-column halo forcing fix required more than soft DOT and early halo-snap changes: the later `_snap_opamp_locality()` pass in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` was still resetting halo members onto `ic_x`.
+- Added explicit `halo` handling to `_snap_opamp_locality()` so op-amp halo members stay one adjacent lane off the IC body column instead of collapsing back onto it.
+- Added targeted unit coverage in `tests/unit/test_phase4_layout.py` and revalidated the canonical NE5532 regression fixture; `pytest kicad-pcb/tests/unit/test_layout.py tests/unit/test_phase4_layout.py -k 'halo or opamp_locality_keeps_halo_members_off_ic_column'` and `pytest tests/integration/test_phase1_regression_path.py` both passed.
+
+## 2026-03-11T06:22:31Z - GPT-5.4 - Memory headings should include Copilot model
+
+- Updated `.github/copilot-instructions.md` so the `## Memory file` section now requires each `memory.md` entry heading to include the GitHub Copilot model used, alongside the ISO timestamp.
+- Example heading format is now `## <timestamp> - GPT-5.4 - <summary>`.
+
+## 2026-03-11T06:14:51Z - Removed SDS-to-BFS degradation from legacy layout path
+
+- Deleted the warning-plus-BFS degradation branch from `kicad-pcb/src/kicad_pcb/layout.py` `compute_signal_flow_layout(...)` when connector roles are incomplete.
+- Incomplete roles now always raise `UserError(IR_SEMANTIC_INVALID)` instead of silently degrading, regardless of `strict`.
+- Updated coverage in:
+  - `kicad-pcb/tests/unit/test_layout.py`
+  - `tests/unit/test_phase6_coverage.py`
+  - `code_review/FALLBACKS.md`
+- Validation passed:
+  - `pytest -q kicad-pcb/tests/unit/test_layout.py tests/unit/test_phase6_coverage.py`
+  - `pytest -q tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py tests/integration/test_phase9_integration.py`
+- Remaining canonical-fixture issue is now isolated to connector-role detection, not silent fallback behavior: the NE5532 fixture still classifies `J1=input`, `J2=unknown`, `J3=unknown`, and no `output` connector.
+
+## 2026-03-11T06:07:20Z - CODE_REVIEW7 Phase 1 regression path confirmed
+
+- Added a production-path layout debug dump behind an explicit engine flag (`debug_dump_path`) in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` and threaded it through `kicad-pcb/src/kicad_pcb/layout_engine.py`.
+- The debug artifact records the Phase 1 data requested in CODE_REVIEW7: tiers, connector roles, SDS columns/scores, halo map, decoupling map, DOT source, raw Graphviz positions, post-snap positions, and final oriented positions.
+- Added tests:
+  - `tests/unit/test_phase1_regression_path.py` validates dump wiring without needing real Graphviz.
+  - `tests/integration/test_phase1_regression_path.py` exercises the regressed NE5532 fixture with the live Graphviz engine.
+- Confirmed regression-path facts from the live NE5532 fixture dump:
+  - connector roles are incomplete: `J1=input`, `J2=unknown`, `J3=unknown`, no connector classified as `output`
+  - the legacy SDS path would therefore degrade to BFS fallback for this fixture
+  - U1's post-snap column contains 9 non-power refs
+  - the explicit halo map contributes `C6 -> U1` and `R2 -> U1`, both already same-column at raw Graphviz time
+- Validation passed:
+  - `pytest -q tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py`
+  - `pytest -q tests/unit/test_phase0_regression.py tests/integration/test_phase9_integration.py`
+
+## 2026-03-11T05:54:34Z - CODE_REVIEW7 Phase 0 regression fixture captured
+
+- Added Phase 0 regression fixture directory: `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/`.
+- Source artifact came from session `ne5532_headphone_amp_fa070cbe`:
+  - managed schematic copied from `NE5532_Headphone_Amp_Left/OpenClaw_Managed.kicad_sch`
+  - source netlist copied from `ne5532_headphone_amp_netlist.json`
+  - preview copied from `schematic_preview.svg/NE5532_Headphone_Amp_Left-OpenClaw_Managed.svg`
+- Added new metrics in `kicad-pcb/src/kicad_pcb/schematic_metrics.py`:
+  - `count_refs_in_same_x_column_as(...)`
+  - `count_non_power_symbols_in_same_x_column_as(...)`
+  - `compute_block_role_spread(...)`
+- Captured regression snapshot metrics for the latest bad NE5532 left-channel layout:
+  - `u1_same_column_non_power = 9`
+  - `u1_same_column_feedback_support = 5`
+  - strong single-column collapse at `x = 173.99 mm` for U1 plus multiple nearby passives/support parts
+- Added tests:
+  - new unit coverage in `tests/unit/test_schematic_metrics.py`
+  - fixture snapshot regression test in `tests/unit/test_phase0_regression.py`
+- Validation passed: `pytest -q tests/unit/test_schematic_metrics.py tests/unit/test_phase0_regression.py`
+
+## 2026-03-11T05:40:31Z - README corrected to remove heuristic-fallback claims
+
+- User clarified that heuristic layout fallback is incorrect and should not be documented as valid behavior.
+- Updated `README.md` so the Graphviz layout section now states Graphviz-only intended behavior and explicitly removes heuristic/multi-engine fallback language.
+- Going forward, if code investigation or edits reveal heuristic fallback behavior, surface it explicitly so it can be removed rather than preserved.
+
+## 2026-03-11T05:35:12Z - Refreshed repo context from README and memory
+
+- Repository purpose reaffirmed: OpenClaw KiCad PCB automation skill centered on AST-based KiCad schematic/PCB editing, transactional writes, structural linting, and deterministic Circuit IR -> schematic compilation.
+- Primary workflow remains `new-from-netlist` / `apply-netlist` over Circuit IR JSON, with ownership markers guarding managed schematic regions and `kicad-cli` validation used in strict `kicad` mode.
+- Layout model in README still documents Graphviz `dot` as the preferred engine with heuristic fallback when unavailable, but recent work in memory has focused on improving human-readable Graphviz output rather than router correctness.
+- Latest verified implementation state from memory: Phase 10 of CODE_REVIEW6 was completed on 2026-03-10 with new validation tests and full `ruff check .`, `mypy kicad-pcb/src`, and `pytest -q` passing; worktree was noted as ready to commit/push.
+- Current likely next area, based on attached review docs in context, is CODE_REVIEW7 layout-regression investigation around excessive op-amp-column stacking, over-aggressive halo constraints, and stronger block-aware placement diagnostics.
+
 ## 2026-03-10T21:54:43Z - Phase 10 changes prepared for commit/push
 
 - Working tree includes Phase 10 completion updates in `code_review/CODE_REVIEW6_TODO.md`, new integration tests in `tests/unit/test_phase10_validation.py`, and a new human-review checklist artifact in `tests/fixtures/readability/ne5532_headphone_amp_left_current/PHASE10_HUMAN_REVIEW_CHECKLIST.md`.

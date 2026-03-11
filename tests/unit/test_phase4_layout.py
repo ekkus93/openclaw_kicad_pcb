@@ -46,7 +46,10 @@ from kicad_pcb.graphviz_layout.snap import (
     PAGE_MAX_Y,
     _center_ics_in_columns,
     _clamp_to_page,
+    _OpAmpLocalityContext,
     _remediate_crossings,
+    _snap_opamp_halo,
+    _snap_opamp_locality,
     _spread_x_columns,
 )
 from kicad_pcb.layout import (
@@ -3069,6 +3072,107 @@ class TestApplyPostLayoutSnaps:
             )
         assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
 
+    def test_same_column_halo_members_move_to_adjacent_lanes(self) -> None:
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "C6": (100.0, 120.0, None),
+            "R2": (100.0, 130.0, None),
+        }
+
+        result = _snap_opamp_halo(positions, {"C6": "U1", "R2": "U1"})
+
+        assert result["C6"][0] == pytest.approx(100.0 - GRID_COL_MM)
+        assert result["R2"][0] == pytest.approx(100.0 + GRID_COL_MM)
+        assert result["C6"][1] == pytest.approx(100.0 - _gv_mod.GRID_ROW_MM)
+        assert result["R2"][1] == pytest.approx(100.0 + _gv_mod.GRID_ROW_MM)
+
+    def test_build_dot_source_uses_soft_halo_affinity_without_rank_same(self) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+                ComponentIR(ref="R_FB", symbol="Device:R", value="100k"),
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="OUT"),
+            ],
+            nets=[
+                NetIR(
+                    name="N_IN",
+                    pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="U1", pin="1")],
+                ),
+                NetIR(
+                    name="N_FB",
+                    pins=[PinRefIR(ref="R_FB", pin="1"), PinRefIR(ref="U1", pin="2")],
+                ),
+                NetIR(
+                    name="N_OUT",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="J2", pin="1")],
+                ),
+            ],
+        )
+
+        dot_source = _gv_mod.build_dot_source(
+            ir,
+            tiers={"J1": 0, "R_FB": 1, "U1": 2, "J2": 3},
+            connector_roles={"J1": "input", "J2": "output"},
+            halo={"R_FB": "U1"},
+        )
+
+        assert "R_FB -> U1 [style=invis, weight=6, constraint=false];" in dot_source
+        assert "rank=same;\n    U1;\n    R_FB;" not in dot_source
+
+    def test_opamp_locality_keeps_halo_members_off_ic_column(self) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="R2", symbol="Device:R", value="47k"),
+                ComponentIR(ref="C6", symbol="Device:C", value="10u"),
+            ],
+            nets=[
+                NetIR(
+                    name="INV",
+                    pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="R2", pin="1")],
+                ),
+                NetIR(
+                    name="OUT",
+                    pins=[
+                        PinRefIR(ref="U1", pin="6"),
+                        PinRefIR(ref="R2", pin="2"),
+                        PinRefIR(ref="C6", pin="1"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("R2", BlockRole.FEEDBACK)
+        block_layout.add_assignment("C6", BlockRole.OUTPUT)
+
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "R2": (100.0, 115.0, None),
+            "C6": (100.0, 125.0, None),
+        }
+
+        result = _snap_opamp_locality(
+            positions,
+            ir,
+            annotations={"R2": ComponentAnnotation(feedback=True)},
+            context=_OpAmpLocalityContext(
+                decoupling_map={},
+                halo={"R2": "U1", "C6": "U1"},
+                block_layout=block_layout,
+            ),
+        )
+
+        ux, _uy, _ = result["U1"]
+        assert result["R2"][0] == pytest.approx(ux + GRID_COL_MM)
+        assert result["C6"][0] == pytest.approx(ux + GRID_COL_MM)
+        assert result["R2"][0] != pytest.approx(ux)
+        assert result["C6"][0] != pytest.approx(ux)
+
     def test_opamp_local_rules_input_output_feedback_decoupling(self) -> None:
         """Phase 4.1: op-amp neighborhood should stage local roles clearly."""
         ir = CircuitIR(
@@ -4201,6 +4305,25 @@ class TestPhase8WireRouting:
         routing_far = route_nets(ir=ir_far, pin_endpoints=endpoints_far, tiers=tiers_far)
         assert len(routing_far.labels) == 2, (
             f"Non-adjacent tier net must have 2 per-pin labels; got {routing_far.labels}"
+        )
+
+    def test_connector_to_passive_edge_net_can_still_route_directly(self) -> None:
+        """Connector-to-passive 2-pin edge links stay directly wired despite tier drift."""
+        ir = _make_ir(
+            [("J1", "Connector"), ("R1", "Device:R")],
+            [("EDGE", [("J1", "1"), ("R1", "1")])],
+        )
+        tiers = {"J1": 0, "R1": 4}
+        pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+            ("J1", "1"): (35.56, 119.38, 0.0),
+            ("R1", "1"): (116.84, 119.38, 0.0),
+        }
+
+        routing = route_nets(ir=ir, pin_endpoints=pin_endpoints, tiers=tiers)
+
+        assert routing.labels == [], (
+            "Short connector-to-passive edge nets should remain directly wired "
+            "even when tier inference places the passive deeper in the path"
         )
 
     def test_long_wire_adjacent_tier_gets_label(self) -> None:

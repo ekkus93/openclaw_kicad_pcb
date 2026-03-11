@@ -38,8 +38,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from kicad_pcb.block_detection import BlockLayout, BlockRole
+
 if TYPE_CHECKING:
-    from kicad_pcb.block_detection import BlockLayout, BlockRole
     from kicad_pcb.sch_doc import SchematicDoc
 
 from kicad_pcb.lint.helpers import _collect_wire_segments
@@ -50,16 +51,44 @@ from kicad_pcb.sexpr.utils import walk
 __all__ = [
     "average_symbol_spacing",
     "compute_block_separation",
+    "compute_block_role_spread",
     "compute_local_density",
     "count_distinct_x_columns",
     "count_global_labels",
+    "count_non_power_symbols_in_same_x_column_as",
     "count_power_symbols",
+    "count_refs_in_same_x_column_as",
     "count_short_wire_segments",
     "detect_dense_clusters",
     "page_region_density",
     "run_layout_lints",
     "wire_stub_ratio",
 ]
+
+
+def _symbol_ref_positions(
+    doc: SchematicDoc,
+    *,
+    exclude_power_symbols: bool = False,
+) -> dict[str, tuple[float, float]]:
+    """Return a mapping of symbol ref to (x, y) position.
+
+    Power symbols can be excluded because they often share crowded support
+    lanes and would distort readability metrics aimed at placed components.
+    """
+    positions: dict[str, tuple[float, float]] = {}
+    for sym in doc.list_symbols():
+        ref_raw = sym.get("ref")
+        x_raw = sym.get("x")
+        y_raw = sym.get("y")
+        if not isinstance(ref_raw, str):
+            continue
+        if exclude_power_symbols and ref_raw.startswith("#PWR"):
+            continue
+        if not isinstance(x_raw, (float, int)) or not isinstance(y_raw, (float, int)):
+            continue
+        positions[ref_raw] = (float(x_raw), float(y_raw))
+    return positions
 
 
 def count_distinct_x_columns(
@@ -98,6 +127,57 @@ def count_distinct_x_columns(
         x = float(sym["x"])  # type: ignore[arg-type]
         buckets.add(int(x / tolerance_mm))
     return len(buckets)
+
+
+def count_refs_in_same_x_column_as(
+    doc: SchematicDoc,
+    anchor_ref: str,
+    *,
+    tolerance_mm: float = 0.5,
+    refs: set[str] | None = None,
+    include_anchor: bool = False,
+) -> int:
+    """Count refs whose x-position falls in the same visual column as anchor_ref.
+
+    This is useful for detecting layout collapse around an anchor component,
+    such as too many passives sharing the op-amp column.
+    """
+    positions = _symbol_ref_positions(doc)
+    if anchor_ref not in positions:
+        msg = f"Anchor ref not found in schematic: {anchor_ref}"
+        raise ValueError(msg)
+
+    anchor_x, _anchor_y = positions[anchor_ref]
+    count = 0
+    for ref, (x, _y) in positions.items():
+        if refs is not None and ref not in refs:
+            continue
+        if ref == anchor_ref and not include_anchor:
+            continue
+        if abs(x - anchor_x) <= tolerance_mm:
+            count += 1
+    return count
+
+
+def count_non_power_symbols_in_same_x_column_as(
+    doc: SchematicDoc,
+    anchor_ref: str,
+    *,
+    tolerance_mm: float = 0.5,
+    include_anchor: bool = False,
+) -> int:
+    """Count non-power symbols sharing the anchor component's x column."""
+    positions = _symbol_ref_positions(doc, exclude_power_symbols=True)
+    if anchor_ref not in positions:
+        msg = f"Anchor ref not found in schematic: {anchor_ref}"
+        raise ValueError(msg)
+
+    anchor_x, _anchor_y = positions[anchor_ref]
+    return sum(
+        1
+        for ref, (x, _y) in positions.items()
+        if (include_anchor or ref != anchor_ref) and abs(x - anchor_x) <= tolerance_mm
+    )
 
 
 def count_global_labels(
@@ -535,3 +615,40 @@ def compute_block_separation(
                 separations[(role_b, role_a)] = min_dist
 
     return separations
+
+
+def compute_block_role_spread(
+    positions: dict[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+    *,
+    tolerance_mm: float = 0.5,
+) -> dict[str, dict[str, float | int]]:
+    """Summarize x/y spread metrics for each functional block role.
+
+    Returns JSON-serializable per-role stats so regression fixtures can track
+    whether a role has collapsed into a narrow column or drifted across the page.
+    """
+    by_role: dict[BlockRole, list[tuple[float, float]]] = {}
+    for ref, assignment in block_layout.assignments.items():
+        if ref not in positions:
+            continue
+        x, y, _rot = positions[ref]
+        by_role.setdefault(assignment.role, []).append((x, y))
+
+    spread: dict[str, dict[str, float | int]] = {}
+    for role, role_positions in by_role.items():
+        xs = [x for x, _y in role_positions]
+        ys = [y for _x, y in role_positions]
+        column_count = len({int(x / tolerance_mm) for x in xs}) if xs else 0
+        spread[role.value] = {
+            "count": len(role_positions),
+            "column_count": column_count,
+            "min_x": min(xs),
+            "max_x": max(xs),
+            "width_mm": max(xs) - min(xs),
+            "min_y": min(ys),
+            "max_y": max(ys),
+            "height_mm": max(ys) - min(ys),
+        }
+
+    return spread
