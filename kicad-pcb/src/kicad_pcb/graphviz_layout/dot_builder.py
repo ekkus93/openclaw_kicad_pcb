@@ -432,6 +432,78 @@ def _emit_connector_rank_constraints(
         lines.append("  }")
 
 
+def _emit_block_zone_constraints(lines: list[str], block_layout: BlockLayout) -> None:
+    """Append soft block-anchor constraints to bias left/center/right zones.
+
+    Uses invisible anchor nodes and weighted invisible edges so Graphviz
+    prefers a left-to-right block order without hard-locking every component
+    into the same rank or exact column.
+    """
+    input_refs = sorted(
+        ref
+        for ref, assignment in block_layout.assignments.items()
+        if assignment.role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+    )
+    core_refs = sorted(
+        ref
+        for ref, assignment in block_layout.assignments.items()
+        if assignment.role in {BlockRole.OPAMP_CORE, BlockRole.FEEDBACK}
+    )
+    output_refs = sorted(
+        ref
+        for ref, assignment in block_layout.assignments.items()
+        if assignment.role == BlockRole.OUTPUT
+    )
+    power_refs = sorted(
+        ref
+        for ref, assignment in block_layout.assignments.items()
+        if assignment.role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}
+    )
+    if not any((input_refs, core_refs, output_refs, power_refs)):
+        return
+
+    input_anchor = "__blk_input__"
+    core_anchor = "__blk_core__"
+    output_anchor = "__blk_output__"
+    power_anchor = "__blk_power__"
+
+    for anchor in (input_anchor, core_anchor, output_anchor, power_anchor):
+        lines.append(f'  {anchor} [label="", shape=point, width=0, height=0, style=invis];')
+
+    if input_refs:
+        lines.append("  {")
+        lines.append("    rank=source;")
+        lines.append(f"    {input_anchor};")
+        lines.append("  }")
+    if output_refs:
+        lines.append("  {")
+        lines.append("    rank=sink;")
+        lines.append(f"    {output_anchor};")
+        lines.append("  }")
+
+    lines.append(f"  {input_anchor} -> {core_anchor} [style=invis, weight=30];")
+    lines.append(f"  {core_anchor} -> {output_anchor} [style=invis, weight=30];")
+
+    for ref in input_refs:
+        safe = _safe_id(ref)
+        lines.append(f"  {input_anchor} -> {safe} [style=invis, weight=12];")
+        lines.append(f"  {safe} -> {core_anchor} [style=invis, weight=8];")
+
+    for ref in core_refs:
+        safe = _safe_id(ref)
+        lines.append(f"  {input_anchor} -> {safe} [style=invis, weight=6];")
+        lines.append(f"  {safe} -> {output_anchor} [style=invis, weight=6];")
+
+    for ref in output_refs:
+        safe = _safe_id(ref)
+        lines.append(f"  {core_anchor} -> {safe} [style=invis, weight=12];")
+
+    lines.append(f"  {input_anchor} -> {power_anchor} [style=invis, weight=4, constraint=false];")
+    for ref in power_refs:
+        safe = _safe_id(ref)
+        lines.append(f"  {power_anchor} -> {safe} [style=invis, weight=4, constraint=false];")
+
+
 # ---------------------------------------------------------------------------
 # Top-level DOT source builder
 # ---------------------------------------------------------------------------
@@ -548,6 +620,8 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     # of the tier subgraphs; merged/idempotent if already in the correct tier).
     if connector_roles:
         _emit_connector_rank_constraints(lines, connector_roles)
+    if block_layout:
+        _emit_block_zone_constraints(lines, block_layout)
 
     # Emit net nodes + directional edges.
     # For each signal net, sort pins by ascending BFS tier so edges flow

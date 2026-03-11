@@ -1,15 +1,15 @@
 {
-  "avg_spacing": 8.84942206189133,
+  "avg_spacing": 12.14712777623042,
   "gnd_labels": 0,
   "power_symbols": 0,
   "region_density": {
-    "bottom_left": 0.15789473684210525,
+    "bottom_left": 0.21052631578947367,
     "bottom_right": 0.2631578947368421,
-    "top_left": 0.2631578947368421,
-    "top_right": 0.3157894736842105
+    "top_left": 0.42105263157894735,
+    "top_right": 0.10526315789473684
   },
-  "short_wires": 102,
+  "short_wires": 90,
   "symbol_count": 19,
-  "wire_stub_ratio": 0.4885057471264368,
-  "x_columns": 12
+  "wire_stub_ratio": 0.5394736842105263,
+  "x_columns": 11
 }

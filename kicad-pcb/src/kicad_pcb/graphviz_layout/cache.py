@@ -20,10 +20,13 @@ A single JSON file with the structure::
 Invalidation policy
 -------------------
 The cache key is the SHA-256 digest of the DOT source string passed to
-``dot -Tplain``.  Any change in circuit topology (added/removed component,
-renamed net) changes the DOT source and therefore produces a different key,
-guaranteeing a cache miss.  The ``version`` field is bumped whenever the
-JSON schema changes so that old cache files are automatically discarded.
+``dot -Tplain`` plus a layout-algorithm revision salt. Any change in circuit
+topology (added/removed component, renamed net) changes the DOT source and
+therefore produces a different key. Layout-pipeline changes that affect the
+final snapped coordinates but not the DOT source must bump the algorithm
+revision so persisted caches are invalidated as well. The ``version`` field
+is bumped whenever the JSON schema changes so that old cache files are
+automatically discarded.
 """
 
 from __future__ import annotations
@@ -36,16 +39,18 @@ from typing import Any
 
 # Bump this when the cache JSON schema changes to invalidate all persisted caches.
 _CACHE_FORMAT_VERSION = 1
+_LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v2"
 
 
 def _layout_cache_key(dot_source: str) -> str:
     """Return a stable SHA-256 hex digest for *dot_source*.
 
-    The digest is used as the cache lookup key — any change in circuit topology
-    (new component, different net) produces a different key and therefore a
-    guaranteed cache miss.
+    The digest is used as the cache lookup key. It incorporates both the DOT
+    source and the current layout-algorithm revision so post-layout snap
+    changes also invalidate persisted caches.
     """
-    return hashlib.sha256(dot_source.encode()).hexdigest()
+    payload = f"{_LAYOUT_ALGORITHM_REVISION}\0{dot_source}"
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _load_layout_cache(

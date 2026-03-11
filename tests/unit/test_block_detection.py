@@ -34,6 +34,10 @@ _READABILITY_FIXTURE_DIR = (
     _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
 )
 _CIRCUIT_IR_PATH = _READABILITY_FIXTURE_DIR / "circuit_ir.json"
+_REGRESSED_FIXTURE_DIR = (
+    _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
+)
+_REGRESSED_IR_PATH = _REGRESSED_FIXTURE_DIR / "circuit_ir.json"
 
 
 # ---------------------------------------------------------------------------
@@ -47,6 +51,15 @@ def _load_test_circuit() -> CircuitIR:
         pytest.skip("Circuit IR fixture not found")
 
     ir_data = json.loads(_CIRCUIT_IR_PATH.read_text(encoding="utf-8"))
+    return CircuitIR(**ir_data)
+
+
+def _load_regressed_test_circuit() -> CircuitIR:
+    """Load the canonical regressed NE5532 left-channel circuit IR."""
+    if not _REGRESSED_IR_PATH.exists():
+        pytest.skip("Regressed circuit IR fixture not found")
+
+    ir_data = json.loads(_REGRESSED_IR_PATH.read_text(encoding="utf-8"))
     return CircuitIR(**ir_data)
 
 
@@ -371,6 +384,35 @@ def test_layout_preserves_electrical_groups() -> None:
     output_refs = set(layout.components_by_role(BlockRole.OUTPUT))
     output_jacks = {c.ref for c in ir.components if c.ref in ("J4", "J5")}
     assert output_jacks.issubset(output_refs), "J4 and J5 should be OUTPUT"
+
+
+@pytest.mark.skipif(
+    not _REGRESSED_IR_PATH.exists(),
+    reason="Regressed circuit IR fixture not found",
+)
+def test_regressed_ne5532_fixture_uses_block_roles_by_path_and_proximity() -> None:
+    """The canonical regressed fixture should map into explicit signal blocks."""
+    ir = _load_regressed_test_circuit()
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("J1") == BlockRole.INPUT
+    assert layout.get_role("J2") == BlockRole.OUTPUT
+    assert layout.get_role("J3") == BlockRole.POWER_ENTRY
+    assert layout.get_role("U1") == BlockRole.OPAMP_CORE
+
+    assert layout.get_role("C1") == BlockRole.DECOUPLING
+    assert layout.get_role("C2") == BlockRole.DECOUPLING
+    assert layout.get_role("C3") == BlockRole.DECOUPLING
+    assert layout.get_role("C4") == BlockRole.DECOUPLING
+
+    assert layout.get_role("R2") == BlockRole.FEEDBACK
+    assert layout.get_role("R3") == BlockRole.FEEDBACK
+    assert layout.get_role("C7") == BlockRole.OUTPUT
+    assert layout.get_role("R7") == BlockRole.OUTPUT
+
+    assert layout.get_role("C5") in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+    assert layout.get_role("R1") in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+    assert layout.get_role("RV1") == BlockRole.PRECONDITIONING
 
 
 def test_block_zone_snapping() -> None:
