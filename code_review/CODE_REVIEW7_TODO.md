@@ -138,37 +138,43 @@ Completed on 2026-03-11:
 Restore human-readable block layout so parts do not collapse into a graph-theoretic pillar.
 
 ### 3.1 Implement real block detection if still missing
-- [ ] Add block classification for the headphone amp fixture:
-  - [ ] input block
-  - [ ] op-amp stage
-  - [ ] output block
-  - [ ] power/decoupling block
-  - [ ] feedback/support sub-block
-- [ ] Base it on:
-  - [ ] component types
-  - [ ] net names
-  - [ ] graph proximity to U1, connectors, and power nets
+- [x] Add block classification for the headphone amp fixture:
+  - [x] input block
+  - [x] op-amp stage
+  - [x] output block
+  - [x] power/decoupling block
+  - [x] feedback/support sub-block
+- [x] Base it on:
+  - [x] component types
+  - [x] net names
+  - [x] graph proximity to U1, connectors, and power nets
 
 ### 3.2 Add block-aware Graphviz zoning
-- [ ] Extend Graphviz constraints so blocks prefer zones:
-  - [ ] input left
-  - [ ] op-amp center
-  - [ ] output right
-  - [ ] power/decoupling above/top-left/top-center
-- [ ] Use softer constraints than same-column locks.
+- [x] Extend Graphviz constraints so blocks prefer zones:
+  - [x] input left
+  - [x] op-amp center
+  - [x] output right
+  - [x] power/decoupling above/top-left/top-center
+- [x] Use softer constraints than same-column locks.
 
 ### 3.3 Add post-Graphviz block refinement
-- [ ] After Graphviz placement:
-  - [ ] nudge blocks apart
-  - [ ] keep support parts near their stage
-  - [ ] prevent feedback/power parts from collapsing into one narrow vertical stack
+- [x] After Graphviz placement:
+  - [x] nudge blocks apart
+  - [x] keep support parts near their stage
+  - [x] prevent feedback/power parts from collapsing into one narrow vertical stack
 
 ### 3.4 Add tests for block spread
-- [ ] Assert that:
-  - [ ] input block is left of U1
-  - [ ] output block is right of U1
-  - [ ] power block is not merged into the main op-amp column
-  - [ ] feedback parts are near U1 but not all same-column
+- [x] Assert that:
+  - [x] input block is left of U1
+  - [x] output block is right of U1
+  - [x] power block is not merged into the main op-amp column
+  - [x] feedback parts are near U1 but not all same-column
+
+Completed on 2026-03-11:
+- added path/proximity-based block classification in `kicad-pcb/src/kicad_pcb/block_detection.py`
+- threaded block-aware zoning through the Graphviz/snap pipeline in `layout.py` and `graphviz_layout/snap.py`
+- added post-Graphviz refinement for block zones, stage cohesion, page balance, and central composition
+- added regression coverage in `tests/unit/test_block_detection.py` for block roles, block-zone snapping, and left/right stage placement
 
 ---
 
@@ -197,7 +203,7 @@ Prevent internal fallback-style behavior from silently degrading placement.
 
 Note:
 - The legacy warning-plus-BFS degradation branch in `layout.py` was removed on 2026-03-11.
-- Remaining work here is to fix connector-role detection so the canonical headphone amp fixture satisfies the intended connector-aware path instead of merely failing fast.
+- Remaining work here is limited to stronger diagnostics when internal degradation-like behavior is encountered.
 
 Completed on 2026-03-11:
 - `classify_connector_roles(...)` now accepts optional IR context and uses connector metadata / net-name hints to distinguish `input`, `output`, and `power` connectors when topology alone is ambiguous
@@ -240,19 +246,24 @@ Prevent support parts from being dumped into simplistic clusters that hurt reada
 Make the U1 area read like an analog stage instead of a stacked trunk.
 
 ### 6.1 Create local placement rules around U1
-- [ ] Input-side parts on input side of U1
-- [ ] Output-side parts on output side of U1
-- [ ] Feedback parts adjacent to relevant op-amp pins
-- [ ] Decouplers close to power pins but visually separated from feedback loop
+- [x] Input-side parts on input side of U1
+- [x] Output-side parts on output side of U1
+- [x] Feedback parts adjacent to relevant op-amp pins
+- [x] Decouplers close to power pins but visually separated from feedback loop
 
 ### 6.2 Limit vertical stacking around U1
-- [ ] Add a local spread rule so the neighborhood around U1 uses multiple nearby columns/rows when helpful.
+- [x] Add a local spread rule so the neighborhood around U1 uses multiple nearby columns/rows when helpful.
 - [ ] Avoid placing too many passives directly above/below U1 in the exact same x-coordinate band.
 
 ### 6.3 Add op-amp neighborhood tests
-- [ ] Assert feedback components are near U1.
-- [ ] Assert output-side parts are right-biased relative to U1.
-- [ ] Assert support parts do not all share one x-position with U1.
+- [x] Assert feedback components are near U1.
+- [x] Assert output-side parts are right-biased relative to U1.
+- [x] Assert support parts do not all share one x-position with U1.
+
+Partially completed on 2026-03-11:
+- added op-amp locality, input-stage cohesion, output-stage cohesion, and late deoverlap protections in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`
+- added targeted coverage in `tests/unit/test_phase4_layout.py` for locality, stage separation, left-to-right flow, and no-IC output alignment
+- remaining work is mostly heuristic hardening to further reduce tall/narrow op-amp stacks in difficult fixtures
 
 ---
 
@@ -262,21 +273,28 @@ Make the U1 area read like an analog stage instead of a stacked trunk.
 Stop future commits from silently reintroducing this regression.
 
 ### 7.1 Compare against previous better layout
-- [ ] Add a previous “better” schematic fixture as reference if available.
-- [ ] Use approximate metrics, not exact coordinate diff.
+- [x] Add a previous “better” schematic fixture as reference if available.
+- [x] Use approximate metrics, not exact coordinate diff.
+
+Completed on 2026-03-11:
+- no earlier saved NE5532 "better" fixture was available, so Phase 7 guardrails compare the current generator output for the canonical regression IR against the captured bad snapshot in `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/`
+- added approximate metric comparisons in `tests/unit/test_phase7_regression_guardrails.py` instead of exact coordinate matching
 
 ### 7.2 Add metrics thresholds
-- [ ] Distinct x-columns should not regress below threshold.
-- [ ] Components in U1 column should not exceed threshold.
-- [ ] Block spread should not collapse.
-- [ ] Short-wire ratio should not increase dramatically.
-- [ ] Layout lints should not worsen.
+- [x] Distinct x-columns should not regress below threshold.
+- [x] Components in U1 column should not exceed threshold.
+- [x] Block spread should not collapse.
+- [x] Short-wire ratio should not increase dramatically.
+- [x] Layout lints should not worsen.
 
 ### 7.3 Add human-review checklist for this regression
-- [ ] Does the schematic again look like a column dump around U1?
-- [ ] Are input/output/power blocks distinguishable?
-- [ ] Is the op-amp neighborhood still too narrow/tall?
-- [ ] Does this look worse than the previous iteration?
+- [x] Does the schematic again look like a column dump around U1?
+- [x] Are input/output/power blocks distinguishable?
+- [x] Is the op-amp neighborhood still too narrow/tall?
+- [x] Does this look worse than the previous iteration?
+
+Completed on 2026-03-11:
+- added `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/PHASE7_HUMAN_REVIEW_CHECKLIST.md` for manual regression review of the canonical NE5532 fixture
 
 ---
 
@@ -314,10 +332,10 @@ Remove mismatches between docs, assumptions, and implementation.
 2. [x] Phase 1 — instrument and prove actual regression path
 3. [x] Phase 2 — weaken same-column halo forcing
 4. [x] Phase 4 — confirm/fix connector role path and fallback behavior
-5. [ ] Phase 3 — add block-aware zoning and post-Graphviz refinement
+5. [x] Phase 3 — add block-aware zoning and post-Graphviz refinement
 6. [ ] Phase 5 — refine power/support clustering
 7. [ ] Phase 6 — improve op-amp neighborhood layout
-8. [ ] Phase 7 — lock in regression tests
+8. [x] Phase 7 — lock in regression tests
 9. [ ] Phase 8 — clean up docs/comments and debug support
 
 ---
@@ -326,8 +344,8 @@ Remove mismatches between docs, assumptions, and implementation.
 
 The headphone amp schematic should:
 
-- [ ] no longer line up a large fraction of parts in the op-amp column
-- [ ] visibly separate input, op-amp, output, and power/support regions
-- [ ] keep feedback/support parts near U1 without stacking them all vertically with it
+- [x] no longer line up a large fraction of parts in the op-amp column
+- [x] visibly separate input, op-amp, output, and power/support regions
+- [x] keep feedback/support parts near U1 without stacking them all vertically with it
 - [ ] avoid internal fallback-style degradation for the canonical headphone amp fixture
-- [ ] include regression tests that catch this exact layout collapse in future
+- [x] include regression tests that catch this exact layout collapse in future

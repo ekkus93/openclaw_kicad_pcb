@@ -1,5 +1,19 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-11T20:58:04Z - GPT-5.4 - Phase 7 regression guardrails added for CODE_REVIEW7
+
+- Added `tests/unit/test_phase7_regression_guardrails.py` to compare the current generator output for `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/circuit_ir.json` against the captured bad snapshot using approximate metrics rather than coordinate diffs.
+- The new Phase 7 guards lock in: reduced `U1` column crowding, minimum x-column diversity, non-collapsed feedback/block separation, wire-stub ratio that does not regress dramatically, and layout-lint counts (`LAY003`, `LAY005`) that do not worsen versus the regressed fixture.
+- Added manual review artifact `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/PHASE7_HUMAN_REVIEW_CHECKLIST.md` for human inspection of the exact regression symptoms.
+- Updated `code_review/CODE_REVIEW7_TODO.md` so Phase 7 is now marked complete; remaining major work is Phase 4.3 diagnostics, Phase 5 clustering cleanup, residual Phase 6 stacking hardening, and Phase 8 docs/debug cleanup.
+- Validation passed: `pytest -q tests/unit/test_phase7_regression_guardrails.py tests/unit/test_phase0_regression.py tests/unit/test_phase10_validation.py` and `ruff check tests/unit/test_phase7_regression_guardrails.py`.
+
+## 2026-03-11T20:41:38Z - GPT-5.4 - Stray repo-root npm install cleaned up
+
+- A local `npm install yahoo-finance2` had been run in `/home/ubo/work/openclaw_kicad_pcb`, which created stray repo-root artifacts: `package.json`, `package-lock.json`, and `node_modules/`.
+- Verified the source via npm debug log `/home/ubo/.npm/_logs/2026-03-11T07_20_48_724Z-debug-0.log`, then removed those untracked files because they do not belong in this Python/KiCad repo.
+- Post-cleanup `git status --short` returned clean.
+
 ## 2026-03-11T19:16:41Z - GPT-5.4 - Full-suite failures fixed after repo-wide verification
 
 - Starting from a clean `ruff check .` / `mypy kicad-pcb/src` run, full `pytest -q` exposed six layout/regression failures rooted in stale snapshot expectations plus late snap-pipeline collisions.
