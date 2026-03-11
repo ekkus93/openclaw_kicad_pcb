@@ -13,8 +13,10 @@ The DOT graph is *bipartite*:
 
 Power nets (GND, VCC, VDD, V+, V−, etc.) are *excluded* from the bipartite
 graph to prevent highly-connected power hubs from dominating the layout.
-Components connected exclusively via power nets are placed in a dedicated
-``cluster_power`` subgraph on the right side of the schematic.
+Components connected exclusively via power nets are normally placed in a
+dedicated ``cluster_power`` subgraph on the right side of the schematic,
+except for semantically-classified decoupling parts that should stay near the
+active stage they support.
 
 DOT emission strategy
 ---------------------
@@ -332,6 +334,32 @@ def _partition_power_unit_refs(
     return new_power_only, new_signal_refs
 
 
+def _partition_power_cluster_refs(
+    power_only_refs: list[str],
+    block_layout: BlockLayout | None,
+) -> tuple[list[str], list[str]]:
+    """Return ``(cluster_power_refs, retained_support_refs)`` for power-only refs.
+
+    When block classification is available, true bypass/decoupling capacitors
+    should not be forced into ``cluster_power`` just because both pins land on
+    recognized power nets. Keeping them out of the power cluster lets SDS/block
+    zoning place them near the op-amp stage instead of dumping them into the
+    far-right power bucket.
+    """
+    if block_layout is None:
+        return list(power_only_refs), []
+
+    cluster_power_refs: list[str] = []
+    retained_support_refs: list[str] = []
+    for ref in power_only_refs:
+        assignment = block_layout.assignments.get(ref)
+        if assignment is not None and assignment.role == BlockRole.DECOUPLING:
+            retained_support_refs.append(ref)
+        else:
+            cluster_power_refs.append(ref)
+    return cluster_power_refs, retained_support_refs
+
+
 def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> None:
     """Append ``cluster_feedback`` DOT subgraph for *feedback_refs*.
 
@@ -575,6 +603,11 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
             refs, signal_refs, power_only_refs, power_unit_refs
         )
 
+    power_only_refs, retained_power_support_refs = _partition_power_cluster_refs(
+        power_only_refs,
+        block_layout,
+    )
+
     # Longest-path tier assignment — determines left-to-right rank for each component.
     # Use pre-computed tiers if supplied (avoids redundant work when the caller already
     # ran assign_tiers).
@@ -591,6 +624,8 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     for ref in refs:
         if ref in power_only_refs:
             continue
+        tier_groups.setdefault(_col_source.get(ref, 0), []).append(ref)
+    for ref in retained_power_support_refs:
         tier_groups.setdefault(_col_source.get(ref, 0), []).append(ref)
 
     # Emit component nodes.

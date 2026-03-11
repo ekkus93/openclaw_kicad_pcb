@@ -164,6 +164,107 @@ def test_output_resistors_classified() -> None:
     assert layout.get_role("R8") == BlockRole.OUTPUT
 
 
+def test_signal_support_caps_are_not_misclassified_as_decoupling() -> None:
+    """Output/input support caps touching ground should keep their signal-side roles."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="CIN", symbol="Device:C", value="100n"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ComponentIR(ref="COUT", symbol="Device:C", value="10u"),
+            ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ComponentIR(ref="RISO", symbol="Device:R", value="10"),
+            ComponentIR(ref="CDEC", symbol="Device:C", value="100n"),
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x02", value="Power"),
+        ],
+        nets=[
+            NetIR(
+                name="IN",
+                pins=[
+                    PinRefIR(ref="JIN", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                    PinRefIR(ref="CIN", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="OUT",
+                pins=[
+                    PinRefIR(ref="U1", pin="6"),
+                    PinRefIR(ref="JOUT", pin="1"),
+                    PinRefIR(ref="COUT", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VCC",
+                pins=[
+                    PinRefIR(ref="J3", pin="1"),
+                    PinRefIR(ref="RISO", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VCC_LOCAL",
+                pins=[
+                    PinRefIR(ref="RISO", pin="2"),
+                    PinRefIR(ref="U1", pin="7"),
+                    PinRefIR(ref="CDEC", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="J3", pin="2"),
+                    PinRefIR(ref="U1", pin="4"),
+                    PinRefIR(ref="CIN", pin="2"),
+                    PinRefIR(ref="COUT", pin="2"),
+                    PinRefIR(ref="CDEC", pin="2"),
+                ],
+            ),
+        ],
+    )
+
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("CIN") in (BlockRole.INPUT, BlockRole.PRECONDITIONING)
+    assert layout.get_role("COUT") == BlockRole.OUTPUT
+    assert layout.get_role("RISO") == BlockRole.POWER_ENTRY
+    assert layout.get_role("CDEC") == BlockRole.DECOUPLING
+
+
+def test_negative_rail_decouplers_stay_in_power_support_roles() -> None:
+    """Negative-rail bypass caps should not fall through to signal-side roles."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x03", value="Power"),
+            ComponentIR(ref="CNEG", symbol="Device:C", value="100n"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+        ],
+        nets=[
+            NetIR(
+                name="VMINUS15",
+                pins=[
+                    PinRefIR(ref="J3", pin="3"),
+                    PinRefIR(ref="U1", pin="4"),
+                    PinRefIR(ref="CNEG", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="0V",
+                pins=[
+                    PinRefIR(ref="J3", pin="2"),
+                    PinRefIR(ref="CNEG", pin="2"),
+                ],
+            ),
+        ],
+    )
+
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("J3") == BlockRole.POWER_ENTRY
+    assert layout.get_role("CNEG") == BlockRole.DECOUPLING
+
+
 @pytest.mark.skipif(
     not _CIRCUIT_IR_PATH.exists(),
     reason="Circuit IR fixture not found",

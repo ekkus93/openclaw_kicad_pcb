@@ -34,7 +34,7 @@ from unittest.mock import patch
 
 import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
-from kicad_pcb.block_detection import BlockLayout, BlockRole
+from kicad_pcb.block_detection import BlockLayout, BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._project import minimal_schematic_text
 from kicad_pcb.component_types import component_type
@@ -1709,6 +1709,60 @@ class TestFindDecouplingCaps:
         ir = CircuitIR(version="1", components=components, nets=nets)
         result = _gv_mod.find_decoupling_caps(ir)
         assert result == {}, f"Expected empty map for true bypass cap, got: {result}"
+
+    def test_true_bypass_cap_stays_out_of_cluster_power_with_block_layout(self) -> None:
+        """Block-classified decouplers should not be dumped into cluster_power."""
+        components = [
+            ComponentIR(ref="J1", symbol="Device:Conn", value="Input"),
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="Device:IC", value="OpAmp"),
+            ComponentIR(ref="J3", symbol="Connector:Conn_01x02", value="Power"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+        ]
+        nets = [
+            NetIR(
+                name="IN_SIG",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="R1", pin="1")],
+            ),
+            NetIR(
+                name="OUT_SIG",
+                pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="U1", pin="1")],
+            ),
+            NetIR(
+                name="VCC",
+                pins=[
+                    PinRefIR(ref="J3", pin="1"),
+                    PinRefIR(ref="U1", pin="2"),
+                    PinRefIR(ref="C1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="J3", pin="2"),
+                    PinRefIR(ref="U1", pin="3"),
+                    PinRefIR(ref="C1", pin="2"),
+                ],
+            ),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+
+        block_layout = classify_circuit(ir)
+        src = _gv_mod.build_dot_source(
+            ir,
+            block_layout=block_layout,
+            sds_cols={"J1": 0, "R1": 1, "U1": 2, "J3": 0, "C1": 2},
+        )
+
+        cluster_start = src.index("cluster_power")
+        cluster_end = src.index("}", cluster_start)
+        cluster_body = src[cluster_start:cluster_end]
+
+        assert "J3" in cluster_body
+        assert "C1" not in cluster_body, (
+            "True bypass decoupling cap should stay out of cluster_power when "
+            "block classification marks it as DECOUPLING"
+        )
 
     def test_cap_with_only_connector_neighbour_not_detected(self) -> None:
         """If only connectors share C1's signal net, no IC is associated → not detected."""
@@ -3484,6 +3538,114 @@ class TestApplyPostLayoutSnaps:
             "Feedback cluster should remain local to the op-amp body"
         )
 
+    def test_opamp_locality_spreads_overflow_feedback_and_decoupling_lanes(self) -> None:
+        """Phase 6.2: large op-amp support stacks should not all share U1's x-column."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="RFB1", symbol="Device:R", value="47k"),
+                ComponentIR(ref="RFB2", symbol="Device:R", value="22k"),
+                ComponentIR(ref="CFB1", symbol="Device:C", value="22p"),
+                ComponentIR(ref="CDEC1", symbol="Device:C", value="100n"),
+                ComponentIR(ref="CDEC2", symbol="Device:C", value="100n"),
+                ComponentIR(ref="CDEC3", symbol="Device:C", value="10u"),
+            ],
+            nets=[
+                NetIR(
+                    name="FB_A",
+                    pins=[
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="RFB1", pin="1"),
+                        PinRefIR(ref="CFB1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="FB_B",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="RFB1", pin="2"),
+                        PinRefIR(ref="RFB2", pin="1"),
+                        PinRefIR(ref="CFB1", pin="2"),
+                    ],
+                ),
+                NetIR(
+                    name="FB_C",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="RFB2", pin="2")],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[
+                        PinRefIR(ref="U1", pin="7"),
+                        PinRefIR(ref="CDEC1", pin="1"),
+                        PinRefIR(ref="CDEC2", pin="1"),
+                        PinRefIR(ref="CDEC3", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="U1", pin="4"),
+                        PinRefIR(ref="CDEC1", pin="2"),
+                        PinRefIR(ref="CDEC2", pin="2"),
+                        PinRefIR(ref="CDEC3", pin="2"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("RFB1", BlockRole.FEEDBACK)
+        block_layout.add_assignment("RFB2", BlockRole.FEEDBACK)
+        block_layout.add_assignment("CFB1", BlockRole.FEEDBACK)
+        block_layout.add_assignment("CDEC1", BlockRole.DECOUPLING)
+        block_layout.add_assignment("CDEC2", BlockRole.DECOUPLING)
+        block_layout.add_assignment("CDEC3", BlockRole.DECOUPLING)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (110.0, 100.0, None),
+            "RFB1": (150.0, 80.0, None),
+            "RFB2": (150.0, 90.0, None),
+            "CFB1": (150.0, 110.0, None),
+            "CDEC1": (70.0, 140.0, None),
+            "CDEC2": (70.0, 150.0, None),
+            "CDEC3": (70.0, 160.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs={"RFB1", "RFB2", "CFB1"},
+            annotations={
+                "RFB1": ComponentAnnotation(feedback=True),
+                "RFB2": ComponentAnnotation(feedback=True),
+                "CFB1": ComponentAnnotation(feedback=True),
+            },
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={"CDEC1": "U1", "CDEC2": "U1", "CDEC3": "U1"},
+            block_layout=block_layout,
+        )
+
+        ux, uy, _ = result["U1"]
+        feedback_xs = {round(result[ref][0], 2) for ref in ("RFB1", "RFB2", "CFB1")}
+        decoupling_xs = {round(result[ref][0], 2) for ref in ("CDEC1", "CDEC2", "CDEC3")}
+
+        assert len(feedback_xs) >= 2, (
+            f"Overflow feedback parts should use multiple x lanes: {result}"
+        )
+        assert len(decoupling_xs) >= 2, (
+            f"Overflow decoupling parts should use multiple x lanes: {result}"
+        )
+        assert all(result[ref][1] > uy for ref in ("RFB1", "RFB2", "CFB1")), (
+            "Feedback overflow should remain below the op-amp body"
+        )
+        assert all(result[ref][1] < uy for ref in ("CDEC1", "CDEC2", "CDEC3")), (
+            "Decoupling overflow should remain above the op-amp body"
+        )
+        assert round(ux, 2) in feedback_xs, "Primary feedback lane should remain aligned to U1"
+        assert round(ux, 2) in decoupling_xs, "Primary decoupling lane should remain aligned to U1"
+
     def test_input_stage_cohesion_left_to_right_transition(self) -> None:
         """Phase 7.1: input stage should read connector -> preconditioning -> op-amp."""
         ir = CircuitIR(
@@ -4279,6 +4441,95 @@ class TestApplyPostLayoutSnaps:
         assert jout_x > ux, (
             f"Output connector JOUT should be right of U1: JOUT.x={jout_x:.2f}, U1.x={ux:.2f}"
         )
+
+    def test_opamp_neighborhood_signal_support_caps_stay_out_of_decoupling_lane(self) -> None:
+        """Phase 5.2: signal-side caps touching ground should stay in signal lanes."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="COUT", symbol="Device:C", value="10u"),
+                ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+                ComponentIR(ref="RISO", symbol="Device:R", value="10"),
+                ComponentIR(ref="CDEC", symbol="Device:C", value="100n"),
+                ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x02", value="Power"),
+            ],
+            nets=[
+                NetIR(name="IN", pins=[PinRefIR(ref="JIN", pin="1"), PinRefIR(ref="U1", pin="3")]),
+                NetIR(
+                    name="OUT",
+                    pins=[
+                        PinRefIR(ref="U1", pin="6"),
+                        PinRefIR(ref="COUT", pin="1"),
+                        PinRefIR(ref="JOUT", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[
+                        PinRefIR(ref="J3", pin="1"),
+                        PinRefIR(ref="RISO", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="VCC_LOCAL",
+                    pins=[
+                        PinRefIR(ref="RISO", pin="2"),
+                        PinRefIR(ref="U1", pin="7"),
+                        PinRefIR(ref="CDEC", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="J3", pin="2"),
+                        PinRefIR(ref="U1", pin="4"),
+                        PinRefIR(ref="COUT", pin="2"),
+                        PinRefIR(ref="CDEC", pin="2"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = classify_circuit(ir)
+
+        assert block_layout.get_role("COUT") == BlockRole.OUTPUT
+        assert block_layout.get_role("RISO") == BlockRole.POWER_ENTRY
+        assert block_layout.get_role("CDEC") == BlockRole.DECOUPLING
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "JIN": (30.0, 100.0, None),
+            "U1": (90.0, 100.0, None),
+            "COUT": (65.0, 80.0, None),
+            "JOUT": (150.0, 100.0, None),
+            "RISO": (120.0, 84.0, None),
+            "CDEC": (125.0, 112.0, None),
+            "J3": (150.0, 70.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={"CDEC": "U1"},
+            block_layout=block_layout,
+        )
+
+        ux, uy, _ = result["U1"]
+        cout_x, cout_y, _ = result["COUT"]
+        cdec_x, cdec_y, _ = result["CDEC"]
+
+        assert cout_x > ux, f"Output support cap should stay on output side: {result}"
+        assert cout_y >= uy - 2.0 * _gv_mod.GRID_ROW_MM, (
+            "Output support cap should not be pulled into the decoupling lane above the op-amp"
+        )
+        assert math.isclose(cdec_x, ux, abs_tol=0.01), (
+            "True decoupling cap should remain aligned to the op-amp column"
+        )
+        assert cdec_y < uy, "True decoupling cap should remain above the op-amp"
 
     def test_opamp_neighborhood_decouplers_near_power_not_input(self) -> None:
         """Phase 4.4: supply decouplers should be nearer the power pins than input network."""

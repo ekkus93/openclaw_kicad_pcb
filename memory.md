@@ -1,5 +1,17 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-11T22:59:41Z - GPT-5.4 - Phase 6.2 reduces residual U1 same-column stacks
+
+- Refined `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so the first local feedback/decoupling parts can stay aligned with the op-amp, but overflow passives peel into adjacent x lanes instead of forming a taller exact-U1 column.
+- Mirrored that overflow-lane rule inside `_post_snap_decoupling_caps(...)` because the later page-balance re-anchor was otherwise collapsing extra bypass caps back onto the op-amp centerline.
+- Added focused Phase 6.2 regression coverage in `tests/unit/test_phase4_layout.py` and revalidated with the canonical Phase 7 guardrails, Ruff, and targeted mypy.
+
+## 2026-03-11T22:51:47Z - GPT-5.4 - Phase 5.2 separates signal support caps from true decouplers
+
+- Tightened `kicad-pcb/src/kicad_pcb/block_detection.py` so capacitors on `IN`/`OUT`/feedback nets plus ground keep signal-side roles instead of being mistaken for `DECOUPLING`, while local supply caps still classify as decoupling support.
+- Broadened supply-rail detection to cover common negative rails such as `VMINUS15`, which fixed a Phase 7 regression where a rail decoupler had fallen through to the generic output-capacitor heuristic.
+- Added focused regressions in `tests/unit/test_block_detection.py` and `tests/unit/test_phase4_layout.py`, then revalidated with the Phase 7 guardrails plus Ruff and targeted mypy.
+
 ## 2026-03-11T21:33:40Z - GPT-5.4 - Phase 4.3 diagnostics now surface degradation reasons
 
 - Added explicit `diagnostics` records to the Graphviz layout debug dump in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`; incomplete connector-role inference now emits `LAYDBG001` with missing-role/unknown-ref details explaining that older layout logic would have degraded to BFS fallback.
@@ -18,6 +30,12 @@
 - `kicad-pcb/src/kicad_pcb/layout.py` now raises `UserError` when connector roles are omitted and cannot be inferred well enough for SDS, instead of generating a weaker connector-distance schematic.
 - Deleted the remaining `_bfs_columns(...)` fallback helper and updated tests so under-specified reference circuits now assert failure, while well-specified fixtures pass explicit roles or rely on successful inference.
 - Validated with focused pytest on `kicad-pcb/tests/unit/test_layout.py` and `tests/unit/test_phase6_coverage.py`, plus `ruff check` and `mypy kicad-pcb/src`.
+
+## 2026-03-11T22:31:03Z - GPT-5.4 - Phase 5.1 keeps true bypass decouplers out of cluster_power
+
+- Refined `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` so `power_only_refs` no longer blindly dumps block-classified `DECOUPLING` parts into `cluster_power`; real power-entry parts still stay in the power cluster.
+- This specifically addresses true bypass capacitors whose pins are both on recognized power nets: they were semantically classified as decoupling support, but DOT emission was still shoving them into the far-right power bucket before the main layout heuristics could help.
+- Added a focused regression test in `tests/unit/test_phase4_layout.py` and validated with targeted pytest, Phase 7 guardrails, Ruff, and `mypy kicad-pcb/src`.
 
 ## 2026-03-11T20:58:04Z - GPT-5.4 - Phase 7 regression guardrails added for CODE_REVIEW7
 

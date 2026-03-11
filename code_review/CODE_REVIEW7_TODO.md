@@ -232,17 +232,27 @@ Prevent support parts from being dumped into simplistic clusters that hurt reada
 ### 5.1 Audit `cluster_power` usage in DOT output
 **File:** `src/kicad_pcb/graphviz_layout/dot_builder.py`
 
-- [ ] Review which refs are classified as `power_only_refs`
-- [ ] Confirm whether any support parts that should stay near U1 are being over-clustered as “power only”
-- [ ] Refine classification so power/support grouping does not distort the signal-stage layout.
+- [x] Review which refs are classified as `power_only_refs`
+- [x] Confirm whether any support parts that should stay near U1 are being over-clustered as “power only”
+- [x] Refine classification so power/support grouping does not distort the signal-stage layout.
+
+Completed on 2026-03-11:
+- audited `power_only_refs` in `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` and confirmed that true bypass/decoupling caps were still being forced into `cluster_power` whenever both pins landed on recognized power nets
+- refined DOT emission so block-classified `DECOUPLING` parts stay out of `cluster_power` and can participate in the main SDS/block-zoned layout instead of being dumped into the far-right power bucket
+- added focused coverage in `tests/unit/test_phase4_layout.py` to keep true bypass decouplers out of `cluster_power` while leaving real power-entry parts there
 
 ### 5.2 Reposition decoupling/support parts more intentionally
-- [ ] Keep true decouplers near op-amp power pins.
-- [ ] Keep output/input support parts near their signal role, not grouped just because they touch power/ground.
-- [ ] Add tests distinguishing:
-  - [ ] decoupling caps
-  - [ ] signal coupling caps
-  - [ ] power connector support parts
+- [x] Keep true decouplers near op-amp power pins.
+- [x] Keep output/input support parts near their signal role, not grouped just because they touch power/ground.
+- [x] Add tests distinguishing:
+  - [x] decoupling caps
+  - [x] signal coupling caps
+  - [x] power connector support parts
+
+Completed on 2026-03-11:
+- tightened `kicad-pcb/src/kicad_pcb/block_detection.py` so capacitors on `IN`/`OUT`/feedback nets plus ground no longer get misclassified as `DECOUPLING`, while local rail caps still do
+- broadened supply-rail detection to cover negative-rail aliases like `VMINUS15`, preventing rail decouplers from falling through into output-role heuristics
+- added focused role and placement regressions in `tests/unit/test_block_detection.py` and `tests/unit/test_phase4_layout.py`, then revalidated against `tests/unit/test_phase7_regression_guardrails.py`
 
 ---
 
@@ -259,7 +269,7 @@ Make the U1 area read like an analog stage instead of a stacked trunk.
 
 ### 6.2 Limit vertical stacking around U1
 - [x] Add a local spread rule so the neighborhood around U1 uses multiple nearby columns/rows when helpful.
-- [ ] Avoid placing too many passives directly above/below U1 in the exact same x-coordinate band.
+- [x] Avoid placing too many passives directly above/below U1 in the exact same x-coordinate band.
 
 ### 6.3 Add op-amp neighborhood tests
 - [x] Assert feedback components are near U1.
@@ -269,7 +279,11 @@ Make the U1 area read like an analog stage instead of a stacked trunk.
 Partially completed on 2026-03-11:
 - added op-amp locality, input-stage cohesion, output-stage cohesion, and late deoverlap protections in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`
 - added targeted coverage in `tests/unit/test_phase4_layout.py` for locality, stage separation, left-to-right flow, and no-IC output alignment
-- remaining work is mostly heuristic hardening to further reduce tall/narrow op-amp stacks in difficult fixtures
+
+Completed on 2026-03-11:
+- refined `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so overflow feedback and decoupling passives peel into adjacent x lanes around the op-amp instead of all stacking on the exact U1 column
+- moved the same overflow-lane rule into `_post_snap_decoupling_caps(...)` so the later page-balance re-anchor does not collapse the extra bypass caps back onto U1
+- added focused Phase 6.2 coverage in `tests/unit/test_phase4_layout.py` and revalidated against `tests/unit/test_phase7_regression_guardrails.py`
 
 ---
 
