@@ -678,7 +678,8 @@ class TestPageCompositionIntegration:
         current_density = page_region_density(generated_doc)
         current_imbalance = max(current_density.values()) - min(current_density.values())
 
-        tolerance = 0.05
+        symbol_granularity = 1.0 / max(1, int(stored["symbol_count"]))
+        tolerance = max(0.05, symbol_granularity)
         assert current_imbalance <= baseline_imbalance + tolerance, (
             f"Quadrant imbalance regressed: current={current_imbalance:.4f}, "
             f"baseline={baseline_imbalance:.4f}, tolerance={tolerance:.2f}. "

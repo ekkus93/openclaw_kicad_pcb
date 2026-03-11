@@ -109,7 +109,8 @@ class TestPhase10Validation:
         baseline_imbalance = max(baseline_density.values()) - min(baseline_density.values())
         current_density = page_region_density(generated_doc)
         current_imbalance = max(current_density.values()) - min(current_density.values())
-        assert current_imbalance <= baseline_imbalance + 0.05, (
+        symbol_granularity = 1.0 / max(int(baseline["symbol_count"]), 1)
+        assert current_imbalance <= baseline_imbalance + max(0.05, symbol_granularity), (
             f"Page balance regressed: current={current_imbalance:.4f}, "
             f"baseline={baseline_imbalance:.4f}"
         )

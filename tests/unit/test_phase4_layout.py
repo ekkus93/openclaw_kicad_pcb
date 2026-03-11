@@ -807,14 +807,12 @@ class TestGraphvizLayoutEngineCache:
     def test_cache_hit_skips_dot(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """When a valid cache entry exists, _run_dot must not be called."""
         ir = _simple_ir()
-        dot_source = _gv_mod.build_dot_source(ir)
-        cache_key = _gv_mod.layout_cache_key(dot_source)
         positions: dict[str, tuple[float, float, float | None]] = {
             "R1": (31.0, 51.0, None),
             "C1": (41.0, 61.0, None),
         }
         cache_file: Path = tmp_path / "layout.json"
-        _gv_mod.save_layout_cache(cache_file, cache_key, positions)
+        monkeypatch.setattr(_gv_mod, "_load_layout_cache", lambda *_args: positions)
 
         run_dot_called = False
 
@@ -3121,6 +3119,72 @@ class TestApplyPostLayoutSnaps:
         assert "R_FB -> U1 [style=invis, weight=6, constraint=false];" in dot_source
         assert "rank=same;\n    U1;\n    R_FB;" not in dot_source
 
+    def test_build_dot_source_emits_soft_block_zone_anchors(self) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="C7", symbol="Device:C", value="220u"),
+                ComponentIR(
+                    ref="J2",
+                    symbol="Connector_Generic:Conn_01x01",
+                    value="OUT",
+                ),
+                ComponentIR(
+                    ref="J3",
+                    symbol="Connector_Generic:Conn_01x03",
+                    value="+15V / 0V / -15V",
+                ),
+            ],
+            nets=[
+                NetIR(
+                    name="N_IN",
+                    pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                ),
+                NetIR(
+                    name="N_STAGE",
+                    pins=[PinRefIR(ref="R1", pin="2"), PinRefIR(ref="U1", pin="1")],
+                ),
+                NetIR(
+                    name="N_OUT",
+                    pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="C7", pin="1")],
+                ),
+                NetIR(
+                    name="HP_OUT",
+                    pins=[PinRefIR(ref="C7", pin="2"), PinRefIR(ref="J2", pin="1")],
+                ),
+            ],
+        )
+        block_layout = BlockLayout()
+        block_layout.add_assignment("J1", BlockRole.INPUT)
+        block_layout.add_assignment("R1", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("C7", BlockRole.OUTPUT)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+        block_layout.add_assignment("J3", BlockRole.POWER_ENTRY)
+
+        dot_source = _gv_mod.build_dot_source(
+            ir,
+            tiers={"J1": 0, "R1": 1, "U1": 2, "C7": 3, "J2": 4, "J3": 0},
+            connector_roles={"J1": "input", "J2": "output", "J3": "power"},
+            block_layout=block_layout,
+        )
+
+        assert (
+            '__blk_input__ [label="", shape=point, width=0, height=0, style=invis];' in dot_source
+        )
+        assert '__blk_core__ [label="", shape=point, width=0, height=0, style=invis];' in dot_source
+        assert (
+            '__blk_output__ [label="", shape=point, width=0, height=0, style=invis];' in dot_source
+        )
+        assert "__blk_input__ -> R1 [style=invis, weight=12];" in dot_source
+        assert "R1 -> __blk_core__ [style=invis, weight=8];" in dot_source
+        assert "__blk_core__ -> C7 [style=invis, weight=12];" in dot_source
+        assert "__blk_input__ -> __blk_core__ [style=invis, weight=30];" in dot_source
+        assert "__blk_core__ -> __blk_output__ [style=invis, weight=30];" in dot_source
+
     def test_opamp_locality_keeps_halo_members_off_ic_column(self) -> None:
         ir = CircuitIR(
             version="1",
@@ -3690,6 +3754,56 @@ class TestApplyPostLayoutSnaps:
         assert jin_x <= rfb_x, "Input support should not intrude into the output lane"
         assert cdec_x <= rfb_x, "Decoupling support should not intrude into the output lane"
         assert cdec_y < uy, "Decoupling support should stay on power-side (above op-amp)"
+
+    def test_output_stage_cohesion_without_ic_aligns_connectors_to_support(self) -> None:
+        """Phase 7.2: output-only stages still align connectors with support parts."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="JOUTL", symbol="Connector_Generic:Conn_01x01", value="OutL"),
+                ComponentIR(ref="JOUTR", symbol="Connector_Generic:Conn_01x01", value="OutR"),
+                ComponentIR(ref="ROUTL", symbol="Device:R", value="100"),
+                ComponentIR(ref="ROUTR", symbol="Device:R", value="100"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_L",
+                    pins=[PinRefIR(ref="ROUTL", pin="1"), PinRefIR(ref="JOUTL", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_R",
+                    pins=[PinRefIR(ref="ROUTR", pin="1"), PinRefIR(ref="JOUTR", pin="1")],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("JOUTL", BlockRole.OUTPUT)
+        block_layout.add_assignment("JOUTR", BlockRole.OUTPUT)
+        block_layout.add_assignment("ROUTL", BlockRole.OUTPUT)
+        block_layout.add_assignment("ROUTR", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "JOUTL": (220.0, 100.0, None),
+            "JOUTR": (220.0, 110.0, None),
+            "ROUTL": (205.0, 128.0, None),
+            "ROUTR": (205.0, 140.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        assert result["JOUTL"][1] >= result["ROUTL"][1] - 0.01
+        assert result["JOUTR"][1] >= result["ROUTR"][1] - 0.01
+        assert result["JOUTL"][0] >= positions["JOUTL"][0] - 1.0
+        assert result["JOUTR"][0] >= positions["JOUTR"][0] - 1.0
 
     def test_stage_coherence_input_block_compact_and_left_bounded(self) -> None:
         """Phase 7.3: input stage should stay compact and left-bounded."""

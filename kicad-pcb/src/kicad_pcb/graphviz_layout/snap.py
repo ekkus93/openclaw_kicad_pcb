@@ -174,10 +174,11 @@ _POWER_BOTTOM_MARGIN_MM: float = 20.0
 # at least this many mm before a corrective vertical nudge is applied.
 _PAGE_BALANCE_DEAD_ZONE_MM: float = 1.5 * GRID_ROW_MM  # ~11.43 mm
 
-# Fraction of the detected deviation that is corrected per pass (gentle nudge).
-# 0.3 moves the circuit 30% of the way toward the page centre each time the
-# pipeline runs, avoiding over-correction that would fight other snap passes.
-_PAGE_BALANCE_CORRECTION: float = 0.3
+# Fraction of the detected deviation that is corrected per pass.
+# Phase 3 block zoning creates a stronger left/centre/right structure, so the
+# balancing pass needs a meaningful vertical correction to keep the signal
+# circuit out of the top half on small fixtures.
+_PAGE_BALANCE_CORRECTION: float = 0.85
 
 # Phase 8.2: central composition thresholds.
 # Any signal-path component must stay at least this far from the bottom of the
@@ -1005,6 +1006,51 @@ def _place_output_stage_lane(
     return result
 
 
+def _align_output_connectors_without_ic(
+    positions: dict[str, tuple[float, float, float | None]],
+    output_connectors: list[str],
+    output_support: list[str],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Align output connectors to nearby output support when no IC anchor exists.
+
+    Some simple output-stage circuits consist only of passives between stage
+    nets and output connectors. In that case the usual IC-anchored lane logic
+    cannot run, but the output connector row should still line up with the
+    output support row instead of floating above it.
+    """
+    if not output_connectors:
+        return dict(positions)
+
+    result = dict(positions)
+    connector_lane_x: float | None = None
+    if output_support:
+        support_rows = [result[ref][1] for ref in output_support]
+        support_xs = [result[ref][0] for ref in output_support]
+        connector_lane_x = round(max(support_xs) + _GRID_COL_MM, 2)
+        if len(support_rows) == len(output_connectors):
+            target_rows = support_rows
+        else:
+            center_y = sum(support_rows) / len(support_rows)
+            target_rows = [
+                round(center_y + (index - (len(output_connectors) - 1) / 2) * GRID_ROW_MM, 2)
+                for index in range(len(output_connectors))
+            ]
+    else:
+        connector_rows = [result[ref][1] for ref in output_connectors]
+        center_y = sum(connector_rows) / len(connector_rows)
+        target_rows = [
+            round(center_y + (index - (len(output_connectors) - 1) / 2) * GRID_ROW_MM, 2)
+            for index in range(len(output_connectors))
+        ]
+
+    for ref, target_y in zip(output_connectors, target_rows, strict=False):
+        x, _y, rot = result[ref]
+        target_x = x if connector_lane_x is None else max(round(x, 2), connector_lane_x)
+        result[ref] = (round(target_x, 2), target_y, rot)
+
+    return result
+
+
 def _evict_output_lane_intruders(
     positions: dict[str, tuple[float, float, float | None]],
     role_by_ref: Mapping[str, object],
@@ -1046,10 +1092,22 @@ def _snap_output_stage_cohesion(
     if not positions or block_layout is None:
         return positions
 
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
     role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
     ic_refs = [ref for ref in positions if _is_ic_ref(ref)]
     if not ic_refs:
-        return positions
+        output_connectors = sorted(
+            ref
+            for ref, role in role_by_ref.items()
+            if ref in positions and role == BlockRole.OUTPUT and _is_connector_ref(ref)
+        )
+        output_support = sorted(
+            ref
+            for ref, role in role_by_ref.items()
+            if ref in positions and role == BlockRole.OUTPUT and ref not in output_connectors
+        )
+        return _align_output_connectors_without_ic(positions, output_connectors, output_support)
 
     anchor_ic = min(ic_refs, key=lambda ref: positions[ref][0])
     ic_x, ic_y, _ = positions[anchor_ic]
@@ -1133,6 +1191,8 @@ def _snap_block_zones(
 
     for ref, assignment in block_layout.assignments.items():
         if ref not in result:
+            continue
+        if ref.startswith("#"):
             continue
 
         x, y, rot = result[ref]
@@ -1232,11 +1292,15 @@ def _apply_density_spreading(  # noqa: PLR0912, PLR0915
     density: dict[str, int] = {}
     radius_sq = radius_mm**2
     for ref_i in refs:
+        if ref_i.startswith("#"):
+            continue
         if ref_i not in pos_map:
             continue
         x_i, y_i = pos_map[ref_i]
         neighbors = 0
         for ref_j in refs:
+            if ref_j.startswith("#"):
+                continue
             if ref_i == ref_j or ref_j not in pos_map:
                 continue
             x_j, y_j = pos_map[ref_j]
@@ -2556,9 +2620,9 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     )
     result = _snap_input_stage_cohesion(result, ir, block_layout=block_layout)
     result = _snap_output_stage_cohesion(result, ir, block_layout=block_layout)
-    # 7e: Page balance pass is complete implementation but currently disabled
-    # pending refinement to prevent overlap creation on small/dense circuits.
-    # result, page_balance_shift = _snap_page_balance(result, block_layout)
+    result, page_balance_shift = _snap_page_balance(result, block_layout)
+    if page_balance_shift != 0.0 and decoupling_map:
+        result = _post_snap_decoupling_caps(result, decoupling_map)
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
     # Use grid-safe max bounds so final clamped coordinates stay on the
@@ -2566,5 +2630,33 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
     grid = 1.27
     grid_max_x = round(math.floor(PAGE_MAX_X / grid) * grid, 4)
     grid_max_y = round(math.floor(PAGE_MAX_Y / grid) * grid, 4)
+    result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
+    late_skip_pairs = set(decouple_skip)
+    if block_layout is not None:
+        from ..block_detection import BlockRole  # noqa: PLC0415
+
+        protected_roles = {
+            BlockRole.OPAMP_CORE,
+            BlockRole.FEEDBACK,
+            BlockRole.DECOUPLING,
+        }
+        protected_by_x: dict[float, list[str]] = defaultdict(list)
+        for ref, (x, _y, _rot) in result.items():
+            assignment = block_layout.assignments.get(ref)
+            if assignment is None or assignment.role not in protected_roles:
+                continue
+            protected_by_x[x].append(ref)
+        for refs in protected_by_x.values():
+            if len(refs) < 2:
+                continue
+            refs.sort()
+            for idx, left in enumerate(refs[:-1]):
+                for right in refs[idx + 1 :]:
+                    late_skip_pairs.add((left, right))
+    # Late locality/cohesion/composition passes can still reintroduce same-column
+    # collisions after the earlier deoverlap step, and final clamping can merge
+    # edge-bound components back onto the same grid cell. Run one last deoverlap
+    # pass on the final clamped coordinates.
+    result = _deoverlap_positions(result, skip_pairs=frozenset(late_skip_pairs))
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result
