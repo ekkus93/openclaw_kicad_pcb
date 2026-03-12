@@ -148,8 +148,12 @@ python scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
 
 The discovery order is:
 
-1. `GRAPHVIZ_DOT` environment variable (highest priority)
-2. System `PATH` (`shutil.which("dot")`)
+1. Package-local `kicad_pcb/graphviz_layout/bin/dot` if present
+2. `GRAPHVIZ_DOT` environment variable
+3. System `PATH` (`shutil.which("dot")`)
+
+Current releases do not ship a package-local Graphviz binary, so in normal use
+the active lookup path is `GRAPHVIZ_DOT` first and then the system `PATH`.
 
 Run `python scripts/kicad_pcb.py doctor` to see which binary is active and
 its version.
