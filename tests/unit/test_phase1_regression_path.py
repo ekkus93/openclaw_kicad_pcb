@@ -85,6 +85,25 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
 
     assert result["J_IN"][0] == 50.8
     assert dump["cache_hit"] is False
+    assert dump["artifact_manifest"] == {
+        "version": 1,
+        "artifacts": [
+            "tiers",
+            "connector_roles",
+            "connector_role_summary",
+            "diagnostics",
+            "block_layout",
+            "halo_map",
+            "halo_alignment",
+            "decoupling_map",
+            "sds_scores",
+            "sds_columns",
+            "dot_source",
+            "raw_graphviz_positions",
+            "post_snap_positions",
+            "final_positions",
+        ],
+    }
     assert dump["connector_role_summary"]["would_trigger_legacy_bfs_fallback"] is False
     assert dump["diagnostics"] == []
     assert dump["connector_roles"]["J_IN"] == "input"
@@ -133,5 +152,6 @@ def test_graphviz_engine_records_role_degradation_diagnostic(
     assert diagnostic["severity"] == "warning"
     assert diagnostic["details"]["missing_roles"] == ["output"]
     assert diagnostic["details"]["unknown_refs"] == ["J_OUT"]
+    assert "current Graphviz pipeline stays active" in diagnostic["message"]
     assert "would have degraded to BFS fallback" in diagnostic["message"]
     assert "LAYDBG001" in caplog.text

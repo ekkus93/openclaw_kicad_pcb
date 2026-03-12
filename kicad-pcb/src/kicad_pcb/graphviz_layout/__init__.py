@@ -91,6 +91,23 @@ _log = logging.getLogger(__name__)
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
 
+_LAYOUT_DEBUG_ARTIFACTS: tuple[str, ...] = (
+    "tiers",
+    "connector_roles",
+    "connector_role_summary",
+    "diagnostics",
+    "block_layout",
+    "halo_map",
+    "halo_alignment",
+    "decoupling_map",
+    "sds_scores",
+    "sds_columns",
+    "dot_source",
+    "raw_graphviz_positions",
+    "post_snap_positions",
+    "final_positions",
+)
+
 
 def _serialize_layout_positions(
     positions: Mapping[str, tuple[float, float, float | None]],
@@ -126,8 +143,16 @@ def _serialize_block_layout(block_layout: object) -> dict[str, object]:
     }
 
 
+def _layout_debug_artifact_manifest() -> dict[str, object]:
+    """Describe the stable top-level artifacts emitted in layout debug dumps."""
+    return {
+        "version": 1,
+        "artifacts": list(_LAYOUT_DEBUG_ARTIFACTS),
+    }
+
+
 def _analyze_legacy_sds_fallback(roles: Mapping[str, str]) -> dict[str, object]:
-    """Describe whether the legacy layout path would degrade to BFS fallback."""
+    """Describe how older connector-role gating would have classified this role set."""
     input_refs = sorted(ref for ref, role in roles.items() if role == "input")
     output_refs = sorted(ref for ref, role in roles.items() if role == "output")
     power_refs = sorted(ref for ref, role in roles.items() if role == "power")
@@ -153,7 +178,12 @@ def _analyze_legacy_sds_fallback(roles: Mapping[str, str]) -> dict[str, object]:
 def _build_layout_diagnostics(
     connector_role_summary: Mapping[str, object],
 ) -> list[dict[str, object]]:
-    """Return debug/warning diagnostics for degradation-like layout conditions."""
+    """Return diagnostics describing legacy-risk role classifications.
+
+    These diagnostics do not indicate that the current Graphviz engine switched
+    to a separate fallback placer. They record when older connector-role-gated
+    logic would have degraded into lower-quality BFS-based column assignment.
+    """
     diagnostics: list[dict[str, object]] = []
     raw_missing_roles = connector_role_summary.get("missing_roles", [])
     raw_unknown_refs = connector_role_summary.get("unknown_refs", [])
@@ -170,8 +200,9 @@ def _build_layout_diagnostics(
                 "code": "LAYDBG001",
                 "severity": "warning",
                 "message": (
-                    "Connector-role inference is incomplete; older layout logic would have "
-                    "degraded to BFS fallback."
+                    "Connector-role inference is incomplete; the current Graphviz pipeline "
+                    "stays active, but older connector-role gating would have degraded to "
+                    "BFS fallback."
                 ),
                 "details": {
                     "missing_roles": missing_roles,
@@ -261,13 +292,11 @@ def _write_layout_debug_dump(path: Path, payload: dict[str, object]) -> None:
 # Binary discovery
 # ---------------------------------------------------------------------------
 
-# When a ``dot`` binary is shipped alongside the package it should be placed
-# at ``<package_root>/bin/dot`` (or ``bin/dot.exe`` on Windows).  The slot is
-# checked *before* the environment variable and PATH lookup so the bundled
-# binary is always preferred when present.
-#
-# Currently no binary is bundled; the constant resolves to a path that will
-# not exist, so the check always falls through to the env-var / PATH steps.
+# Current releases resolve Graphviz from ``GRAPHVIZ_DOT`` or the system PATH.
+# The package-local ``bin/dot`` slot remains as a dormant compatibility hook so
+# future distributions can ship a colocated binary without changing discovery
+# code. In today's tree the path does not exist, so user-visible resolution is
+# still env-var first, then PATH.
 _BUNDLED_DOT_PATH: Path = Path(__file__).parent / "bin" / "dot"
 
 
@@ -276,7 +305,7 @@ def find_dot_binary(*, strict: bool = False) -> str | None:
 
     Search order:
 
-    1. **Bundled binary** — ``<package>/bin/dot`` if present and executable.
+    1. **Package-local compatibility slot** — ``<package>/bin/dot`` if present.
     2. :envvar:`GRAPHVIZ_DOT` environment variable.
     3. System :data:`PATH` (``shutil.which``).
 
@@ -284,7 +313,7 @@ def find_dot_binary(*, strict: bool = False) -> str | None:
 
     Use :func:`find_dot_source` to get both the path and discovery source.
     """
-    # 1. Bundled binary (preferred when present).
+    # 1. Package-local compatibility slot.
     if _BUNDLED_DOT_PATH.is_file() and os.access(_BUNDLED_DOT_PATH, os.X_OK):
         return str(_BUNDLED_DOT_PATH)
     # 2. GRAPHVIZ_DOT environment variable.
@@ -459,6 +488,7 @@ class GraphvizLayoutEngine:
                     _write_layout_debug_dump(
                         self._debug_dump_path,
                         {
+                            "artifact_manifest": _layout_debug_artifact_manifest(),
                             "block_layout": _serialize_block_layout(block_layout),
                             "cache_hit": True,
                             "cache_key": cache_key,
@@ -547,6 +577,7 @@ class GraphvizLayoutEngine:
             _write_layout_debug_dump(
                 self._debug_dump_path,
                 {
+                    "artifact_manifest": _layout_debug_artifact_manifest(),
                     "block_layout": _serialize_block_layout(block_layout),
                     "cache_hit": False,
                     "cache_key": cache_key,

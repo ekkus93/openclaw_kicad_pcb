@@ -52,6 +52,9 @@ class TestPhase1RegressionPath:
         assert dump["connector_role_summary"]["legacy_mode"] == "sds_recursive_halving"
         assert dump["connector_role_summary"]["missing_roles"] == []
         assert dump["connector_role_summary"]["power_refs"] == ["J3"]
+        assert dump["artifact_manifest"]["version"] == 1
+        assert "block_layout" in dump["artifact_manifest"]["artifacts"]
+        assert "final_positions" in dump["artifact_manifest"]["artifacts"]
         assert dump["connector_roles"] == {"J1": "input", "J2": "output", "J3": "power"}
         assert dump["halo_map"] == {"C6": "U1", "R2": "U1"}
         assert dump["raw_graphviz_positions"]

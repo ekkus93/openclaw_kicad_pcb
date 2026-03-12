@@ -324,25 +324,38 @@ Completed on 2026-03-11:
 Remove mismatches between docs, assumptions, and implementation.
 
 ### 8.1 Remove stale “fallback engine” assumptions from docs/comments
-- [ ] Update docs/comments to clearly distinguish:
-  - [ ] no separate layout fallback engine
-  - [ ] internal fallback algorithms may still exist
-- [ ] Document where fallback-like behavior still lives inside the Graphviz pipeline.
+- [x] Update docs/comments to clearly distinguish:
+  - [x] no separate layout fallback engine
+  - [x] legacy fallback terminology now refers only to diagnostics about older connector-role gating
+- [x] Document where fallback-like behavior still lives inside the Graphviz pipeline.
+
+Completed on 2026-03-11:
+- clarified `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` so legacy BFS wording is limited to diagnostics/debug summaries about older connector-role gating, not a live secondary layout engine
+- aligned README wording with the implemented Graphviz-only behavior and failure semantics
 
 ### 8.2 Make Graphviz binary strategy explicit
 **File:** `src/kicad_pcb/graphviz_layout/__init__.py`
 
-- [ ] If Graphviz is supposed to be bundled, actually bundle it or correct the docs/comments.
-- [ ] If PATH/env is the intended strategy, document it clearly.
+- [x] If Graphviz is supposed to be bundled, actually bundle it or correct the docs/comments.
+- [x] If PATH/env is the intended strategy, document it clearly.
+
+Completed on 2026-03-11:
+- documented the package-local `bin/dot` probe as a dormant compatibility slot rather than an active bundled-binary promise
+- aligned README and module comments so current user-facing behavior is explicit: present-day installs resolve `dot` via `GRAPHVIZ_DOT` or `PATH`, and fail fast when unavailable
 
 ### 8.3 Add debug artifacts for future regressions
-- [ ] Save optional debug JSON for:
-  - [ ] tiers
-  - [ ] connector roles
-  - [ ] block classification
-  - [ ] raw positions
-  - [ ] final positions
-- [ ] This should make future layout regressions much easier to diagnose.
+- [x] Save optional debug JSON for:
+  - [x] tiers
+  - [x] connector roles
+  - [x] block classification
+  - [x] raw positions
+  - [x] final positions
+- [x] This should make future layout regressions much easier to diagnose.
+
+Completed on 2026-03-11:
+- confirmed the existing Graphviz debug dump already captures tiers, connector roles, block layout, raw Graphviz positions, post-snap positions, final positions, SDS data, halo data, and diagnostics
+- added an explicit `artifact_manifest` section to the debug JSON so future regressions can rely on a stable, self-describing dump contract
+- extended Phase 1 unit/integration coverage to lock in that debug-artifact surface
 
 ---
 
@@ -353,10 +366,10 @@ Remove mismatches between docs, assumptions, and implementation.
 3. [x] Phase 2 — weaken same-column halo forcing
 4. [x] Phase 4 — confirm/fix connector role path and fallback behavior
 5. [x] Phase 3 — add block-aware zoning and post-Graphviz refinement
-6. [ ] Phase 5 — refine power/support clustering
-7. [ ] Phase 6 — improve op-amp neighborhood layout
+6. [x] Phase 5 — refine power/support clustering
+7. [x] Phase 6 — improve op-amp neighborhood layout
 8. [x] Phase 7 — lock in regression tests
-9. [ ] Phase 8 — clean up docs/comments and debug support
+9. [x] Phase 8 — clean up docs/comments and debug support
 
 ---
 

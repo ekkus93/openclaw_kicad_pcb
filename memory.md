@@ -379,6 +379,14 @@ After Phases 1-4, regenerate baseline and assess improvement before continuing t
   - `uv run mypy kicad-pcb/src/kicad_pcb/sch_doc/__init__.py`
 
 
+## 2026-03-11T23:51:06Z - GPT-5.4 - Completed CODE_REVIEW7 Phase 8 hygiene cleanup
+
+- Clarified `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` so legacy BFS wording now refers only to diagnostics about older connector-role gating, not a live fallback engine.
+- Documented the package-local `bin/dot` probe as a dormant compatibility slot; current installs still resolve Graphviz through `GRAPHVIZ_DOT` or `PATH` and fail fast when unavailable.
+- Added `artifact_manifest` to the Graphviz debug dump and locked it in with focused Phase 1 unit/integration tests.
+- Validation passed: `uv run pytest -q tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py`, `uv run ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py`, `uv run mypy kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`.
+
+
 ## 2026-03-06T18:08:10Z — Reviewed fallback audit item B23 (serializer inline-vs-block formatting)
 
 - Reviewed `kicad-pcb/src/kicad_pcb/sexpr/serializer.py` inline-vs-block behavior.
