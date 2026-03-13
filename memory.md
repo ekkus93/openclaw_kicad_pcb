@@ -1,5 +1,244 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-13T00:08:53Z - GPT-5.4 - Detailed handoff after item-3 rollback and baseline restore
+
+- This note is the current resume point for the NE5532 wiring-readability thread. The active accepted code baseline is the router/test state after item 2 was completed, after the protected-endpoint wire-orientation fix landed, and after the first item-3 `VOL_L_OUT` experiment was explicitly rejected and reverted.
+- The main active files remain:
+  - `kicad-pcb/src/kicad_pcb/router.py`
+  - `tests/unit/test_phase6_wire_simplification.py`
+  - `code_review/FIX_WIRES_TODO.md`
+  - `memory.md`
+- The current accepted visual baseline is preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/`.
+  - Managed SVG: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/svg/OpenClaw_Managed.svg`
+  - Managed PNG: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/png/OpenClaw_Managed.png`
+- Do not treat preview `..._234940` as current baseline. That preview came from the first item-3 `VOL_L_OUT` experiment and was rejected.
+
+- `code_review/FIX_WIRES_TODO.md` status at handoff:
+  - item 1 `Lock the primary input path`: `DONE`
+  - item 2 `Remove the secondary rectangular lane`: `DONE`
+  - item 3 `Reduce vertical span of the input cluster`: `IN PROGRESS`
+  - item 4 `Make RV1 feel downstream`: `TODO`
+  - item 5 `Add explicit regression coverage for the intended shape`: `DONE`
+  - item 6 `Regenerate and review after each routing change`: `IN PROGRESS`
+- The TODO file already records the right current diagnosis: after item 2, the main remaining height issue is no longer `LEFT_IN` / `IN_L_AC`; it is the adjacent `VOL_L_OUT` neighborhood around `R4`, `RV1` pin `2`, and `U1` pin `3`.
+
+- What worked and is part of the accepted baseline:
+  - The broad early cleanup work on `_simplify_wires(...)` that removed zero-length and duplicate segments stayed.
+  - The router-local power-net recognition for `VPLUS*` / `VMINUS*` style rails stayed.
+  - `_chain_route(...)` and `_prefer_chain_route(...)` stayed; these helped compact local 3-pin nets avoid some boxy mini-bus patterns.
+  - The neighborhood-aware local ladder planner stayed, but only after it evolved from a naive shared repeated-lane detector into a real grouped planner that assigns distinct lanes.
+  - The connector-led asymmetric input-ladder work stayed and is now the accepted item-1 result.
+    - `LEFT_IN` is intentionally locked to the dedicated left-entry lane at `x=49.53`.
+    - This was the correct lever for making `J1 -> LEFT_IN` read like the primary entry path.
+  - The bounded shared-lane planner work stayed and is the accepted item-2 result.
+    - `SharedLanePlan` exists so local ladder routes can specify a lane coordinate plus optional orthogonal bounds.
+    - `_shared_lane_route(...)` honors those bounds and clamps taps to the bounded trunk instead of always spanning the full min/max extent.
+    - `IN_L_AC` now uses the bounded right-side continuation lane at `x=60.96` with bounded `y` span `120.65..134.62` in the relevant focused regression/planner expectation.
+    - This removed both the old full-height rectangle and the later smaller `C5/R1` rectangle.
+  - The repo-wide endpoint regression fix stayed.
+    - The real issue was not missing connectivity in the schematic; it was segment orientation after final simplification.
+    - The accepted fix is in `route_nets(...)`: when exactly one endpoint is a protected pin endpoint, emit that protected endpoint first in the final segment.
+
+- What was tried and rejected earlier in the thread:
+  - A `_spine_route(...)` experiment that anchored trunks on an existing endpoint lane instead of a mean lane.
+    - Focused tests passed.
+    - Preview got worse: junction count rose and local nets became more rectangular.
+    - This was reverted from `router.py`, and its temporary tests were removed.
+  - A body-crossing-policy change that narrowed the exemption for segments whose endpoints are inside symbol boxes.
+    - The diagnosis behind it was technically plausible, but the preview outcome was worse.
+    - It introduced a different detour pattern and a second dogleg/rectangle.
+    - User explicitly asked to revert it and keep the older `..._152500` behavior as the working baseline at that point.
+    - That code and its tests were rolled back.
+  - An intermediate neighborhood-ladder attempt where adjacent local nets landed on the same exact lane and visually merged.
+    - The underlying idea survived, but that specific version did not.
+    - It was replaced by the grouped-lane planner that assigns distinct offsets.
+
+- Item-1 history in one place:
+  - The target was to make the input side read asymmetrically instead of as two generic parallel ladder lanes.
+  - A failing regression was written first for the intended `LEFT_IN / IN_L_AC` asymmetry.
+  - Planner changes in `_collect_local_ladder_candidates(...)`, `_assign_grouped_ladder_lanes(...)`, and `_plan_local_ladder_routes(...)` introduced connector-led handling.
+  - Initial expected coordinates had to be corrected after observing actual routed geometry; the accepted `LEFT_IN` lane is `x=49.53`, not the first guessed value.
+  - Preview `..._212047` confirmed the primary path improvement: `LEFT_IN` became cleaner and more stable, but `IN_L_AC` still retained a boxy secondary lane.
+
+- Item-2 history in one place:
+  - A failing route-level regression was written specifically so `IN_L_AC` could not silently revert to a full rectangle around `C5/R1`.
+  - `SharedLanePlan` was added to support bounded trunks.
+  - The first bounded plan used `x=57.15`; that removed the old full-height rectangle but still produced a smaller local box because the lane was still too close to or on the real body boundary in generated geometry.
+  - Probing against actual generated positions showed the lane needed to move farther right.
+  - `59.69` was tried and still effectively sat on the boundary.
+  - `60.96` was the first actually clear external lane and removed the remaining `C5/R1` box.
+  - Accepted visual result: preview `..._230958`.
+  - After this, item 2 was correctly marked `DONE` in `FIX_WIRES_TODO.md`.
+
+- Repo-wide regression that appeared during item 2:
+  - Full validation exposed `tests/unit/test_netlist_commands.py::test_wires_connect_at_pin_endpoints`.
+  - A first attempted fix tried to stop `_simplify_wires(...)` from internalizing protected endpoints.
+  - That was the wrong level and did not solve the real issue.
+  - That incorrect simplification patch and its temporary test were removed.
+  - The correct accepted fix was the final wire-orientation rule described above.
+  - After that, full repo validation returned to green.
+
+- Current item-3 state in one place:
+  - The remaining input-cluster height problem is now localized to `VOL_L_OUT`, not to `LEFT_IN` / `IN_L_AC`.
+  - Actual relevant stub ends in the accepted baseline were measured as:
+    - `R4`: `(76.20, 110.49)`
+    - `RV1 pin 2`: `(85.09, 142.24)`
+    - `U1 pin 3`: `(133.35, 120.65)`
+  - This means item 3 overlaps conceptually with item 4 because the `RV1` side endpoint is part of the remaining tall local shape.
+
+- First item-3 experiment that was tried and rolled back:
+  - Goal: compact the `VOL_L_OUT` local route and reduce the vertical span of the input-side neighborhood.
+  - Approach: add a positioned compact-route chooser for small 3-pin local nets, comparing spine vs explicit chain orderings after body-crossing adjustments.
+  - Temporary code added helpers such as ordered chain scoring/selection in `router.py` and a focused `VOL_L_OUT` regression in `tests/unit/test_phase6_wire_simplification.py`.
+  - Focused tests passed after making the test orientation-agnostic and widening some type hints for mapping-based positions.
+  - The preview result was not acceptable:
+    - generated preview: `..._234940`
+    - `wires=108`, `junctions=37`, `local_wires=42`, `local_height=77.47`
+    - accepted baseline `..._230958`: `wires=110`, `junctions=34`, `local_wires=39`, `local_height=77.47`
+    - net result: no reduction in local height at all, plus more junctions
+  - Because the actual preview did not improve and got noisier, this entire item-3 experiment was rejected.
+  - Rolled back:
+    - removed the broad compact-route chooser code from `kicad-pcb/src/kicad_pcb/router.py`
+    - removed the temporary `VOL_L_OUT` regression from `tests/unit/test_phase6_wire_simplification.py`
+    - restored the repository to the accepted `..._230958` baseline
+
+- Validation state at the current handoff point:
+  - `uv run --frozen ruff check .` passed
+  - `uv run --frozen mypy kicad-pcb/src` passed
+  - `uv run --frozen pytest -q` passed
+  - Focused routing slices also passed after the rollback back to the accepted baseline
+- This matters because the repo is not paused in a speculative half-changed state. It is paused in a clean accepted state after a rejected experiment was fully removed.
+
+- Practical guidance for the next session:
+  - Start from preview `..._230958`, not from `..._234940`.
+  - Treat `LEFT_IN` at `x=49.53` and `IN_L_AC` at bounded `x=60.96` as locked-good unless there is a very strong reason to revisit them.
+  - Do not reopen the earlier body-crossing-policy change.
+  - Do not revive the first broad item-3 compact-route chooser across all small 3-pin local nets.
+  - The next useful move should be a narrower, preview-driven regression/change that targets the actual `VOL_L_OUT` geometry specifically, while preserving the accepted `LEFT_IN / IN_L_AC` cleanup.
+  - After any new item-3 or item-4 change, regenerate a preview and compare directly against `..._230958`, plus older visual references `..._212047`, `..._152500`, and `..._094046` if needed.
+
+## 2026-03-13T00:01:09Z - GPT-5.4 - First item-3 VOL_L_OUT experiment was rejected and reverted
+
+- Tried a positioned compact-route chooser for small 3-pin local nets to simplify the `VOL_L_OUT` neighborhood (`R4`, `RV1` pin `2`, `U1` pin `3`). Focused tests passed, but the regenerated preview did not reduce the overall local height and junction count increased, so the experiment was rejected.
+- Reverted the router/test changes from that experiment and revalidated the accepted baseline with `ruff check .`, `mypy kicad-pcb/src`, the accepted focused routing slices, and full `pytest -q`.
+- `code_review/FIX_WIRES_TODO.md` should keep item 3 as `IN PROGRESS` with the VOL_L_OUT diagnosis, but note that the first compact-route chooser attempt was not accepted.
+
+## 2026-03-12T23:33:56Z - GPT-5.4 - Item 3 root cause is now the adjacent VOL_L_OUT neighborhood
+
+- After item 2, the remaining height issue in the input cluster is no longer the `LEFT_IN` / `IN_L_AC` pair. The compact local planner output for those nets is already clean.
+- The remaining tall geometry in preview `..._230958` is dominated by `VOL_L_OUT` around `R4`, `RV1` pin `2`, and `U1` pin `3`. Actual stub ends in the generated schematic are `(76.20, 110.49)`, `(85.09, 142.24)`, and `(133.35, 120.65)`.
+- Probing horizontal and vertical shared-lane alternatives against real body positions shows that this neighborhood is the next real item-3 target, and it overlaps with item 4 because the `RV1` side endpoint itself sits high. `code_review/FIX_WIRES_TODO.md` should mark item 3 as `IN PROGRESS` with that diagnosis.
+
+## 2026-03-12T23:19:42Z - GPT-5.4 - Item 2 completed by moving IN_L_AC to first clear external lane
+
+- The remaining `C5/R1` rectangle was caused by the secondary connector-led lane still landing on or inside the capacitor/resistor body X-range in the generated schematic. Moving the `IN_L_AC` lane from `57.15` to `59.69` was still on-boundary and still detoured; moving it to `60.96` removed the local box.
+- Current best preview artifact is `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/` with SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/svg/OpenClaw_Managed.svg` and PNG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/png/OpenClaw_Managed.png`.
+- In that artifact, `LEFT_IN` stays locked on `x=49.53`, while `IN_L_AC` now uses a single right-side vertical continuation on `x=60.96`; `code_review/FIX_WIRES_TODO.md` should treat item 2 as `DONE` and advance to item 3.
+- Validation after the final tweak passed: focused ladder tests, nearby routing slice, `ruff check .`, `mypy kicad-pcb/src`, and full `pytest -q`.
+
+## 2026-03-12T22:50:54Z - GPT-5.4 - FIX_WIRES_TODO now records repo-wide green validation
+
+- Updated `code_review/FIX_WIRES_TODO.md` so item 2 notes that repo-wide validation is green again after the protected-endpoint wire-orientation fix.
+- The validation checklist in that file now explicitly marks `ruff check .`, `mypy kicad-pcb/src`, and full `pytest -q` as completed.
+
+## 2026-03-12T22:48:40Z - GPT-5.4 - Full suite restored by orienting final wires from protected pin endpoints
+
+- The bounded shared-lane planner change exposed a repo-wide regression in `tests/unit/test_netlist_commands.py::test_wires_connect_at_pin_endpoints`: a valid pin endpoint was still connected, but it was emitted as the second point of a wire segment, so the managed schematic no longer had that pin in the set of wire starts.
+- The correct fix was not in `_simplify_wires(...)`. Instead, after the final protected-point simplification in `route_nets(...)`, wire segments are now reoriented so that if exactly one endpoint is a protected pin endpoint, that protected endpoint is emitted first in the segment.
+- Validation passed cleanly after this fix: `ruff check .`, `mypy kicad-pcb/src`, the isolated endpoint regression, the recent ladder regressions, and full `pytest -q`.
+
+## 2026-03-12T22:22:03Z - GPT-5.4 - Preview confirms partial secondary-lane improvement
+
+- Regenerated preview artifact from the bounded shared-lane planner change at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview/`, with SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview/svg/OpenClaw_Managed.svg` and PNG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview/png/OpenClaw_Managed.png`.
+- Compared against baselines `..._212047` and `..._152500` by parsing the managed schematics: total wire count dropped `115 -> 114`, and the old full-height secondary input trunk at `x=57.15` from `y=101.60` to `y=142.24` is gone.
+- The item is only partially solved visually: the preview still shows a smaller local box in the `C5/R1` neighborhood after detouring, so `FIX_WIRES_TODO.md` should keep item 2 as `IN PROGRESS` while item 5 (regression coverage) is now `DONE`.
+
+## 2026-03-12T22:13:17Z - GPT-5.4 - Secondary input lane now uses a bounded planner lane
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so local ladder planning now returns a `SharedLanePlan` with optional orthogonal bounds, and `_shared_lane_route(...)` clamps pin connections to the nearest point on that bounded trunk instead of always spanning the full min/max extent.
+- The connector-led input-ladder special case still keeps `LEFT_IN` on the locked left-entry lane at `x=49.53`, but the remaining `IN_L_AC` lane is now planned as `SharedLanePlan("vertical", 57.15, 120.65, 134.62)`, which removes the full-height `C5/R1` rectangle in the focused route-level regression.
+- Validation passed: focused ladder pytest slice, nearby routing pytest slice, `ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `mypy kicad-pcb/src/kicad_pcb/router.py`.
+
+## 2026-03-12T21:58:33Z - GPT-5.4 - Next NE5532 step is secondary-lane cleanup
+
+- `code_review/FIX_WIRES_TODO.md` is up to date: item 1 (`LEFT_IN` primary-path lock) is done; the next engineering target is item 2, removing the rectangular secondary `IN_L_AC` lane while preserving the locked `LEFT_IN` lane.
+- The right next move should stay test-first: add a focused route-level regression in `tests/unit/test_phase6_wire_simplification.py` that fails if `IN_L_AC` reverts to a full rectangle around `C5/R1`, then make the smallest planner-only change in `kicad-pcb/src/kicad_pcb/router.py` to satisfy it.
+- Do not reopen the reverted body-crossing-policy experiment for this; planner changes remain the preferred lever, and any new result should be compared visually against previews `..._212047`, `..._152500`, and `..._094046`.
+
+## 2026-03-12T15:57:52Z - GPT-5.4 - Detailed handoff note for paused NE5532 local-ladder routing work
+
+- Current active area is still `kicad-pcb/src/kicad_pcb/router.py`, specifically the NE5532 local-net readability problem around the input ladder `J1/C5/R1/RV1` and the output ladder `C7/R7/J2`.
+- The latest implemented change moved the approach from single-net routing decisions to a multi-net neighborhood planner:
+  - `_collect_local_ladder_candidates(...)` gathers compact 2-3 pin local signal nets from `CircuitIR` using stub-end geometry.
+  - `_build_ladder_adjacency(...)` groups nearby candidates whose local bounding boxes touch or nearly touch.
+  - `_assign_grouped_ladder_lanes(...)` assigns distinct parallel lanes to adjacent 3-pin nets that would otherwise try to use the same repeated X/Y lane.
+  - `route_nets(...)` now calls `_plan_local_ladder_routes(...)` once per schematic and uses `_shared_lane_route(...)` with an explicit `(axis, coordinate)` plan for qualifying nets.
+- This was added because the previous attempt at neighborhood-aware ladder routing let adjacent local nets collapse onto one shared lane, and the global `_simplify_wires(...)` pass then merged them into an electrically wrong-looking shared trunk.
+- Focused regressions currently live in `tests/unit/test_phase6_wire_simplification.py` and cover:
+  - `_shared_lane_route(...)` using an existing repeated lane.
+  - `_plan_local_ladder_routes(...)` assigning distinct parallel offsets for adjacent local nets.
+  - `route_nets(...)` actually emitting distinct parallel lane geometry for those adjacent nets.
+- Important environment note: the user/context warned that `tests/unit/test_phase6_wire_simplification.py` had changed externally during the session, and it was re-read before edits. If work resumes later, re-read that file again before changing it because it has been a moving target.
+- Validation that passed after the latest router/test edits:
+  - `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`
+  - `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`
+  - `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`
+- Preview-generation trail from this latest phase:
+  - Intermediate preview `.../ne5532_headphone_amp_preview_20260312_150450/` was generated from an earlier neighborhood-ladder attempt and showed a real problem: the new vertical trunks caused adjacent local nets to land on the same exact lane and visually merge.
+  - That bug was fixed by changing the detector into a lane planner with distinct parallel offsets.
+  - Final validated preview for this phase: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_152500/`
+  - Final SVG for review: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_152500/svg/OpenClaw_Managed.svg`
+- Latest coarse metrics from `OpenClaw_Managed.kicad_sch` in `..._152500`:
+  - `wires=115`
+  - `junctions=34`
+  - Prior best preview `..._094046` remained `wires=115`, `junctions=31`, so the new planner is not yet a clean overall win by counts alone.
+- Latest qualitative geometry read from the generated managed schematic:
+  - Output side improved: `HP_L_OUT` no longer falls back into the old shared box pattern and now keeps a distinct local lane, which makes the `C7/R7/J2` area more readable.
+  - Input side still not good enough: the `LEFT_IN` / `IN_L_AC` neighborhood around `J1/C5/R1/RV1` is structurally more controlled than before, but it still reads too rectangular/tall and does not yet look like a simple local signal chain.
+  - In the final `..._152500` managed schematic, the input-side routing now uses offset lanes around `x=52.07` and `x=57.15`, which fixed net-collision/merging, but the left neighborhood still has too much box height and too many verticals.
+- If work resumes, the best next step is not another broad router tweak. It should specifically target the input-side neighborhood only:
+  - treat `LEFT_IN` and `IN_L_AC` as an asymmetric left-entry ladder rather than two generic parallel ladder lanes,
+  - keep the output-side planner behavior as the current baseline because that side did improve,
+  - compare any new attempt directly against preview `..._152500` and also against `..._094046` rather than relying on tests or counts alone.
+- Known good files/areas at pause point:
+  - `kicad-pcb/src/kicad_pcb/router.py` compiles, lints, and passes focused tests in its current state.
+  - `tests/unit/test_phase6_wire_simplification.py` contains the current regression coverage for this work.
+  - `memory.md` now reflects both the previous `15:53:10Z` summary and this more detailed pause/handoff note.
+
+## 2026-03-12T15:53:10Z - GPT-5.4 - Added neighborhood-aware parallel ladder routing for adjacent local nets
+
+- Reworked `kicad-pcb/src/kicad_pcb/router.py` so local ladder routing is now selected from a multi-net neighborhood plan rather than a per-net spine tweak: compact adjacent 2-3 pin signal nets are detected by overlapping local bounding boxes, and nearby 3-pin nets with the same repeated X/Y lane get distinct parallel offsets before routing.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` covering the repeated-lane helper, the neighborhood planner, and route-level use of distinct parallel lanes for adjacent local nets; validation passed with `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`, `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`.
+- Regenerated preview artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_152500/` with SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_152500/svg/OpenClaw_Managed.svg`.
+- Quick geometry read: output-side `HP_L_OUT` is cleaner because it now keeps a distinct local lane instead of collapsing into the previous shared-box pattern, but the input-side `J1/C5/R1/RV1` neighborhood still reads more rectangular than desired. Coarse counts on the new managed sheet are `wires=115` and `junctions=34`, versus the prior best `..._094046` at `wires=115`, `junctions=31`.
+
+## 2026-03-12T10:05:49Z - GPT-5.4 - Reverted unsuccessful spine-lane experiment after NE5532 regression
+
+- Tried a follow-up router experiment that changed `_spine_route(...)` to anchor trunks on an existing endpoint lane instead of the mean lane, with focused regressions in `tests/unit/test_phase6_wire_simplification.py`.
+- Focused pytest, Ruff, and mypy passed, but the regenerated NE5532 preview `.../ne5532_headphone_amp_preview_20260312_100146/` regressed visually by geometry proxy: junction count climbed from `31` back to `40`, and the input/output local nets expanded into larger rectangles.
+- Reverted that experiment in `kicad-pcb/src/kicad_pcb/router.py` and removed the temporary spine-lane tests, restoring the earlier validated router state.
+- Current best preview artifact remains `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_094046/` with SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_094046/svg/OpenClaw_Managed.svg`.
+
+## 2026-03-12T09:48:09Z - GPT-5.4 - Latest NE5532 preview still has unclear local input/output net shapes
+
+- Opened the latest regenerated SVG artifact at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_094046/svg/OpenClaw_Managed.svg`, but browser-tool content inspection was unavailable; assessment used the matching generated schematic geometry in `.../OpenClaw_Managed.kicad_sch`.
+- Input-side placement is improved and logically ordered (`J1 -> C5/R1 -> RV1 -> U1`), but the local nets still read as rectangular ladder patterns rather than simple signal chains.
+- Output-side placement is also coherent (`U1/R6 -> C7/R7 -> J2`), yet `HP_L_OUT` still uses a boxy right-side rectangle with multiple verticals/horizontals that remains visually ambiguous.
+- Net result: the latest routing is better than the prior preview, but not yet visually clear enough; the next routing pass should specifically reduce rectangle-style local 3-pin/3-node loops around the input and headphone-output neighborhoods.
+
+## 2026-03-12T09:43:49Z - GPT-5.4 - Router now prefers simple chain wiring for compact 3-pin local nets
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` with `_chain_route(...)` plus `_prefer_chain_route(...)` so compact 3-pin signal nets use a direct ordered chain when it is shorter or equally short as the default spine route.
+- This specifically targets the remaining NE5532 readability issue where short local nets were still rendered as boxy mini-bus patterns despite acceptable placement.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` for the new chain helper, route selection, and existing cleanup behavior; validation passed with `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py -k 'chain or spine or zero_length or vplus or collision_safe'`, `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`.
+- Regenerated preview artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_094046/` with SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_094046/svg/OpenClaw_Managed.svg`.
+- Quick coarse comparison versus preview `..._005210`: managed-sheet wire count changed `109 -> 115`, but junction count dropped `43 -> 31`, indicating fewer forced hub/spine intersections in the updated routing.
+
+## 2026-03-12T09:04:49Z - GPT-5.4 - Session restart context refreshed from README and memory
+
+- Re-read `/home/ubo/work/openclaw_kicad_pcb/README.md` and this memory log after a session restart to restore project context before continuing work.
+- Current active area remains the NE5532 headphone amp schematic generation and readability investigation, especially router-level wiring quality after the recent rail-visibility and zero-length/duplicate-wire cleanup.
+
 ## 2026-03-11T22:59:41Z - GPT-5.4 - Phase 6.2 reduces residual U1 same-column stacks
 
 - Refined `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so the first local feedback/decoupling parts can stay aligned with the op-amp, but overflow passives peel into adjacent x lanes instead of forming a taller exact-U1 column.
@@ -387,6 +626,90 @@ After Phases 1-4, regenerate baseline and assess improvement before continuing t
 - Validation passed: `uv run pytest -q tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py`, `uv run ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_phase1_regression_path.py tests/integration/test_phase1_regression_path.py`, `uv run mypy kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`.
 
 
+## 2026-03-12T00:13:26Z - GPT-5.4 - Generated NE5532 headphone amp preview from provided netlist
+
+- Ran `python /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/scripts/kicad_pcb.py new-from-netlist --name ne5532_headphone_amp_preview_20260312_001019 --netlist /home/ubo/work/openclaw_kicad_pcb/code_review/ne5532_headphone_amp_netlist.json --symbols-dir /usr/share/kicad/symbols --mode kicad`.
+- Active session auto-routed output to `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_001019/` and also produced `ne5532_headphone_amp_preview_20260312_001019_schematic.zip` in the session directory.
+- Exported SVG previews with `kicad-cli sch export svg`; the managed-sheet SVG is `.../svg/ne5532_headphone_amp_preview_20260312_001019-OpenClaw_Managed.svg`.
+- Quick layout read: J1 input block left, U1 centered, J2 output block right, J3 power entry above U1, input conditioning parts (C5/R1/RV1) on the left, feedback/output parts (R2/C6/R6/C7/R7) on the right, and rail decouplers placed above the main stage.
+
+
+## 2026-03-12T00:23:01Z - GPT-5.4 - Cleaned router artifacts after NE5532 preview wiring review
+
+- Found router-level schematic artifacts in the first generated NE5532 preview: `OpenClaw_Managed.kicad_sch` had 324 wire segments, including 32 zero-length wires.
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `_simplify_wires(...)` now removes zero-length segments and exact duplicate segments before colinear merging.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` covering zero-length cleanup, duplicate-segment cleanup, and a boundary-touching detour case in `route_nets(...)`.
+- Validation passed: `uv run --frozen pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py`, `uv run --frozen ruff check /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py`, `uv run --frozen mypy /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`.
+- Regenerated preview `ne5532_headphone_amp_preview_20260312_002047`; the new managed schematic dropped to 253 wire segments with 0 zero-length wires, and the updated SVG is `.../ne5532_headphone_amp_preview_20260312_002047/svg/ne5532_headphone_amp_preview_20260312_002047-OpenClaw_Managed.svg`.
+
+
+## 2026-03-12T00:51:54Z - GPT-5.4 - Detailed continuation note for NE5532 wiring investigation
+
+- Main repro netlist file for this thread: `/home/ubo/work/openclaw_kicad_pcb/code_review/ne5532_headphone_amp_netlist.json`.
+- Netlist summary: dual-opamp NE5532 headphone amp with `J1` input jack, `J2` output jack, `J3` `+15V / 0V / -15V` power connector, rail decouplers `C1/C2/C3/C4`, input chain `C5/R1/RV1`, first-stage feedback `R2/R3/R4`, buffer coupling `C6/R5`, and output chain `R6/C7/R7`.
+- Canonical command used to generate a KiCad project from that JSON:
+  `python /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/scripts/kicad_pcb.py new-from-netlist --name <preview_name> --netlist /home/ubo/work/openclaw_kicad_pcb/code_review/ne5532_headphone_amp_netlist.json --symbols-dir /usr/share/kicad/symbols --mode kicad`
+- Active session routing behavior: output does not land under the repo; it goes into the current session directory under `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/`.
+- Command used to export an SVG directly from the managed sheet:
+  `kicad-cli sch export svg --output <preview_dir>/svg <preview_dir>/OpenClaw_Managed.kicad_sch`
+- Command used to open the exported SVG in VS Code/browser during this session:
+  `code <preview_dir>/svg/OpenClaw_Managed.svg`
+- Important preview directories created during this investigation:
+  - first preview: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_001019/`
+  - zero-length-wire cleanup preview: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_002047/`
+  - latest preview after rail-visibility + pin-stub-detour fixes: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_005210/`
+- Latest SVG path that was opened at the end of the session:
+  `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_005210/svg/OpenClaw_Managed.svg`
+- What the user reported from the visual review:
+  - could not see the `+15/-15` rails for the opamp
+  - the input jack plus capacitor/resistor chain looked disconnected from the rest of the circuit
+  - the top-right capacitor wiring looked ambiguous / PWM-like
+  - overall placement was maybe tolerable, but wiring quality was still bad
+- Concrete findings from investigation:
+  - the original generated sheet passed repo lint/validation but still looked wrong because the routing geometry was misleading rather than syntactically invalid
+  - the managed schematic stores hidden `OpenClaw:bind=...` markers off-canvas; the existing lint path therefore did not help much for visual debugging of this specific issue
+  - endpoint-level auditing showed multiple pins without visible wire starts in the generated sheet, especially around `C5`, `C7`, `J2`, `R3`, `R4`, `R5`, `R7`, and `RV1`
+  - the worst visible pathology came from `detect_body_crossings(...)` in `kicad-pcb/src/kicad_pcb/router.py`: it was detouring legitimate pin stubs around the component body they belonged to, creating rectangular loop artifacts around local parts
+  - the rail-visibility issue was separate: router power-net handling did not treat `VPLUS15` / `VMINUS15` as power-style routed rails, so those names were effectively absent as visible power objects even though their bind markers existed
+- Code changes currently in the working tree and not yet committed:
+  - `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
+  - `/home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py`
+  - `/home/ubo/work/openclaw_kicad_pcb/memory.md`
+  - unrelated existing UUID/path churn remains in `/home/ubo/work/openclaw_kicad_pcb/tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch` and was intentionally not part of this wiring work
+- Current router changes in `router.py`:
+  - kept earlier `_simplify_wires(...)` normalization that removes zero-length segments and exact duplicate segments before merge logic
+  - added `_point_in_or_on_box(...)`
+  - updated `detect_body_crossings(...)` to skip detouring any segment whose start or end already lies on/in the component box, preventing pin stubs from looping around their own symbol
+  - localized supply-rail recognition inside router `_is_power_net_name(...)` so `VPLUS*`, `VMINUS*`, `VPOS*`, and `VNEG*` use power-style routing semantics without broadening the shared layout-time power-net matcher (a broader change briefly broke Graphviz rank generation and was reverted)
+- Current focused tests added in `/home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py`:
+  - `test_simplify_drops_zero_length_segments`
+  - `test_simplify_deduplicates_identical_segments_regardless_of_direction`
+  - `test_route_nets_cleanup_removes_zero_length_detour_segments`
+  - `test_detect_body_crossings_preserves_pin_stub_touching_own_box`
+  - `test_route_nets_treats_vplus_style_rails_as_power`
+- Validation commands that passed for the current uncommitted state:
+  - `uv run --frozen pytest -q /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/tests/unit/test_component_types.py`
+  - `uv run --frozen ruff check /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/component_types.py /home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/tests/unit/test_component_types.py`
+  - `uv run --frozen mypy /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py /home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/component_types.py`
+- Important failed attempt during the session:
+  - broadening `kicad-pcb/src/kicad_pcb/component_types.py:is_power_net(...)` to include `VPLUS/VMINUS/VPOS/VNEG` caused Graphviz `dot` to fail during project generation with `Error: trouble in init_rank ... net_LEFT_IN ... net_IN_L_AC`; that change was reverted, and rail handling was moved into router-local logic only
+- Latest generation result after the router-local fixes:
+  - generation command succeeded for preview `ne5532_headphone_amp_preview_20260312_005210`
+  - latest managed schematic path: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_005210/OpenClaw_Managed.kicad_sch`
+  - latest SVG path: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_005210/svg/OpenClaw_Managed.svg`
+  - file text counts on that latest managed schematic showed visible rail names now present via `global_label` objects (`(global_label` count = 4; `VPLUS15` count = 5; `VMINUS15` count = 7; `power:GND` count = 8)
+- Qualitative state at end of session:
+  - the “where are the rails?” problem appears partially fixed because `VPLUS15` and `VMINUS15` now show up visibly as global labels in the regenerated sheet
+  - the worst fake disconnect rectangles caused by pin-stub detours should be reduced
+  - however, the sheet is still too boxy/mechanical, especially in the input-side and right-side neighborhoods; the user may still dislike it even after these fixes
+  - likely next step is not another power-net tweak; it is a readability-focused router refinement for short local 3-pin nets and stage-local passive chains so they use simpler direct wiring instead of hub/spine rectangles
+- Recommended continuation path for next chat:
+  1. Open `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_005210/svg/OpenClaw_Managed.svg` first and visually confirm what still looks wrong.
+  2. Compare the left input chain (`J1/C5/R1/RV1`) and right/output chain (`C6/R5/U1`, `R6/C7/R7/J2`) against the AST wire geometry in the latest managed schematic.
+  3. Focus on replacing short local 3-pin hub/spine patterns with simpler stage-local direct wiring rules rather than touching Graphviz placement again.
+  4. Do not revert or overwrite the unrelated `baseline_generated.kicad_sch` UUID churn unless the user explicitly asks.
+
+
 ## 2026-03-06T18:08:10Z — Reviewed fallback audit item B23 (serializer inline-vs-block formatting)
 
 - Reviewed `kicad-pcb/src/kicad_pcb/sexpr/serializer.py` inline-vs-block behavior.
@@ -760,6 +1083,41 @@ After Phases 1-4, regenerate baseline and assess improvement before continuing t
   - removed broad suppression in `detected_version` path;
   - version parse failures return `None`, but `require_capability` now fail-fast on unknown version.
 - Updated `tests/unit/test_compat.py` expectations:
+
+## 2026-03-12T18:51:03Z - GPT-5.4 - Refreshed project context from README and memory
+
+- Re-read `/home/ubo/work/openclaw_kicad_pcb/README.md` and `/home/ubo/work/openclaw_kicad_pcb/memory.md` to get back up to speed on the current repository state.
+- Repository baseline remains: Python/KiCad automation with AST-based schematic/PCB editing, deterministic Circuit IR to schematic generation, transactional writes, and Graphviz `dot` as the intended layout engine without a documented heuristic fallback.
+- Current active implementation focus remains the NE5532 readability work in `kicad-pcb/src/kicad_pcb/router.py`, where the output-side local-ladder routing improved but the input-side `J1/C5/R1/RV1` neighborhood still needs a more asymmetric left-entry routing treatment.
+
+## 2026-03-12T20:54:06Z - GPT-5.4 - Body-crossing exemption narrowed to true short stubs
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `detect_body_crossings(...)` only skips endpoint-inside-box segments when they are truly stub-like (`<= WIRE_EXTEND_MM` Manhattan length), instead of exempting longer synthesized ladder trunks as well.
+- This fixes the root policy mismatch found in the NE5532 input neighborhood: a long shared-lane trunk can no longer bypass body-crossing remediation merely because one endpoint happens to land inside a nearby symbol box.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` covering both helper-level and route-level behavior: true pin stubs still remain untouched, while long ladder trunks now detour and leave a stable `x=44.45` detour signature after simplification.
+- Validation passed with `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py -k 'detect_body_crossings or ladder or collision_safe or zero_length or chain or vplus'`, `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`, and `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`.
+
+## 2026-03-12T21:03:18Z - GPT-5.4 - Regenerated NE5532 preview after crossing-policy fix
+
+- Generated fresh preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_205814/` from `code_review/ne5532_headphone_amp_netlist.json` and exported SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_205814/svg/OpenClaw_Managed.svg`.
+- The input-side geometry changed materially from preview `..._152500`: the `IN_L_AC` lane at `x=57.15` now also detours left through `x=44.45`, creating a second rectangular dogleg instead of the earlier mixed result where only `LEFT_IN` visibly detoured.
+- Coarse metrics regressed versus the prior best/current baseline: new managed schematic counts are `wires=147`, `junctions=34`, versus `..._152500` at `wires=115`, `junctions=34` and `..._094046` at `wires=115`, `junctions=31`.
+- Conclusion from this preview: the fix corrected the crossing-policy inconsistency, but visually it produced a different detour pattern rather than a better input-side shape; the next step should be a routing/planning change that avoids placing the raw local lane through nearby symbol bodies, not further tuning the detour pass alone.
+
+## 2026-03-12T21:07:09Z - GPT-5.4 - Reverted crossing-policy experiment to restore 152500 baseline
+
+- Reverted the `detect_body_crossings(...)` change that exempted only stub-like endpoint-inside-box segments, along with its added focused regressions in `tests/unit/test_phase6_wire_simplification.py`.
+- Reason for revert: the regenerated preview `..._205814` proved the policy fix was logically correct but visually harmful for the current NE5532 goal; it turned the input side into a second detour rectangle instead of improving readability.
+- Validation after revert passed with `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`, `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`.
+- Working baseline is back to the pre-experiment router behavior represented by preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_152500/`; future work should target lane planning on the input side rather than the crossing-policy guard.
+
+## 2026-03-12T21:28:09Z - GPT-5.4 - Added asymmetric left-entry ladder heuristic for connector-led input net
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `_assign_grouped_ladder_lanes(...)` now detects a single connector-led net in a vertical local ladder group and assigns it a left-entry lane at the leftmost stub-end plus one stub length, while keeping sibling lanes on the right side.
+- Added regression expectations in `tests/unit/test_phase6_wire_simplification.py` so the NE5532 input fixture now plans `LEFT_IN -> ("vertical", 49.53)` and `IN_L_AC -> ("vertical", 57.15)`, with route-level assertions locking in the `J1` entry segment and the two distinct vertical lanes.
+- Validation passed with `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py -k 'left_entry_lane_for_connector_input_net or uses_ladder_route_for_adjacent_three_pin_nets'`, `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`, `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`.
+- Regenerated preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_212047/` with SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_212047/svg/OpenClaw_Managed.svg`.
+- Coarse metrics stayed flat versus `..._152500` (`wires=115`, `junctions=34`), but the input-side geometry changed meaningfully: `LEFT_IN` now owns the cleaner left-entry lane at `x=49.53` with direct `J1 -> lane` entry, while `IN_L_AC` takes the more rectangular secondary lane around `x=57.15`/`x=44.45`. This is a better asymmetric decomposition than `..._152500`, though the secondary lane is still boxy.
   - unknown-version capability checks now assert `ToolError`.
 - Validation:
   - `uv run ruff check` on modified files passed.
