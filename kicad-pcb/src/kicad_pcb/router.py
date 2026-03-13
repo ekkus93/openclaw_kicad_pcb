@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from .sch_doc import SchematicDoc
 
 from .component_types import component_type as _component_type
-from .component_types import is_power_net as _is_power_net_name
+from .component_types import is_power_net as _base_is_power_net_name
 from .errors import ErrorCode, UserError
 
 # ---------------------------------------------------------------------------
@@ -93,6 +93,14 @@ class LabelPolicy:
 DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()
 
 
+def _is_power_net_name(net_name: str) -> bool:
+    """Return True for routed power rails, including VPLUS/VMINUS aliases."""
+    upper_name = net_name.upper()
+    return _base_is_power_net_name(net_name) or upper_name.startswith(
+        ("VPLUS", "VMINUS", "VPOS", "VNEG")
+    )
+
+
 def _tier_distance(ref_a: str, ref_b: str, tiers: dict[str, int]) -> int:
     """Return the absolute tier-index difference between two component refs."""
     return abs(tiers.get(ref_a, 0) - tiers.get(ref_b, 0))
@@ -122,6 +130,11 @@ def _wire_crosses_box(  # noqa: PLR0913
         seg_ty, seg_bot = min(y1, y2), max(y1, y2)
         return lx <= x1 <= rx and seg_ty < bot and seg_bot > ty
     return False
+
+
+def _point_in_or_on_box(x: float, y: float, bx: float, by: float, half: float) -> bool:
+    """Return True when point *(x, y)* lies inside or on the box boundary."""
+    return (bx - half) <= x <= (bx + half) and (by - half) <= y <= (by + half)
 
 
 def _detour_segment(
@@ -166,7 +179,7 @@ def _detour_segment(
 
 def detect_body_crossings(
     wires: list[WireSegment],
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
 ) -> list[WireSegment]:
     """Reroute wire segments that pass through a component bounding box.
 
@@ -190,6 +203,10 @@ def detect_body_crossings(
     for seg in wires:
         replaced = False
         for bx, by in bboxes:
+            if _point_in_or_on_box(
+                seg.x1, seg.y1, bx, by, SYMBOL_HALF_SIZE_MM
+            ) or _point_in_or_on_box(seg.x2, seg.y2, bx, by, SYMBOL_HALF_SIZE_MM):
+                continue
             if _wire_crosses_box(seg.x1, seg.y1, seg.x2, seg.y2, bx, by, SYMBOL_HALF_SIZE_MM):
                 result.extend(_detour_segment(seg, bx, by, SYMBOL_HALF_SIZE_MM))
                 replaced = True
@@ -320,6 +337,21 @@ class JunctionPoint:
 
     x: float
     y: float
+
+
+@dataclass(frozen=True)
+class SharedLanePlan:
+    """Planner output for a local shared lane.
+
+    The optional orthogonal bounds let the planner keep a lane on the same
+    X/Y coordinate while shortening the visible trunk to the portion that
+    actually reads as the downstream continuation.
+    """
+
+    axis: str
+    coordinate: float
+    min_orthogonal: float | None = None
+    max_orthogonal: float | None = None
 
 
 @dataclass
@@ -458,7 +490,399 @@ def _spine_route(
     return segs, junctions
 
 
-def _simplify_wires(  # noqa: PLR0912
+def _shared_lane_route(
+    endpoints: list[tuple[float, float]],
+    *,
+    axis: str | None = None,
+    coordinate: float | None = None,
+    min_bound: float | None = None,
+    max_bound: float | None = None,
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Route a local net along a repeated endpoint lane.
+
+    When two or more endpoints already share the same X or Y coordinate, keep
+    the trunk on that existing lane instead of inventing a new centroid spine.
+    This avoids the nested-rectangle look common in compact passive ladders.
+    """
+    if len(endpoints) < 2:
+        return [], []
+
+    rounded_xs = [round(point[0], 2) for point in endpoints]
+    rounded_ys = [round(point[1], 2) for point in endpoints]
+
+    x_counts: dict[float, int] = {}
+    y_counts: dict[float, int] = {}
+    for value in rounded_xs:
+        x_counts[value] = x_counts.get(value, 0) + 1
+    for value in rounded_ys:
+        y_counts[value] = y_counts.get(value, 0) + 1
+
+    shared_x, shared_x_count = max(x_counts.items(), key=lambda item: item[1])
+    shared_y, shared_y_count = max(y_counts.items(), key=lambda item: item[1])
+
+    if axis is None or coordinate is None:
+        if shared_x_count >= shared_y_count and shared_x_count >= 2:
+            axis = "vertical"
+            coordinate = shared_x
+        elif shared_y_count >= 2:
+            axis = "horizontal"
+            coordinate = shared_y
+        else:
+            return _spine_route(endpoints)
+
+    segs: list[WireSegment] = []
+    junctions: list[JunctionPoint] = []
+
+    if axis == "vertical":
+        trunk_x = coordinate
+        min_y = min(point[1] for point in endpoints) if min_bound is None else min_bound
+        max_y = max(point[1] for point in endpoints) if max_bound is None else max_bound
+        segs.append(WireSegment(trunk_x, min_y, trunk_x, max_y))
+        for ex, ey in endpoints:
+            target_y = min(max(ey, min_y), max_y)
+            if not math.isclose(ey, target_y, abs_tol=0.01):
+                segs.append(WireSegment(ex, ey, ex, target_y))
+            if not math.isclose(ex, trunk_x, abs_tol=0.01):
+                segs.append(WireSegment(ex, target_y, trunk_x, target_y))
+            junctions.append(JunctionPoint(trunk_x, target_y))
+        return _simplify_wires(segs), junctions
+
+    if axis == "horizontal":
+        trunk_y = coordinate
+        min_x = min(point[0] for point in endpoints) if min_bound is None else min_bound
+        max_x = max(point[0] for point in endpoints) if max_bound is None else max_bound
+        segs.append(WireSegment(min_x, trunk_y, max_x, trunk_y))
+        for ex, ey in endpoints:
+            target_x = min(max(ex, min_x), max_x)
+            if not math.isclose(ex, target_x, abs_tol=0.01):
+                segs.append(WireSegment(ex, ey, target_x, ey))
+            if not math.isclose(ey, trunk_y, abs_tol=0.01):
+                segs.append(WireSegment(target_x, ey, target_x, trunk_y))
+            junctions.append(JunctionPoint(target_x, trunk_y))
+        return _simplify_wires(segs), junctions
+
+    return _spine_route(endpoints)
+
+
+def _is_local_ladder_net(
+    endpoints: list[tuple[float, float]],
+) -> bool:
+    """Return True when a net is compact enough to participate in a ladder neighborhood."""
+    xs = [point[0] for point in endpoints]
+    ys = [point[1] for point in endpoints]
+    return (max(xs) - min(xs)) <= 80.0 and (max(ys) - min(ys)) <= 50.0
+
+
+def _boxes_touch_or_overlap(
+    box_a: tuple[float, float, float, float],
+    box_b: tuple[float, float, float, float],
+    *,
+    margin: float = 15.0,
+) -> bool:
+    """Return True when two axis-aligned boxes overlap or nearly touch."""
+    ax0, ax1, ay0, ay1 = box_a
+    bx0, bx1, by0, by1 = box_b
+    return not (
+        ax1 + margin < bx0 or bx1 + margin < ax0 or ay1 + margin < by0 or by1 + margin < ay0
+    )
+
+
+def _preferred_shared_lane(
+    endpoints: list[tuple[float, float]],
+) -> tuple[str, float] | None:
+    """Return the dominant repeated lane for a compact local net, if one exists."""
+    rounded_xs = [round(point[0], 2) for point in endpoints]
+    rounded_ys = [round(point[1], 2) for point in endpoints]
+
+    x_counts: dict[float, int] = {}
+    y_counts: dict[float, int] = {}
+    for value in rounded_xs:
+        x_counts[value] = x_counts.get(value, 0) + 1
+    for value in rounded_ys:
+        y_counts[value] = y_counts.get(value, 0) + 1
+
+    shared_x, shared_x_count = max(x_counts.items(), key=lambda item: item[1])
+    shared_y, shared_y_count = max(y_counts.items(), key=lambda item: item[1])
+
+    if shared_x_count >= shared_y_count and shared_x_count >= 2:
+        return "vertical", shared_x
+    if shared_y_count >= 2:
+        return "horizontal", shared_y
+    return None
+
+
+def _collect_local_ladder_candidates(
+    ir: CircuitIR,
+    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+) -> tuple[
+    dict[str, tuple[float, float, float, float]],
+    dict[str, int],
+    dict[str, tuple[str, float]],
+    dict[str, list[tuple[float, float]]],
+    dict[str, float],
+]:
+    """Collect compact local nets that may participate in ladder routing."""
+    candidate_boxes: dict[str, tuple[float, float, float, float]] = {}
+    candidate_degree: dict[str, int] = {}
+    shared_lane_by_net: dict[str, tuple[str, float]] = {}
+    endpoints_by_net: dict[str, list[tuple[float, float]]] = {}
+    connector_entry_x_by_net: dict[str, float] = {}
+
+    for net in ir.nets:
+        if _is_power_net_name(net.name):
+            continue
+
+        endpoints: list[tuple[float, float]] = []
+        for pin in net.pins:
+            endpoint = pin_endpoints.get((pin.ref, pin.pin))
+            if endpoint is None:
+                endpoints = []
+                break
+            endpoints.append(_stub_end(*endpoint))
+
+        if len(endpoints) < 2 or len(endpoints) > 3:
+            continue
+        if not _is_local_ladder_net(endpoints):
+            continue
+
+        endpoints_by_net[net.name] = endpoints
+        xs = [point[0] for point in endpoints]
+        ys = [point[1] for point in endpoints]
+        candidate_boxes[net.name] = (min(xs), max(xs), min(ys), max(ys))
+        candidate_degree[net.name] = len(endpoints)
+
+        if any(_component_type(pin.ref) == "connector" for pin in net.pins):
+            connector_entry_x_by_net[net.name] = min(xs)
+
+        lane = _preferred_shared_lane(endpoints)
+        if lane is not None:
+            shared_lane_by_net[net.name] = lane
+
+    return (
+        candidate_boxes,
+        candidate_degree,
+        shared_lane_by_net,
+        endpoints_by_net,
+        connector_entry_x_by_net,
+    )
+
+
+def _build_ladder_adjacency(
+    candidate_boxes: dict[str, tuple[float, float, float, float]],
+) -> dict[str, set[str]]:
+    """Connect compact local nets whose bounding boxes nearly touch."""
+    adjacency: dict[str, set[str]] = {name: set() for name in candidate_boxes}
+    names = sorted(candidate_boxes)
+    for index, net_name in enumerate(names):
+        for other_name in names[index + 1 :]:
+            if not _boxes_touch_or_overlap(candidate_boxes[net_name], candidate_boxes[other_name]):
+                continue
+            adjacency[net_name].add(other_name)
+            adjacency[other_name].add(net_name)
+    return adjacency
+
+
+def _connected_ladder_component(
+    start_name: str,
+    adjacency: dict[str, set[str]],
+    visited: set[str],
+) -> list[str]:
+    """Return one connected component from the ladder-neighborhood graph."""
+    stack = [start_name]
+    component: list[str] = []
+    while stack:
+        current = stack.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        component.append(current)
+        stack.extend(sorted(adjacency[current] - visited))
+    return component
+
+
+def _lane_center(
+    net_name: str,
+    axis: str,
+    endpoints_by_net: dict[str, list[tuple[float, float]]],
+) -> float:
+    """Return the orthogonal-axis center used to order parallel local lanes."""
+    coordinates = endpoints_by_net[net_name]
+    if axis == "vertical":
+        return sum(point[1] for point in coordinates) / len(coordinates)
+    return sum(point[0] for point in coordinates) / len(coordinates)
+
+
+def _assign_grouped_ladder_lanes(
+    component: list[str],
+    *,
+    candidate_degree: dict[str, int],
+    shared_lane_by_net: dict[str, tuple[str, float]],
+    endpoints_by_net: dict[str, list[tuple[float, float]]],
+    connector_entry_x_by_net: dict[str, float],
+) -> dict[str, SharedLanePlan]:
+    """Assign distinct parallel lanes to all 3-pin nets in one neighborhood."""
+    grouped: dict[tuple[str, float], list[str]] = {}
+    for net_name in component:
+        if candidate_degree.get(net_name) != 3:
+            continue
+        lane = shared_lane_by_net.get(net_name)
+        if lane is None:
+            continue
+        axis, base_coordinate = lane
+        grouped.setdefault((axis, round(base_coordinate, 2)), []).append(net_name)
+
+    planned_routes: dict[str, SharedLanePlan] = {}
+    for (axis, base_coordinate), grouped_names in grouped.items():
+        grouped_names.sort(key=lambda net_name: _lane_center(net_name, axis, endpoints_by_net))
+        if len(grouped_names) == 1:
+            planned_routes[grouped_names[0]] = SharedLanePlan(axis, base_coordinate)
+            continue
+
+        connector_entry_names = [
+            net_name for net_name in grouped_names if net_name in connector_entry_x_by_net
+        ]
+        if axis == "vertical" and len(connector_entry_names) == 1:
+            entry_net = connector_entry_names[0]
+            entry_coordinate = round(connector_entry_x_by_net[entry_net] + WIRE_EXTEND_MM, 2)
+            if entry_coordinate < round(base_coordinate, 2):
+                planned_routes[entry_net] = SharedLanePlan(axis, entry_coordinate)
+                remaining_names = [name for name in grouped_names if name != entry_net]
+                for index, net_name in enumerate(remaining_names):
+                    offset = (index + 1.25) * WIRE_EXTEND_MM
+                    coordinate = round(base_coordinate + offset, 2)
+                    if len(remaining_names) == 1:
+                        shared_points = [
+                            point
+                            for point in endpoints_by_net[net_name]
+                            if math.isclose(point[0], base_coordinate, abs_tol=0.01)
+                        ]
+                        other_points = [
+                            point
+                            for point in endpoints_by_net[net_name]
+                            if not math.isclose(point[0], base_coordinate, abs_tol=0.01)
+                        ]
+                        if len(shared_points) == 2 and len(other_points) == 1:
+                            other_y = other_points[0][1]
+                            anchor_y = min(
+                                (point[1] for point in shared_points),
+                                key=lambda y: abs(y - other_y),
+                            )
+                            planned_routes[net_name] = SharedLanePlan(
+                                axis,
+                                coordinate,
+                                min(anchor_y, other_y),
+                                max(anchor_y, other_y),
+                            )
+                            continue
+                    planned_routes[net_name] = SharedLanePlan(axis, coordinate)
+                continue
+
+        for index, net_name in enumerate(grouped_names):
+            offset = (index - (len(grouped_names) - 1) / 2) * WIRE_EXTEND_MM
+            planned_routes[net_name] = SharedLanePlan(axis, round(base_coordinate + offset, 2))
+
+    return planned_routes
+
+
+def _plan_local_ladder_routes(
+    ir: CircuitIR,
+    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+) -> dict[str, SharedLanePlan]:
+    """Detect nearby small-signal net neighborhoods that should share ladder-style routing.
+
+    The detector intentionally works across multiple nets. A 3-pin local net is
+    considered a ladder candidate only when it lives in a compact neighborhood
+    with at least one adjacent local 2-pin or 3-pin signal net.
+    """
+    (
+        candidate_boxes,
+        candidate_degree,
+        shared_lane_by_net,
+        endpoints_by_net,
+        connector_entry_x_by_net,
+    ) = _collect_local_ladder_candidates(ir, pin_endpoints)
+    adjacency = _build_ladder_adjacency(candidate_boxes)
+
+    visited: set[str] = set()
+    planned_routes: dict[str, SharedLanePlan] = {}
+
+    for net_name in sorted(candidate_boxes):
+        if net_name in visited:
+            continue
+
+        component = _connected_ladder_component(net_name, adjacency, visited)
+        if len(component) < 2:
+            continue
+
+        planned_routes.update(
+            _assign_grouped_ladder_lanes(
+                component,
+                candidate_degree=candidate_degree,
+                shared_lane_by_net=shared_lane_by_net,
+                endpoints_by_net=endpoints_by_net,
+                connector_entry_x_by_net=connector_entry_x_by_net,
+            )
+        )
+
+    return planned_routes
+
+
+def _chain_route(
+    endpoints: list[tuple[float, float]],
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Route a compact 3-pin net as a simple ordered chain.
+
+    Endpoints are ordered along the dominant axis and connected pairwise with
+    direct orthogonal segments. This avoids the boxy mini-bus look that the
+    generic spine route can produce for short local support nets.
+    """
+    if len(endpoints) < 2:
+        return [], []
+
+    xs = [e[0] for e in endpoints]
+    ys = [e[1] for e in endpoints]
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+
+    if x_span >= y_span:
+        ordered = sorted(endpoints, key=lambda point: (point[0], point[1]))
+    else:
+        ordered = sorted(endpoints, key=lambda point: (point[1], point[0]))
+
+    segs: list[WireSegment] = []
+    for index in range(len(ordered) - 1):
+        x1, y1 = ordered[index]
+        x2, y2 = ordered[index + 1]
+        segs.extend(_l_route(x1, y1, x2, y2))
+
+    protected = {(round(x, 2), round(y, 2)) for x, y in ordered}
+    return _simplify_wires(segs, protected_points=protected), []
+
+
+def _route_length(segments: list[WireSegment]) -> float:
+    """Return total Manhattan wire length for *segments*."""
+    return sum(_manhattan(seg.x1, seg.y1, seg.x2, seg.y2) for seg in segments)
+
+
+def _prefer_chain_route(endpoints: list[tuple[float, float]]) -> bool:
+    """Return True when a local 3-pin net reads better as a chain than a spine."""
+    if len(endpoints) != 3:
+        return False
+
+    chain_segs, _ = _chain_route(endpoints)
+    spine_segs, _ = _spine_route(endpoints)
+    chain_length = _route_length(chain_segs)
+    spine_length = _route_length(spine_segs)
+
+    if chain_length < spine_length - 0.01:
+        return True
+
+    return math.isclose(chain_length, spine_length, abs_tol=0.01) and len(chain_segs) <= len(
+        spine_segs
+    )
+
+
+def _simplify_wires(  # noqa: PLR0912, PLR0915
     wires: list[WireSegment],
     *,
     protected_points: set[tuple[float, float]] | None = None,
@@ -501,10 +925,31 @@ def _simplify_wires(  # noqa: PLR0912
     if not wires:
         return []
 
+    def _segment_key(seg: WireSegment) -> tuple[tuple[float, float], tuple[float, float]]:
+        p1 = (round(seg.x1, 2), round(seg.y1, 2))
+        p2 = (round(seg.x2, 2), round(seg.y2, 2))
+        return (p1, p2) if p1 <= p2 else (p2, p1)
+
+    def _is_zero_length(seg: WireSegment) -> bool:
+        return math.isclose(seg.x1, seg.x2, abs_tol=0.01) and math.isclose(
+            seg.y1, seg.y2, abs_tol=0.01
+        )
+
+    normalized: list[WireSegment] = []
+    seen_segments: set[tuple[tuple[float, float], tuple[float, float]]] = set()
+    for seg in wires:
+        if _is_zero_length(seg):
+            continue
+        key = _segment_key(seg)
+        if key in seen_segments:
+            continue
+        seen_segments.add(key)
+        normalized.append(seg)
+
     if protected_points is None:
         protected_points = set()
 
-    segments = list(wires)
+    segments = normalized
     changed = True
 
     while changed:
@@ -665,6 +1110,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     """
     routing = NetRouting()
     fallback_y = -1500.0
+    ladder_routes = _plan_local_ladder_routes(ir, pin_endpoints)
 
     for net in sorted(ir.nets, key=lambda n: n.name):
         pins = sorted(net.pins, key=lambda p: (p.ref, p.pin))
@@ -784,7 +1230,18 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 stub_ends.append((ex, ey))
-            if use_bus:
+            if use_bus and net.name in ladder_routes:
+                lane_plan = ladder_routes[net.name]
+                hub_segs, hub_junctions = _shared_lane_route(
+                    stub_ends,
+                    axis=lane_plan.axis,
+                    coordinate=lane_plan.coordinate,
+                    min_bound=lane_plan.min_orthogonal,
+                    max_bound=lane_plan.max_orthogonal,
+                )
+            elif use_bus and _prefer_chain_route(stub_ends):
+                hub_segs, hub_junctions = _chain_route(stub_ends)
+            elif use_bus:
                 hub_segs, hub_junctions = _spine_route(stub_ends)
             else:
                 hub_segs, hub_junctions = _hub_route(stub_ends)
@@ -855,6 +1312,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     # places (0.01 mm precision) to avoid floating-point comparison issues.
     protected = {(round(x, 2), round(y, 2)) for x, y, _angle in pin_endpoints.values()}
     routing.wires = _simplify_wires(routing.wires, protected_points=protected)
+
+    oriented_wires: list[WireSegment] = []
+    for seg in routing.wires:
+        start = (round(seg.x1, 2), round(seg.y1, 2))
+        end = (round(seg.x2, 2), round(seg.y2, 2))
+        if end in protected and start not in protected:
+            oriented_wires.append(WireSegment(seg.x2, seg.y2, seg.x1, seg.y1))
+        else:
+            oriented_wires.append(seg)
+    routing.wires = oriented_wires
 
     return routing
 

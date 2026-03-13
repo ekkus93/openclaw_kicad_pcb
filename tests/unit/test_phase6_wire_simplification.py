@@ -11,9 +11,17 @@ import math
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.router import (
     SYMBOL_HALF_SIZE_MM,
+    JunctionPoint,
+    SharedLanePlan,
     WireSegment,
+    _chain_route,
+    _plan_local_ladder_routes,
+    _point_in_or_on_box,
+    _prefer_chain_route,
+    _shared_lane_route,
     _simplify_wires,
     _wire_crosses_box,
+    detect_body_crossings,
     route_nets,
 )
 
@@ -154,6 +162,115 @@ def test_simplify_handles_single_segment() -> None:
     assert result[0] == wires[0]
 
 
+def test_simplify_drops_zero_length_segments() -> None:
+    """Degenerate zero-length segments are removed before further simplification."""
+    wires = [
+        WireSegment(10.0, 10.0, 10.0, 10.0),
+        WireSegment(0.0, 5.0, 10.0, 5.0),
+    ]
+
+    result = _simplify_wires(wires)
+
+    assert result == [WireSegment(0.0, 5.0, 10.0, 5.0)]
+
+
+def test_simplify_deduplicates_identical_segments_regardless_of_direction() -> None:
+    """Exact duplicate segments are collapsed even when reversed."""
+    wires = [
+        WireSegment(0.0, 5.0, 10.0, 5.0),
+        WireSegment(10.0, 5.0, 0.0, 5.0),
+    ]
+
+    result = _simplify_wires(wires)
+
+    assert len(result) == 1
+    assert {result[0].x1, result[0].x2} == {0.0, 10.0}
+    assert result[0].y1 == result[0].y2 == 5.0
+
+
+def test_chain_route_orders_local_three_pin_net_along_dominant_axis() -> None:
+    """Compact local 3-pin nets should route as a simple chain, not a bus."""
+    segs, junctions = _chain_route([(30.0, 10.0), (10.0, 10.0), (20.0, 10.0)])
+
+    assert junctions == []
+    assert segs == [
+        WireSegment(10.0, 10.0, 20.0, 10.0),
+        WireSegment(20.0, 10.0, 30.0, 10.0),
+    ]
+
+
+def test_prefer_chain_route_only_when_it_beats_spine_geometry() -> None:
+    """Triangular 3-pin nets should keep spine routing when it is shorter/cleaner."""
+    assert _prefer_chain_route([(10.0, 10.0), (20.0, 10.0), (30.0, 10.0)])
+    assert not _prefer_chain_route([(10.0, 50.0), (30.0, 30.0), (50.0, 50.0)])
+
+
+def test_shared_lane_route_uses_existing_vertical_lane() -> None:
+    """Repeated X coordinates should produce a clean vertical trunk instead of a box."""
+    segs, junctions = _shared_lane_route([(44.45, 123.19), (54.61, 101.60), (54.61, 118.11)])
+
+    assert WireSegment(54.61, 101.60, 54.61, 123.19) in segs
+    assert WireSegment(44.45, 123.19, 54.61, 123.19) in segs
+    assert JunctionPoint(54.61, 123.19) in junctions
+
+
+def test_plan_local_ladder_routes_prefers_left_entry_lane_for_connector_input_net() -> None:
+    """Connector-entry input nets should use an asymmetric left-entry ladder lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="OUT"),
+            ComponentIR(ref="R9", symbol="Device:R", value="1k"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="C5", pin="1"),
+                    PinRefIR(ref="R1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="ISOLATED",
+                pins=[
+                    PinRefIR(ref="J2", pin="1"),
+                    PinRefIR(ref="R9", pin="1"),
+                ],
+            ),
+        ],
+    )
+
+    ladder_routes = _plan_local_ladder_routes(
+        ir,
+        {
+            ("J1", "1"): (39.37, 123.19, 180.0),
+            ("C5", "1"): (54.61, 106.68, 270.0),
+            ("R1", "1"): (54.61, 118.11, 270.0),
+            ("C5", "2"): (54.61, 114.30, 90.0),
+            ("R1", "2"): (54.61, 125.73, 90.0),
+            ("RV1", "1"): (85.09, 129.54, 270.0),
+            ("J2", "1"): (200.0, 100.0, 180.0),
+            ("R9", "1"): (230.0, 100.0, 180.0),
+        },
+    )
+
+    assert ladder_routes["LEFT_IN"] == SharedLanePlan("vertical", 49.53)
+    assert ladder_routes["IN_L_AC"] == SharedLanePlan("vertical", 60.96, 120.65, 134.62)
+
+
 def test_simplify_floating_point_tolerance() -> None:
     """Endpoint coordinates are compared with 0.01 mm tolerance (2 decimal places).
 
@@ -252,3 +369,214 @@ def test_route_nets_simplified_wires_remain_collision_safe() -> None:
             obstacle_y,
             interior_half,
         )
+
+
+def test_route_nets_cleanup_removes_zero_length_detour_segments() -> None:
+    """Boundary-touching detours should not leak zero-length wires into output."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+            ComponentIR(ref="R2", symbol="Device:R", value="1k"),
+        ],
+        nets=[
+            NetIR(
+                name="SIG",
+                pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="R2", pin="1")],
+            )
+        ],
+    )
+
+    pin_endpoints = {
+        ("R1", "1"): (100.08, 0.0, 0.0),
+        ("R2", "1"): (140.0, 0.0, 180.0),
+    }
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions={"U_OBS": (100.0, 0.0, 0.0)},
+    )
+
+    assert routing.wires
+
+    def _is_zero_length(seg: WireSegment) -> bool:
+        return math.isclose(seg.x1, seg.x2, abs_tol=0.01) and math.isclose(
+            seg.y1, seg.y2, abs_tol=0.01
+        )
+
+    assert all(not _is_zero_length(seg) for seg in routing.wires)
+
+
+def test_route_nets_prefers_chain_for_compact_three_pin_signal_net() -> None:
+    """Local 3-pin signal nets should avoid the default spine/junction topology."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="C5", pin="1"),
+                    PinRefIR(ref="R1", pin="1"),
+                ],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J1", "1"): (15.08, 10.0, 0.0),
+            ("C5", "1"): (25.08, 10.0, 0.0),
+            ("R1", "1"): (35.08, 10.0, 0.0),
+        },
+    )
+
+    assert routing.junctions == []
+    assert len(routing.wires) == 3
+    assert all(seg.y1 == seg.y2 == 10.0 for seg in routing.wires)
+    covered_spans = sorted((min(seg.x1, seg.x2), max(seg.x1, seg.x2)) for seg in routing.wires)
+    assert covered_spans == [(10.0, 20.0), (20.0, 25.08), (20.0, 35.08)]
+
+
+def test_route_nets_uses_ladder_route_for_adjacent_three_pin_nets() -> None:
+    """Adjacent input ladders should keep a distinct left-entry lane for LEFT_IN."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="C5", pin="1"),
+                    PinRefIR(ref="R1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J1", "1"): (39.37, 123.19, 180.0),
+            ("C5", "1"): (54.61, 106.68, 270.0),
+            ("R1", "1"): (54.61, 118.11, 270.0),
+            ("C5", "2"): (54.61, 114.30, 90.0),
+            ("R1", "2"): (54.61, 125.73, 90.0),
+            ("RV1", "1"): (85.09, 129.54, 270.0),
+        },
+    )
+
+    assert WireSegment(39.37, 123.19, 49.53, 123.19) in routing.wires
+
+    vertical_lanes = {
+        round(seg.x1, 2)
+        for seg in routing.wires
+        if math.isclose(seg.x1, seg.x2, abs_tol=0.01) and round(seg.x1, 2) in {49.53, 60.96}
+    }
+    assert vertical_lanes == {49.53, 60.96}
+
+
+def test_route_nets_secondary_input_lane_avoids_full_c5_r1_rectangle() -> None:
+    """IN_L_AC should continue downstream without a full-height parallel box."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="C5", pin="1"),
+                    PinRefIR(ref="R1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J1", "1"): (39.37, 123.19, 180.0),
+            ("C5", "1"): (54.61, 106.68, 270.0),
+            ("R1", "1"): (54.61, 118.11, 270.0),
+            ("C5", "2"): (54.61, 114.30, 90.0),
+            ("R1", "2"): (54.61, 125.73, 90.0),
+            ("RV1", "1"): (85.09, 129.54, 270.0),
+        },
+    )
+
+    assert WireSegment(60.96, 120.65, 60.96, 134.62) in routing.wires
+    assert WireSegment(60.96, 109.22, 60.96, 134.62) not in routing.wires
+    assert WireSegment(54.61, 109.22, 60.96, 109.22) not in routing.wires
+
+
+def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:
+    """Pin stubs that start on a symbol boundary must not be detoured."""
+    stub = WireSegment(54.61, 106.68, 54.61, 101.60)
+
+    result = detect_body_crossings([stub], {"C5": (54.61, 110.49, 0.0)})
+
+    assert result == [stub]
+    assert _point_in_or_on_box(stub.x1, stub.y1, 54.61, 110.49, SYMBOL_HALF_SIZE_MM)
+
+
+def test_route_nets_treats_vplus_style_rails_as_power() -> None:
+    """Custom VPLUS/VMINUS rails should use power-style routing semantics."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x02", value="PWR"),
+            ComponentIR(ref="U1", symbol="Device:R", value="stub"),
+        ],
+        nets=[
+            NetIR(
+                name="VPLUS15",
+                pins=[PinRefIR(ref="J3", pin="1"), PinRefIR(ref="U1", pin="1")],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J3", "1"): (0.0, 0.0, 180.0),
+            ("U1", "1"): (30.0, 0.0, 0.0),
+        },
+    )
+
+    assert routing.power_symbols
+    assert not routing.labels
