@@ -67,16 +67,26 @@ Status: IN PROGRESS
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
 - Proposed fix:
 	- [ ] keep the two local nets on distinct lanes when needed
-	- [ ] shorten unnecessary full-height vertical runs in the input group
-	- [ ] prefer lane endpoints tied to actual participating taps instead of spanning the whole local box
+	- [ ] treat the `VOL_L_OUT` route as the remaining height driver, not `LEFT_IN` / `IN_L_AC`
+	- [ ] replace the current tall shared-lane shape with a shorter local continuation tied to the actual participating taps near `R4`, `RV1` pin `2`, and `U1` pin `3`
+	- [ ] avoid introducing a new top wraparound lane above `RV1` unless it is visibly shorter than the current `y=142.24` route
 - Current diagnosis:
 	- [x] `LEFT_IN` / `IN_L_AC` are no longer the dominant height problem after item 2; their local planner output is already compact
 	- [x] the remaining vertical span is now dominated by the adjacent `VOL_L_OUT` neighborhood (`R4`, `RV1` pin `2`, `U1` pin `3`)
 	- [x] a first positioned compact-route chooser experiment was tried and rejected because the preview did not reduce overall local height and increased junction count
-	- [ ] next change should target that `VOL_L_OUT` local route without regressing the now-clean `LEFT_IN` / `IN_L_AC` shape
+	- [x] the exact segments now reading worst in preview `..._230958` are:
+		- `88.90,133.35 -> 93.98,133.35`
+		- `93.98,133.35 -> 93.98,124.46`
+		- `85.09,124.46 -> 133.35,124.46`
+		- `85.09,130.81 -> 133.35,130.81`
+		- `133.35,130.81 -> 133.35,120.65`
+	- [ ] next change should target those `VOL_L_OUT` segments without regressing the now-clean `LEFT_IN` / `IN_L_AC` shape
 - Acceptance criteria:
-	- the input neighborhood uses less vertical height than preview `..._212047`
-	- the path remains electrically clear and does not reintroduce merged/shared trunks
+	- [ ] the `VOL_L_OUT` route no longer uses the visible right-then-down branch shape `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46`
+	- [ ] the long horizontal trunk `85.09,124.46 -> 133.35,124.46` is either removed or clearly shortened
+	- [ ] the high top route `85.09,142.24 -> 60.96,142.24` from the input neighborhood is not made worse while compacting `VOL_L_OUT`
+	- [ ] the path remains electrically clear and does not reintroduce merged/shared trunks
+	- [ ] the combined `J1/C5/R1/RV1/R4` neighborhood reads shorter vertically than preview `..._230958`
 
 ### 4. Make `RV1` feel downstream
 
@@ -85,11 +95,15 @@ Status: TODO
 - Goal: make the potentiometer connection read as the next stage in the chain instead of a side branch.
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
 - Proposed fix:
-	- [ ] bias the `IN_L_AC` continuation toward the `RV1` side once the `C5/R1` local node is established
-	- [ ] avoid a high wraparound connection if a shorter downstream continuation exists
+	- [ ] keep the accepted `LEFT_IN` and `IN_L_AC` shapes unchanged unless the new route absolutely requires a local adjustment
+	- [ ] bias the `VOL_L_OUT` continuation so the `RV1` wiper exits into a downstream path toward `U1` pin `3`, not into a vertical drop into a bus-like lane
+	- [ ] favor a route where the first visually dominant move from `RV1` pin `2` points toward the op-amp side rather than down into `y=124.46`
+	- [ ] avoid the current sequence `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46` if a direct or near-direct continuation to the op-amp side is available
 - Acceptance criteria:
-	- `RV1` visually reads as continuing the input path
-	- the local geometry looks less like a bus and more like a staged signal chain
+	- [ ] `RV1` visually reads as continuing the input path into `U1` rather than tapping into a routing scaffold
+	- [ ] the short wiper stub `88.90,133.35 -> 93.98,133.35` is not followed immediately by a vertical drop into the old trunk at `x=93.98`
+	- [ ] the corner sequence `85.09,130.81 -> 133.35,130.81 -> 133.35,120.65 -> 138.43,120.65` is either simplified or replaced by a route that reads as one downstream continuation
+	- [ ] the local geometry looks less like a bus and more like a staged signal chain
 
 ### 5. Add explicit regression coverage for the intended shape
 
