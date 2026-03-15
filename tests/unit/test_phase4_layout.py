@@ -5732,7 +5732,7 @@ class TestPhase3PowerSymbols:
         doc = _make_sch_doc()
         routing = NetRouting()
         # Use a net name that cannot exist in the power library.
-        routing.power_symbols.append(PowerSymbolPlacement("NOT_A_REAL_NET_XYZ", 50.0, 80.0))
+        routing.power_symbols.append(PowerSymbolPlacement("NOT_A_REAL_NET_XYZ", 50.0, 80.0, 0))
         stats: dict[str, int] = {
             "wires": 0,
             "labels": 0,
@@ -5751,6 +5751,33 @@ class TestPhase3PowerSymbols:
         )
         assert stats["power_symbols"] == 0, "Expected 0 successful power symbols"
         assert stats["global_labels"] == 1, "Expected global_label fallback"
+        assert stats["wires"] == 1, "Expected one orthogonal jog to the fallback label"
+
+        placed_labels = [
+            item
+            for item in doc.root.items
+            if isinstance(item, ListNode) and item.key == "global_label"
+        ]
+        assert len(placed_labels) == 1
+        label_at = find_first(placed_labels[0], "at")
+        assert label_at is not None
+        assert label_at.items[1].value == "50.00"  # type: ignore[union-attr]
+        assert label_at.items[2].value == "73.66"  # type: ignore[union-attr]
+        assert label_at.items[3].value == "270"  # type: ignore[union-attr]
+
+        wires = [
+            item for item in doc.root.items if isinstance(item, ListNode) and item.key == "wire"
+        ]
+        assert len(wires) == 1
+        pts = find_first(wires[0], "pts")
+        assert pts is not None
+        xy1, xy2 = pts.items[1], pts.items[2]
+        assert isinstance(xy1, ListNode)
+        assert isinstance(xy2, ListNode)
+        assert xy1.items[1].value == "50.00"  # type: ignore[union-attr]
+        assert xy1.items[2].value == "80.00"  # type: ignore[union-attr]
+        assert xy2.items[1].value == "50.00"  # type: ignore[union-attr]
+        assert xy2.items[2].value == "73.66"  # type: ignore[union-attr]
 
     def test_write_routing_strict_raises_when_power_symbol_missing(self, tmp_path: Path) -> None:
         """Strict mode must fail fast when a power symbol cannot be resolved."""

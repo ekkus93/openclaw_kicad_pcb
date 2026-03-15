@@ -600,6 +600,107 @@ def test_plan_local_ladder_routes_bounds_vol_l_out_horizontal_lane() -> None:
     )
 
 
+def test_plan_local_ladder_routes_infers_full_preview_vol_l_out_lane() -> None:
+    """Full-layout VOL_L_OUT geometry should still receive a bounded ladder plan."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+            ComponentIR(ref="R4", symbol="Device:R", value="100k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VOL_L_OUT",
+                pins=[
+                    PinRefIR(ref="RV1", pin="2"),
+                    PinRefIR(ref="R4", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                ],
+            ),
+        ],
+    )
+
+    plans = _plan_local_ladder_routes(
+        ir,
+        pin_endpoints={
+            ("C5", "2"): (54.61, 106.68, 90.0),
+            ("R1", "2"): (54.61, 121.92, 90.0),
+            ("RV1", "1"): (85.09, 144.78, 270.0),
+            ("RV1", "2"): (88.90, 140.97, 180.0),
+            ("R4", "1"): (85.09, 114.30, 270.0),
+            ("U1", "3"): (138.43, 120.65, 0.0),
+        },
+    )
+
+    assert "VOL_L_OUT" in plans
+    assert plans["VOL_L_OUT"] == SharedLanePlan("horizontal", 120.65, 85.09, 133.35)
+
+
+def test_route_nets_uses_bounded_ladder_route_for_full_preview_vol_l_out() -> None:
+    """Real full-preview VOL_L_OUT geometry should avoid the widened spine fallback."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+            ComponentIR(ref="R4", symbol="Device:R", value="100k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VOL_L_OUT",
+                pins=[
+                    PinRefIR(ref="RV1", pin="2"),
+                    PinRefIR(ref="R4", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("C5", "2"): (54.61, 106.68, 90.0),
+            ("R1", "2"): (54.61, 121.92, 90.0),
+            ("RV1", "1"): (85.09, 144.78, 270.0),
+            ("RV1", "2"): (88.90, 140.97, 180.0),
+            ("R4", "1"): (85.09, 114.30, 270.0),
+            ("U1", "3"): (138.43, 120.65, 0.0),
+        },
+        positions={
+            "C5": (54.61, 110.49, 0.0),
+            "R1": (54.61, 125.73, 0.0),
+            "RV1": (85.09, 140.97, 0.0),
+            "R4": (85.09, 110.49, 0.0),
+            "U1": (146.05, 118.11, 0.0),
+        },
+    )
+
+    assert WireSegment(138.43, 120.65, 85.09, 120.65) in routing.wires
+    assert WireSegment(85.09, 127.0, 133.35, 127.0) not in routing.wires
+
+
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:
     """Pin stubs that start on a symbol boundary must not be detoured."""
     stub = WireSegment(54.61, 106.68, 54.61, 101.60)

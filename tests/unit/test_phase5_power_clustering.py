@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.router import _cluster_power_pins, route_nets
+from kicad_pcb.router import PowerSymbolPlacement, WireSegment, _cluster_power_pins, route_nets
 
 
 def test_cluster_power_pins_single_cluster() -> None:
@@ -107,3 +107,51 @@ def test_power_net_single_pin_no_clustering() -> None:
     assert len(routing.bind_markers) == 1
     # Single pin cluster should not create junctions
     assert len(routing.junctions) == 0
+
+
+def test_power_net_single_pin_offsets_symbol_beyond_stub() -> None:
+    """Single-pin power symbols should move outward so the visible text clears the part."""
+    ir = CircuitIR(
+        version="1",
+        components=[ComponentIR(ref="R1", symbol="Device:R", value="10k")],
+        nets=[NetIR(name="GND", pins=[PinRefIR(ref="R1", pin="2")])],
+    )
+    endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+        ("R1", "2"): (50.0, 110.0, 270.0),
+    }
+
+    routing = route_nets(ir=ir, pin_endpoints=endpoints)
+
+    assert routing.power_symbols == [
+        PowerSymbolPlacement(net_name="GND", x=50.0, y=121.92, angle=90)
+    ]
+    assert WireSegment(50.0, 110.0, 50.0, 121.92) in routing.wires
+
+
+def test_power_net_cluster_offsets_shared_symbol_toward_open_side() -> None:
+    """Clustered power labels should be offset away from the local hub instead of sitting on it."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="NEG"),
+        ],
+        nets=[
+            NetIR(
+                name="VMINUS15",
+                pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="J1", pin="1")],
+            )
+        ],
+    )
+    endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+        ("U1", "1"): (115.57, 67.31, 180.0),
+        ("J1", "1"): (120.65, 67.31, 180.0),
+    }
+
+    routing = route_nets(ir=ir, pin_endpoints=endpoints)
+
+    assert len(routing.power_symbols) == 1
+    power_symbol = routing.power_symbols[0]
+    assert power_symbol.angle == 270
+    assert power_symbol == PowerSymbolPlacement(net_name="VMINUS15", x=118.11, y=60.96, angle=270)
+    assert WireSegment(118.11, 67.31, 118.11, 60.96) in routing.wires

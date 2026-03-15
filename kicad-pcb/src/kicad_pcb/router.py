@@ -60,6 +60,7 @@ _HUB_MAX_DEGREE: int = 6
 # power symbol cluster.  Pins within this radius share one power symbol,
 # reducing visual ground/power clutter (Phase 5.1).
 _POWER_CLUSTER_RADIUS_MM: float = 40.0
+_POWER_LABEL_CLEARANCE_MM: float = 6.35
 
 
 @dataclass(frozen=True)
@@ -416,6 +417,72 @@ def _snap_grid(v: float, grid: float = 1.27) -> float:
     return round(round(v / grid) * grid, 4)
 
 
+def _offset_point_along_angle(
+    x: float,
+    y: float,
+    angle: int,
+    distance: float,
+) -> tuple[float, float]:
+    """Return *(x, y)* shifted *distance* mm along cardinal *angle*."""
+    normalized = angle % 360
+    if normalized == 0:
+        return _snap_grid(x + distance), y
+    if normalized == 90:
+        return x, _snap_grid(y + distance)
+    if normalized == 180:
+        return _snap_grid(x - distance), y
+    if normalized == 270:
+        return x, _snap_grid(y - distance)
+    rad = math.radians(normalized)
+    return _snap_grid(x + math.cos(rad) * distance), _snap_grid(y + math.sin(rad) * distance)
+
+
+def _power_label_angle_for_pin(pin_angle: float) -> int:
+    """Return the outward-facing label angle for a power pin stub."""
+    return int((pin_angle + 180) % 360)
+
+
+def _power_cluster_angle(points: list[tuple[float, float]]) -> int:
+    """Choose an outward direction for a shared power label cluster.
+
+    The chosen angle points toward the nearest edge of the cluster bounding box,
+    which keeps the visible label on the open side of the local geometry.
+    """
+    if not points:
+        return 0
+
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
+    distances = {
+        180: cx - min(xs),
+        0: max(xs) - cx,
+        270: cy - min(ys),
+        90: max(ys) - cy,
+    }
+    priority = {180: 0, 0: 1, 270: 2, 90: 3}
+    return min(distances, key=lambda angle: (distances[angle], priority[angle]))
+
+
+def _fallback_power_label_position(
+    x: float,
+    y: float,
+    angle: int,
+) -> tuple[float, float, int]:
+    """Return an off-axis fallback position for power nets missing a library symbol.
+
+    Global labels render as text boxes anchored on the connection point, so
+    leaving them colinear with the incoming rail tends to stamp the visible text
+    directly on top of that rail. Move them one clearance step orthogonally into
+    whitespace instead.
+    """
+    normalized = angle % 360
+    fallback_angle = 270 if normalized in {0, 180} else 180
+    fx, fy = _offset_point_along_angle(x, y, fallback_angle, _POWER_LABEL_CLEARANCE_MM)
+    return fx, fy, fallback_angle
+
+
 def _hub_route(
     endpoints: list[tuple[float, float]],
 ) -> tuple[list[WireSegment], list[JunctionPoint]]:
@@ -609,6 +676,83 @@ def _preferred_shared_lane(
     if shared_y_count >= 2:
         return "horizontal", shared_y
     return None
+
+
+def _infer_bounded_local_lane_plan(
+    endpoints: list[tuple[float, float]],
+) -> SharedLanePlan | None:
+    """Infer a bounded ladder lane for compact 3-pin nets without an exact shared axis.
+
+    This covers full-layout cases where two nearby pins are visually aligned as a
+    ladder rung but land on slightly different coordinates after symbol placement.
+    """
+    if len(endpoints) != 3:
+        return None
+
+    xs = [point[0] for point in endpoints]
+    ys = [point[1] for point in endpoints]
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+
+    indexed_points = list(enumerate(endpoints))
+    horizontal_pairs = sorted(
+        (
+            abs(first[1][1] - second[1][1]),
+            first[0],
+            second[0],
+        )
+        for first in indexed_points
+        for second in indexed_points
+        if first[0] < second[0]
+    )
+    vertical_pairs = sorted(
+        (
+            abs(first[1][0] - second[1][0]),
+            first[0],
+            second[0],
+        )
+        for first in indexed_points
+        for second in indexed_points
+        if first[0] < second[0]
+    )
+
+    horizontal_gap, horizontal_i, horizontal_j = horizontal_pairs[0]
+    vertical_gap, vertical_i, vertical_j = vertical_pairs[0]
+    if min(horizontal_gap, vertical_gap) > WIRE_EXTEND_MM:
+        return None
+
+    if x_span >= y_span:
+        pair_i, pair_j = horizontal_i, horizontal_j
+        axis = "horizontal"
+        third_index = next(index for index in range(3) if index not in {pair_i, pair_j})
+        pair_points = [endpoints[pair_i], endpoints[pair_j]]
+        third_point = endpoints[third_index]
+        coordinate = min(
+            (pair_points[0][1], pair_points[1][1]),
+            key=lambda value: abs(value - third_point[1]),
+        )
+        return SharedLanePlan(
+            axis,
+            round(coordinate, 2),
+            round(min(pair_points[0][0], pair_points[1][0]), 2),
+            round(max(pair_points[0][0], pair_points[1][0]), 2),
+        )
+
+    pair_i, pair_j = vertical_i, vertical_j
+    axis = "vertical"
+    third_index = next(index for index in range(3) if index not in {pair_i, pair_j})
+    pair_points = [endpoints[pair_i], endpoints[pair_j]]
+    third_point = endpoints[third_index]
+    coordinate = min(
+        (pair_points[0][0], pair_points[1][0]),
+        key=lambda value: abs(value - third_point[0]),
+    )
+    return SharedLanePlan(
+        axis,
+        round(coordinate, 2),
+        round(min(pair_points[0][1], pair_points[1][1]), 2),
+        round(max(pair_points[0][1], pair_points[1][1]), 2),
+    )
 
 
 def _collect_local_ladder_candidates(
@@ -805,6 +949,13 @@ def _assign_grouped_ladder_lanes(
         for index, net_name in enumerate(grouped_names):
             offset = (index - (len(grouped_names) - 1) / 2) * WIRE_EXTEND_MM
             planned_routes[net_name] = SharedLanePlan(axis, round(base_coordinate + offset, 2))
+
+    for net_name in component:
+        if net_name in planned_routes or candidate_degree.get(net_name) != 3:
+            continue
+        inferred_plan = _infer_bounded_local_lane_plan(endpoints_by_net[net_name])
+        if inferred_plan is not None:
+            planned_routes[net_name] = inferred_plan
 
     return planned_routes
 
@@ -1174,16 +1325,23 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     # Single pin: traditional stub + symbol
                     pin_ref, (wx, wy, wa) = cluster[0]
                     ex, ey = _stub_end(wx, wy, wa)
+                    label_angle = _power_label_angle_for_pin(wa)
+                    px, py = _offset_point_along_angle(
+                        ex,
+                        ey,
+                        label_angle,
+                        _POWER_LABEL_CLEARANCE_MM,
+                    )
                     routing.wires.append(WireSegment(wx, wy, ex, ey))
-                    routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
+                    routing.wires.append(WireSegment(ex, ey, px, py))
+                    routing.power_symbols.append(
+                        PowerSymbolPlacement(net.name, px, py, label_angle)
+                    )
                     routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 else:
                     # Multiple pins: compute cluster centroid for shared symbol
                     cx = sum(cpx for _, (cpx, _, _) in cluster) / len(cluster)
                     cy = sum(cpy for _, (_, cpy, _) in cluster) / len(cluster)
-
-                    # Place ONE power symbol at centroid
-                    routing.power_symbols.append(PowerSymbolPlacement(net.name, cx, cy))
 
                     # Wire each pin to centroid via hub routing
                     stub_ends: list[tuple[float, float]] = []
@@ -1192,6 +1350,20 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         routing.wires.append(WireSegment(wx, wy, ex, ey))
                         routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                         stub_ends.append((ex, ey))
+
+                    power_angle = _power_cluster_angle(stub_ends)
+                    px, py = _offset_point_along_angle(
+                        cx,
+                        cy,
+                        power_angle,
+                        _POWER_LABEL_CLEARANCE_MM,
+                    )
+
+                    # Place ONE power symbol beyond the cluster centroid so the
+                    # visible net text does not sit on top of nearby wires.
+                    routing.power_symbols.append(
+                        PowerSymbolPlacement(net.name, px, py, power_angle)
+                    )
 
                     # Add centroid as hub target
                     stub_ends.append((cx, cy))
@@ -1203,13 +1375,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         hub_segs, hub_junctions = _hub_route(stub_ends)
                     routing.wires.extend(hub_segs)
                     routing.junctions.extend(hub_junctions)
+                    routing.wires.append(WireSegment(cx, cy, px, py))
 
             # Off-canvas fallback for power pins with no known endpoint
             for pin_ref in unknown:
                 wx, wy = -1200.0, fallback_y
                 ex, ey = wx + WIRE_EXTEND_MM, wy
+                px, py = _offset_point_along_angle(ex, ey, 0, _POWER_LABEL_CLEARANCE_MM)
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.power_symbols.append(PowerSymbolPlacement(net.name, ex, ey))
+                routing.wires.append(WireSegment(ex, ey, px, py))
+                routing.power_symbols.append(PowerSymbolPlacement(net.name, px, py, 0))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 fallback_y -= 10.0
             continue
@@ -1424,8 +1599,24 @@ def write_routing(  # noqa: PLR0913
                     },
                 )
             # Fallback: global_label when power symbol is not in the library.
+            fallback_x, fallback_y, fallback_angle = _fallback_power_label_position(
+                ps.x,
+                ps.y,
+                ps.angle,
+            )
+            if not (
+                math.isclose(ps.x, fallback_x, abs_tol=0.01)
+                and math.isclose(ps.y, fallback_y, abs_tol=0.01)
+            ):
+                doc.add_wire(ps.x, ps.y, fallback_x, fallback_y, new_uuid())
+                stats["wires"] += 1
             doc.add_global_label(
-                ps.net_name, ps.x, ps.y, new_uuid(), angle=ps.angle, shape="passive"
+                ps.net_name,
+                fallback_x,
+                fallback_y,
+                new_uuid(),
+                angle=fallback_angle,
+                shape="passive",
             )
             stats["global_labels"] = stats.get("global_labels", 0) + 1
         else:
