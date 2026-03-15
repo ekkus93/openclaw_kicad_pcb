@@ -77,6 +77,39 @@ def _symbol_property_positions(
     return (x, y - _FIELD_CLEARANCE_MM), (x, y + _FIELD_CLEARANCE_MM)
 
 
+def _offset_point_along_angle(
+    x: float,
+    y: float,
+    angle: int,
+    distance: float,
+) -> tuple[float, float]:
+    """Return *(x, y)* shifted *distance* mm along cardinal *angle*."""
+    normalized = angle % 360
+    if normalized == 0:
+        return x + distance, y
+    if normalized == 90:
+        return x, y + distance
+    if normalized == 180:
+        return x - distance, y
+    if normalized == 270:
+        return x, y - distance
+    return x, y
+
+
+def _power_symbol_property_positions(
+    x: float,
+    y: float,
+    angle: int,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Return `(Reference, Value)` positions for power symbols.
+
+    Keep the visible power-net text one readable clearance step farther along
+    the symbol's facing direction so it does not sit on top of the connection
+    point or the immediately adjacent routed wire.
+    """
+    return (x, y), _offset_point_along_angle(x, y, angle, _FIELD_CLEARANCE_MM)
+
+
 def _make_intersheet_prop() -> ListNode:
     """Return the standard KiCad ``(property "Intersheet References" …)`` node.
 
@@ -302,6 +335,7 @@ def make_power_symbol_node(  # noqa: PLR0913
     project_name: KiCad project name (for the ``(instances …)`` annotation).
     angle:        Symbol rotation in degrees CCW (default 0).
     """
+    reference_pos, value_pos = _power_symbol_property_positions(x, y, angle)
     items: list[Node] = [
         atom("symbol"),
         L(atom("lib_id"), string(lib_id)),
@@ -311,8 +345,8 @@ def make_power_symbol_node(  # noqa: PLR0913
         L(atom("in_bom"), atom("no")),
         L(atom("on_board"), atom("no")),
         L(atom("uuid"), string(sym_uuid)),
-        _make_property("Reference", ref, x, y - 1.524, hide=True),
-        _make_property("Value", value, x, y + 1.524),
+        _make_property("Reference", ref, *reference_pos, hide=True),
+        _make_property("Value", value, *value_pos),
         _make_property("Footprint", "", x, y, hide=True),
         _make_property("Datasheet", "~", x, y, hide=True),
         L(atom("pin"), string("1"), L(atom("uuid"), string(pin_uuid))),

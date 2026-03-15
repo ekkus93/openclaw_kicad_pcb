@@ -1,5 +1,19 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-15T18:03:14Z - GPT-5.4 - Power/global labels now offset away from crowded endpoints
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so power nets no longer place power symbols or fallback global labels directly on the first crowded stub endpoint or cluster centroid. The router now extends one extra clearance step outward, preserves an outward-facing angle for fallback global labels like `VMINUS15`, and adds the short connecting wire explicitly.
+- Updated `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` so `make_power_symbol_node(...)` places the visible `Value` text along the symbol angle instead of always below the pin. This cleared the `GND` text from local wires/components in the NE5532 preview.
+- Added focused regressions in `tests/unit/test_phase5_power_clustering.py` and `tests/unit/test_sch_doc.py`, then validated with `pytest tests/unit/test_phase5_power_clustering.py tests/unit/test_sch_doc.py -q`.
+- Regenerated preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/test_netlist_preview_20260315_174915/` and exported SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/test_netlist_preview_20260315_174915/svg/OpenClaw_Managed.svg`. Concrete moved anchors include `VMINUS15` at `104.14,67.31 angle 180` and `142.88,100.33 angle 270`, plus a `power:GND` symbol moved from `110.49,69.85 angle 0 / value at 110.49,71.37` to `104.14,69.85 angle 180 / value at 97.79,69.85`.
+
+## 2026-03-15T11:08:20Z - GPT-5.4 - Full-preview VOL_L_OUT now gets an inferred bounded ladder lane
+
+- Fixed `kicad-pcb/src/kicad_pcb/router.py` so compact 3-pin nets inside a local ladder neighborhood can still receive a bounded `SharedLanePlan` even when real full-layout stub endpoints do not share an exact X/Y coordinate. The new inference picks the dominant axis, looks for the closest aligned pair within one stub length, and bounds the trunk to that pair instead of falling back to `_spine_route(...)`.
+- This specifically resolves the full NE5532 `VOL_L_OUT` case from `code_review/ne5532_headphone_amp_netlist.json`: the old widened preview segment `85.09,127.00 -> 133.35,127.00` is replaced in the routing pass by the inferred rung `138.43,120.65 -> 85.09,120.65`.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` for both planner coverage on the real full-preview pin geometry and route-level coverage with actual symbol positions.
+- Validation completed with `pytest tests/unit/test_phase6_wire_simplification.py -q`, plus a direct full-netlist routing reproduction confirming `NEW_SEGMENT_PRESENT (138.43, 120.65, 85.09, 120.65)` and no reappearance of the old `y=127.0` segment.
+
 ## 2026-03-15T10:28:58Z - GPT-5.4 - Added a late text-aware layout spacing pass
 
 - Added `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py:_apply_property_text_spacing(...)` as a late post-layout pass after central composition. It enforces a two-row vertical gap for components in very nearby x-lanes so generated `Reference` / `Value` text has reserved whitespace instead of collapsing onto nearby symbols or short local wire corridors.

@@ -13,6 +13,7 @@ from kicad_pcb.errors import ErrorCode, ParseError, UserError
 from kicad_pcb.sch_doc import (
     SchematicDoc,
     make_label_node,
+    make_power_symbol_node,
     make_symbol_node,
     make_wire_node,
     read_lib_symbol_def,
@@ -673,6 +674,54 @@ class TestMakeSymbolNode:
         assert reference_at.items[1].value == "44.45"  # type: ignore[union-attr]
         assert reference_at.items[2].value == "76.20"  # type: ignore[union-attr]
         assert value_at.items[1].value == "57.15"  # type: ignore[union-attr]
+        assert value_at.items[2].value == "76.20"  # type: ignore[union-attr]
+
+
+class TestMakePowerSymbolNode:
+    def test_places_value_along_upward_facing_angle(self) -> None:
+        node = make_power_symbol_node(
+            "power:GND",
+            "GND",
+            "#PWR01",
+            50.8,
+            76.2,
+            "sym-uuid",
+            "pin-uuid",
+            "proj",
+            angle=270,
+        )
+
+        properties = [
+            item for item in node.items if isinstance(item, ListNode) and item.key == "property"
+        ]
+        value = next(prop for prop in properties if prop.items[1].value == "Value")  # type: ignore[union-attr]
+        value_at = find_first(value, "at")
+
+        assert value_at is not None
+        assert value_at.items[1].value == "50.80"  # type: ignore[union-attr]
+        assert value_at.items[2].value == "69.85"  # type: ignore[union-attr]
+
+    def test_places_value_along_left_facing_angle(self) -> None:
+        node = make_power_symbol_node(
+            "power:GND",
+            "GND",
+            "#PWR02",
+            50.8,
+            76.2,
+            "sym-uuid",
+            "pin-uuid",
+            "proj",
+            angle=180,
+        )
+
+        properties = [
+            item for item in node.items if isinstance(item, ListNode) and item.key == "property"
+        ]
+        value = next(prop for prop in properties if prop.items[1].value == "Value")  # type: ignore[union-attr]
+        value_at = find_first(value, "at")
+
+        assert value_at is not None
+        assert value_at.items[1].value == "44.45"  # type: ignore[union-attr]
         assert value_at.items[2].value == "76.20"  # type: ignore[union-attr]
 
 
