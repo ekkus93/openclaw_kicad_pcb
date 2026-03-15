@@ -44,6 +44,7 @@ from kicad_pcb.graphviz_layout.snap import (
     ORIGIN_Y,
     PAGE_MAX_X,
     PAGE_MAX_Y,
+    _apply_property_text_spacing,
     _center_ics_in_columns,
     _clamp_to_page,
     _OpAmpLocalityContext,
@@ -5443,6 +5444,51 @@ class TestSpreadXColumns:
             f"Expected >= {expected_min} x-columns from {n_sym} identical-x symbols, "
             f"got {distinct_x_count}"
         )
+
+
+class TestPropertyTextSpacing:
+    """Unit tests for the late property-text spacing pass."""
+
+    def test_pushes_nearby_x_lanes_apart(self) -> None:
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (50.8, 50.8, 0.0),
+            "R2": (63.5, 60.96, 0.0),
+        }
+
+        result = _apply_property_text_spacing(positions)
+
+        assert result["R1"] == positions["R1"]
+        assert result["R2"][1] == pytest.approx(66.04)
+
+    def test_leaves_distant_x_lanes_unchanged(self) -> None:
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (50.8, 50.8, 0.0),
+            "R2": (114.3, 60.96, 0.0),
+        }
+
+        result = _apply_property_text_spacing(positions)
+
+        assert result == positions
+
+    def test_skips_power_refs(self) -> None:
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (50.8, 50.8, 0.0),
+            "#PWR01": (50.8, 58.42, 0.0),
+        }
+
+        result = _apply_property_text_spacing(positions)
+
+        assert result == positions
+
+    def test_keeps_fixed_refs_stationary(self) -> None:
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (50.8, 50.8, 0.0),
+            "R1": (63.5, 60.96, 0.0),
+        }
+
+        result = _apply_property_text_spacing(positions, fixed_refs=frozenset({"R1"}))
+
+        assert result == positions
 
 
 # ---------------------------------------------------------------------------

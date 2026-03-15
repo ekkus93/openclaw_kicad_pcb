@@ -37,6 +37,8 @@ __all__ = [
     "make_wire_node",
 ]
 
+_FIELD_CLEARANCE_MM = 6.35
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -55,6 +57,24 @@ def _make_property(name: str, value: str, x: float, y: float, *, hide: bool = Fa
         effects_items.append(atom("hide"))
     effects = ListNode(tuple(effects_items), NO_POS)
     return L(atom("property"), string(name), string(value), at, effects)
+
+
+def _symbol_property_positions(
+    x: float,
+    y: float,
+    rotation: int,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Return `(Reference, Value)` property positions with body clearance.
+
+    Generated symbols previously placed both visible properties only 1.27 mm
+    from the symbol origin, which left text on top of nearby symbol graphics and
+    routed wires. Keep the properties on the orthogonal axis to the symbol's
+    dominant flow direction and move them one readable clearance step away.
+    """
+    normalized_rotation = rotation % 360
+    if normalized_rotation in {90, 270}:
+        return (x - _FIELD_CLEARANCE_MM, y), (x + _FIELD_CLEARANCE_MM, y)
+    return (x, y - _FIELD_CLEARANCE_MM), (x, y + _FIELD_CLEARANCE_MM)
 
 
 def _make_intersheet_prop() -> ListNode:
@@ -106,6 +126,7 @@ def make_symbol_node(  # noqa: PLR0913
     rotation:     Symbol rotation in degrees (CCW, KiCad convention).
                   0 = default orientation, 90 = rotated 90° CCW.
     """
+    reference_pos, value_pos = _symbol_property_positions(x, y, rotation)
     items: list[Node] = [
         atom("symbol"),
         L(atom("lib_id"), string(lib_sym)),
@@ -115,8 +136,8 @@ def make_symbol_node(  # noqa: PLR0913
         L(atom("in_bom"), atom("yes")),
         L(atom("on_board"), atom("yes")),
         L(atom("uuid"), string(sym_uuid)),
-        _make_property("Reference", ref, x + 1.27, y - 1.27),
-        _make_property("Value", value, x + 1.27, y + 1.27),
+        _make_property("Reference", ref, *reference_pos),
+        _make_property("Value", value, *value_pos),
         _make_property("Footprint", footprint, x, y, hide=True),
         _make_property("Datasheet", "~", x, y, hide=True),
     ]
