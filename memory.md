@@ -1,5 +1,24 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-15T09:24:56Z - GPT-5.4 - VOL_L_OUT planner unit fix did not change full preview geometry
+
+- Implemented the smallest planner-only change in `kicad-pcb/src/kicad_pcb/router.py` so the new focused unit test for bounded horizontal `VOL_L_OUT` lane planning passes.
+- Regenerated preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_092206/` and exported SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_092206/svg/OpenClaw_Managed.svg`.
+- Exact `VOL_L_OUT` target segments remained identical to baseline `..._230958`, including `88.90,133.35 -> 93.98,133.35`, `93.98,133.35 -> 93.98,124.46`, `85.09,124.46 -> 133.35,124.46`, `85.09,130.81 -> 133.35,130.81`, and `133.35,130.81 -> 133.35,120.65`.
+- Practical conclusion: the new bounded horizontal planner behavior is real in isolation, but it is not yet the controlling path for the full NE5532 preview. The next investigation should explain why the full route still emits the old geometry before making further shaping changes.
+
+## 2026-03-15T09:13:05Z - GPT-5.4 - FIX_WIRES item 3 and 4 now use segment-level acceptance targets
+
+- Updated `code_review/FIX_WIRES_TODO.md` so item 3 and item 4 are no longer generic router goals; they now cite the exact misleading accepted-preview segments around `VOL_L_OUT` and the input cluster.
+- The main item-3 target segments are the current `VOL_L_OUT` branch/trunk shape in preview `..._230958`: `88.90,133.35 -> 93.98,133.35`, `93.98,133.35 -> 93.98,124.46`, `85.09,124.46 -> 133.35,124.46`, `85.09,130.81 -> 133.35,130.81`, and `133.35,130.81 -> 133.35,120.65`.
+- Item 4 now explicitly treats the current `RV1` wiper read as the problem: the route should stop looking like a short rightward stub followed by a drop into a bus-like trunk and instead read as a downstream continuation toward `U1` pin `3`.
+
+## 2026-03-15T08:50:12Z - GPT-5.4 - Session restart context refreshed from README and memory
+
+- Re-read `README.md` and `memory.md` after chat restart to restore current repo state before continuing work.
+- Current active thread remains the NE5532 wiring-readability effort in `kicad-pcb/src/kicad_pcb/router.py`, with the accepted baseline still centered on preview `..._230958` and item 3 focused on the `VOL_L_OUT` neighborhood rather than `LEFT_IN` / `IN_L_AC`.
+- Project-wide documented posture remains Graphviz-only layout with no intended heuristic fallback, and the standard full verification gate remains `ruff check .`, `mypy kicad-pcb/src`, and `pytest -q`.
+
 ## 2026-03-13T00:08:53Z - GPT-5.4 - Detailed handoff after item-3 rollback and baseline restore
 
 - This note is the current resume point for the NE5532 wiring-readability thread. The active accepted code baseline is the router/test state after item 2 was completed, after the protected-endpoint wire-orientation fix landed, and after the first item-3 `VOL_L_OUT` experiment was explicitly rejected and reverted.

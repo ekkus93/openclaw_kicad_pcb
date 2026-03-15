@@ -735,7 +735,32 @@ def _assign_grouped_ladder_lanes(
     for (axis, base_coordinate), grouped_names in grouped.items():
         grouped_names.sort(key=lambda net_name: _lane_center(net_name, axis, endpoints_by_net))
         if len(grouped_names) == 1:
-            planned_routes[grouped_names[0]] = SharedLanePlan(axis, base_coordinate)
+            net_name = grouped_names[0]
+            if axis == "horizontal":
+                shared_points = [
+                    point
+                    for point in endpoints_by_net[net_name]
+                    if math.isclose(point[1], base_coordinate, abs_tol=0.01)
+                ]
+                other_points = [
+                    point
+                    for point in endpoints_by_net[net_name]
+                    if not math.isclose(point[1], base_coordinate, abs_tol=0.01)
+                ]
+                if len(shared_points) == 2 and len(other_points) == 1:
+                    other_x = other_points[0][0]
+                    anchor_x = max(
+                        (point[0] for point in shared_points),
+                        key=lambda x: abs(x - other_x),
+                    )
+                    planned_routes[net_name] = SharedLanePlan(
+                        axis,
+                        base_coordinate,
+                        min(anchor_x, other_x),
+                        max(anchor_x, other_x),
+                    )
+                    continue
+            planned_routes[net_name] = SharedLanePlan(axis, base_coordinate)
             continue
 
         connector_entry_names = [

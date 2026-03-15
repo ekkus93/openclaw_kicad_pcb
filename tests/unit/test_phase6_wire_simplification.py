@@ -544,6 +544,62 @@ def test_route_nets_secondary_input_lane_avoids_full_c5_r1_rectangle() -> None:
     assert WireSegment(54.61, 109.22, 60.96, 109.22) not in routing.wires
 
 
+def test_plan_local_ladder_routes_bounds_vol_l_out_horizontal_lane() -> None:
+    """VOL_L_OUT should not keep an unbounded full-width horizontal shared lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+            ComponentIR(ref="R4", symbol="Device:R", value="100k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VOL_L_OUT",
+                pins=[
+                    PinRefIR(ref="RV1", pin="2"),
+                    PinRefIR(ref="R4", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                ],
+            ),
+        ],
+    )
+
+    plans = _plan_local_ladder_routes(
+        ir,
+        pin_endpoints={
+            ("C5", "2"): (54.61, 114.30, 90.0),
+            ("R1", "2"): (54.61, 125.73, 90.0),
+            ("RV1", "1"): (85.09, 129.54, 270.0),
+            ("RV1", "2"): (88.90, 128.27, 270.0),
+            ("R4", "1"): (85.09, 119.38, 270.0),
+            ("U1", "3"): (138.43, 124.46, 0.0),
+        },
+    )
+
+    assert "VOL_L_OUT" in plans
+    assert plans["VOL_L_OUT"].axis == "horizontal"
+    assert math.isclose(plans["VOL_L_OUT"].coordinate, 124.46, abs_tol=0.01)
+    assert plans["VOL_L_OUT"].min_orthogonal is not None
+    assert plans["VOL_L_OUT"].max_orthogonal is not None
+    assert plans["VOL_L_OUT"].min_orthogonal >= 85.09
+    assert plans["VOL_L_OUT"].max_orthogonal <= 133.35
+    assert not (
+        math.isclose(plans["VOL_L_OUT"].min_orthogonal, 85.09, abs_tol=0.01)
+        and math.isclose(plans["VOL_L_OUT"].max_orthogonal, 133.35, abs_tol=0.01)
+    )
+
+
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:
     """Pin stubs that start on a symbol boundary must not be detoured."""
     stub = WireSegment(54.61, 106.68, 54.61, 101.60)
