@@ -165,6 +165,13 @@ GRID_ROW_MM: float = 7.62
 # Used by _apply_stereo_split to push compressed same-column components apart.
 _STEREO_DEOVERLAP_MIN_MM: float = 10.17  # 2 × 5.08 + ε
 
+# Generated Reference/Value properties now sit one full field-clearance step
+# away from the symbol body. Reserve two grid rows of vertical whitespace for
+# components that share the same or a very nearby x-lane so those text bands do
+# not collapse back onto adjacent symbols or short local wire corridors.
+_PROPERTY_TEXT_NEAR_X_MM: float = 12 * 1.27
+_PROPERTY_TEXT_VERTICAL_GAP_MM: float = 2 * GRID_ROW_MM
+
 # Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
 # and one grid row above the very bottom of the usable area.
 _POWER_BOTTOM_MARGIN_MM: float = 20.0
@@ -1793,6 +1800,53 @@ def _spread_x_columns(
     return result
 
 
+def _apply_property_text_spacing(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    near_x_mm: float = _PROPERTY_TEXT_NEAR_X_MM,
+    min_vertical_gap_mm: float = _PROPERTY_TEXT_VERTICAL_GAP_MM,
+    fixed_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Reserve a readable vertical lane for generated Reference/Value text.
+
+    Generated component properties now sit above and below the symbol body.
+    When nearby components land in the same or an adjacent x-lane, those text
+    bands compete for the same whitespace as neighboring symbols and short
+    local wires. This late snap pass walks the layout top-to-bottom and
+    increases the vertical gap for nearby x-lanes to at least two KiCad rows.
+
+    Only non-power refs are moved; x and rotation are preserved.
+    """
+    if len(positions) < 2:
+        return positions
+
+    result = dict(positions)
+    movable_refs = [ref for ref in positions if not ref.startswith("#")]
+    if len(movable_refs) < 2:
+        return result
+
+    changed = True
+    while changed:
+        changed = False
+        ordered_refs = sorted(movable_refs, key=lambda ref: (result[ref][1], result[ref][0], ref))
+        for idx, upper_ref in enumerate(ordered_refs[:-1]):
+            upper_x, upper_y, _upper_rot = result[upper_ref]
+            for lower_ref in ordered_refs[idx + 1 :]:
+                lower_x, lower_y, lower_rot = result[lower_ref]
+                target_y = round(upper_y + min_vertical_gap_mm, 4)
+                if lower_y + 1e-6 >= target_y:
+                    break
+                if abs(lower_x - upper_x) > near_x_mm:
+                    continue
+                if lower_ref in fixed_refs:
+                    continue
+                if target_y > lower_y + 1e-6:
+                    result[lower_ref] = (lower_x, target_y, lower_rot)
+                    changed = True
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # General deoverlap and y-gap compact
 # ---------------------------------------------------------------------------
@@ -2517,7 +2571,7 @@ def _snap_central_composition(
 # ---------------------------------------------------------------------------
 
 
-def _apply_post_layout_snaps(  # noqa: PLR0913
+def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     result: dict[str, tuple[float, float, float | None]],
     ir: CircuitIR,
     *,
@@ -2590,6 +2644,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         (2) nudge when the op-amp (OPAMP_CORE) average y-coordinate falls
         outside the central 60 % of the vertical range; (3) emit a debug
         warning when the circuit vertical span is very small.
+    7h. :func:`_apply_property_text_spacing` — reserve extra vertical space
+        for components that share the same or a nearby x-lane so visible
+        ``Reference``/``Value`` text does not collapse onto nearby symbol
+        bodies or short local wire corridors.
     8. :func:`_spread_x_columns` — split overloaded x-columns (> 3 symbols at
        the same x) into sub-columns spaced 25.4 mm apart so the Y deoverlap
        does not produce unreadable vertical stacks.
@@ -2645,6 +2703,21 @@ def _apply_post_layout_snaps(  # noqa: PLR0913
         result = _post_snap_decoupling_caps(result, decoupling_map)
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
+    protected_text_refs: frozenset[str] = frozenset()
+    if block_layout is not None:
+        from ..block_detection import BlockRole  # noqa: PLC0415
+
+        protected_text_roles = {
+            BlockRole.OPAMP_CORE,
+            BlockRole.FEEDBACK,
+            BlockRole.DECOUPLING,
+        }
+        protected_text_refs = frozenset(
+            ref
+            for ref, assignment in block_layout.assignments.items()
+            if assignment.role in protected_text_roles
+        )
+    result = _apply_property_text_spacing(result, fixed_refs=protected_text_refs)
     # Use grid-safe max bounds so final clamped coordinates stay on the
     # 1.27 mm KiCad grid even at the right/bottom page edges.
     grid = 1.27

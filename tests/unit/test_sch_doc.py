@@ -20,7 +20,7 @@ from kicad_pcb.sch_doc import (
     read_lib_symbol_pins,
 )
 from kicad_pcb.sexpr import find_all, find_first, parse, serialize
-from kicad_pcb.sexpr.nodes import StringNode
+from kicad_pcb.sexpr.nodes import ListNode, StringNode
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -614,6 +614,66 @@ class TestMakeSymbolNode:
         proj = find_first(inst, "project")
         assert proj is not None
         assert proj.items[1].value == "myproject"  # type: ignore[union-attr]
+
+    def test_places_reference_and_value_with_vertical_clearance_at_zero_rotation(self) -> None:
+        node = make_symbol_node(
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "uid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
+            rotation=0,
+        )
+
+        properties = [
+            item for item in node.items if isinstance(item, ListNode) and item.key == "property"
+        ]
+        reference = next(prop for prop in properties if prop.items[1].value == "Reference")  # type: ignore[union-attr]
+        value = next(prop for prop in properties if prop.items[1].value == "Value")  # type: ignore[union-attr]
+        reference_at = find_first(reference, "at")
+        value_at = find_first(value, "at")
+
+        assert reference_at is not None
+        assert value_at is not None
+        assert reference_at.items[1].value == "50.80"  # type: ignore[union-attr]
+        assert reference_at.items[2].value == "69.85"  # type: ignore[union-attr]
+        assert value_at.items[1].value == "50.80"  # type: ignore[union-attr]
+        assert value_at.items[2].value == "82.55"  # type: ignore[union-attr]
+
+    def test_places_reference_and_value_with_horizontal_clearance_at_ninety_rotation(self) -> None:
+        node = make_symbol_node(
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "uid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
+            rotation=90,
+        )
+
+        properties = [
+            item for item in node.items if isinstance(item, ListNode) and item.key == "property"
+        ]
+        reference = next(prop for prop in properties if prop.items[1].value == "Reference")  # type: ignore[union-attr]
+        value = next(prop for prop in properties if prop.items[1].value == "Value")  # type: ignore[union-attr]
+        reference_at = find_first(reference, "at")
+        value_at = find_first(value, "at")
+
+        assert reference_at is not None
+        assert value_at is not None
+        assert reference_at.items[1].value == "44.45"  # type: ignore[union-attr]
+        assert reference_at.items[2].value == "76.20"  # type: ignore[union-attr]
+        assert value_at.items[1].value == "57.15"  # type: ignore[union-attr]
+        assert value_at.items[2].value == "76.20"  # type: ignore[union-attr]
 
 
 class TestMakeWireNode:

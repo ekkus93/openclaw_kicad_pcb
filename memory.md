@@ -1,5 +1,21 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-15T10:28:58Z - GPT-5.4 - Added a late text-aware layout spacing pass
+
+- Added `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py:_apply_property_text_spacing(...)` as a late post-layout pass after central composition. It enforces a two-row vertical gap for components in very nearby x-lanes so generated `Reference` / `Value` text has reserved whitespace instead of collapsing onto nearby symbols or short local wire corridors.
+- Scoped the pass narrowly: only x-lanes within `12 * 1.27 mm` are considered, and `OPAMP_CORE`, `FEEDBACK`, and `DECOUPLING` refs are treated as fixed anchors when `block_layout` is available so the pass does not fight the existing op-amp locality/cohesion rules.
+- Added focused unit coverage in `tests/unit/test_phase4_layout.py` for nearby-lane spacing, distant-lane no-op, power-ref no-op, and fixed-ref no-op.
+- Validated with `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py`, `uv run --frozen mypy kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, `uv run --frozen pytest -q tests/unit/test_phase4_layout.py -k TestPropertyTextSpacing`, `uv run --frozen pytest -q tests/unit/test_phase4_layout.py -k TestApplyPostLayoutSnaps`, and `uv run --frozen pytest -q tests/unit/test_phase4_layout.py`.
+- Regenerated preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_102636/` and exported SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_102636/svg/OpenClaw_Managed.svg` for visual inspection.
+
+## 2026-03-15T09:53:31Z - GPT-5.4 - Generated symbol text now uses a larger clearance rule
+
+- The overlap complaint in the latest NE5532 preview was mainly about component `Reference` / `Value` text, not router net labels: that preview had `0` local labels, `4` global labels, and `34` each of `Reference` / `Value` properties.
+- Fixed `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` so `make_symbol_node(...)` no longer places visible properties at `x + 1.27, y ± 1.27`. It now uses a rotation-aware `6.35 mm` clearance rule: above/below for `0/180` and left/right for `90/270`.
+- Added focused coverage in `tests/unit/test_sch_doc.py` for both zero-rotation and ninety-degree property placement, and validated with `pytest -q tests/unit/test_sch_doc.py`, `ruff check kicad-pcb/src/kicad_pcb/sch_doc/nodes.py tests/unit/test_sch_doc.py`, and `mypy kicad-pcb/src/kicad_pcb/sch_doc/nodes.py`.
+- Regenerated preview `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_095037/` and exported SVG `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_095037/svg/OpenClaw_Managed.svg`; key refs moved as expected, e.g. `J1` reference `35.56,124.46 -> 34.29,119.38` and value `35.56,127.00 -> 34.29,132.08`.
+- This change improves generated component text clearance but does not yet add a full text-aware layout spacing pass for adjacent components/wires or a separate net/global-label avoidance pass.
+
 ## 2026-03-15T09:24:56Z - GPT-5.4 - VOL_L_OUT planner unit fix did not change full preview geometry
 
 - Implemented the smallest planner-only change in `kicad-pcb/src/kicad_pcb/router.py` so the new focused unit test for bounded horizontal `VOL_L_OUT` lane planning passes.
