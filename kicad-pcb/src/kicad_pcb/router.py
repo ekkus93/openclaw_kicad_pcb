@@ -442,6 +442,18 @@ def _power_label_angle_for_pin(pin_angle: float) -> int:
     return int((pin_angle + 180) % 360)
 
 
+def _power_symbol_angle(net_name: str, default_angle: int) -> int:
+    """Return the preferred placed-symbol angle for a power net.
+
+    Keep ground symbols visually consistent by always pointing them downward.
+    This avoids sideways/upward ground glyphs that can read like lateral rail
+    continuations in crowded local clusters.
+    """
+    if net_name.upper() == "GND":
+        return 0
+    return default_angle
+
+
 def _power_cluster_angle(points: list[tuple[float, float]]) -> int:
     """Choose an outward direction for a shared power label cluster.
 
@@ -1326,6 +1338,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     pin_ref, (wx, wy, wa) = cluster[0]
                     ex, ey = _stub_end(wx, wy, wa)
                     label_angle = _power_label_angle_for_pin(wa)
+                    symbol_angle = _power_symbol_angle(net.name, label_angle)
                     px, py = _offset_point_along_angle(
                         ex,
                         ey,
@@ -1335,7 +1348,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     routing.wires.append(WireSegment(wx, wy, ex, ey))
                     routing.wires.append(WireSegment(ex, ey, px, py))
                     routing.power_symbols.append(
-                        PowerSymbolPlacement(net.name, px, py, label_angle)
+                        PowerSymbolPlacement(net.name, px, py, symbol_angle)
                     )
                     routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 else:
@@ -1352,6 +1365,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         stub_ends.append((ex, ey))
 
                     power_angle = _power_cluster_angle(stub_ends)
+                    symbol_angle = _power_symbol_angle(net.name, power_angle)
                     px, py = _offset_point_along_angle(
                         cx,
                         cy,
@@ -1362,7 +1376,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     # Place ONE power symbol beyond the cluster centroid so the
                     # visible net text does not sit on top of nearby wires.
                     routing.power_symbols.append(
-                        PowerSymbolPlacement(net.name, px, py, power_angle)
+                        PowerSymbolPlacement(net.name, px, py, symbol_angle)
                     )
 
                     # Add centroid as hub target
@@ -1381,10 +1395,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             for pin_ref in unknown:
                 wx, wy = -1200.0, fallback_y
                 ex, ey = wx + WIRE_EXTEND_MM, wy
-                px, py = _offset_point_along_angle(ex, ey, 0, _POWER_LABEL_CLEARANCE_MM)
+                power_angle = _power_symbol_angle(net.name, 0)
+                px, py = _offset_point_along_angle(
+                    ex,
+                    ey,
+                    power_angle,
+                    _POWER_LABEL_CLEARANCE_MM,
+                )
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
                 routing.wires.append(WireSegment(ex, ey, px, py))
-                routing.power_symbols.append(PowerSymbolPlacement(net.name, px, py, 0))
+                routing.power_symbols.append(PowerSymbolPlacement(net.name, px, py, power_angle))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 fallback_y -= 10.0
             continue

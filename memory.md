@@ -4520,3 +4520,18 @@ Completed Phase 5.1 of CODE_REVIEW6: Reduce ground and power symbol clutter thro
 - Verified quality gates again: `ruff check .` passed, `mypy kicad-pcb/src` passed (64 files), and full `pytest` run completed with exit code 0.
 - Pending repo changes now include the TODO update and regenerated readability fixture baseline at `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch`.
 
+## 2026-03-15T21:37:45Z - GPT-5.4 - Forced GND symbols downward in router output
+
+- Added `_power_symbol_angle()` in `kicad-pcb/src/kicad_pcb/router.py` so placed `power:GND` symbols always use angle `90`, while other power nets keep the existing open-side orientation heuristic.
+- Extended `tests/unit/test_phase5_power_clustering.py` to assert clustered and single-pin GND placements use downward-facing symbols.
+- Validation for this follow-up change: `ruff check .`, `mypy kicad-pcb/src`, focused pytest on `test_phase5_power_clustering.py`, `test_sch_doc.py`, and `test_phase4_layout.py`, plus a full `pytest -q` run reaching `[100%]` with no reported failures.
+- Regenerated preview artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_210937/` and exported SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_210937/svg/OpenClaw_Managed.svg`.
+
+## 2026-03-15T23:18:13Z - GPT-5.4 - Corrected KiCad GND angle semantics and decoupled placement
+
+- Verified `/usr/share/kicad/symbols/power.kicad_sym`: the base `GND` symbol already points downward at angle `0`; the earlier forced `90` rotation was incorrect and rendered the glyph sideways.
+- Fixed `kicad-pcb/src/kicad_pcb/router.py` so GND uses symbol angle `0` while keeping the placement offset derived from the local open-side heuristic. This preserves downward-facing GND glyphs without pushing J3/R3 ground symbols to the right.
+- Updated `tests/unit/test_phase5_power_clustering.py` so clustered and single-pin GND cases assert angle `0` while preserving the expected placement geometry.
+- Regenerated preview artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_214650/` and exported SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_214650/svg/OpenClaw_Managed.svg`.
+- Validation: `ruff check .` passed, `mypy kicad-pcb/src` passed, focused pytest on `test_phase5_power_clustering.py`, `test_sch_doc.py`, and `test_phase4_layout.py` passed, and the saved full `pytest -q` output reached `[100%]`.
+

@@ -89,6 +89,7 @@ def test_power_net_clustering_integration() -> None:
 
     # Verify power symbols are for GND net
     assert all(ps.net_name == "GND" for ps in routing.power_symbols)
+    assert all(ps.angle == 0 for ps in routing.power_symbols)
 
 
 def test_power_net_single_pin_no_clustering() -> None:
@@ -104,6 +105,7 @@ def test_power_net_single_pin_no_clustering() -> None:
     routing = route_nets(ir=ir, pin_endpoints=endpoints)
 
     assert len(routing.power_symbols) == 1
+    assert routing.power_symbols[0].angle == 0
     assert len(routing.bind_markers) == 1
     # Single pin cluster should not create junctions
     assert len(routing.junctions) == 0
@@ -123,7 +125,7 @@ def test_power_net_single_pin_offsets_symbol_beyond_stub() -> None:
     routing = route_nets(ir=ir, pin_endpoints=endpoints)
 
     assert routing.power_symbols == [
-        PowerSymbolPlacement(net_name="GND", x=50.0, y=121.92, angle=90)
+        PowerSymbolPlacement(net_name="GND", x=50.0, y=121.92, angle=0)
     ]
     assert WireSegment(50.0, 110.0, 50.0, 121.92) in routing.wires
 
