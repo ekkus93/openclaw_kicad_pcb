@@ -1,5 +1,30 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-20T08:41:46Z - GPT-5.4 - Added a concrete Phase 7 output-neighborhood routing guardrail
+
+- Updated `tests/unit/test_phase7_regression_guardrails.py` with a local routing helper and `test_output_neighborhood_routing_does_not_revert_to_joggy_cluster`, which measures the real second-stage/output wire box around `C6`, `R5`, `R6`, `C7`, `R7`, and `J2` instead of relying only on whole-page wire-stub metrics.
+- The new guardrail asserts that the generated fixture stays below the current local routing thresholds (`<= 40` intersecting local segments, `<= 12` short local segments, and `<= 0.35` local short-segment ratio) and also remains materially better than the captured regressed snapshot for the same neighborhood.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` under Phase `5.1.3 Add route-quality metrics` so the roadmap now explicitly records this concrete output-neighborhood routing guardrail as landed groundwork.
+- Validation completed with `python -m ruff check tests/unit/test_phase7_regression_guardrails.py`; the fresh-shell pytest invocation for the new test used an explicit success marker (`PASS_OUTPUT_NEIGHBORHOOD_ROUTE`) before terminal output truncation.
+
+## 2026-03-20T07:55:55Z - GPT-5.4 - Roadmap now explicitly records the concrete Phase 7 neighborhood guardrail
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` under Phase `5.1.2 Add expected structural assertions` so the roadmap now explicitly notes that `tests/unit/test_phase7_regression_guardrails.py` includes a concrete NE5532 interstage/output neighborhood guardrail, not only aggregate crowding/separation metrics.
+- The roadmap text now captures the exact local property being protected: the rightmost placed `U1*` unit anchors the second-stage output neighborhood, `C6` / `R5` / `C7` / `R6` / `R7` / `J2` stay on that output side, `R5` stays between the handoff and the output resistor, and the final `R7` / `J2` tail remains farther outward.
+
+## 2026-03-20T07:50:13Z - GPT-5.4 - Added a concrete Phase 7 NE5532 interstage/output neighborhood guardrail
+
+- Updated `tests/unit/test_phase7_regression_guardrails.py` with `test_generated_layout_keeps_interstage_and_output_neighborhood_composed`, which anchors itself to the rightmost placed `U1*` unit and checks the real NE5532 output-side neighborhood directly instead of only relying on broad crowding/separation metrics.
+- The new guardrail locks in three local properties: `C6` / `R5` / `C7` / `R6` / `R7` / `J2` all stay on the output side of the second-stage op-amp unit, `R5` remains vertically between `C6` and `R6`, and the final `R7` / `J2` tail stays farther outward than the handoff pair.
+- Validation completed with `python -m ruff check tests/unit/test_phase7_regression_guardrails.py`; pytest output in the shared terminal session was truncated/noisy, but the background test invocation for the new guardrail returned success through the terminal tool's completion state.
+
+## 2026-03-20T07:35:20Z - GPT-5.4 - Tightened op-amp locality for interstage handoff parts
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so `_snap_opamp_locality(...)` now orders local support refs by signal-hop distance from the op-amp instead of plain refname order, which keeps immediate output support closer to the op-amp than farther output-chain parts.
+- Added a topology-aware handoff rule for PRECONDITIONING refs that touch both the op-amp and an OUTPUT-role neighbor, so second-stage bridge parts like the NE5532 fixture's `R5` stay on the op-amp output side instead of being pulled back into the generic left-side input lane.
+- Added `test_opamp_locality_keeps_interstage_handoff_near_output_side` in `tests/unit/test_phase4_layout.py` to lock in the NE5532-style `C6` / `R5` handoff plus immediate `R6` / `C7` / `J2` output-chain ordering.
+- Validation completed with `pytest tests/unit/test_phase4_layout.py -k 'opamp_local'`, `python -m ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py`, and `pytest tests/unit/test_phase7_regression_guardrails.py` (`5 passed`) before the final test-only assertion wrapping.
+
 ## 2026-03-20T07:01:22Z - GPT-5.4 - Synchronized the schematic-fixes roadmap to the landed snap-pipeline lane work
 
 - Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the roadmap now explicitly records the landed `snap.py` stage-edge work instead of treating it as purely future intent.
