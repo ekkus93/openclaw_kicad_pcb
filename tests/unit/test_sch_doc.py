@@ -19,6 +19,8 @@ from kicad_pcb.sch_doc import (
     read_lib_symbol_def,
     read_lib_symbol_def_chain,
     read_lib_symbol_pins,
+    read_lib_symbol_unit_pin_at,
+    read_lib_symbol_unit_pins,
 )
 from kicad_pcb.sexpr import find_all, find_first, parse, serialize
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
@@ -616,6 +618,38 @@ class TestMakeSymbolNode:
         assert proj is not None
         assert proj.items[1].value == "myproject"  # type: ignore[union-attr]
 
+    def test_writes_explicit_unit_to_symbol_and_instance_path(self) -> None:
+        node = make_symbol_node(
+            "Device:R",
+            "R1",
+            "10k",
+            "",
+            50.8,
+            76.2,
+            "uid",
+            ["1", "2"],
+            ["p1", "p2"],
+            "proj",
+            unit=2,
+        )
+
+        unit_node = find_first(node, "unit")
+        assert unit_node is not None
+        assert unit_node.items[1].value == "2"  # type: ignore[union-attr]
+
+        instances = find_first(node, "instances")
+        assert instances is not None
+        project_node = find_first(instances, "project")
+        assert project_node is not None
+        path_node = find_first(project_node, "path")
+        assert path_node is not None
+        nested_unit = next(
+            child
+            for child in path_node.items
+            if isinstance(child, ListNode) and child.key == "unit"
+        )
+        assert nested_unit.items[1].value == "2"  # type: ignore[union-attr]
+
     def test_places_reference_and_value_with_vertical_clearance_at_zero_rotation(self) -> None:
         node = make_symbol_node(
             "Device:R",
@@ -1100,3 +1134,36 @@ class TestReadLibSymbolPinsExtendsChain:
         fixture_dir = Path(__file__).parent.parent / "fixtures" / "symbols"
         pins = read_lib_symbol_pins("TestLib", "DerivedOpAmp", symbols_dir=fixture_dir)
         assert sorted(pins) == ["1", "2", "3", "6"]
+
+
+class TestReadLibSymbolUnitPins:
+    def test_extracts_unit_pin_groups_from_fixture_dual_op_amp(self) -> None:
+        fixture_dir = Path(__file__).parent.parent / "fixtures" / "symbols"
+
+        assert read_lib_symbol_unit_pins("TestLib", "DualOpAmp", symbols_dir=fixture_dir) == {
+            "1": ["1", "2", "3"],
+            "2": ["5", "6", "7"],
+            "3": ["4", "8"],
+        }
+
+
+class TestReadLibSymbolUnitPinAt:
+    def test_extracts_unit_local_pin_geometry_from_fixture_dual_op_amp(self) -> None:
+        fixture_dir = Path(__file__).parent.parent / "fixtures" / "symbols"
+
+        assert read_lib_symbol_unit_pin_at("TestLib", "DualOpAmp", symbols_dir=fixture_dir) == {
+            "1": {
+                "1": (0.0, 0.0, 0.0),
+                "2": (0.0, -2.54, 0.0),
+                "3": (5.08, -1.27, 180.0),
+            },
+            "2": {
+                "5": (0.0, 0.0, 0.0),
+                "6": (0.0, -2.54, 0.0),
+                "7": (5.08, -1.27, 180.0),
+            },
+            "3": {
+                "4": (2.54, 2.54, 270.0),
+                "8": (2.54, -5.08, 90.0),
+            },
+        }

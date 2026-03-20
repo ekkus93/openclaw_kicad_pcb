@@ -209,15 +209,15 @@ class TestGraphvizFailsLoud:
 
 
 # ---------------------------------------------------------------------------
-# 7.2  _write_symbols returns 3-tuple
+# 7.2  _write_symbols returns 5-tuple
 # ---------------------------------------------------------------------------
 
 
-class TestWriteSymbolsFourTuple:
-    """_write_symbols must return a 4-tuple (positions, endpoints, missing, raw_layout)."""
+class TestWriteSymbolsFiveTuple:
+    """_write_symbols must return a 5-tuple including explicit pin anchors."""
 
     def test_returns_four_elements(self, tmp_path: Path) -> None:
-        """The return value of _write_symbols is a 4-element tuple."""
+        """The return value of _write_symbols is a 5-element tuple."""
         from kicad_pcb.commands.netlist import _write_symbols  # noqa: PLC0415
         from kicad_pcb.sch_doc import SchematicDoc  # noqa: PLC0415
         from kicad_pcb.sexpr import parse as _parse  # noqa: PLC0415
@@ -260,8 +260,8 @@ class TestWriteSymbolsFourTuple:
         )
 
         assert isinstance(result, tuple), "Expected a tuple return value"
-        assert len(result) == 4, f"Expected 4-tuple, got {len(result)}-tuple"
-        _positions, _endpoints, _missing, _raw_layout = result
+        assert len(result) == 5, f"Expected 5-tuple, got {len(result)}-tuple"
+        _positions, _endpoints, _anchors, _missing, _raw_layout = result
 
     def test_strict_raises_when_layout_rotation_missing(self) -> None:
         """Strict mode must fail fast when the layout engine returns None rotation."""
@@ -357,7 +357,7 @@ class TestWriteSymbolsFourTuple:
         )
 
         assert isinstance(result, tuple)
-        assert len(result) == 4
+        assert len(result) == 5
 
 
 # ---------------------------------------------------------------------------

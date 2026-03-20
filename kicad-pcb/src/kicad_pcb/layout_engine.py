@@ -1,7 +1,7 @@
 """Layout engine Protocol and factory for kicad_pcb.
 
 All layout engines satisfy :class:`LayoutEngine` and return
-``{ref: (x_mm, y_mm, rotation_deg | None)}`` placements.
+``{placement_ref: (x_mm, y_mm, rotation_deg | None)}`` placements.
 
 Pipeline overview
 -----------------
@@ -37,8 +37,10 @@ The full placement pipeline executed by :class:`~kicad_pcb.graphviz_layout.Graph
    split vertically: left channel in the top half, right channel in the
    bottom half of the A4 page.
 
-The final output maps each reference designator to a ``(x_mm, y_mm,
+The final output maps each placement reference designator to a ``(x_mm, y_mm,
 rotation_deg | None)`` triple ready for :func:`~kicad_pcb.sch_writer.write_schematic`.
+For multi-unit devices this may be a placed-unit ref such as ``U1A`` or ``U1P``
+rather than the parent device ref ``U1``.
 
 Public API
 ----------
@@ -73,7 +75,7 @@ class LayoutEngine(Protocol):
     """Structural protocol satisfied by every concrete layout engine.
 
     An engine receives a :class:`~kicad_pcb.circuit_ir.CircuitIR` and
-    returns a mapping from reference designator to placement triple.
+    returns a mapping from placement reference designator to placement triple.
     """
 
     def compute_symbol_positions(
@@ -84,7 +86,7 @@ class LayoutEngine(Protocol):
         Returns
         -------
         dict[str, tuple[float, float, float | None]]
-            ``{ref: (x_mm, y_mm, rotation_deg)}`` where *rotation_deg* is
+            ``{placement_ref: (x_mm, y_mm, rotation_deg)}`` where *rotation_deg* is
             ``None`` when the engine does not supply rotation information.
         """
         ...  # pragma: no cover

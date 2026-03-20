@@ -188,6 +188,38 @@ class TestShuntPassiveOrientations:
             "Decoupling-only capacitor defaults to 0° (no signal pins present)"
         )
 
+    def test_placed_pin_subset_ignores_nonlocal_power_pin_membership(self) -> None:
+        """Placed-unit orientation ignores stray net pins outside the placed pin subset."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R1A", symbol="Device:R", value="10k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+            ],
+            nets=[
+                NetIR(
+                    name="SIG",
+                    pins=[PinRefIR(ref="R1A", pin="1"), PinRefIR(ref="R2", pin="1")],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[PinRefIR(ref="R1A", pin="99")],
+                ),
+            ],
+        )
+        positions = {"R1A": (10.0, 0.0), "R2": (20.0, 0.0)}
+
+        result = compute_orientations(
+            ir,
+            positions,
+            placed_pin_numbers={"R1A": ("1", "2"), "R2": ("1", "2")},
+        )
+
+        assert result["R1A"] == 0, (
+            "Placed-unit orientation should ignore nonlocal pin 99 and keep the series resistor "
+            "horizontal"
+        )
+
 
 class TestFeedbackPassiveOrientations:
     """Feedback passives (near op-amp) should prefer vertical in op-amp column.

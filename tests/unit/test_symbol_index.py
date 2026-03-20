@@ -21,6 +21,26 @@ def test_symbol_index_reads_pins_from_explicit_dir(fixture_symbols_dir: Path) ->
     assert pins == {"1", "2"}
 
 
+def test_symbol_index_reads_unit_pins_from_explicit_dir(fixture_symbols_dir: Path) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+
+    unit_pins = index.get_unit_pins("TestLib:DualOpAmp")
+
+    assert unit_pins == {
+        "1": ("1", "2", "3"),
+        "2": ("5", "6", "7"),
+        "3": ("4", "8"),
+    }
+
+
+def test_symbol_index_returns_empty_unit_pins_for_single_unit_symbol(
+    fixture_symbols_dir: Path,
+) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+
+    assert index.get_unit_pins("TestLib:R") == {}
+
+
 def test_symbol_index_missing_symbol_raises_coded_error(fixture_symbols_dir: Path) -> None:
     index = SymbolIndex(symbols_dir=fixture_symbols_dir)
 
@@ -79,3 +99,24 @@ def test_symbol_index_raises_io_error_when_declaration_probe_read_fails(
     assert exc_info.value.code == ErrorCode.IO_ERROR
     assert exc_info.value.details["symbol"] == "TestLib:R"
     assert exc_info.value.details["lib_file"] == str(lib_file)
+
+
+def test_symbol_index_caches_unit_pin_reads(
+    fixture_symbols_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    calls = {"count": 0}
+    original = si_mod.read_lib_symbol_unit_pins
+
+    def _wrapped(*args, **kwargs):
+        calls["count"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(si_mod, "read_lib_symbol_unit_pins", _wrapped)
+
+    first = index.get_unit_pins("TestLib:DualOpAmp")
+    second = index.get_unit_pins("TestLib:DualOpAmp")
+
+    assert first == second
+    assert calls["count"] == 1

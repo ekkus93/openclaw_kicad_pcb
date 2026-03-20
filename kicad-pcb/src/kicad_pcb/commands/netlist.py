@@ -129,7 +129,7 @@ def cmd_validate_netlist(args) -> ValidateNetlistResult:
 
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
     ir = full_validate(netlist_path, symbol_index)
-    warnings = advisory_warnings(ir)
+    warnings = advisory_warnings(ir, symbol_index)
 
     return ValidateNetlistResult(
         valid=True,

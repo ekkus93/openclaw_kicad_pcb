@@ -71,6 +71,7 @@ from kicad_pcb.router import (
     SYMBOL_HALF_SIZE_MM,
     LabelPolicy,
     NetRouting,
+    PinAnchor,
     PowerSymbolPlacement,
     WireSegment,
     _hub_route,
@@ -83,7 +84,12 @@ from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_first
-from kicad_pcb.tier import IcUnitGroup, assign_ic_units_to_tiers, assign_tiers
+from kicad_pcb.tier import (
+    IcUnitGroup,
+    assign_ic_units_to_tiers,
+    assign_tiers,
+    build_ic_unit_sibling_constraints,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -441,6 +447,28 @@ class TestRouteNetsHighFanout:
 
 
 class TestRouteNetsStrictMode:
+    def test_pin_anchor_map_routes_known_pins_without_flat_endpoint_map(self) -> None:
+        ir = _minimal_ir(
+            refs=["R1", "R2"],
+            nets=[
+                {
+                    "name": "SIG",
+                    "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}],
+                }
+            ],
+        )
+        anchors = {
+            ("R1", "1"): PinAnchor(ref="R1", pin="1", x=10.0, y=20.0, angle=0.0),
+            ("R2", "1"): PinAnchor(ref="R2", pin="1", x=30.0, y=20.0, angle=180.0),
+        }
+
+        routing = route_nets(ir=ir, pin_endpoints={}, pin_anchors=anchors, strict=True)
+
+        assert routing.wires
+        assert routing.labels == []
+        assert any(marker.ref == "R1" and marker.pin == "1" for marker in routing.bind_markers)
+        assert any(marker.ref == "R2" and marker.pin == "1" for marker in routing.bind_markers)
+
     def test_strict_mode_raises_for_unknown_pin_endpoints(self) -> None:
         ir = _minimal_ir(
             refs=["R1", "R2"],
@@ -2678,6 +2706,35 @@ def _multi_unit_ir() -> CircuitIR:
     )
 
 
+def _multi_stage_unit_ir() -> CircuitIR:
+    """Three-unit op-amp example with two signal stages and one power unit."""
+    return CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [
+                {"ref": "J1", "symbol": "Connector:Conn_01x01", "value": ""},
+                {"ref": "U1A", "symbol": "Amplifier:NE5532", "value": "NE5532"},
+                {"ref": "U1B", "symbol": "Amplifier:NE5532", "value": "NE5532"},
+                {"ref": "U1P", "symbol": "Amplifier:NE5532", "value": "NE5532"},
+                {"ref": "J2", "symbol": "Connector:Conn_01x01", "value": ""},
+            ],
+            "nets": [
+                {"name": "NET_IN", "pins": [{"ref": "J1", "pin": "1"}, {"ref": "U1A", "pin": "3"}]},
+                {
+                    "name": "NET_STAGE",
+                    "pins": [{"ref": "U1A", "pin": "1"}, {"ref": "U1B", "pin": "5"}],
+                },
+                {
+                    "name": "NET_OUT",
+                    "pins": [{"ref": "U1B", "pin": "7"}, {"ref": "J2", "pin": "1"}],
+                },
+                {"name": "VCC", "pins": [{"ref": "U1P", "pin": "8"}]},
+                {"name": "GND", "pins": [{"ref": "U1P", "pin": "4"}]},
+            ],
+        }
+    )
+
+
 class TestIcUnitGroups:
     """Phase 6 — assign_ic_units_to_tiers and per-unit DOT placement."""
 
@@ -2759,6 +2816,35 @@ class TestIcUnitGroups:
         assert not any("U1B" in block for block in rank_blocks), (
             f"U1B must not be in a tier subgraph.\nDOT:\n{dot}"
         )
+
+    def test_signal_sibling_constraints_skip_power_units(self) -> None:
+        """Only signal units participate in sibling-order constraints."""
+        ir = _multi_stage_unit_ir()
+        groups = assign_ic_units_to_tiers(ir, assign_tiers(ir))
+
+        assert groups["U1"].signal_units == ["U1A", "U1B"]
+        assert build_ic_unit_sibling_constraints(groups) == [("U1A", "U1B")]
+
+    def test_signal_sibling_constraint_emitted_in_dot(self) -> None:
+        """DOT source adds an invisible U1A->U1B constraint but excludes U1P."""
+        ir = _multi_stage_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        power_unit_refs = {g.power_unit for g in groups.values() if g.power_unit is not None}
+        sibling_pairs = build_ic_unit_sibling_constraints(groups)
+
+        dot = _gv_mod._build_dot_source(
+            ir,
+            power_unit_refs=power_unit_refs,
+            unit_sibling_pairs=sibling_pairs,
+            tiers=tiers,
+        )
+
+        assert "U1A -> U1B [style=invis, weight=8];" in dot
+        assert "U1P -> U1A" not in dot
+        assert "U1A -> U1P" not in dot
+        assert "U1P -> U1B" not in dot
+        assert "U1B -> U1P" not in dot
 
 
 # ---------------------------------------------------------------------------

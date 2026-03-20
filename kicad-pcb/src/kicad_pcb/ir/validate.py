@@ -66,33 +66,24 @@ def validate_circuit_ir(ir: CircuitIR) -> None:
 
 
 def validate_ir_symbols(ir: CircuitIR, symbol_index: SymbolIndex) -> None:
-    """Validate symbol existence, pin existence, and MVP unit constraints.
+    """Validate symbol existence, pin existence, and explicit unit selection.
 
     Rules enforced:
     - Every component symbol must resolve in ``symbol_index``.
     - Every pin reference must be valid for its component symbol.
-    - ``PinRefIR.unit`` must be ``None`` in MVP.
+    - ``PinRefIR.unit`` may be used only when the symbol exposes KiCad unit metadata.
+    - When ``PinRefIR.unit`` is present, the selected unit must exist and own the pin.
     """
     component_symbol_by_ref = {component.ref: component.symbol for component in ir.components}
 
     symbol_pins: dict[str, set[str]] = {}
+    symbol_unit_pins: dict[str, dict[str, tuple[str, ...]]] = {}
     for sym_id in sorted(set(component_symbol_by_ref.values())):
         symbol_pins[sym_id] = symbol_index.get_pins(sym_id)
+        symbol_unit_pins[sym_id] = symbol_index.get_unit_pins(sym_id)
 
     for net in ir.nets:
         for pin_ref in net.pins:
-            if pin_ref.unit is not None:
-                raise UserError(
-                    "PinRef.unit is not supported in v1",
-                    code=ErrorCode.MULTI_UNIT_UNSUPPORTED,
-                    details={
-                        "net": net.name,
-                        "ref": pin_ref.ref,
-                        "pin": pin_ref.pin,
-                        "unit": pin_ref.unit,
-                    },
-                )
-
             symbol_id = component_symbol_by_ref.get(pin_ref.ref)
             if symbol_id is None:
                 continue
@@ -111,5 +102,58 @@ def validate_ir_symbols(ir: CircuitIR, symbol_index: SymbolIndex) -> None:
                         "pin": pin_ref.pin,
                         "symbol": symbol_id,
                         "valid_pins": sorted(valid_pins),
+                    },
+                )
+
+            if pin_ref.unit is None:
+                continue
+
+            unit_pins = symbol_unit_pins[symbol_id]
+            if not unit_pins:
+                raise UserError(
+                    "PinRef.unit was provided for a symbol without KiCad unit metadata",
+                    code=ErrorCode.MULTI_UNIT_UNSUPPORTED,
+                    details={
+                        "net": net.name,
+                        "ref": pin_ref.ref,
+                        "pin": pin_ref.pin,
+                        "unit": pin_ref.unit,
+                        "symbol": symbol_id,
+                    },
+                )
+
+            if pin_ref.unit not in unit_pins:
+                raise UserError(
+                    (
+                        f"Net {net.name} references {pin_ref.ref} unit {pin_ref.unit}, "
+                        f"but {symbol_id} valid units are {sorted(unit_pins)}"
+                    ),
+                    code=ErrorCode.IR_SEMANTIC_INVALID,
+                    details={
+                        "net": net.name,
+                        "ref": pin_ref.ref,
+                        "pin": pin_ref.pin,
+                        "unit": pin_ref.unit,
+                        "symbol": symbol_id,
+                        "valid_units": sorted(unit_pins),
+                    },
+                )
+
+            unit_valid_pins = unit_pins[pin_ref.unit]
+            if pin_ref.pin not in unit_valid_pins:
+                raise UserError(
+                    (
+                        f"Net {net.name} references {pin_ref.ref} pin {pin_ref.pin} on unit "
+                        f"{pin_ref.unit}, but {symbol_id} unit {pin_ref.unit} valid pins are "
+                        f"{sorted(unit_valid_pins)}"
+                    ),
+                    code=ErrorCode.PIN_INVALID,
+                    details={
+                        "net": net.name,
+                        "ref": pin_ref.ref,
+                        "pin": pin_ref.pin,
+                        "unit": pin_ref.unit,
+                        "symbol": symbol_id,
+                        "valid_unit_pins": sorted(unit_valid_pins),
                     },
                 )

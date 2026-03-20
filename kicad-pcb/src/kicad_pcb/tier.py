@@ -50,6 +50,7 @@ __all__ = [
     "assign_tiers",
     "identify_main_signal_path",
     "assign_ic_units_to_tiers",
+    "build_ic_unit_sibling_constraints",
     "choose_seed_connector",
     "classify_connector_roles",
     "ConnectorRole",
@@ -93,6 +94,16 @@ class IcUnitGroup:
     base_ref: str
     units: list[str] = field(default_factory=list)
     power_unit: str | None = None
+
+    @property
+    def signal_units(self) -> list[str]:
+        """Return unit refs that belong in the main signal-flow graph."""
+        return [unit_ref for unit_ref in self.units if unit_ref != self.power_unit]
+
+    def sibling_pairs(self) -> list[tuple[str, str]]:
+        """Return adjacent ordered signal-unit pairs for layout constraints."""
+        signal_units = self.signal_units
+        return list(zip(signal_units, signal_units[1:]))
 
 
 def _is_power_net(name: str) -> bool:
@@ -796,6 +807,21 @@ def assign_ic_units_to_tiers(
         result[base] = IcUnitGroup(base_ref=base, units=units, power_unit=power_unit)
 
     return result
+
+
+def build_ic_unit_sibling_constraints(
+    unit_groups: dict[str, IcUnitGroup],
+) -> list[tuple[str, str]]:
+    """Return ordered signal-unit pairs that should remain visually related.
+
+    Each returned pair expresses a preferred left-to-right sibling order for
+    placed multi-unit symbols while excluding any power-only unit that should
+    live in ``cluster_power``.
+    """
+    pairs: list[tuple[str, str]] = []
+    for base_ref in sorted(unit_groups):
+        pairs.extend(unit_groups[base_ref].sibling_pairs())
+    return pairs
 
 
 # ---------------------------------------------------------------------------

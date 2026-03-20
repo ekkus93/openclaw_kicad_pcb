@@ -27,6 +27,8 @@ from ..lib_symbol import (
     read_lib_symbol_def_flat,
     read_lib_symbol_pin_at,
     read_lib_symbol_pins,
+    read_lib_symbol_unit_pin_at,
+    read_lib_symbol_unit_pins,
 )
 from ..sexpr.builder import L, atom, string
 from ..sexpr.nodes import AtomNode, ListNode, Node, StringNode
@@ -61,6 +63,8 @@ __all__ = [
     "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
+    "read_lib_symbol_unit_pin_at",
+    "read_lib_symbol_unit_pins",
 ]
 
 # ---------------------------------------------------------------------------
@@ -307,6 +311,8 @@ class SchematicDoc:
         pin_nums: list[str],
         pin_uuids: list[str],
         project_name: str,
+        *,
+        unit: int = 1,
         rotation: int = 0,
     ) -> None:
         """Append a placed symbol instance to the schematic.
@@ -324,6 +330,7 @@ class SchematicDoc:
             pin_nums,
             pin_uuids,
             project_name,
+            unit=unit,
             rotation=rotation,
         )
         self._insert_before_sheet_instances(node)

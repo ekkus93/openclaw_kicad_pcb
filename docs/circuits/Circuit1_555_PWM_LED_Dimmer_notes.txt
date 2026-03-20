@@ -1,0 +1,86 @@
+Circuit: 555 PWM LED Dimmer
+
+Goal:
+Build a simple adjustable PWM LED dimmer using a 555 timer in astable mode. The circuit should drive a power MOSFET so that a 12V LED strip or high-current LED load can be dimmed efficiently without dissipating large amounts of power in a potentiometer.
+
+Functional blocks:
+1. PWM oscillator using NE555
+2. Duty-cycle control network
+3. MOSFET low-side switch
+4. LED load connection
+5. Supply decoupling and protection
+
+Power:
+- Input supply: +12V DC nominal
+- Acceptable supply range: 9V to 15V
+- Logic/timer runs directly from the 12V supply
+- Common ground throughout
+
+Design intent:
+- PWM frequency should be high enough to avoid visible flicker
+- Target PWM frequency: approximately 500 Hz to 2 kHz
+- Duty cycle adjustable from about 5% to 95%
+- The LED load should be switched by an N-channel logic-level MOSFET on the low side
+
+Detailed behavior:
+- The 555 operates in astable mode
+- A potentiometer and steering diodes should allow charging and discharging paths to differ so duty cycle can be changed while keeping frequency reasonably stable
+- The 555 output drives the MOSFET gate through a small series resistor
+- A pull-down resistor should keep the MOSFET off during startup
+- The LED load is connected from +12V to the MOSFET drain
+- MOSFET source goes to ground
+
+Suggested components:
+- U1: NE555 timer
+- Q1: logic-level N-MOSFET such as IRLZ44N, AO3400, or similar depending on current level
+- RV1: 100k potentiometer for brightness
+- D1, D2: small signal diodes such as 1N4148 for charge/discharge steering
+- R1: small resistor in series with RV1 branch if needed to avoid 0%/100% edge cases
+- R2: gate resistor, around 100 ohms
+- R3: MOSFET gate pull-down, around 100k
+- C1: timing capacitor, value chosen for desired PWM frequency
+- C2: local decoupling for 555, 100nF
+- C3: bulk input capacitor, such as 47uF to 220uF
+
+Pin-level guidance for 555:
+- Pin 1: GND
+- Pin 8: +12V
+- Pin 4 (RESET): tie to +12V
+- Pin 5 (CTRL): optional 10nF to GND for noise reduction
+- Pins 2 and 6 tied together as timing node
+- Pin 7 used for discharge timing network
+- Pin 3 is PWM output to MOSFET gate resistor
+
+Connectivity summary:
+- +12V to U1 pin 8 and pin 4
+- GND to U1 pin 1
+- U1 pin 5 to GND through small capacitor (optional but recommended)
+- U1 pins 2 and 6 tied together
+- Timing network from +12V / discharge pin / threshold-trigger node according to standard 555 PWM astable arrangement using potentiometer and two diodes
+- U1 pin 3 -> R2 -> Q1 gate
+- R3 from Q1 gate to GND
+- Q1 source to GND
+- Q1 drain to LED negative terminal
+- LED positive terminal to +12V
+- C2 between +12V and GND close to U1
+- C3 between +12V and GND near power input
+
+Schematic readability expectations:
+- Put power input on left or top-left
+- Put U1 in center-left
+- Put PWM timing network around U1
+- Put MOSFET and LED load on right side
+- Keep gate path short and obvious
+- Keep decoupling close to U1
+- Show LED load as connector or terminal if not using a specific LED symbol
+
+Optional extras:
+- Add reverse-polarity protection diode or P-MOSFET front end
+- Add fuse on +12V input
+- Add terminal blocks for power and LED load
+
+Acceptance criteria:
+- Adjustable PWM dimming
+- No visible flicker in normal use
+- MOSFET defaults off at power-up
+- Schematic should clearly show oscillator block, control block, and power switch block

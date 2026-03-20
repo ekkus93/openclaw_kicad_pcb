@@ -1,0 +1,79 @@
+Circuit: CD4017 LED Chaser with 555 Clock
+
+Goal:
+Build a classic LED chaser circuit using an NE555 as the clock source and a CD4017 decade counter to sequence ten LEDs. This is a mixed analog/digital example that is simple but very schematic-friendly.
+
+Functional blocks:
+1. 555 clock oscillator
+2. CD4017 counter/decoder
+3. LED output bank
+4. Reset/startup handling
+5. Power decoupling
+
+Power:
+- Input supply: +5V to +12V depending on LED and CMOS operating point
+- Recommended nominal: +9V
+- Common ground throughout
+
+Design intent:
+- 555 generates clock pulses
+- CD4017 advances one output high per pulse
+- Ten LEDs display the moving sequence
+- Clock speed adjustable via potentiometer
+- Outputs are shown clearly and sequentially
+
+Suggested components:
+- U1: NE555 timer
+- U2: CD4017 decade counter
+- RV1: 100k potentiometer for speed control
+- R1: timing resistor
+- C1: timing capacitor
+- C2: 100nF decoupling for U1
+- C3: 100nF decoupling for U2
+- LED1 through LED10
+- R2 through R11: LED current-limiting resistors
+- C4: optional small capacitor on reset for startup behavior
+
+Behavior:
+- U1 in astable mode creates clock on its output
+- U1 output feeds U2 clock input
+- U2 outputs Q0..Q9 each go high one at a time
+- Each output drives one LED through a resistor
+- U2 reset should be wired so the sequence starts correctly; optionally reset Q9 back to Q0 earlier for shorter chase patterns
+
+555 guidance:
+- Standard astable configuration
+- Output on pin 3 goes to CD4017 clock input
+- Reset pin held high
+- Decouple near U1
+
+4017 guidance:
+- Clock input from U1 output
+- Clock inhibit tied inactive
+- Reset tied low for normal free-running 0..9 sequence unless optional pattern shortening is desired
+- VDD to supply
+- VSS to GND
+
+LED bank:
+- Each Q output -> resistor -> LED -> GND, or LED to VCC with sink arrangement depending on polarity choice
+- Keep one consistent output style
+- Label outputs Q0 through Q9 clearly
+
+Schematic readability expectations:
+- Put 555 on left
+- Put 4017 in center
+- Put LED bank on right in an orderly vertical stack
+- Keep decoupling local to each IC
+- Make clock path obvious
+- Make reset and inhibit pins explicitly handled, not left ambiguous
+
+Optional extras:
+- Add SPDT switch for run/hold using clock inhibit
+- Add reset pushbutton
+- Add jumper to shorten sequence length
+
+Acceptance criteria:
+- One LED advances per clock pulse
+- Speed is adjustable
+- Reset/inhibit handling is explicit
+- Schematic clearly shows oscillator, counter, and LED-bank stages
