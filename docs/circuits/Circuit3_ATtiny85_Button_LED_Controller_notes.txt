@@ -1,0 +1,92 @@
+Circuit: ATtiny85 Button-and-LED Controller
+
+Goal:
+Build a small digital circuit around an ATtiny85 that reads two pushbuttons and controls three LEDs. This is meant to be a compact microcontroller-based fixture useful for testing digital schematic generation.
+
+Functional blocks:
+1. 5V power input and decoupling
+2. ATtiny85 microcontroller core connections
+3. Reset/programming header
+4. Two pushbutton inputs
+5. Three LED outputs
+
+Power:
+- Input supply: +5V regulated
+- USB-derived 5V or bench 5V acceptable
+- Common ground throughout
+
+Design intent:
+- ATtiny85 runs from internal oscillator
+- Two buttons are read as digital inputs
+- Three LEDs are driven as digital outputs through current-limiting resistors
+- Include ISP programming header
+- Keep circuit simple and explicit
+
+Suggested components:
+- U1: ATtiny85
+- SW1, SW2: normally-open pushbuttons
+- LED1, LED2, LED3: standard LEDs
+- R1, R2, R3: LED current-limiting resistors, typically 220 ohm to 1k
+- R4: reset pull-up resistor, typically 10k
+- C1: 100nF decoupling capacitor close to U1
+- J1: 2x3 AVR ISP header
+- J2: power input connector
+
+Microcontroller requirements:
+- VCC to +5V
+- GND to ground
+- RESET pulled up to +5V through R4
+- RESET also routed to ISP header
+- MOSI, MISO, SCK routed to ISP header
+- Two GPIOs assigned to buttons
+- Three GPIOs assigned to LED outputs
+
+Button wiring:
+Preferred approach:
+- Each button connects the input pin to GND when pressed
+- Use internal pull-ups in firmware, or external pull-up resistors if desired
+- This gives active-low button inputs
+
+LED wiring:
+- Each LED output pin drives series resistor then LED to GND, or LED to +5V with sink drive depending on preferred polarity
+- Choose one style and keep it consistent
+- For readability, explicit current-limiting resistor per LED
+
+Connectivity summary:
+- +5V -> U1 VCC
+- GND -> U1 GND
+- C1 from VCC to GND close to U1
+- RESET -> R4 -> +5V
+- RESET -> ISP header
+- MOSI/MISO/SCK -> ISP header
+- SW1 from GPIO input to GND
+- SW2 from GPIO input to GND
+- LED outputs from GPIO pins through resistors to LEDs
+- LEDs terminate to GND if sourcing current, or to +5V if sinking current
+
+Suggested header details:
+- J1 should include:
+  - MISO
+  - VCC
+  - SCK
+  - MOSI
+  - RESET
+  - GND
+
+Schematic readability expectations:
+- Power and programming header near the MCU
+- Buttons on left side feeding into MCU
+- LEDs on right side driven from MCU outputs
+- Decoupling capacitor physically close to MCU symbol
+- Reset network compact and obvious
+- Programming header connections clear and not tangled
+
+Optional extras:
+- Add status LED on power
+- Add UART test header if desired, though ATtiny85 is limited
+- Add separate connector for external buttons/LEDs
+
+Acceptance criteria:
+- Circuit is straightforward to program and test
+- Inputs and outputs are clearly separated visually
+- Digital support parts are complete: power, reset, programming, decoupling

@@ -15,6 +15,7 @@ from kicad_pcb.commands.netlist import (
     cmd_fix_netlist,
     cmd_info_sch,
     cmd_new_from_netlist,
+    cmd_validate_netlist,
     resolve_schematic_paths,
 )
 from kicad_pcb.errors import ErrorCode, UserError
@@ -45,6 +46,250 @@ def _write_ir(path: Path) -> None:
         "version": "1",
         "components": [{"ref": "R1", "symbol": "TestLib:R", "value": "10k"}],
         "nets": [{"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]}],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_input_bypass_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "J1", "symbol": "TestLib:R", "value": "Input"},
+            {"ref": "C5", "symbol": "TestLib:R", "value": "1u"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "100k"},
+            {"ref": "RV1", "symbol": "TestLib:R", "value": "10k"},
+        ],
+        "nets": [
+            {
+                "name": "LEFT_IN",
+                "pins": [
+                    {"ref": "J1", "pin": "1"},
+                    {"ref": "C5", "pin": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "IN_L_AC",
+                "pins": [
+                    {"ref": "C5", "pin": "2"},
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "RV1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "J1", "pin": "2"},
+                    {"ref": "RV1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_output_bypass_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:R", "value": "Driver"},
+            {"ref": "C7", "symbol": "TestLib:R", "value": "220u"},
+            {"ref": "R8", "symbol": "TestLib:R", "value": "47"},
+            {"ref": "J2", "symbol": "TestLib:R", "value": "Output"},
+        ],
+        "nets": [
+            {
+                "name": "OUT_L_STAGE2_RAW",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "C7", "pin": "1"},
+                    {"ref": "R8", "pin": "1"},
+                ],
+            },
+            {
+                "name": "HP_L_OUT",
+                "pins": [
+                    {"ref": "C7", "pin": "2"},
+                    {"ref": "R8", "pin": "2"},
+                    {"ref": "J2", "pin": "1"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_connector_ambiguity_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "Stereo-ish"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+        ],
+        "nets": [
+            {
+                "name": "IN",
+                "pins": [
+                    {"ref": "J1", "pin": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "J1", "pin": "2"},
+                    {"ref": "R1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_feedback_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:SingleOpAmp", "value": "Gain"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+            {"ref": "J1", "symbol": "TestLib:R", "value": "Out"},
+        ],
+        "nets": [
+            {
+                "name": "VIN",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "U1_INV",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "R1", "pin": "2"},
+                ],
+            },
+            {
+                "name": "U1_OUT",
+                "pins": [
+                    {"ref": "U1", "pin": "3"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_output_floating_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:SingleOpAmp", "value": "Gain"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+        ],
+        "nets": [
+            {
+                "name": "VIN",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "U1_INV",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "R1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_output_short_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:SingleOpAmp", "value": "Gain"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+            {"ref": "P1", "symbol": "TestLib:R", "value": "Rail"},
+        ],
+        "nets": [
+            {
+                "name": "VIN",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "U1_INV",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "R1", "pin": "2"},
+                ],
+            },
+            {
+                "name": "VPLUS15",
+                "pins": [
+                    {"ref": "U1", "pin": "3"},
+                    {"ref": "P1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "BIAS",
+                "pins": [
+                    {"ref": "P1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_explicit_unit_valid_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:DualOpAmp", "value": "DualOpAmp"},
+            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
+        ],
+        "nets": [
+            {
+                "name": "IN_A",
+                "pins": [
+                    {"ref": "U1", "pin": "1", "unit": "1"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "OUT_A",
+                "pins": [
+                    {"ref": "U1", "pin": "3", "unit": "1"},
+                    {"ref": "R1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_explicit_unit_unknown_unit_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp", "value": "DualOpAmp"}],
+        "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1", "unit": "9"}]}],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_explicit_unit_wrong_pin_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp", "value": "DualOpAmp"}],
+        "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1", "unit": "2"}]}],
     }
     path.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -142,6 +387,110 @@ def test_cmd_apply_netlist_creates_managed_schematic(
     assert symbols[0]["ref"] == "R1"
 
 
+def test_cmd_apply_netlist_surfaces_input_coupling_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "warning_ir.json"
+    _write_input_bypass_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+
+
+def test_cmd_apply_netlist_supports_explicit_unit_generation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "explicit_unit_ir.json"
+    _write_explicit_unit_valid_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    assert result.symbols_added == 2
+    assert result.nets_applied == 2
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
+    assert set(placed_symbols) >= {"R1", "U1A"}
+    assert placed_symbols["U1A"]["unit"] == "1"
+
+    binding_index = {
+        (binding["ref"], binding["pin"]): binding["net_name"]
+        for binding in managed_doc.extract_pin_label_bindings()
+    }
+    assert binding_index[("U1A", "1")] == "IN_A"
+    assert binding_index[("U1A", "3")] == "OUT_A"
+
+
+def test_cmd_apply_netlist_rejects_mismatched_explicit_unit_input(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "explicit_unit_wrong_pin.json"
+    _write_explicit_unit_wrong_pin_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.PIN_INVALID
+    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
+    assert not (project_dir / "OpenClaw_Managed.kicad_sch").exists()
+
+
 def test_cmd_new_from_netlist_creates_project_and_applies(tmp_path: Path) -> None:
     ir_path = tmp_path / "ir.json"
     _write_ir(ir_path)
@@ -163,6 +512,81 @@ def test_cmd_new_from_netlist_creates_project_and_applies(tmp_path: Path) -> Non
     assert result.managed_schematic_path.exists()
     assert result.symbols_added == 1
     assert result.nets_applied == 1
+
+
+def test_cmd_new_from_netlist_preserves_input_coupling_warning(tmp_path: Path) -> None:
+    ir_path = tmp_path / "warning_ir.json"
+    _write_input_bypass_warning_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="WarningProj",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+
+
+def test_cmd_new_from_netlist_supports_explicit_unit_generation(tmp_path: Path) -> None:
+    ir_path = tmp_path / "explicit_unit_ir.json"
+    _write_explicit_unit_valid_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="ExplicitUnitProj",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    assert result.symbols_added == 2
+    assert result.nets_applied == 2
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
+    assert set(placed_symbols) >= {"R1", "U1A"}
+    assert placed_symbols["U1A"]["unit"] == "1"
+
+    binding_index = {
+        (binding["ref"], binding["pin"]): binding["net_name"]
+        for binding in managed_doc.extract_pin_label_bindings()
+    }
+    assert binding_index[("U1A", "1")] == "IN_A"
+    assert binding_index[("U1A", "3")] == "OUT_A"
+
+
+def test_cmd_new_from_netlist_rejects_mismatched_explicit_unit_input(tmp_path: Path) -> None:
+    ir_path = tmp_path / "explicit_unit_wrong_pin.json"
+    _write_explicit_unit_wrong_pin_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    project_path = tmp_path / "ExplicitUnitInvalidProj"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_new_from_netlist(
+            Namespace(
+                name="ExplicitUnitInvalidProj",
+                out_dir=str(tmp_path),
+                description="",
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.PIN_INVALID
+    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
+    assert not project_path.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +668,57 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
     assert info.managed_symbol_count >= 1
     assert info.managed_label_count >= 1
     assert info.symbol_count == 0  # root is thin (no placed symbols)
+
+
+def test_cmd_validate_netlist_accepts_valid_explicit_unit(tmp_path: Path) -> None:
+    ir_path = tmp_path / "explicit_unit_valid.json"
+    _write_explicit_unit_valid_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_validate_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+        )
+    )
+
+    assert result.valid is True
+    assert result.component_count == 2
+    assert result.net_count == 2
+
+
+def test_cmd_validate_netlist_rejects_unknown_explicit_unit(tmp_path: Path) -> None:
+    ir_path = tmp_path / "explicit_unit_unknown.json"
+    _write_explicit_unit_unknown_unit_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_validate_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    assert exc_info.value.details["valid_units"] == ["1", "2", "3"]
+
+
+def test_cmd_validate_netlist_rejects_pin_outside_selected_unit(tmp_path: Path) -> None:
+    ir_path = tmp_path / "explicit_unit_wrong_pin.json"
+    _write_explicit_unit_wrong_pin_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_validate_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.PIN_INVALID
+    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
 
 
 # ---------------------------------------------------------------------------
@@ -911,11 +1386,139 @@ def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
 
 # Path to the system KiCad symbol libraries (installed by kicad package).
 _KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
+_REAL_NE5532_REVIEW_NETLIST = (
+    Path(__file__).resolve().parents[2] / "code_review" / "ne5532_headphone_amp_netlist.json"
+)
 
 _skip_no_system_symbols = pytest.mark.skipif(
     not (_KICAD_SYSTEM_SYMBOLS / "Amplifier_Operational.kicad_sym").exists(),
     reason="KiCad system symbol libraries not installed at /usr/share/kicad/symbols",
 )
+
+
+def _normalize_warning_entries(
+    warnings: tuple[dict[str, object], ...],
+) -> list[tuple[str, tuple[tuple[str, object], ...]]]:
+    return sorted(
+        (
+            warning["code"],
+            tuple(sorted((warning["details"] or {}).items()))
+            if isinstance(warning.get("details"), dict)
+            else (),
+        )
+        for warning in warnings
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 1 — warning suite
+# ---------------------------------------------------------------------------
+
+
+class TestPhase1WarningSuite:
+    @pytest.mark.parametrize(
+        ("filename", "writer", "expected_codes"),
+        [
+            (
+                "warning_ir.json",
+                _write_input_bypass_warning_ir,
+                {"INPUT_COUPLING_BYPASSED_BY_RESISTOR"},
+            ),
+            (
+                "output_warning_ir.json",
+                _write_output_bypass_warning_ir,
+                {"OUTPUT_COUPLING_BYPASSED_BY_RESISTOR"},
+            ),
+            (
+                "connector_warning_ir.json",
+                _write_connector_ambiguity_ir,
+                {"CONNECTOR_UNUSED_PINS_AMBIGUOUS"},
+            ),
+            (
+                "feedback_warning_ir.json",
+                _write_feedback_warning_ir,
+                {"OPAMP_FEEDBACK_MISSING_OR_NONLOCAL"},
+            ),
+            (
+                "output_floating_warning_ir.json",
+                _write_output_floating_warning_ir,
+                {"OPAMP_OUTPUT_FLOATING"},
+            ),
+            (
+                "output_short_warning_ir.json",
+                _write_output_short_warning_ir,
+                {"OPAMP_OUTPUT_SHORTED_TO_RAIL"},
+            ),
+        ],
+        ids=[
+            "input-coupling",
+            "output-coupling",
+            "connector-ambiguity",
+            "missing-feedback",
+            "output-floating",
+            "output-shorted-to-rail",
+        ],
+    )
+    def test_synthetic_warning_fixtures_cover_each_phase1_family(
+        self,
+        tmp_path: Path,
+        filename: str,
+        writer,
+        expected_codes: set[str],
+    ) -> None:
+        ir_path = tmp_path / filename
+        writer(ir_path)
+        fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+        result = cmd_validate_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+            )
+        )
+
+        codes = {warning["code"] for warning in result.warnings}
+        assert expected_codes <= codes
+
+    @_skip_no_system_symbols
+    def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:
+        """The real NE5532 review fixture should keep the current exact warning mix."""
+        result = cmd_validate_netlist(
+            Namespace(
+                netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+                symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            )
+        )
+
+        assert _normalize_warning_entries(result.warnings) == [
+            (
+                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                (
+                    ("ref", "J1"),
+                    ("symbol", "Connector:AudioJack3"),
+                    ("unused_pins", ["R"]),
+                    ("used_pins", ["S", "T"]),
+                ),
+            ),
+            (
+                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                (
+                    ("ref", "J2"),
+                    ("symbol", "Connector:AudioJack3"),
+                    ("unused_pins", ["R"]),
+                    ("used_pins", ["S", "T"]),
+                ),
+            ),
+            (
+                "INPUT_COUPLING_BYPASSED_BY_RESISTOR",
+                (
+                    ("bridge_component_refs", ["C5", "R1"]),
+                    ("capacitor_refs", ["C5"]),
+                    ("nets", ["IN_L_AC", "LEFT_IN"]),
+                    ("resistor_refs", ["R1"]),
+                ),
+            ),
+        ]
 
 
 def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:
@@ -1257,8 +1860,8 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
       Power:  pins 8 (V+), 4 (V-)
 
     Fidelity assertions:
-    1. All 5 components present as placed symbol instances.
-    2. All 8 nets have correct OpenClaw:bind= markers.
+    1. The managed schematic places explicit KiCad units ``U1A``, ``U1B``, ``U1P``.
+    2. All 8 nets have correct OpenClaw:bind= markers against those unit refs.
     3. NE5532 is embedded as a flat (non-extends) symbol — read_lib_symbol_def_flat
        merges LM2904's geometry into the NE5532 node so KiCad renders it correctly
        without needing a separate LM2904 entry in lib_symbols.
@@ -1307,13 +1910,29 @@ def test_ne5532_full_circuit_fidelity_with_system_libraries(tmp_path: Path) -> N
         )
     )
 
-    assert result.symbols_added == 5
+    assert result.symbols_added == 7
     assert result.nets_applied == 8
 
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
 
-    # Core fidelity: all components placed and all net bindings recorded correctly.
-    _check_circuit_fidelity(ir_data, managed_doc)
+    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
+    assert {"R1", "R2", "R3", "R4", "U1A", "U1B", "U1P"} <= set(placed_symbols)
+    assert placed_symbols["U1A"]["unit"] == "1"
+    assert placed_symbols["U1B"]["unit"] == "2"
+    assert placed_symbols["U1P"]["unit"] == "3"
+
+    binding_index = {
+        (binding["ref"], binding["pin"]): binding["net_name"]
+        for binding in managed_doc.extract_pin_label_bindings()
+    }
+    assert binding_index[("U1P", "8")] == "VCC"
+    assert binding_index[("U1P", "4")] == "GND"
+    assert binding_index[("U1A", "3")] == "IN_A"
+    assert binding_index[("U1A", "2")] == "IN_N_A"
+    assert binding_index[("U1A", "1")] == "OUT_A"
+    assert binding_index[("U1B", "5")] == "IN_B"
+    assert binding_index[("U1B", "6")] == "IN_N_B"
+    assert binding_index[("U1B", "7")] == "OUT_B"
 
     # Extends-chain specific: NE5532 is embedded as a flat symbol; LM2904 is NOT
     # embedded separately — its geometry was merged into the NE5532 node.

@@ -1,5 +1,207 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-20T02:03:55Z - GPT-5.4 - Cleared repo-wide Ruff, mypy, and pytest regressions after unit-anchor routing changes
+
+- Restored backward compatibility in `kicad-pcb/src/kicad_pcb/router.py` so `_plan_local_ladder_routes(...)` accepts both explicit `PinAnchor` maps and legacy `(x, y, angle)` endpoint maps, including the old `pin_endpoints=` keyword used by phase-6 tests.
+- Fixed the reported type issues by tightening `_split_symbol_id(...)` in `kicad-pcb/src/kicad_pcb/symbol_index.py`, renaming the reused `pin_to_unit` variable in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, and adding precise helper annotations in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`.
+- Updated `kicad-pcb/src/kicad_pcb/schematic_metrics.py` to resolve base refs like `U1` against placed-unit refs such as `U1A` / `U1B` / `U1C`, so phase-7 readability metrics and block-role spread/separation continue to work after multi-unit expansion.
+- Adjusted `tests/unit/test_phase7_regression_guardrails.py` so its guardrails compare against the current multi-unit readability model instead of the obsolete single-`U1` assumptions and stale hardcoded column-count target.
+- Extracted the Graphviz layout-input preparation steps into `_prepare_layout_inputs(...)` in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`, which removed the lingering `PLR0915` repo-wide Ruff failure without changing layout behavior.
+- Validation completed with `python -m pytest tests/unit/test_phase6_wire_simplification.py -q`, `python -m pytest tests/unit/test_phase7_regression_guardrails.py -q`, `python -m ruff check .`, `python -m mypy kicad-pcb/src`, and `python -m pytest -q`.
+
+## 2026-03-20T00:47:30Z - GPT-5.4 - Routed against explicit placed-unit pin anchors
+
+- Extended `kicad-pcb/src/kicad_pcb/router.py` with a first-class `PinAnchor` model plus backward-compatible `route_nets(..., pin_anchors=...)` support, so known/unknown pin classification and local ladder planning now consume explicit placed-unit anchor ownership instead of relying only on the flattened `pin_endpoints` map.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so `_write_symbols(...)` returns a 5-tuple that includes explicit per-pin anchors with the placed KiCad unit attached, and the managed-sheet apply path now passes that richer anchor map into `route_nets(...)`.
+- Added focused regressions in `tests/unit/test_phase4_layout.py`, `tests/unit/test_sch_apply.py`, and `tests/unit/test_phase7_ux.py` covering router anchor consumption, `_write_symbols(...)` unit-tagged anchors, and the expanded `_write_symbols(...)` return contract.
+- Validation completed with `pytest tests/unit/test_phase4_layout.py -k 'pin_anchor_map_routes_known_pins_without_flat_endpoint_map or strict_mode_raises_for_unknown_pin_endpoints' -q`, `pytest tests/unit/test_sch_apply.py -k 'returns_pin_anchors_with_placed_unit_metadata' -q`, `pytest tests/unit/test_phase7_ux.py -k 'TestWriteSymbolsFiveTuple' -q`, and `python -m ruff check kicad-pcb/src/kicad_pcb/router.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase4_layout.py tests/unit/test_sch_apply.py tests/unit/test_phase7_ux.py`.
+
+## 2026-03-20T00:34:00Z - GPT-5.4 - Added per-unit orientation fallback and unit-local pin-anchor geometry
+
+- Extended `kicad-pcb/src/kicad_pcb/lib_symbol.py` with `read_lib_symbol_unit_pin_at(...)` and `kicad-pcb/src/kicad_pcb/symbol_index.py` with cached `get_unit_pin_at(...)`, so unit-local KiCad pin geometry is now available alongside unit pin membership.
+- Updated `kicad-pcb/src/kicad_pcb/layout.py` so `compute_orientations(...)` accepts optional `placed_pin_numbers`; when supplied, orientation heuristics ignore net memberships on pins outside the placed symbol's own unit-local pin subset.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so fallback orientation passes the placed pin subset into `compute_orientations(...)`, and pin endpoints are now resolved from exact unit-local geometry via `_resolve_placed_symbol_pin_at(...)` instead of relying only on whole-symbol pin coordinates.
+- Added focused regressions in `tests/unit/test_sch_doc.py`, `tests/unit/test_sch_apply.py`, and `tests/unit/test_phase9_orientation.py` covering unit-local pin geometry extraction, placed-unit pin geometry resolution, and placed-pin-subset-aware orientation fallback.
+- Validation completed with `pytest tests/unit/test_sch_doc.py tests/unit/test_sch_apply.py tests/unit/test_phase9_orientation.py -q` and `python -m ruff check kicad-pcb/src/kicad_pcb/lib_symbol.py kicad-pcb/src/kicad_pcb/symbol_index.py kicad-pcb/src/kicad_pcb/layout.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_sch_doc.py tests/unit/test_sch_apply.py tests/unit/test_phase9_orientation.py`.
+
+## 2026-03-20T00:09:32Z - GPT-5.4 - Added the first placed-unit layout and tiering slice
+
+- Updated `kicad-pcb/src/kicad_pcb/layout_engine.py` so the documented placement contract explicitly allows placed-unit refs like `U1A` and `U1P`, not only parent-device refs.
+- Extended `kicad-pcb/src/kicad_pcb/tier.py` with signal-unit metadata on `IcUnitGroup` plus `build_ic_unit_sibling_constraints(...)`, which derives ordered sibling pairs for multi-unit signal stages while excluding a power-only unit.
+- Wired those sibling constraints through `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` into `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py`, which now emits invisible DOT constraints so signal siblings such as `U1A -> U1B` stay visually related without pulling `U1P` into the main chain.
+- Added focused regressions in `tests/unit/test_phase4_layout.py` for signal-only sibling constraints and DOT emission, then validated with `pytest tests/unit/test_phase4_layout.py -k 'IcUnitGroups or signal_sibling'` (`10 passed`), `pytest tests/unit/test_layout_rules.py` (`20 passed`), and `ruff check kicad-pcb/src/kicad_pcb/tier.py kicad-pcb/src/kicad_pcb/layout_engine.py kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py tests/unit/test_phase4_layout.py`.
+- `ruff check` on `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` still reports the repo's pre-existing `PLR0915` on `GraphvizLayoutEngine.compute_symbol_positions(...)`; this change did not add a new lint violation there.
+
+## 2026-03-19T23:47:13Z - GPT-5.4 - Added negative apply/new command coverage for mismatched explicit-unit input
+
+- Extended `tests/unit/test_netlist_commands.py` with mirrored failure-path regressions for `cmd_apply_netlist(...)` and `cmd_new_from_netlist(...)` using mismatched explicit-unit input (`pin "1"` on unit `"2"` for `TestLib:DualOpAmp`).
+- The new tests assert `PIN_INVALID`, confirm the surfaced `valid_unit_pins` payload, and verify that failed command paths do not create `OpenClaw_Managed.kicad_sch` or a new project directory.
+- Validation completed with `pytest tests/unit/test_netlist_commands.py -k 'apply_netlist_rejects_mismatched_explicit_unit_input or new_from_netlist_rejects_mismatched_explicit_unit_input'` (`2 passed`), `ruff check tests/unit/test_netlist_commands.py`, and VS Code diagnostics showing no file-level errors for the touched test file.
+
+## 2026-03-19T23:43:11Z - GPT-5.4 - Added apply/new command coverage for explicit PinRefIR.unit generation
+
+- Added end-to-end command regressions in `tests/unit/test_netlist_commands.py` proving explicit `PinRefIR.unit` now flows beyond validation-only behavior into `cmd_apply_netlist(...)` and `cmd_new_from_netlist(...)` generation.
+- The new tests use the hermetic `TestLib:DualOpAmp` fixture and assert that a netlist targeting unit `1` produces `U1A` in the managed schematic, with the correct KiCad `unit` field and binding markers on pins `1` and `3`.
+- Validation completed with `pytest tests/unit/test_netlist_commands.py -k 'apply_netlist_supports_explicit_unit_generation or new_from_netlist_supports_explicit_unit_generation'` (`2 passed`), `ruff check tests/unit/test_netlist_commands.py`, and VS Code diagnostics showing no file-level errors for the touched test file.
+
+## 2026-03-19T23:33:15Z - GPT-5.4 - Added validate-netlist command regressions for explicit PinRefIR.unit
+
+- Added command-level regression coverage in `tests/unit/test_netlist_commands.py` showing that `cmd_validate_netlist(...)` now surfaces explicit `PinRefIR.unit` behavior through the real command path.
+- New coverage includes:
+  - a valid explicit-unit case for `TestLib:DualOpAmp`
+  - rejection of an unknown explicit unit id
+  - rejection of a pin that does not belong to the selected unit
+- Validation completed with `pytest tests/unit/test_netlist_commands.py -k 'accepts_valid_explicit_unit or rejects_unknown_explicit_unit or rejects_pin_outside_selected_unit'` (`3 passed`), `ruff check tests/unit/test_netlist_commands.py`, and VS Code diagnostics showing no file-level errors for the touched test file.
+
+## 2026-03-19T23:27:14Z - GPT-5.4 - Added unit-aware metadata caching to SymbolIndex
+
+- Extended `kicad-pcb/src/kicad_pcb/symbol_index.py` so `SymbolIndex` now caches both flat pin sets (`get_pins`) and per-unit pin maps (`get_unit_pins`) behind the same symbol-resolution path.
+- `get_unit_pins(...)` now reuses `get_pins(...)` for missing/broken symbol behavior, returns `{}` for ordinary single-unit symbols, and caches successful multi-unit metadata as `dict[str, tuple[str, ...]]` so callers stop re-reading library unit maps.
+- Switched `kicad-pcb/src/kicad_pcb/ir/validate.py` and `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` to use the shared `SymbolIndex` unit cache instead of calling `read_lib_symbol_unit_pins(...)` directly.
+- Added focused `tests/unit/test_symbol_index.py` coverage for unit metadata reads, empty single-unit results, and cache-hit behavior on repeated `get_unit_pins("TestLib:DualOpAmp")` calls.
+- Validation completed with `pytest tests/unit/test_symbol_index.py tests/unit/test_circuit_ir.py tests/unit/test_sch_apply.py -k 'symbol_index or unit or DualOpAmp'` (`42 passed`), `ruff check kicad-pcb/src/kicad_pcb/symbol_index.py kicad-pcb/src/kicad_pcb/ir/validate.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_symbol_index.py`, and VS Code diagnostics showing no file-level errors on the touched files.
+
+## 2026-03-19T23:08:59Z - GPT-5.4 - Added explicit PinRefIR.unit validation in ir/validate.py
+
+- Replaced the old blanket `PinRefIR.unit` rejection in `kicad-pcb/src/kicad_pcb/ir/validate.py` with real semantic checks against KiCad unit metadata from `read_lib_symbol_unit_pins(...)`.
+- Validation behavior now splits cleanly into three cases:
+  - `MULTI_UNIT_UNSUPPORTED` when a symbol has no KiCad multi-unit metadata but a unit is supplied
+  - `IR_SEMANTIC_INVALID` when the selected unit id does not exist on the symbol
+  - `PIN_INVALID` when the pin exists on the symbol overall but not on the selected unit
+- Added focused regressions in `tests/unit/test_circuit_ir.py` covering valid explicit unit selection, unknown unit rejection, and pin-outside-unit rejection for `TestLib:DualOpAmp`.
+- Validation completed with `pytest tests/unit/test_circuit_ir.py -q`, `ruff check kicad-pcb/src/kicad_pcb/ir/validate.py tests/unit/test_circuit_ir.py`, and VS Code diagnostics showing no file-level errors for the edited validator/test files.
+
+## 2026-03-19T22:59:46Z - GPT-5.4 - Phase 1.1 first multi-unit generation slice landed
+
+- Implemented the first Phase 1.1 vertical slice in the generation path rather than enabling full IR-level `PinRefIR.unit` semantics yet.
+- Added `read_lib_symbol_unit_pins(...)` in `kicad-pcb/src/kicad_pcb/lib_symbol.py` so flattened KiCad symbols expose unit-to-pin membership from sub-symbol metadata; this works for derived real symbols like `Amplifier_Operational:NE5532` via the flattened `LM2904` unit geometry.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so generation expands a single device ref into explicit placed units (`U1A`, `U1B`, and `U1P` when one used unit is power-only), emits only unit-local pins for each placed symbol, and routes/binds against those expanded refs.
+- Updated the schematic emitter path in `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` and `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py` so placed symbol nodes and instance paths now carry the real KiCad `unit` value instead of hardcoded `1`.
+- Added a stable fixture multi-unit symbol `TestLib:DualOpAmp` plus regressions in `tests/unit/test_sch_doc.py`, `tests/unit/test_sch_apply.py`, and `tests/unit/test_netlist_commands.py`; the real NE5532 system-symbol regression now expects explicit `U1A` / `U1B` / `U1P` placement.
+- Validation completed with `ruff check` on the edited files, `pytest tests/unit/test_sch_doc.py tests/unit/test_sch_apply.py tests/unit/test_netlist_commands.py tests/unit/test_phase7_ux.py` (`203 passed`), and VS Code file diagnostics showing no errors on the edited source/test files.
+- A standalone `python -m mypy ...` attempt in the terminal did not complete cleanly because the terminal wrapper kept reusing the long pytest session state and interrupted the command after the test run; no file-level diagnostics were reported for the edited modules.
+
+## 2026-03-19T22:25:49Z - GPT-5.4 - Full repo Ruff, mypy, and pytest pass completed
+
+- Ran `python -m ruff check .` from the repo root: passed.
+- Ran `python -m mypy kicad-pcb/src`: passed (`64 source files`, no issues).
+- Ran `python -m pytest -q`: full test suite passed to completion with no failures.
+
+## 2026-03-19T22:14:17Z - GPT-5.4 - Documented the combined Phase 1 warning gate as a routine checklist step
+
+- Added the exact combined helper+command Phase 1 warning gate command to `code_review/SCHEMATIC_FIXES1_TODO.md` as a routine pre-merge checklist for warning-layer work.
+- Chose checklist documentation instead of modifying `scripts/validate.sh` so the Phase 1 gate stays targeted to this workstream and does not silently broaden the repo-wide validation contract.
+
+## 2026-03-19T22:12:51Z - GPT-5.4 - Ran the combined Phase 1 warning gate across helper and command suites
+
+- Executed a single combined pytest gate across `tests/unit/test_sch_apply.py` and `tests/unit/test_netlist_commands.py` using the aligned Phase 1 suite selectors: `Phase1WarningSuite`, `real_ne5532_fixture_warning_set`, `synthetic_warning_fixtures_cover_each_phase1_family`, and `feedback_warning_not_emitted_for_local_feedback_bridge`.
+- Result: `15 passed` across the combined helper-layer and command-layer warning gate.
+- Follow-up lint check also passed: `ruff check tests/unit/test_sch_apply.py tests/unit/test_netlist_commands.py`.
+
+## 2026-03-19T22:08:04Z - GPT-5.4 - Added the companion helper-layer Phase 1 warning suite
+
+- Restructured `tests/unit/test_sch_apply.py` so helper-level advisory-warning coverage now lives under a dedicated `TestPhase1WarningSuite`, matching the command-level suite shape in `tests/unit/test_netlist_commands.py`.
+- The helper suite now combines synthetic fixture coverage for all six Phase 1 warning families with a real-fixture drift guard for `code_review/ne5532_headphone_amp_netlist.json` using the system KiCad symbols when available.
+- Validation passed with `pytest tests/unit/test_sch_apply.py -k 'Phase1WarningSuite or real_ne5532_fixture_warning_set or synthetic_warning_fixtures_cover_each_phase1_family or feedback_warning_not_emitted_for_local_feedback_bridge'` and `ruff check tests/unit/test_sch_apply.py`.
+
+## 2026-03-19T22:02:15Z - GPT-5.4 - Folded the NE5532 drift guard into a broader Phase 1 warning suite
+
+- Restructured `tests/unit/test_netlist_commands.py` so the Phase 1 warning coverage now lives under a single `TestPhase1WarningSuite` section instead of scattered standalone tests.
+- The suite now combines synthetic `validate-netlist` fixtures for each warning family with the real-fixture drift guard for `code_review/ne5532_headphone_amp_netlist.json`.
+- Validation passed with `pytest tests/unit/test_netlist_commands.py -k 'Phase1WarningSuite or real_ne5532_fixture_warning_set or synthetic_warning_fixtures_cover_each_phase1_family'` and `ruff check tests/unit/test_netlist_commands.py`.
+
+## 2026-03-19T21:57:09Z - GPT-5.4 - Added a real-fixture warning-set regression for the NE5532 review netlist
+
+- Added `test_cmd_validate_netlist_real_ne5532_fixture_warning_set_does_not_drift` to `tests/unit/test_netlist_commands.py`.
+- The regression validates the actual `code_review/ne5532_headphone_amp_netlist.json` file against `/usr/share/kicad/symbols` and asserts the exact normalized advisory-warning set: one `INPUT_COUPLING_BYPASSED_BY_RESISTOR` entry for `C5` / `R1`, plus two `CONNECTOR_UNUSED_PINS_AMBIGUOUS` entries for `J1` and `J2`.
+- Validation passed for the new test with `pytest -k real_ne5532_fixture_warning_set` and `ruff check tests/unit/test_netlist_commands.py`.
+- A direct `mypy tests/unit/test_netlist_commands.py` invocation still reports the repo’s existing `import-untyped` issues for test-file imports; this was not introduced by the new regression.
+
+## 2026-03-19T21:52:13Z - GPT-5.4 - Confirmed the real NE5532 fixture warning mix
+
+- Ran the actual validator path against `code_review/ne5532_headphone_amp_netlist.json` with `PYTHONPATH=kicad-pcb/src` and `cmd_validate_netlist(...)`; symbol resolution used `/usr/share/kicad/symbols` plus the Flatpak KiCad 9 symbols directory.
+- The real review fixture returns exactly three advisory warnings: `INPUT_COUPLING_BYPASSED_BY_RESISTOR` once for `C5` + `R1` between `LEFT_IN` and `IN_L_AC`, plus `CONNECTOR_UNUSED_PINS_AMBIGUOUS` twice for the unused `R` pins on `J1` and `J2` (`Connector:AudioJack3`).
+- The real fixture does not currently trigger the newer output/feedback sanity warnings: `OUTPUT_COUPLING_BYPASSED_BY_RESISTOR`, `OPAMP_FEEDBACK_MISSING_OR_NONLOCAL`, `OPAMP_OUTPUT_FLOATING`, or `OPAMP_OUTPUT_SHORTED_TO_RAIL`.
+
+## 2026-03-19T21:44:27Z - GPT-5.4 - Completed the remaining Phase 1.2 op-amp topology warnings
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_validate.py` with symbol-aware op-amp pin-role parsing from library AST so advisory warnings can identify inverting-input and output pins without hardcoding NE5532 pin numbers.
+- Added the remaining non-fatal Phase 1.2 warning codes: `OPAMP_FEEDBACK_MISSING_OR_NONLOCAL`, `OPAMP_OUTPUT_FLOATING`, and `OPAMP_OUTPUT_SHORTED_TO_RAIL`.
+- The feedback rule now warns when an op-amp inverting-input net has no direct local bridge or direct short to any output net; the output-sanity rule warns when an output pin is absent from all nets, only connects within the same package, or lands on a rail-like net.
+- Added hermetic `TestLib:SingleOpAmp` fixture coverage plus focused helper/command regressions in `tests/unit/test_sch_apply.py` and `tests/unit/test_netlist_commands.py` for the new feedback and output-sanity warnings.
+- Validation passed with targeted `pytest`, `ruff`, and `mypy` runs on the touched validator and warning tests.
+
+## 2026-03-19T21:32:53Z - GPT-5.4 - Expanded Phase 1.2 warning family for output coupling and connector ambiguity
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_validate.py` so the advisory warning family now covers three non-fatal analog/usage cases: `INPUT_COUPLING_BYPASSED_BY_RESISTOR`, `OUTPUT_COUPLING_BYPASSED_BY_RESISTOR`, and `CONNECTOR_UNUSED_PINS_AMBIGUOUS`.
+- `advisory_warnings(...)` now accepts an optional `SymbolIndex`, allowing connector warnings to compare used IR pins against the actual symbol pin set when validation runs with symbol libraries available.
+- Wired the same warning set through `validate-netlist`, `apply-netlist`, and `new-from-netlist`; `_sch_apply.py` now forwards the active `SymbolIndex` into the advisory-warning pass.
+- Added a 3-pin `Conn3` test symbol to `tests/fixtures/symbols/TestLib.kicad_sym` and expanded `tests/unit/test_sch_apply.py` plus `tests/unit/test_netlist_commands.py` to cover helper-level and command-level warning surfacing for the new output-coupling and connector-ambiguity cases.
+- Validation for this change passed with targeted `pytest`, `ruff`, and `mypy` runs on the touched validator/command/test files.
+
+## 2026-03-19T21:16:32Z - GPT-5.4 - Located headphone-amp notes artifact and traced notes-to-netlist provenance
+
+- Located a workspace-local copy of the previously missing design-notes artifact at `/home/ubo/.openclaw/media/inbound/71f077cc-46d8-4973-8dd8-c93dbc7cf165.txt`; the text matches the review’s `OpAmp_Audio_Amp_notes.txt` description for the NE5532 left-channel headphone amp.
+- Traced provenance in `/home/ubo/.openclaw/agents/main/sessions/02fa958c-f707-416d-8f4d-21d5893703ca.jsonl` and related session logs: the notes were originally written to `/home/ubo/kicad-projects/OpAmp_Audio_Amp/OpAmp_Audio_Amp_notes.txt`, then a richer intermediate `audio_headphone_amp_netlist.json` was generated from those notes, and later fixed/validated JSON was sent as `opamp_audio_headphone_amp_left_netlist.json`.
+- The authored notes explicitly state both `C5` in series between `LEFT_IN` and `IN_L_AC` and `R1` from `LEFT_IN` to `IN_L_AC` (later restated as optional), so the suspicious `R1` / `C5` parallel topology is already present in the source notes rather than being introduced by later normalization.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so tasks `1.2.2` and `1.2.3` are now `DONE` with concrete provenance and findings.
+
+## 2026-03-19T21:07:21Z - GPT-5.4 - NE5532 netlist inspection advanced Phase 0.2 and 1.2 status
+
+- Inspected `code_review/ne5532_headphone_amp_netlist.json` directly and updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the investigation statuses reflect evidence rather than assumptions.
+- Verified that `U1` is currently a single `Amplifier_Operational:NE5532` component ref with stage identity implicit in pin numbers, not explicit unit metadata.
+- Verified the exact suspicious input topology: `LEFT_IN = J1.T + C5.1 + R1.1` and `IN_L_AC = C5.2 + R1.2 + RV1.1`, so `R1` is directly in parallel with `C5` across the coupling boundary.
+- `SCHEMATIC_FIXES1_TODO.md` now marks Phase 0.2 and task `1.2.1` as `DONE`, while `1.2.2` and `1.2.3` remain blocked/pending because the design-notes artifact and upstream notes-to-netlist derivation path have not yet been located.
+
+## 2026-03-19T20:57:06Z - GPT-5.4 - SCHEMATIC_FIXES TODO statuses synchronized to current work state
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to add explicit status markers (`DONE`, `IN PROGRESS`, `NOT STARTED`) across the main phases and numbered subtasks.
+- Current state reflected there: Phase 0 pipeline tracing is done/in progress, Phase 1 multi-unit and `R1/C5` work are planned but largely unimplemented, and later placement/routing/layout areas are marked in progress where the repo already contains partial groundwork from earlier iterations.
+
+## 2026-03-19T20:53:25Z - GPT-5.4 - SCHEMATIC_FIXES TODO now includes concrete Phase 0 fixture and baseline map
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` Phase 0.3 and 0.4 to add concrete file maps for fixture creation and before-baseline preservation.
+- The TODO now makes explicit that durable automated fixture inputs and preserved before artifacts should live under `tests/fixtures/`, not only in ad hoc session/output directories, and that the current generated schematic/preview are regression comparison baselines rather than correctness truth.
+
+## 2026-03-19T20:50:59Z - GPT-5.4 - SCHEMATIC_FIXES TODO now includes concrete R1/C5 warning file map
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` Phase 1.2 to add a dependency-ordered concrete change map for the suspicious `R1` / `C5` topology work.
+- The TODO now makes the warning-first policy explicit at implementation level: preserve the extracted netlist by default, surface non-fatal analog-topology warnings through validation/command results, and only correct upstream extraction when the source notes and extraction path clearly prove a different intended topology.
+
+## 2026-03-19T20:48:41Z - GPT-5.4 - SCHEMATIC_FIXES TODO now includes concrete Phase 1 file map
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to add a concrete device-vs-unit change map under Phase 1.1, with dependency-ordered layers: IR/validation, internal expansion, symbol metadata, placement/tiering, pin-anchor/routing, KiCad emitter, and fixture/regression work.
+- The TODO now names the minimum must-change files for multi-unit support explicitly, including `ir/validate.py`, `lib_symbol.py`, `symbol_index.py`, `_sch_apply.py`, `tier.py`, `graphviz_layout/__init__.py`, `layout_engine.py`, `layout.py`, `router.py`, and the `sch_doc` emitter files.
+
+## 2026-03-19T20:37:45Z - GPT-5.4 - ChatGPT review decisions confirmed for schematic fix pass
+
+- Treat `code_review/SCHEMATIC_FIXES1.md` and `code_review/SCHEMATIC_FIXES1_TODO.md` as the source of truth for this fix pass; use `memory.md` only as supplemental implementation history unless a concrete code change must be preserved intentionally.
+- For the suspicious `R1` / `C5` topology, preserve the extracted netlist by default and emit a warning rather than silently correcting the circuit; only fix upstream extraction when the source notes and extraction path clearly prove the intended topology differs.
+- `NE5532` target output is separate placed units `U1A` and `U1B`, with optional power unit only if the KiCad symbol library requires it; sibling units should stay visually related, and for this headphone-amp fixture placement should prefer left-to-right stage order `U1A` then `U1B`.
+- Phase 1 foundation work now has priority over more routing polish: fixture and pipeline trace first, then device-vs-unit model, unit-aware emitter/router, and topology-warning support before analog drafting and later refinement.
+- Connector policy should be configurable in the framework, but this fixture should keep TRS symbols and mark unused pins explicitly with no-connects.
+- Acceptance baseline is: input truth = `OpAmp_Audio_Amp_notes.txt` plus `opamp_audio_headphone_amp_left_netlist.json`; current generated schematic/PNG are before-artifact comparison baselines only, not correctness truth.
+- Use hard assertions for structural correctness and soft regression guardrails for routing/page metrics; the preferred implementation structure is foundation -> analog drafting -> refinement.
+
+## 2026-03-19T20:29:50Z - GPT-5.4 - Loaded SCHEMATIC_FIXES review docs into current resume context
+
+- Read `code_review/SCHEMATIC_FIXES1.md` and `code_review/SCHEMATIC_FIXES1_TODO.md`; they describe the target quality bar for the op-amp headphone amplifier schematic as electrical correctness plus human-readable analog drafting.
+- The highest-priority structural gap called out there is proper multi-unit device support for `NE5532` (`device` vs `placed unit`, e.g. `U1A` / `U1B` and optional power unit), with placement, routing, and `.kicad_sch` emission all needing to become unit-aware.
+- The highest-priority electrical-review concern remains the suspicious `R1` / `C5` input topology; if upstream correction is not provable, the generator should preserve the extracted netlist but add analog-topology warnings rather than silently beautifying it.
+- The review documents also sharpen the intended roadmap: explicit analog block inference, op-amp-specific placement, local decoupling placement, connector/no-connect clarity, calmer net-class-aware routing, and page composition as a final pass.
+
+## 2026-03-19T20:26:07Z - GPT-5.4 - Session refresh loaded current project docs and orientation rules
+
+- Re-read `README.md`, `docs/ORIENTATION_CONVENTIONS.md`, and `memory.md` after chat restart to restore the current project state.
+- The documented layout posture remains Graphviz-first schematic generation with no intended heuristic fallback, and the orientation rules continue to prioritize readability, left-to-right signal flow, stable 0° op-amps, inward-facing connectors, horizontal series passives, and vertical shunt/feedback passives.
+- The active work history in memory remains centered on NE5532 readability/routing cleanup in `kicad-pcb/src/kicad_pcb/router.py`, plus the recent orientation/layout refinement work already recorded below.
+
+## 2026-03-19T19:39:27Z - GPT-5.4 - Added a shared svg-to-png skill and verified librsvg conversion
+
+- Created a shared OpenClaw skill at `/home/ubo/.openclaw/skills/svg-to-png/` with `SKILL.md` plus wrapper script `scripts/svg-to-png.sh` that tries `inkscape`, `rsvg-convert`, `magick`, `convert`, then `python3 -m cairosvg`.
+- Installed `librsvg2-bin`, which provides `/usr/bin/rsvg-convert` version `2.54.7`, so the skill now has a working local renderer on this machine.
+- Verified end-to-end conversion by rasterizing `/home/ubo/tmp/svg-to-png-test.svg` into `/home/ubo/tmp/svg-to-png-test.png`; `file` reported a valid `120 x 120` PNG.
+
 ## 2026-03-15T18:03:14Z - GPT-5.4 - Power/global labels now offset away from crowded endpoints
 
 - Updated `kicad-pcb/src/kicad_pcb/router.py` so power nets no longer place power symbols or fallback global labels directly on the first crowded stub endpoint or cluster centroid. The router now extends one extra clearance step outward, preserves an outward-facing angle for fallback global labels like `VMINUS15`, and adds the short connecting wire explicitly.

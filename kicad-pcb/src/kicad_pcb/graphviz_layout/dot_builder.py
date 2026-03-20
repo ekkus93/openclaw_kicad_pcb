@@ -308,6 +308,27 @@ def _emit_tier_subgraphs(
         lines.append("  }")
 
 
+def _emit_unit_sibling_constraints(
+    lines: list[str],
+    unit_sibling_pairs: list[tuple[str, str]],
+    tiers: dict[str, int],
+) -> None:
+    """Emit invisible constraints that keep sibling units visually related."""
+    for left_ref, right_ref in unit_sibling_pairs:
+        if tiers.get(left_ref) == tiers.get(right_ref):
+            lines.append("  {")
+            lines.append("    rank=same;")
+            lines.append(f"    {_safe_id(left_ref)};")
+            lines.append(f"    {_safe_id(right_ref)};")
+            lines.append("  }")
+            lines.append(
+                f"  {_safe_id(left_ref)} -> {_safe_id(right_ref)} "
+                "[style=invis, weight=8, constraint=false];"
+            )
+            continue
+        lines.append(f"  {_safe_id(left_ref)} -> {_safe_id(right_ref)} [style=invis, weight=8];")
+
+
 def _partition_power_unit_refs(
     refs: list[str],
     signal_refs: set[str],
@@ -543,6 +564,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     decoupling_map: dict[str, str] | None = None,
     feedback_refs: set[str] | None = None,
     power_unit_refs: set[str] | None = None,
+    unit_sibling_pairs: list[tuple[str, str]] | None = None,
     tiers: dict[str, int] | None = None,
     connector_roles: Mapping[str, str] | None = None,
     halo: dict[str, str] | None = None,
@@ -650,6 +672,8 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     # Emit rank subgraphs: rank=source for tier 0, rank=sink for last tier,
     # rank=same for all intermediate tiers.
     _emit_tier_subgraphs(lines, tier_groups, affinity_order=affinity_order)
+    if unit_sibling_pairs:
+        _emit_unit_sibling_constraints(lines, unit_sibling_pairs, _tiers)
 
     # Reinforce connector source/sink constraints (belt-and-suspenders on top
     # of the tier subgraphs; merged/idempotent if already in the correct tier).

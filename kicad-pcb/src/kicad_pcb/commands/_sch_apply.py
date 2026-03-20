@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
+from ..component_types import is_power_net
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
@@ -21,14 +22,15 @@ from ..layout_engine import (
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult
-from ..router import route_nets, write_routing
+from ..router import PinAnchor, route_nets, write_routing
 from ..runner import find_kicad_cli
-from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat, read_lib_symbol_pin_at
+from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat
 from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..symbol_index import SymbolIndex
 from ..tier import assign_tiers
 from ._project import minimal_schematic_text
+from ._validate import advisory_warnings
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -99,6 +101,12 @@ class _ApplyNetlistRequest:
     routing_name: str | None = None
 
 
+@dataclass(frozen=True)
+class _PlacedSymbolSpec:
+    unit: int
+    pin_nums: tuple[str, ...]
+
+
 # ---------------------------------------------------------------------------
 # Core apply logic
 # ---------------------------------------------------------------------------
@@ -116,6 +124,8 @@ def _apply_netlist_to_project(
 
     symbol_index = SymbolIndex(symbols_dir=request.symbols_dir)
     validate_ir_symbols(ir, symbol_index)
+    warnings.extend(advisory_warnings(ir, symbol_index))
+    generation_ir, placed_symbol_specs = _expand_generation_ir(ir, symbol_index)
 
     # Pre-flight: check kicad-cli availability BEFORE touching the filesystem.
     # This prevents a half-initialised project where the root schematic has been
@@ -166,8 +176,10 @@ def _apply_netlist_to_project(
             managed_sch_path,
             _build_managed_mutator(
                 ir=ir,
+                generation_ir=generation_ir,
                 project=project,
                 symbol_index=symbol_index,
+                placed_symbol_specs=placed_symbol_specs,
                 sheet_uuid=sheet_uuid,
                 request=request,
                 stats=stats,
@@ -229,8 +241,10 @@ def _apply_netlist_to_project(
 def _build_managed_mutator(  # noqa: PLR0913
     *,
     ir: CircuitIR,
+    generation_ir: CircuitIR,
     project: ProjectRef,
     symbol_index: SymbolIndex,
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec],
     sheet_uuid: str,
     request: _ApplyNetlistRequest,
     stats: dict[str, int],
@@ -256,19 +270,27 @@ def _build_managed_mutator(  # noqa: PLR0913
             cache_path=project.path / "openclaw_layout_cache.json",
             strict=request.strict,
         )
-        symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout = _write_symbols(
+        (
+            symbol_positions,
+            pin_endpoints,
+            pin_anchors,
+            symbol_defs_missing,
+            raw_layout,
+        ) = _write_symbols(
             doc=doc,
-            ir=ir,
+            ir=generation_ir,
             symbol_index=symbol_index,
+            placed_symbol_specs=placed_symbol_specs,
             project_name=project.name,
             stats=stats,
             engine=_engine,
             strict=request.strict,
         )
-        _tiers = assign_tiers(ir, strict=request.strict)
+        _tiers = assign_tiers(generation_ir, strict=request.strict)
         routing = route_nets(
-            ir=ir,
+            ir=generation_ir,
             pin_endpoints=pin_endpoints,
+            pin_anchors=pin_anchors,
             tiers=_tiers,
             positions=raw_layout,
             use_bus=_resolve_routing(request.routing_name),
@@ -290,7 +312,7 @@ def _build_managed_mutator(  # noqa: PLR0913
         # Post-mutation AST invariants: a non-empty IR must produce symbols in
         # the managed sheet. Check the live AST, not the stats counters.
         found_symbols = len(doc.list_symbols())
-        expected_components = len(ir.components)
+        expected_components = len(generation_ir.components)
 
         if expected_components and found_symbols == 0:
             if not request.dry_run:
@@ -395,11 +417,182 @@ def _transform_pin_at(
     }
 
 
+def _sorted_unit_keys(unit_pins: dict[str, list[str]]) -> list[str]:
+    return sorted(unit_pins, key=lambda key: (int(key), key))
+
+
+def _symbol_unit_pins(symbol: str, symbol_index: SymbolIndex) -> dict[str, list[str]]:
+    return {unit: list(pins) for unit, pins in symbol_index.get_unit_pins(symbol).items()}
+
+
+def _expand_generation_ir(
+    ir: CircuitIR,
+    symbol_index: SymbolIndex,
+) -> tuple[CircuitIR, dict[str, _PlacedSymbolSpec]]:
+    """Expand multi-unit devices into explicit placed refs for generation."""
+    ref_to_used_pins: dict[str, set[str]] = {component.ref: set() for component in ir.components}
+    for net in ir.nets:
+        for pin_ref in net.pins:
+            used_pins = ref_to_used_pins.get(pin_ref.ref)
+            if used_pins is not None:
+                used_pins.add(pin_ref.pin)
+
+    multi_unit_pin_to_unit: dict[str, dict[str, str]] = {}
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec] = {}
+    expanded_components = []
+    ref_rewrite: dict[tuple[str, str], str] = {}
+
+    for component in ir.components:
+        all_symbol_pins = tuple(sorted(symbol_index.get_pins(component.symbol)))
+        unit_pins = _symbol_unit_pins(component.symbol, symbol_index)
+        if len(unit_pins) <= 1:
+            expanded_components.append(component.model_copy(deep=True))
+            placed_symbol_specs[component.ref] = _PlacedSymbolSpec(unit=1, pin_nums=all_symbol_pins)
+            continue
+
+        (
+            component_copies,
+            component_specs,
+            pin_to_unit,
+            component_ref_rewrite,
+        ) = _expand_multi_unit_component(
+            component=component,
+            used_pins=ref_to_used_pins[component.ref],
+            unit_pins=unit_pins,
+            nets=ir.nets,
+            fallback_pins=all_symbol_pins,
+        )
+        expanded_components.extend(component_copies)
+        placed_symbol_specs.update(component_specs)
+        if pin_to_unit:
+            multi_unit_pin_to_unit[component.ref] = pin_to_unit
+            ref_rewrite.update(component_ref_rewrite)
+
+    expanded_nets = []
+    for net in ir.nets:
+        expanded_pins = []
+        for pin_ref in net.pins:
+            placed_pin_to_unit = multi_unit_pin_to_unit.get(pin_ref.ref)
+            if placed_pin_to_unit is None:
+                expanded_pins.append(pin_ref.model_copy(deep=True))
+                continue
+            unit = placed_pin_to_unit[pin_ref.pin]
+            expanded_ref = ref_rewrite[(pin_ref.ref, unit)]
+            expanded_pins.append(pin_ref.model_copy(update={"ref": expanded_ref}))
+        expanded_nets.append(net.model_copy(update={"pins": expanded_pins}, deep=True))
+
+    return ir.model_copy(
+        update={"components": expanded_components, "nets": expanded_nets},
+        deep=True,
+    ), placed_symbol_specs
+
+
+def _expand_multi_unit_component(
+    *,
+    component,
+    used_pins: set[str],
+    unit_pins: dict[str, list[str]],
+    nets,
+    fallback_pins: tuple[str, ...],
+) -> tuple[list, dict[str, _PlacedSymbolSpec], dict[str, str], dict[tuple[str, str], str]]:
+    pin_to_unit = _pin_to_unit_map(component.symbol, unit_pins)
+    if not used_pins:
+        return (
+            [component.model_copy(deep=True)],
+            {component.ref: _PlacedSymbolSpec(unit=1, pin_nums=fallback_pins)},
+            {},
+            {},
+        )
+
+    missing_pins = sorted(pin_num for pin_num in used_pins if pin_num not in pin_to_unit)
+    if missing_pins:
+        raise UserError(
+            "Multi-unit symbol pins could not be assigned to KiCad units",
+            code=ErrorCode.IR_SEMANTIC_INVALID,
+            details={
+                "ref": component.ref,
+                "symbol": component.symbol,
+                "missing_pins": missing_pins,
+                "known_unit_pins": {unit: sorted(pins) for unit, pins in unit_pins.items()},
+            },
+        )
+
+    used_units = _sorted_unit_keys(
+        {unit: unit_pins[unit] for unit in {pin_to_unit[pin_num] for pin_num in used_pins}}
+    )
+    unit_nets = _component_unit_nets(component.ref, pin_to_unit, nets, used_units)
+    suffix_by_unit = _suffix_by_unit(used_units, unit_nets)
+
+    component_copies = []
+    component_specs: dict[str, _PlacedSymbolSpec] = {}
+    ref_rewrite: dict[tuple[str, str], str] = {}
+    for unit in used_units:
+        expanded_ref = f"{component.ref}{suffix_by_unit[unit]}"
+        component_copies.append(component.model_copy(update={"ref": expanded_ref}, deep=True))
+        component_specs[expanded_ref] = _PlacedSymbolSpec(
+            unit=int(unit),
+            pin_nums=tuple(sorted(unit_pins[unit])),
+        )
+        ref_rewrite[(component.ref, unit)] = expanded_ref
+    return component_copies, component_specs, pin_to_unit, ref_rewrite
+
+
+def _pin_to_unit_map(symbol: str, unit_pins: dict[str, list[str]]) -> dict[str, str]:
+    pin_to_unit: dict[str, str] = {}
+    for unit, pins in unit_pins.items():
+        for pin_num in pins:
+            existing_unit = pin_to_unit.get(pin_num)
+            if existing_unit is not None and existing_unit != unit:
+                raise UserError(
+                    "Multi-unit symbol pin belongs to multiple KiCad units",
+                    code=ErrorCode.IR_SEMANTIC_INVALID,
+                    details={
+                        "symbol": symbol,
+                        "pin": pin_num,
+                        "units": sorted({existing_unit, unit}),
+                    },
+                )
+            pin_to_unit[pin_num] = unit
+    return pin_to_unit
+
+
+def _component_unit_nets(
+    ref: str,
+    pin_to_unit: dict[str, str],
+    nets,
+    used_units: list[str],
+) -> dict[str, set[str]]:
+    unit_nets: dict[str, set[str]] = {unit: set() for unit in used_units}
+    for net in nets:
+        for pin_ref in net.pins:
+            if pin_ref.ref == ref:
+                unit_nets[pin_to_unit[pin_ref.pin]].add(net.name)
+    return unit_nets
+
+
+def _suffix_by_unit(used_units: list[str], unit_nets: dict[str, set[str]]) -> dict[str, str]:
+    power_units = {
+        unit
+        for unit in used_units
+        if unit_nets[unit] and all(is_power_net(net_name) for net_name in unit_nets[unit])
+    }
+    suffix_by_unit: dict[str, str] = {}
+    next_letter = ord("A")
+    for unit in used_units:
+        if len(power_units) == 1 and unit in power_units:
+            suffix_by_unit[unit] = "P"
+            continue
+        suffix_by_unit[unit] = chr(next_letter)
+        next_letter += 1
+    return suffix_by_unit
+
+
 def _write_symbols(  # noqa: PLR0913
     *,
     doc: SchematicDoc,
     ir: CircuitIR,
     symbol_index: SymbolIndex,
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec] | None = None,
     project_name: str,
     stats: dict[str, int],
     engine: LayoutEngine | None = None,
@@ -408,12 +601,13 @@ def _write_symbols(  # noqa: PLR0913
 ) -> tuple[
     dict[str, tuple[float, float]],
     dict[tuple[str, str], tuple[float, float, float]],
+    dict[tuple[str, str], PinAnchor],
     set[str],
     dict[str, tuple[float, float, float | None]],
 ]:
     """Place all symbols from *ir* into *doc*.
 
-    Returns a 4-tuple of:
+        Returns a 5-tuple of:
     * ``symbol_positions``  — ``{ref: (x, y)}`` placed-symbol origins.
     * ``pin_endpoints``     — ``{(ref, pin_num): (x, y, angle)}`` actual
       pin connection-point coordinates in schematic space, derived from the
@@ -421,6 +615,9 @@ def _write_symbols(  # noqa: PLR0913
       the symbol placement position.  *angle* is the KiCad pin direction
       (0=right, 90=down, 180=left, 270=up) pointing **from the endpoint
       toward the symbol body** — wire stubs extend in the opposite direction.
+        * ``pin_anchors``       — ``{(ref, pin_num): PinAnchor(...)}`` explicit
+            placed-unit anchor ownership plus the same schematic-space endpoint
+            geometry used by the router.
     * ``symbol_defs_missing`` — set of symbol ids whose library def was
       not found (embedded as best-effort empty stubs).
     * ``raw_layout``        — ``{ref: (x, y, rotation)}`` full layout positions
@@ -430,6 +627,7 @@ def _write_symbols(  # noqa: PLR0913
     symbol_positions: dict[str, tuple[float, float]] = {}
     # (ref, pin_number) -> (schematic_x, schematic_y, pin_angle)
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]] = {}
+    pin_anchors: dict[tuple[str, str], PinAnchor] = {}
     symbol_defs_missing: set[str] = set()
 
     if engine is None:
@@ -454,13 +652,27 @@ def _write_symbols(  # noqa: PLR0913
                 details={"refs_missing_rotation": missing_rotation_refs},
             )
         tiers: dict[str, int] = assign_tiers(ir, strict=strict)
-        orientations: dict[str, int] = compute_orientations(ir, layout, tiers)
+        orientations: dict[str, int] = compute_orientations(
+            ir,
+            layout,
+            tiers,
+            placed_pin_numbers={
+                ref: spec.pin_nums for ref, spec in (placed_symbol_specs or {}).items()
+            }
+            or None,
+        )
     else:
         orientations = {ref: int(pos[2]) for ref, pos in raw_layout.items() if pos[2] is not None}
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]
-        valid_pins = sorted(symbol_index.get_pins(component.symbol))
+        placed_symbol = (placed_symbol_specs or {}).get(component.ref)
+        if placed_symbol is None:
+            placed_symbol = _PlacedSymbolSpec(
+                unit=1,
+                pin_nums=tuple(sorted(symbol_index.get_pins(component.symbol))),
+            )
+        valid_pins = list(placed_symbol.pin_nums)
         pin_uuids = [_new_uuid() for _ in valid_pins]
 
         if not _embed_symbol_if_found(doc=doc, symbol=component.symbol, symbol_index=symbol_index):
@@ -477,6 +689,7 @@ def _write_symbols(  # noqa: PLR0913
             valid_pins,
             pin_uuids,
             project_name,
+            unit=placed_symbol.unit,
             rotation=orientations.get(component.ref, 0),
         )
         symbol_positions[component.ref] = (x, y)
@@ -485,18 +698,56 @@ def _write_symbols(  # noqa: PLR0913
         # Pin (at px py angle) in library space is transformed by rotation θ
         # via _transform_pin_at; when θ=0 this is a pure translation.
         rotation = orientations.get(component.ref, 0)
-        lib_name, sym_name = component.symbol.split(":", 1)
-        for directory in symbol_index.directories:
-            pin_at = read_lib_symbol_pin_at(lib_name, sym_name, symbols_dir=directory)
-            if pin_at:
-                transformed = _transform_pin_at(pin_at, x, y, rotation)
-                for pin_num, endpoint in transformed.items():
-                    pin_endpoints[(component.ref, pin_num)] = endpoint
-                break  # use first directory that has the symbol
+        pin_at = _resolve_placed_symbol_pin_at(
+            component.symbol,
+            placed_symbol,
+            symbol_index,
+        )
+        transformed = _transform_pin_at(pin_at, x, y, rotation)
+        for pin_num, endpoint in transformed.items():
+            pin_endpoints[(component.ref, pin_num)] = endpoint
+            pin_anchors[(component.ref, pin_num)] = PinAnchor(
+                ref=component.ref,
+                pin=pin_num,
+                x=endpoint[0],
+                y=endpoint[1],
+                angle=endpoint[2],
+                unit=placed_symbol.unit,
+            )
 
         stats["symbols"] += 1
 
-    return symbol_positions, pin_endpoints, symbol_defs_missing, raw_layout
+    return symbol_positions, pin_endpoints, pin_anchors, symbol_defs_missing, raw_layout
+
+
+def _resolve_placed_symbol_pin_at(
+    symbol: str,
+    placed_symbol: _PlacedSymbolSpec,
+    symbol_index: SymbolIndex,
+) -> dict[str, tuple[float, float, float]]:
+    """Return unit-local pin geometry for a placed symbol when available."""
+    unit_pin_at = symbol_index.get_unit_pin_at(symbol)
+    if unit_pin_at:
+        pin_at = unit_pin_at.get(str(placed_symbol.unit), {})
+        if pin_at:
+            return {
+                pin_num: coords
+                for pin_num, coords in pin_at.items()
+                if pin_num in placed_symbol.pin_nums
+            }
+
+    lib_name, sym_name = symbol.split(":", 1)
+    for directory in symbol_index.directories:
+        from ..sch_doc import read_lib_symbol_pin_at  # noqa: PLC0415
+
+        pin_at = read_lib_symbol_pin_at(lib_name, sym_name, symbols_dir=directory)
+        if pin_at:
+            return {
+                pin_num: coords
+                for pin_num, coords in pin_at.items()
+                if pin_num in placed_symbol.pin_nums
+            }
+    return {}
 
 
 def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:

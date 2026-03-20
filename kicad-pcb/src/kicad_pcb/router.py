@@ -305,6 +305,18 @@ class BindMarker:
 
 
 @dataclass(frozen=True)
+class PinAnchor:
+    """Unit-local anchor ownership plus schematic-space endpoint geometry."""
+
+    ref: str
+    pin: str
+    x: float
+    y: float
+    angle: float
+    unit: int | None = None
+
+
+@dataclass(frozen=True)
 class GlobalLabelPlacement:
     """A global-label node placed at *(x, y)*.  Used for high-degree
     non-power nets instead of per-pin local labels."""
@@ -383,6 +395,39 @@ def _stub_end(wx: float, wy: float, wa: float) -> tuple[float, float]:
 
 def _manhattan(x1: float, y1: float, x2: float, y2: float) -> float:
     return abs(x2 - x1) + abs(y2 - y1)
+
+
+def _resolve_pin_anchors(
+    pin_endpoints: Mapping[tuple[str, str], tuple[float, float, float]],
+    pin_anchors: Mapping[tuple[str, str], PinAnchor] | None = None,
+) -> dict[tuple[str, str], PinAnchor]:
+    """Return the explicit pin-anchor map used by routing helpers."""
+
+    resolved = dict(pin_anchors or {})
+    for (ref, pin), (x, y, angle) in pin_endpoints.items():
+        resolved.setdefault(
+            (ref, pin),
+            PinAnchor(ref=ref, pin=pin, x=x, y=y, angle=angle),
+        )
+    return resolved
+
+
+def _coerce_pin_anchor_map(
+    pin_map: Mapping[tuple[str, str], PinAnchor | tuple[float, float, float]] | None,
+) -> dict[tuple[str, str], PinAnchor]:
+    """Normalize legacy endpoint tuples into PinAnchor values."""
+
+    if pin_map is None:
+        return {}
+
+    normalized: dict[tuple[str, str], PinAnchor] = {}
+    for (ref, pin), anchor in pin_map.items():
+        if isinstance(anchor, PinAnchor):
+            normalized[(ref, pin)] = anchor
+            continue
+        x, y, angle = anchor
+        normalized[(ref, pin)] = PinAnchor(ref=ref, pin=pin, x=x, y=y, angle=angle)
+    return normalized
 
 
 def _is_connector_passive_edge(ref_a: str, ref_b: str) -> bool:
@@ -769,7 +814,7 @@ def _infer_bounded_local_lane_plan(
 
 def _collect_local_ladder_candidates(
     ir: CircuitIR,
-    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+    pin_anchors: Mapping[tuple[str, str], PinAnchor],
 ) -> tuple[
     dict[str, tuple[float, float, float, float]],
     dict[str, int],
@@ -790,11 +835,11 @@ def _collect_local_ladder_candidates(
 
         endpoints: list[tuple[float, float]] = []
         for pin in net.pins:
-            endpoint = pin_endpoints.get((pin.ref, pin.pin))
-            if endpoint is None:
+            anchor = pin_anchors.get((pin.ref, pin.pin))
+            if anchor is None:
                 endpoints = []
                 break
-            endpoints.append(_stub_end(*endpoint))
+            endpoints.append(_stub_end(anchor.x, anchor.y, anchor.angle))
 
         if len(endpoints) < 2 or len(endpoints) > 3:
             continue
@@ -974,7 +1019,9 @@ def _assign_grouped_ladder_lanes(
 
 def _plan_local_ladder_routes(
     ir: CircuitIR,
-    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+    pin_anchors: Mapping[tuple[str, str], PinAnchor | tuple[float, float, float]] | None = None,
+    *,
+    pin_endpoints: Mapping[tuple[str, str], tuple[float, float, float]] | None = None,
 ) -> dict[str, SharedLanePlan]:
     """Detect nearby small-signal net neighborhoods that should share ladder-style routing.
 
@@ -982,13 +1029,17 @@ def _plan_local_ladder_routes(
     considered a ladder candidate only when it lives in a compact neighborhood
     with at least one adjacent local 2-pin or 3-pin signal net.
     """
+    resolved_anchors = _resolve_pin_anchors(
+        pin_endpoints or {},
+        _coerce_pin_anchor_map(pin_anchors),
+    )
     (
         candidate_boxes,
         candidate_degree,
         shared_lane_by_net,
         endpoints_by_net,
         connector_entry_x_by_net,
-    ) = _collect_local_ladder_candidates(ir, pin_endpoints)
+    ) = _collect_local_ladder_candidates(ir, resolved_anchors)
     adjacency = _build_ladder_adjacency(candidate_boxes)
 
     visited: set[str] = set()
@@ -1228,6 +1279,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     *,
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+    pin_anchors: Mapping[tuple[str, str], PinAnchor] | None = None,
     use_bus: bool = True,
     tiers: dict[str, int] | None = None,
     positions: dict[str, tuple[float, float, float | None]] | None = None,
@@ -1264,7 +1316,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     * **Label route** — fallback for anything else: one stub wire + one
       local net label per pin.
 
-    Unknown pins (absent from *pin_endpoints*) always fall back to an
+    Unknown pins (absent from the resolved anchor set) always fall back to an
     off-canvas position with local labels.
 
     Parameters
@@ -1273,6 +1325,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         Circuit IR with nets and components.
     pin_endpoints:
         ``{(ref, pin): (x, y, angle)}`` map produced by the schematic builder.
+    pin_anchors:
+        Optional ``{(ref, pin): PinAnchor}`` map carrying explicit placed-unit
+        anchor ownership plus endpoint geometry. When supplied, router helpers
+        use this richer model as their source of truth and only fall back to
+        *pin_endpoints* for legacy callers.
     use_bus:
         When ``True``, replace centroid-hub routing for multi-pin local nets
         with spine-style routing (:func:`_spine_route`).  Produces a cleaner
@@ -1298,14 +1355,24 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     """
     routing = NetRouting()
     fallback_y = -1500.0
-    ladder_routes = _plan_local_ladder_routes(ir, pin_endpoints)
+    resolved_anchors = _resolve_pin_anchors(pin_endpoints, pin_anchors)
+    ladder_routes = _plan_local_ladder_routes(ir, resolved_anchors)
 
     for net in sorted(ir.nets, key=lambda n: n.name):
         pins = sorted(net.pins, key=lambda p: (p.ref, p.pin))
         known = [
-            (p, pin_endpoints[(p.ref, p.pin)]) for p in pins if (p.ref, p.pin) in pin_endpoints
+            (
+                p,
+                (
+                    resolved_anchors[(p.ref, p.pin)].x,
+                    resolved_anchors[(p.ref, p.pin)].y,
+                    resolved_anchors[(p.ref, p.pin)].angle,
+                ),
+            )
+            for p in pins
+            if (p.ref, p.pin) in resolved_anchors
         ]
-        unknown = [p for p in pins if (p.ref, p.pin) not in pin_endpoints]
+        unknown = [p for p in pins if (p.ref, p.pin) not in resolved_anchors]
 
         if strict and unknown:
             raise UserError(

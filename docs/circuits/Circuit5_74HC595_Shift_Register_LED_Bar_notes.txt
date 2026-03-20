@@ -1,0 +1,90 @@
+Circuit: 74HC595 Shift-Register LED Bar Interface
+
+Goal:
+Build a digital circuit that uses a 74HC595 serial-in/parallel-out shift register to control eight LEDs from a microcontroller or external logic source using only three control lines.
+
+Functional blocks:
+1. 5V logic power and decoupling
+2. Serial control interface
+3. 74HC595 shift/latch storage
+4. LED output bank
+5. Output-enable and reset handling
+6. Expansion connector for daisy chaining
+
+Power:
+- Input supply: +5V regulated
+- Common ground throughout
+
+Design intent:
+- Demonstrate a very common digital support circuit
+- Inputs:
+  - SER (serial data)
+  - SRCLK (shift clock)
+  - RCLK (storage register clock / latch)
+- Outputs:
+  - Q0 through Q7 driving LEDs
+- Explicit handling of:
+  - OE
+  - SRCLR
+- Include optional serial-out pin for chaining to another 74HC595
+
+Suggested components:
+- U1: 74HC595
+- LED1 through LED8
+- R1 through R8: current-limiting resistors
+- C1: 100nF decoupling capacitor near U1
+- J1: logic input header
+- J2: optional output/chain header
+- R9: optional pull-up or pull-down for OE or SRCLR if needed
+
+Required signal behavior:
+- SER receives serial data bitstream
+- SRCLK shifts data into the register
+- RCLK latches shifted data to outputs
+- OE should be tied active unless external brightness blanking is wanted
+- SRCLR should be tied inactive unless external clear control is desired
+
+Connectivity summary:
+- VCC to +5V
+- GND to GND
+- C1 from VCC to GND close to U1
+- J1 provides:
+  - +5V
+  - GND
+  - SER
+  - SRCLK
+  - RCLK
+  - optionally OE
+  - optionally SRCLR
+- U1 outputs Q0..Q7 each drive one resistor and one LED
+- LEDs can be arranged as source or sink outputs; keep one style consistent
+- Q7' optionally routed to J2 for daisy chaining into another shift register
+
+Control-pin expectations:
+- OE handled explicitly:
+  - tied low for always-enabled operation, or
+  - brought to header with a default pull resistor
+- SRCLR handled explicitly:
+  - tied high for normal operation, or
+  - brought to header with a default pull resistor
+- Do not leave these pins floating
+
+Schematic readability expectations:
+- Input/control header on left
+- 74HC595 in center
+- LED bank on right
+- Decoupling close to U1
+- Q7' chain output clearly labeled
+- OE and SRCLR shown explicitly as fixed or configurable
+- Avoid messy crossing among the eight output lines by arranging LED bank in order
+
+Optional extras:
+- Add second 74HC595 footprint or connector for cascading
+- Add transistor array stage if driving heavier loads
+- Add test points on SER, SRCLK, and RCLK
+
+Acceptance criteria:
+- All control pins are explicit and not floating
+- Eight outputs are clear and ordered
+- Daisy-chain output is available or intentionally omitted
+- Schematic clearly communicates serial control in, parallel LED outputs out

@@ -127,3 +127,53 @@ def test_validate_ir_symbols_rejects_non_null_unit() -> None:
         validate_ir_symbols(ir, symbol_index)
 
     assert exc_info.value.code == ErrorCode.MULTI_UNIT_UNSUPPORTED
+
+
+def test_validate_ir_symbols_accepts_valid_explicit_unit() -> None:
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    symbol_index = SymbolIndex(symbols_dir=fixtures_dir)
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp"}],
+            "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1", "unit": "1"}]}],
+        }
+    )
+
+    validate_ir_symbols(ir, symbol_index)
+
+
+def test_validate_ir_symbols_rejects_unknown_explicit_unit() -> None:
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    symbol_index = SymbolIndex(symbols_dir=fixtures_dir)
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp"}],
+            "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1", "unit": "9"}]}],
+        }
+    )
+
+    with pytest.raises(UserError) as exc_info:
+        validate_ir_symbols(ir, symbol_index)
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    assert exc_info.value.details["valid_units"] == ["1", "2", "3"]
+
+
+def test_validate_ir_symbols_rejects_pin_outside_selected_unit() -> None:
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    symbol_index = SymbolIndex(symbols_dir=fixtures_dir)
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp"}],
+            "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "1", "unit": "2"}]}],
+        }
+    )
+
+    with pytest.raises(UserError) as exc_info:
+        validate_ir_symbols(ir, symbol_index)
+
+    assert exc_info.value.code == ErrorCode.PIN_INVALID
+    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]

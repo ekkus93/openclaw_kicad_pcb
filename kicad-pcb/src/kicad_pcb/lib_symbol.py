@@ -17,6 +17,7 @@ compatibility):
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -32,6 +33,8 @@ __all__ = [
     "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
+    "read_lib_symbol_unit_pins",
+    "read_lib_symbol_unit_pin_at",
 ]
 
 # Default system KiCad symbols directory.  Callers can override via the
@@ -354,6 +357,9 @@ def _collect_subsymbols(sym_node: ListNode) -> list[ListNode]:
     return [item for item in sym_node.items if isinstance(item, ListNode) and item.key == "symbol"]
 
 
+_UNIT_SUBSYMBOL_RE = re.compile(r"^.+_(\d+)_(\d+)$")
+
+
 def _rename_subsymbol(sub: ListNode, old_base: str, new_base: str) -> ListNode:
     """Return *sub* with its name changed from ``old_base_N_M`` → ``new_base_N_M``."""
     if len(sub.items) < 2 or not isinstance(sub.items[1], StringNode):
@@ -499,3 +505,62 @@ def read_lib_symbol_pin_at(
             if pin_num not in result:
                 result[pin_num] = coords
     return result
+
+
+def read_lib_symbol_unit_pins(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> dict[str, list[str]]:
+    """Return ``{unit_number: [pin_numbers...]}`` for a library symbol."""
+    sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=symbols_dir)
+    if sym_def is None:
+        return {}
+
+    unit_pins: dict[str, list[str]] = {}
+    for subsymbol in _collect_subsymbols(sym_def):
+        subsymbol_id = _symbol_id(subsymbol)
+        if subsymbol_id is None:
+            continue
+        match = _UNIT_SUBSYMBOL_RE.match(subsymbol_id)
+        if match is None:
+            continue
+        unit = match.group(1)
+        subsymbol_pins = _collect_pin_numbers(subsymbol)
+        if not subsymbol_pins:
+            continue
+        pins = unit_pins.setdefault(unit, [])
+        for pin_num in subsymbol_pins:
+            if pin_num not in pins:
+                pins.append(pin_num)
+    return unit_pins
+
+
+def read_lib_symbol_unit_pin_at(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> dict[str, dict[str, tuple[float, float, float]]]:
+    """Return ``{unit_number: {pin_number: (x, y, angle)}}`` for a library symbol."""
+    sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=symbols_dir)
+    if sym_def is None:
+        return {}
+
+    unit_pin_at: dict[str, dict[str, tuple[float, float, float]]] = {}
+    for subsymbol in _collect_subsymbols(sym_def):
+        subsymbol_id = _symbol_id(subsymbol)
+        if subsymbol_id is None:
+            continue
+        match = _UNIT_SUBSYMBOL_RE.match(subsymbol_id)
+        if match is None:
+            continue
+        unit = match.group(1)
+        subsymbol_pin_at = _collect_pin_at(subsymbol)
+        if not subsymbol_pin_at:
+            continue
+        pins = unit_pin_at.setdefault(unit, {})
+        for pin_num, coords in subsymbol_pin_at.items():
+            pins.setdefault(pin_num, coords)
+    return unit_pin_at

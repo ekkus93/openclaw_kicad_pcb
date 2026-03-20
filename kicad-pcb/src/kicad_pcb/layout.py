@@ -875,6 +875,7 @@ def compute_affinity_groups(
 
 def _classify_passive_pins(
     ir: CircuitIR,
+    placed_pin_numbers: Mapping[str, tuple[str, ...]] | None = None,
 ) -> tuple[frozenset[str], frozenset[str]]:
     """Return ``(refs_with_power_pin, refs_with_signal_pin)`` for components in *ir*.
 
@@ -886,6 +887,10 @@ def _classify_passive_pins(
     for net in ir.nets:
         bucket = power_refs if _is_power_net_layout(net.name) else signal_refs
         for pin in net.pins:
+            if placed_pin_numbers is not None:
+                allowed_pins = placed_pin_numbers.get(pin.ref)
+                if allowed_pins is not None and pin.pin not in allowed_pins:
+                    continue
             bucket.add(pin.ref)
     return frozenset(power_refs), frozenset(signal_refs)
 
@@ -1056,6 +1061,7 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
     tiers: dict[str, int] | None = None,
     roles: Mapping[str, str] | None = None,
     block_layout: BlockLayout | None = None,
+    placed_pin_numbers: Mapping[str, tuple[str, ...]] | None = None,
 ) -> dict[str, int]:
     """Return ``{ref: rotation_degrees}`` orientation for every component.
 
@@ -1096,6 +1102,11 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
         Optional :class:`~kicad_pcb.block_detection.BlockLayout` with functional
         block role assignments.  When provided, passive orientation is influenced
         by block role to support signal flow direction (Phase 4.3 / Phase 9.1).
+    placed_pin_numbers:
+        Optional ``{placed_ref: (pin_numbers...)}`` describing the exact pin subset
+        exposed by each placed symbol.  When provided, orientation heuristics ignore
+        net memberships on pins outside the placed unit so explicit unit refs like
+        ``U1A`` / ``U1P`` are evaluated using only their own pins.
 
     Rules (applied in priority order)
     -----------------------------------
@@ -1146,14 +1157,23 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
         - Similar passives in same role have consistent orientations
     """
     # Pre-compute shunt topology: which refs have power-net pins / signal-net pins.
-    power_pin_refs, signal_pin_refs = _classify_passive_pins(ir)
+    power_pin_refs, signal_pin_refs = _classify_passive_pins(
+        ir,
+        placed_pin_numbers=placed_pin_numbers,
+    )
 
     # Build adjacency through signal nets only (for the position heuristic).
     adjacency: dict[str, list[str]] = defaultdict(list)
     for net in ir.nets:
         if _is_power_net_layout(net.name):
             continue
-        pin_refs = [p.ref for p in net.pins]
+        pin_refs = [
+            p.ref
+            for p in net.pins
+            if placed_pin_numbers is None
+            or p.ref not in placed_pin_numbers
+            or p.pin in placed_pin_numbers[p.ref]
+        ]
         for i, r_i in enumerate(pin_refs):
             for r_j in pin_refs[i + 1 :]:
                 if r_i != r_j:

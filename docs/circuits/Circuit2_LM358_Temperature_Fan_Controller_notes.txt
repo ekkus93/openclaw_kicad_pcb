@@ -1,0 +1,81 @@
+Circuit: LM358 Temperature-Controlled Fan Driver
+
+Goal:
+Build an analog temperature-controlled fan circuit that turns on a DC fan when temperature rises above a threshold. The circuit should use a thermistor, an LM358 comparator-like stage with hysteresis, and a transistor or MOSFET to drive the fan.
+
+Functional blocks:
+1. Thermistor sensing divider
+2. Adjustable threshold reference
+3. Comparator / control amplifier with hysteresis
+4. Fan driver stage
+5. Power decoupling and flyback protection
+
+Power:
+- Input supply: +12V DC nominal
+- Analog section may run from +12V directly if compatible
+- Common ground throughout
+
+Design intent:
+- Use an NTC thermistor to sense temperature
+- Use one section of LM358 as the main threshold detector
+- Add hysteresis so the fan does not chatter near the threshold
+- Drive a 12V brushless fan through a transistor or logic-level MOSFET
+- Include flyback diode if a brushed inductive load is ever substituted, though many brushless fans are internally protected
+
+Suggested components:
+- U1: LM358 dual op-amp
+- TH1: 10k NTC thermistor at 25C
+- RV1: 10k threshold adjust potentiometer
+- R1, R2: fixed resistors for sensor/reference divider scaling
+- R3: hysteresis feedback resistor
+- Q1: NPN transistor or logic-level N-MOSFET for fan control
+- R4: base/gate resistor
+- R5: pull-down if MOSFET is used
+- D1: flyback diode across fan if desired
+- C1: 100nF local decoupling for U1
+- C2: bulk supply capacitor near fan connector
+
+Behavior:
+- Thermistor and resistor form a temperature-dependent voltage divider
+- RV1 creates an adjustable reference voltage
+- U1A compares sensor voltage to threshold
+- Hysteresis via R3 shifts switching threshold slightly depending on output state
+- Output drives Q1
+- When temperature exceeds threshold, Q1 turns on and fan receives power
+- When temperature drops enough below threshold, fan turns off
+
+Connectivity guidance:
+- U1 supply pins connected appropriately for LM358
+- Sensor divider feeding one input of U1A
+- Reference divider feeding the other input of U1A
+- R3 from output of U1A back to the non-inverting or inverting input depending on desired polarity
+- U1A output -> R4 -> Q1 control terminal
+- If using NPN:
+  - emitter to GND
+  - collector to fan negative
+  - fan positive to +12V
+- If using N-MOSFET:
+  - source to GND
+  - drain to fan negative
+  - fan positive to +12V
+- D1 across fan if included, reverse-biased during normal operation
+
+Schematic readability expectations:
+- Thermistor divider on left
+- Reference/threshold network below or above it
+- LM358 in center
+- Hysteresis resistor close to op-amp
+- Driver transistor/MOSFET and fan connector on right
+- Decoupling near LM358
+- Clearly indicate fan supply path
+
+Optional extras:
+- Use second LM358 section to buffer sensor voltage or drive an indicator LED
+- Add power LED
+- Add terminal block for external thermistor
+- Add test points for threshold and sensor voltage
+
+Acceptance criteria:
+- Fan switches on and off at repeatable temperatures
+- Hysteresis prevents rapid chattering
+- Schematic clearly communicates sensor, comparator, feedback, and driver stages

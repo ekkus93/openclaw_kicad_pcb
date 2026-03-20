@@ -41,7 +41,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
+    from ..layout import ComponentAnnotation
 
 from ..errors import ErrorCode, UserError
 from ..layout import _compute_opamp_halo as _compute_opamp_halo_layout
@@ -53,6 +55,7 @@ from ..layout import detect_stereo_channels as _detect_stereo_channels
 from ..layout import find_feedback_paths as _find_feedback_paths
 from ..tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
 from ..tier import assign_tiers as _assign_tiers
+from ..tier import build_ic_unit_sibling_constraints as _build_ic_unit_sibling_constraints
 from ..tier import classify_connector_roles as _classify_connector_roles
 from .cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
 from .dot_builder import (
@@ -242,6 +245,63 @@ def _emit_layout_diagnostics(diagnostics: list[dict[str, object]]) -> None:
             _log.debug("%s: %s details=%s", code, message, details)
 
 
+def _prepare_layout_inputs(
+    ir: CircuitIR,
+    refs: list[str],
+    *,
+    tiers: dict[str, int],
+) -> tuple[
+    BlockLayout,
+    dict[str, str],
+    dict[str, ComponentAnnotation],
+    set[str],
+    dict[str, str],
+    dict[str, int],
+    list[dict[str, object]],
+    dict[str, object],
+    set[str],
+    list[tuple[str, str]],
+]:
+    """Collect derived layout inputs used by the Graphviz engine."""
+
+    from ..block_detection import classify_circuit, debug_dump  # noqa: PLC0415
+
+    block_layout = classify_circuit(ir)
+    _log.debug("Block detection complete:\n%s", debug_dump(block_layout))
+
+    decoupling_map = _find_decoupling_caps(ir)
+    roles = _classify_connector_roles(refs, tiers, ir=ir)
+    annotations = _find_feedback_paths(ir, tiers, roles=roles or None)
+    feedback_refs: set[str] = {
+        ref for ref, annotation in annotations.items() if annotation.feedback
+    }
+    halo = _compute_opamp_halo_layout(ir, annotations, tiers)
+    sds_scores = _compute_signal_distance_scores(ir, roles)
+    sds_cols = _compute_sds_columns(refs, sds_scores)
+    legacy_sds_fallback = _analyze_legacy_sds_fallback(roles)
+    diagnostics = _build_layout_diagnostics(legacy_sds_fallback)
+    _emit_layout_diagnostics(diagnostics)
+
+    unit_groups = _assign_ic_units_to_tiers(ir, tiers)
+    power_unit_refs: set[str] = {
+        group.power_unit for group in unit_groups.values() if group.power_unit is not None
+    }
+    unit_sibling_pairs = _build_ic_unit_sibling_constraints(unit_groups)
+
+    return (
+        block_layout,
+        decoupling_map,
+        annotations,
+        feedback_refs,
+        halo,
+        sds_cols,
+        diagnostics,
+        legacy_sds_fallback,
+        power_unit_refs,
+        unit_sibling_pairs,
+    )
+
+
 def _analyze_halo_column_alignment(
     raw_positions: Mapping[str, tuple[float, float, float | None]],
     post_snap_positions: Mapping[str, tuple[float, float, float | None]],
@@ -426,39 +486,21 @@ class GraphvizLayoutEngine:
         if not refs:
             return {}
 
-        # Phase 1.2: Classify components into functional blocks for readability.
-        # Block assignments are computed early so they can influence layout decisions.
-        from ..block_detection import classify_circuit, debug_dump  # noqa: PLC0415
-
-        block_layout = classify_circuit(ir)
-        _log.debug("Block detection complete:\n%s", debug_dump(block_layout))
-
-        # Detect decoupling caps before building DOT source so the same map
-        # can be used both for invisible-edge constraints and post-layout snap.
-        decoupling_map = _find_decoupling_caps(ir)
-
-        # Detect feedback components (passives that form back-edges).
         _tiers = self._tiers if self._tiers is not None else _assign_tiers(ir, strict=self._strict)
+        (
+            block_layout,
+            decoupling_map,
+            annotations,
+            feedback_refs,
+            halo,
+            sds_cols,
+            diagnostics,
+            legacy_sds_fallback,
+            _power_unit_refs,
+            _unit_sibling_pairs,
+        ) = _prepare_layout_inputs(ir, refs, tiers=_tiers)
         _roles = _classify_connector_roles(refs, _tiers, ir=ir)
-        annotations = _find_feedback_paths(ir, _tiers, roles=_roles or None)
-        feedback_refs: set[str] = {r for r, a in annotations.items() if a.feedback}
-
-        # Compute op-amp halo membership for DOT rank constraints (R4-5)
-        # and the post-layout snap pass (R4-4).
-        halo = _compute_opamp_halo_layout(ir, annotations, _tiers)
-
-        # R2-3: compute SDS-derived column indices to feed rank subgraphs.
         sds_scores = _compute_signal_distance_scores(ir, _roles)
-        sds_cols = _compute_sds_columns(refs, sds_scores)
-        legacy_sds_fallback = _analyze_legacy_sds_fallback(_roles)
-        diagnostics = _build_layout_diagnostics(legacy_sds_fallback)
-        _emit_layout_diagnostics(diagnostics)
-
-        # Detect multi-unit IC groups; extract power units for cluster_power.
-        _unit_groups = _assign_ic_units_to_tiers(ir, _tiers)
-        _power_unit_refs: set[str] = {
-            g.power_unit for g in _unit_groups.values() if g.power_unit is not None
-        }
 
         # Build DOT source up-front so we can derive the cache key.
         # Pass pre-computed tiers so _build_dot_source skips a redundant assign_tiers call.
@@ -470,6 +512,7 @@ class GraphvizLayoutEngine:
             decoupling_map=decoupling_map,
             feedback_refs=feedback_refs or None,
             power_unit_refs=_power_unit_refs or None,
+            unit_sibling_pairs=_unit_sibling_pairs or None,
             tiers=_tiers,
             connector_roles=_roles or None,
             halo=halo or None,

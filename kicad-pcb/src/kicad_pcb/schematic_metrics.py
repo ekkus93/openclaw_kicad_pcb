@@ -36,7 +36,8 @@ readability criteria on generated schematics.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, TypeVar
 
 from kicad_pcb.block_detection import BlockLayout, BlockRole
 
@@ -65,6 +66,8 @@ __all__ = [
     "wire_stub_ratio",
 ]
 
+T = TypeVar("T")
+
 
 def _symbol_ref_positions(
     doc: SchematicDoc,
@@ -89,6 +92,42 @@ def _symbol_ref_positions(
             continue
         positions[ref_raw] = (float(x_raw), float(y_raw))
     return positions
+
+
+def _resolve_placed_refs(
+    mapping: dict[str, T],
+    ref: str,
+) -> list[tuple[str, T]]:
+    """Resolve a base device ref to matching placed-unit refs when needed."""
+
+    if ref in mapping:
+        return [(ref, mapping[ref])]
+
+    unit_suffix = re.compile(rf"^{re.escape(ref)}[A-Z]+$")
+    return sorted(
+        (
+            (candidate_ref, value)
+            for candidate_ref, value in mapping.items()
+            if unit_suffix.match(candidate_ref)
+        ),
+        key=lambda item: item[0],
+    )
+
+
+def _anchor_x_coordinate(
+    mapping: dict[str, tuple[float, float]],
+    anchor_ref: str,
+) -> tuple[float, set[str]]:
+    """Return a stable x anchor for exact refs or placed-unit siblings."""
+
+    matches = _resolve_placed_refs(mapping, anchor_ref)
+    if not matches:
+        msg = f"Anchor ref not found in schematic: {anchor_ref}"
+        raise ValueError(msg)
+
+    xs = sorted(value[0] for _ref, value in matches)
+    anchor_x = xs[len(xs) // 2]
+    return anchor_x, {ref for ref, _value in matches}
 
 
 def count_distinct_x_columns(
@@ -143,16 +182,12 @@ def count_refs_in_same_x_column_as(
     such as too many passives sharing the op-amp column.
     """
     positions = _symbol_ref_positions(doc)
-    if anchor_ref not in positions:
-        msg = f"Anchor ref not found in schematic: {anchor_ref}"
-        raise ValueError(msg)
-
-    anchor_x, _anchor_y = positions[anchor_ref]
+    anchor_x, anchor_refs = _anchor_x_coordinate(positions, anchor_ref)
     count = 0
     for ref, (x, _y) in positions.items():
         if refs is not None and ref not in refs:
             continue
-        if ref == anchor_ref and not include_anchor:
+        if ref in anchor_refs and not include_anchor:
             continue
         if abs(x - anchor_x) <= tolerance_mm:
             count += 1
@@ -168,15 +203,11 @@ def count_non_power_symbols_in_same_x_column_as(
 ) -> int:
     """Count non-power symbols sharing the anchor component's x column."""
     positions = _symbol_ref_positions(doc, exclude_power_symbols=True)
-    if anchor_ref not in positions:
-        msg = f"Anchor ref not found in schematic: {anchor_ref}"
-        raise ValueError(msg)
-
-    anchor_x, _anchor_y = positions[anchor_ref]
+    anchor_x, anchor_refs = _anchor_x_coordinate(positions, anchor_ref)
     return sum(
         1
         for ref, (x, _y) in positions.items()
-        if (include_anchor or ref != anchor_ref) and abs(x - anchor_x) <= tolerance_mm
+        if (include_anchor or ref not in anchor_refs) and abs(x - anchor_x) <= tolerance_mm
     )
 
 
@@ -591,13 +622,11 @@ def compute_block_separation(
     # Group components by block role
     by_role: dict[BlockRole, list[tuple[float, float]]] = {}
     for ref, assignment in block_layout.assignments.items():
-        if ref not in positions:
-            continue
-        x, y, _ = positions[ref]
-        role = assignment.role
-        if role not in by_role:
-            by_role[role] = []
-        by_role[role].append((x, y))
+        for _resolved_ref, (x, y, _rot) in _resolve_placed_refs(positions, ref):
+            role = assignment.role
+            if role not in by_role:
+                by_role[role] = []
+            by_role[role].append((x, y))
 
     # Compute minimum separation between each block pair
     separations: dict[tuple[BlockRole, BlockRole], float] = {}
@@ -630,10 +659,8 @@ def compute_block_role_spread(
     """
     by_role: dict[BlockRole, list[tuple[float, float]]] = {}
     for ref, assignment in block_layout.assignments.items():
-        if ref not in positions:
-            continue
-        x, y, _rot = positions[ref]
-        by_role.setdefault(assignment.role, []).append((x, y))
+        for _resolved_ref, (x, y, _rot) in _resolve_placed_refs(positions, ref):
+            by_role.setdefault(assignment.role, []).append((x, y))
 
     spread: dict[str, dict[str, float | int]] = {}
     for role, role_positions in by_role.items():

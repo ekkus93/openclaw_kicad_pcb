@@ -13,13 +13,28 @@ from pathlib import Path
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.commands._sch_apply import _transform_pin_at
+from kicad_pcb.commands._sch_apply import (
+    _expand_generation_ir,
+    _PlacedSymbolSpec,
+    _resolve_placed_symbol_pin_at,
+    _transform_pin_at,
+    _write_symbols,
+)
 from kicad_pcb.commands._validate import advisory_warnings, full_validate
 from kicad_pcb.errors import UserError
+from kicad_pcb.sch_doc import SchematicDoc
+from kicad_pcb.sexpr import parse
+from kicad_pcb.sexpr.nodes import ListNode
 from kicad_pcb.symbol_index import SymbolIndex
 from pytest import approx
 
 pytestmark = pytest.mark.unit
+
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+_KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
+_REAL_NE5532_REVIEW_NETLIST = (
+    Path(__file__).resolve().parents[2] / "code_review" / "ne5532_headphone_amp_netlist.json"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +106,136 @@ class TestTransformPinAt:
         }
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=0)
         assert set(result.keys()) == set(pin_at.keys())
+
+
+class TestExpandGenerationIr:
+    def test_splits_fixture_dual_op_amp_into_explicit_units(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="TestLib:DualOpAmp", value="DualOpAmp"),
+                ComponentIR(ref="R1", symbol="TestLib:R", value="10k"),
+                ComponentIR(ref="R2", symbol="TestLib:R", value="10k"),
+            ],
+            nets=[
+                NetIR(
+                    name="IN_A",
+                    pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_A",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R1", pin="2")],
+                ),
+                NetIR(
+                    name="IN_B",
+                    pins=[PinRefIR(ref="U1", pin="5"), PinRefIR(ref="R2", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_B",
+                    pins=[PinRefIR(ref="U1", pin="7"), PinRefIR(ref="R2", pin="2")],
+                ),
+                NetIR(name="VCC", pins=[PinRefIR(ref="U1", pin="8")]),
+                NetIR(name="GND", pins=[PinRefIR(ref="U1", pin="4")]),
+            ],
+        )
+
+        expanded_ir, placed_symbols = _expand_generation_ir(
+            ir,
+            SymbolIndex(symbols_dir=_FIXTURES_DIR),
+        )
+
+        refs = [component.ref for component in expanded_ir.components]
+        assert refs == ["U1A", "U1B", "U1P", "R1", "R2"]
+        assert placed_symbols["U1A"].unit == 1
+        assert placed_symbols["U1A"].pin_nums == ("1", "2", "3")
+        assert placed_symbols["U1B"].unit == 2
+        assert placed_symbols["U1B"].pin_nums == ("5", "6", "7")
+        assert placed_symbols["U1P"].unit == 3
+        assert placed_symbols["U1P"].pin_nums == ("4", "8")
+
+        bindings = {(pin.ref, pin.pin): net.name for net in expanded_ir.nets for pin in net.pins}
+        assert bindings[("U1A", "1")] == "IN_A"
+        assert bindings[("U1A", "3")] == "OUT_A"
+        assert bindings[("U1B", "5")] == "IN_B"
+        assert bindings[("U1B", "7")] == "OUT_B"
+        assert bindings[("U1P", "4")] == "GND"
+        assert bindings[("U1P", "8")] == "VCC"
+
+
+class TestResolvePlacedSymbolPinAt:
+    def test_returns_unit_local_geometry_for_signal_unit(self) -> None:
+        pin_at = _resolve_placed_symbol_pin_at(
+            "TestLib:DualOpAmp",
+            _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3")),
+            SymbolIndex(symbols_dir=_FIXTURES_DIR),
+        )
+
+        assert pin_at == {
+            "1": (0.0, 0.0, 0.0),
+            "2": (0.0, -2.54, 0.0),
+            "3": (5.08, -1.27, 180.0),
+        }
+
+    def test_returns_unit_local_geometry_for_power_unit(self) -> None:
+        pin_at = _resolve_placed_symbol_pin_at(
+            "TestLib:DualOpAmp",
+            _PlacedSymbolSpec(unit=3, pin_nums=("4", "8")),
+            SymbolIndex(symbols_dir=_FIXTURES_DIR),
+        )
+
+        assert pin_at == {
+            "4": (2.54, 2.54, 270.0),
+            "8": (2.54, -5.08, 90.0),
+        }
+
+
+class TestWriteSymbolsPinAnchors:
+    def test_returns_pin_anchors_with_placed_unit_metadata(self) -> None:
+        root = parse(
+            "(kicad_sch (version 20230121) (generator eeschema) "
+            '(uuid "00000000-0000-0000-0000-000000000001") '
+            '(paper "A4"))\n'
+        )
+        assert isinstance(root, ListNode)
+        doc = SchematicDoc(root)
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="U1A", symbol="TestLib:DualOpAmp", value="DualOpAmp")],
+            nets=[NetIR(name="IN_A", pins=[PinRefIR(ref="U1A", pin="1")])],
+        )
+        stats = {
+            "symbols": 0,
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        class _StaticLayoutEngine:
+            def compute_symbol_positions(
+                self,
+                _ir: CircuitIR,
+            ) -> dict[str, tuple[float, float, float]]:
+                return {"U1A": (10.0, 20.0, 0.0)}
+
+        _positions, pin_endpoints, pin_anchors, _missing, _raw_layout = _write_symbols(
+            doc=doc,
+            ir=ir,
+            symbol_index=SymbolIndex(symbols_dir=_FIXTURES_DIR),
+            placed_symbol_specs={"U1A": _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3"))},
+            project_name="test",
+            stats=stats,
+            engine=_StaticLayoutEngine(),
+        )
+
+        assert pin_anchors[("U1A", "1")].unit == 1
+        assert pin_anchors[("U1A", "1")].ref == "U1A"
+        assert pin_anchors[("U1A", "1")].pin == "1"
+        assert (
+            pin_anchors[("U1A", "1")].x,
+            pin_anchors[("U1A", "1")].y,
+            pin_anchors[("U1A", "1")].angle,
+        ) == approx(pin_endpoints[("U1A", "1")])
 
 
 # ---------------------------------------------------------------------------
@@ -177,6 +322,266 @@ class TestAdvisoryWarnings:
         codes = {w["code"] for w in advisory_warnings(ir)}
         assert "COMPONENT_NOT_IN_ANY_NET" in codes
         assert "SINGLE_PIN_NET" in codes
+
+
+def _make_ir(
+    *,
+    components: list[ComponentIR],
+    nets: list[NetIR],
+) -> CircuitIR:
+    return CircuitIR(version="1", components=components, nets=nets)
+
+
+def _normalize_warning_entries(
+    warnings: list[dict[str, object]],
+) -> list[tuple[str, tuple[tuple[str, object], ...]]]:
+    return sorted(
+        (
+            warning["code"],
+            tuple(sorted((warning["details"] or {}).items()))
+            if isinstance(warning.get("details"), dict)
+            else (),
+        )
+        for warning in warnings
+    )
+
+
+_skip_no_system_symbols = pytest.mark.skipif(
+    not (_KICAD_SYSTEM_SYMBOLS / "Amplifier_Operational.kicad_sym").exists(),
+    reason="KiCad system symbol libraries not installed at /usr/share/kicad/symbols",
+)
+
+
+class TestPhase1WarningSuite:
+    @pytest.mark.parametrize(
+        ("ir", "expected_codes"),
+        [
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="J1", symbol="Lib:J"),
+                        ComponentIR(ref="C5", symbol="Device:C"),
+                        ComponentIR(ref="R1", symbol="Device:R"),
+                        ComponentIR(ref="RV1", symbol="Lib:P"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="LEFT_IN",
+                            pins=[
+                                PinRefIR(ref="J1", pin="1"),
+                                PinRefIR(ref="C5", pin="1"),
+                                PinRefIR(ref="R1", pin="1"),
+                            ],
+                        ),
+                        NetIR(
+                            name="IN_L_AC",
+                            pins=[
+                                PinRefIR(ref="C5", pin="2"),
+                                PinRefIR(ref="R1", pin="2"),
+                                PinRefIR(ref="RV1", pin="1"),
+                            ],
+                        ),
+                    ],
+                ),
+                {"INPUT_COUPLING_BYPASSED_BY_RESISTOR"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="Lib:U"),
+                        ComponentIR(ref="C7", symbol="Device:C"),
+                        ComponentIR(ref="R8", symbol="Device:R"),
+                        ComponentIR(ref="J2", symbol="Lib:J"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="OUT_L_STAGE2_RAW",
+                            pins=[
+                                PinRefIR(ref="U1", pin="1"),
+                                PinRefIR(ref="C7", pin="1"),
+                                PinRefIR(ref="R8", pin="1"),
+                            ],
+                        ),
+                        NetIR(
+                            name="HP_L_OUT",
+                            pins=[
+                                PinRefIR(ref="C7", pin="2"),
+                                PinRefIR(ref="R8", pin="2"),
+                                PinRefIR(ref="J2", pin="1"),
+                            ],
+                        ),
+                    ],
+                ),
+                {"OUTPUT_COUPLING_BYPASSED_BY_RESISTOR"},
+            ),
+            (
+                _make_ir(
+                    components=[ComponentIR(ref="J1", symbol="TestLib:Conn3")],
+                    nets=[
+                        NetIR(name="IN", pins=[PinRefIR(ref="J1", pin="1")]),
+                        NetIR(name="GND", pins=[PinRefIR(ref="J1", pin="2")]),
+                    ],
+                ),
+                {"CONNECTOR_UNUSED_PINS_AMBIGUOUS"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                        ComponentIR(ref="R1", symbol="TestLib:R"),
+                        ComponentIR(ref="J1", symbol="TestLib:R"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="VIN",
+                            pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                        ),
+                        NetIR(
+                            name="U1_INV",
+                            pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="R1", pin="2")],
+                        ),
+                        NetIR(
+                            name="U1_OUT",
+                            pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="J1", pin="1")],
+                        ),
+                    ],
+                ),
+                {"OPAMP_FEEDBACK_MISSING_OR_NONLOCAL"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                        ComponentIR(ref="R1", symbol="TestLib:R"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="VIN",
+                            pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                        ),
+                        NetIR(
+                            name="U1_INV",
+                            pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="R1", pin="2")],
+                        ),
+                    ],
+                ),
+                {"OPAMP_OUTPUT_FLOATING"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                        ComponentIR(ref="R1", symbol="TestLib:R"),
+                        ComponentIR(ref="P1", symbol="TestLib:R"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="VIN",
+                            pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                        ),
+                        NetIR(
+                            name="U1_INV",
+                            pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="R1", pin="2")],
+                        ),
+                        NetIR(
+                            name="VPLUS15",
+                            pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="P1", pin="1")],
+                        ),
+                        NetIR(name="BIAS", pins=[PinRefIR(ref="P1", pin="2")]),
+                    ],
+                ),
+                {"OPAMP_OUTPUT_SHORTED_TO_RAIL"},
+            ),
+        ],
+        ids=[
+            "input-coupling",
+            "output-coupling",
+            "connector-ambiguity",
+            "missing-feedback",
+            "output-floating",
+            "output-shorted-to-rail",
+        ],
+    )
+    def test_synthetic_warning_fixtures_cover_each_phase1_family(
+        self,
+        ir: CircuitIR,
+        expected_codes: set[str],
+    ) -> None:
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+        assert expected_codes <= codes
+
+    @_skip_no_system_symbols
+    def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:
+        ir = CircuitIR.load(_REAL_NE5532_REVIEW_NETLIST)
+        warnings = advisory_warnings(ir, SymbolIndex(symbols_dir=_KICAD_SYSTEM_SYMBOLS))
+
+        assert _normalize_warning_entries(warnings) == [
+            (
+                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                (
+                    ("ref", "J1"),
+                    ("symbol", "Connector:AudioJack3"),
+                    ("unused_pins", ["R"]),
+                    ("used_pins", ["S", "T"]),
+                ),
+            ),
+            (
+                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                (
+                    ("ref", "J2"),
+                    ("symbol", "Connector:AudioJack3"),
+                    ("unused_pins", ["R"]),
+                    ("used_pins", ["S", "T"]),
+                ),
+            ),
+            (
+                "INPUT_COUPLING_BYPASSED_BY_RESISTOR",
+                (
+                    ("bridge_component_refs", ["C5", "R1"]),
+                    ("capacitor_refs", ["C5"]),
+                    ("nets", ["IN_L_AC", "LEFT_IN"]),
+                    ("resistor_refs", ["R1"]),
+                ),
+            ),
+        ]
+
+    def test_feedback_warning_not_emitted_for_local_feedback_bridge(self) -> None:
+        """A direct output-to-inverting-input feedback bridge should not warn."""
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                ComponentIR(ref="R1", symbol="TestLib:R"),
+                ComponentIR(ref="R2", symbol="TestLib:R"),
+            ],
+            nets=[
+                NetIR(
+                    name="VIN",
+                    pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                ),
+                NetIR(
+                    name="U1_INV",
+                    pins=[
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="R1", pin="2"),
+                        PinRefIR(ref="R2", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="U1_OUT",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R2", pin="2")],
+                ),
+            ],
+        )
+
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+        assert "OPAMP_FEEDBACK_MISSING_OR_NONLOCAL" not in codes
+        assert "OPAMP_OUTPUT_FLOATING" not in codes
 
 
 # ---------------------------------------------------------------------------

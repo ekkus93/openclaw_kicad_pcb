@@ -1,4 +1,4 @@
-"""Symbol metadata index (memoized pin lookup) for deterministic IR validation."""
+"""Symbol metadata index (memoized pin and unit lookup) for deterministic IR validation."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import SYMBOLS_CANDIDATES
 from .errors import ErrorCode, UserError
-from .sch_doc import read_lib_symbol_pins
+from .sch_doc import read_lib_symbol_pins, read_lib_symbol_unit_pin_at, read_lib_symbol_unit_pins
 
 REPO_LOCAL_SYMBOLS_DIR = Path(__file__).resolve().parent / "resources" / "symbols"
 
@@ -52,7 +52,7 @@ def resolve_symbol_dirs(*, symbols_dir: Path | None = None) -> SymbolsResolution
 
 
 class SymbolIndex:
-    """Memoized symbol pin lookup facade around ``read_lib_symbol_pins``."""
+    """Memoized symbol pin and unit metadata lookup facade."""
 
     def __init__(
         self,
@@ -74,7 +74,9 @@ class SymbolIndex:
                     "hint": "Pass --symbols-dir <path> or install KiCad symbol libraries.",
                 },
             )
-        self._cache: dict[str, set[str]] = {}
+        self._pins_cache: dict[str, set[str]] = {}
+        self._unit_pins_cache: dict[str, dict[str, tuple[str, ...]]] = {}
+        self._unit_pin_at_cache: dict[str, dict[str, dict[str, tuple[float, float, float]]]] = {}
 
     @property
     def directories(self) -> tuple[Path, ...]:
@@ -91,22 +93,15 @@ class SymbolIndex:
         library file but resolves to 0 pins (e.g. a broken ``extends`` chain
         where the base symbol does not exist).
         """
-        if symbol_id in self._cache:
-            return self._cache[symbol_id]
+        if symbol_id in self._pins_cache:
+            return self._pins_cache[symbol_id]
 
-        if ":" not in symbol_id:
-            raise UserError(
-                f"Invalid symbol id '{symbol_id}' (expected Lib:Symbol)",
-                code=ErrorCode.SYMBOL_NOT_FOUND,
-                details={"symbol": symbol_id},
-            )
-
-        lib_name, sym_name = symbol_id.split(":", 1)
+        lib_name, sym_name = _split_symbol_id(symbol_id)
         for directory in self._dirs:
             pins = read_lib_symbol_pins(lib_name, sym_name, symbols_dir=directory)
             if pins:
                 pin_set = set(pins)
-                self._cache[symbol_id] = pin_set
+                self._pins_cache[symbol_id] = pin_set
                 return pin_set
 
         # Distinguish "declared in file but 0 pins" (broken extends chain, or
@@ -152,3 +147,58 @@ class SymbolIndex:
                 "searched_dirs": [str(path) for path in self._dirs],
             },
         )
+
+    def get_unit_pins(self, symbol_id: str) -> dict[str, tuple[str, ...]]:
+        """Return cached ``{unit_number: (pin_numbers...)}`` metadata for *symbol_id*.
+
+        Returns an empty dict for symbols that resolve normally but do not expose
+        KiCad multi-unit metadata.
+        """
+        if symbol_id in self._unit_pins_cache:
+            return self._unit_pins_cache[symbol_id]
+
+        # Reuse the same missing-symbol and broken-symbol behavior as get_pins.
+        self.get_pins(symbol_id)
+
+        lib_name, sym_name = _split_symbol_id(symbol_id)
+        for directory in self._dirs:
+            unit_pins = read_lib_symbol_unit_pins(lib_name, sym_name, symbols_dir=directory)
+            if unit_pins:
+                cached = {unit: tuple(pins) for unit, pins in unit_pins.items()}
+                self._unit_pins_cache[symbol_id] = cached
+                return cached
+
+        self._unit_pins_cache[symbol_id] = {}
+        return {}
+
+    def get_unit_pin_at(
+        self,
+        symbol_id: str,
+    ) -> dict[str, dict[str, tuple[float, float, float]]]:
+        """Return cached ``{unit_number: {pin_number: (x, y, angle)}}`` metadata."""
+        if symbol_id in self._unit_pin_at_cache:
+            return self._unit_pin_at_cache[symbol_id]
+
+        self.get_pins(symbol_id)
+
+        lib_name, sym_name = _split_symbol_id(symbol_id)
+        for directory in self._dirs:
+            unit_pin_at = read_lib_symbol_unit_pin_at(lib_name, sym_name, symbols_dir=directory)
+            if unit_pin_at:
+                cached = {unit: dict(pin_map) for unit, pin_map in unit_pin_at.items()}
+                self._unit_pin_at_cache[symbol_id] = cached
+                return cached
+
+        self._unit_pin_at_cache[symbol_id] = {}
+        return {}
+
+
+def _split_symbol_id(symbol_id: str) -> tuple[str, str]:
+    if ":" not in symbol_id:
+        raise UserError(
+            f"Invalid symbol id '{symbol_id}' (expected Lib:Symbol)",
+            code=ErrorCode.SYMBOL_NOT_FOUND,
+            details={"symbol": symbol_id},
+        )
+    lib_name, sym_name = symbol_id.split(":", 1)
+    return lib_name, sym_name
