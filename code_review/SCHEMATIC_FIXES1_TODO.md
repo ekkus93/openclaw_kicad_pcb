@@ -1077,6 +1077,10 @@ Track and compare:
 
 Do not overfit to exact numbers, but enforce sane upper bounds.
 
+Current findings:
+- Phase 7 guardrails in `tests/unit/test_phase7_regression_guardrails.py` now include a concrete output-neighborhood routing check for the real NE5532 fixture, not only whole-page wire-stub and lint metrics.
+- The new guardrail measures the local wire box around `C6`, `R5`, `R6`, `C7`, `R7`, and `J2`, and asserts that the generated schematic stays below the current small-jog threshold (`<= 12` short local segments and `<= 0.35` local short-segment ratio) while also remaining materially better than the captured regressed snapshot for the same neighborhood.
+
 ---
 
 ## 5.2 Add topology warnings / linting
