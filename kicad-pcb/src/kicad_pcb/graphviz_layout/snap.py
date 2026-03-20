@@ -172,6 +172,11 @@ _STEREO_DEOVERLAP_MIN_MM: float = 10.17  # 2 × 5.08 + ε
 _PROPERTY_TEXT_NEAR_X_MM: float = 12 * 1.27
 _PROPERTY_TEXT_VERTICAL_GAP_MM: float = 2 * GRID_ROW_MM
 
+# Keep output connectors one snap step farther outward than the nominal
+# connector lane so left-facing connector stubs do not fall back into the
+# nearest output-support body column.
+_OUTPUT_CONNECTOR_CLEARANCE_MM: float = 1.27
+
 # Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
 # and one grid row above the very bottom of the usable area.
 _POWER_BOTTOM_MARGIN_MM: float = 20.0
@@ -1107,7 +1112,7 @@ def _place_output_stage_lane(
     """Place output connector/support refs into right-side columns."""
     ic_x, ic_y = anchor
     result = dict(positions)
-    connector_x = round(ic_x + 3.0 * _GRID_COL_MM, 2)
+    connector_x = round(ic_x + 3.0 * _GRID_COL_MM + _OUTPUT_CONNECTOR_CLEARANCE_MM, 2)
     support_x = round(ic_x + 2.0 * _GRID_COL_MM, 2)
     support_inner_x = round(ic_x + _GRID_COL_MM, 2)
 
