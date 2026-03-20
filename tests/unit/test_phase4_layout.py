@@ -3625,6 +3625,88 @@ class TestApplyPostLayoutSnaps:
             "Feedback cluster should remain local to the op-amp body"
         )
 
+    def test_opamp_locality_keeps_interstage_handoff_near_output_side(self) -> None:
+        """Phase 4.2: interstage bridge parts should stay near the op-amp output side."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+                ComponentIR(ref="R2", symbol="Device:R", value="22k"),
+                ComponentIR(ref="C6", symbol="Device:C", value="10u"),
+                ComponentIR(ref="R5", symbol="Device:R", value="22k"),
+                ComponentIR(ref="R6", symbol="Device:R", value="100"),
+                ComponentIR(ref="C7", symbol="Device:C", value="220u"),
+                ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_L_STAGE1",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="R2", pin="1"),
+                        PinRefIR(ref="C6", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="BUF_L_IN",
+                    pins=[
+                        PinRefIR(ref="C6", pin="2"),
+                        PinRefIR(ref="R5", pin="1"),
+                        PinRefIR(ref="U1", pin="5"),
+                    ],
+                ),
+                NetIR(
+                    name="OUT_L_STAGE2_RAW",
+                    pins=[PinRefIR(ref="U1", pin="7"), PinRefIR(ref="R6", pin="1")],
+                ),
+                NetIR(
+                    name="AFTER_R6",
+                    pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="C7", pin="1")],
+                ),
+                NetIR(
+                    name="HP_L_OUT",
+                    pins=[PinRefIR(ref="C7", pin="2"), PinRefIR(ref="J2", pin="1")],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("R2", BlockRole.FEEDBACK)
+        block_layout.add_assignment("C6", BlockRole.OUTPUT)
+        block_layout.add_assignment("R5", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT)
+        block_layout.add_assignment("C7", BlockRole.OUTPUT)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "R2": (100.0, 118.0, None),
+            "C6": (98.0, 130.0, None),
+            "R5": (86.0, 90.0, None),
+            "R6": (101.0, 136.0, None),
+            "C7": (102.0, 148.0, None),
+            "J2": (103.0, 160.0, None),
+        }
+
+        result = _snap_opamp_locality(
+            positions,
+            ir,
+            annotations={"R2": ComponentAnnotation(feedback=True)},
+            context=_OpAmpLocalityContext(decoupling_map={}, block_layout=block_layout),
+        )
+
+        ux, uy, _ = result["U1"]
+        assert result["R5"][0] > ux, (
+            f"Interstage resistor R5 should stay on U1's output side: {result}"
+        )
+        assert abs(result["R5"][1] - uy) <= _gv_mod.GRID_ROW_MM, (
+            f"Interstage resistor R5 should stay close to U1's centerline: {result}"
+        )
+        assert max(result[ref][1] for ref in ["C6", "R6"]) < min(
+            result[ref][1] for ref in ["C7", "J2"]
+        ), f"Nearest output support should stay above farther output-chain parts: {result}"
+
     def test_opamp_locality_spreads_overflow_feedback_and_decoupling_lanes(self) -> None:
         """Phase 6.2: large op-amp support stacks should not all share U1's x-column."""
         ir = CircuitIR(

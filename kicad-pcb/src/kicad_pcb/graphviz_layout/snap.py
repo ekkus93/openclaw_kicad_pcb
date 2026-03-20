@@ -613,6 +613,29 @@ class _OpAmpLocalityContext:
     block_layout: BlockLayout | None = None
 
 
+def _local_signal_distances(
+    anchor_ref: str,
+    candidate_refs: set[str],
+    adjacency: Mapping[str, set[str]],
+) -> dict[str, int]:
+    """Return shortest signal-hop distance from *anchor_ref* within *candidate_refs*."""
+    if not candidate_refs:
+        return {}
+
+    distances: dict[str, int] = {}
+    frontier: deque[tuple[str, int]] = deque([(anchor_ref, 0)])
+    seen = {anchor_ref}
+    while frontier:
+        ref, dist = frontier.popleft()
+        for nbr in adjacency.get(ref, set()):
+            if nbr in seen or nbr not in candidate_refs:
+                continue
+            seen.add(nbr)
+            distances[nbr] = dist + 1
+            frontier.append((nbr, dist + 1))
+    return distances
+
+
 def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
     positions: dict[str, tuple[float, float, float | None]],
     ir: CircuitIR,
@@ -674,9 +697,14 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
         }
         candidates = sorted(set(signal_neighbors) | local_role_neighbors)
         input_like: list[str] = []
+        handoff_like: list[str] = []
         output_like: list[str] = []
         feedback_like: list[str] = []
         halo_like: list[str] = []
+        local_distances = _local_signal_distances(ic_ref, set(candidates), adjacency)
+
+        def _local_order_key(ref: str) -> tuple[int, float, str]:
+            return (local_distances.get(ref, 999), result[ref][1], ref)
 
         for ref in candidates:
             role = role_by_ref.get(ref)
@@ -694,9 +722,20 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             if is_decoupling or role == BlockRole.DECOUPLING:
                 continue
             if role in (BlockRole.INPUT, BlockRole.PRECONDITIONING):
-                input_like.append(ref)
+                if ic_ref in adjacency.get(ref, set()) and any(
+                    role_by_ref.get(nbr) == BlockRole.OUTPUT for nbr in adjacency.get(ref, set())
+                ):
+                    handoff_like.append(ref)
+                else:
+                    input_like.append(ref)
             elif role == BlockRole.OUTPUT:
                 output_like.append(ref)
+
+        input_like.sort(key=_local_order_key)
+        handoff_like.sort(key=_local_order_key)
+        output_like.sort(key=_local_order_key)
+        feedback_like.sort(key=_local_order_key)
+        halo_like.sort(key=_local_order_key)
 
         # Keep stage input parts on op-amp input side (left), slightly above
         # center to separate them from output support parts.
@@ -706,6 +745,15 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             offset = idx - (len(input_like) - 1) / 2
             target_y = round(ic_y - 1.5 * GRID_ROW_MM + offset * GRID_ROW_MM, 2)
             result[ref] = (min(round(x, 2), target_input_x), target_y, rot)
+
+        # Keep bridge parts that hand off into a later output stage close to the
+        # op-amp on the right so the interstage coupling does not split apart.
+        target_handoff_x = round(ic_x + _GRID_COL_MM, 2)
+        for idx, ref in enumerate(handoff_like):
+            x, _y, rot = result[ref]
+            offset = idx - (len(handoff_like) - 1) / 2
+            target_y = round(ic_y + offset * GRID_ROW_MM, 2)
+            result[ref] = (max(round(x, 2), target_handoff_x), target_y, rot)
 
         # Keep stage output parts on op-amp output side (right), slightly below
         # center to avoid mixing with input/support clusters.
@@ -738,7 +786,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
         # column so coupling/output support does not collapse back onto the IC.
         target_halo_left_x = round(ic_x - _GRID_COL_MM, 2)
         target_halo_right_x = round(ic_x + _GRID_COL_MM, 2)
-        for idx, ref in enumerate(sorted(halo_like)):
+        for idx, ref in enumerate(halo_like):
             x, _y, rot = result[ref]
             role = role_by_ref.get(ref)
             target_x = target_halo_right_x
@@ -757,7 +805,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
         # Keep feedback parts near the op-amp but in a distinct band below
         # the IC centerline, and avoid decoupling slots.
-        for idx, ref in enumerate(sorted(feedback_like)):
+        for idx, ref in enumerate(feedback_like):
             _x, _y, rot = result[ref]
             level = idx + 1
             fb_y = round(ic_y + level * GRID_ROW_MM, 2)
