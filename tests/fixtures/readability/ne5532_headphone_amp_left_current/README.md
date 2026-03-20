@@ -91,3 +91,43 @@ After completing Phases 1-4 of CODE_REVIEW6_TODO, this schematic should:
 - **IR/Netlist:** Canonical headphone amp IR from `tests/fixtures/regressions/headphone_amp_ir.json`
 - **Generation:** `cmd_new_from_netlist` with current code (before readability improvements)
 - **Circuit:** Simplified dual-channel passive/resistive headphone amplifier (13 components, 9 nets)
+
+## Authoritative Structural Expectations
+
+### Expected key component refs
+
+- Active device: `U1`
+- Power entry: `J3`
+- Input path: `J1`, `C5`, `R1`, `RV1`
+- Gain / feedback: `R2`, `R3`, `R4`
+- Buffer / coupling / output: `C6`, `R5`, `R6`, `C7`, `R7`, `J2`
+- Decoupling: `C1`, `C2`, `C3`, `C4`
+
+### Expected key net names
+
+- Supply rails: `VPLUS15`, `VMINUS15`, `0V`
+- Input path: `LEFT_IN`, `IN_L_AC`, `VOL_L_OUT`
+- Gain / feedback: `U1A_INV`, `OUT_L_STAGE1`
+- Buffer / output: `BUF_L_IN`, `OUT_L_STAGE2_RAW`, `AFTER_R6`, `HP_L_OUT`
+
+### Fixture-specific expectations
+
+- `U1` is a dual `NE5532`; generation should preserve explicit multi-unit handling rather than collapsing both stages into one ambiguous drawable instance.
+- `J1` and `J2` are TRS connectors used in mono-left mode for this fixture. Their sleeve pins join `0V` and their tip pins carry `LEFT_IN` / `HP_L_OUT`.
+- The ring pins on `J1` and `J2` are intentionally unused in this left-channel fixture. Generated managed schematics should therefore contain two explicit KiCad `no_connect` markers, one for each unused ring pin.
+- The `R1` / `C5` input topology is intentionally preserved as-authored by the fixture. Validation may warn about it, but generation must not silently rewrite it.
+
+## Baseline Metrics Snapshot
+
+- `symbol_count = 19`
+- `x_columns = 11`
+- `short_wires = 29`
+- `wire_stub_ratio = 0.40384615384615385`
+- `avg_spacing = 15.52910168432786`
+- Region density:
+	- `top_left = 0.3684210526315789`
+	- `top_right = 0.15789473684210525`
+	- `bottom_left = 0.21052631578947367`
+	- `bottom_right = 0.2631578947368421`
+
+These values are baseline measurements only. They describe the current generated layout and should be used for regression comparison, not as the target end-state for schematic readability.

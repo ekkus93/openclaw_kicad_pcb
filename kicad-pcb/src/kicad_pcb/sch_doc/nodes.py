@@ -31,6 +31,7 @@ __all__ = [
     "make_junction_node",
     "make_label_node",
     "make_managed_sheet_node",
+    "make_no_connect_node",
     "make_power_symbol_node",
     "make_symbol_node",
     "make_text_node",
@@ -268,6 +269,15 @@ def make_junction_node(x: float, y: float, junction_uuid: str) -> ListNode:
         L(atom("diameter"), atom("0")),
         L(atom("color"), atom("0"), atom("0"), atom("0"), atom("0")),
         L(atom("uuid"), string(junction_uuid)),
+    )
+
+
+def make_no_connect_node(x: float, y: float, no_connect_uuid: str) -> ListNode:
+    """Build a KiCad ``(no_connect ...)`` marker at *(x, y)*."""
+    return L(
+        atom("no_connect"),
+        L(atom("at"), fnum(x, 2), fnum(y, 2)),
+        L(atom("uuid"), string(no_connect_uuid)),
     )
 
 

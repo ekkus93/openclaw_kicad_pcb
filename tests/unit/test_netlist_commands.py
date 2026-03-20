@@ -23,7 +23,7 @@ from kicad_pcb.layout import compute_orientations
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
-from kicad_pcb.sexpr.utils import find_first, walk
+from kicad_pcb.sexpr.utils import find_all, find_first, walk
 
 
 def _write_minimal_sch(path: Path) -> None:
@@ -532,6 +532,30 @@ def test_cmd_new_from_netlist_preserves_input_coupling_warning(tmp_path: Path) -
 
     codes = {warning["code"] for warning in result.warnings}
     assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+
+
+def test_cmd_new_from_netlist_marks_unused_connector_pins_with_no_connects(
+    tmp_path: Path,
+) -> None:
+    ir_path = tmp_path / "connector_warning_ir.json"
+    _write_connector_ambiguity_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="ConnectorNoConnectProj",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    no_connects = find_all(managed_doc.root, "no_connect")
+
+    assert len(no_connects) == 1
 
 
 def test_cmd_new_from_netlist_supports_explicit_unit_generation(tmp_path: Path) -> None:
@@ -1519,6 +1543,24 @@ class TestPhase1WarningSuite:
                 ),
             ),
         ]
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532ConnectorClarity",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+
+    assert len(find_all(managed_doc.root, "no_connect")) == 2
 
 
 def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:

@@ -1,5 +1,33 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-20T07:01:22Z - GPT-5.4 - Synchronized the schematic-fixes roadmap to the landed snap-pipeline lane work
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the roadmap now explicitly records the landed `snap.py` stage-edge work instead of treating it as purely future intent.
+- Phase 2.2.3 and 2.2.4 now note that `_snap_input_stage_cohesion(...)` and `_snap_output_stage_cohesion(...)` provide compact staged input/output lanes while preserving the existing feedback-locality rule that core feedback parts remain in the op-amp column.
+- Phase 4.2.2 now notes that local block spacing is already partly enforced by the snap pipeline, including left/right stage bounds, compactness, intrusion avoidance, and inner/outer lane behavior for longer chains.
+
+## 2026-03-20T06:50:47Z - GPT-5.4 - Refined input-stage snap lanes for longer preconditioning chains
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so `_snap_input_stage_cohesion(...)` now computes connector-hop distances within the input stage and lets larger preconditioning chains (`>= 3` PRECONDITIONING refs) use an inner lane near the op-amp plus an outer lane near the input connector.
+- The refinement preserves the existing Phase 7.1 contract that the input stage remains left-bounded, compact, and free of unrelated output/decoupling intrusions; the change only affects PRECONDITIONING-role staging within longer input chains.
+- Added `test_input_stage_cohesion_spreads_longer_preconditioning_chain_into_inner_lane` in `tests/unit/test_phase4_layout.py` to lock in the new behavior: connector-side conditioning stays outer, op-amp-side conditioning moves into the inner lane, and all preconditioning remains left of `U1`.
+- Validation completed with focused `pytest` on the touched input-side Phase 4 layout tests, focused `ruff check` on `snap.py` and `test_phase4_layout.py`, and a follow-up `pytest tests/unit/test_phase7_regression_guardrails.py -q` run that remained green through the terminal wrapper.
+
+## 2026-03-20T06:44:11Z - GPT-5.4 - Refined output-stage snap lanes for longer NE5532-style output chains
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so `_snap_output_stage_cohesion(...)` now computes connector-hop distances within the output stage and lets larger output chains (`>= 3` OUTPUT support refs) use an inner support lane near the op-amp plus an outer support lane near the connector.
+- The refinement preserves the existing Phase 4 contract that core feedback parts remain in the op-amp column; the change only affects OUTPUT-role support staging, not FEEDBACK-role placement.
+- Added `test_output_stage_cohesion_spreads_longer_output_chain_into_inner_lane` in `tests/unit/test_phase4_layout.py` to lock in the new behavior: op-amp-side output support stays inside connector-side support, and the connector remains the outermost lane.
+- Validation completed with focused `pytest` on the touched Phase 4 layout tests, focused `ruff check` on `snap.py` and `test_phase4_layout.py`, and a follow-up `pytest tests/unit/test_phase7_regression_guardrails.py -q` run that remained green through the terminal wrapper.
+
+## 2026-03-20T06:30:56Z - GPT-5.4 - Added connector no-connect emission and aligned NE5532 readability fixture metadata
+
+- Extended `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` and `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py` with explicit KiCad `no_connect` node emission via `make_no_connect_node(...)` and `SchematicDoc.add_no_connect(...)`.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so managed-schematic generation now emits explicit no-connect markers for unused connector pins using the existing placed-pin endpoint geometry; this specifically covers the left-channel TRS ring pins in the NE5532 review fixture.
+- Added focused regressions in `tests/unit/test_sch_doc.py`, `tests/unit/test_netlist_commands.py`, and `tests/unit/test_phase7_regression_guardrails.py` covering direct no-connect emission, command-level unused-connector behavior, the real NE5532 fixture's unused TRS ring pins, and the Phase 7 readability fixture preserving two no-connect markers.
+- Updated `tests/fixtures/readability/ne5532_headphone_amp_left_current/README.md` and `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/README.md` so the checked-in fixture metadata now explicitly records authoritative key refs, key nets, the `R1` / `C5` warning-preserved topology, and the expectation that generated schematics contain two no-connect markers for the intentionally unused TRS ring pins.
+- Synchronized `code_review/SCHEMATIC_FIXES1_TODO.md` so connector task `2.4.2 Mark unused pins explicitly` is now `DONE` and Phase 0 fixture-metadata notes reflect that the NE5532 fixture READMEs now serve as the durable copy-pasteable metadata artifact.
+
 ## 2026-03-20T02:03:55Z - GPT-5.4 - Cleared repo-wide Ruff, mypy, and pytest regressions after unit-anchor routing changes
 
 - Restored backward compatibility in `kicad-pcb/src/kicad_pcb/router.py` so `_plan_local_ladder_routes(...)` accepts both explicit `PinAnchor` maps and legacy `(x, y, angle)` endpoint maps, including the old `pin_endpoints=` keyword used by phase-6 tests.

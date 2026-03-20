@@ -66,3 +66,34 @@ Snapshot of Phase 0 regression-specific metrics:
 
 Those values are intentionally poor. They define the failure mode that later
 phases must improve.
+
+## Authoritative Structural Expectations
+
+### Expected key component refs
+
+- Active device: `U1`
+- Power entry: `J3`
+- Input path: `J1`, `C5`, `R1`, `RV1`
+- Gain / feedback: `R2`, `R3`, `R4`
+- Buffer / coupling / output: `C6`, `R5`, `R6`, `C7`, `R7`, `J2`
+- Decoupling: `C1`, `C2`, `C3`, `C4`
+
+### Expected key net names
+
+- Supply rails: `VPLUS15`, `VMINUS15`, `0V`
+- Input path: `LEFT_IN`, `IN_L_AC`, `VOL_L_OUT`
+- Gain / feedback: `U1A_INV`, `OUT_L_STAGE1`
+- Buffer / output: `BUF_L_IN`, `OUT_L_STAGE2_RAW`, `AFTER_R6`, `HP_L_OUT`
+
+### Fixture-specific expectations
+
+- This is still the same left-channel NE5532 headphone-amp circuit represented by the authoritative repo netlist in `code_review/ne5532_headphone_amp_netlist.json`.
+- The regression is about placement and composition, not missing connectivity. The schematic should remain electrically faithful while later phases improve block separation and page composition.
+- `J1` and `J2` remain mono-left TRS connectors in this fixture. Their ring pins are intentionally unused and should appear as explicit KiCad `no_connect` markers in generated managed schematics.
+- The regressed layout is allowed to be visually poor, but it is not allowed to silently drop components, rename key nets, or reinterpret the authored `R1` / `C5` topology.
+
+## Regression Guardrails
+
+- Keep `u1_same_column_non_power` materially below this captured failure baseline in follow-up fixes.
+- Keep `u1_same_column_feedback_support` materially below this captured failure baseline in follow-up fixes.
+- Preserve the same key refs and key nets listed above so readability work does not hide a correctness regression.
