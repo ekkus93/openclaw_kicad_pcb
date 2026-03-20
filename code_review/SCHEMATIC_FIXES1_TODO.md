@@ -124,6 +124,11 @@ Implement the fixture work in this order.
      - expected important net names such as `LEFT_IN`, `IN_L_AC`, `VOL_L_OUT`, and output-stage nets
      - any fixture-specific expectations, including the fact that this case currently contains a suspicious `R1` / `C5` topology that should warn rather than be silently corrected
 
+Current findings:
+- The checked-in fixture READMEs under `tests/fixtures/readability/ne5532_headphone_amp_left_current/` and `tests/fixtures/readability/ne5532_headphone_amp_left_regressed/` now record the authoritative key refs, key nets, and fixture-specific expectations.
+- Those expectations now explicitly document that `J1` and `J2` are mono-left TRS connectors whose ring pins are intentionally unused and should emit explicit KiCad `no_connect` markers in managed schematics.
+- The `R1` / `C5` topology remains documented as authored input truth that may warn during validation but must not be silently rewritten by generation.
+
 4. **Make the fixture runnable from tests and local CLI workflows**
    - Add or update tests so the fixture can be passed through:
      - validation
@@ -730,6 +735,12 @@ Status: `IN PROGRESS`
   - `C6` and `R5` sit between stage 1 output and stage 2 input,
   - `R6`, `C7`, `R7`, and `J2` form one right-side chain.
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now includes explicit post-layout stage-cohesion passes for both input and output staging.
+- `_snap_input_stage_cohesion(...)` now keeps input connectors and preconditioning parts in compact left-side lanes, and longer preconditioning chains can use an inner lane near the op-amp instead of collapsing into one flat column.
+- `_snap_output_stage_cohesion(...)` now keeps output connectors and output-support parts in compact right-side lanes, and longer output chains can use an inner op-amp-side support lane plus an outer connector-side support lane.
+- These lane refinements are covered in `tests/unit/test_phase4_layout.py`, including explicit regressions for longer input-side and output-side chains.
+
 #### 2.2.4 Avoid stretching feedback loops across large distances
 Status: `IN PROGRESS`
 - Penalize placements where feedback members are far from their op-amp unit.
@@ -737,6 +748,10 @@ Status: `IN PROGRESS`
   - op-amp output to feedback resistor distance,
   - feedback resistor to inverting input distance,
   - inverting node to shunt resistor-to-ground distance.
+
+Current findings:
+- The recent snap-pipeline work deliberately preserved the existing Phase 4 rule that core feedback parts stay in the op-amp column instead of being pushed into the new input/output support lanes.
+- Focused regressions in `tests/unit/test_phase4_layout.py` still assert that feedback support remains vertically local to the op-amp body while the input/output lane refinements only affect PRECONDITIONING and OUTPUT support staging.
 
 ---
 
@@ -790,10 +805,20 @@ Implement one of:
 - or keep TRS symbols but mark unused pins explicitly,
 - or add generator configuration to choose between full connector and simplified channel-specific representation.
 
+Current findings:
+- The generator now emits explicit KiCad `no_connect` markers on unused connector pins during schematic generation.
+- Existing TRS symbols for the headphone-amp fixture therefore no longer leave the unused ring pins visually ambiguous.
+- The remaining decision is product-level policy, not basic schematic clarity: whether this fixture should keep the current TRS-plus-no-connect presentation or later switch to a simpler mono/channel-specific symbol strategy.
+
 #### 2.4.2 Mark unused pins explicitly
-Status: `NOT STARTED`
+Status: `DONE`
 - If TRS symbols remain, emit no-connect markers on unused pins where appropriate.
 - Avoid leaving the reader guessing whether a pin was forgotten.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` now emits KiCad `no_connect` markers for unused connector pins using the already-computed pin endpoint geometry.
+- `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` and `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py` now support explicit `(no_connect ...)` AST nodes through `make_no_connect_node(...)` and `SchematicDoc.add_no_connect(...)`.
+- Focused regression coverage now exists in `tests/unit/test_sch_doc.py` and `tests/unit/test_netlist_commands.py`, including the real-system NE5532 command path asserting two no-connect markers for the unused TRS ring pins on `J1` and `J2`.
 
 #### 2.4.3 Improve connector orientation and attachment
 Status: `IN PROGRESS`
@@ -963,6 +988,11 @@ Status: `IN PROGRESS`
   - between-block separation,
   - power-block offset,
   - connector margin from page edge.
+
+Current findings:
+- The snap pipeline now enforces more consistent local spacing for stage-edge blocks through `_snap_input_stage_cohesion(...)` and `_snap_output_stage_cohesion(...)` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
+- Input-side staging is now explicitly left-bounded and compact, while output-side staging is explicitly right-bounded and compact; both sides can split longer support chains across inner/outer lanes without breaking the short left-to-right transition into and out of the op-amp.
+- Focused coverage in `tests/unit/test_phase4_layout.py` now checks compactness, left/right bounds, intrusion avoidance, and the new longer-chain lane behavior for both stage edges.
 
 #### 4.2.3 Keep local loops compact
 Status: `IN PROGRESS`

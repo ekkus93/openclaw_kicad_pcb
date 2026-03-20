@@ -96,7 +96,7 @@ from __future__ import annotations
 
 import logging
 import math
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
@@ -834,18 +834,43 @@ def _find_input_stage_members(
     return input_refs, pre_refs, stage_refs
 
 
+def _input_stage_connector_distances(
+    input_refs: list[str],
+    stage_refs: set[str],
+    adjacency: Mapping[str, set[str]],
+) -> dict[str, int]:
+    """Return shortest input-connector hop distance for refs within the input stage."""
+    if not input_refs or not stage_refs:
+        return {}
+
+    stage_distance: dict[str, int] = {}
+    frontier: deque[tuple[str, int]] = deque((ref, 0) for ref in input_refs)
+    seen = set(input_refs)
+    while frontier:
+        ref, dist = frontier.popleft()
+        stage_distance[ref] = dist
+        for nbr in adjacency.get(ref, set()):
+            if nbr in seen or nbr not in stage_refs:
+                continue
+            seen.add(nbr)
+            frontier.append((nbr, dist + 1))
+    return stage_distance
+
+
 def _place_input_stage_lane(
     positions: dict[str, tuple[float, float, float | None]],
     input_refs: list[str],
     pre_refs: list[str],
     *,
-    ic_x: float,
-    ic_y: float,
+    anchor: tuple[float, float],
+    stage_distance: Mapping[str, int] | None = None,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Place input and preconditioning refs into compact left-side columns."""
+    ic_x, ic_y = anchor
     result = dict(positions)
     connector_x = round(ic_x - 3.0 * _GRID_COL_MM, 2)
     precond_x = round(ic_x - 2.0 * _GRID_COL_MM, 2)
+    precond_inner_x = round(ic_x - _GRID_COL_MM, 2)
 
     for idx, ref in enumerate(input_refs):
         x, _y, rot = result[ref]
@@ -857,8 +882,9 @@ def _place_input_stage_lane(
         x, _y, rot = result[ref]
         offset = idx - (len(pre_refs) - 1) / 2
         target_y = round(ic_y + offset * GRID_ROW_MM, 2)
-        min_pre_x = connector_x + _GRID_COL_MM
-        target_x = max(min_pre_x, min(round(x, 2), precond_x))
+        target_x = precond_x
+        if len(pre_refs) >= 3 and (stage_distance or {}).get(ref, 0) >= 2:
+            target_x = precond_inner_x
         result[ref] = (round(target_x, 2), target_y, rot)
 
     return result
@@ -919,7 +945,13 @@ def _snap_input_stage_cohesion(
     if not input_refs and not pre_refs:
         return positions
 
-    result = _place_input_stage_lane(positions, input_refs, pre_refs, ic_x=ic_x, ic_y=ic_y)
+    result = _place_input_stage_lane(
+        positions,
+        input_refs,
+        pre_refs,
+        anchor=(ic_x, ic_y),
+        stage_distance=_input_stage_connector_distances(input_refs, stage_refs, adjacency),
+    )
     precond_x = round(ic_x - 2.0 * _GRID_COL_MM, 2)
     return _evict_input_lane_intruders(
         result,
@@ -993,18 +1025,43 @@ def _find_output_stage_members(
     return output_connectors_sorted, output_support, stage_refs
 
 
+def _output_stage_connector_distances(
+    output_connectors: list[str],
+    stage_refs: set[str],
+    adjacency: Mapping[str, set[str]],
+) -> dict[str, int]:
+    """Return shortest connector-hop distance for refs within the output stage."""
+    if not output_connectors or not stage_refs:
+        return {}
+
+    stage_distance: dict[str, int] = {}
+    frontier: deque[tuple[str, int]] = deque((ref, 0) for ref in output_connectors)
+    seen = set(output_connectors)
+    while frontier:
+        ref, dist = frontier.popleft()
+        stage_distance[ref] = dist
+        for nbr in adjacency.get(ref, set()):
+            if nbr in seen or nbr not in stage_refs:
+                continue
+            seen.add(nbr)
+            frontier.append((nbr, dist + 1))
+    return stage_distance
+
+
 def _place_output_stage_lane(
     positions: dict[str, tuple[float, float, float | None]],
     output_connectors: list[str],
     output_support: list[str],
     *,
     anchor: tuple[float, float],
+    stage_distance: Mapping[str, int] | None = None,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Place output connector/support refs into right-side columns."""
     ic_x, ic_y = anchor
     result = dict(positions)
     connector_x = round(ic_x + 3.0 * _GRID_COL_MM, 2)
     support_x = round(ic_x + 2.0 * _GRID_COL_MM, 2)
+    support_inner_x = round(ic_x + _GRID_COL_MM, 2)
 
     output_lane_y = ic_y + GRID_ROW_MM
 
@@ -1018,7 +1075,10 @@ def _place_output_stage_lane(
         x, _y, rot = result[ref]
         offset = idx - (len(output_support) - 1) / 2
         target_y = round(output_lane_y + offset * GRID_ROW_MM, 2)
-        result[ref] = (max(round(x, 2), support_x), target_y, rot)
+        target_x = support_x
+        if len(output_support) >= 3 and (stage_distance or {}).get(ref, 0) >= 2:
+            target_x = support_inner_x
+        result[ref] = (max(round(x, 2), target_x), target_y, rot)
 
     return result
 
@@ -1145,6 +1205,7 @@ def _snap_output_stage_cohesion(
         output_connectors,
         output_support,
         anchor=(ic_x, ic_y),
+        stage_distance=_output_stage_connector_distances(output_connectors, stage_refs, adjacency),
     )
     support_x = round(ic_x + 2.0 * _GRID_COL_MM, 2)
     return _evict_output_lane_intruders(
