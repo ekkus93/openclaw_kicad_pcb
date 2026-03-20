@@ -8,6 +8,7 @@ improvements with approximate readability metrics rather than exact coordinates.
 from __future__ import annotations
 
 import json
+import math
 from argparse import Namespace
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.lint import lint_schematic_layout
+from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
     compute_block_role_spread,
@@ -50,6 +52,50 @@ def _positions_from_doc(doc: SchematicDoc) -> dict[str, tuple[float, float, floa
 def _layout_issue_count(path: Path, code: str) -> int:
     issues = lint_schematic_layout(parse(path.read_text(encoding="utf-8")))
     return sum(1 for issue in issues if issue.code == code)
+
+
+def _bounding_box_for_refs(
+    doc: SchematicDoc,
+    refs: list[str],
+    *,
+    pad_mm: float = 8.0,
+) -> tuple[float, float, float, float]:
+    positions = _positions_from_doc(doc)
+    xs = [positions[ref][0] for ref in refs]
+    ys = [positions[ref][1] for ref in refs]
+    return (min(xs) - pad_mm, min(ys) - pad_mm, max(xs) + pad_mm, max(ys) + pad_mm)
+
+
+def _segment_intersects_box(
+    segment: tuple[float, float, float, float],
+    box: tuple[float, float, float, float],
+) -> bool:
+    x1, y1, x2, y2 = segment
+    min_x, min_y, max_x, max_y = box
+    return not (
+        max(x1, x2) < min_x or min(x1, x2) > max_x or max(y1, y2) < min_y or min(y1, y2) > max_y
+    )
+
+
+def _local_output_wire_metrics(
+    doc: SchematicDoc,
+    refs: list[str],
+    *,
+    short_threshold_mm: float = 10.0,
+) -> tuple[int, int, float]:
+    box = _bounding_box_for_refs(doc, refs)
+    segments = [
+        segment
+        for segment in _collect_wire_segments(doc.root.items)
+        if _segment_intersects_box(segment, box)
+    ]
+    if not segments:
+        return 0, 0, 0.0
+
+    short_count = sum(
+        1 for x1, y1, x2, y2 in segments if math.hypot(x2 - x1, y2 - y1) <= short_threshold_mm
+    )
+    return len(segments), short_count, short_count / len(segments)
 
 
 @pytest.mark.skipif(
@@ -220,3 +266,25 @@ class TestPhase7RegressionGuardrails:
         assert min(positions["R7"][0], positions["J2"][0]) > max(
             positions["C6"][0], positions["R5"][0]
         )
+
+    def test_output_neighborhood_routing_does_not_revert_to_joggy_cluster(
+        self,
+        generated_doc: SchematicDoc,
+        regressed_doc: SchematicDoc,
+    ) -> None:
+        output_refs = ["C6", "R5", "R6", "C7", "R7", "J2"]
+        generated_total, generated_short, generated_ratio = _local_output_wire_metrics(
+            generated_doc,
+            output_refs,
+        )
+        regressed_total, regressed_short, regressed_ratio = _local_output_wire_metrics(
+            regressed_doc,
+            output_refs,
+        )
+
+        assert generated_total <= 40
+        assert generated_short <= 12
+        assert generated_ratio <= 0.35
+        assert generated_total < regressed_total
+        assert generated_short < regressed_short
+        assert generated_ratio < regressed_ratio
