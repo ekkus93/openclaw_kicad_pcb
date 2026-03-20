@@ -1,11 +1,83 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-20T23:58:19Z - GPT-5.4 - Captured handoff state for the output-connector drift-fix slice
+
+- The narrow placement drift-fix under test is in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`: output connectors now get one extra snap step of outward clearance (`+1.27 mm`) beyond the nominal connector lane so left-facing connector stubs do not fall back into the nearest output-support body column.
+- Focused validation is green for the slice as staged for handoff: `pytest tests/unit/test_phase4_layout.py -k 'output_stage_cohesion_gives_connector_extra_clearance' -q`, `pytest tests/unit/test_phase6_wire_simplification.py -k 'compact_local_ground_lane_for_output_cluster or asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `pytest tests/unit/test_phase7_regression_guardrails.py -k 'output_neighborhood_routing_does_not_revert_to_joggy_cluster' -q`, and `python -m ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`.
+- Re-measured the real `code_review/ne5532_headphone_amp_netlist.json` fixture in internal mode at handoff time: the concrete `C6` / `R5` / `R6` / `C7` / `R7` / `J2` output box is currently `32` total segments / `7` short segments (ratio `0.219`) with bounds `(168.53, 124.08, 246.76, 185.8)`.
+- Untracked probe JSON files under `tmp/` are exploratory artifacts only and should stay out of the commit; the drift-fix commit should stay scoped to the output-connector clearance change, its focused layout regression, and this memory handoff note.
+
+## 2026-03-20T22:17:43Z - GPT-5.4 - Reclassified the remaining 7 short segments in the real NE5532 output box
+
+- Re-ran the real `code_review/ne5532_headphone_amp_netlist.json` fixture in internal mode and matched the remaining short segments in the `C6` / `R5` / `R6` / `C7` / `R7` / `J2` box against generation-layer `pin_endpoints`, stub ends, and per-net reconstructed routes.
+- Current output-box short-segment mix is mostly irreducible local pin geometry: five segments are true pin-stub or pin-to-stub legs (`C6.2`, `R5.1`, `C7.2`, `J2.T`, `R7.1`), one segment is a short pin-adjacent join for `AFTER_R6` at `C7.1 -> (213.36, 142.24)`, and one segment is the `GND` connector-side stub-adjacent jog `J2.S stub end (212.09, 160.02) -> (203.2, 160.02)`.
+- No remaining short segment in that box is a pure non-stub internal artifact after the latest compact local ground-route refinement; the previous pair of `R5`-detour horizontals is gone.
+- The only plausible remaining optimization target is the `GND` stub-adjacent jog from `J2.S`, but removing it would likely require a different connector-side approach geometry or symbol placement change rather than another local post-routing cleanup, because the current jog is already the pre-cleared way to avoid the nearby body boxes.
+
+## 2026-03-20T22:01:09Z - GPT-5.4 - Absorbed the last local R5 detour fragments into the compact output-side GND route
+
+- Refined `kicad-pcb/src/kicad_pcb/router.py` so `_compact_local_ground_cluster_route(...)` no longer drops the connector-side ground stub straight through the nearby `R5` body box and lets `detect_body_crossings(...)` create two short horizontal cleanup fragments.
+- The helper now checks each local ground-cluster stub's vertical descent against the member body boxes, shifts only the obstructed drop to a snapped left-clearance X, and then builds the shared horizontal lane from that pre-cleared entry point. This turns the old pair of non-stub short detour horizontals into one short stub-adjacent jog from the connector-side stub end.
+- Updated `tests/unit/test_phase6_wire_simplification.py` so the focused regression now expects the left-clearance ground lane (`x = 203.2`), the short connector-side jog at `y = 160.02`, and zero remaining non-stub short fragments once the actual stub ends are treated as protected.
+- Validation passed with `pytest tests/unit/test_phase6_wire_simplification.py -k 'compact_local_ground_lane_for_output_cluster or asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `pytest tests/unit/test_phase7_regression_guardrails.py -k 'output_neighborhood_routing_does_not_revert_to_joggy_cluster' -q`.
+- Real-fixture output-neighborhood metrics improved again in internal generation mode for the `C6` / `R5` / `R6` / `C7` / `R7` / `J2` box: `32` total segments / `7` short segments (ratio `0.219`), down from the prior `34` / `8` / `0.235` after the first compact local GND-lane change.
+
+## 2026-03-20T21:39:28Z - GPT-5.4 - Replaced the local output-side GND knot with a compact ground lane
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so tiny local `GND` clusters like the NE5532 output-side `J2.S` / `R5.2` / `R7.2` group can bypass the old centroid-based power-cluster knot and use `_compact_local_ground_cluster_route(...)` instead.
+- The compact local ground route anchors one calm horizontal lane at the lowest stub Y, reuses the existing body boxes to avoid routing through the member symbols, and then extends directly to a right-side ground symbol instead of creating multiple short vertical cleanup fragments near the connector.
+- Added focused regression coverage in `tests/unit/test_phase6_wire_simplification.py` that locks in the compact local lane, its rightward power-symbol extension, and the remaining two short horizontal detour fragments that still appear because the connector body must be respected.
+- Validation passed with `pytest tests/unit/test_phase6_wire_simplification.py -k 'compact_local_ground_lane_for_output_cluster or asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `pytest tests/unit/test_phase7_regression_guardrails.py -k 'output_neighborhood_routing_does_not_revert_to_joggy_cluster' -q`.
+- Real-fixture output-box metrics improved again after the GND-cluster refinement: the concrete `C6` / `R5` / `R6` / `C7` / `R7` / `J2` box is now `34` total segments / `8` short segments (ratio `0.235`), down from the prior `34` / `11` state after the body-aware `HP_L_OUT` tail work.
+
+## 2026-03-20T20:57:07Z - GPT-5.4 - Made the compact-tail route body-aware for J2 and R7
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `_compact_vertical_tail_route(...)` now accepts layout positions and, when the downstream vertical drop would cross a symbol box, doglegs to the right of the blocking body before dropping to the resistor stub. This prevents `detect_body_crossings(...)` from re-fragmenting the right-side tail after routing.
+- Kept the asymmetric compact-tail behavior covered in `tests/unit/test_phase6_wire_simplification.py`, now with explicit `positions=` in the route-level regression so the test exercises the real managed-sheet path where body avoidance matters.
+- Focused validation passed with `pytest tests/unit/test_phase6_wire_simplification.py -k 'asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `pytest tests/unit/test_phase7_regression_guardrails.py -k 'output_neighborhood_routing_does_not_revert_to_joggy_cluster' -q`.
+- Post-change measurements improved again: the isolated `HP_L_OUT` footprint inside the Phase 7 output box is now `10` segments / `3` short segments (ratio `0.300`), down from the failed clearance-lane attempt's `13` / `4`; the whole `C6` / `R5` / `R6` / `C7` / `R7` / `J2` output box is now `34` total segments / `11` short segments (ratio `0.324`), improving over the prior `35` / `11` output-box measurement while keeping the guardrail green.
+
+## 2026-03-20T20:45:47Z - GPT-5.4 - Tightened the R7 tail leg via a clearance-lane compact-tail route
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `_compact_vertical_tail_route(...)` no longer lifts the downstream run directly to the resistor stub Y when that creates a short connector-side lift; instead it uses a snapped clearance lane above `J2`, which removes the extra short `R7` cleanup leg while keeping the required `C7` and `J2` stubs intact.
+- Focused validation remained green with `pytest tests/unit/test_phase6_wire_simplification.py -k 'asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and the concrete Phase 7 output-neighborhood routing guardrail.
+- The isolated `HP_L_OUT` footprint changed from `11` segments / `3` short segments (ratio `0.273`) to `13` segments / `4` short segments (ratio `0.308`) inside the Phase 7 output box; the explicit short `R7` cleanup fragment is gone, but body-crossing detours around the right-side symbols now dominate the remaining net-local clutter.
+- This means the R7-tail tightening worked mechanically, but the next meaningful short-ratio improvement will need to target the interaction between the compact-tail route and `detect_body_crossings(...)`, not just the tail-leg endpoint choice.
+
+## 2026-03-20T20:01:07Z - GPT-5.4 - Measured HP_L_OUT alone inside the Phase 7 output neighborhood box
+
+- Reconstructed the real `HP_L_OUT` route from the full NE5532 generation context rather than from the emitted schematic, because `write_routing(...)` does not preserve per-net ownership on wire segments after emission.
+- With the current broadened asymmetric-tail heuristic, `HP_L_OUT` now routes via the dedicated `compact-tail` path and contributes `11` final wire segments inside the concrete output box around `C6` / `R5` / `R6` / `C7` / `R7` / `J2`.
+- Of those `11` local `HP_L_OUT` segments, `3` are short (`<= 10 mm`), for a net-local short-segment ratio of about `0.273`.
+- The three short local `HP_L_OUT` segments are the `C7.2` stub (`213.36,123.19 -> 213.36,128.27`), the `J2.T` stub (`217.17,165.10 -> 212.09,165.10`), and the `R7.1` tail leg (`238.76,165.10 -> 238.76,171.45`), which makes the remaining `R7` tail leg the clearest non-stub candidate for the next short-ratio refinement.
+
+## 2026-03-20T19:45:38Z - GPT-5.4 - Broadened the HP_L_OUT output-tail carve-out to the real asymmetric geometry
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so the compact output-tail carve-out now covers inferred vertical ladder plans where one near-lane endpoint sits slightly left of the inferred lane, matching the real `HP_L_OUT` stub geometry (`C7.2`, `J2.T`, `R7.1`).
+- Added `_compact_vertical_tail_route(...)` and used it from `route_nets(...)` when the lane planner intentionally skips that inferred tail lane, so the router now emits one long downstream horizontal run through the connector-side endpoint instead of splitting it into two shorter horizontals around the near-lane offset.
+- Factored the connector-entry grouped-lane special case into `_assign_connector_entry_grouped_lanes(...)` so `_assign_grouped_ladder_lanes(...)` stays lint-clean while carrying the broader carve-out logic.
+- Added focused asymmetric regressions in `tests/unit/test_phase6_wire_simplification.py` for both the planner and the route-level shape, then re-measured the real NE5532 output neighborhood: the concrete Phase 7 box around `C6` / `R5` / `R6` / `C7` / `R7` / `J2` moved from `36` local segments / `11` short segments to `35` local segments / `11` short segments while the route-quality guardrail remained green.
+
+## 2026-03-20T19:04:52Z - GPT-5.4 - Narrowed single-net vertical ladder plans for compact rightward output tails
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so `_assign_grouped_ladder_lanes(...)` no longer forces a single 3-pin vertical shared lane when the net already forms a compact rightward tail and `_prefer_chain_route(...)` is already the cleaner choice.
+- Added `_is_compact_rightward_tail(...)` plus a small single-net lane helper so the carve-out stays narrow: it only applies to a vertical lane with two points on the shared entry, one short downstream point to the right, and a nearby 2-pin neighborhood that would otherwise make the planner keep a redundant ladder plan.
+- Added focused regressions in `tests/unit/test_phase6_wire_simplification.py` proving the planner skips that compact output-tail geometry while preserving the existing left-entry input-ladder and bounded `VOL_L_OUT` ladder behavior.
+- Validation completed with focused `pytest` on the touched Phase 6 ladder tests, `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and the concrete Phase 7 output-neighborhood routing guardrail `test_output_neighborhood_routing_does_not_revert_to_joggy_cluster`.
+
 ## 2026-03-20T08:41:46Z - GPT-5.4 - Added a concrete Phase 7 output-neighborhood routing guardrail
 
 - Updated `tests/unit/test_phase7_regression_guardrails.py` with a local routing helper and `test_output_neighborhood_routing_does_not_revert_to_joggy_cluster`, which measures the real second-stage/output wire box around `C6`, `R5`, `R6`, `C7`, `R7`, and `J2` instead of relying only on whole-page wire-stub metrics.
 - The new guardrail asserts that the generated fixture stays below the current local routing thresholds (`<= 40` intersecting local segments, `<= 12` short local segments, and `<= 0.35` local short-segment ratio) and also remains materially better than the captured regressed snapshot for the same neighborhood.
 - Updated `code_review/SCHEMATIC_FIXES1_TODO.md` under Phase `5.1.3 Add route-quality metrics` so the roadmap now explicitly records this concrete output-neighborhood routing guardrail as landed groundwork.
 - Validation completed with `python -m ruff check tests/unit/test_phase7_regression_guardrails.py`; the fresh-shell pytest invocation for the new test used an explicit success marker (`PASS_OUTPUT_NEIGHBORHOOD_ROUTE`) before terminal output truncation.
+
+## 2026-03-20T18:53:31Z - GPT-5.4 - Attributed the current NE5532 output-cluster routing strategies
+
+- Probed the real generation path with `_expand_generation_ir(...)` and `_write_symbols(...)` and confirmed that the current `C6` / `R5` / `R6` / `C7` / `R7` / `J2` routing shape is not coming from one uniform strategy.
+- `HP_L_OUT` is the only inspected local output-side net currently receiving an explicit shared vertical ladder lane (`x = 213.36`) from `_plan_local_ladder_routes(...)`; its pins are `C7.2`, `R7.1`, and `J2.T`.
+- The upstream local nets `BUF_L_IN` and `OUT_L_STAGE2_RAW` are not getting ladder plans, but both still prefer chain routing under `_prefer_chain_route(...)`; `AFTER_R6` is a simple 2-pin vertical connection with no ladder plan and no chain preference.
+- This explains why the generated cluster still shows a dense vertical trunk and several short bridges near `x = 213.36`: the final output net is being lane-forced while nearby handoff nets are routed with different local heuristics.
 
 ## 2026-03-20T07:55:55Z - GPT-5.4 - Roadmap now explicitly records the concrete Phase 7 neighborhood guardrail
 

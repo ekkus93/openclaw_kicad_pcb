@@ -4280,6 +4280,52 @@ class TestApplyPostLayoutSnaps:
         )
         assert rload_x < jout_x, f"Connector should remain the outermost output lane: {result}"
 
+    def test_output_stage_cohesion_gives_connector_extra_clearance(self) -> None:
+        """Output connectors should sit one grid step beyond the nominal connector lane."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="RISO", symbol="Device:R", value="47"),
+                ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_A",
+                    pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="RISO", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_B",
+                    pins=[PinRefIR(ref="RISO", pin="2"), PinRefIR(ref="JOUT", pin="1")],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("RISO", BlockRole.OUTPUT)
+        block_layout.add_assignment("JOUT", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (190.0, 100.0, None),
+            "RISO": (205.0, 100.0, None),
+            "JOUT": (215.0, 100.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        expected_connector_x = round(190.0 + 3.0 * GRID_COL_MM + 1.27, 2)
+        assert result["JOUT"][0] >= expected_connector_x - 0.01
+        assert result["RISO"][0] < result["JOUT"][0]
+
     def test_stage_coherence_input_block_compact_and_left_bounded(self) -> None:
         """Phase 7.3: input stage should stay compact and left-bounded."""
         ir = CircuitIR(
