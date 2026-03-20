@@ -1062,6 +1062,10 @@ Assert that:
 - feedback parts are near their op-amp stage,
 - unused connector pins are handled explicitly.
 
+Current findings:
+- Phase 7 guardrails in `tests/unit/test_phase7_regression_guardrails.py` now go beyond aggregate column/separation metrics and include a concrete NE5532 interstage/output neighborhood assertion.
+- That guardrail anchors itself to the rightmost placed `U1*` unit and locks in the local output-side composition: `C6`, `R5`, `C7`, `R6`, `R7`, and `J2` stay on the output side of the second stage, `R5` remains between the `C6` handoff and `R6`, and the final `R7` / `J2` tail stays farther outward than the handoff pair.
+
 #### 5.1.3 Add route-quality metrics
 Status: `IN PROGRESS`
 Track and compare:

@@ -197,3 +197,26 @@ class TestPhase7RegressionGuardrails:
 
     def test_generated_layout_marks_unused_trs_ring_pins(self, generated_doc: SchematicDoc) -> None:
         assert len(find_all(generated_doc.root, "no_connect")) == 2
+
+    def test_generated_layout_keeps_interstage_and_output_neighborhood_composed(
+        self,
+        generated_doc: SchematicDoc,
+    ) -> None:
+        positions = _positions_from_doc(generated_doc)
+        output_stage_anchor = max(
+            (ref for ref in positions if ref.startswith("U1")),
+            key=lambda ref: positions[ref][0],
+        )
+        anchor_x, _anchor_y, _ = positions[output_stage_anchor]
+
+        handoff_and_output_refs = ["C6", "R5", "C7", "R6", "R7", "J2"]
+        assert all(positions[ref][0] > anchor_x for ref in handoff_and_output_refs)
+
+        # Lock in the intended local story around the second stage: the
+        # `C6`/`R5` handoff stays on the output side, `R5` remains between the
+        # coupling cap and the stage-2 output resistor, and the final `R7`/`J2`
+        # tail stays farther outward than the handoff pair.
+        assert positions["C6"][1] <= positions["R5"][1] <= positions["R6"][1]
+        assert min(positions["R7"][0], positions["J2"][0]) > max(
+            positions["C6"][0], positions["R5"][0]
+        )
