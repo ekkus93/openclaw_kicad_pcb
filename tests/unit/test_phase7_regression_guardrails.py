@@ -26,6 +26,7 @@ from kicad_pcb.schematic_metrics import (
     wire_stub_ratio,
 )
 from kicad_pcb.sexpr import parse
+from kicad_pcb.sexpr.utils import find_all
 
 _TEST_ROOT = Path(__file__).resolve().parent.parent
 _FIXTURE_DIR = _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
@@ -193,3 +194,6 @@ class TestPhase7RegressionGuardrails:
             _REGRESSED_SCH_PATH,
             "LAY005",
         )
+
+    def test_generated_layout_marks_unused_trs_ring_pins(self, generated_doc: SchematicDoc) -> None:
+        assert len(find_all(generated_doc.root, "no_connect")) == 2

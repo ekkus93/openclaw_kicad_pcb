@@ -472,6 +472,32 @@ class TestAddLabel:
 
 
 # ---------------------------------------------------------------------------
+# add_no_connect
+# ---------------------------------------------------------------------------
+
+
+class TestAddNoConnect:
+    def test_no_connect_added_to_root(self) -> None:
+        doc = _doc_from(MINIMAL_SCH)
+        doc.add_no_connect(60.0, 50.0, "nc1")
+        markers = find_all(doc.root, "no_connect")
+        assert len(markers) == 1
+
+    def test_no_connect_has_correct_coordinates_and_uuid(self) -> None:
+        doc = _doc_from(MINIMAL_SCH)
+        doc.add_no_connect(60.0, 50.0, "nc-uuid")
+        markers = find_all(doc.root, "no_connect")
+        at_node = find_first(markers[0], "at")
+        uuid_node = find_first(markers[0], "uuid")
+
+        assert at_node is not None
+        assert at_node.items[1].value == "60.00"  # type: ignore[union-attr]
+        assert at_node.items[2].value == "50.00"  # type: ignore[union-attr]
+        assert uuid_node is not None
+        assert uuid_node.items[1].value == "nc-uuid"  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
 # extract_pin_label_bindings
 # ---------------------------------------------------------------------------
 

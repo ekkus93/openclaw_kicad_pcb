@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
-from ..component_types import is_power_net
+from ..component_types import component_type, is_power_net
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
@@ -285,6 +285,12 @@ def _build_managed_mutator(  # noqa: PLR0913
             stats=stats,
             engine=_engine,
             strict=request.strict,
+        )
+        _write_unused_connector_no_connects(
+            doc=doc,
+            ir=generation_ir,
+            symbol_index=symbol_index,
+            pin_endpoints=pin_endpoints,
         )
         _tiers = assign_tiers(generation_ir, strict=request.strict)
         routing = route_nets(
@@ -758,6 +764,34 @@ def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: Symb
             doc.embed_lib_symbol(sym_def)
             return True
     return False
+
+
+def _write_unused_connector_no_connects(
+    *,
+    doc: SchematicDoc,
+    ir: CircuitIR,
+    symbol_index: SymbolIndex,
+    pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
+) -> None:
+    """Place KiCad no-connect markers on unused connector pins."""
+    used_pins_by_ref: dict[str, set[str]] = {}
+    for net in ir.nets:
+        for pin_ref in net.pins:
+            used_pins_by_ref.setdefault(pin_ref.ref, set()).add(pin_ref.pin)
+
+    for component in ir.components:
+        if component_type(component.ref) != "connector":
+            continue
+
+        all_pins = sorted(symbol_index.get_pins(component.symbol))
+        used_pins = used_pins_by_ref.get(component.ref, set())
+        for pin_num in all_pins:
+            if pin_num in used_pins:
+                continue
+            endpoint = pin_endpoints.get((component.ref, pin_num))
+            if endpoint is None:
+                continue
+            doc.add_no_connect(endpoint[0], endpoint[1], _new_uuid())
 
 
 # ---------------------------------------------------------------------------

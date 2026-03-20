@@ -41,6 +41,7 @@ from .nodes import (
     make_junction_node,
     make_label_node,
     make_managed_sheet_node,
+    make_no_connect_node,
     make_power_symbol_node,
     make_symbol_node,
     make_text_node,
@@ -54,6 +55,7 @@ __all__ = [
     "make_junction_node",
     "make_label_node",
     "make_managed_sheet_node",
+    "make_no_connect_node",
     "make_power_symbol_node",
     "make_symbol_node",
     "make_text_node",
@@ -362,6 +364,10 @@ class SchematicDoc:
         X-intersection so KiCad treats them as electrically connected.
         """
         self._insert_before_sheet_instances(make_junction_node(x, y, junction_uuid))
+
+    def add_no_connect(self, x: float, y: float, no_connect_uuid: str) -> None:
+        """Append a KiCad no-connect marker at *(x, y)* to the schematic."""
+        self._insert_before_sheet_instances(make_no_connect_node(x, y, no_connect_uuid))
 
     def add_global_label(  # noqa: PLR0913
         self,
