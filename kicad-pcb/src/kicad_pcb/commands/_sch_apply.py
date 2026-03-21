@@ -10,7 +10,13 @@ from pathlib import Path
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
-from ..component_types import component_type, is_power_net
+from ..component_types import (
+    TIER_SPACING_MM,
+    component_type,
+    is_power_net,
+    normalize_gnd_net_name,
+    power_rail_polarity,
+)
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
@@ -39,6 +45,23 @@ from ._validate import advisory_warnings
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
 MIN_COMPONENT_PLACEMENT_RATIO = 0.8
+_LOCAL_DECOUPLING_DISTANCE_WARN_MM = TIER_SPACING_MM * 1.5
+
+
+def _prefer_decoupling_side_candidates(
+    *,
+    cap_y: float,
+    rail_polarity: str | None,
+    candidate_refs: list[str],
+    raw_layout: dict[str, tuple[float, float, float | None]],
+) -> list[str]:
+    if rail_polarity == "positive":
+        same_side = [ref for ref in candidate_refs if raw_layout[ref][1] > cap_y]
+        return same_side or candidate_refs
+    if rail_polarity == "negative":
+        same_side = [ref for ref in candidate_refs if raw_layout[ref][1] < cap_y]
+        return same_side or candidate_refs
+    return candidate_refs
 
 
 def _cleanup_new_managed_file(managed_sch_path: Path, original_error: Exception) -> None:
@@ -286,6 +309,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             engine=_engine,
             strict=request.strict,
         )
+        warnings.extend(_layout_decoupling_distance_warnings(generation_ir, raw_layout))
         _write_unused_connector_no_connects(
             doc=doc,
             ir=generation_ir,
@@ -380,6 +404,95 @@ def _build_managed_mutator(  # noqa: PLR0913
         doc.update_managed_path(sheet_uuid)
 
     return _mutate
+
+
+def _layout_decoupling_distance_warnings(
+    ir: CircuitIR,
+    raw_layout: dict[str, tuple[float, float, float | None]],
+) -> list[dict[str, object]]:
+    component_nets: dict[str, set[str]] = {}
+    for net in ir.nets:
+        for pin_ref in net.pins:
+            component_nets.setdefault(pin_ref.ref, set()).add(net.name)
+
+    active_ics_by_rail: dict[str, list[str]] = {}
+    for component in ir.components:
+        if component_type(component.ref) != "ic":
+            continue
+        if component.ref not in raw_layout:
+            continue
+
+        nets = component_nets.get(component.ref, set())
+        if not nets or not any(not is_power_net(net_name) for net_name in nets):
+            continue
+
+        for net_name in nets:
+            if power_rail_polarity(net_name) is not None:
+                active_ics_by_rail.setdefault(net_name, []).append(component.ref)
+
+    warnings: list[dict[str, object]] = []
+    for component in ir.components:
+        if component_type(component.ref) != "passive" or not component.ref.upper().startswith("C"):
+            continue
+        if component.ref not in raw_layout:
+            continue
+
+        nets = sorted(component_nets.get(component.ref, set()))
+        if len(nets) != 2:
+            continue
+
+        rail_net: str | None = None
+        reference_net: str | None = None
+        for net_name in nets:
+            if normalize_gnd_net_name(net_name) == "GND":
+                reference_net = net_name
+            elif power_rail_polarity(net_name) is not None:
+                rail_net = net_name
+        if rail_net is None or reference_net is None:
+            continue
+
+        candidate_refs = active_ics_by_rail.get(rail_net, [])
+        if not candidate_refs:
+            continue
+
+        cap_x, cap_y, _ = raw_layout[component.ref]
+        rail_polarity = power_rail_polarity(rail_net)
+        candidate_refs = _prefer_decoupling_side_candidates(
+            cap_y=cap_y,
+            rail_polarity=rail_polarity,
+            candidate_refs=candidate_refs,
+            raw_layout=raw_layout,
+        )
+        nearest_ref = min(
+            candidate_refs,
+            key=lambda ref: math.dist((cap_x, cap_y), raw_layout[ref][:2]),
+        )
+        nearest_x, nearest_y, _ = raw_layout[nearest_ref]
+        distance_mm = math.dist((cap_x, cap_y), (nearest_x, nearest_y))
+        if distance_mm <= _LOCAL_DECOUPLING_DISTANCE_WARN_MM:
+            continue
+
+        warnings.append(
+            {
+                "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+                "message": (
+                    f"Decoupling capacitor {component.ref} between {rail_net} and {reference_net} "
+                    f"is placed {distance_mm:.2f} mm from active device {nearest_ref}, which is "
+                    "too far to read as local support circuitry."
+                ),
+                "details": {
+                    "capacitor_ref": component.ref,
+                    "rail_net": rail_net,
+                    "rail_polarity": rail_polarity,
+                    "reference_net": reference_net,
+                    "nearest_active_ref": nearest_ref,
+                    "distance_mm": round(distance_mm, 2),
+                    "max_local_distance_mm": round(_LOCAL_DECOUPLING_DISTANCE_WARN_MM, 2),
+                },
+            }
+        )
+
+    return warnings
 
 
 # ---------------------------------------------------------------------------

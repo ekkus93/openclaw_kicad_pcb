@@ -107,6 +107,7 @@ if TYPE_CHECKING:
 
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
+from ..component_types import is_ground_like_name as _is_ground_like_name
 from ..component_types import is_power_net as _is_power_net
 from ..errors import ErrorCode, UserError
 from ..layout import GRID_COL_MM as _GRID_COL_MM
@@ -177,8 +178,10 @@ _PROPERTY_TEXT_VERTICAL_GAP_MM: float = 2 * GRID_ROW_MM
 # nearest output-support body column.
 _OUTPUT_CONNECTOR_CLEARANCE_MM: float = 1.27
 
-# Bottom inset for GND/VSS power symbols: keeps them clear of the lower margin
-# and one grid row above the very bottom of the usable area.
+# Bottom inset for shared ground-family power symbols: used when
+# ``is_ground_like_name(...)`` classifies a ``#PWR`` / ``#FLG`` value as a
+# bottom-row symbol, keeping it clear of the lower margin and one grid row
+# above the very bottom of the usable area.
 _POWER_BOTTOM_MARGIN_MM: float = 20.0
 
 # Phase 8.1: page-balance pass thresholds.
@@ -424,8 +427,8 @@ def _snap_power_symbols(
     (KiCad global power-net and PWR_FLAG markers) and pins their y-coordinate
     to one of two rows:
 
-    * **GND-type** (value upper-cased equals or starts with ``GND``, ``AGND``,
-      ``DGND``, ``PGND``, ``SGND``, ``VSS``, or ``0V``) →
+        * **GND-type** (value satisfies
+            :func:`kicad_pcb.component_types.is_ground_like_name`) →
       ``y = page_max_y - _POWER_BOTTOM_MARGIN_MM`` (bottom row, clear of the
       lower margin).
     * **All other power symbols** (VCC, VDD, VBAT, VREF, PWR_FLAG, etc.) →
@@ -435,7 +438,6 @@ def _snap_power_symbols(
     below the component it shares a net with in the Graphviz layout.
     Components not present in *positions* are silently skipped.
     """
-    _GND_STARTS: tuple[str, ...] = ("GND", "AGND", "DGND", "PGND", "SGND", "VSS", "0V")
     result = dict(positions)
     for comp in ir.components:
         ref = comp.ref
@@ -443,8 +445,7 @@ def _snap_power_symbols(
             continue
         if ref not in result:
             continue
-        val = (comp.value or "").upper()
-        is_gnd = any(val == g or val.startswith(g) for g in _GND_STARTS)
+        is_gnd = _is_ground_like_name(comp.value or "")
         target_y = round(page_max_y - _POWER_BOTTOM_MARGIN_MM, 2) if is_gnd else origin_y
         x, _, rot = result[ref]
         result[ref] = (x, target_y, rot)

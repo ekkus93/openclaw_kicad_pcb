@@ -19,7 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ..circuit_ir import CircuitIR
-from ..component_types import is_power_net
+from ..component_types import is_power_net, normalize_gnd_net_name, power_rail_polarity
 from ..errors import ParseError, UserError
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
 from ..lib_symbol import read_lib_symbol_def_flat
@@ -28,6 +28,7 @@ from ..sexpr.utils import walk
 from ..symbol_index import SymbolIndex
 
 _PIN_ROLE_INVERTING_INPUT = "inverting_input"
+_PIN_ROLE_NONINVERTING_INPUT = "noninverting_input"
 _PIN_ROLE_OUTPUT = "output"
 
 
@@ -61,8 +62,12 @@ def _looks_output_net(net_name: str) -> bool:
 
 def _looks_power_like_net(net_name: str) -> bool:
     name = net_name.upper()
-    return is_power_net(net_name) or any(
-        hint in name for hint in ("VPLUS", "VMINUS", "VCC", "VEE", "VDD", "VSS", "GND", "0V")
+    return (
+        is_power_net(net_name)
+        or power_rail_polarity(net_name) is not None
+        or normalize_gnd_net_name(name) == "GND"
+        or "GND" in name
+        or "0V" in name
     )
 
 
@@ -80,18 +85,20 @@ def _looks_connector(component_ref: str, symbol: str | None) -> bool:
 
 def _looks_supply_pin_name(pin_name: str) -> bool:
     name = pin_name.upper().replace(" ", "")
-    return name in {
-        "V+",
-        "V-",
-        "VCC",
-        "VEE",
-        "VDD",
-        "VSS",
-        "VCC+",
-        "VCC-",
-        "VDD+",
-        "VDD-",
-    } or name.startswith(("VCC", "VEE", "VDD", "VSS"))
+    return (
+        name
+        in {
+            "V+",
+            "V-",
+            "VCC+",
+            "VCC-",
+            "VDD+",
+            "VDD-",
+        }
+        or power_rail_polarity(name) is not None
+        or normalize_gnd_net_name(name) == "GND"
+        or name.startswith("VSS")
+    )
 
 
 def _sorted_net_pair(net_a: str, net_b: str) -> tuple[str, str]:
@@ -106,6 +113,14 @@ def _classify_pin_role(pin_name: str, electrical_type: str) -> str | None:
         return None
     if "OUT" in normalized_name or normalized_type == "OUTPUT":
         return _PIN_ROLE_OUTPUT
+    if (
+        normalized_name in {"+", "IN+", "NONINV", "NONINVERTING", "NONINVERTINGINPUT"}
+        or normalized_name.startswith("IN+")
+        or normalized_name.endswith("+")
+        or "NONINV" in normalized_name
+        or "NONINVERT" in normalized_name
+    ):
+        return _PIN_ROLE_NONINVERTING_INPUT
     if (
         normalized_name in {"-", "IN-", "INV", "INVERTING", "INVERTINGINPUT"}
         or normalized_name.startswith("IN-")
@@ -489,6 +504,197 @@ def _opamp_output_sanity_warnings(
     return warnings
 
 
+def _opamp_ac_coupled_output_load_warnings(
+    ir: CircuitIR,
+    symbol_index: SymbolIndex | None,
+) -> list[dict[str, object]]:
+    if symbol_index is None:
+        return []
+
+    pin_to_net = _collect_pin_to_net(ir)
+    bridges = _collect_two_pin_component_bridges(ir)
+    component_map = {component.ref: component for component in ir.components}
+    nets_by_name = {net.name: net for net in ir.nets}
+    warnings: list[dict[str, object]] = []
+    warned_paths: set[tuple[str, str, str]] = set()
+
+    for component in ir.components:
+        pin_roles = _component_pin_roles(component.symbol, symbol_index)
+        if not pin_roles:
+            continue
+
+        for pin_number, role in sorted(pin_roles.items()):
+            if role != _PIN_ROLE_OUTPUT:
+                continue
+
+            output_net = pin_to_net.get((component.ref, pin_number))
+            if output_net is None or _looks_power_like_net(output_net):
+                continue
+
+            for net_pair, bridge_members in sorted(bridges.items()):
+                if output_net not in net_pair:
+                    continue
+
+                capacitor_refs = sorted(
+                    item["ref"] for item in bridge_members if item["kind"] == "capacitor"
+                )
+                if not capacitor_refs:
+                    continue
+
+                coupled_net = net_pair[1] if net_pair[0] == output_net else net_pair[0]
+                if _looks_power_like_net(coupled_net):
+                    continue
+                if not _looks_output_net(coupled_net):
+                    coupled_net_record = nets_by_name.get(coupled_net)
+                    if coupled_net_record is None:
+                        continue
+                    coupled_components = [
+                        component_map.get(pin.ref) for pin in coupled_net_record.pins
+                    ]
+                    if not any(
+                        part is not None and _looks_connector(part.ref, part.symbol)
+                        for part in coupled_components
+                    ):
+                        continue
+
+                bleed_resistor_refs: set[str] = set()
+                for other_pair, other_members in bridges.items():
+                    if coupled_net not in other_pair:
+                        continue
+                    reference_net = other_pair[1] if other_pair[0] == coupled_net else other_pair[0]
+                    if not _looks_power_like_net(reference_net):
+                        continue
+                    bleed_resistor_refs.update(
+                        item["ref"] for item in other_members if item["kind"] == "resistor"
+                    )
+
+                if bleed_resistor_refs:
+                    continue
+
+                warning_key = (component.ref, output_net, coupled_net)
+                if warning_key in warned_paths:
+                    continue
+                warned_paths.add(warning_key)
+
+                warnings.append(
+                    {
+                        "code": "OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED",
+                        "message": (
+                            f"Op-amp {component.ref} output pin {pin_number} is AC-coupled from "
+                            f"{output_net} to {coupled_net} without a resistor-defined bleed or "
+                            "load path on the output side."
+                        ),
+                        "details": {
+                            "ref": component.ref,
+                            "symbol": component.symbol,
+                            "output_pin": pin_number,
+                            "output_net": output_net,
+                            "coupled_output_net": coupled_net,
+                            "capacitor_refs": capacitor_refs,
+                        },
+                    }
+                )
+
+    return warnings
+
+
+def _opamp_stage_topology_warnings(
+    ir: CircuitIR,
+    symbol_index: SymbolIndex | None,
+) -> list[dict[str, object]]:
+    if symbol_index is None:
+        return []
+
+    pin_to_net = _collect_pin_to_net(ir)
+    bridges = _collect_two_pin_component_bridges(ir)
+    warnings: list[dict[str, object]] = []
+
+    for component in ir.components:
+        pin_roles = _component_pin_roles(component.symbol, symbol_index)
+        if not pin_roles:
+            continue
+
+        output_nets = sorted(
+            {
+                pin_to_net[(component.ref, pin_number)]
+                for pin_number, role in pin_roles.items()
+                if role == _PIN_ROLE_OUTPUT and (component.ref, pin_number) in pin_to_net
+            }
+        )
+        noninverting_signal_nets = sorted(
+            {
+                pin_to_net[(component.ref, pin_number)]
+                for pin_number, role in pin_roles.items()
+                if role == _PIN_ROLE_NONINVERTING_INPUT
+                and (component.ref, pin_number) in pin_to_net
+                and not _looks_power_like_net(pin_to_net[(component.ref, pin_number)])
+                and pin_to_net[(component.ref, pin_number)] not in output_nets
+            }
+        )
+        if not output_nets or not noninverting_signal_nets:
+            continue
+
+        for pin_number, role in sorted(pin_roles.items()):
+            if role != _PIN_ROLE_INVERTING_INPUT:
+                continue
+
+            inverting_net = pin_to_net.get((component.ref, pin_number))
+            if inverting_net is None or _looks_power_like_net(inverting_net):
+                continue
+            if inverting_net in output_nets:
+                continue
+
+            feedback_resistor_refs: set[str] = set()
+            shunt_resistor_refs: set[str] = set()
+            other_stage_resistor_refs: set[str] = set()
+            for net_pair, bridge_members in bridges.items():
+                if inverting_net not in net_pair:
+                    continue
+
+                other_net = net_pair[1] if net_pair[0] == inverting_net else net_pair[0]
+                resistor_refs = {
+                    item["ref"] for item in bridge_members if item["kind"] == "resistor"
+                }
+                if not resistor_refs:
+                    continue
+
+                if other_net in output_nets:
+                    feedback_resistor_refs.update(resistor_refs)
+                    continue
+                if _looks_power_like_net(other_net):
+                    shunt_resistor_refs.update(resistor_refs)
+                    continue
+                other_stage_resistor_refs.update(resistor_refs)
+
+            if not feedback_resistor_refs or shunt_resistor_refs or other_stage_resistor_refs:
+                continue
+
+            warnings.append(
+                {
+                    "code": "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN",
+                    "message": (
+                        f"Op-amp {component.ref} looks like a non-inverting stage because its "
+                        "non-inverting input carries signal net(s) "
+                        f"{', '.join(noninverting_signal_nets)}, but inverting input pin "
+                        f"{pin_number} on {inverting_net} has feedback resistor(s) "
+                        f"{', '.join(sorted(feedback_resistor_refs))} and no "
+                        "resistor-defined shunt/reference path."
+                    ),
+                    "details": {
+                        "ref": component.ref,
+                        "symbol": component.symbol,
+                        "inverting_input_pin": pin_number,
+                        "inverting_input_net": inverting_net,
+                        "noninverting_signal_nets": noninverting_signal_nets,
+                        "output_nets": output_nets,
+                        "feedback_resistor_refs": sorted(feedback_resistor_refs),
+                    },
+                }
+            )
+
+    return warnings
+
+
 def full_validate(path: Path, symbol_index: SymbolIndex) -> CircuitIR:
     """Run all three validation layers on *path* and return the parsed IR.
 
@@ -559,5 +765,7 @@ def advisory_warnings(
     warnings.extend(_ambiguous_connector_usage_warnings(ir, symbol_index))
     warnings.extend(_opamp_feedback_warnings(ir, symbol_index))
     warnings.extend(_opamp_output_sanity_warnings(ir, symbol_index))
+    warnings.extend(_opamp_ac_coupled_output_load_warnings(ir, symbol_index))
+    warnings.extend(_opamp_stage_topology_warnings(ir, symbol_index))
 
     return warnings

@@ -54,6 +54,8 @@ import math
 from collections import Counter
 from typing import TYPE_CHECKING
 
+from ..component_types import is_power_net as _is_power_net
+from ..component_types import power_rail_polarity
 from ..layout import build_signal_adjacency, count_wire_crossings
 from ..sexpr.nodes import AtomNode, ListNode, StringNode
 from ..sexpr.utils import find_all, find_first, walk
@@ -962,7 +964,7 @@ def lint_wire_quality(
     # -------------------------------------------------------------------------
     for net in ir.nets:
         # Skip power nets (they typically use hub/spine routing)
-        if net.name.upper() in {"GND", "VCC", "V+", "V-", "+5V", "+3.3V", "+12V", "-12V"}:
+        if _is_power_net_name(net.name):
             continue
 
         # Only check 2-pin nets (local connections)
@@ -1094,7 +1096,7 @@ def _build_net_segments(
 
 
 def _is_power_net_name(net_name: str) -> bool:
-    return net_name.upper() in {"GND", "VCC", "V+", "V-", "+5V", "+3.3V", "+12V", "-12V"}
+    return _is_power_net(net_name) or power_rail_polarity(net_name) is not None
 
 
 def lint_local_direct_wiring(doc: SchematicDoc, ir: CircuitIR) -> list[LintIssue]:

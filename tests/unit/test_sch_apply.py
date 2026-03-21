@@ -452,6 +452,52 @@ class TestPhase1WarningSuite:
                 _make_ir(
                     components=[
                         ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                        ComponentIR(ref="C1", symbol="Device:C"),
+                        ComponentIR(ref="J1", symbol="TestLib:Conn3"),
+                    ],
+                    nets=[
+                        NetIR(name="VIN", pins=[PinRefIR(ref="U1", pin="1")]),
+                        NetIR(name="U1_INV", pins=[PinRefIR(ref="U1", pin="2")]),
+                        NetIR(
+                            name="U1_OUT",
+                            pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="C1", pin="1")],
+                        ),
+                        NetIR(
+                            name="HP_L_OUT",
+                            pins=[PinRefIR(ref="C1", pin="2"), PinRefIR(ref="J1", pin="1")],
+                        ),
+                    ],
+                ),
+                {"OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                        ComponentIR(ref="R2", symbol="Device:R"),
+                        ComponentIR(ref="J1", symbol="TestLib:Conn3"),
+                    ],
+                    nets=[
+                        NetIR(
+                            name="VIN",
+                            pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="J1", pin="1")],
+                        ),
+                        NetIR(
+                            name="U1_INV",
+                            pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="R2", pin="1")],
+                        ),
+                        NetIR(
+                            name="U1_OUT",
+                            pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R2", pin="2")],
+                        ),
+                    ],
+                ),
+                {"OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN"},
+            ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
                         ComponentIR(ref="R1", symbol="TestLib:R"),
                     ],
                     nets=[
@@ -498,6 +544,8 @@ class TestPhase1WarningSuite:
             "output-coupling",
             "connector-ambiguity",
             "missing-feedback",
+            "output-cap-no-load-or-bleed",
+            "stage-topology-likely-mistaken",
             "output-floating",
             "output-shorted-to-rail",
         ],
@@ -512,6 +560,71 @@ class TestPhase1WarningSuite:
             for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
         }
         assert expected_codes <= codes
+
+    def test_output_load_warning_not_emitted_when_output_side_has_bleed_resistor(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                ComponentIR(ref="C1", symbol="Device:C"),
+                ComponentIR(ref="R5", symbol="Device:R"),
+                ComponentIR(ref="J1", symbol="TestLib:Conn3"),
+            ],
+            nets=[
+                NetIR(name="VIN", pins=[PinRefIR(ref="U1", pin="1")]),
+                NetIR(name="U1_INV", pins=[PinRefIR(ref="U1", pin="2")]),
+                NetIR(
+                    name="U1_OUT",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="C1", pin="1")],
+                ),
+                NetIR(
+                    name="HP_L_OUT",
+                    pins=[
+                        PinRefIR(ref="C1", pin="2"),
+                        PinRefIR(ref="R5", pin="1"),
+                        PinRefIR(ref="J1", pin="1"),
+                    ],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="R5", pin="2"), PinRefIR(ref="J1", pin="2")]),
+            ],
+        )
+
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+        assert "OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED" not in codes
+
+    def test_stage_topology_warning_not_emitted_for_valid_noninverting_stage(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
+                ComponentIR(ref="R2", symbol="Device:R"),
+                ComponentIR(ref="R3", symbol="Device:R"),
+                ComponentIR(ref="J1", symbol="TestLib:Conn3"),
+            ],
+            nets=[
+                NetIR(name="VIN", pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="J1", pin="1")]),
+                NetIR(
+                    name="U1_INV",
+                    pins=[
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="R2", pin="1"),
+                        PinRefIR(ref="R3", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="U1_OUT",
+                    pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R2", pin="2")],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="R3", pin="2"), PinRefIR(ref="J1", pin="2")]),
+            ],
+        )
+
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+        assert "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN" not in codes
 
     @_skip_no_system_symbols
     def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:

@@ -235,6 +235,34 @@ class TestLAY010OverRoutedLocalConnection:
         lay010_issues = [i for i in issues if i.code == "LAY010"]
         assert lay010_issues == []
 
+    def test_extended_power_alias_is_skipped_for_lay010(self) -> None:
+        """Shared VPOS/VNEG-style rails should be skipped like other power nets."""
+        body = " ".join(
+            [
+                _wire(0.0, 0.0, 10.0, 0.0),
+                _wire(10.0, 0.0, 10.0, 20.0),
+                _wire(10.0, 20.0, 40.0, 20.0),
+                _wire(40.0, 20.0, 40.0, 10.0),
+                _wire(40.0, 10.0, 50.0, 10.0),
+                _bind_marker("R1", "1", "VPOS15", 0.0, 0.0),
+                _bind_marker("R2", "1", "VPOS15", 50.0, 10.0),
+            ]
+        )
+        doc = _doc(body)
+        net = NetIR(name="VPOS15", pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="R2", pin="1")])
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="1k"),
+            ],
+            nets=[net],
+        )
+
+        issues = lint_wire_quality(doc, ir)
+        lay010_issues = [i for i in issues if i.code == "LAY010"]
+        assert lay010_issues == []
+
     def test_two_pin_with_many_segments_triggers_warning(self) -> None:
         """2-pin net with >4 segments should trigger LAY010."""
         # Create a connected path of 6 wire segments (over-routed for 2-pin net)

@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 from .component_types import component_type as _component_type
 from .component_types import is_power_net as _base_is_power_net_name
+from .component_types import power_rail_polarity
 from .errors import ErrorCode, UserError
 
 # ---------------------------------------------------------------------------
@@ -96,10 +97,7 @@ DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()
 
 def _is_power_net_name(net_name: str) -> bool:
     """Return True for routed power rails, including VPLUS/VMINUS aliases."""
-    upper_name = net_name.upper()
-    return _base_is_power_net_name(net_name) or upper_name.startswith(
-        ("VPLUS", "VMINUS", "VPOS", "VNEG")
-    )
+    return _base_is_power_net_name(net_name) or power_rail_polarity(net_name) is not None
 
 
 def _tier_distance(ref_a: str, ref_b: str, tiers: dict[str, int]) -> int:

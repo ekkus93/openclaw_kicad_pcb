@@ -1,5 +1,81 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T18:32:10Z - GPT-5.4 - Full-repo verification before push found one pytest regression and existing mypy blockers
+
+- Ran full-repo verification before the requested push: `python -m ruff check .` passed, full `pytest kicad-pcb/tests tests` finished with 2289 passed / 1 failed, and repo-root `python -m mypy .` was blocked by a duplicate module collision between `kicad-pcb/src/kicad_pcb/__init__.py` and `kicad-pcb/scripts/kicad_pcb.py`.
+- The failing full-suite regression is `tests/unit/test_netlist_commands.py::test_ne5532_full_circuit_fidelity_with_system_libraries`, which currently misses the expected `("U1P", "4") -> "GND"` bind marker in the managed schematic.
+- A narrower `python -m mypy kicad-pcb/src tests kicad-pcb/tests` run also reported existing typed issues in `kicad-pcb/src/kicad_pcb/router.py`, `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, and several test modules; the user requested a push despite those outstanding verification failures.
+
+## 2026-03-21T17:49:45Z - GPT-5.4 - Cleaned up stale ground-alias comments after the helper centralization
+
+- Updated the remaining stale ground-alias comments/docstrings in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so the power-symbol row-placement docs now refer to shared `is_ground_like_name(...)` behavior instead of describing a local `GND` / `VSS` list.
+- Clarified the `normalize_gnd_net_name(...)` docstring in `kicad-pcb/src/kicad_pcb/component_types.py` to distinguish exact alias normalization from the broader heuristic role of `is_ground_like_name(...)`.
+- Re-ran Ruff on the touched files after the documentation-only cleanup.
+
+## 2026-03-21T17:04:29Z - GPT-5.4 - Removed the remaining ground-only alias duplication
+
+- Added shared `is_ground_like_name(...)` to `kicad-pcb/src/kicad_pcb/component_types.py` so ground-family detection no longer depends on local `GND` / `AGND` / `VSS` / `0V` lists in downstream modules.
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so `#PWR` / `#FLG` top-vs-bottom row placement uses the shared ground helper, and updated `kicad-pcb/src/kicad_pcb/block_detection.py` so its ground-family classification also defers to the same helper.
+- Added focused regressions in `kicad-pcb/tests/unit/test_component_types.py`, `tests/unit/test_phase4_layout.py`, and `tests/unit/test_block_detection.py` to lock shared ground detection plus `VSS` and `0V` power-symbol bottom-row placement, then re-ran Ruff and the focused pytest slice successfully.
+
+## 2026-03-21T16:50:46Z - GPT-5.4 - Extended shared rail polarity usage across the remaining rail-aware modules
+
+- Replaced the remaining local rail-alias heuristics in `kicad-pcb/src/kicad_pcb/commands/_validate.py`, `kicad-pcb/src/kicad_pcb/tier.py`, `kicad-pcb/src/kicad_pcb/block_detection.py`, `kicad-pcb/src/kicad_pcb/router.py`, and `kicad-pcb/src/kicad_pcb/lint/sch.py` so they now defer to `kicad-pcb/src/kicad_pcb/component_types.py::power_rail_polarity(...)` instead of maintaining separate `VPLUS` / `VMINUS` / `VEE` / `VNEG` alias lists.
+- Added focused regressions proving the rollout at the right seams: `kicad-pcb/tests/unit/test_tier.py` now checks connector classification on `VPOS15` / `AVEE15`, `tests/unit/test_phase4_layout.py` now verifies router power-net detection for extended aliases, and the Phase 6 wire-quality/direct-routing lint tests now confirm `VPOS15` / `AVEE15` are skipped as power rails.
+- Validation passed with focused `pytest` over the tier, layout, wire-quality, local-direct-wiring, and block-detection slices plus Ruff on the changed modules.
+
+## 2026-03-21T16:38:33Z - GPT-5.4 - Centralized the rail alias vocabulary in component_types
+
+- Moved the shared rail vocabulary and polarity classifier into `kicad-pcb/src/kicad_pcb/component_types.py` by introducing shared positive/negative/neutral rail prefix sets plus `power_rail_polarity(...)`, and updated `is_power_net(...)` to use the same alias vocabulary instead of the older narrower regex list.
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` to import the shared `power_rail_polarity(...)` helper rather than carrying its own rail alias list.
+- Moved the pure alias/polarity coverage into `kicad-pcb/tests/unit/test_component_types.py` so shared-module behavior is tested at the right seam, then re-ran that shared test module plus the focused decoupling integration slice in `tests/unit/test_netlist_commands.py` and Ruff.
+
+## 2026-03-21T15:45:18Z - GPT-5.4 - Extended rail polarity alias coverage for the decoupling matcher
+
+- Broadened `_power_rail_polarity(...)` in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` to recognize additional common supply aliases that are likely to appear in mixed-signal and analog netlists: positive (`AVCC`, `AVDD`, `DVDD`, `VPOS`, `VAA`, `VS+`) and negative (`AVEE`, `DVEE`, `VNEG`, `VBB`, `VS-`) alongside the earlier `VCC` / `VDD` / `VBAT` / `VEE` / `VPLUS` / `VMINUS` families.
+- Added a direct parametrized regression in `tests/unit/test_netlist_commands.py` to lock the extended alias mapping while preserving the current `GND` / `VSS` behavior.
+- Re-ran Ruff plus the focused decoupling warning regression slice; the expanded alias set did not disturb the existing far/local decoupler behavior, positive/negative side-selection regressions, or `new-from-netlist` propagation.
+
+## 2026-03-21T15:15:38Z - GPT-5.4 - Locked the negative-rail decoupling regression and fixed VEE-style rail detection
+
+- Added the symmetric negative-rail regression in `tests/unit/test_netlist_commands.py`, proving that a negative-rail decoupler chooses the upper supporting device while the positive-rail regression still chooses the lower one.
+- The new regression initially failed and exposed a real inconsistency: `_sch_apply.py` used the new polarity helper for side preference but still relied on the older generic power-net predicate for collecting rail candidates, so `VEE`-style rails were skipped entirely.
+- Fixed the matcher to use the explicit rail-polarity classifier consistently for both candidate collection and capacitor rail detection, then re-ran Ruff and the focused decoupling warning test slice successfully.
+
+## 2026-03-21T15:09:47Z - GPT-5.4 - Tightened the decoupling matcher with explicit positive/negative side preference
+
+- Refined `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so `DECOUPLING_FAR_FROM_ACTIVE_DEVICE` now classifies the rail polarity and biases candidate active-device matches by schematic side: positive-rail decouplers prefer devices below the capacitor, negative-rail decouplers prefer devices above it, while still falling back to the old nearest-on-rail behavior if no same-side candidates exist.
+- This keeps the layout-side warning narrow while reducing broad shared-rail matches when multiple active devices live on the same supply net.
+- Added focused regressions in `tests/unit/test_netlist_commands.py` proving both directions explicitly: a positive-rail decoupler selects the lower supporting device and a negative-rail decoupler selects the upper supporting device instead of a closer wrong-side shared-rail device, then re-ran the existing decoupling warning and `new-from-netlist` propagation tests plus Ruff.
+
+## 2026-03-21T14:27:09Z - GPT-5.4 - Started the layout-side lint family with a decoupling distance warning
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` with `DECOUPLING_FAR_FROM_ACTIVE_DEVICE`, a post-layout advisory that looks for capacitors bridging a rail net to ground and warns when the placed symbol is farther than the local-support threshold from the nearest active device on that rail that still has non-power signal nets.
+- Kept the scope honest: this warning is geometry-dependent, so it lives in the apply path where final `(x, y, rotation)` placements exist and currently surfaces through `apply-netlist` and `new-from-netlist`, not plain `validate-netlist`.
+- Added deterministic command-layer regression coverage in `tests/unit/test_netlist_commands.py` by monkeypatching `_sch_apply._resolve_layout(...)` with a fake layout engine, covering both the far-decoupler warning case and the nearby-decoupler no-warning guard, plus propagation into `new-from-netlist` results.
+- Focused validation passed with Ruff plus targeted `pytest` runs for the new decoupling warning tests.
+
+## 2026-03-21T13:38:58Z - GPT-5.4 - Added the next topology warning for likely mistaken non-inverting op-amp stages
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_validate.py` with `OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN`, scoped narrowly to op-amp stages whose non-inverting input carries a signal net while the inverting-input node only shows local feedback resistor(s) back to the output and no resistor-defined shunt/reference path.
+- Added non-inverting input role detection to the existing symbol-pin-role helper so the new rule stays inside the same advisory-warning architecture rather than inventing a separate topology pass.
+- Added focused regression coverage at both layers: `tests/unit/test_sch_apply.py` now exercises both the positive case and a valid non-inverting stage with an inverting-node shunt resistor, and `tests/unit/test_netlist_commands.py` now checks both `cmd_validate_netlist` and `cmd_apply_netlist` surfacing for the new warning code.
+- Focused Ruff and pytest runs passed, and the real `code_review/ne5532_headphone_amp_netlist.json` warning drift guards still stay clean because `U1A` has the expected inverting-node shunt and `U1B` remains a follower.
+
+## 2026-03-21T13:15:54Z - GPT-5.4 - Added the missing output-side analog lint family for AC-coupled outputs without a defined bleed/load path
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_validate.py` with `OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED`, scoped narrowly to op-amp output nets that cross a coupling capacitor onto an output-like or connector net and still lack any resistor-defined path from that downstream node to a rail/reference net.
+- Kept the rule aligned with the existing advisory-warning architecture rather than adding a separate validator path, so it composes with the current op-amp output-role detection and two-pin bridge motif helpers.
+- Added focused regression coverage at both layers: `tests/unit/test_sch_apply.py` now exercises both the positive warning case and the guarded case where a bleed resistor suppresses it, and `tests/unit/test_netlist_commands.py` now checks both `cmd_validate_netlist` and `cmd_apply_netlist` surfacing for the new warning code.
+- Focused validation passed for the new family and the existing real NE5532 warning drift guards; the real review fixture still does not warn because its output-side node already has the expected bleed resistor.
+
+## 2026-03-21T12:42:29Z - GPT-5.4 - Verified that the first analog lint rule is already live and synced Phase 5.2.1 to match
+
+- Confirmed that `kicad-pcb/src/kicad_pcb/commands/_validate.py` already emits `INPUT_COUPLING_BYPASSED_BY_RESISTOR` for the `R1` / `C5` style topology: a capacitor and resistor bridging the same two nets where one side reads as an input-path net.
+- Verified both helper-layer and command-layer coverage are already in place through `tests/unit/test_sch_apply.py` and `tests/unit/test_netlist_commands.py`, including the real `code_review/ne5532_headphone_amp_netlist.json` fixture pinned to warn on bridge refs `C5` and `R1` between `LEFT_IN` and `IN_L_AC`.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so Phase 5.2 and Phase 5.2.1 now read as `IN PROGRESS` instead of `NOT STARTED`, with current findings describing the already-landed advisory-warning path and the broader warning families that now exist beside the original `R1/C5` rule.
+- This pass was state-sync and verification only; it did not add a second lint implementation because the requested warning family was already present in the repo.
+
 ## 2026-03-21T10:03:36Z - GPT-5.4 - Synced the schematic-fixes roadmap to the landed connector and routing work
 
 - Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the roadmap now explicitly records the shipped output-connector clearance drift guard, the compact output-tail routing carve-outs, the compact local output-side `GND` cluster route, and the current concrete output-box metric state.

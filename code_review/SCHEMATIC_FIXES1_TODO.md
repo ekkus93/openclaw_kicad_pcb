@@ -1116,7 +1116,7 @@ Current findings:
 
 ## 5.2 Add topology warnings / linting
 
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 
 ### Required result
 The tool should help catch suspicious circuits before drawing them prettily.
@@ -1124,7 +1124,7 @@ The tool should help catch suspicious circuits before drawing them prettily.
 ### Tasks
 
 #### 5.2.1 Add analog lint rules
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 Warn on:
 - coupling capacitor directly paralleled by resistor,
 - missing op-amp feedback,
@@ -1132,6 +1132,28 @@ Warn on:
 - unconnected connector pins without explicit no-connect,
 - decoupling parts far from active device in layout phase,
 - likely mistaken stage topology.
+
+Current findings:
+- The first analog warning family is already live in the advisory-warning path: `kicad-pcb/src/kicad_pcb/commands/_validate.py` emits `INPUT_COUPLING_BYPASSED_BY_RESISTOR` when a capacitor and resistor bridge the same two nets and one of those nets reads as an input-path net.
+- That rule covers the long-running `R1` / `C5` concern in the NE5532 review fixture and is regression-covered at both layers:
+  - helper-layer coverage in `tests/unit/test_sch_apply.py`
+  - command-layer coverage in `tests/unit/test_netlist_commands.py`
+- The real `code_review/ne5532_headphone_amp_netlist.json` fixture is already pinned to warn with `INPUT_COUPLING_BYPASSED_BY_RESISTOR` for bridge refs `C5` and `R1` between `LEFT_IN` and `IN_L_AC`.
+- The next missing output-side family is now live too: `kicad-pcb/src/kicad_pcb/commands/_validate.py` emits `OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED` when an op-amp output is AC-coupled onto an output-like/connector net without a resistor-defined bleed or load path to a rail/reference net on the output side.
+- That output-side warning is regression-covered at both layers as well:
+  - helper-layer coverage in `tests/unit/test_sch_apply.py`
+  - command-layer coverage in `tests/unit/test_netlist_commands.py`
+- The next topology family is now live too: `kicad-pcb/src/kicad_pcb/commands/_validate.py` emits `OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN` when a stage looks non-inverting at the signal input but the inverting-input node only has local feedback resistor(s) and lacks any resistor-defined shunt/reference path.
+- That stage-topology warning is also regression-covered at both layers:
+  - helper-layer coverage in `tests/unit/test_sch_apply.py`
+  - command-layer coverage in `tests/unit/test_netlist_commands.py`
+- The remaining layout-side family has now started too: `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` emits `DECOUPLING_FAR_FROM_ACTIVE_DEVICE` after placement when a capacitor bridging a rail net to ground is positioned too far from the nearest active device that shares that rail and still carries non-power signal nets.
+- This decoupling warning is intentionally apply/layout scoped rather than netlist-only scoped, so it currently surfaces through `apply-netlist` and `new-from-netlist` where final symbol coordinates exist.
+- The matcher is now tighter about support polarity too: positive-rail decouplers prefer candidate active devices below the capacitor, while negative-rail decouplers prefer candidate active devices above it, which reduces broad shared-rail matches when multiple devices sit on the same supply net; the underlying rail alias vocabulary and polarity classifier now live in `kicad-pcb/src/kicad_pcb/component_types.py`, so generic `is_power_net(...)` checks and the layout-side decoupling matcher share the same alias set (`AVCC`, `AVDD`, `DVDD`, `VPOS`, `VAA`, `VS+`, `AVEE`, `DVEE`, `VNEG`, `VBB`, `VS-`) instead of diverging.
+- The same shared `power_rail_polarity(...)` helper now also drives the remaining rail-aware consumers that previously carried their own alias lists: `kicad-pcb/src/kicad_pcb/commands/_validate.py`, `kicad-pcb/src/kicad_pcb/tier.py`, `kicad-pcb/src/kicad_pcb/block_detection.py`, `kicad-pcb/src/kicad_pcb/router.py`, and the power-net skip helpers in `kicad-pcb/src/kicad_pcb/lint/sch.py`.
+- A second sweep also removed the remaining ground-only alias duplication by adding shared `is_ground_like_name(...)` support in `kicad-pcb/src/kicad_pcb/component_types.py`; the `#PWR` / `#FLG` row-placement snap in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` and the ground-family classification logic in `kicad-pcb/src/kicad_pcb/block_detection.py` now both use the same GND/VSS/0V/AGND-family predicate instead of carrying local lists.
+- Focused regression coverage for the layout-side family now lives in `tests/unit/test_netlist_commands.py`, including the far-placement warning case, the nearby decoupler guard case, explicit positive- and negative-rail side-selection regressions, and propagation through `new-from-netlist`.
+- Additional warning families in the same advisory path now also cover missing/nonlocal op-amp feedback, output floating, output shorted to a rail, output coupling bypassed by resistor, and ambiguous unused connector pins, so Phase 5.2.1 is underway rather than untouched.
 
 #### 5.2.2 Add warning surfacing
 Status: `NOT STARTED`

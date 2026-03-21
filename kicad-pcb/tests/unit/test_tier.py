@@ -158,6 +158,25 @@ class TestClassifyConnectorRoles:
         assert roles.get("J2") == "output", f"Expected J2=output, got {roles}"
         assert roles.get("J3") == "power", f"Expected J3=power, got {roles}"
 
+    def test_ir_hints_treat_extended_shared_rail_aliases_as_power(self) -> None:
+        """Connector-only shared aliases such as VPOS/AVEE should classify as power."""
+        ir = _make_ir(
+            components=[
+                ("J3", "Connector_Generic:Conn_01x03", "+15V / 0V / -15V"),
+                ("U1", "Amplifier_Operational:NE5532", "NE5532"),
+            ],
+            nets=[
+                ("VPOS15", [("J3", "1"), ("U1", "8")]),
+                ("0V", [("J3", "2")]),
+                ("AVEE15", [("J3", "3"), ("U1", "4")]),
+            ],
+        )
+
+        tiers = assign_tiers(ir)
+        roles = classify_connector_roles(list(tiers.keys()), tiers, ir=ir)
+
+        assert roles.get("J3") == "power", f"Expected J3=power, got {roles}"
+
 
 # ---------------------------------------------------------------------------
 # Tests: assign_tiers (Rule 0 tier-forcing)
