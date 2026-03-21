@@ -826,6 +826,11 @@ Status: `IN PROGRESS`
 - Output connector should clearly face out of the circuit on the right.
 - Avoid awkward connector placement that hides signal flow.
 
+Current findings:
+- Output-stage connector placement in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now adds one extra snap step of outward clearance beyond the nominal output connector lane.
+- Focused coverage in `tests/unit/test_phase4_layout.py` now asserts that output connectors remain the outermost lane and keep at least that extra clearance, which prevents the left-facing output connector stub from collapsing back into the nearest output-support body column.
+- The remaining connector-orientation work is mostly policy and broader placement polish, not the specific `J2` drift problem from the NE5532 output cluster.
+
 ---
 
 ## Phase 3 - Reduce routing clutter
@@ -849,6 +854,10 @@ Status: `IN PROGRESS`
 - Move complexity reduction earlier into placement.
 - Prefer placing related parts close enough that routing becomes trivial.
 - Do not rely on elaborate router behavior to compensate for weak placement.
+
+Current findings:
+- The recent output-stage drift fix moved one part of the clutter reduction upstream into placement: output connectors now sit slightly farther outward, which protects the connector-side ground and output attachment geometry before the router runs.
+- That small placement bias removed the specific connector-column drift that was forcing the `J2` neighborhood back toward nearby support bodies, while leaving the broader compact-routing heuristics to clean up only the remaining local nets.
 
 #### 3.1.2 Penalize excessive bends and junctions
 Status: `IN PROGRESS`
@@ -891,6 +900,10 @@ Classify nets into categories such as:
 - connector-only nets,
 - local decoupling nets.
 
+Current findings:
+- The current routing pass now effectively distinguishes several of these cases in the NE5532 fixture even though the classification is still heuristic and local rather than a first-class net taxonomy.
+- Output-tail signal nets such as `HP_L_OUT` can now skip overfit shared-lane plans and use a compact tail route, while tiny local `GND` clusters around output connectors use a dedicated compact ground-cluster route instead of the generic centroid-based power-cluster path.
+
 #### 3.2.2 Route by net class
 Status: `IN PROGRESS`
 - **feedback nets**: shortest and most local possible
@@ -899,10 +912,18 @@ Status: `IN PROGRESS`
 - **signal-chain nets**: left-to-right readable path
 - **connector nets**: short clean attachment to connector pins
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` now contains a compact rightward-tail carve-out plus `_compact_vertical_tail_route(...)`, which keeps short asymmetric output tails readable instead of forcing them onto a redundant local ladder trunk.
+- The same router module now uses `_compact_local_ground_cluster_route(...)` for tiny output-side `GND` clusters so connector/support ground returns use one calm horizontal lane with body-aware entry points instead of a small centroid knot.
+- Focused regression coverage for both behaviors now lives in `tests/unit/test_phase6_wire_simplification.py`.
+
 #### 3.2.3 Prefer labels only when they improve clarity
 Status: `IN PROGRESS`
 - Avoid label fallback for short readable local nets.
 - Use labels only when they reduce crossing/clutter or improve comprehension.
+
+Current findings:
+- The new compact-tail and compact-ground local routes both reduce the need to fall through to noisier fallback behavior in the densest output-side neighborhood, which keeps more of the NE5532 output cluster readable as direct local wiring instead of label-style or over-spined routing.
 
 ---
 
@@ -925,10 +946,17 @@ Status: `IN PROGRESS`
   - add a local ground symbol directly below,
   - avoid long runs to distant common ground points.
 
+Current findings:
+- The current output-side `GND` refinement is not yet a full generic local-ground drop policy, but it does now keep the `J2.S` / `R5.2` / `R7.2` cluster on a local horizontal lane with a nearby ground symbol instead of routing those pins through a more distant shared centroid.
+
 #### 3.3.2 Keep stage-local grounds stage-local in drawing
 Status: `IN PROGRESS`
 - Do not over-centralize grounds in the visual layout.
 - Preserve clarity over theoretical “single common ground symbol” compactness.
+
+Current findings:
+- The compact local ground-cluster route in `kicad-pcb/src/kicad_pcb/router.py` is the first concrete step here: the NE5532 output-side ground cluster now stays visually local to `J2`, `R5`, and `R7` instead of being absorbed into a noisier generic cluster presentation.
+- That change materially reduced the real output-neighborhood clutter while preserving local body avoidance.
 
 ---
 
@@ -993,6 +1021,7 @@ Current findings:
 - The snap pipeline now enforces more consistent local spacing for stage-edge blocks through `_snap_input_stage_cohesion(...)` and `_snap_output_stage_cohesion(...)` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
 - Input-side staging is now explicitly left-bounded and compact, while output-side staging is explicitly right-bounded and compact; both sides can split longer support chains across inner/outer lanes without breaking the short left-to-right transition into and out of the op-amp.
 - Focused coverage in `tests/unit/test_phase4_layout.py` now checks compactness, left/right bounds, intrusion avoidance, and the new longer-chain lane behavior for both stage edges.
+- Output connectors also now receive one extra snap-step of outward clearance beyond the nominal connector lane, which keeps the right-side attachment geometry readable without widening the whole stage.
 
 #### 4.2.3 Keep local loops compact
 Status: `IN PROGRESS`
@@ -1080,6 +1109,8 @@ Do not overfit to exact numbers, but enforce sane upper bounds.
 Current findings:
 - Phase 7 guardrails in `tests/unit/test_phase7_regression_guardrails.py` now include a concrete output-neighborhood routing check for the real NE5532 fixture, not only whole-page wire-stub and lint metrics.
 - The new guardrail measures the local wire box around `C6`, `R5`, `R6`, `C7`, `R7`, and `J2`, and asserts that the generated schematic stays below the current small-jog threshold (`<= 12` short local segments and `<= 0.35` local short-segment ratio) while also remaining materially better than the captured regressed snapshot for the same neighborhood.
+- With the currently landed placement and routing work, that concrete output box now measures `32` total segments / `7` short segments (ratio `0.219`) in internal generation mode for `code_review/ne5532_headphone_amp_netlist.json`.
+- Current route-level regressions in `tests/unit/test_phase6_wire_simplification.py` now lock in the compact output-tail carve-outs and the compact output-side `GND` lane so those local improvements do not silently drift.
 
 ---
 

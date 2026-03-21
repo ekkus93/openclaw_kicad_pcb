@@ -1,5 +1,11 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T10:03:36Z - GPT-5.4 - Synced the schematic-fixes roadmap to the landed connector and routing work
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the roadmap now explicitly records the shipped output-connector clearance drift guard, the compact output-tail routing carve-outs, the compact local output-side `GND` cluster route, and the current concrete output-box metric state.
+- The roadmap sections updated in this sync are the connector attachment subsection (`2.4.3`), the net-class routing and stage-local ground subsections in Phase 3, the output-stage spacing note in Phase 4, and the route-quality metrics subsection (`5.1.3`).
+- This was a documentation/state-sync pass only; no generator behavior changed in this step.
+
 ## 2026-03-21T09:39:58Z - GPT-5.4 - Ignored local probe artifacts under tmp/
 
 - Added `tmp/` to `.gitignore` so local routing/layout probe JSON files stop appearing in routine `git status` output.
