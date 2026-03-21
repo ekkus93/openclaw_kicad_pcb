@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
@@ -215,7 +216,7 @@ class TestWriteSymbolsPinAnchors:
             def compute_symbol_positions(
                 self,
                 _ir: CircuitIR,
-            ) -> dict[str, tuple[float, float, float]]:
+            ) -> dict[str, tuple[float, float, float | None]]:
                 return {"U1A": (10.0, 20.0, 0.0)}
 
         _positions, pin_endpoints, pin_anchors, _missing, _raw_layout = _write_symbols(
@@ -335,15 +336,15 @@ def _make_ir(
 def _normalize_warning_entries(
     warnings: list[dict[str, object]],
 ) -> list[tuple[str, tuple[tuple[str, object], ...]]]:
-    return sorted(
-        (
-            warning["code"],
-            tuple(sorted((warning["details"] or {}).items()))
-            if isinstance(warning.get("details"), dict)
-            else (),
-        )
-        for warning in warnings
-    )
+    normalized: list[tuple[str, tuple[tuple[str, object], ...]]] = []
+    for warning in warnings:
+        code = warning.get("code")
+        if not isinstance(code, str):
+            continue
+        details_obj = warning.get("details")
+        details = cast(dict[str, object], details_obj) if isinstance(details_obj, dict) else {}
+        normalized.append((code, tuple(sorted(details.items()))))
+    return sorted(normalized)
 
 
 _skip_no_system_symbols = pytest.mark.skipif(

@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, TypeVar
 
 from kicad_pcb.block_detection import BlockLayout, BlockRole
@@ -95,7 +96,7 @@ def _symbol_ref_positions(
 
 
 def _resolve_placed_refs(
-    mapping: dict[str, T],
+    mapping: Mapping[str, T],
     ref: str,
 ) -> list[tuple[str, T]]:
     """Resolve a base device ref to matching placed-unit refs when needed."""
@@ -120,7 +121,7 @@ def _anchor_x_coordinate(
 ) -> tuple[float, set[str]]:
     """Return a stable x anchor for exact refs or placed-unit siblings."""
 
-    matches = _resolve_placed_refs(mapping, anchor_ref)
+    matches: list[tuple[str, tuple[float, float]]] = _resolve_placed_refs(mapping, anchor_ref)
     if not matches:
         msg = f"Anchor ref not found in schematic: {anchor_ref}"
         raise ValueError(msg)
@@ -596,7 +597,7 @@ def detect_dense_clusters(
 
 
 def compute_block_separation(
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
     block_layout: BlockLayout,
 ) -> dict[tuple[BlockRole, BlockRole], float]:
     """Compute minimum spacing between functional blocks.
@@ -647,7 +648,7 @@ def compute_block_separation(
 
 
 def compute_block_role_spread(
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
     block_layout: BlockLayout,
     *,
     tolerance_mm: float = 0.5,

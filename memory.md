@@ -1,5 +1,24 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T22:39:16Z - GPT-5.4 - Final verification is green before the requested commit and push
+
+- Re-ran the repo-root verification using the local `.venv`: `.venv/bin/python -m mypy .` succeeds (with only existing `annotation-unchecked` notes from untyped bodies in `kicad-pcb/tests/unit/test_layout.py`) and `.venv/bin/pytest kicad-pcb/tests tests` now finishes with `2291 passed`.
+- This confirms the mypy cleanup and the compact-ground bind-marker regression fix did not introduce runtime regressions outside the typing surface.
+- Current push target remains `master` on `origin git@github.com:ekkus93/openclaw_kicad_pcb.git`.
+
+## 2026-03-21T21:27:44Z - GPT-5.4 - Cleared the repo-root mypy blocker and the remaining typed errors
+
+- Fixed the repo-root mypy blocker by excluding only the thin wrapper script `kicad-pcb/scripts/kicad_pcb.py` in `pyproject.toml`; that file intentionally shadows the package name for direct script execution, so checking the package tree and tests while skipping the wrapper avoids the duplicate-module collision without muting real package code.
+- Cleared the remaining source typing issues by tightening the compact-tail null guard in `kicad-pcb/src/kicad_pcb/router.py`, renaming the list-valued `component_net_names` local in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, returning concrete dicts from read-only snap helpers, and widening read-only layout/metric helper inputs from `dict[...]` to `Mapping[...]` where invariance had been tripping tests.
+- Cleared the remaining test typing issues by aligning helper engines with the `LayoutEngine` protocol and casting JSON/object payloads before indexing in `tests/unit/test_sch_apply.py`, `tests/unit/test_netlist_commands.py`, `tests/unit/test_phase7_regression_guardrails.py`, and `tests/unit/test_phase5_power_clustering.py`.
+- Validation: `.venv/bin/python -m mypy .` and `.venv/bin/python -m mypy kicad-pcb/src tests kicad-pcb/tests` now both report success; the only remaining output is `annotation-unchecked` notes from existing untyped test bodies in `kicad-pcb/tests/unit/test_layout.py`. Ruff is clean on all touched files.
+
+## 2026-03-21T19:07:25Z - GPT-5.4 - Fixed the NE5532 fidelity regression in the compact local ground-cluster router path
+
+- Root cause: `kicad-pcb/src/kicad_pcb/router.py` had a compact 3-pin local `GND` cluster fast path that emitted wires, junctions, and a power symbol, then `continue`d without appending the per-pin `BindMarker` entries that every other routing branch emits.
+- Fixed the compact-ground branch to emit `BindMarker(ref, pin, net_name)` for each clustered pin before exiting, which restores hidden `OpenClaw:bind=...` markers for cases like the NE5532 system-library power unit `U1P` pin 4 on `GND`.
+- Added a focused router regression in `tests/unit/test_phase5_power_clustering.py` that forces the compact-ground path with `positions=...`, then re-ran that test file plus the original `tests/unit/test_netlist_commands.py::test_ne5532_full_circuit_fidelity_with_system_libraries`; both now pass and Ruff is clean on the touched files.
+
 ## 2026-03-21T18:32:10Z - GPT-5.4 - Full-repo verification before push found one pytest regression and existing mypy blockers
 
 - Ran full-repo verification before the requested push: `python -m ruff check .` passed, full `pytest kicad-pcb/tests tests` finished with 2289 passed / 1 failed, and repo-root `python -m mypy .` was blocked by a duplicate module collision between `kicad-pcb/src/kicad_pcb/__init__.py` and `kicad-pcb/scripts/kicad_pcb.py`.

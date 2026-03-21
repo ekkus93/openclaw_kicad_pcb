@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.router import PowerSymbolPlacement, WireSegment, _cluster_power_pins, route_nets
 
@@ -128,6 +130,54 @@ def test_power_net_single_pin_offsets_symbol_beyond_stub() -> None:
         PowerSymbolPlacement(net_name="GND", x=50.0, y=121.92, angle=0)
     ]
     assert WireSegment(50.0, 110.0, 50.0, 121.92) in routing.wires
+
+
+def test_compact_ground_cluster_keeps_bind_markers() -> None:
+    """Compact local GND clusters must still emit bind markers for every pin."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="U1", pin="4"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="R2", pin="2"),
+                ],
+            )
+        ],
+    )
+    endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+        ("U1", "4"): (100.0, 100.0, 270.0),
+        ("R1", "2"): (110.0, 100.0, 270.0),
+        ("R2", "2"): (120.0, 100.0, 270.0),
+    }
+    positions: Mapping[str, tuple[float, float, float | None]] = {
+        "U1": (100.0, 94.92, 0.0),
+        "R1": (110.0, 94.92, 0.0),
+        "R2": (120.0, 94.92, 0.0),
+    }
+
+    routing = route_nets(ir=ir, pin_endpoints=endpoints, positions=positions)
+
+    assert len(routing.power_symbols) == 1
+    assert routing.power_symbols[0].net_name == "GND"
+
+    gnd_bind_markers = {
+        (marker.ref, marker.pin, marker.net_name)
+        for marker in routing.bind_markers
+        if marker.net_name == "GND"
+    }
+    assert gnd_bind_markers == {
+        ("U1", "4", "GND"),
+        ("R1", "2", "GND"),
+        ("R2", "2", "GND"),
+    }
 
 
 def test_power_net_cluster_offsets_shared_symbol_toward_open_side() -> None:

@@ -437,13 +437,13 @@ def _layout_decoupling_distance_warnings(
         if component.ref not in raw_layout:
             continue
 
-        nets = sorted(component_nets.get(component.ref, set()))
-        if len(nets) != 2:
+        component_net_names = sorted(component_nets.get(component.ref, set()))
+        if len(component_net_names) != 2:
             continue
 
         rail_net: str | None = None
         reference_net: str | None = None
-        for net_name in nets:
+        for net_name in component_net_names:
             if normalize_gnd_net_name(net_name) == "GND":
                 reference_net = net_name
             elif power_rail_polarity(net_name) is not None:

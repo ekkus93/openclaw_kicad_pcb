@@ -11,6 +11,7 @@ import json
 import math
 from argparse import Namespace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.block_detection import BlockRole, classify_circuit
@@ -175,10 +176,20 @@ class TestPhase7RegressionGuardrails:
             include_anchor=False,
         )
 
-        assert current_non_power <= int(saved_regressed_metrics["u1_same_column_non_power"]) - 2
+        saved_non_power = cast(
+            int | float | str,
+            saved_regressed_metrics["u1_same_column_non_power"],
+        )
+        assert current_non_power <= int(saved_non_power) - 2
         assert (
             current_feedback_support
-            <= int(saved_regressed_metrics["u1_same_column_feedback_support"]) - 2
+            <= int(
+                cast(
+                    int | float | str,
+                    saved_regressed_metrics["u1_same_column_feedback_support"],
+                )
+            )
+            - 2
         )
 
     def test_generated_layout_keeps_x_column_diversity(
@@ -209,9 +220,12 @@ class TestPhase7RegressionGuardrails:
         generated_sep = compute_block_separation(generated_positions, block_layout)
         regressed_sep = compute_block_separation(regressed_positions, block_layout)
 
-        saved_spread = saved_regressed_metrics["block_role_spread"]
+        saved_spread = cast(
+            dict[str, dict[str, object]],
+            saved_regressed_metrics["block_role_spread"],
+        )
         assert int(generated_spread["feedback"]["column_count"]) >= int(
-            saved_spread["feedback"]["column_count"]
+            cast(int | float | str, saved_spread["feedback"]["column_count"])
         )
         assert generated_sep[(BlockRole.INPUT, BlockRole.OUTPUT)] >= 100.0
         assert generated_sep[(BlockRole.OPAMP_CORE, BlockRole.OUTPUT)] >= 50.0
