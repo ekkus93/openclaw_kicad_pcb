@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T09:11:19Z - GPT-5.4 - Committed the compact local output-routing slice for tails and ground clusters
+
+- The remaining local routing slice centers on `kicad-pcb/src/kicad_pcb/router.py` and `tests/unit/test_phase6_wire_simplification.py`: compact rightward output tails now skip overfit ladder lanes, asymmetric output tails use the body-aware compact-tail route, and tiny output-side `GND` clusters use the compact local ground-lane helper with pre-cleared vertical drops.
+- Focused validation is green at commit time: `pytest tests/unit/test_phase6_wire_simplification.py -k 'compact_local_ground_lane_for_output_cluster or asymmetric_compact_output_tail or compact_output_tail or compact_rightward_output_tail' -q`, `pytest tests/unit/test_phase7_regression_guardrails.py -k 'output_neighborhood_routing_does_not_revert_to_joggy_cluster' -q`, and `python -m ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`.
+- The real `code_review/ne5532_headphone_amp_netlist.json` output neighborhood remains at `32` total segments / `7` short segments (ratio `0.219`) after the layout drift-fix commit; classification shows no pure non-stub internal artifacts remain in the `C6` / `R5` / `R6` / `C7` / `R7` / `J2` box.
+- Untracked probe JSON files under `tmp/` remain exploratory only and should stay out of the routing commit.
+
 ## 2026-03-20T23:58:19Z - GPT-5.4 - Captured handoff state for the output-connector drift-fix slice
 
 - The narrow placement drift-fix under test is in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`: output connectors now get one extra snap step of outward clearance (`+1.27 mm`) beyond the nominal connector lane so left-facing connector stubs do not fall back into the nearest output-support body column.
