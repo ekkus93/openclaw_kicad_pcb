@@ -55,6 +55,7 @@ fail_under = 70
 
 [tool.mypy]
 python_version = "3.11"
+exclude = ['(^|/)kicad-pcb/scripts/kicad_pcb\.py$']
 
 [[tool.mypy.overrides]]
 # cairosvg is an optional runtime dep (PNG preview); no type stubs available.

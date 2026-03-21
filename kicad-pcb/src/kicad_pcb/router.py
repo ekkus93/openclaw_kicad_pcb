@@ -1534,7 +1534,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     pin_anchors: Mapping[tuple[str, str], PinAnchor] | None = None,
     use_bus: bool = True,
     tiers: dict[str, int] | None = None,
-    positions: dict[str, tuple[float, float, float | None]] | None = None,
+    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
     policy: LabelPolicy = DEFAULT_LABEL_POLICY,
     strict: bool = False,
 ) -> NetRouting:
@@ -1682,6 +1682,10 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         cluster_segs, cluster_junctions, (px, py) = compact_ground_cluster
                         routing.wires.extend(cluster_segs)
                         routing.junctions.extend(cluster_junctions)
+                        routing.bind_markers.extend(
+                            BindMarker(pin_ref.ref, pin_ref.pin, net.name)
+                            for pin_ref, _anchor in cluster
+                        )
                         routing.power_symbols.append(
                             PowerSymbolPlacement(
                                 net.name,
@@ -1799,7 +1803,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     min_bound=lane_plan.min_orthogonal,
                     max_bound=lane_plan.max_orthogonal,
                 )
-            elif use_bus and _should_skip_inferred_lane_plan(stub_ends, compact_tail_plan):
+            elif (
+                use_bus
+                and compact_tail_plan is not None
+                and _should_skip_inferred_lane_plan(stub_ends, compact_tail_plan)
+            ):
                 hub_segs, hub_junctions = _compact_vertical_tail_route(
                     stub_ends,
                     coordinate=compact_tail_plan.coordinate,

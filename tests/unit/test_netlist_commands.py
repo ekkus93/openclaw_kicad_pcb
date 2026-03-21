@@ -812,8 +812,9 @@ def test_cmd_apply_netlist_prefers_positive_rail_device_below_decoupler(
         for warning in result.warnings
         if warning["code"] == "DECOUPLING_FAR_FROM_ACTIVE_DEVICE"
     )
-    assert decoupling_warning["details"]["rail_polarity"] == "positive"
-    assert decoupling_warning["details"]["nearest_active_ref"] == "U2"
+    details = cast(dict[str, object], decoupling_warning["details"])
+    assert details["rail_polarity"] == "positive"
+    assert details["nearest_active_ref"] == "U2"
 
 
 def test_cmd_apply_netlist_prefers_negative_rail_device_above_decoupler(
@@ -859,8 +860,9 @@ def test_cmd_apply_netlist_prefers_negative_rail_device_above_decoupler(
         for warning in result.warnings
         if warning["code"] == "DECOUPLING_FAR_FROM_ACTIVE_DEVICE"
     )
-    assert decoupling_warning["details"]["rail_polarity"] == "negative"
-    assert decoupling_warning["details"]["nearest_active_ref"] == "U1"
+    details = cast(dict[str, object], decoupling_warning["details"])
+    assert details["rail_polarity"] == "negative"
+    assert details["nearest_active_ref"] == "U1"
 
 
 def test_cmd_apply_netlist_supports_explicit_unit_generation(
@@ -1902,15 +1904,15 @@ _skip_no_system_symbols = pytest.mark.skipif(
 def _normalize_warning_entries(
     warnings: tuple[dict[str, object], ...],
 ) -> list[tuple[str, tuple[tuple[str, object], ...]]]:
-    return sorted(
-        (
-            warning["code"],
-            tuple(sorted((warning["details"] or {}).items()))
-            if isinstance(warning.get("details"), dict)
-            else (),
-        )
-        for warning in warnings
-    )
+    normalized: list[tuple[str, tuple[tuple[str, object], ...]]] = []
+    for warning in warnings:
+        code = warning.get("code")
+        if not isinstance(code, str):
+            continue
+        details_obj = warning.get("details")
+        details = cast(dict[str, object], details_obj) if isinstance(details_obj, dict) else {}
+        normalized.append((code, tuple(sorted(details.items()))))
+    return sorted(normalized)
 
 
 # ---------------------------------------------------------------------------

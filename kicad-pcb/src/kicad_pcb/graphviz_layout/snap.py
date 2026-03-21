@@ -542,7 +542,7 @@ def _resolve_feedback_anchor_y(
 
 
 def _snap_opamp_halo(
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
     halo: Mapping[str, str],
 ) -> dict[str, tuple[float, float, float | None]]:
     """Normalize halo members into adjacent lanes around their anchor IC.
@@ -563,7 +563,7 @@ def _snap_opamp_halo(
         :func:`~kicad_pcb.layout._compute_opamp_halo`.
     """
     if not halo:
-        return positions
+        return dict(positions)
 
     result = dict(positions)
 
@@ -643,7 +643,7 @@ def _local_signal_distances(
 
 
 def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
-    positions: dict[str, tuple[float, float, float | None]],
+    positions: Mapping[str, tuple[float, float, float | None]],
     ir: CircuitIR,
     *,
     annotations: Mapping[str, _ComponentAnnotation],
@@ -663,7 +663,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
     from ..block_detection import BlockRole  # noqa: PLC0415
 
     if not positions:
-        return positions
+        return dict(positions)
 
     result = dict(positions)
     adjacency = _build_signal_adjacency(ir)
