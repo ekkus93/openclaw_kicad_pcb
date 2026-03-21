@@ -1,5 +1,21 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T23:26:36Z - GPT-5.4 - Re-ran the full pytest suite in the repo-local .venv
+
+- Verified the current repo-local environment directly from `.venv/bin` after the Python environment service failed to attach; `.venv/bin/pytest` and `.venv/bin/python3.11` are present.
+- Full regression check succeeded with `.venv/bin/pytest kicad-pcb/tests tests`: `2291 passed in 373.42s`, so there is no observed runtime regression outside the earlier typing cleanup.
+
+## 2026-03-21T23:14:29Z - GPT-5.4 - Verified the GitHub Actions CI Python version
+
+- The repository CI workflow in `.github/workflows/ci.yml` pins `actions/setup-python@v5` to `python-version: "3.11"` for both the `unit-tests` and `integration-tests` jobs.
+- This matches the current project metadata in `pyproject.toml`, which declares `requires-python = ">=3.11"`, Ruff `target-version = "py311"`, and mypy `python_version = "3.11"`.
+
+## 2026-03-21T22:52:32Z - GPT-5.4 - Reviewed the pushed generated fixture and uv.lock changes in commit 7047f7c
+
+- Sanity-checked commit `7047f7c` after push: the generated fixture diff for `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch` showed UUID and sheet-path churn only, with no changes to searched semantic schematic fields such as coordinates, bind markers, labels, references, values, or wire-point geometry.
+- The `uv.lock` diff did not change any locked package names, versions, sources, or sdists; the semantic changes were limited to `requires-python` broadening from `==3.11.*` to `>=3.11` and the resulting expansion of recorded wheel metadata for newer Python/platform targets.
+- Follow-up note: if the repo intends to keep the lockfile pinned strictly to Python 3.11 artifacts, future `uv lock` / `uv sync` runs should be done with the prior interpreter constraint or the lockfile change should be split from functional code changes.
+
 ## 2026-03-21T22:39:16Z - GPT-5.4 - Final verification is green before the requested commit and push
 
 - Re-ran the repo-root verification using the local `.venv`: `.venv/bin/python -m mypy .` succeeds (with only existing `annotation-unchecked` notes from untyped bodies in `kicad-pcb/tests/unit/test_layout.py`) and `.venv/bin/pytest kicad-pcb/tests tests` now finishes with `2291 passed`.
