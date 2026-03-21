@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-21T09:39:58Z - GPT-5.4 - Ignored local probe artifacts under tmp/
+
+- Added `tmp/` to `.gitignore` so local routing/layout probe JSON files stop appearing in routine `git status` output.
+- This is housekeeping only; it does not change generator behavior or test expectations.
+
 ## 2026-03-21T09:11:19Z - GPT-5.4 - Committed the compact local output-routing slice for tails and ground clusters
 
 - The remaining local routing slice centers on `kicad-pcb/src/kicad_pcb/router.py` and `tests/unit/test_phase6_wire_simplification.py`: compact rightward output tails now skip overfit ladder lanes, asymmetric output tails use the body-aware compact-tail route, and tiny output-side `GND` clusters use the compact local ground-lane helper with pre-cleared vertical drops.
