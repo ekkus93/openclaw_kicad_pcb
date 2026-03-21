@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
 
-from .component_types import component_type
+from .component_types import component_type, is_ground_like_name, power_rail_polarity
 from .component_types import is_power_net as _is_power_net
 from .tier import assign_tiers, classify_connector_roles, identify_main_signal_path
 
@@ -113,22 +113,12 @@ class _DetectionContext:
 
 # Heuristics for block classification
 
-_GROUND_NET_HINTS = ("GND", "0V", "AGND", "PGND", "DGND")
 _INPUT_NET_HINTS = ("IN", "INPUT", "AUDIO_IN", "LEFT_IN", "RIGHT_IN", "VOL")
 _OUTPUT_NET_HINTS = ("OUT", "OUTPUT", "HP", "HEADPHONE", "BUF")
 _FEEDBACK_NET_HINTS = ("FB", "INV", "NFB")
 _SUPPLY_NET_HINTS = (
-    "VCC",
-    "VDD",
-    "V+",
-    "VPLUS",
-    "V-",
-    "VMINUS",
-    "VNEG",
-    "VEE",
     "SUPPLY",
     "POWER",
-    "VBAT",
 )
 _DECOUPLING_VALUE_HINTS = ("100N", "10U", "22U", "47U", "100U", "220U")
 
@@ -185,14 +175,17 @@ def _has_any_hint(net_names: list[str], hints: tuple[str, ...]) -> bool:
 
 def _is_ground_like_net(net_name: str) -> bool:
     """Return True when *net_name* looks like a ground net."""
-    upper_name = net_name.upper()
-    return any(hint in upper_name for hint in _GROUND_NET_HINTS)
+    return is_ground_like_name(net_name)
 
 
 def _is_supply_like_net(net_name: str) -> bool:
     """Return True for power rails, including common negative-rail aliases."""
     upper_name = net_name.upper()
-    return _is_power_net(net_name) or any(hint in upper_name for hint in _SUPPLY_NET_HINTS)
+    return (
+        _is_power_net(net_name)
+        or power_rail_polarity(net_name) is not None
+        or any(hint in upper_name for hint in _SUPPLY_NET_HINTS)
+    )
 
 
 def _is_operational_core(ref: str, symbol: str) -> bool:

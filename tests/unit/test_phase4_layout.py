@@ -206,7 +206,24 @@ class TestLayoutEngineFactory:
 class TestIsPowerNetName:
     @pytest.mark.parametrize(
         "name",
-        ["GND", "VCC", "VDD", "VSS", "AGND", "PGND", "DGND", "VBAT", "VREF", "V+", "V-"],
+        [
+            "GND",
+            "VCC",
+            "VDD",
+            "VSS",
+            "AGND",
+            "PGND",
+            "DGND",
+            "VBAT",
+            "VREF",
+            "V+",
+            "V-",
+            "VPLUS15",
+            "VMINUS15",
+            "VPOS_ANALOG",
+            "VNEG_FILTERED",
+            "AVEE15",
+        ],
     )
     def test_known_power_nets_detected(self, name: str) -> None:
         assert _is_power_net_name(name)
@@ -2453,6 +2470,54 @@ class TestSnapPowerSymbols:
         assert result["#PWR03"][1] == pytest.approx(expected), (
             f"AGND symbol should be at y={expected}, got {result['#PWR03'][1]}"
         )
+
+    def test_vss_variant_clamped_to_bottom(self) -> None:
+        """VSS must follow the shared ground-family row placement rule."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="#PWR04", symbol="power:VSS", value="VSS"),
+                ComponentIR(ref="J1", symbol="Device:Conn", value="In"),
+            ],
+            nets=[
+                NetIR(
+                    name="VSS",
+                    pins=[PinRefIR(ref="#PWR04", pin="1"), PinRefIR(ref="J1", pin="1")],
+                )
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "#PWR04": (50.0, 80.0, None),
+            "J1": (30.48, 80.0, None),
+        }
+
+        result = _gv_mod.snap_power_symbols(positions, ir)
+        expected = _gv_mod.PAGE_MAX_Y - 20.0
+        assert result["#PWR04"][1] == pytest.approx(expected)
+
+    def test_zero_volt_variant_clamped_to_bottom(self) -> None:
+        """0V-labelled power symbols must also land on the bottom row."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="#PWR05", symbol="power:GND", value="0V"),
+                ComponentIR(ref="J1", symbol="Device:Conn", value="In"),
+            ],
+            nets=[
+                NetIR(
+                    name="0V",
+                    pins=[PinRefIR(ref="#PWR05", pin="1"), PinRefIR(ref="J1", pin="1")],
+                )
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "#PWR05": (50.0, 80.0, None),
+            "J1": (30.48, 80.0, None),
+        }
+
+        result = _gv_mod.snap_power_symbols(positions, ir)
+        expected = _gv_mod.PAGE_MAX_Y - 20.0
+        assert result["#PWR05"][1] == pytest.approx(expected)
 
     def test_power_snap_runs_inside_compute_symbol_positions(
         self, monkeypatch: pytest.MonkeyPatch

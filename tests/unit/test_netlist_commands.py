@@ -26,6 +26,20 @@ from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first, walk
 
 
+class _FakeLayoutEngine:
+    def __init__(self, placements: dict[str, tuple[float, float, float | None]]) -> None:
+        self._placements = placements
+
+    def compute_symbol_positions(
+        self,
+        ir: CircuitIR,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        return {
+            component.ref: self._placements.get(component.ref, (50.8, 76.2, 0.0))
+            for component in ir.components
+        }
+
+
 def _write_minimal_sch(path: Path) -> None:
     path.write_text(
         """(kicad_sch (version 20230121) (generator eeschema)
@@ -119,6 +133,169 @@ def _write_output_bypass_warning_ir(path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_output_load_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:SingleOpAmp", "value": "Driver"},
+            {"ref": "C1", "symbol": "Device:C", "value": "220u"},
+            {"ref": "J2", "symbol": "TestLib:Conn3", "value": "Output"},
+        ],
+        "nets": [
+            {
+                "name": "U1_OUT",
+                "pins": [
+                    {"ref": "U1", "pin": "3"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "HP_L_OUT",
+                "pins": [
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J2", "pin": "1"},
+                ],
+            },
+            {
+                "name": "VIN",
+                "pins": [{"ref": "U1", "pin": "1"}],
+            },
+            {
+                "name": "U1_INV",
+                "pins": [{"ref": "U1", "pin": "2"}],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_decoupling_distance_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:R", "value": "Active"},
+            {"ref": "C1", "symbol": "TestLib:R", "value": "100n"},
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "Signal"},
+        ],
+        "nets": [
+            {
+                "name": "VCC",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_shared_positive_rail_decoupling_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:R", "value": "UpperActive"},
+            {"ref": "U2", "symbol": "TestLib:R", "value": "LowerActive"},
+            {"ref": "C1", "symbol": "TestLib:R", "value": "100n"},
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "Signal1"},
+            {"ref": "J2", "symbol": "TestLib:Conn3", "value": "Signal2"},
+        ],
+        "nets": [
+            {
+                "name": "VCC",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "U2", "pin": "1"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG_A",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG_B",
+                "pins": [
+                    {"ref": "U2", "pin": "2"},
+                    {"ref": "J2", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J1", "pin": "2"},
+                    {"ref": "J2", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_shared_negative_rail_decoupling_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:R", "value": "UpperActive"},
+            {"ref": "U2", "symbol": "TestLib:R", "value": "LowerActive"},
+            {"ref": "C1", "symbol": "TestLib:R", "value": "100n"},
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "Signal1"},
+            {"ref": "J2", "symbol": "TestLib:Conn3", "value": "Signal2"},
+        ],
+        "nets": [
+            {
+                "name": "VEE",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "U2", "pin": "1"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG_A",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG_B",
+                "pins": [
+                    {"ref": "U2", "pin": "2"},
+                    {"ref": "J2", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J1", "pin": "2"},
+                    {"ref": "J2", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def _write_connector_ambiguity_ir(path: Path) -> None:
     payload = {
         "version": "1",
@@ -174,6 +351,41 @@ def _write_feedback_warning_ir(path: Path) -> None:
                 "pins": [
                     {"ref": "U1", "pin": "3"},
                     {"ref": "J1", "pin": "1"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_stage_topology_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:SingleOpAmp", "value": "Gain"},
+            {"ref": "R2", "symbol": "Device:R", "value": "10k"},
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "In"},
+        ],
+        "nets": [
+            {
+                "name": "VIN",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "U1_INV",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "R2", "pin": "1"},
+                ],
+            },
+            {
+                "name": "U1_OUT",
+                "pins": [
+                    {"ref": "U1", "pin": "3"},
+                    {"ref": "R2", "pin": "2"},
                 ],
             },
         ],
@@ -417,6 +629,240 @@ def test_cmd_apply_netlist_surfaces_input_coupling_warning(
     assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
 
 
+def test_cmd_apply_netlist_surfaces_output_load_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "output_load_warning_ir.json"
+    _write_output_load_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED" in codes
+
+
+def test_cmd_apply_netlist_surfaces_stage_topology_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "stage_topology_warning_ir.json"
+    _write_stage_topology_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN" in codes
+
+
+def test_cmd_apply_netlist_surfaces_decoupling_distance_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "decoupling_warning_ir.json"
+    _write_decoupling_distance_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (50.8, 76.2, 0.0),
+                "C1": (127.0, 76.2, 0.0),
+                "J1": (30.48, 76.2, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" in codes
+
+
+def test_cmd_apply_netlist_skips_decoupling_distance_warning_when_local(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "decoupling_warning_ir.json"
+    _write_decoupling_distance_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (50.8, 76.2, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 76.2, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" not in codes
+
+
+def test_cmd_apply_netlist_prefers_positive_rail_device_below_decoupler(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "shared_positive_rail_decoupling_ir.json"
+    _write_shared_positive_rail_decoupling_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (88.9, 68.58, 0.0),
+                "U2": (96.52, 121.92, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 68.58, 0.0),
+                "J2": (30.48, 121.92, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    decoupling_warning = next(
+        warning
+        for warning in result.warnings
+        if warning["code"] == "DECOUPLING_FAR_FROM_ACTIVE_DEVICE"
+    )
+    assert decoupling_warning["details"]["rail_polarity"] == "positive"
+    assert decoupling_warning["details"]["nearest_active_ref"] == "U2"
+
+
+def test_cmd_apply_netlist_prefers_negative_rail_device_above_decoupler(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "shared_negative_rail_decoupling_ir.json"
+    _write_shared_negative_rail_decoupling_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (88.9, 30.48, 0.0),
+                "U2": (96.52, 83.82, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 30.48, 0.0),
+                "J2": (30.48, 83.82, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    decoupling_warning = next(
+        warning
+        for warning in result.warnings
+        if warning["code"] == "DECOUPLING_FAR_FROM_ACTIVE_DEVICE"
+    )
+    assert decoupling_warning["details"]["rail_polarity"] == "negative"
+    assert decoupling_warning["details"]["nearest_active_ref"] == "U1"
+
+
 def test_cmd_apply_netlist_supports_explicit_unit_generation(
     tmp_path: Path,
     monkeypatch,
@@ -532,6 +978,39 @@ def test_cmd_new_from_netlist_preserves_input_coupling_warning(tmp_path: Path) -
 
     codes = {warning["code"] for warning in result.warnings}
     assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+
+
+def test_cmd_new_from_netlist_preserves_decoupling_distance_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    ir_path = tmp_path / "decoupling_warning_ir.json"
+    _write_decoupling_distance_warning_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (50.8, 76.2, 0.0),
+                "C1": (127.0, 76.2, 0.0),
+                "J1": (30.48, 76.2, 0.0),
+            }
+        ),
+    )
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="DecouplingWarningProj",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" in codes
 
 
 def test_cmd_new_from_netlist_marks_unused_connector_pins_with_no_connects(
@@ -1464,6 +1943,16 @@ class TestPhase1WarningSuite:
                 {"OPAMP_FEEDBACK_MISSING_OR_NONLOCAL"},
             ),
             (
+                "stage_topology_warning_ir.json",
+                _write_stage_topology_warning_ir,
+                {"OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN"},
+            ),
+            (
+                "output_load_warning_ir.json",
+                _write_output_load_warning_ir,
+                {"OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED"},
+            ),
+            (
                 "output_floating_warning_ir.json",
                 _write_output_floating_warning_ir,
                 {"OPAMP_OUTPUT_FLOATING"},
@@ -1479,6 +1968,8 @@ class TestPhase1WarningSuite:
             "output-coupling",
             "connector-ambiguity",
             "missing-feedback",
+            "stage-topology-likely-mistaken",
+            "output-cap-no-load-or-bleed",
             "output-floating",
             "output-shorted-to-rail",
         ],

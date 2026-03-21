@@ -4,6 +4,7 @@ Covers:
   - R5-1: GND_ALIASES constant
   - R5-2: normalize_gnd_net_name()
   - R5-5: POWER_NET_PREFIXES includes "0V"
+    - shared rail polarity vocabulary used by power-net logic and layout linting
 """
 
 from __future__ import annotations
@@ -11,8 +12,13 @@ from __future__ import annotations
 import pytest
 from kicad_pcb.component_types import (
     GND_ALIASES,
+    NEGATIVE_POWER_NET_PREFIXES,
+    POSITIVE_POWER_NET_PREFIXES,
     POWER_NET_PREFIXES,
+    is_ground_like_name,
+    is_power_net,
     normalize_gnd_net_name,
+    power_rail_polarity,
 )
 
 
@@ -90,3 +96,58 @@ class TestPowerNetPrefixesHasZeroVolt:
         assert "0V" in POWER_NET_PREFIXES, (
             f"'0V' missing from POWER_NET_PREFIXES: {POWER_NET_PREFIXES!r}"
         )
+
+
+class TestGroundLikeName:
+    @pytest.mark.parametrize(
+        "name",
+        ["GND", "0V", "VSS", "AGND", "AGND_STAR", "INPUT_GND", "SIGNAL_0V_RETURN"],
+    )
+    def test_ground_family_names_detected(self, name: str) -> None:
+        assert is_ground_like_name(name) is True
+
+    @pytest.mark.parametrize("name", ["VCC", "AVDD", "SIG", "INPUT", "RETURN_PATH"])
+    def test_non_ground_names_not_detected(self, name: str) -> None:
+        assert is_ground_like_name(name) is False
+
+
+class TestSharedRailVocabulary:
+    def test_positive_aliases_are_in_shared_prefixes(self) -> None:
+        for alias in ("AVCC", "AVDD", "DVDD", "VPOS", "VAA", "VS+"):
+            assert alias in POSITIVE_POWER_NET_PREFIXES
+
+    def test_negative_aliases_are_in_shared_prefixes(self) -> None:
+        for alias in ("AVEE", "DVEE", "VNEG", "VBB", "VS-"):
+            assert alias in NEGATIVE_POWER_NET_PREFIXES
+
+    @pytest.mark.parametrize(
+        ("net_name", "expected"),
+        [
+            ("AVDD", "positive"),
+            ("DVDD", "positive"),
+            ("AVCC", "positive"),
+            ("VPOS", "positive"),
+            ("VAA", "positive"),
+            ("VS+", "positive"),
+            ("AVEE", "negative"),
+            ("DVEE", "negative"),
+            ("VNEG", "negative"),
+            ("VBB", "negative"),
+            ("VS-", "negative"),
+            ("GND", None),
+            ("VSS", None),
+        ],
+    )
+    def test_power_rail_polarity_recognizes_extended_aliases(
+        self,
+        net_name: str,
+        expected: str | None,
+    ) -> None:
+        assert power_rail_polarity(net_name) == expected
+
+    @pytest.mark.parametrize(
+        "net_name",
+        ["AVCC", "AVDD", "DVDD", "VPOS", "VAA", "VS+", "AVEE", "DVEE", "VNEG", "VBB", "VS-"],
+    )
+    def test_is_power_net_uses_shared_rail_aliases(self, net_name: str) -> None:
+        assert is_power_net(net_name) is True

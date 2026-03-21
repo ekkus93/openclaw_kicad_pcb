@@ -217,6 +217,38 @@ class TestLAY011LocalDirectWiring:
         lay011_issues = [i for i in issues if i.code == "LAY011"]
         assert lay011_issues == [], "Power nets should be skipped for LAY011"
 
+    def test_extended_negative_power_alias_skipped(self) -> None:
+        """Shared negative-rail aliases should be skipped for LAY011 as well."""
+        body = " ".join(
+            [
+                _symbol("R1", 0.0, 0.0),
+                _symbol("R2", 50.0, 10.0),
+                _wire(0.0, 0.0, 20.0, 0.0),
+                _wire(20.0, 0.0, 20.0, 20.0),
+                _wire(20.0, 20.0, 50.0, 20.0),
+                _wire(50.0, 20.0, 50.0, 10.0),
+                _bind_marker("R1", "1", "AVEE15", 0.0, 0.0),
+                _bind_marker("R2", "1", "AVEE15", 50.0, 10.0),
+            ]
+        )
+        doc = _doc(body)
+        net = NetIR(
+            name="AVEE15",
+            pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="R2", pin="1")],
+        )
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="1k"),
+            ],
+            nets=[net],
+        )
+
+        issues = lint_local_direct_wiring(doc, ir)
+        lay011_issues = [i for i in issues if i.code == "LAY011"]
+        assert lay011_issues == [], "Extended power aliases should be skipped for LAY011"
+
     def test_3pin_net_skipped(self) -> None:
         """Multi-pin nets (not 2-pin) should be skipped."""
         body = " ".join(

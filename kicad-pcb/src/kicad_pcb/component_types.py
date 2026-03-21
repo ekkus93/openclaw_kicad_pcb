@@ -35,27 +35,67 @@ CAPACITOR_PREFIXES: tuple[str, ...] = ("C",)
 
 #: Top-level prefixes of power and ground rail net names.
 #: Used for simple ``startswith``-style tests in layout heuristics.
+POSITIVE_POWER_NET_PREFIXES: tuple[str, ...] = (
+    "VCC",
+    "AVCC",
+    "VDD",
+    "AVDD",
+    "DVDD",
+    "VBAT",
+    "V+",
+    "VPLUS",
+    "VPOS",
+    "VPOSITIVE",
+    "VAA",
+    "VS+",
+)
+
+NEGATIVE_POWER_NET_PREFIXES: tuple[str, ...] = (
+    "V-",
+    "VMINUS",
+    "VEE",
+    "AVEE",
+    "DVEE",
+    "VNEG",
+    "VNEGATIVE",
+    "VBB",
+    "VS-",
+)
+
+NEUTRAL_POWER_NET_PREFIXES: tuple[str, ...] = ("PWR", "VREF")
+
 POWER_NET_PREFIXES: tuple[str, ...] = (
     "GND",
-    "VCC",
-    "VDD",
+    *POSITIVE_POWER_NET_PREFIXES,
+    *NEGATIVE_POWER_NET_PREFIXES,
+    *NEUTRAL_POWER_NET_PREFIXES,
     "VSS",
-    "PWR",
     "AGND",
     "PGND",
     "DGND",
-    "V+",
-    "V-",
-    "VBAT",
-    "VREF",
     "0V",  # numeric zero-volt ground alias (e.g. 0V, 0V0)
 )
 
 #: Pre-compiled full-match regex for power/ground net names.
 #: Covers named rails, PWR_FLAG, and numeric voltage forms (e.g. +5V, -12V, 3V3).
 POWER_NET_PATTERN: re.Pattern[str] = re.compile(
-    r"^(?:GND|AGND|DGND|PGND|VCC|VDD|VSS|V\+|V-|VBAT|VREF|0V|"
-    r"[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
+    r"^(?:"
+    + "|".join(
+        re.escape(name)
+        for name in (
+            "GND",
+            "AGND",
+            "DGND",
+            "PGND",
+            "SGND",
+            *POSITIVE_POWER_NET_PREFIXES,
+            *NEGATIVE_POWER_NET_PREFIXES,
+            *NEUTRAL_POWER_NET_PREFIXES,
+            "VSS",
+            "0V",
+        )
+    )
+    + r"|[+\-]?(?:\d+V\d*|\d*V\d+)|PWR_FLAG)$",
     re.IGNORECASE,
 )
 
@@ -89,6 +129,18 @@ GND_ALIASES: frozenset[str] = frozenset(
     }
 )
 
+_GROUND_LIKE_PREFIXES: tuple[str, ...] = (
+    "GND",
+    "AGND",
+    "PGND",
+    "DGND",
+    "SGND",
+    "VSS",
+    "0V",
+    "GROUND",
+    "EARTH",
+)
+
 
 def normalize_gnd_net_name(name: str) -> str:
     """Return ``"GND"`` when *name* is a known ground alias; otherwise unchanged.
@@ -97,10 +149,13 @@ def normalize_gnd_net_name(name: str) -> str:
     before the lookup.  The canonical output is always the uppercase string
     ``"GND"``.
 
-    This function is the single authoritative place where ground net aliases
-    are collapsed.  All IR ingestion paths should call it on raw net names so
-    that every downstream consumer (tier assignment, layout, dot builder,
-    schematic writer) sees ``"GND"`` instead of ``"0V"`` or other aliases.
+    This function is the single authoritative place where exact ground net
+    aliases are collapsed.  All IR ingestion paths should call it on raw net
+    names so that every downstream consumer (tier assignment, layout, dot
+    builder, schematic writer) sees ``"GND"`` instead of ``"0V"`` or other
+    exact aliases.  Broader layout/readability heuristics that need to match
+    prefixed or embedded ground-family names should use
+    :func:`is_ground_like_name`.
 
     Examples::
 
@@ -116,6 +171,23 @@ def normalize_gnd_net_name(name: str) -> str:
     if name.strip().upper() in GND_ALIASES:
         return "GND"
     return name
+
+
+def is_ground_like_name(name: str) -> bool:
+    """Return True when *name* should be treated as a ground-family label.
+
+    This is broader than :func:`normalize_gnd_net_name`: it still recognizes
+    prefixed and embedded variants such as ``AGND_STAR`` or ``INPUT_GND`` that
+    should follow ground-specific layout heuristics even when the full name is
+    not normalized to the canonical ``"GND"`` net string.
+    """
+    upper_name = name.strip().upper()
+    return (
+        normalize_gnd_net_name(upper_name) == "GND"
+        or any(upper_name.startswith(prefix) for prefix in _GROUND_LIKE_PREFIXES)
+        or "GND" in upper_name
+        or "0V" in upper_name
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +229,23 @@ def is_power_net(name: str) -> bool:
         False
     """
     return bool(POWER_NET_PATTERN.match(name))
+
+
+def power_rail_polarity(name: str) -> str | None:
+    """Return the polarity class for a named rail, or ``None`` when neutral.
+
+    Returns ``"positive"`` for positive supply aliases, ``"negative"`` for
+    negative supply aliases, and ``None`` for ground/reference nets or names
+    that do not match the shared rail vocabulary.
+    """
+    normalized = name.strip().upper()
+    if normalize_gnd_net_name(normalized) == "GND":
+        return None
+    if normalized.startswith(NEGATIVE_POWER_NET_PREFIXES):
+        return "negative"
+    if normalized.startswith(POSITIVE_POWER_NET_PREFIXES):
+        return "positive"
+    return None
 
 
 def component_type(ref: str) -> str:

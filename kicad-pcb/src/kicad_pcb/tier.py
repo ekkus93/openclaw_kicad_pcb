@@ -37,6 +37,7 @@ from .component_types import (
     ORIGIN_X_MM,
     TIER_SPACING_MM,
     component_type,
+    power_rail_polarity,
 )
 from .component_types import (
     is_power_net as _component_is_power_net,
@@ -455,8 +456,7 @@ def _infer_connector_roles_from_ir(
     output_hints = (" OUT ", " OUTPUT ", " AUDIO OUT ", " TRS OUT ", " HP OUT ")
 
     def _is_supply_alias(net_name: str) -> bool:
-        upper = net_name.upper()
-        return upper.startswith(("VPLUS", "VMINUS"))
+        return power_rail_polarity(net_name) is not None
 
     ref_to_component = {component.ref: component for component in ir.components}
     ref_to_nets: dict[str, list[str]] = {ref: [] for ref in connectors}

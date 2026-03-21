@@ -265,6 +265,41 @@ def test_negative_rail_decouplers_stay_in_power_support_roles() -> None:
     assert layout.get_role("CNEG") == BlockRole.DECOUPLING
 
 
+def test_vss_ground_alias_keeps_supply_support_components_out_of_signal_roles() -> None:
+    """VSS should be treated as the shared ground family in block detection."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x02", value="Power"),
+            ComponentIR(ref="CDEC", symbol="Device:C", value="100n"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+        ],
+        nets=[
+            NetIR(
+                name="VCC",
+                pins=[
+                    PinRefIR(ref="J3", pin="1"),
+                    PinRefIR(ref="U1", pin="7"),
+                    PinRefIR(ref="CDEC", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="VSS",
+                pins=[
+                    PinRefIR(ref="J3", pin="2"),
+                    PinRefIR(ref="U1", pin="4"),
+                    PinRefIR(ref="CDEC", pin="2"),
+                ],
+            ),
+        ],
+    )
+
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("J3") == BlockRole.POWER_ENTRY
+    assert layout.get_role("CDEC") == BlockRole.DECOUPLING
+
+
 @pytest.mark.skipif(
     not _CIRCUIT_IR_PATH.exists(),
     reason="Circuit IR fixture not found",
