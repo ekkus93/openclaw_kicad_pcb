@@ -182,6 +182,8 @@ def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
     ]
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")
+    if r.debug_dump_path is not None:
+        lines.append(f"   Debug dump: {r.debug_dump_path}")
     if r.symbols_dirs_used:
         lines.append("   Symbol dirs used:")
         for d in r.symbols_dirs_used:
@@ -204,6 +206,8 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
     ]
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")
+    if r.debug_dump_path is not None:
+        lines.append(f"   Debug dump: {r.debug_dump_path}")
     if r.session_path is not None:
         lines.append(f"   Session: {r.session_path}")
     if r.zip_path is not None:

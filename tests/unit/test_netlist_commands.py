@@ -634,6 +634,64 @@ def test_cmd_apply_netlist_surfaces_input_coupling_warning(
     assert report["managed_schematic_path"] == str(result.managed_schematic_path)
 
 
+def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "debug_ir.json"
+    _write_explicit_unit_valid_ir(ir_path)
+    debug_dump_path = project_dir / "OpenClaw_Debug.json"
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1A": (50.8, 76.2, 0.0),
+                "R1": (101.6, 76.2, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+            debug_dump=str(debug_dump_path),
+        )
+    )
+
+    assert result.debug_dump_path == debug_dump_path
+    dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
+    assert dump["unit_splitting"]["expanded_device_count"] == 1
+    assert dump["unit_splitting"]["expanded_devices"][0]["source_ref"] == "U1"
+    assert dump["net_classification"] == [
+        {
+            "classification": "signal",
+            "known_pin_count": 2,
+            "net_name": "IN_A",
+            "pin_count": 2,
+            "unknown_pin_count": 0,
+        },
+        {
+            "classification": "signal",
+            "known_pin_count": 2,
+            "net_name": "OUT_A",
+            "pin_count": 2,
+            "unknown_pin_count": 0,
+        },
+    ]
+    assert [choice["strategy"] for choice in dump["final_route_choices"]] == ["direct", "direct"]
+    assert dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
+
+
 def test_cmd_apply_netlist_surfaces_output_load_warning(
     tmp_path: Path,
     monkeypatch,

@@ -93,6 +93,8 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
             "connector_role_summary",
             "diagnostics",
             "block_layout",
+            "layout_heuristic_policy",
+            "placement_constraints",
             "halo_map",
             "halo_alignment",
             "decoupling_map",
@@ -110,13 +112,16 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
     assert dump["connector_roles"]["J_OUT"] == "output"
     assert dump["tiers"]["J_IN"] == 0
     assert "dot_source" in dump
+    assert dump["layout_heuristic_policy"]["enable_decoupling_snap"] is True
     assert "sds_columns" in dump
     assert "halo_map" in dump
+    assert "placement_constraints" in dump
     assert "decoupling_map" in dump
     assert "raw_graphviz_positions" in dump
     assert "post_snap_positions" in dump
     assert "final_positions" in dump
     assert set(dump["raw_graphviz_positions"]) == {"C1", "J_IN", "J_OUT", "R1", "U1"}
+    assert dump["placement_constraints"]["halo_map"] == dump["halo_map"]
 
 
 def test_graphviz_engine_records_role_degradation_diagnostic(

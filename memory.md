@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-22T21:40:52Z - GPT-5.4 - Extended the debug dump pipeline to expose unit splitting and final route choices
+
+- Added a new optional `--debug-dump <path>` path on `apply-netlist` and `new-from-netlist`, threaded through `kicad-pcb/src/kicad_pcb/commands/netlist.py`, `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, `kicad-pcb/src/kicad_pcb/cli.py`, `kicad-pcb/src/kicad_pcb/results.py`, and `kicad-pcb/src/kicad_pcb/formatting.py` so schematic generation can emit a merged JSON introspection sidecar without changing the warning-report contract.
+- Extended `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` so layout debug dumps now include the active `LayoutHeuristicPolicy` toggles and a structured `placement_constraints` object, then merged post-generation details from `_sch_apply.py` covering unit splitting, per-net classification, final route choices, and active routing-heuristic toggles.
+- Added `RouteDecision` capture in `kicad-pcb/src/kicad_pcb/router.py` so the final per-net routing strategy is recorded at the branch where it is chosen instead of being reconstructed later from rendered wires.
+- Focused validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/router.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py kicad-pcb/src/kicad_pcb/commands/netlist.py kicad-pcb/src/kicad_pcb/cli.py kicad-pcb/src/kicad_pcb/results.py kicad-pcb/src/kicad_pcb/formatting.py tests/unit/test_phase1_regression_path.py tests/unit/test_netlist_commands.py tests/unit/test_presentation.py`, `.venv/bin/mypy` on the same touched files, and `.venv/bin/pytest -q tests/unit/test_phase1_regression_path.py tests/unit/test_netlist_commands.py tests/unit/test_presentation.py`.
+
 ## 2026-03-22T20:30:48Z - GPT-5.4 - Extracted analog-only post-layout snap rules behind a policy seam
 
 - Added `LayoutHeuristicPolicy` and `DEFAULT_LAYOUT_HEURISTIC_POLICY` to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so the analog-only decoupling re-anchor, op-amp locality, input-stage cohesion, and output-stage cohesion passes now sit behind an explicit policy object instead of being hard-coded into the generic post-layout snap coordinator.

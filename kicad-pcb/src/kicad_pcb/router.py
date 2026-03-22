@@ -24,7 +24,7 @@ import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR, PinRefIR
@@ -443,6 +443,21 @@ class NetRouting:
     power_symbols: list[PowerSymbolPlacement] = field(default_factory=list)
     junctions: list[JunctionPoint] = field(default_factory=list)
     bind_markers: list[BindMarker] = field(default_factory=list)
+    route_decisions: list[RouteDecision] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class RouteDecision:
+    """Debug summary of the final routing strategy selected for one net."""
+
+    net_name: str
+    classification: Literal["power", "signal"]
+    strategy: str
+    pin_count: int
+    known_pin_count: int
+    unknown_pin_count: int
+    use_bus: bool
+    heuristic_override: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1723,11 +1738,14 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             )
 
         is_power = _is_power_net_name(net.name)
+        strategy = "local_labels"
+        heuristic_override: str | None = None
 
         # ----------------------------------------------------------------
         # Power nets → cluster-based power symbol placement (Phase 5.1)
         # ----------------------------------------------------------------
         if is_power:
+            used_compact_ground_cluster = False
             # Cluster known pins by proximity to share power symbols
             clusters = _cluster_power_pins(known, radius=_POWER_CLUSTER_RADIUS_MM)
 
@@ -1758,6 +1776,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         positions=positions,
                     )
                     if compact_ground_cluster is not None:
+                        used_compact_ground_cluster = True
                         cluster_segs, cluster_junctions, (px, py) = compact_ground_cluster
                         routing.wires.extend(cluster_segs)
                         routing.junctions.extend(cluster_junctions)
@@ -1829,6 +1848,20 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 routing.power_symbols.append(PowerSymbolPlacement(net.name, px, py, power_angle))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 fallback_y -= 10.0
+            routing.route_decisions.append(
+                RouteDecision(
+                    net_name=net.name,
+                    classification="power",
+                    strategy="power_symbols",
+                    pin_count=len(pins),
+                    known_pin_count=len(known),
+                    unknown_pin_count=len(unknown),
+                    use_bus=use_bus,
+                    heuristic_override=(
+                        "compact_local_ground_cluster" if used_compact_ground_cluster else None
+                    ),
+                )
+            )
             continue
 
         # ----------------------------------------------------------------
@@ -1858,8 +1891,20 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 routing.bind_markers.append(BindMarker(p0.ref, p0.pin, net.name))
                 routing.bind_markers.append(BindMarker(p1.ref, p1.pin, net.name))
                 routed_directly = True
+                strategy = "direct"
 
         if routed_directly:
+            routing.route_decisions.append(
+                RouteDecision(
+                    net_name=net.name,
+                    classification="signal",
+                    strategy=strategy,
+                    pin_count=len(pins),
+                    known_pin_count=len(known),
+                    unknown_pin_count=len(unknown),
+                    use_bus=use_bus,
+                )
+            )
             continue
 
         # ----------------------------------------------------------------
@@ -1882,6 +1927,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     min_bound=lane_plan.min_orthogonal,
                     max_bound=lane_plan.max_orthogonal,
                 )
+                strategy = "shared_lane"
             elif (
                 use_bus
                 and (
@@ -1894,20 +1940,38 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 is not None
             ):
                 hub_segs, hub_junctions = compact_tail_route
+                strategy = "compact_signal_tail"
+                heuristic_override = "compact_output_tail"
             elif use_bus and _prefer_chain_route(stub_ends):
                 hub_segs, hub_junctions = _chain_route(stub_ends)
+                strategy = "chain"
             elif use_bus:
                 hub_segs, hub_junctions = _spine_route(stub_ends)
+                strategy = "spine"
             else:
                 hub_segs, hub_junctions = _hub_route(stub_ends)
+                strategy = "hub"
             routing.wires.extend(hub_segs)
             routing.junctions.extend(hub_junctions)
+            routing.route_decisions.append(
+                RouteDecision(
+                    net_name=net.name,
+                    classification="signal",
+                    strategy=strategy,
+                    pin_count=len(pins),
+                    known_pin_count=len(known),
+                    unknown_pin_count=len(unknown),
+                    use_bus=use_bus,
+                    heuristic_override=heuristic_override,
+                )
+            )
             continue
 
         # ----------------------------------------------------------------
         # High-degree non-power → global label per pin (capped by policy)
         # ----------------------------------------------------------------
         if len(known) > _HUB_MAX_DEGREE:
+            strategy = "global_labels"
             global_label_count = 0
             for pin_ref, (wx, wy, wa) in known:
                 ex, ey = _stub_end(wx, wy, wa)
@@ -1926,6 +1990,17 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 routing.global_labels.append(GlobalLabelPlacement(net.name, ex, ey, 0))
                 routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 fallback_y -= 10.0
+            routing.route_decisions.append(
+                RouteDecision(
+                    net_name=net.name,
+                    classification="signal",
+                    strategy=strategy,
+                    pin_count=len(pins),
+                    known_pin_count=len(known),
+                    unknown_pin_count=len(unknown),
+                    use_bus=use_bus,
+                )
+            )
             continue
 
         # ----------------------------------------------------------------
@@ -1952,6 +2027,18 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             # (they have no physical wire connection; the label IS their connection).
             routing.labels.append(NetLabel(net.name, ex, ey, 0))
             fallback_y -= 10.0
+
+        routing.route_decisions.append(
+            RouteDecision(
+                net_name=net.name,
+                classification="signal",
+                strategy=strategy,
+                pin_count=len(pins),
+                known_pin_count=len(known),
+                unknown_pin_count=len(unknown),
+                use_bus=use_bus,
+            )
+        )
 
     # ----------------------------------------------------------------
     # Body-crossing guard (Rule §4.3)

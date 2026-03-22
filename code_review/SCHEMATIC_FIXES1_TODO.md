@@ -1211,9 +1211,13 @@ Current findings:
 Status: `IN PROGRESS`
 
 ## 6.1 Separate generic graph heuristics from analog-specific drafting heuristics
-Status: `NOT STARTED`
+Status: `DONE`
 - Refactor so generic placement logic is not tangled with analog-special-case logic.
 - Keep analog rules in a clear module or strategy layer.
+
+Current findings:
+- `RoutingHeuristicPolicy` now isolates the analog-only compact output-tail and compact local-ground-cluster decisions from the generic router flow.
+- `LayoutHeuristicPolicy` now isolates the analog-only decoupling, op-amp locality, input-stage cohesion, and output-stage cohesion passes from the generic post-layout snap pipeline.
 
 ## 6.2 Add schematic-style profiles
 Status: `NOT STARTED`
@@ -1232,6 +1236,11 @@ Status: `IN PROGRESS`
   - net classification,
   - placement constraints,
   - final route choices.
+
+Current findings:
+- `GraphvizLayoutEngine` debug dumps now include the active layout heuristic toggles and a structured `placement_constraints` summary alongside the existing block-layout and coordinate artifacts.
+- `apply-netlist` and `new-from-netlist` now accept `--debug-dump <path>` and write a merged JSON sidecar that includes unit-splitting summaries, per-net classification, final route choices, and the active routing-heuristic toggles.
+- Focused regression coverage exists for both the layout-only debug dump and the end-to-end schematic debug sidecar.
 
 ---
 

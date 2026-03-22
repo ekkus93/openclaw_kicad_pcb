@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TypedDict, cast
 
 from ..adapters import KicadCliAdapter
 from ..circuit_ir import CircuitIR
@@ -30,7 +31,7 @@ from ..layout_engine import (
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult
-from ..router import PinAnchor, route_nets, write_routing
+from ..router import PinAnchor, RouteDecision, RoutingHeuristicPolicy, route_nets, write_routing
 from ..runner import find_kicad_cli
 from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat
 from ..sexpr.nodes import ListNode
@@ -155,12 +156,20 @@ class _ApplyNetlistRequest:
     strict: bool = False
     layout_name: str | None = None
     routing_name: str | None = None
+    debug_dump_path: Path | None = None
 
 
 @dataclass(frozen=True)
 class _PlacedSymbolSpec:
     unit: int
     pin_nums: tuple[str, ...]
+
+
+class _UnitSplitDebugEntry(TypedDict):
+    placed_ref: str
+    pin_nums: list[str]
+    symbol: str
+    unit: int
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +191,19 @@ def _apply_netlist_to_project(
     validate_ir_symbols(ir, symbol_index)
     warnings.extend(advisory_warnings(ir, symbol_index))
     generation_ir, placed_symbol_specs = _expand_generation_ir(ir, symbol_index)
+    debug_capture: dict[str, object] = {
+        "schematic_debug_artifacts": [
+            "unit_splitting",
+            "net_classification",
+            "final_route_choices",
+            "routing_heuristic_policy",
+        ],
+        "unit_splitting": _build_unit_splitting_debug(
+            source_ir=ir,
+            generation_ir=generation_ir,
+            placed_symbol_specs=placed_symbol_specs,
+        ),
+    }
 
     # Pre-flight: check kicad-cli availability BEFORE touching the filesystem.
     # This prevents a half-initialised project where the root schematic has been
@@ -241,6 +263,7 @@ def _apply_netlist_to_project(
                 stats=stats,
                 warnings=warnings,
                 managed_sch_path=managed_sch_path,
+                debug_capture=debug_capture,
             ),
             mode=mode,
             cli=cli,
@@ -273,6 +296,9 @@ def _apply_netlist_to_project(
             }
         )
 
+    if request.debug_dump_path is not None:
+        _write_schematic_debug_dump(request.debug_dump_path, debug_capture)
+
     warning_report_path: Path | None = None
     if not request.dry_run:
         warning_report_path = _write_warning_report(
@@ -298,6 +324,7 @@ def _apply_netlist_to_project(
         dry_run=request.dry_run,
         warnings=tuple(warnings),
         warning_report_path=warning_report_path,
+        debug_dump_path=request.debug_dump_path,
         symbols_dirs_used=tuple(str(d) for d in symbol_index.directories),
     )
 
@@ -319,6 +346,7 @@ def _build_managed_mutator(  # noqa: PLR0913
     stats: dict[str, int],
     warnings: list[dict[str, object]],
     managed_sch_path: Path,
+    debug_capture: dict[str, object] | None = None,
 ) -> Callable[[SchematicDoc], None]:
     """Return a ``SchematicDoc`` mutator that reconstructs the managed sheet from *ir*.
 
@@ -337,6 +365,7 @@ def _build_managed_mutator(  # noqa: PLR0913
         _engine = _resolve_layout(
             request.layout_name,
             cache_path=project.path / "openclaw_layout_cache.json",
+            debug_dump_path=request.debug_dump_path,
             strict=request.strict,
         )
         (
@@ -372,6 +401,18 @@ def _build_managed_mutator(  # noqa: PLR0913
             use_bus=_resolve_routing(request.routing_name),
             strict=request.strict,
         )
+        if debug_capture is not None:
+            debug_capture.update(
+                {
+                    "net_classification": _build_net_classification_summary(
+                        routing.route_decisions
+                    ),
+                    "final_route_choices": _serialize_route_decisions(routing.route_decisions),
+                    "routing_heuristic_policy": _serialize_routing_heuristic_policy(
+                        RoutingHeuristicPolicy()
+                    ),
+                }
+            )
         write_routing(
             doc=doc,
             routing=routing,
@@ -702,6 +743,104 @@ def _expand_multi_unit_component(
     return component_copies, component_specs, pin_to_unit, ref_rewrite
 
 
+def _build_unit_splitting_debug(
+    *,
+    source_ir: CircuitIR,
+    generation_ir: CircuitIR,
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec],
+) -> dict[str, object]:
+    """Summarize how logical device refs expanded into placed KiCad units."""
+    source_refs = {component.ref for component in source_ir.components}
+    grouped: dict[str, list[_UnitSplitDebugEntry]] = {}
+    for component in generation_ir.components:
+        placed_ref = component.ref
+        source_ref = placed_ref
+        if (
+            placed_ref not in source_refs
+            and placed_ref[:-1] in source_refs
+            and placed_ref[-1].isalpha()
+        ):
+            source_ref = placed_ref[:-1]
+        spec = placed_symbol_specs[placed_ref]
+        grouped.setdefault(source_ref, []).append(
+            {
+                "placed_ref": placed_ref,
+                "pin_nums": list(spec.pin_nums),
+                "symbol": component.symbol,
+                "unit": spec.unit,
+            }
+        )
+
+    expanded_devices = []
+    for source_ref in sorted(grouped):
+        units = grouped[source_ref]
+        if len(units) <= 1 and units[0]["placed_ref"] == source_ref:
+            continue
+        expanded_devices.append(
+            {
+                "source_ref": source_ref,
+                "placed_refs": [entry["placed_ref"] for entry in units],
+                "units": list(units),
+            }
+        )
+
+    return {
+        "original_component_count": len(source_ir.components),
+        "placed_component_count": len(generation_ir.components),
+        "expanded_device_count": len(expanded_devices),
+        "expanded_devices": expanded_devices,
+    }
+
+
+def _build_net_classification_summary(decisions: list[RouteDecision]) -> list[dict[str, object]]:
+    """Return the coarse per-net classification debug summary."""
+    return [
+        {
+            "net_name": decision.net_name,
+            "classification": decision.classification,
+            "pin_count": decision.pin_count,
+            "known_pin_count": decision.known_pin_count,
+            "unknown_pin_count": decision.unknown_pin_count,
+        }
+        for decision in decisions
+    ]
+
+
+def _serialize_route_decisions(decisions: list[RouteDecision]) -> list[dict[str, object]]:
+    """Return the final routing strategy selected for each net."""
+    return [
+        {
+            "net_name": decision.net_name,
+            "classification": decision.classification,
+            "strategy": decision.strategy,
+            "pin_count": decision.pin_count,
+            "known_pin_count": decision.known_pin_count,
+            "unknown_pin_count": decision.unknown_pin_count,
+            "use_bus": decision.use_bus,
+            "heuristic_override": decision.heuristic_override,
+        }
+        for decision in decisions
+    ]
+
+
+def _serialize_routing_heuristic_policy(policy: RoutingHeuristicPolicy) -> dict[str, bool]:
+    """Return the active routing-heuristic toggles for debug dumps."""
+    return {
+        "enable_compact_output_tails": policy.enable_compact_output_tails,
+        "enable_compact_local_ground_clusters": policy.enable_compact_local_ground_clusters,
+    }
+
+
+def _write_schematic_debug_dump(path: Path, payload: dict[str, object]) -> None:
+    """Merge post-generation schematic debug details into the JSON sidecar."""
+    merged: dict[str, object] = {}
+    if path.exists():
+        merged = cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
+    merged.update(payload)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(merged, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def _pin_to_unit_map(symbol: str, unit_pins: dict[str, list[str]]) -> dict[str, str]:
     pin_to_unit: dict[str, str] = {}
     for unit, pins in unit_pins.items():
@@ -993,6 +1132,7 @@ def _resolve_layout(
     layout_name: str | None,
     *,
     cache_path: Path | None = None,
+    debug_dump_path: Path | None = None,
     strict: bool = False,
 ) -> LayoutEngine:
     """Return the layout engine requested by *layout_name*.
@@ -1003,7 +1143,11 @@ def _resolve_layout(
     """
     name = (layout_name or "graphviz").strip().lower()
     if name == "graphviz":
-        return make_layout_engine(cache_path=cache_path, strict=strict)
+        return make_layout_engine(
+            cache_path=cache_path,
+            debug_dump_path=debug_dump_path,
+            strict=strict,
+        )
     raise UserError(
         f"Unknown layout engine '{layout_name}'",
         code=ErrorCode.USER_ERROR,
