@@ -69,7 +69,11 @@ def test_legacy_sds_fallback_summary_marks_missing_output() -> None:
 def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -> None:
     ir = _build_headphone_amp_ir()
     debug_dump_path = tmp_path / "layout_debug.json"
-    engine = GraphvizLayoutEngine(dot_path="dot", debug_dump_path=debug_dump_path)
+    engine = GraphvizLayoutEngine(
+        dot_path="dot",
+        debug_dump_path=debug_dump_path,
+        heuristic_profile_name="generic_digital",
+    )
 
     fake_positions = {
         _safe_id("J_IN"): (50.8, 76.2, None),
@@ -93,6 +97,7 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
             "connector_role_summary",
             "diagnostics",
             "block_layout",
+            "heuristic_profile_name",
             "layout_heuristic_policy",
             "placement_constraints",
             "halo_map",
@@ -110,6 +115,7 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
     assert dump["diagnostics"] == []
     assert dump["connector_roles"]["J_IN"] == "input"
     assert dump["connector_roles"]["J_OUT"] == "output"
+    assert dump["heuristic_profile_name"] == "generic_digital"
     assert dump["tiers"]["J_IN"] == 0
     assert "dot_source" in dump
     assert dump["layout_heuristic_policy"]["enable_decoupling_snap"] is True

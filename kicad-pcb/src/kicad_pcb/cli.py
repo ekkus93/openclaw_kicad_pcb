@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 
+from .commands._sch_apply import SCHEMATIC_HEURISTIC_PROFILES
 from .commands.doctor import cmd_doctor
 from .commands.export import (
     cmd_export_3d,
@@ -180,6 +181,15 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
     )
     p_apply.add_argument(
+        "--heuristic-profile",
+        choices=sorted(SCHEMATIC_HEURISTIC_PROFILES),
+        default=None,
+        help=(
+            "Named schematic heuristic profile for bundled layout and routing policies "
+            "(default: analog_audio)"
+        ),
+    )
+    p_apply.add_argument(
         "--debug-dump",
         help="Optional path for a JSON debug dump covering layout, unit splitting, and routing",
     )
@@ -221,6 +231,15 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         choices=["bus", "hub", "labels"],
         default="bus",
         help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
+    )
+    p_new_netlist.add_argument(
+        "--heuristic-profile",
+        choices=sorted(SCHEMATIC_HEURISTIC_PROFILES),
+        default=None,
+        help=(
+            "Named schematic heuristic profile for bundled layout and routing policies "
+            "(default: analog_audio)"
+        ),
     )
     p_new_netlist.add_argument(
         "--debug-dump",

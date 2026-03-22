@@ -1,5 +1,46 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-22T23:04:39Z - GPT-5.4 - Synced the Phase 6 roadmap with the shipped profile and debug-dump surfacing work
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so Phase `6.2 Add schematic-style profiles` is now `IN PROGRESS` and explicitly records the named profile registry, CLI `--heuristic-profile` selection, and human-readable `Heuristic profile: <name>` command output.
+- Updated Phase `6.3 Improve internal debug introspection` so its current findings now explicitly mention `heuristic_profile_name` surfacing in both the standalone layout debug dump and the merged schematic debug sidecar.
+- This was a documentation/state-sync update only; no generator behavior changed in this step.
+
+## 2026-03-22T22:50:29Z - GPT-5.4 - Exposed heuristic profile names in standalone layout debug dumps too
+
+- Extended `GraphvizLayoutEngine` in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` with an optional `heuristic_profile_name`, added that field to the stable layout `artifact_manifest`, and emitted it in both the cache-hit and fresh-run layout debug payloads.
+- Threaded the optional profile name through `kicad-pcb/src/kicad_pcb/layout_engine.py` and `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py::_resolve_layout(...)` so end-to-end schematic generation passes the active bundled profile name into the underlying layout engine as well.
+- Extended focused coverage in `tests/unit/test_phase1_regression_path.py` to assert the standalone layout debug dump now includes `heuristic_profile_name`, and updated `tests/unit/test_phase7_ux.py` so the layout-factory forwarding assertion includes the profile name.
+- Validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py kicad-pcb/src/kicad_pcb/layout_engine.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase1_regression_path.py tests/unit/test_phase7_ux.py`, `.venv/bin/mypy` on the same files, and `.venv/bin/pytest -q tests/unit/test_phase1_regression_path.py tests/unit/test_phase7_ux.py -k 'graphviz_engine_writes_phase1_debug_dump or strict_flag_is_forwarded_to_make_layout_engine'`.
+
+## 2026-03-22T22:46:59Z - GPT-5.4 - Made the active heuristic profile name part of the schematic debug-dump contract
+
+- Updated `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` so the merged schematic debug sidecar now declares `heuristic_profile_name` inside `schematic_debug_artifacts` and seeds that field before mutation, making the selected profile name part of the stable payload contract instead of an incidental late-added field.
+- Extended `tests/unit/test_netlist_commands.py` so the focused debug-dump regression now asserts both the `schematic_debug_artifacts` list and the emitted `heuristic_profile_name` value (`analog_audio` by default).
+- Also updated the fake apply-result objects in the heuristic-profile forwarding tests so they stay aligned with the current result shape.
+- Validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_netlist_commands.py`, `.venv/bin/mypy` on the same files, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'writes_debug_dump or forwards_heuristic_profile_name'`.
+
+## 2026-03-22T22:43:36Z - GPT-5.4 - Surfaced the active heuristic profile name in human-readable netlist output
+
+- Extended `ApplyNetlistResult` and `NewFromNetlistResult` in `kicad-pcb/src/kicad_pcb/results.py` with `heuristic_profile_name`, and threaded the resolved active profile name through `_apply_netlist_to_project(...)` plus the `new-from-netlist` wrapper return path.
+- Updated `kicad-pcb/src/kicad_pcb/formatting.py` so the human-readable output for `apply-netlist` and `new-from-netlist` now prints `Heuristic profile: <name>` alongside the existing KiCad/debug/warning metadata.
+- Added focused presentation coverage in `tests/unit/test_presentation.py` proving both result formatters now include the selected profile name.
+- Validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/results.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py kicad-pcb/src/kicad_pcb/commands/netlist.py kicad-pcb/src/kicad_pcb/formatting.py tests/unit/test_presentation.py`, `.venv/bin/mypy` on the same files, and `.venv/bin/pytest -q tests/unit/test_presentation.py -k 'ApplyNetlistResult or NewFromNetlistResult'`.
+
+## 2026-03-22T22:27:36Z - GPT-5.4 - Added named heuristic-profile selection to the CLI and request path
+
+- Extended `kicad-pcb/src/kicad_pcb/cli.py` so `apply-netlist` and `new-from-netlist` now accept `--heuristic-profile` with choices sourced directly from `SCHEMATIC_HEURISTIC_PROFILES`, keeping the parser aligned with the registry instead of duplicating a hard-coded list.
+- Extended `_ApplyNetlistRequest` in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` with `heuristic_profile_name`, added `_resolve_heuristic_profile(...)`, and resolved the active bundled profile once inside `_apply_netlist_to_project(...)` before threading it through layout and routing.
+- Added focused coverage in `tests/unit/test_phase7_ux.py` for resolver behavior and parser acceptance/defaults, plus focused forwarding checks in `tests/unit/test_netlist_commands.py` proving both `cmd_apply_netlist(...)` and `cmd_new_from_netlist(...)` pass the selected profile name into the request layer.
+- Validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/cli.py kicad-pcb/src/kicad_pcb/commands/netlist.py kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase7_ux.py tests/unit/test_netlist_commands.py`, `.venv/bin/mypy` on the same files, and `.venv/bin/pytest -q tests/unit/test_phase7_ux.py tests/unit/test_netlist_commands.py -k 'heuristic_profile or debug_dump or phase7 or cmd_apply_netlist_forwards_heuristic_profile_name or cmd_new_from_netlist_forwards_heuristic_profile_name'`.
+
+## 2026-03-22T22:20:59Z - GPT-5.4 - Added explicit named schematic heuristic profiles beyond analog_audio
+
+- Extended `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` with explicit bundled profile constants for `generic_digital`, `power_supply`, and `dense_debug` in addition to the existing `analog_audio` profile, keeping the profile shape as `SchematicHeuristicProfile(layout_policy=..., routing_policy=...)` so later CLI/profile selection can resolve a single named object.
+- Added `SCHEMATIC_HEURISTIC_PROFILES`, a small name-to-profile registry keyed by `profile.name`, so downstream selection logic can stay data-driven instead of hard-coding profile branches.
+- Added focused coverage in `tests/unit/test_phase7_ux.py` locking the registry contents and the intended policy-toggle differences for the new named profiles.
+- Validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase7_ux.py`, `.venv/bin/mypy kicad-pcb/src/kicad_pcb/commands/_sch_apply.py tests/unit/test_phase7_ux.py`, and `.venv/bin/pytest -q tests/unit/test_phase7_ux.py`.
+
 ## 2026-03-22T21:40:52Z - GPT-5.4 - Extended the debug dump pipeline to expose unit splitting and final route choices
 
 - Added a new optional `--debug-dump <path>` path on `apply-netlist` and `new-from-netlist`, threaded through `kicad-pcb/src/kicad_pcb/commands/netlist.py`, `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, `kicad-pcb/src/kicad_pcb/cli.py`, `kicad-pcb/src/kicad_pcb/results.py`, and `kicad-pcb/src/kicad_pcb/formatting.py` so schematic generation can emit a merged JSON introspection sidecar without changing the warning-report contract.

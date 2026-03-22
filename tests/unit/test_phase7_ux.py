@@ -40,12 +40,25 @@ from unittest.mock import patch
 
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.commands._sch_apply import _resolve_layout, _resolve_mode, _resolve_routing
+from kicad_pcb.commands._sch_apply import (
+    ANALOG_AUDIO_HEURISTIC_PROFILE,
+    DEFAULT_SCHEMATIC_HEURISTIC_PROFILE,
+    DENSE_DEBUG_HEURISTIC_PROFILE,
+    GENERIC_DIGITAL_HEURISTIC_PROFILE,
+    POWER_SUPPLY_HEURISTIC_PROFILE,
+    SCHEMATIC_HEURISTIC_PROFILES,
+    SchematicHeuristicProfile,
+    _resolve_heuristic_profile,
+    _resolve_layout,
+    _resolve_mode,
+    _resolve_routing,
+)
 from kicad_pcb.commands.netlist import _ApplyNetlistRequest, cmd_new_from_netlist
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.graphviz_layout import GraphvizLayoutEngine
+from kicad_pcb.graphviz_layout import GraphvizLayoutEngine, LayoutHeuristicPolicy
 from kicad_pcb.pipeline import ValidationMode
 from kicad_pcb.results import NewFromNetlistResult
+from kicad_pcb.router import RoutingHeuristicPolicy
 from kicad_pcb.symbol_index import SymbolIndex
 
 pytestmark = pytest.mark.unit
@@ -465,8 +478,71 @@ class TestResolveLayout:
         mocked_factory.assert_called_once_with(
             cache_path=None,
             debug_dump_path=None,
+            heuristic_profile_name=DEFAULT_SCHEMATIC_HEURISTIC_PROFILE.name,
+            layout_heuristic_policy=DEFAULT_SCHEMATIC_HEURISTIC_PROFILE.layout_policy,
             strict=True,
         )
+
+    def test_default_profile_bundles_layout_and_routing_policies(self) -> None:
+        profile = DEFAULT_SCHEMATIC_HEURISTIC_PROFILE
+
+        assert isinstance(profile, SchematicHeuristicProfile)
+        assert profile.name == "analog_audio"
+        assert isinstance(profile.layout_policy, LayoutHeuristicPolicy)
+        assert isinstance(profile.routing_policy, RoutingHeuristicPolicy)
+
+    def test_named_profiles_are_registered(self) -> None:
+        assert SCHEMATIC_HEURISTIC_PROFILES == {
+            "analog_audio": ANALOG_AUDIO_HEURISTIC_PROFILE,
+            "generic_digital": GENERIC_DIGITAL_HEURISTIC_PROFILE,
+            "power_supply": POWER_SUPPLY_HEURISTIC_PROFILE,
+            "dense_debug": DENSE_DEBUG_HEURISTIC_PROFILE,
+        }
+
+    def test_generic_digital_profile_disables_analog_specific_heuristics(self) -> None:
+        profile = GENERIC_DIGITAL_HEURISTIC_PROFILE
+
+        assert profile.layout_policy.enable_decoupling_snap is False
+        assert profile.layout_policy.enable_opamp_locality is False
+        assert profile.layout_policy.enable_input_stage_cohesion is False
+        assert profile.layout_policy.enable_output_stage_cohesion is False
+        assert profile.routing_policy.enable_compact_output_tails is False
+        assert profile.routing_policy.enable_compact_local_ground_clusters is False
+
+    def test_power_supply_profile_keeps_ground_cluster_compaction_only(self) -> None:
+        profile = POWER_SUPPLY_HEURISTIC_PROFILE
+
+        assert profile.layout_policy.enable_decoupling_snap is False
+        assert profile.layout_policy.enable_opamp_locality is False
+        assert profile.layout_policy.enable_input_stage_cohesion is False
+        assert profile.layout_policy.enable_output_stage_cohesion is False
+        assert profile.routing_policy.enable_compact_output_tails is False
+        assert profile.routing_policy.enable_compact_local_ground_clusters is True
+
+    def test_dense_debug_profile_uses_generic_heuristics(self) -> None:
+        profile = DENSE_DEBUG_HEURISTIC_PROFILE
+
+        assert profile.layout_policy.enable_decoupling_snap is False
+        assert profile.layout_policy.enable_opamp_locality is False
+        assert profile.layout_policy.enable_input_stage_cohesion is False
+        assert profile.layout_policy.enable_output_stage_cohesion is False
+        assert profile.routing_policy.enable_compact_output_tails is False
+        assert profile.routing_policy.enable_compact_local_ground_clusters is False
+
+
+class TestResolveHeuristicProfile:
+    def test_none_returns_default_profile(self) -> None:
+        assert _resolve_heuristic_profile(None) is DEFAULT_SCHEMATIC_HEURISTIC_PROFILE
+
+    def test_known_name_returns_registered_profile(self) -> None:
+        assert _resolve_heuristic_profile("power_supply") is POWER_SUPPLY_HEURISTIC_PROFILE
+
+    def test_unknown_name_raises_user_error(self) -> None:
+        with pytest.raises(UserError, match="Unknown heuristic profile") as exc_info:
+            _resolve_heuristic_profile("banana")
+
+        details = exc_info.value.details or {}
+        assert details["allowed"] == sorted(SCHEMATIC_HEURISTIC_PROFILES)
 
 
 class TestResolveRouting:
@@ -535,8 +611,24 @@ class TestCLINewFlags:
             ["apply-netlist", "--netlist", "x.json", "--validate", "lint"],
             ["apply-netlist", "--netlist", "x.json", "--validate", "full"],
             ["apply-netlist", "--netlist", "x.json", "--validate", "none"],
+            [
+                "apply-netlist",
+                "--netlist",
+                "x.json",
+                "--heuristic-profile",
+                "generic_digital",
+            ],
             ["new-from-netlist", "--name", "p", "--netlist", "x.json", "--routing", "labels"],
             ["new-from-netlist", "--name", "p", "--netlist", "x.json", "--validate", "syntax"],
+            [
+                "new-from-netlist",
+                "--name",
+                "p",
+                "--netlist",
+                "x.json",
+                "--heuristic-profile",
+                "dense_debug",
+            ],
         ],
     )
     def test_flag_accepted_by_argparse(self, argv: list[str]) -> None:
@@ -577,6 +669,14 @@ class TestCLINewFlags:
         parser = cli_mod.build_parser()
         ns = parser.parse_args(["apply-netlist", "--netlist", "x.json"])
         assert ns.validate is None
+
+    def test_heuristic_profile_default_is_none(self) -> None:
+        """When --heuristic-profile is omitted, the parsed namespace has None."""
+        import kicad_pcb.cli as cli_mod  # noqa: PLC0415
+
+        parser = cli_mod.build_parser()
+        ns = parser.parse_args(["apply-netlist", "--netlist", "x.json"])
+        assert ns.heuristic_profile is None
 
 
 # ---------------------------------------------------------------------------
