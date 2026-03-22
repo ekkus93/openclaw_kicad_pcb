@@ -102,6 +102,8 @@ _LAYOUT_DEBUG_ARTIFACTS: tuple[str, ...] = (
     "connector_role_summary",
     "diagnostics",
     "block_layout",
+    "layout_heuristic_policy",
+    "placement_constraints",
     "halo_map",
     "halo_alignment",
     "decoupling_map",
@@ -153,6 +155,34 @@ def _layout_debug_artifact_manifest() -> dict[str, object]:
     return {
         "version": 1,
         "artifacts": list(_LAYOUT_DEBUG_ARTIFACTS),
+    }
+
+
+def _serialize_layout_heuristic_policy(policy: LayoutHeuristicPolicy) -> dict[str, bool]:
+    """Return the active post-layout heuristic toggles for debug dumps."""
+    return {
+        "enable_decoupling_snap": policy.enable_decoupling_snap,
+        "enable_opamp_locality": policy.enable_opamp_locality,
+        "enable_input_stage_cohesion": policy.enable_input_stage_cohesion,
+        "enable_output_stage_cohesion": policy.enable_output_stage_cohesion,
+    }
+
+
+def _serialize_placement_constraints(
+    *,
+    decoupling_map: Mapping[str, str],
+    feedback_refs: set[str],
+    halo: Mapping[str, str],
+    power_unit_refs: set[str],
+    unit_sibling_pairs: list[tuple[str, str]],
+) -> dict[str, object]:
+    """Return the stable placement constraints that shaped the layout."""
+    return {
+        "decoupling_map": dict(sorted(decoupling_map.items())),
+        "feedback_refs": sorted(feedback_refs),
+        "halo_map": dict(sorted(halo.items())),
+        "power_unit_refs": sorted(power_unit_refs),
+        "unit_sibling_pairs": [list(pair) for pair in sorted(unit_sibling_pairs)],
     }
 
 
@@ -549,6 +579,16 @@ class GraphvizLayoutEngine:
                             "final_positions": _serialize_layout_positions(cached),
                             "halo_alignment": _analyze_halo_column_alignment({}, cached, halo),
                             "halo_map": dict(sorted(halo.items())),
+                            "layout_heuristic_policy": _serialize_layout_heuristic_policy(
+                                self._layout_heuristic_policy
+                            ),
+                            "placement_constraints": _serialize_placement_constraints(
+                                decoupling_map=decoupling_map,
+                                feedback_refs=feedback_refs,
+                                halo=halo,
+                                power_unit_refs=_power_unit_refs,
+                                unit_sibling_pairs=_unit_sibling_pairs,
+                            ),
                             "post_snap_positions": _serialize_layout_positions(cached),
                             "raw_graphviz_positions": {},
                             "sds_columns": dict(sorted(sds_cols.items())),
@@ -644,6 +684,16 @@ class GraphvizLayoutEngine:
                     ),
                     "halo_alignment": halo_alignment,
                     "halo_map": dict(sorted(halo.items())),
+                    "layout_heuristic_policy": _serialize_layout_heuristic_policy(
+                        self._layout_heuristic_policy
+                    ),
+                    "placement_constraints": _serialize_placement_constraints(
+                        decoupling_map=decoupling_map,
+                        feedback_refs=feedback_refs,
+                        halo=halo,
+                        power_unit_refs=_power_unit_refs,
+                        unit_sibling_pairs=_unit_sibling_pairs,
+                    ),
                     "post_snap_positions": _serialize_layout_positions(post_snap_result),
                     "raw_graphviz_positions": _serialize_layout_positions(raw_result),
                     "sds_columns": dict(sorted(sds_cols.items())),

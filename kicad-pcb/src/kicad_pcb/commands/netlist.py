@@ -163,6 +163,9 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             strict=bool(getattr(args, "strict", False)),
             layout_name=getattr(args, "layout", None),
             routing_name=getattr(args, "routing", None),
+            debug_dump_path=(
+                Path(getattr(args, "debug_dump")) if getattr(args, "debug_dump", None) else None
+            ),
         ),
     )
 
@@ -369,6 +372,9 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
             strict=bool(getattr(args, "strict", False)),
             layout_name=getattr(args, "layout", None),
             routing_name=getattr(args, "routing", None),
+            debug_dump_path=(
+                Path(getattr(args, "debug_dump")) if getattr(args, "debug_dump", None) else None
+            ),
         ),
     )
 
@@ -389,6 +395,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         kicad_cli_used=apply_result.kicad_cli_used,
         warnings=apply_result.warnings,
         warning_report_path=apply_result.warning_report_path,
+        debug_dump_path=apply_result.debug_dump_path,
         symbols_dirs_used=apply_result.symbols_dirs_used,
         zip_path=zip_path,
         session_path=session.path if session is not None else None,

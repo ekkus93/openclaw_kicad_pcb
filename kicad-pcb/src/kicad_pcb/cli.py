@@ -179,6 +179,10 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         default="bus",
         help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
     )
+    p_apply.add_argument(
+        "--debug-dump",
+        help="Optional path for a JSON debug dump covering layout, unit splitting, and routing",
+    )
     p_apply.add_argument("--force", action="store_true", help="Adopt non-owned schematic")
     p_apply.add_argument("--dry-run", action="store_true", help="Validate without writing")
     p_apply.add_argument("--strict", action="store_true", help="Treat lint warnings as errors")
@@ -217,6 +221,10 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         choices=["bus", "hub", "labels"],
         default="bus",
         help="Routing style: bus/hub = spine routing, labels = label stubs (default: bus)",
+    )
+    p_new_netlist.add_argument(
+        "--debug-dump",
+        help="Optional path for a JSON debug dump covering layout, unit splitting, and routing",
     )
     p_new_netlist.add_argument(
         "--no-auto-fix",

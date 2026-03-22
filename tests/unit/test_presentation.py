@@ -252,9 +252,11 @@ class TestApplyNetlistResult:
             kicad_cli_used=False,
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
+            debug_dump_path=tmp_path / "OpenClaw_Debug.json",
         )
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
+        assert "OpenClaw_Debug.json" in text
 
 
 class TestNewFromNetlistResult:
@@ -269,9 +271,11 @@ class TestNewFromNetlistResult:
             kicad_cli_used=False,
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
+            debug_dump_path=tmp_path / "OpenClaw_Debug.json",
         )
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
+        assert "OpenClaw_Debug.json" in text
 
 
 # ---------------------------------------------------------------------------
