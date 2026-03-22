@@ -17,6 +17,7 @@ from kicad_pcb.models import FootprintMoveSpec, LintIssue, ProjectRef, Validatio
 from kicad_pcb.results import (
     AddComponentResult,
     AddNetResult,
+    ApplyNetlistResult,
     AutoPlaceResult,
     AutoRouteResult,
     ConnectResult,
@@ -31,6 +32,7 @@ from kicad_pcb.results import (
     ExportPosResult,
     ImportNetlistResult,
     InfoResult,
+    NewFromNetlistResult,
     NewProjectResult,
     OpenResult,
     PackageFabResult,
@@ -236,6 +238,40 @@ class TestExport3dResult:
         text = joined(r)
         assert "board.step" in text
         assert "10.0" in text  # KB
+
+
+class TestApplyNetlistResult:
+    def test_format_shows_warning_report_path(self, tmp_path: Path) -> None:
+        r = ApplyNetlistResult(
+            schematic_path=tmp_path / "root.kicad_sch",
+            managed_schematic_path=tmp_path / "OpenClaw_Managed.kicad_sch",
+            symbols_added=2,
+            symbols_updated=0,
+            managed_items_written=5,
+            nets_applied=3,
+            kicad_cli_used=False,
+            warnings=({"code": "WARN", "message": "example"},),
+            warning_report_path=tmp_path / "OpenClaw_Warnings.json",
+        )
+        text = joined(r)
+        assert "OpenClaw_Warnings.json" in text
+
+
+class TestNewFromNetlistResult:
+    def test_format_shows_warning_report_path(self, tmp_path: Path) -> None:
+        r = NewFromNetlistResult(
+            name="demo",
+            path=tmp_path,
+            schematic_path=tmp_path / "demo.kicad_sch",
+            managed_schematic_path=tmp_path / "OpenClaw_Managed.kicad_sch",
+            symbols_added=2,
+            nets_applied=3,
+            kicad_cli_used=False,
+            warnings=({"code": "WARN", "message": "example"},),
+            warning_report_path=tmp_path / "OpenClaw_Warnings.json",
+        )
+        text = joined(r)
+        assert "OpenClaw_Warnings.json" in text
 
 
 # ---------------------------------------------------------------------------

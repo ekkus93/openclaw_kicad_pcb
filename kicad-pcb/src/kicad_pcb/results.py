@@ -103,6 +103,7 @@ class ApplyNetlistResult:
     kicad_cli_used: bool
     dry_run: bool = False
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    warning_report_path: Path | None = None
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -118,6 +119,7 @@ class NewFromNetlistResult:
     nets_applied: int
     kicad_cli_used: bool
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    warning_report_path: Path | None = None
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
     zip_path: Path | None = None
     session_path: Path | None = None
