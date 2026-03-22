@@ -69,12 +69,14 @@ from .dot_builder import (
     _safe_id,
 )
 from .snap import (
+    DEFAULT_LAYOUT_HEURISTIC_POLICY,
     GRID_ROW_MM,
     ORIGIN_X,
     ORIGIN_Y,
     PAGE_MAX_X,
     PAGE_MAX_Y,
     SCALE_MM_PER_GV,
+    LayoutHeuristicPolicy,
     _apply_post_layout_snaps,
     _apply_stereo_split,
     _compact_y_gap,
@@ -443,6 +445,7 @@ class GraphvizLayoutEngine:
         cache_path: Path | None = None,
         debug_dump_path: Path | None = None,
         tiers: dict[str, int] | None = None,
+        layout_heuristic_policy: LayoutHeuristicPolicy = DEFAULT_LAYOUT_HEURISTIC_POLICY,
         strict: bool = False,
     ) -> None:
         self._dot = dot_path
@@ -452,6 +455,7 @@ class GraphvizLayoutEngine:
         self._cache_path = cache_path
         self._debug_dump_path = debug_dump_path
         self._tiers = tiers
+        self._layout_heuristic_policy = layout_heuristic_policy
         self._strict = strict
 
     # ----------------------------------------------------------------
@@ -599,6 +603,7 @@ class GraphvizLayoutEngine:
             roles=_roles or None,
             halo=halo or None,
             block_layout=block_layout,
+            heuristic_policy=self._layout_heuristic_policy,
             strict=self._strict,
         )
 
@@ -739,6 +744,7 @@ __all__ = [
     "fit_to_page",
     "GraphvizLayoutEngine",
     "GRID_ROW_MM",
+    "LayoutHeuristicPolicy",
     "is_capacitor",
     "is_connector",
     "layout_cache_key",

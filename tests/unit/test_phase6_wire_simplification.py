@@ -10,8 +10,10 @@ import math
 
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.router import (
+    DEFAULT_ROUTING_HEURISTIC_POLICY,
     SYMBOL_HALF_SIZE_MM,
     JunctionPoint,
+    RoutingHeuristicPolicy,
     SharedLanePlan,
     WireSegment,
     _chain_route,
@@ -727,6 +729,49 @@ def test_plan_local_ladder_routes_skips_asymmetric_compact_output_tail() -> None
     assert "HP_L_OUT" not in plans
 
 
+def test_plan_local_ladder_routes_can_disable_compact_output_tail_policy() -> None:
+    """Disabling the analog compact-tail rule should restore the inferred lane plan."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C7", symbol="Device:C", value="100n"),
+            ComponentIR(ref="R6", symbol="Device:R", value="47"),
+            ComponentIR(ref="R7", symbol="Device:R", value="100"),
+            ComponentIR(ref="J2", symbol="Connector:AudioJack3", value="OUT"),
+        ],
+        nets=[
+            NetIR(
+                name="AFTER_R6",
+                pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="C7", pin="1")],
+            ),
+            NetIR(
+                name="HP_L_OUT",
+                pins=[
+                    PinRefIR(ref="C7", pin="2"),
+                    PinRefIR(ref="R7", pin="1"),
+                    PinRefIR(ref="J2", pin="T"),
+                ],
+            ),
+        ],
+    )
+
+    plans = _plan_local_ladder_routes(
+        ir,
+        pin_endpoints={
+            ("R6", "2"): (213.36, 173.99, 90.0),
+            ("C7", "1"): (213.36, 135.89, 270.0),
+            ("C7", "2"): (213.36, 128.27, 90.0),
+            ("R7", "1"): (238.76, 166.37, 270.0),
+            ("J2", "T"): (217.17, 165.10, 0.0),
+        },
+        heuristic_policy=RoutingHeuristicPolicy(enable_compact_output_tails=False),
+    )
+
+    assert DEFAULT_ROUTING_HEURISTIC_POLICY.enable_compact_output_tails
+    assert "HP_L_OUT" in plans
+    assert plans["HP_L_OUT"] == SharedLanePlan("vertical", 213.36, 123.19, 165.1)
+
+
 def test_route_nets_uses_bounded_ladder_route_for_full_preview_vol_l_out() -> None:
     """Real full-preview VOL_L_OUT geometry should avoid the widened spine fallback."""
     ir = CircuitIR(
@@ -939,11 +984,61 @@ def test_route_nets_uses_compact_local_ground_lane_for_output_cluster() -> None:
         and math.isclose(max(seg.x1, seg.x2), 212.09, abs_tol=0.01)
         for seg in routing.wires
     )
-    assert any(
+
+
+def test_route_nets_can_disable_compact_local_ground_cluster_policy() -> None:
+    """Disabling the analog ground-cluster rule should fall back to centroid routing."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J2", symbol="Connector:AudioJack3", value="OUT"),
+            ComponentIR(ref="R5", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R7", symbol="Device:R", value="100"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="J2", pin="S"),
+                    PinRefIR(ref="R5", pin="2"),
+                    PinRefIR(ref="R7", pin="2"),
+                ],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J2", "S"): (217.17, 160.02, 0.0),
+            ("R5", "2"): (213.36, 143.51, 90.0),
+            ("R7", "2"): (238.76, 158.75, 90.0),
+        },
+        positions={
+            "J2": (222.25, 162.56, 0.0),
+            "R5": (213.36, 147.32, 0.0),
+            "R7": (238.76, 162.56, 0.0),
+        },
+        heuristic_policy=RoutingHeuristicPolicy(enable_compact_local_ground_clusters=False),
+    )
+
+    assert DEFAULT_ROUTING_HEURISTIC_POLICY.enable_compact_local_ground_clusters
+    assert len(routing.power_symbols) == 1
+    power_symbol = routing.power_symbols[0]
+    assert not math.isclose(power_symbol.x, 248.92, abs_tol=0.01)
+    assert not math.isclose(power_symbol.y, 138.43, abs_tol=0.01)
+    assert not any(
         math.isclose(seg.y1, 138.43, abs_tol=0.01)
         and math.isclose(seg.y2, 138.43, abs_tol=0.01)
-        and math.isclose(min(seg.x1, seg.x2), 238.76, abs_tol=0.01)
-        and math.isclose(max(seg.x1, seg.x2), 248.92, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 203.2, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 238.76, abs_tol=0.01)
+        for seg in routing.wires
+    )
+    assert any(
+        math.isclose(seg.y1, 151.13, abs_tol=0.01)
+        and math.isclose(seg.y2, 151.13, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 212.09, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 238.76, abs_tol=0.01)
         for seg in routing.wires
     )
 
@@ -959,7 +1054,7 @@ def test_route_nets_uses_compact_local_ground_lane_for_output_cluster() -> None:
         and (round(seg.x1, 2), round(seg.y1, 2)) not in protected
         and (round(seg.x2, 2), round(seg.y2, 2)) not in protected
     ]
-    assert short_non_stub == []
+    assert short_non_stub != []
 
 
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:

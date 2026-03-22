@@ -619,6 +619,66 @@ class _OpAmpLocalityContext:
     block_layout: BlockLayout | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class LayoutHeuristicPolicy:
+    """Policy seam for analog-specific post-layout snap passes."""
+
+    enable_decoupling_snap: bool = True
+    enable_opamp_locality: bool = True
+    enable_input_stage_cohesion: bool = True
+    enable_output_stage_cohesion: bool = True
+
+    def apply_decoupling_snap(
+        self,
+        positions: Mapping[str, tuple[float, float, float | None]],
+        decoupling_map: Mapping[str, str],
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Apply the decoupling-cap snap when enabled."""
+        if not self.enable_decoupling_snap or not decoupling_map:
+            return dict(positions)
+        return _post_snap_decoupling_caps(dict(positions), dict(decoupling_map))
+
+    def apply_opamp_locality(
+        self,
+        positions: Mapping[str, tuple[float, float, float | None]],
+        ir: CircuitIR,
+        *,
+        annotations: Mapping[str, _ComponentAnnotation],
+        context: _OpAmpLocalityContext,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Apply op-amp-centric locality staging when enabled."""
+        if not self.enable_opamp_locality:
+            return dict(positions)
+        return _snap_opamp_locality(dict(positions), ir, annotations=annotations, context=context)
+
+    def apply_input_stage_cohesion(
+        self,
+        positions: Mapping[str, tuple[float, float, float | None]],
+        ir: CircuitIR,
+        *,
+        block_layout: BlockLayout | None = None,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Apply analog input-stage cohesion when enabled."""
+        if not self.enable_input_stage_cohesion:
+            return dict(positions)
+        return _snap_input_stage_cohesion(dict(positions), ir, block_layout=block_layout)
+
+    def apply_output_stage_cohesion(
+        self,
+        positions: Mapping[str, tuple[float, float, float | None]],
+        ir: CircuitIR,
+        *,
+        block_layout: BlockLayout | None = None,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        """Apply analog output-stage cohesion when enabled."""
+        if not self.enable_output_stage_cohesion:
+            return dict(positions)
+        return _snap_output_stage_cohesion(dict(positions), ir, block_layout=block_layout)
+
+
+DEFAULT_LAYOUT_HEURISTIC_POLICY: LayoutHeuristicPolicy = LayoutHeuristicPolicy()
+
+
 def _local_signal_distances(
     anchor_ref: str,
     candidate_refs: set[str],
@@ -2697,6 +2757,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     roles: Mapping[str, str] | None = None,
     halo: Mapping[str, str] | None = None,
     block_layout: BlockLayout | None = None,
+    heuristic_policy: LayoutHeuristicPolicy = DEFAULT_LAYOUT_HEURISTIC_POLICY,
     strict: bool = False,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Apply all post-layout positional corrections in canonical order.
@@ -2789,8 +2850,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         result = _post_stereo_barycentric(result, ir, channels)
     result = _compact_y_gap(result, ir)
     result = _center_ics_in_columns(result, halo=halo)
-    if decoupling_map:
-        result = _post_snap_decoupling_caps(result, decoupling_map)
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
     # Build canonical skip-pairs from the decoupling map so that intentional
     # one-grid-row cap/IC co-locations are not nudged by _deoverlap_positions.
     decouple_skip: frozenset[tuple[str, str]] = frozenset(
@@ -2801,7 +2861,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
     # Re-apply op-amp locality after crossing remediation so op-amp neighborhoods
     # remain readable in the final coordinates.
-    result = _snap_opamp_locality(
+    result = heuristic_policy.apply_opamp_locality(
         result,
         ir,
         annotations=annotations,
@@ -2811,11 +2871,19 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
             block_layout=block_layout,
         ),
     )
-    result = _snap_input_stage_cohesion(result, ir, block_layout=block_layout)
-    result = _snap_output_stage_cohesion(result, ir, block_layout=block_layout)
+    result = heuristic_policy.apply_input_stage_cohesion(
+        result,
+        ir,
+        block_layout=block_layout,
+    )
+    result = heuristic_policy.apply_output_stage_cohesion(
+        result,
+        ir,
+        block_layout=block_layout,
+    )
     result, page_balance_shift = _snap_page_balance(result, block_layout)
-    if page_balance_shift != 0.0 and decoupling_map:
-        result = _post_snap_decoupling_caps(result, decoupling_map)
+    if page_balance_shift != 0.0:
+        result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
     protected_text_refs: frozenset[str] = frozenset()
