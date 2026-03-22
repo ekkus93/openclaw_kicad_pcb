@@ -1,5 +1,19 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-22T20:30:48Z - GPT-5.4 - Extracted analog-only post-layout snap rules behind a policy seam
+
+- Added `LayoutHeuristicPolicy` and `DEFAULT_LAYOUT_HEURISTIC_POLICY` to `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so the analog-only decoupling re-anchor, op-amp locality, input-stage cohesion, and output-stage cohesion passes now sit behind an explicit policy object instead of being hard-coded into the generic post-layout snap coordinator.
+- Threaded that policy through `_apply_post_layout_snaps(...)` and `GraphvizLayoutEngine` in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`, preserving the default analog readability behavior while making later layout profiles able to disable or swap those passes without touching the generic snap pipeline.
+- Added focused coverage in `tests/unit/test_phase4_layout.py` proving each analog snap pass can be disabled explicitly and that `_apply_post_layout_snaps(...)` honors a disabled policy without disabling the unrelated generic snap passes.
+- Validation: `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py tests/unit/test_phase4_layout.py` and `.venv/bin/pytest tests/unit/test_phase4_layout.py -q -k 'layout_policy or opamp_local_rules or input_stage_cohesion or output_stage_cohesion or decoupling'` both pass.
+
+## 2026-03-22T20:13:00Z - GPT-5.4 - Extracted analog-only router heuristics behind a small policy seam
+
+- Added `RoutingHeuristicPolicy` and `DEFAULT_ROUTING_HEURISTIC_POLICY` to `kicad-pcb/src/kicad_pcb/router.py` so the analog-specific compact output-tail and compact local-ground-cluster behavior is now selected through an explicit policy object instead of being hard-coded directly into the generic routing flow.
+- Threaded that policy through `_plan_local_ladder_routes(...)` and `route_nets(...)`, and added `LadderLanePlannerContext` so the grouped-ladder planning helpers stay lint-clean while centralizing the compact-tail skip decision in the same seam.
+- Added focused coverage in `tests/unit/test_phase6_wire_simplification.py` proving the default policy still keeps the current analog behavior while disabling either compact output tails or compact local ground clusters falls back to the generic ladder/centroid routes as expected.
+- Validation: `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py` and `.venv/bin/pytest tests/unit/test_phase6_wire_simplification.py -q` both pass.
+
 ## 2026-03-22T08:17:46Z - GPT-5.4 - Fixed the review-bundle preview path by adding an internal preview renderer
 
 - Investigated raw `kicad-cli sch export svg` behavior on this machine (`kicad-cli version` = `9.0.7`): flat baseline schematics reported `Plotted to ...` but left the output directory empty, and generated/root schematics returned `Schematic file does not exist or is not accessible` even though the `.kicad_sch` file existed beside its `.kicad_pro` and managed sheet.

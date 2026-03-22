@@ -95,6 +95,63 @@ class LabelPolicy:
 DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()
 
 
+@dataclass(frozen=True)
+class RoutingHeuristicPolicy:
+    """Policy seam for analog-specific routing heuristics.
+
+    The generic router still owns direct, hub, spine, lane, and label routing.
+    This policy only governs the analog-audio special cases layered on top of
+    those generic strategies so later profile work can swap or disable them
+    without rewriting :func:`route_nets`.
+    """
+
+    enable_compact_output_tails: bool = True
+    enable_compact_local_ground_clusters: bool = True
+
+    def should_skip_shared_lane_plan(
+        self,
+        endpoints: list[tuple[float, float]],
+        inferred_plan: SharedLanePlan | None,
+    ) -> bool:
+        """Return True when the analog compact-tail rule should override a lane."""
+        if not self.enable_compact_output_tails or inferred_plan is None:
+            return False
+        return _should_skip_inferred_lane_plan(endpoints, inferred_plan)
+
+    def route_compact_signal_tail(
+        self,
+        endpoints: list[tuple[float, float]],
+        *,
+        inferred_plan: SharedLanePlan | None,
+        positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+    ) -> tuple[list[WireSegment], list[JunctionPoint]] | None:
+        """Return the analog compact-tail route when that policy applies."""
+        if not self.enable_compact_output_tails or inferred_plan is None:
+            return None
+        if not self.should_skip_shared_lane_plan(endpoints, inferred_plan):
+            return None
+        return _compact_vertical_tail_route(
+            endpoints,
+            coordinate=inferred_plan.coordinate,
+            positions=positions,
+        )
+
+    def route_compact_power_cluster(
+        self,
+        *,
+        net_name: str,
+        cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
+        positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+    ) -> tuple[list[WireSegment], list[JunctionPoint], tuple[float, float]] | None:
+        """Return the analog local-ground cluster route when that policy applies."""
+        if not self.enable_compact_local_ground_clusters or net_name.upper() != "GND":
+            return None
+        return _compact_local_ground_cluster_route(cluster, positions=positions)
+
+
+DEFAULT_ROUTING_HEURISTIC_POLICY: RoutingHeuristicPolicy = RoutingHeuristicPolicy()
+
+
 def _is_power_net_name(net_name: str) -> bool:
     """Return True for routed power rails, including VPLUS/VMINUS aliases."""
     return _base_is_power_net_name(net_name) or power_rail_polarity(net_name) is not None
@@ -363,6 +420,17 @@ class SharedLanePlan:
     coordinate: float
     min_orthogonal: float | None = None
     max_orthogonal: float | None = None
+
+
+@dataclass(frozen=True)
+class LadderLanePlannerContext:
+    """Grouped-ladder planning inputs shared across one local neighborhood."""
+
+    candidate_degree: dict[str, int]
+    shared_lane_by_net: dict[str, tuple[str, float]]
+    endpoints_by_net: dict[str, list[tuple[float, float]]]
+    connector_entry_x_by_net: dict[str, float]
+    heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY
 
 
 @dataclass
@@ -773,18 +841,15 @@ def _is_compact_rightward_tail(
 
 
 def _plan_single_grouped_ladder_lane(
-    net_name: str,
     *,
     axis: str,
     base_coordinate: float,
     endpoints: list[tuple[float, float]],
+    heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY,
 ) -> SharedLanePlan | None:
     """Return the single-net lane plan, or ``None`` when chain routing should win."""
-    if _prefer_chain_route(endpoints) and _is_compact_rightward_tail(
-        endpoints,
-        axis=axis,
-        coordinate=base_coordinate,
-    ):
+    candidate_plan = SharedLanePlan(axis, base_coordinate)
+    if heuristic_policy.should_skip_shared_lane_plan(endpoints, candidate_plan):
         return None
 
     if axis == "horizontal":
@@ -1204,17 +1269,14 @@ def _lane_center(
 def _assign_grouped_ladder_lanes(
     component: list[str],
     *,
-    candidate_degree: dict[str, int],
-    shared_lane_by_net: dict[str, tuple[str, float]],
-    endpoints_by_net: dict[str, list[tuple[float, float]]],
-    connector_entry_x_by_net: dict[str, float],
+    context: LadderLanePlannerContext,
 ) -> dict[str, SharedLanePlan]:
     """Assign distinct parallel lanes to all 3-pin nets in one neighborhood."""
     grouped: dict[tuple[str, float], list[str]] = {}
     for net_name in component:
-        if candidate_degree.get(net_name) != 3:
+        if context.candidate_degree.get(net_name) != 3:
             continue
-        lane = shared_lane_by_net.get(net_name)
+        lane = context.shared_lane_by_net.get(net_name)
         if lane is None:
             continue
         axis, base_coordinate = lane
@@ -1223,28 +1285,29 @@ def _assign_grouped_ladder_lanes(
     planned_routes: dict[str, SharedLanePlan] = {}
     skipped_single_lane_nets: set[str] = set()
     for (axis, base_coordinate), grouped_names in grouped.items():
-        grouped_names.sort(key=lambda net_name: _lane_center(net_name, axis, endpoints_by_net))
+        grouped_names.sort(
+            key=lambda net_name: _lane_center(net_name, axis, context.endpoints_by_net)
+        )
         if len(grouped_names) == 1:
-            net_name = grouped_names[0]
-            endpoints = endpoints_by_net[net_name]
+            endpoints = context.endpoints_by_net[grouped_names[0]]
             single_lane_plan = _plan_single_grouped_ladder_lane(
-                net_name,
                 axis=axis,
                 base_coordinate=base_coordinate,
                 endpoints=endpoints,
+                heuristic_policy=context.heuristic_policy,
             )
             if single_lane_plan is None:
-                skipped_single_lane_nets.add(net_name)
+                skipped_single_lane_nets.add(grouped_names[0])
                 continue
-            planned_routes[net_name] = single_lane_plan
+            planned_routes[grouped_names[0]] = single_lane_plan
             continue
 
         connector_group_routes = _assign_connector_entry_grouped_lanes(
             grouped_names,
             axis=axis,
             base_coordinate=base_coordinate,
-            endpoints_by_net=endpoints_by_net,
-            connector_entry_x_by_net=connector_entry_x_by_net,
+            endpoints_by_net=context.endpoints_by_net,
+            connector_entry_x_by_net=context.connector_entry_x_by_net,
         )
         if connector_group_routes is not None:
             planned_routes.update(connector_group_routes)
@@ -1255,14 +1318,17 @@ def _assign_grouped_ladder_lanes(
             planned_routes[net_name] = SharedLanePlan(axis, round(base_coordinate + offset, 2))
 
     for net_name in component:
-        if net_name in planned_routes or candidate_degree.get(net_name) != 3:
+        if net_name in planned_routes or context.candidate_degree.get(net_name) != 3:
             continue
         if net_name in skipped_single_lane_nets:
             continue
-        inferred_plan = _infer_bounded_local_lane_plan(endpoints_by_net[net_name])
+        inferred_plan = _infer_bounded_local_lane_plan(context.endpoints_by_net[net_name])
         if inferred_plan is None:
             continue
-        if _should_skip_inferred_lane_plan(endpoints_by_net[net_name], inferred_plan):
+        if context.heuristic_policy.should_skip_shared_lane_plan(
+            context.endpoints_by_net[net_name],
+            inferred_plan,
+        ):
             continue
         planned_routes[net_name] = inferred_plan
 
@@ -1274,6 +1340,7 @@ def _plan_local_ladder_routes(
     pin_anchors: Mapping[tuple[str, str], PinAnchor | tuple[float, float, float]] | None = None,
     *,
     pin_endpoints: Mapping[tuple[str, str], tuple[float, float, float]] | None = None,
+    heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY,
 ) -> dict[str, SharedLanePlan]:
     """Detect nearby small-signal net neighborhoods that should share ladder-style routing.
 
@@ -1292,6 +1359,13 @@ def _plan_local_ladder_routes(
         endpoints_by_net,
         connector_entry_x_by_net,
     ) = _collect_local_ladder_candidates(ir, resolved_anchors)
+    planner_context = LadderLanePlannerContext(
+        candidate_degree=candidate_degree,
+        shared_lane_by_net=shared_lane_by_net,
+        endpoints_by_net=endpoints_by_net,
+        connector_entry_x_by_net=connector_entry_x_by_net,
+        heuristic_policy=heuristic_policy,
+    )
     adjacency = _build_ladder_adjacency(candidate_boxes)
 
     visited: set[str] = set()
@@ -1308,10 +1382,7 @@ def _plan_local_ladder_routes(
         planned_routes.update(
             _assign_grouped_ladder_lanes(
                 component,
-                candidate_degree=candidate_degree,
-                shared_lane_by_net=shared_lane_by_net,
-                endpoints_by_net=endpoints_by_net,
-                connector_entry_x_by_net=connector_entry_x_by_net,
+                context=planner_context,
             )
         )
 
@@ -1536,6 +1607,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     tiers: dict[str, int] | None = None,
     positions: Mapping[str, tuple[float, float, float | None]] | None = None,
     policy: LabelPolicy = DEFAULT_LABEL_POLICY,
+    heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY,
     strict: bool = False,
 ) -> NetRouting:
     """Compute routing decisions for all nets in *ir*.
@@ -1599,6 +1671,10 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         labels are emitted per net.  Defaults to
         :data:`DEFAULT_LABEL_POLICY` (2 local labels per net, 4 global
         labels per high-degree net).
+    heuristic_policy:
+        Analog-specific routing policy that governs compact output-tail and
+        local-ground-cluster special cases while leaving generic routing
+        strategies unchanged.
     strict:
         When ``True``, unknown pin endpoints are treated as an error instead
         of falling back to off-canvas stub+label/symbol routing.
@@ -1608,7 +1684,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     routing = NetRouting()
     fallback_y = -1500.0
     resolved_anchors = _resolve_pin_anchors(pin_endpoints, pin_anchors)
-    ladder_routes = _plan_local_ladder_routes(ir, resolved_anchors)
+    ladder_routes = _plan_local_ladder_routes(
+        ir,
+        resolved_anchors,
+        heuristic_policy=heuristic_policy,
+    )
 
     for net in sorted(ir.nets, key=lambda n: n.name):
         pins = sorted(net.pins, key=lambda p: (p.ref, p.pin))
@@ -1672,12 +1752,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                 else:
                     # Multiple pins: compute cluster centroid for shared symbol
-                    compact_ground_cluster = None
-                    if net.name.upper() == "GND":
-                        compact_ground_cluster = _compact_local_ground_cluster_route(
-                            cluster,
-                            positions=positions,
-                        )
+                    compact_ground_cluster = heuristic_policy.route_compact_power_cluster(
+                        net_name=net.name,
+                        cluster=cluster,
+                        positions=positions,
+                    )
                     if compact_ground_cluster is not None:
                         cluster_segs, cluster_junctions, (px, py) = compact_ground_cluster
                         routing.wires.extend(cluster_segs)
@@ -1805,14 +1884,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 )
             elif (
                 use_bus
-                and compact_tail_plan is not None
-                and _should_skip_inferred_lane_plan(stub_ends, compact_tail_plan)
-            ):
-                hub_segs, hub_junctions = _compact_vertical_tail_route(
-                    stub_ends,
-                    coordinate=compact_tail_plan.coordinate,
-                    positions=positions,
+                and (
+                    compact_tail_route := heuristic_policy.route_compact_signal_tail(
+                        stub_ends,
+                        inferred_plan=compact_tail_plan,
+                        positions=positions,
+                    )
                 )
+                is not None
+            ):
+                hub_segs, hub_junctions = compact_tail_route
             elif use_bus and _prefer_chain_route(stub_ends):
                 hub_segs, hub_junctions = _chain_route(stub_ends)
             elif use_bus:
