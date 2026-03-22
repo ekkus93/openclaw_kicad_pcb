@@ -627,6 +627,11 @@ def test_cmd_apply_netlist_surfaces_input_coupling_warning(
 
     codes = {warning["code"] for warning in result.warnings}
     assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+    assert result.warning_report_path is not None
+    report = json.loads(result.warning_report_path.read_text(encoding="utf-8"))
+    report_codes = {warning["code"] for warning in report["warnings"]}
+    assert codes <= report_codes
+    assert report["managed_schematic_path"] == str(result.managed_schematic_path)
 
 
 def test_cmd_apply_netlist_surfaces_output_load_warning(
@@ -980,6 +985,13 @@ def test_cmd_new_from_netlist_preserves_input_coupling_warning(tmp_path: Path) -
 
     codes = {warning["code"] for warning in result.warnings}
     assert "INPUT_COUPLING_BYPASSED_BY_RESISTOR" in codes
+    assert result.warning_report_path is not None
+    report = json.loads(result.warning_report_path.read_text(encoding="utf-8"))
+    assert report["project_path"] == str(result.path)
+    assert report["warning_count"] == len(report["warnings"])
+    assert any(
+        warning["code"] == "INPUT_COUPLING_BYPASSED_BY_RESISTOR" for warning in report["warnings"]
+    )
 
 
 def test_cmd_new_from_netlist_preserves_decoupling_distance_warning(

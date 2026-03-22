@@ -1156,12 +1156,18 @@ Current findings:
 - Additional warning families in the same advisory path now also cover missing/nonlocal op-amp feedback, output floating, output shorted to a rail, output coupling bypassed by resistor, and ambiguous unused connector pins, so Phase 5.2.1 is underway rather than untouched.
 
 #### 5.2.2 Add warning surfacing
-Status: `NOT STARTED`
+Status: `DONE`
 - Ensure warnings can appear in:
   - CLI output,
   - logs,
   - generated metadata,
   - optional sidecar report.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` now writes a deterministic sidecar report `OpenClaw_Warnings.json` into the generated project directory for non-dry-run `apply-netlist` and `new-from-netlist` flows.
+- The sidecar captures the same advisory warning payloads already returned in structured command results, along with generation context such as project paths, input netlist path, validation mode, symbol directories used, managed-item counts, and warning count.
+- `ApplyNetlistResult` and `NewFromNetlistResult` now surface `warning_report_path`, and `kicad-pcb/src/kicad_pcb/formatting.py` prints that path in the human-readable CLI output so users can discover the persisted warning report without switching to JSON mode.
+- Focused command and presentation coverage now asserts that the sidecar is written and that persisted warning codes match the structured warning set.
 
 ---
 
@@ -1181,12 +1187,17 @@ Status: `IN PROGRESS`
   - improved output.
 
 #### 5.3.2 Add a schematic-quality review script
-Status: `NOT STARTED`
+Status: `DONE`
 - Create a simple developer utility that:
   - generates the fixture,
   - reports warnings,
   - prints key layout metrics,
   - saves the result to a known output folder.
+
+Current findings:
+- Added `scripts/review_schematic_readability.py`, a repo-local developer utility that regenerates the canonical NE5532 readability fixture in internal mode, captures both `validate-netlist` and `new-from-netlist` warning sets, computes the current readability metrics, compares them against the checked-in current and regressed baselines, and writes a deterministic review bundle under `code_review/generated/` by default.
+- The review bundle now includes copied generated root/managed schematics plus `review_report.json` and `review_summary.txt`, which gives a repeatable way to inspect warning drift and readability-metric drift outside the pytest output.
+- Added focused regression coverage in `tests/unit/test_readability_review_script.py` proving the script writes the bundle and preserves the expected real-fixture warning and metrics content.
 
 ---
 

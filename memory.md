@@ -1,5 +1,23 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-22T06:30:42Z - GPT-5.4 - Made the readability review script visibly progressive and removed duplicate validation work
+
+- Updated `scripts/review_schematic_readability.py` so it now prints timestamped progress lines for workspace setup, temporary project creation, schematic generation, metric computation, and bundle writing instead of staying silent during long phases.
+- Removed the extra standalone validation pass from the review script by creating the temporary project directly and calling `_apply_netlist_to_project(...)`, then deriving the validation-warning subset from the generation warning set by filtering generation-only codes.
+- Fixed the refactor fallout by introducing a small `ReviewRequest` dataclass, returning `project.path` correctly, and revalidating with `.venv/bin/pytest tests/unit/test_readability_review_script.py`, `.venv/bin/ruff check scripts/review_schematic_readability.py tests/unit/test_readability_review_script.py`, and a standalone `.venv/bin/python scripts/review_schematic_readability.py --out-dir /tmp/openclaw_kicad_readability_review_repro2` run that completed successfully while printing progress.
+
+## 2026-03-22T04:30:07Z - GPT-5.4 - Persisted advisory warnings to a generated sidecar report
+
+- Implemented `5.2.2 Add warning surfacing` by writing `OpenClaw_Warnings.json` into the generated project directory for non-dry-run `apply-netlist` and `new-from-netlist` flows inside `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`.
+- The sidecar now stores the same advisory warning payloads returned in structured results plus generation context (`project_path`, `netlist_path`, root/managed schematic paths, validation mode, symbol dirs used, managed-item stats, warning count).
+- `ApplyNetlistResult` and `NewFromNetlistResult` now expose `warning_report_path`, and `kicad-pcb/src/kicad_pcb/formatting.py` prints that path in human-readable CLI output; focused validation passed with `.venv/bin/pytest tests/unit/test_netlist_commands.py -k 'surfaces_input_coupling_warning or preserves_input_coupling_warning'`, `.venv/bin/pytest tests/unit/test_presentation.py -k 'WarningReportPath or ApplyNetlistResult or NewFromNetlistResult'`, and Ruff on the touched implementation/test files.
+
+## 2026-03-22T04:09:42Z - GPT-5.4 - Added the readability review utility for the NE5532 fixture
+
+- Implemented `scripts/review_schematic_readability.py`, a repo-local developer utility that regenerates the canonical NE5532 readability fixture in internal mode, captures both `validate-netlist` and `new-from-netlist` warning sets, computes the existing readability metrics, compares them against the checked-in current and regressed baselines, and writes a deterministic review bundle (`generated_root.kicad_sch`, `generated_managed.kicad_sch`, `review_report.json`, `review_summary.txt`) to an output folder.
+- Added focused coverage in `tests/unit/test_readability_review_script.py`; validation passed with `.venv/bin/pytest tests/unit/test_readability_review_script.py`, `.venv/bin/ruff check scripts/review_schematic_readability.py tests/unit/test_readability_review_script.py`, and a standalone invocation writing the bundle to `/tmp/openclaw_kicad_readability_review`.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so item `5.3.2 Add a schematic-quality review script` is now marked `DONE` with the new script/test details recorded under Current findings.
+
 ## 2026-03-21T23:26:36Z - GPT-5.4 - Re-ran the full pytest suite in the repo-local .venv
 
 - Verified the current repo-local environment directly from `.venv/bin` after the Python environment service failed to attach; `.venv/bin/pytest` and `.venv/bin/python3.11` are present.

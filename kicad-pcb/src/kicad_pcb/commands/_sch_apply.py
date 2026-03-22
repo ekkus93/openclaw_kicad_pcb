@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import math
 import shutil
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ..adapters import KicadCliAdapter
@@ -44,6 +46,7 @@ from ._validate import advisory_warnings
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
+WARNING_REPORT_FILE = "OpenClaw_Warnings.json"
 MIN_COMPONENT_PLACEMENT_RATIO = 0.8
 _LOCAL_DECOUPLING_DISTANCE_WARN_MM = TIER_SPACING_MM * 1.5
 
@@ -85,6 +88,36 @@ def _cleanup_new_managed_file(managed_sch_path: Path, original_error: Exception)
             add_note(cleanup_note)
         else:
             setattr(original_error, "cleanup_note", cleanup_note)
+
+
+def _write_warning_report(  # noqa: PLR0913
+    *,
+    project: ProjectRef,
+    request: _ApplyNetlistRequest,
+    warnings: list[dict[str, object]],
+    managed_sch_path: Path,
+    stats: dict[str, int],
+    kicad_cli_used: bool,
+    symbols_dirs: tuple[str, ...],
+) -> Path:
+    """Write a deterministic advisory-warning sidecar for a generated project."""
+    warning_report_path = project.path / WARNING_REPORT_FILE
+    payload = {
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "project_name": project.name,
+        "project_path": str(project.path),
+        "netlist_path": str(request.netlist_path),
+        "root_schematic_path": str(project.sch_file),
+        "managed_schematic_path": str(managed_sch_path),
+        "validation_mode": request.mode_name or "kicad",
+        "kicad_cli_used": kicad_cli_used,
+        "symbols_dirs_used": list(symbols_dirs),
+        "managed_stats": dict(stats),
+        "warning_count": len(warnings),
+        "warnings": list(warnings),
+    }
+    warning_report_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return warning_report_path
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +273,18 @@ def _apply_netlist_to_project(
             }
         )
 
+    warning_report_path: Path | None = None
+    if not request.dry_run:
+        warning_report_path = _write_warning_report(
+            project=project,
+            request=request,
+            warnings=warnings,
+            managed_sch_path=managed_sch_path,
+            stats=stats,
+            kicad_cli_used=cli is not None,
+            symbols_dirs=tuple(str(d) for d in symbol_index.directories),
+        )
+
     return ApplyNetlistResult(
         schematic_path=project.sch_file,
         managed_schematic_path=managed_sch_path,
@@ -252,6 +297,7 @@ def _apply_netlist_to_project(
         kicad_cli_used=cli is not None,
         dry_run=request.dry_run,
         warnings=tuple(warnings),
+        warning_report_path=warning_report_path,
         symbols_dirs_used=tuple(str(d) for d in symbol_index.directories),
     )
 

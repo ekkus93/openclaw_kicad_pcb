@@ -180,6 +180,8 @@ def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
         f"   {items_label}: {r.managed_items_written}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
+    if r.warning_report_path is not None:
+        lines.append(f"   Warning report: {r.warning_report_path}")
     if r.symbols_dirs_used:
         lines.append("   Symbol dirs used:")
         for d in r.symbols_dirs_used:
@@ -200,6 +202,8 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
         f"   Nets applied: {r.nets_applied}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
     ]
+    if r.warning_report_path is not None:
+        lines.append(f"   Warning report: {r.warning_report_path}")
     if r.session_path is not None:
         lines.append(f"   Session: {r.session_path}")
     if r.zip_path is not None:
