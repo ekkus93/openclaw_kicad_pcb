@@ -101,6 +101,7 @@ class ApplyNetlistResult:
     managed_items_written: int
     nets_applied: int
     kicad_cli_used: bool
+    heuristic_profile_name: str
     dry_run: bool = False
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
     warning_report_path: Path | None = None
@@ -119,6 +120,7 @@ class NewFromNetlistResult:
     symbols_added: int
     nets_applied: int
     kicad_cli_used: bool
+    heuristic_profile_name: str
     warnings: tuple[dict[str, object], ...] = field(default_factory=tuple)
     warning_report_path: Path | None = None
     debug_dump_path: Path | None = None

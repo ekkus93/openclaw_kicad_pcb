@@ -250,6 +250,7 @@ class TestApplyNetlistResult:
             managed_items_written=5,
             nets_applied=3,
             kicad_cli_used=False,
+            heuristic_profile_name="generic_digital",
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
             debug_dump_path=tmp_path / "OpenClaw_Debug.json",
@@ -257,6 +258,7 @@ class TestApplyNetlistResult:
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
         assert "OpenClaw_Debug.json" in text
+        assert "generic_digital" in text
 
 
 class TestNewFromNetlistResult:
@@ -269,6 +271,7 @@ class TestNewFromNetlistResult:
             symbols_added=2,
             nets_applied=3,
             kicad_cli_used=False,
+            heuristic_profile_name="power_supply",
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
             debug_dump_path=tmp_path / "OpenClaw_Debug.json",
@@ -276,6 +279,7 @@ class TestNewFromNetlistResult:
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
         assert "OpenClaw_Debug.json" in text
+        assert "power_supply" in text
 
 
 # ---------------------------------------------------------------------------

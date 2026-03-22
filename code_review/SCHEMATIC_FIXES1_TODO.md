@@ -1220,13 +1220,18 @@ Current findings:
 - `LayoutHeuristicPolicy` now isolates the analog-only decoupling, op-amp locality, input-stage cohesion, and output-stage cohesion passes from the generic post-layout snap pipeline.
 
 ## 6.2 Add schematic-style profiles
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 - Add output profiles such as:
   - generic digital,
   - analog audio,
   - power supply,
   - dense debug.
 - Use analog-audio profile for this circuit.
+
+Current findings:
+- `SchematicHeuristicProfile` now bundles layout and routing heuristic policies under named profiles, and the current registry includes `analog_audio`, `generic_digital`, `power_supply`, and `dense_debug`.
+- `apply-netlist` and `new-from-netlist` now accept `--heuristic-profile <name>` and resolve the selected name through `SCHEMATIC_HEURISTIC_PROFILES`, so profile selection is wired through the request path instead of staying as an internal default only.
+- Human-readable command output for both `apply-netlist` and `new-from-netlist` now prints `Heuristic profile: <name>`, which makes the active profile visible during normal CLI use without inspecting JSON output.
 
 ## 6.3 Improve internal debug introspection
 Status: `IN PROGRESS`
@@ -1238,8 +1243,8 @@ Status: `IN PROGRESS`
   - final route choices.
 
 Current findings:
-- `GraphvizLayoutEngine` debug dumps now include the active layout heuristic toggles and a structured `placement_constraints` summary alongside the existing block-layout and coordinate artifacts.
-- `apply-netlist` and `new-from-netlist` now accept `--debug-dump <path>` and write a merged JSON sidecar that includes unit-splitting summaries, per-net classification, final route choices, and the active routing-heuristic toggles.
+- `GraphvizLayoutEngine` debug dumps now include the active `heuristic_profile_name`, the active layout heuristic toggles, and a structured `placement_constraints` summary alongside the existing block-layout and coordinate artifacts.
+- `apply-netlist` and `new-from-netlist` now accept `--debug-dump <path>` and write a merged JSON sidecar that includes `heuristic_profile_name`, unit-splitting summaries, per-net classification, final route choices, and the active routing-heuristic toggles.
 - Focused regression coverage exists for both the layout-only debug dump and the end-to-end schematic debug sidecar.
 
 ---

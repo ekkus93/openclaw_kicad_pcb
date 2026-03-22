@@ -672,6 +672,14 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
     assert dump["unit_splitting"]["expanded_device_count"] == 1
     assert dump["unit_splitting"]["expanded_devices"][0]["source_ref"] == "U1"
+    assert dump["schematic_debug_artifacts"] == [
+        "heuristic_profile_name",
+        "unit_splitting",
+        "net_classification",
+        "final_route_choices",
+        "routing_heuristic_policy",
+    ]
+    assert dump["heuristic_profile_name"] == "analog_audio"
     assert dump["net_classification"] == [
         {
             "classification": "signal",
@@ -690,6 +698,118 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     ]
     assert [choice["strategy"] for choice in dump["final_route_choices"]] == ["direct", "direct"]
     assert dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
+
+
+def test_cmd_apply_netlist_forwards_heuristic_profile_name(tmp_path: Path, monkeypatch) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    captured_request = None
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    def _fake_apply(project_arg, request_arg):
+        nonlocal captured_request
+        captured_request = request_arg
+        return type(
+            "_Result",
+            (),
+            {
+                "schematic_path": project_arg.sch_file,
+                "managed_schematic_path": project_arg.path / "OpenClaw_Managed.kicad_sch",
+                "symbols_added": 0,
+                "symbols_updated": 0,
+                "managed_items_written": 0,
+                "nets_applied": 0,
+                "kicad_cli_used": False,
+                "heuristic_profile_name": "generic_digital",
+                "dry_run": False,
+                "warnings": (),
+                "warning_report_path": None,
+                "debug_dump_path": None,
+                "symbols_dirs_used": (),
+            },
+        )()
+
+    monkeypatch.setattr("kicad_pcb.commands.netlist._apply_netlist_to_project", _fake_apply)
+
+    cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=None,
+            mode="internal",
+            force=True,
+            dry_run=False,
+            heuristic_profile="generic_digital",
+        )
+    )
+
+    assert captured_request is not None
+    assert captured_request.heuristic_profile_name == "generic_digital"
+
+
+def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, monkeypatch) -> None:
+    ir_path = tmp_path / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(
+        name="proj",
+        path=tmp_path / "out" / "proj",
+        created=datetime.now().isoformat(),
+    )
+    captured_request = None
+
+    monkeypatch.setattr("kicad_pcb.commands.netlist.full_validate", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("kicad_pcb.commands.netlist._create_project", lambda **_kwargs: project)
+
+    def _fake_apply(project_arg, request_arg):
+        nonlocal captured_request
+        captured_request = request_arg
+        return type(
+            "_Result",
+            (),
+            {
+                "schematic_path": project_arg.sch_file,
+                "managed_schematic_path": project_arg.path / "OpenClaw_Managed.kicad_sch",
+                "symbols_added": 0,
+                "symbols_updated": 0,
+                "managed_items_written": 0,
+                "nets_applied": 0,
+                "kicad_cli_used": False,
+                "heuristic_profile_name": "power_supply",
+                "dry_run": False,
+                "warnings": (),
+                "warning_report_path": None,
+                "debug_dump_path": None,
+                "symbols_dirs_used": (),
+            },
+        )()
+
+    monkeypatch.setattr("kicad_pcb.commands.netlist._apply_netlist_to_project", _fake_apply)
+
+    cmd_new_from_netlist(
+        Namespace(
+            name="proj",
+            netlist=str(ir_path),
+            out_dir=str(tmp_path / "out"),
+            description="",
+            symbols_dir=None,
+            mode="internal",
+            validate=None,
+            routing="bus",
+            heuristic_profile="power_supply",
+            auto_fix=False,
+            strict=False,
+        )
+    )
+
+    assert captured_request is not None
+    assert captured_request.heuristic_profile_name == "power_supply"
 
 
 def test_cmd_apply_netlist_surfaces_output_load_warning(

@@ -63,6 +63,7 @@ from typing_extensions import Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
+    from .graphviz_layout import LayoutHeuristicPolicy
 
 
 # ---------------------------------------------------------------------------
@@ -117,11 +118,13 @@ class NoneLayoutEngine:
 # ---------------------------------------------------------------------------
 
 
-def make_layout_engine(
+def make_layout_engine(  # noqa: PLR0913
     *,
     seed: int = 7,
     cache_path: Path | None = None,
     debug_dump_path: Path | None = None,
+    heuristic_profile_name: str | None = None,
+    layout_heuristic_policy: LayoutHeuristicPolicy | None = None,
     tiers: dict[str, int] | None = None,
     strict: bool = False,
 ) -> LayoutEngine:
@@ -146,7 +149,11 @@ def make_layout_engine(
     RuntimeError
         If the ``dot`` binary cannot be found.
     """
-    from .graphviz_layout import GraphvizLayoutEngine, find_dot_binary  # noqa: PLC0415
+    from .graphviz_layout import (  # noqa: PLC0415
+        DEFAULT_LAYOUT_HEURISTIC_POLICY,
+        GraphvizLayoutEngine,
+        find_dot_binary,
+    )
 
     dot = find_dot_binary(strict=strict)
     if not dot:
@@ -159,17 +166,21 @@ def make_layout_engine(
         seed=seed,
         cache_path=cache_path,
         debug_dump_path=debug_dump_path,
+        heuristic_profile_name=heuristic_profile_name,
+        layout_heuristic_policy=(layout_heuristic_policy or DEFAULT_LAYOUT_HEURISTIC_POLICY),
         tiers=tiers,
         strict=strict,
     )
 
 
-def make_layout_engine_with_ir(
+def make_layout_engine_with_ir(  # noqa: PLR0913
     ir: CircuitIR,
     *,
     seed: int = 7,
     cache_path: Path | None = None,
     debug_dump_path: Path | None = None,
+    heuristic_profile_name: str | None = None,
+    layout_heuristic_policy: LayoutHeuristicPolicy | None = None,
     strict: bool = False,
 ) -> LayoutEngine:
     """Return a :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine` with pre-computed tiers.
@@ -200,6 +211,8 @@ def make_layout_engine_with_ir(
         seed=seed,
         cache_path=cache_path,
         debug_dump_path=debug_dump_path,
+        heuristic_profile_name=heuristic_profile_name,
+        layout_heuristic_policy=layout_heuristic_policy,
         tiers=precomputed_tiers,
         strict=strict,
     )

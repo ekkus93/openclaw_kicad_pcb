@@ -22,6 +22,7 @@ from ..component_types import (
 )
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
+from ..graphviz_layout import DEFAULT_LAYOUT_HEURISTIC_POLICY, LayoutHeuristicPolicy
 from ..ir.validate import validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
 from ..layout_engine import (
@@ -31,7 +32,14 @@ from ..layout_engine import (
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult
-from ..router import PinAnchor, RouteDecision, RoutingHeuristicPolicy, route_nets, write_routing
+from ..router import (
+    DEFAULT_ROUTING_HEURISTIC_POLICY,
+    PinAnchor,
+    RouteDecision,
+    RoutingHeuristicPolicy,
+    route_nets,
+    write_routing,
+)
 from ..runner import find_kicad_cli
 from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat
 from ..sexpr.nodes import ListNode
@@ -140,6 +148,67 @@ def resolve_schematic_paths(project: ProjectRef) -> tuple[Path, Path]:
     return project.sch_file, project.path / MANAGED_SHEET_FILE
 
 
+@dataclass(frozen=True)
+class SchematicHeuristicProfile:
+    """Bundle layout and routing heuristic policies under one named profile."""
+
+    name: str
+    layout_policy: LayoutHeuristicPolicy = DEFAULT_LAYOUT_HEURISTIC_POLICY
+    routing_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY
+
+
+ANALOG_AUDIO_HEURISTIC_PROFILE = SchematicHeuristicProfile(name="analog_audio")
+GENERIC_DIGITAL_HEURISTIC_PROFILE = SchematicHeuristicProfile(
+    name="generic_digital",
+    layout_policy=LayoutHeuristicPolicy(
+        enable_decoupling_snap=False,
+        enable_opamp_locality=False,
+        enable_input_stage_cohesion=False,
+        enable_output_stage_cohesion=False,
+    ),
+    routing_policy=RoutingHeuristicPolicy(
+        enable_compact_output_tails=False,
+        enable_compact_local_ground_clusters=False,
+    ),
+)
+POWER_SUPPLY_HEURISTIC_PROFILE = SchematicHeuristicProfile(
+    name="power_supply",
+    layout_policy=LayoutHeuristicPolicy(
+        enable_decoupling_snap=False,
+        enable_opamp_locality=False,
+        enable_input_stage_cohesion=False,
+        enable_output_stage_cohesion=False,
+    ),
+    routing_policy=RoutingHeuristicPolicy(
+        enable_compact_output_tails=False,
+        enable_compact_local_ground_clusters=True,
+    ),
+)
+DENSE_DEBUG_HEURISTIC_PROFILE = SchematicHeuristicProfile(
+    name="dense_debug",
+    layout_policy=LayoutHeuristicPolicy(
+        enable_decoupling_snap=False,
+        enable_opamp_locality=False,
+        enable_input_stage_cohesion=False,
+        enable_output_stage_cohesion=False,
+    ),
+    routing_policy=RoutingHeuristicPolicy(
+        enable_compact_output_tails=False,
+        enable_compact_local_ground_clusters=False,
+    ),
+)
+SCHEMATIC_HEURISTIC_PROFILES: dict[str, SchematicHeuristicProfile] = {
+    profile.name: profile
+    for profile in (
+        ANALOG_AUDIO_HEURISTIC_PROFILE,
+        GENERIC_DIGITAL_HEURISTIC_PROFILE,
+        POWER_SUPPLY_HEURISTIC_PROFILE,
+        DENSE_DEBUG_HEURISTIC_PROFILE,
+    )
+}
+DEFAULT_SCHEMATIC_HEURISTIC_PROFILE = ANALOG_AUDIO_HEURISTIC_PROFILE
+
+
 # ---------------------------------------------------------------------------
 # Request dataclass
 # ---------------------------------------------------------------------------
@@ -156,7 +225,9 @@ class _ApplyNetlistRequest:
     strict: bool = False
     layout_name: str | None = None
     routing_name: str | None = None
+    heuristic_profile_name: str | None = None
     debug_dump_path: Path | None = None
+    heuristic_profile: SchematicHeuristicProfile = DEFAULT_SCHEMATIC_HEURISTIC_PROFILE
 
 
 @dataclass(frozen=True)
@@ -181,6 +252,10 @@ def _apply_netlist_to_project(
     project: ProjectRef,
     request: _ApplyNetlistRequest,
 ) -> ApplyNetlistResult:
+    active_heuristic_profile = _resolve_heuristic_profile(
+        request.heuristic_profile_name,
+        default=request.heuristic_profile,
+    )
     ir = CircuitIR.load(request.netlist_path)
     validate_circuit_ir(ir)
 
@@ -193,11 +268,13 @@ def _apply_netlist_to_project(
     generation_ir, placed_symbol_specs = _expand_generation_ir(ir, symbol_index)
     debug_capture: dict[str, object] = {
         "schematic_debug_artifacts": [
+            "heuristic_profile_name",
             "unit_splitting",
             "net_classification",
             "final_route_choices",
             "routing_heuristic_policy",
         ],
+        "heuristic_profile_name": active_heuristic_profile.name,
         "unit_splitting": _build_unit_splitting_debug(
             source_ir=ir,
             generation_ir=generation_ir,
@@ -260,6 +337,7 @@ def _apply_netlist_to_project(
                 placed_symbol_specs=placed_symbol_specs,
                 sheet_uuid=sheet_uuid,
                 request=request,
+                active_heuristic_profile=active_heuristic_profile,
                 stats=stats,
                 warnings=warnings,
                 managed_sch_path=managed_sch_path,
@@ -321,6 +399,7 @@ def _apply_netlist_to_project(
         ),
         nets_applied=len(ir.nets),
         kicad_cli_used=cli is not None,
+        heuristic_profile_name=active_heuristic_profile.name,
         dry_run=request.dry_run,
         warnings=tuple(warnings),
         warning_report_path=warning_report_path,
@@ -343,6 +422,7 @@ def _build_managed_mutator(  # noqa: PLR0913
     placed_symbol_specs: dict[str, _PlacedSymbolSpec],
     sheet_uuid: str,
     request: _ApplyNetlistRequest,
+    active_heuristic_profile: SchematicHeuristicProfile,
     stats: dict[str, int],
     warnings: list[dict[str, object]],
     managed_sch_path: Path,
@@ -366,6 +446,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             request.layout_name,
             cache_path=project.path / "openclaw_layout_cache.json",
             debug_dump_path=request.debug_dump_path,
+            heuristic_profile=active_heuristic_profile,
             strict=request.strict,
         )
         (
@@ -399,6 +480,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             tiers=_tiers,
             positions=raw_layout,
             use_bus=_resolve_routing(request.routing_name),
+            heuristic_policy=active_heuristic_profile.routing_policy,
             strict=request.strict,
         )
         if debug_capture is not None:
@@ -409,8 +491,9 @@ def _build_managed_mutator(  # noqa: PLR0913
                     ),
                     "final_route_choices": _serialize_route_decisions(routing.route_decisions),
                     "routing_heuristic_policy": _serialize_routing_heuristic_policy(
-                        RoutingHeuristicPolicy()
+                        active_heuristic_profile.routing_policy
                     ),
+                    "heuristic_profile_name": active_heuristic_profile.name,
                 }
             )
         write_routing(
@@ -1133,6 +1216,7 @@ def _resolve_layout(
     *,
     cache_path: Path | None = None,
     debug_dump_path: Path | None = None,
+    heuristic_profile: SchematicHeuristicProfile = DEFAULT_SCHEMATIC_HEURISTIC_PROFILE,
     strict: bool = False,
 ) -> LayoutEngine:
     """Return the layout engine requested by *layout_name*.
@@ -1146,6 +1230,8 @@ def _resolve_layout(
         return make_layout_engine(
             cache_path=cache_path,
             debug_dump_path=debug_dump_path,
+            heuristic_profile_name=heuristic_profile.name,
+            layout_heuristic_policy=heuristic_profile.layout_policy,
             strict=strict,
         )
     raise UserError(
@@ -1153,6 +1239,25 @@ def _resolve_layout(
         code=ErrorCode.USER_ERROR,
         details={"allowed": ["graphviz"]},
     )
+
+
+def _resolve_heuristic_profile(
+    profile_name: str | None,
+    *,
+    default: SchematicHeuristicProfile = DEFAULT_SCHEMATIC_HEURISTIC_PROFILE,
+) -> SchematicHeuristicProfile:
+    """Return the bundled heuristic profile requested by *profile_name*."""
+    if profile_name is None:
+        return default
+    name = profile_name.strip().lower()
+    try:
+        return SCHEMATIC_HEURISTIC_PROFILES[name]
+    except KeyError as exc:
+        raise UserError(
+            f"Unknown heuristic profile '{profile_name}'",
+            code=ErrorCode.USER_ERROR,
+            details={"allowed": sorted(SCHEMATIC_HEURISTIC_PROFILES)},
+        ) from exc
 
 
 def _resolve_routing(routing_name: str | None) -> bool:

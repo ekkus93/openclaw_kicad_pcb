@@ -102,6 +102,7 @@ _LAYOUT_DEBUG_ARTIFACTS: tuple[str, ...] = (
     "connector_role_summary",
     "diagnostics",
     "block_layout",
+    "heuristic_profile_name",
     "layout_heuristic_policy",
     "placement_constraints",
     "halo_map",
@@ -474,6 +475,7 @@ class GraphvizLayoutEngine:
         seed: int = 7,
         cache_path: Path | None = None,
         debug_dump_path: Path | None = None,
+        heuristic_profile_name: str | None = None,
         tiers: dict[str, int] | None = None,
         layout_heuristic_policy: LayoutHeuristicPolicy = DEFAULT_LAYOUT_HEURISTIC_POLICY,
         strict: bool = False,
@@ -484,6 +486,7 @@ class GraphvizLayoutEngine:
         self._seed = seed
         self._cache_path = cache_path
         self._debug_dump_path = debug_dump_path
+        self._heuristic_profile_name = heuristic_profile_name
         self._tiers = tiers
         self._layout_heuristic_policy = layout_heuristic_policy
         self._strict = strict
@@ -577,6 +580,7 @@ class GraphvizLayoutEngine:
                             "dot_source": dot_source,
                             "feedback_refs": sorted(feedback_refs),
                             "final_positions": _serialize_layout_positions(cached),
+                            "heuristic_profile_name": self._heuristic_profile_name,
                             "halo_alignment": _analyze_halo_column_alignment({}, cached, halo),
                             "halo_map": dict(sorted(halo.items())),
                             "layout_heuristic_policy": _serialize_layout_heuristic_policy(
@@ -677,6 +681,7 @@ class GraphvizLayoutEngine:
                     "dot_source": dot_source,
                     "feedback_refs": sorted(feedback_refs),
                     "final_positions": _serialize_layout_positions(result),
+                    "heuristic_profile_name": self._heuristic_profile_name,
                     "forced_same_column_halo_refs": sorted(
                         halo_ref
                         for halo_ref, details in halo_alignment.items()
