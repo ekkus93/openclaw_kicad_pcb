@@ -1181,10 +1181,15 @@ Developers should be able to see whether layout quality actually improved.
 ### Tasks
 
 #### 5.3.1 Save render snapshots during tests or dev mode
-Status: `IN PROGRESS`
+Status: `DONE`
 - Generate PNG or equivalent preview renders for:
   - current baseline,
   - improved output.
+
+Current findings:
+- `scripts/review_schematic_readability.py` now emits comparison preview snapshots into the review bundle using the existing KiCad schematic SVG export path when it works, with optional PNG conversion when `cairosvg` is available.
+- Because `kicad-cli sch export svg` on this machine can report success without leaving an SVG behind, the review bundle now falls back to an internal schematic SVG renderer so the standalone bundle still contains real baseline/improved preview files.
+- Focused coverage in `tests/unit/test_readability_review_script.py` now verifies both the normal preview-export path and the internal preview renderer path, so `review_report.json` always carries direct visual before/after artifacts alongside the metric drift data.
 
 #### 5.3.2 Add a schematic-quality review script
 Status: `DONE`

@@ -1,5 +1,17 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-22T08:17:46Z - GPT-5.4 - Fixed the review-bundle preview path by adding an internal preview renderer
+
+- Investigated raw `kicad-cli sch export svg` behavior on this machine (`kicad-cli version` = `9.0.7`): flat baseline schematics reported `Plotted to ...` but left the output directory empty, and generated/root schematics returned `Schematic file does not exist or is not accessible` even though the `.kicad_sch` file existed beside its `.kicad_pro` and managed sheet.
+- Updated `scripts/review_schematic_readability.py` so preview generation still tries the KiCad CLI path first, but now uses an internal deterministic SVG preview renderer when KiCad export fails or reports success without emitting a file; the improved-output comparison now renders the generated managed schematic so the internal preview renderer stays visually meaningful.
+- Validation: focused `pytest tests/unit/test_readability_review_script.py` now has two passing tests (normal preview path + internal preview renderer path), Ruff is clean on the updated script/test, and the standalone bundle run under `/tmp/openclaw_kicad_readability_review_preview` now contains real top-level preview files `current_baseline_preview.svg` and `improved_output_preview.svg` alongside `review_report.json` and `review_summary.txt`.
+
+## 2026-03-22T07:14:09Z - GPT-5.4 - Added review-bundle preview export support with deterministic test coverage
+
+- Extended `scripts/review_schematic_readability.py` so the review bundle now records baseline/improved preview render attempts in both `review_report.json` and `review_summary.txt`, with focused deterministic coverage in `tests/unit/test_readability_review_script.py` using a fake preview CLI and PNG writer.
+- The script now uses the existing KiCad schematic SVG export path and optional `cairosvg` PNG conversion, while keeping preview export non-fatal so the review bundle still completes when preview generation is unavailable or fails.
+- Runtime note from this machine: the standalone script run succeeded, but the real KiCad CLI did not leave SVG files behind in the output bundle and the generated report recorded failed preview entries instead (`current_baseline_preview` reported a plotted path with no emitted file, `improved_output_preview` reported `Schematic file does not exist or is not accessible`), so preview-export behavior may still need separate CLI-level investigation beyond the review-script wiring.
+
 ## 2026-03-22T06:30:42Z - GPT-5.4 - Made the readability review script visibly progressive and removed duplicate validation work
 
 - Updated `scripts/review_schematic_readability.py` so it now prints timestamped progress lines for workspace setup, temporary project creation, schematic generation, metric computation, and bundle writing instead of staying silent during long phases.
