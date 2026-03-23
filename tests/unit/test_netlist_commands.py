@@ -2500,6 +2500,60 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert digital_overrides == {}
 
 
+@_skip_no_system_symbols
+def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
+    tmp_path: Path,
+) -> None:
+    power_result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532PowerProfile",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+            heuristic_profile="power_supply",
+            debug_dump=str(tmp_path / "power_supply_debug.json"),
+        )
+    )
+    digital_result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DigitalProfile",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+            heuristic_profile="generic_digital",
+            debug_dump=str(tmp_path / "generic_digital_debug.json"),
+        )
+    )
+
+    power_dump = json.loads(cast(Path, power_result.debug_dump_path).read_text(encoding="utf-8"))
+    digital_dump = json.loads(
+        cast(Path, digital_result.debug_dump_path).read_text(encoding="utf-8")
+    )
+    power_counts, power_overrides = _summarize_route_choices(cast(dict[str, object], power_dump))
+    digital_counts, digital_overrides = _summarize_route_choices(
+        cast(dict[str, object], digital_dump)
+    )
+
+    assert power_dump["heuristic_profile_name"] == "power_supply"
+    assert digital_dump["heuristic_profile_name"] == "generic_digital"
+    assert power_dump["net_classification"] == digital_dump["net_classification"]
+    assert power_counts == digital_counts
+    assert power_dump["routing_heuristic_policy"] == {
+        "enable_compact_local_ground_clusters": True,
+        "enable_compact_output_tails": False,
+    }
+    assert digital_dump["routing_heuristic_policy"] == {
+        "enable_compact_local_ground_clusters": False,
+        "enable_compact_output_tails": False,
+    }
+    assert power_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert digital_overrides == {}
+
+
 def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:
     """Assert that *managed_doc* faithfully represents *ir_data*.
 

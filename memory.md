@@ -1,5 +1,18 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-23T07:57:53Z - GPT-5.4 - Added the real NE5532 power_supply profile comparison and confirmed its current no-op routing summary
+
+- Extended `tests/unit/test_netlist_commands.py` with a system-library-guarded real-fixture regression that runs `cmd_new_from_netlist(...)` on `code_review/ne5532_headphone_amp_netlist.json` with `heuristic_profile="power_supply"` and `heuristic_profile="generic_digital"` and compares their debug dumps.
+- Current verified contract on this fixture: `power_supply` and `generic_digital` produce identical serialized `final_route_choices` and `net_classification`, but expose different `routing_heuristic_policy` flags (`enable_compact_local_ground_clusters=True` for `power_supply`, `False` for `generic_digital`). This means the real NE5532 case does not currently trigger a power-only routing divergence even though the profile plumbing is active.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'real_ne5532_fixture_profile_debug_dump_summary_diff or real_ne5532_power_profile_debug_dump_matches_current_route_summary or real_ne5532_fixture_warning_set_does_not_drift or new_from_real_ne5532_fixture_marks_unused_trs_ring_pins'`.
+
+## 2026-03-23T08:17:36Z - GPT-5.4 - Expanded compact local ground-cluster lane selection so power_supply now diverges on the real NE5532 fixture
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py::_compact_local_ground_cluster_route(...)` so compact 3-pin local `GND` clusters no longer hardcode the lowest stub row as the horizontal lane; the helper now evaluates the cluster's candidate stub rows, rejects body-crossing lanes, and chooses the viable lane with the lowest total vertical travel plus left-shift cost.
+- Added a focused router regression in `tests/unit/test_phase6_wire_simplification.py` proving a compressed output-side `GND` cluster routes on the middle lane at `y=128.27` instead of falling back when the lowest row is blocked by the connector body.
+- Updated the real system-library-guarded NE5532 regression in `tests/unit/test_netlist_commands.py` so `heuristic_profile="power_supply"` now truthfully differs from `heuristic_profile="generic_digital"`: both still keep the same stable route-strategy counts and `net_classification`, but only `power_supply` now reports `{"compact_local_ground_cluster": ["GND"]}` in the debug-dump heuristic overrides.
+- Focused validation passed with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_netlist_commands.py -k 'middle_lane_for_compressed_output_ground_cluster or real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff or real_ne5532_fixture_profile_debug_dump_summary_diff or power_profile_ground_cluster_route'`.
+
 ## 2026-03-23T07:31:45Z - GPT-5.4 - Full repo validation is still green after adding the real NE5532 profile-difference regression
 
 - Re-ran full validation from `/home/ubo/work/openclaw_kicad_pcb` with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest` after adding the real-fixture debug-dump regression.
