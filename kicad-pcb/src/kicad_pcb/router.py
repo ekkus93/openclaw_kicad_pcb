@@ -128,6 +128,8 @@ class RoutingHeuristicPolicy:
         """Return the analog compact-tail route when that policy applies."""
         if not self.enable_compact_output_tails or inferred_plan is None:
             return None
+        if _is_compact_horizontal_stage_tail(endpoints, axis=inferred_plan.axis):
+            return _compact_horizontal_stage_tail_route(endpoints)
         if not self.should_skip_shared_lane_plan(endpoints, inferred_plan):
             return None
         return _compact_vertical_tail_route(
@@ -855,6 +857,41 @@ def _is_compact_rightward_tail(
     )
 
 
+def _is_compact_horizontal_stage_tail(
+    endpoints: list[tuple[float, float]],
+    *,
+    axis: str,
+) -> bool:
+    """Return True when a local 3-pin net reads as stage then downstream tail.
+
+    This covers the mirror-image analog-audio case where a short support point
+    on the left feeds a middle stage node (for example a potentiometer wiper),
+    and the visually dominant continuation should then run rightward toward the
+    downstream stage instead of dropping immediately into a shared horizontal bus.
+    """
+    if axis != "horizontal" or len(endpoints) != 3:
+        return False
+
+    left, middle, right = sorted(endpoints, key=lambda point: (point[0], point[1]))
+    left_x, left_y = left
+    middle_x, middle_y = middle
+    right_x, right_y = right
+
+    left_gap = middle_x - left_x
+    right_gap = right_x - middle_x
+    if left_gap <= 0.01 or right_gap <= 0.01:
+        return False
+    if left_gap > (2 * WIRE_EXTEND_MM) + 0.05:
+        return False
+    if right_gap <= left_gap + 0.01:
+        return False
+    if abs(left_y - right_y) > WIRE_EXTEND_MM + 0.05:
+        return False
+
+    stage_offset = min(abs(middle_y - left_y), abs(middle_y - right_y))
+    return stage_offset > WIRE_EXTEND_MM + 0.05
+
+
 def _plan_single_grouped_ladder_lane(
     *,
     axis: str,
@@ -904,6 +941,38 @@ def _should_skip_inferred_lane_plan(
         axis=inferred_plan.axis,
         coordinate=inferred_plan.coordinate,
     )
+
+
+def _compact_horizontal_stage_tail_route(
+    endpoints: list[tuple[float, float]],
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Route a short left support into a stage node plus downstream continuation.
+
+    The middle point stays visually dominant: the support enters the stage from
+    the left, then the main continuation runs rightward from that stage toward
+    the downstream endpoint. This makes small analog chains read as deliberate
+    signal flow instead of taps into a shared horizontal scaffold.
+    """
+    if len(endpoints) != 3:
+        return _chain_route(endpoints)
+
+    left, middle, right = sorted(endpoints, key=lambda point: (point[0], point[1]))
+    left_x, left_y = left
+    middle_x, middle_y = middle
+    right_x, right_y = right
+
+    segs: list[WireSegment] = []
+    if not math.isclose(left_x, middle_x, abs_tol=0.01):
+        segs.append(WireSegment(left_x, left_y, middle_x, left_y))
+    if not math.isclose(left_y, middle_y, abs_tol=0.01):
+        segs.append(WireSegment(middle_x, left_y, middle_x, middle_y))
+    if not math.isclose(middle_x, right_x, abs_tol=0.01):
+        segs.append(WireSegment(middle_x, middle_y, right_x, middle_y))
+    if not math.isclose(middle_y, right_y, abs_tol=0.01):
+        segs.append(WireSegment(right_x, middle_y, right_x, right_y))
+
+    protected = {(round(x, 2), round(y, 2)) for x, y in endpoints}
+    return _simplify_wires(segs, protected_points=protected), []
 
 
 def _compact_vertical_tail_route(
@@ -1934,46 +2003,73 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         # Hub route (3 – _HUB_MAX_DEGREE known, no unknown pins)
         # ----------------------------------------------------------------
         if 3 <= len(known) <= _HUB_MAX_DEGREE and not unknown:
-            stub_ends = []
-            for pin_ref, (wx, wy, wa) in known:
-                ex, ey = _stub_end(wx, wy, wa)
-                routing.wires.append(WireSegment(wx, wy, ex, ey))
-                routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
-                stub_ends.append((ex, ey))
-            compact_tail_plan = _infer_bounded_local_lane_plan(stub_ends)
             if use_bus and net.name in ladder_routes:
                 lane_plan = ladder_routes[net.name]
-                hub_segs, hub_junctions = _shared_lane_route(
+                stub_ends = []
+                for pin_ref, (wx, wy, wa) in known:
+                    ex, ey = _stub_end(wx, wy, wa)
+                    routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                    # For a horizontal shared lane, suppress the sideways stub from
+                    # pins that exit horizontally (angle ≈ 0° or 180°).  Routing
+                    # from the pin endpoint directly avoids the "right/left-then-up"
+                    # L-shaped detour; _shared_lane_route reproduces any needed
+                    # horizontal span internally, leaving connectivity unchanged.
+                    if lane_plan.axis == "horizontal" and math.isclose(
+                        math.sin(math.radians(wa)), 0.0, abs_tol=0.01
+                    ):
+                        stub_ends.append((wx, wy))
+                    else:
+                        routing.wires.append(WireSegment(wx, wy, ex, ey))
+                        stub_ends.append((ex, ey))
+                compact_tail_route = heuristic_policy.route_compact_signal_tail(
                     stub_ends,
-                    axis=lane_plan.axis,
-                    coordinate=lane_plan.coordinate,
-                    min_bound=lane_plan.min_orthogonal,
-                    max_bound=lane_plan.max_orthogonal,
+                    inferred_plan=lane_plan,
+                    positions=positions,
                 )
-                strategy = "shared_lane"
-            elif (
-                use_bus
-                and (
-                    compact_tail_route := heuristic_policy.route_compact_signal_tail(
+                if compact_tail_route is not None:
+                    hub_segs, hub_junctions = compact_tail_route
+                    strategy = "compact_signal_tail"
+                    heuristic_override = "compact_output_tail"
+                else:
+                    hub_segs, hub_junctions = _shared_lane_route(
                         stub_ends,
-                        inferred_plan=compact_tail_plan,
-                        positions=positions,
+                        axis=lane_plan.axis,
+                        coordinate=lane_plan.coordinate,
+                        min_bound=lane_plan.min_orthogonal,
+                        max_bound=lane_plan.max_orthogonal,
                     )
-                )
-                is not None
-            ):
-                hub_segs, hub_junctions = compact_tail_route
-                strategy = "compact_signal_tail"
-                heuristic_override = "compact_output_tail"
-            elif use_bus and _prefer_chain_route(stub_ends):
-                hub_segs, hub_junctions = _chain_route(stub_ends)
-                strategy = "chain"
-            elif use_bus:
-                hub_segs, hub_junctions = _spine_route(stub_ends)
-                strategy = "spine"
+                    strategy = "shared_lane"
             else:
-                hub_segs, hub_junctions = _hub_route(stub_ends)
-                strategy = "hub"
+                stub_ends = []
+                for pin_ref, (wx, wy, wa) in known:
+                    ex, ey = _stub_end(wx, wy, wa)
+                    routing.wires.append(WireSegment(wx, wy, ex, ey))
+                    routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                    stub_ends.append((ex, ey))
+                compact_tail_plan = _infer_bounded_local_lane_plan(stub_ends)
+                if (
+                    use_bus
+                    and (
+                        compact_tail_route := heuristic_policy.route_compact_signal_tail(
+                            stub_ends,
+                            inferred_plan=compact_tail_plan,
+                            positions=positions,
+                        )
+                    )
+                    is not None
+                ):
+                    hub_segs, hub_junctions = compact_tail_route
+                    strategy = "compact_signal_tail"
+                    heuristic_override = "compact_output_tail"
+                elif use_bus and _prefer_chain_route(stub_ends):
+                    hub_segs, hub_junctions = _chain_route(stub_ends)
+                    strategy = "chain"
+                elif use_bus:
+                    hub_segs, hub_junctions = _spine_route(stub_ends)
+                    strategy = "spine"
+                else:
+                    hub_segs, hub_junctions = _hub_route(stub_ends)
+                    strategy = "hub"
             routing.wires.extend(hub_segs)
             routing.junctions.extend(hub_junctions)
             routing.route_decisions.append(

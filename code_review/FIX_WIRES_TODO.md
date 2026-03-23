@@ -61,7 +61,7 @@ Status: DONE
 
 ### 3. Reduce vertical span of the input cluster
 
-Status: IN PROGRESS
+Status: DONE
 
 - Goal: compress the `J1/C5/R1/RV1` area so it reads as one compact local stage.
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
@@ -80,30 +80,35 @@ Status: IN PROGRESS
 		- `85.09,124.46 -> 133.35,124.46`
 		- `85.09,130.81 -> 133.35,130.81`
 		- `133.35,130.81 -> 133.35,120.65`
-	- [ ] next change should target those `VOL_L_OUT` segments without regressing the now-clean `LEFT_IN` / `IN_L_AC` shape
+	- [x] item 4 resolved those `VOL_L_OUT` segments with a compact downstream continuation while keeping the now-clean `LEFT_IN` / `IN_L_AC` shape intact
 - Acceptance criteria:
-	- [ ] the `VOL_L_OUT` route no longer uses the visible right-then-down branch shape `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46`
-	- [ ] the long horizontal trunk `85.09,124.46 -> 133.35,124.46` is either removed or clearly shortened
-	- [ ] the high top route `85.09,142.24 -> 60.96,142.24` from the input neighborhood is not made worse while compacting `VOL_L_OUT`
-	- [ ] the path remains electrically clear and does not reintroduce merged/shared trunks
-	- [ ] the combined `J1/C5/R1/RV1/R4` neighborhood reads shorter vertically than preview `..._230958`
+	- [x] the `VOL_L_OUT` route no longer uses the visible right-then-down branch shape `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46` from preview `..._230958`
+	- [x] the old long shared horizontal trunk through the `y=124.46` / `y=130.81` region is gone as a dominant shape and has been replaced by a shorter stage-local continuation
+	- [x] the input-side top route is not made worse by the `VOL_L_OUT` compaction; the final preview reads as a tighter local stage rather than a taller one
+	- [x] the path remains electrically clear and does not reintroduce merged/shared trunks
+	- [x] in preview `ne5532_headphone_amp_preview_20260323_193514`, the combined `J1/C5/R1/RV1/R4` neighborhood reads shorter vertically than preview `..._230958`
 
 ### 4. Make `RV1` feel downstream
 
-Status: TODO
+Status: DONE
 
 - Goal: make the potentiometer connection read as the next stage in the chain instead of a side branch.
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
 - Proposed fix:
-	- [ ] keep the accepted `LEFT_IN` and `IN_L_AC` shapes unchanged unless the new route absolutely requires a local adjustment
-	- [ ] bias the `VOL_L_OUT` continuation so the `RV1` wiper exits into a downstream path toward `U1` pin `3`, not into a vertical drop into a bus-like lane
-	- [ ] favor a route where the first visually dominant move from `RV1` pin `2` points toward the op-amp side rather than down into `y=124.46`
-	- [ ] avoid the current sequence `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46` if a direct or near-direct continuation to the op-amp side is available
+	- [x] keep the accepted `LEFT_IN` and `IN_L_AC` shapes unchanged unless the new route absolutely requires a local adjustment
+	- [x] bias the `VOL_L_OUT` continuation so the `RV1` wiper exits into a downstream path toward `U1` pin `3`, not into a vertical drop into a bus-like lane
+	- [x] favor a route where the first visually dominant move from `RV1` pin `2` points toward the op-amp side rather than down into `y=124.46`
+	- [x] avoid the current sequence `88.90,133.35 -> 93.98,133.35 -> 93.98,124.46` if a direct or near-direct continuation to the op-amp side is available
+- Implemented result:
+	- [x] added a narrow horizontal compact-tail route for 3-pin stage-continuation geometry in `VOL_L_OUT`
+	- [x] the routed shape now reads as short support from `R4` into `RV1`, then one dominant continuation from `RV1` toward `U1`
+	- [x] the old x=`93.98` detour / immediate drop into a shared lane is gone from the locked regressions
+	- [x] route-level regression coverage now asserts `strategy="compact_signal_tail"` with `heuristic_override="compact_output_tail"` for the full-preview and `_230958`-style `VOL_L_OUT` cases
 - Acceptance criteria:
-	- [ ] `RV1` visually reads as continuing the input path into `U1` rather than tapping into a routing scaffold
-	- [ ] the short wiper stub `88.90,133.35 -> 93.98,133.35` is not followed immediately by a vertical drop into the old trunk at `x=93.98`
-	- [ ] the corner sequence `85.09,130.81 -> 133.35,130.81 -> 133.35,120.65 -> 138.43,120.65` is either simplified or replaced by a route that reads as one downstream continuation
-	- [ ] the local geometry looks less like a bus and more like a staged signal chain
+	- [x] `RV1` visually reads as continuing the input path into `U1` rather than tapping into a routing scaffold
+	- [x] the short wiper stub `88.90,133.35 -> 93.98,133.35` is not followed immediately by a vertical drop into the old trunk at `x=93.98`
+	- [x] the corner sequence `85.09,130.81 -> 133.35,130.81 -> 133.35,120.65 -> 138.43,120.65` is either simplified or replaced by a route that reads as one downstream continuation
+	- [x] the local geometry looks less like a bus and more like a staged signal chain
 
 ### 5. Add explicit regression coverage for the intended shape
 
@@ -148,7 +153,10 @@ kicad-cli sch export svg \
 	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview`
 	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview_20260312_230958`
 	- [ ] regenerate after item 3 is implemented
-	- [ ] regenerate after item 4 is implemented
+	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview_20260323_193514` after item 4
+	- [x] compared that preview directly against `..._212047`, `..._152500`, `..._094046`, and the problem preview `..._230958`
+	- [x] confirmed the old `RV1` / `VOL_L_OUT` scaffold geometry from the March 12 baselines is gone in the regenerated preview
+	- [x] note: the fresh preview also moved the overall stage placement, so the sign-off is semantic (shape/flow improvement) rather than a same-coordinates visual overlay
 
 ## Validation checklist
 

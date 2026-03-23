@@ -1,0 +1,161 @@
+{
+  "apply_warnings": [
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    }
+  ],
+  "current_baseline_delta": {
+    "avg_spacing": 0.0,
+    "gnd_labels": 0.0,
+    "power_symbols": 0.0,
+    "region_density": {
+      "bottom_left": 0.0,
+      "bottom_right": 0.0,
+      "top_left": 0.0,
+      "top_right": 0.0
+    },
+    "short_wires": 0.0,
+    "symbol_count": 0.0,
+    "wire_stub_ratio": 0.0,
+    "x_columns": 0.0
+  },
+  "current_baseline_metrics": {
+    "avg_spacing": 15.52910168432786,
+    "gnd_labels": 0,
+    "power_symbols": 0,
+    "region_density": {
+      "bottom_left": 0.21052631578947367,
+      "bottom_right": 0.2631578947368421,
+      "top_left": 0.3684210526315789,
+      "top_right": 0.15789473684210525
+    },
+    "short_wires": 29,
+    "symbol_count": 19,
+    "wire_stub_ratio": 0.40384615384615385,
+    "x_columns": 11
+  },
+  "fixture_dir": "/home/ubo/work/openclaw_kicad_pcb/tests/fixtures/readability/ne5532_headphone_amp_left_current",
+  "fixture_name": "ne5532_headphone_amp_left_current",
+  "generated_at_utc": "2026-03-23T09:54:13Z",
+  "input_netlist": "/home/ubo/work/openclaw_kicad_pcb/tests/fixtures/readability/ne5532_headphone_amp_left_current/circuit_ir.json",
+  "managed_schematic": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/generated_managed.kicad_sch",
+  "metrics": {
+    "avg_spacing": 15.52910168432786,
+    "gnd_labels": 0,
+    "power_symbols": 0,
+    "region_density": {
+      "bottom_left": 0.21052631578947367,
+      "bottom_right": 0.2631578947368421,
+      "top_left": 0.3684210526315789,
+      "top_right": 0.15789473684210525
+    },
+    "short_wires": 29,
+    "symbol_count": 19,
+    "wire_stub_ratio": 0.40384615384615385,
+    "x_columns": 11
+  },
+  "output_dir": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review",
+  "preview_renders": [
+    {
+      "name": "current_baseline_preview",
+      "note": "",
+      "png_file": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/current_baseline_preview.png",
+      "source_schematic": "/home/ubo/work/openclaw_kicad_pcb/tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch",
+      "status": "rendered",
+      "svg_file": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/current_baseline_preview.svg"
+    },
+    {
+      "name": "improved_output_preview",
+      "note": "",
+      "png_file": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/improved_output_preview.png",
+      "source_schematic": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/generated_managed.kicad_sch",
+      "status": "rendered",
+      "svg_file": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/improved_output_preview.svg"
+    }
+  ],
+  "project_dir": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/work/ReadabilityReview",
+  "regressed_baseline_delta": {},
+  "regressed_baseline_metrics": {
+    "block_role_spread": {
+      "decoupling": {
+        "column_count": 1,
+        "count": 4,
+        "height_mm": 21.590000000000003,
+        "max_x": 173.99,
+        "max_y": 72.39,
+        "min_x": 173.99,
+        "min_y": 50.8,
+        "width_mm": 0.0
+      },
+      "feedback": {
+        "column_count": 1,
+        "count": 2,
+        "height_mm": 7.6200000000000045,
+        "max_x": 173.99,
+        "max_y": 102.87,
+        "min_x": 173.99,
+        "min_y": 95.25,
+        "width_mm": 0.0
+      },
+      "input": {
+        "column_count": 2,
+        "count": 3,
+        "height_mm": 30.480000000000004,
+        "max_x": 82.55,
+        "max_y": 95.25,
+        "min_x": 53.34,
+        "min_y": 64.77,
+        "width_mm": 29.209999999999994
+      },
+      "opamp_core": {
+        "column_count": 1,
+        "count": 1,
+        "height_mm": 0.0,
+        "max_x": 173.99,
+        "max_y": 80.01,
+        "min_x": 173.99,
+        "min_y": 80.01,
+        "width_mm": 0.0
+      },
+      "output": {
+        "column_count": 5,
+        "count": 5,
+        "height_mm": 88.89999999999999,
+        "max_x": 204.47,
+        "max_y": 168.91,
+        "min_x": 82.55,
+        "min_y": 80.01,
+        "width_mm": 121.92
+      },
+      "power_entry": {
+        "column_count": 1,
+        "count": 1,
+        "height_mm": 0.0,
+        "max_x": 68.58,
+        "max_y": 54.61,
+        "min_x": 68.58,
+        "min_y": 54.61,
+        "width_mm": 0.0
+      },
+      "preconditioning": {
+        "column_count": 2,
+        "count": 3,
+        "height_mm": 45.72,
+        "max_x": 173.99,
+        "max_y": 118.11,
+        "min_x": 53.34,
+        "min_y": 72.39,
+        "width_mm": 120.65
+      }
+    },
+    "u1_same_column_feedback_support": 8,
+    "u1_same_column_non_power": 9
+  },
+  "root_schematic": "/home/ubo/work/openclaw_kicad_pcb/code_review/generated/ne5532_headphone_amp_review/generated_root.kicad_sch",
+  "symbols_dir": "/home/ubo/work/openclaw_kicad_pcb/tests/fixtures/symbols",
+  "validation_warnings": []
+}
