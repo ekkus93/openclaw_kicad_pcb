@@ -396,6 +396,12 @@ def _classify_component(
         role, reason, confidence = BlockRole.INPUT, f"Connector role: {connector_role}", 1.0
     elif connector_role == "output":
         role, reason, confidence = BlockRole.OUTPUT, f"Connector role: {connector_role}", 1.0
+    elif power_nets and not signal_nets and _is_operational_core(component_ref, component_symbol):
+        role, reason, confidence = (
+            BlockRole.POWER_ENTRY,
+            f"Power-only support: {', '.join(connected_nets)}",
+            0.85,
+        )
     elif _is_operational_core(component_ref, component_symbol):
         role, reason, confidence = BlockRole.OPAMP_CORE, f"Active stage: {component_symbol}", 1.0
     elif _is_decoupling_component(component_ref, component_value, connected_nets):
@@ -452,13 +458,6 @@ def _classify_component(
         role_from_val = _classify_by_value(component_ref, component_value)
         if role_from_val is not None:
             role, reason, confidence = role_from_val, f"Value heuristic: {component_value}", 0.65
-
-    if role is None and power_nets and not signal_nets:
-        role, reason, confidence = (
-            BlockRole.POWER_ENTRY,
-            f"Power-only support: {', '.join(connected_nets)}",
-            0.7,
-        )
 
     if role is None:
         role, reason, confidence = _distance_role(component_ref, signal_nets, context)

@@ -265,6 +265,38 @@ def test_negative_rail_decouplers_stay_in_power_support_roles() -> None:
     assert layout.get_role("CNEG") == BlockRole.DECOUPLING
 
 
+def test_power_only_opamp_unit_stays_in_power_block() -> None:
+    """Power-only multi-unit IC sections should not be classified as signal cores."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x03", value="Power"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="VPLUS15",
+                pins=[
+                    PinRefIR(ref="J3", pin="1"),
+                    PinRefIR(ref="U1P", pin="8"),
+                ],
+            ),
+            NetIR(
+                name="VMINUS15",
+                pins=[
+                    PinRefIR(ref="J3", pin="3"),
+                    PinRefIR(ref="U1P", pin="4"),
+                ],
+            ),
+        ],
+    )
+
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("J3") == BlockRole.POWER_ENTRY
+    assert layout.get_role("U1P") == BlockRole.POWER_ENTRY
+
+
 def test_vss_ground_alias_keeps_supply_support_components_out_of_signal_roles() -> None:
     """VSS should be treated as the shared ground family in block detection."""
     ir = CircuitIR(

@@ -229,6 +229,32 @@
 - Repo-wide validation completed from `/home/ubo/work/openclaw_kicad_pcb` using the repo-local `.venv`: `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest -q` all exited successfully.
 - The VS Code Python environment service had no selected interpreter for this workspace, so verification was run directly against the checked-in virtualenv rather than a VS Code-selected environment.
 
+## 2026-03-23T20:44:20Z - GPT-5.4 - Locked the real NE5532 fixture to explicit multi-unit output
+
+- Added a command-level regression in `tests/unit/test_netlist_commands.py` proving the authoritative `code_review/ne5532_headphone_amp_netlist.json` fixture generates explicit `U1A`, `U1B`, and `U1P` symbols rather than a flattened `U1`, and that the expected stage/power net bindings land on the correct unit-local pins.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark the stale Phase 1.1 sub-items for device-vs-unit modeling, NE5532 drawable-unit splitting, and unit-aware KiCad emission as `DONE`, and noted that the real headphone-amp fixture is now covered directly rather than only through the synthetic NE5532 system-library regression.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'real_ne5532_fixture_warning_set_does_not_drift or new_from_real_ne5532_fixture_marks_unused_trs_ring_pins or new_from_real_ne5532_fixture_splits_u1_into_explicit_units or ne5532_full_circuit_fidelity_with_system_libraries'`.
+
+## 2026-03-23T20:53:22Z - GPT-5.4 - Added whole-fixture structural coverage for the real headphone-amp managed schematic
+
+- Extended `tests/unit/test_netlist_commands.py` with a real-fixture regression that loads the generated managed schematic for `code_review/ne5532_headphone_amp_netlist.json`, asserts the non-power placed-symbol set exactly matches the source components with `U1` expanded to `U1A` / `U1B` / `U1P`, and locks key pin-binding coverage from `J1.T` / `C5` through `RV1`, `U1A`, `C6`, `U1B`, `R6`, `C7`, and `J2.T`.
+- The same test also asserts the unused TRS ring pins stay absent from the managed binding markers, so the structural whole-fixture check complements the existing separate no-connect regression without overfitting coordinates.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'new_from_real_ne5532_fixture_marks_unused_trs_ring_pins or new_from_real_ne5532_fixture_splits_u1_into_explicit_units or new_from_real_ne5532_fixture_managed_schematic_structure_is_stable or real_ne5532_fixture_warning_set_does_not_drift'`.
+
+## 2026-03-23T21:08:42Z - GPT-5.4 - Repo-wide validation found two failing real-fixture regressions
+
+- Repo-wide validation from `/home/ubo/work/openclaw_kicad_pcb` using the repo-local `.venv` produced: `.venv/bin/ruff check .` = pass, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .` = success with existing `annotation-unchecked` notes in `kicad-pcb/tests/unit/test_layout.py`, and `.venv/bin/pytest -q` = fail.
+- The full pytest failure set is currently limited to `tests/unit/test_netlist_commands.py`: `test_new_from_real_ne5532_fixture_splits_u1_into_explicit_units` fails because `U1P` is absent from the generated placed-symbol set, and `test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable` fails because `managed_doc.has_openclaw_marker()` returned `False`.
+- Local modified files at the time of this validation include `tests/unit/test_netlist_commands.py`, `code_review/SCHEMATIC_FIXES1_TODO.md`, and `memory.md`.
+
+## 2026-03-23T22:22:15Z - GPT-5.4 - Fixed the real-fixture multi-unit/marker regressions and revalidated the repo
+
+- Root cause for the `U1P` regression: `kicad-pcb/src/kicad_pcb/component_types.py` treated only exact rail names as power nets, so real fixture rails like `VPLUS15` and `VMINUS15` were not recognized as power-only and the NE5532 supply unit expanded as `U1C` instead of `U1P`. The fix now accepts numeric suffixed shared-rail aliases while still rejecting local distribution names like `VCC_LOCAL` so decoupling detection stays intact.
+- Root cause for the managed-marker regression: `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` rebuilt the managed sheet from a bare minimal schematic each run but never re-applied `ensure_openclaw_marker()`. The managed mutator now restores the OpenClaw marker immediately after resetting the AST.
+- Follow-on layout fallout from the restored `U1P` path required two additional fixes: `kicad-pcb/src/kicad_pcb/block_detection.py` now classifies power-only IC units such as `U1P` as `POWER_ENTRY` instead of `OPAMP_CORE`, and `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` now filters affinity-ordered refs down to the actual tier members so power-cluster refs cannot leak back into rank subgraphs.
+- Added regression coverage for the repaired behavior in `kicad-pcb/tests/unit/test_component_types.py`, `tests/unit/test_block_detection.py`, and `tests/unit/test_phase4_layout.py`, and updated stale profile/Phase 7 guardrail assertions in `tests/unit/test_netlist_commands.py` and `tests/unit/test_phase7_regression_guardrails.py` to match the verified post-fix layout/routing behavior.
+- Final repo-wide validation from `/home/ubo/work/openclaw_kicad_pcb` succeeded with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest -q`; mypy still emits the pre-existing `annotation-unchecked` notes in `kicad-pcb/tests/unit/test_layout.py` but reports `Success: no issues found in 137 source files`.
+
 ## 2026-03-23T19:12:37Z - GPT-5.4 - Fixed VOL_L_OUT rightward-stub shared-lane detours
 
 - Updated `kicad-pcb/src/kicad_pcb/router.py` so 3-pin shared-lane hub routes on horizontal lanes no longer force the initial 5.08 mm horizontal stub for pins that exit horizontally; those pins now route from the pin endpoint directly into `_shared_lane_route(...)`, which removes the visible right/left-then-up detour without changing electrical connectivity.

@@ -300,7 +300,8 @@ def _emit_tier_subgraphs(
         lines.append("  {")
         lines.append(f"    rank={rank_kw};")
         if affinity_order is not None and tier_val in affinity_order:
-            ref_list = affinity_order[tier_val]
+            member_set = set(members)
+            ref_list = [ref for ref in affinity_order[tier_val] if ref in member_set]
         else:
             ref_list = sorted(members)
         for ref in ref_list:
