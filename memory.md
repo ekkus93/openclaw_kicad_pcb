@@ -1,5 +1,23 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-23T07:31:45Z - GPT-5.4 - Full repo validation is still green after adding the real NE5532 profile-difference regression
+
+- Re-ran full validation from `/home/ubo/work/openclaw_kicad_pcb` with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest` after adding the real-fixture debug-dump regression.
+- Ruff reported no issues.
+- Mypy again reported success on 137 source files, with only the existing `annotation-unchecked` notes from untyped bodies in `kicad-pcb/tests/unit/test_layout.py`.
+- Pytest now finishes with `2176 passed in 400.32s (0:06:40)`.
+
+## 2026-03-23T07:19:28Z - GPT-5.4 - Added a real NE5532 profile-difference integration regression based on debug-dump summaries
+
+- Extended `tests/unit/test_netlist_commands.py` with a system-library-guarded real-fixture regression that runs `cmd_new_from_netlist(...)` twice on `code_review/ne5532_headphone_amp_netlist.json`, once with `heuristic_profile="analog_audio"` and once with `heuristic_profile="generic_digital"`, then compares stable debug-dump summaries instead of full schematic diffs.
+- The stable summary delta on this machine is: `analog_audio` produces more `shared_lane` routes and fewer `spine` routes than `generic_digital`, and only `analog_audio` reports `{"compact_local_ground_cluster": ["GND"]}` in the serialized heuristic overrides for the real fixture.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'real_ne5532_fixture_profile_debug_dump_summary_diff or real_ne5532_fixture_warning_set_does_not_drift or new_from_real_ne5532_fixture_marks_unused_trs_ring_pins'`.
+
+## 2026-03-23T06:50:44Z - GPT-5.4 - Synced the roadmap so Phase 6 now reflects the completed profile and debug-dump work
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so the Phase 6 parent section is now `DONE`, `6.2 Add schematic-style profiles` is now `DONE`, and `6.3 Improve internal debug introspection` is now `DONE`.
+- The roadmap findings now explicitly mention the newer behavior-level coverage that landed after the initial plumbing: fixture-level profile-difference tests in `tests/unit/test_phase4_layout.py` and `tests/unit/test_phase6_wire_simplification.py`, plus command-layer debug-dump regressions in `tests/unit/test_netlist_commands.py` for `analog_audio` vs `generic_digital` and `power_supply` vs `generic_digital`.
+
 ## 2026-03-23T05:14:57Z - GPT-5.4 - Full repo validation is currently green after the profile-difference coverage work
 
 - Full-repo validation succeeded from `/home/ubo/work/openclaw_kicad_pcb` with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest`.

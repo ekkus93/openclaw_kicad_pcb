@@ -1208,7 +1208,7 @@ Current findings:
 
 ## Phase 6 - Optional but strongly recommended cleanup
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ## 6.1 Separate generic graph heuristics from analog-specific drafting heuristics
 Status: `DONE`
@@ -1220,7 +1220,7 @@ Current findings:
 - `LayoutHeuristicPolicy` now isolates the analog-only decoupling, op-amp locality, input-stage cohesion, and output-stage cohesion passes from the generic post-layout snap pipeline.
 
 ## 6.2 Add schematic-style profiles
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add output profiles such as:
   - generic digital,
   - analog audio,
@@ -1232,9 +1232,10 @@ Current findings:
 - `SchematicHeuristicProfile` now bundles layout and routing heuristic policies under named profiles, and the current registry includes `analog_audio`, `generic_digital`, `power_supply`, and `dense_debug`.
 - `apply-netlist` and `new-from-netlist` now accept `--heuristic-profile <name>` and resolve the selected name through `SCHEMATIC_HEURISTIC_PROFILES`, so profile selection is wired through the request path instead of staying as an internal default only.
 - Human-readable command output for both `apply-netlist` and `new-from-netlist` now prints `Heuristic profile: <name>`, which makes the active profile visible during normal CLI use without inspecting JSON output.
+- Focused behavioral regression coverage now proves the named profiles are not just plumbing: fixture-level tests in `tests/unit/test_phase4_layout.py` and `tests/unit/test_phase6_wire_simplification.py` show `analog_audio`, `generic_digital`, and `power_supply` produce intentionally different layout and routing outcomes on the same local fixtures.
 
 ## 6.3 Improve internal debug introspection
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add optional debug dumps for:
   - block classification,
   - unit splitting,
@@ -1245,7 +1246,8 @@ Status: `IN PROGRESS`
 Current findings:
 - `GraphvizLayoutEngine` debug dumps now include the active `heuristic_profile_name`, the active layout heuristic toggles, and a structured `placement_constraints` summary alongside the existing block-layout and coordinate artifacts.
 - `apply-netlist` and `new-from-netlist` now accept `--debug-dump <path>` and write a merged JSON sidecar that includes `heuristic_profile_name`, unit-splitting summaries, per-net classification, final route choices, and the active routing-heuristic toggles.
-- Focused regression coverage exists for both the layout-only debug dump and the end-to-end schematic debug sidecar.
+- Focused regression coverage now exists for both the layout-only debug dump and the end-to-end schematic debug sidecar.
+- Command-layer debug-dump regressions in `tests/unit/test_netlist_commands.py` now prove the same input circuit yields different serialized `final_route_choices` and heuristic overrides when `apply-netlist` runs with `analog_audio` versus `generic_digital`, and with `power_supply` versus `generic_digital` for the local `GND` cluster path.
 
 ---
 
