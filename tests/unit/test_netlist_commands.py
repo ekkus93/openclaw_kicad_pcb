@@ -2298,6 +2298,22 @@ def _normalize_warning_entries(
     return sorted(normalized)
 
 
+def _summarize_route_choices(
+    dump: dict[str, object],
+) -> tuple[dict[str, int], dict[str, list[str]]]:
+    counts: dict[str, int] = {}
+    overrides: dict[str, list[str]] = {}
+    route_choices = cast(list[dict[str, object]], dump["final_route_choices"])
+    for choice in route_choices:
+        strategy = cast(str, choice["strategy"])
+        counts[strategy] = counts.get(strategy, 0) + 1
+        heuristic_override = choice.get("heuristic_override")
+        net_name = cast(str, choice["net_name"])
+        if isinstance(heuristic_override, str):
+            overrides.setdefault(heuristic_override, []).append(net_name)
+    return counts, overrides
+
+
 # ---------------------------------------------------------------------------
 # Phase 1 — warning suite
 # ---------------------------------------------------------------------------
@@ -2437,6 +2453,51 @@ def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path)
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
 
     assert len(find_all(managed_doc.root, "no_connect")) == 2
+
+
+@_skip_no_system_symbols
+def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> None:
+    analog_result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532AnalogProfile",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+            heuristic_profile="analog_audio",
+            debug_dump=str(tmp_path / "analog_audio_debug.json"),
+        )
+    )
+    digital_result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DigitalProfile",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+            heuristic_profile="generic_digital",
+            debug_dump=str(tmp_path / "generic_digital_debug.json"),
+        )
+    )
+
+    analog_dump = json.loads(cast(Path, analog_result.debug_dump_path).read_text(encoding="utf-8"))
+    digital_dump = json.loads(
+        cast(Path, digital_result.debug_dump_path).read_text(encoding="utf-8")
+    )
+    analog_counts, analog_overrides = _summarize_route_choices(cast(dict[str, object], analog_dump))
+    digital_counts, digital_overrides = _summarize_route_choices(
+        cast(dict[str, object], digital_dump)
+    )
+
+    assert analog_dump["heuristic_profile_name"] == "analog_audio"
+    assert digital_dump["heuristic_profile_name"] == "generic_digital"
+    assert analog_counts != digital_counts
+    assert analog_counts.get("shared_lane", 0) > digital_counts.get("shared_lane", 0)
+    assert analog_counts.get("spine", 0) < digital_counts.get("spine", 0)
+    assert analog_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert digital_overrides == {}
 
 
 def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:
