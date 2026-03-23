@@ -219,6 +219,41 @@
 - Added a direct parametrized regression in `tests/unit/test_netlist_commands.py` to lock the extended alias mapping while preserving the current `GND` / `VSS` behavior.
 - Re-ran Ruff plus the focused decoupling warning regression slice; the expanded alias set did not disturb the existing far/local decoupler behavior, positive/negative side-selection regressions, or `new-from-netlist` propagation.
 
+## 2026-03-23T20:02:06Z - GPT-5.4 - Synced item 3 acceptance criteria to the final post-item-4 routing state
+
+- Updated `code_review/FIX_WIRES_TODO.md` so item 3 is now `DONE`, the stale "next change should target `VOL_L_OUT`" bullet is closed out, and the acceptance criteria now describe the shipped post-item-4 geometry rather than the older in-progress `..._230958` targets.
+- The refreshed item 3 acceptance block now records that the old right-then-down `VOL_L_OUT` branch and dominant shared horizontal trunk are gone, the input cluster was not made taller, and preview `ne5532_headphone_amp_preview_20260323_193514` is the final comparison point against `..._230958`.
+
+## 2026-03-23T20:16:23Z - GPT-5.4 - Re-ran repo-wide Ruff, mypy, and pytest verification successfully
+
+- Repo-wide validation completed from `/home/ubo/work/openclaw_kicad_pcb` using the repo-local `.venv`: `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest -q` all exited successfully.
+- The VS Code Python environment service had no selected interpreter for this workspace, so verification was run directly against the checked-in virtualenv rather than a VS Code-selected environment.
+
+## 2026-03-23T19:12:37Z - GPT-5.4 - Fixed VOL_L_OUT rightward-stub shared-lane detours
+
+- Updated `kicad-pcb/src/kicad_pcb/router.py` so 3-pin shared-lane hub routes on horizontal lanes no longer force the initial 5.08 mm horizontal stub for pins that exit horizontally; those pins now route from the pin endpoint directly into `_shared_lane_route(...)`, which removes the visible right/left-then-up detour without changing electrical connectivity.
+- Strengthened `tests/unit/test_phase6_wire_simplification.py::test_route_nets_uses_bounded_ladder_route_for_full_preview_vol_l_out` to assert the old horizontal stub is absent and the clean direct vertical is present for the full-preview VOL_L_OUT geometry.
+- Added `test_route_nets_vol_l_out_no_l_shaped_detour_when_rv1_exits_rightward` covering the original `_230958`-style geometry (`RV1` pin 2 at `(88.90, 133.35, 180.0)`) and locking out any remaining x=`93.98` detour wire.
+- Validation that passed: `python3 -m pytest tests/unit/test_phase6_wire_simplification.py` (`37 passed`), `python3 -m pytest tests/unit/test_phase6.py tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_phase6_local_direct_wiring.py tests/unit/test_phase6_wire_quality_lints.py tests/unit/test_phase7_regression_guardrails.py` (`173 passed`), and `python3 -m pytest tests/unit/test_golden.py tests/unit/test_fixtures.py tests/unit/test_phase7_ux.py` (all passed).
+
+## 2026-03-23T19:30:58Z - GPT-5.4 - Made VOL_L_OUT read as an RV1-to-U1 downstream continuation
+
+- Extended `kicad-pcb/src/kicad_pcb/router.py` with a narrow horizontal compact-tail heuristic for 3-pin nets that look like `left support -> middle stage node -> longer downstream run`; the helper now routes those nets as a staged continuation instead of a shared horizontal lane.
+- Kept `_plan_local_ladder_routes(...)` stable for the full-preview VOL_L_OUT geometry (`SharedLanePlan("horizontal", 120.65, 85.09, 133.35)` still holds), but let `route_nets(...)` override the shared-lane route with `strategy="compact_signal_tail"` when the actual routed geometry matches the RV1 stage-continuation pattern.
+- Updated `tests/unit/test_phase6_wire_simplification.py` so the full-preview and `_230958` VOL_L_OUT regressions now lock the new shape: short support from `R4` into `RV1`, dominant horizontal continuation from `RV1` to `U1`, no wire at x=`93.98`, and no old bus-like full-width horizontal trunk.
+- Validation that passed: focused VOL_L_OUT slice (`4 passed`), `python3 -m pytest tests/unit/test_phase6.py tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_phase6_local_direct_wiring.py tests/unit/test_phase6_wire_quality_lints.py tests/unit/test_phase7_regression_guardrails.py` (`173 passed`), `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`, and `MYPYPATH=kicad-pcb/src .venv/bin/mypy kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`.
+
+## 2026-03-23T19:43:15Z - GPT-5.4 - Regenerated the actual NE5532 preview and compared it against the roadmap baselines
+
+- Generated a fresh KiCad-mode preview from `code_review/ne5532_headphone_amp_netlist.json` at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260323_193514` and exported `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260323_193514/svg/OpenClaw_Managed.svg`.
+- Direct managed-schematic comparison against roadmap baselines `..._094046`, `..._152500`, `..._212047`, plus the last problem preview `..._230958`, confirmed the old RV1/VOL_L_OUT scaffold geometry is gone: the baseline previews still contain the old x=`93.98` detour / full-width ladder structure and a 22–23 segment local box in that neighborhood, while the new preview no longer contains those coordinates and compresses the downstream subregion to a 4-segment box.
+- Caveat: the regenerated preview also moved the overall `RV1` / `R4` / `U1A` stage to a different absolute location (`RV1=(30.48,148.59)`, `R4=(72.39,66.04)`, `U1A=(102.87,85.09)`), so the comparison is semantically positive but not a same-coordinates visual overlay against the March 12 baseline screenshots.
+
+## 2026-03-23T19:46:36Z - GPT-5.4 - Synced FIX_WIRES_TODO.md after the item 4 route change and preview review
+
+- Updated `code_review/FIX_WIRES_TODO.md` so item `4. Make RV1 feel downstream` is now `DONE`, with the implemented horizontal compact-tail continuation and its route-level regression coverage recorded explicitly.
+- Updated item `6. Regenerate and review after each routing change` so the fresh preview `ne5532_headphone_amp_preview_20260323_193514` and its direct comparison against `..._212047`, `..._152500`, `..._094046`, and `..._230958` are recorded in the roadmap status.
+
 ## 2026-03-21T15:15:38Z - GPT-5.4 - Locked the negative-rail decoupling regression and fixed VEE-style rail detection
 
 - Added the symmetric negative-rail regression in `tests/unit/test_netlist_commands.py`, proving that a negative-rail decoupler chooses the upper supporting device while the positive-rail regression still chooses the lower one.
