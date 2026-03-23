@@ -1012,27 +1012,50 @@ def _compact_local_ground_cluster_route(
         cluster_positions = [
             pos for pin_ref, _anchor in cluster if (pos := positions.get(pin_ref.ref)) is not None
         ]
-        for x, y in stub_ends:
-            if math.isclose(y, lane_y, abs_tol=0.01):
-                continue
-            clearance_x = x
-            for bx, by, _rotation in cluster_positions:
-                if _wire_crosses_box(x, y, x, lane_y, bx, by, SYMBOL_HALF_SIZE_MM):
-                    clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
-            vertical_target_x[(x, y)] = _snap_grid(clearance_x)
+        lane_candidates = sorted(set(ys))
+        best_lane: tuple[float, float, dict[tuple[float, float], float]] | None = None
+        for candidate_y in lane_candidates:
+            candidate_targets = {(x, y): x for x, y in stub_ends}
+            for x, y in stub_ends:
+                if math.isclose(y, candidate_y, abs_tol=0.01):
+                    continue
+                clearance_x = x
+                for bx, by, _rotation in cluster_positions:
+                    if _wire_crosses_box(x, y, x, candidate_y, bx, by, SYMBOL_HALF_SIZE_MM):
+                        clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
+                candidate_targets[(x, y)] = _snap_grid(clearance_x)
 
-        lane_x0 = min(lane_x0, *vertical_target_x.values())
-        for bx, by, _rotation in cluster_positions:
-            if _wire_crosses_box(
-                lane_x0,
-                lane_y,
-                lane_x1,
-                lane_y,
-                bx,
-                by,
-                SYMBOL_HALF_SIZE_MM,
+            candidate_x0 = min(lane_x0, *candidate_targets.values())
+            blocked = any(
+                _wire_crosses_box(
+                    candidate_x0,
+                    candidate_y,
+                    lane_x1,
+                    candidate_y,
+                    bx,
+                    by,
+                    SYMBOL_HALF_SIZE_MM,
+                )
+                for bx, by, _rotation in cluster_positions
+            )
+            if blocked:
+                continue
+
+            score = sum(abs(y - candidate_y) for _x, y in stub_ends) + sum(
+                abs(x - candidate_targets[(x, y)]) for x, y in stub_ends
+            )
+            if (
+                best_lane is None
+                or score < best_lane[0]
+                or (math.isclose(score, best_lane[0], abs_tol=0.01) and candidate_y < best_lane[1])
             ):
-                return None
+                best_lane = (score, candidate_y, candidate_targets)
+
+        if best_lane is None:
+            return None
+
+        _score, lane_y, vertical_target_x = best_lane
+        lane_x0 = min(lane_x0, *vertical_target_x.values())
 
     segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
     junctions: list[JunctionPoint] = []
