@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
+from kicad_pcb.commands._sch_apply import SCHEMATIC_HEURISTIC_PROFILES
 from kicad_pcb.router import (
     DEFAULT_ROUTING_HEURISTIC_POLICY,
     SYMBOL_HALF_SIZE_MM,
@@ -927,6 +928,75 @@ def test_route_nets_uses_chain_for_asymmetric_compact_output_tail() -> None:
         and math.isclose(max(seg.y1, seg.y2), 171.45, abs_tol=0.01)
         for seg in routing.wires
     )
+
+
+def test_named_routing_profiles_diverge_on_output_tail_fixture() -> None:
+    """Named profiles should pick different routing strategies on the same output-tail fixture."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C7", symbol="Device:C", value="100n"),
+            ComponentIR(ref="R6", symbol="Device:R", value="47"),
+            ComponentIR(ref="R7", symbol="Device:R", value="100"),
+            ComponentIR(ref="J2", symbol="Connector:AudioJack3", value="OUT"),
+        ],
+        nets=[
+            NetIR(
+                name="AFTER_R6",
+                pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="C7", pin="1")],
+            ),
+            NetIR(
+                name="HP_L_OUT",
+                pins=[
+                    PinRefIR(ref="C7", pin="2"),
+                    PinRefIR(ref="R7", pin="1"),
+                    PinRefIR(ref="J2", pin="T"),
+                ],
+            ),
+        ],
+    )
+    pin_endpoints = {
+        ("R6", "2"): (213.36, 173.99, 90.0),
+        ("C7", "1"): (213.36, 135.89, 270.0),
+        ("C7", "2"): (213.36, 128.27, 90.0),
+        ("R7", "1"): (238.76, 166.37, 270.0),
+        ("J2", "T"): (217.17, 165.10, 0.0),
+    }
+    positions = {
+        "C7": (213.36, 132.08, 0.0),
+        "R7": (238.76, 162.56, 0.0),
+        "J2": (222.25, 162.56, 0.0),
+    }
+    analog_audio = SCHEMATIC_HEURISTIC_PROFILES["analog_audio"]
+    generic_digital = SCHEMATIC_HEURISTIC_PROFILES["generic_digital"]
+
+    analog_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions=positions,
+        heuristic_policy=analog_audio.routing_policy,
+    )
+    digital_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions=positions,
+        heuristic_policy=generic_digital.routing_policy,
+    )
+    analog_choice = next(
+        choice for choice in analog_routing.route_decisions if choice.net_name == "HP_L_OUT"
+    )
+    digital_choice = next(
+        choice for choice in digital_routing.route_decisions if choice.net_name == "HP_L_OUT"
+    )
+
+    assert analog_audio.routing_policy.enable_compact_output_tails is True
+    assert generic_digital.routing_policy.enable_compact_output_tails is False
+    assert analog_choice.strategy == "compact_signal_tail"
+    assert analog_choice.heuristic_override == "compact_output_tail"
+    assert digital_choice.strategy == "shared_lane"
+    assert digital_choice.heuristic_override is None
+    assert analog_routing.wires != digital_routing.wires
+    assert analog_routing.junctions != digital_routing.junctions
 
 
 def test_route_nets_uses_compact_local_ground_lane_for_output_cluster() -> None:
