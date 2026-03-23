@@ -151,3 +151,7 @@ class TestSharedRailVocabulary:
     )
     def test_is_power_net_uses_shared_rail_aliases(self, net_name: str) -> None:
         assert is_power_net(net_name) is True
+
+    @pytest.mark.parametrize("net_name", ["VPLUS15", "VMINUS15", "VPOS15", "AVEE15"])
+    def test_is_power_net_accepts_suffixed_shared_rail_aliases(self, net_name: str) -> None:
+        assert is_power_net(net_name) is True

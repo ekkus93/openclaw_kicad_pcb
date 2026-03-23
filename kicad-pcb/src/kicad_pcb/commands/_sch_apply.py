@@ -441,6 +441,7 @@ def _build_managed_mutator(  # noqa: PLR0913
         if not isinstance(root, ListNode):
             raise UserError("Managed schematic template parse failed", code=ErrorCode.PARSE_ERROR)
         doc.root = root
+        doc.ensure_openclaw_marker()
 
         _engine = _resolve_layout(
             request.layout_name,

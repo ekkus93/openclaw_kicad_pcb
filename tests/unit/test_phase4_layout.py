@@ -2883,6 +2883,25 @@ class TestIcUnitGroups:
             f"U1B must not be in a tier subgraph.\nDOT:\n{dot}"
         )
 
+    def test_power_unit_excluded_from_tiers_even_with_affinity_order(self) -> None:
+        """Affinity ordering must not reinsert power units into rank subgraphs."""
+        ir = _multi_stage_unit_ir()
+        tiers = assign_tiers(ir)
+        groups = assign_ic_units_to_tiers(ir, tiers)
+        power_unit_refs = {g.power_unit for g in groups.values() if g.power_unit is not None}
+
+        dot = _gv_mod._build_dot_source(
+            ir,
+            power_unit_refs=power_unit_refs,
+            tiers=tiers,
+            affinity_order={0: ["J1", "U1P"], 1: ["U1A", "U1B"]},
+        )
+
+        rank_blocks = re.findall(r"\{[^{}]*rank=(?:same|source|sink)[^{}]*\}", dot, re.DOTALL)
+        assert not any("U1P" in block for block in rank_blocks), (
+            f"U1P leaked back into a tier subgraph via affinity ordering.\nDOT:\n{dot}"
+        )
+
     def test_signal_sibling_constraints_skip_power_units(self) -> None:
         """Only signal units participate in sibling-order constraints."""
         ir = _multi_stage_unit_ir()

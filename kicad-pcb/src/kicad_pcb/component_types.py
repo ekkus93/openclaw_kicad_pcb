@@ -209,9 +209,10 @@ ORIGIN_X_MM: float = 30.48  # 1.2 inch
 def is_power_net(name: str) -> bool:
     """Return True when *name* is a power or ground rail net.
 
-    Uses :data:`POWER_NET_PATTERN` for a full-name, case-insensitive match.
-    Numeric voltage forms such as ``+5V``, ``-12V``, ``3V3``, and ``0V`` are
-    recognised in addition to the named prefixes.
+    Uses :data:`POWER_NET_PATTERN` for exact-name and numeric-rail matches,
+    then falls back to the shared named-rail prefix vocabulary so aliases such
+    as ``VPLUS15`` and ``VMINUS15`` classify consistently with the rest of the
+    layout and validation code.
 
     Examples::
 
@@ -225,10 +226,26 @@ def is_power_net(name: str) -> bool:
         True
         >>> is_power_net("PWR_FLAG")
         True
+        >>> is_power_net("VPLUS15")
+        True
         >>> is_power_net("SIGNAL_NET")
         False
     """
-    return bool(POWER_NET_PATTERN.match(name))
+    normalized = name.strip().upper()
+    if POWER_NET_PATTERN.match(normalized):
+        return True
+
+    for prefix in POWER_NET_PREFIXES:
+        if not normalized.startswith(prefix):
+            continue
+        suffix = normalized[len(prefix) :]
+        if (
+            suffix
+            and any(char.isdigit() for char in suffix)
+            and all(char.isdigit() or char in {"+", "-", ".", "V"} for char in suffix)
+        ):
+            return True
+    return False
 
 
 def power_rail_polarity(name: str) -> str | None:

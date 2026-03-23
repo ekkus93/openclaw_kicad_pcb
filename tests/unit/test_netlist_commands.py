@@ -2456,6 +2456,100 @@ def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path)
 
 
 @_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_splits_u1_into_explicit_units(tmp_path: Path) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532UnitSplit",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+
+    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
+    assert "U1" not in placed_symbols
+    assert {"U1A", "U1B", "U1P"} <= set(placed_symbols)
+    assert placed_symbols["U1A"]["unit"] == "1"
+    assert placed_symbols["U1B"]["unit"] == "2"
+    assert placed_symbols["U1P"]["unit"] == "3"
+
+    binding_index = {
+        (binding["ref"], binding["pin"]): binding["net_name"]
+        for binding in managed_doc.extract_pin_label_bindings()
+    }
+    assert binding_index[("U1P", "8")] == "VPLUS15"
+    assert binding_index[("U1P", "4")] == "VMINUS15"
+    assert binding_index[("U1A", "3")] == "VOL_L_OUT"
+    assert binding_index[("U1A", "2")] == "U1A_INV"
+    assert binding_index[("U1A", "1")] == "OUT_L_STAGE1"
+    assert binding_index[("U1B", "5")] == "BUF_L_IN"
+    assert binding_index[("U1B", "6")] == "OUT_L_STAGE2_RAW"
+    assert binding_index[("U1B", "7")] == "OUT_L_STAGE2_RAW"
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532Structure",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    assert managed_doc.has_openclaw_marker() is True
+
+    fixture = json.loads(_REAL_NE5532_REVIEW_NETLIST.read_text(encoding="utf-8"))
+    source_component_refs = {
+        str(component["ref"])
+        for component in fixture["components"]
+        if str(component["ref"]) != "U1"
+    }
+
+    symbols = managed_doc.list_symbols()
+    non_power_symbols = [sym for sym in symbols if not str(sym["ref"]).startswith("#")]
+    non_power_refs = {str(sym["ref"]) for sym in non_power_symbols}
+
+    assert len(non_power_symbols) == len(source_component_refs) + 3
+    assert non_power_refs == source_component_refs | {"U1A", "U1B", "U1P"}
+
+    binding_index = {
+        (binding["ref"], binding["pin"]): binding["net_name"]
+        for binding in managed_doc.extract_pin_label_bindings()
+    }
+    expected_bindings = {
+        ("J1", "T"): "LEFT_IN",
+        ("C5", "1"): "LEFT_IN",
+        ("C5", "2"): "IN_L_AC",
+        ("RV1", "2"): "VOL_L_OUT",
+        ("U1A", "3"): "VOL_L_OUT",
+        ("U1A", "1"): "OUT_L_STAGE1",
+        ("C6", "1"): "OUT_L_STAGE1",
+        ("C6", "2"): "BUF_L_IN",
+        ("U1B", "5"): "BUF_L_IN",
+        ("U1B", "7"): "OUT_L_STAGE2_RAW",
+        ("R6", "2"): "AFTER_R6",
+        ("C7", "2"): "HP_L_OUT",
+        ("J2", "T"): "HP_L_OUT",
+    }
+    for pin_ref, net_name in expected_bindings.items():
+        assert binding_index[pin_ref] == net_name
+
+    assert ("J1", "R") not in binding_index
+    assert ("J2", "R") not in binding_index
+
+
+@_skip_no_system_symbols
 def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> None:
     analog_result = cmd_new_from_netlist(
         Namespace(
@@ -2496,7 +2590,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert analog_counts != digital_counts
     assert analog_counts.get("shared_lane", 0) > digital_counts.get("shared_lane", 0)
     assert analog_counts.get("spine", 0) < digital_counts.get("spine", 0)
-    assert analog_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert analog_overrides == {}
     assert digital_overrides == {}
 
 
@@ -2550,7 +2644,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
         "enable_compact_local_ground_clusters": False,
         "enable_compact_output_tails": False,
     }
-    assert power_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert power_overrides == {}
     assert digital_overrides == {}
 
 

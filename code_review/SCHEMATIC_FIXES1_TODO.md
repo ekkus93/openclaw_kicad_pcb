@@ -318,7 +318,7 @@ Status: `DONE`
   - symbol emission.
 
 #### 1.1.2 Add an internal concept of “device” vs “placed unit”
-Status: `NOT STARTED`
+Status: `DONE`
 - Introduce or formalize two different concepts:
   - **physical/logical device**: e.g. `U1`
   - **placed unit**: e.g. `U1A`, `U1B`, optionally power unit
@@ -340,7 +340,7 @@ Status: `IN PROGRESS`
 - If the current symbol parsing layer does not expose this, extend it.
 
 #### 1.1.4 Split `NE5532` into separate drawable units
-Status: `NOT STARTED`
+Status: `DONE`
 - For the headphone amp example, `U1` must produce:
   - one drawable symbol for stage 1 op-amp,
   - one drawable symbol for stage 2 op-amp,
@@ -362,7 +362,7 @@ Status: `DONE`
 - Eliminate any routing ambiguity caused by shared parent device state.
 
 #### 1.1.7 Update KiCad emitter for unit-aware symbol instances
-Status: `NOT STARTED`
+Status: `DONE`
 - Emit the correct unit information into `.kicad_sch`.
 - Verify the output opens cleanly in KiCad without silently collapsing units or misassigning pins.
 
@@ -402,6 +402,7 @@ Status: `IN PROGRESS`
   - command-level `apply-netlist` / `new-from-netlist` coverage proving explicit `PinRefIR.unit` reaches generation and binds onto `U1A`, plus mirrored failure coverage for mismatched unit/pin input, in `tests/unit/test_netlist_commands.py`
   - command-level real-system NE5532 placement in `tests/unit/test_netlist_commands.py`
 - `kicad-pcb/src/kicad_pcb/ir/validate.py` now accepts explicit `PinRefIR.unit` only when the symbol exposes KiCad unit metadata, rejects unknown unit ids, and rejects pins that do not belong to the selected unit.
+- command-level real-fixture coverage now also locks the authoritative `code_review/ne5532_headphone_amp_netlist.json` path to explicit `U1A`, `U1B`, and `U1P` output plus the expected stage/power net bindings, so the real headphone-amp correctness target is no longer only implied by the synthetic system-library NE5532 regression.
 - Still pending in later Phase 1.1 slices:
   - router-side consumption of the richer placed-unit anchor model beyond endpoint generation
   - broader layout/routing refinements for the real NE5532 readability fixture
