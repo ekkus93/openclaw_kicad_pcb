@@ -133,6 +133,58 @@ def _write_output_bypass_warning_ir(path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_output_tail_profile_diff_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "R6", "symbol": "TestLib:R", "value": "47"},
+            {"ref": "C7", "symbol": "TestLib:R", "value": "100n"},
+            {"ref": "R7", "symbol": "TestLib:R", "value": "100"},
+            {"ref": "J2", "symbol": "TestLib:Conn3", "value": "OUT"},
+        ],
+        "nets": [
+            {
+                "name": "AFTER_R6",
+                "pins": [
+                    {"ref": "R6", "pin": "2"},
+                    {"ref": "C7", "pin": "1"},
+                ],
+            },
+            {
+                "name": "HP_L_OUT",
+                "pins": [
+                    {"ref": "C7", "pin": "2"},
+                    {"ref": "R7", "pin": "1"},
+                    {"ref": "J2", "pin": "1"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_ground_cluster_profile_diff_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "J2", "symbol": "TestLib:Conn3", "value": "OUT"},
+            {"ref": "R5", "symbol": "TestLib:R", "value": "10k"},
+            {"ref": "R7", "symbol": "TestLib:R", "value": "100"},
+        ],
+        "nets": [
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "J2", "pin": "3"},
+                    {"ref": "R5", "pin": "2"},
+                    {"ref": "R7", "pin": "2"},
+                ],
+            }
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def _write_output_load_warning_ir(path: Path) -> None:
     payload = {
         "version": "1",
@@ -698,6 +750,147 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     ]
     assert [choice["strategy"] for choice in dump["final_route_choices"]] == ["direct", "direct"]
     assert dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
+
+
+def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_output_tail_route(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "profile_diff_ir.json"
+    _write_output_tail_profile_diff_ir(ir_path)
+    analog_dump_path = project_dir / "OpenClaw_Debug_Analog.json"
+    digital_dump_path = project_dir / "OpenClaw_Debug_Digital.json"
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "R6": (213.36, 179.07, 270.0),
+                "C7": (213.36, 133.35, 270.0),
+                "R7": (238.76, 166.37, 270.0),
+                "J2": (217.17, 165.10, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+            debug_dump=str(analog_dump_path),
+            heuristic_profile="analog_audio",
+        )
+    )
+    cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+            debug_dump=str(digital_dump_path),
+            heuristic_profile="generic_digital",
+        )
+    )
+
+    analog_dump = json.loads(analog_dump_path.read_text(encoding="utf-8"))
+    digital_dump = json.loads(digital_dump_path.read_text(encoding="utf-8"))
+    analog_hp_out = next(
+        choice for choice in analog_dump["final_route_choices"] if choice["net_name"] == "HP_L_OUT"
+    )
+    digital_hp_out = next(
+        choice for choice in digital_dump["final_route_choices"] if choice["net_name"] == "HP_L_OUT"
+    )
+
+    assert analog_dump["heuristic_profile_name"] == "analog_audio"
+    assert digital_dump["heuristic_profile_name"] == "generic_digital"
+    assert analog_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
+    assert digital_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is False
+    assert analog_hp_out["strategy"] == "compact_signal_tail"
+    assert analog_hp_out["heuristic_override"] == "compact_output_tail"
+    assert digital_hp_out["strategy"] == "shared_lane"
+    assert digital_hp_out["heuristic_override"] is None
+
+
+def test_cmd_apply_netlist_debug_dump_surfaces_power_profile_ground_cluster_route(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ground_cluster_ir.json"
+    _write_ground_cluster_profile_diff_ir(ir_path)
+    power_dump_path = project_dir / "OpenClaw_Debug_Power.json"
+    digital_dump_path = project_dir / "OpenClaw_Debug_Digital.json"
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "J2": (222.25, 162.56, 0.0),
+                "R5": (213.36, 147.32, 270.0),
+                "R7": (238.76, 162.56, 270.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+            debug_dump=str(power_dump_path),
+            heuristic_profile="power_supply",
+        )
+    )
+    cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+            debug_dump=str(digital_dump_path),
+            heuristic_profile="generic_digital",
+        )
+    )
+
+    power_dump = json.loads(power_dump_path.read_text(encoding="utf-8"))
+    digital_dump = json.loads(digital_dump_path.read_text(encoding="utf-8"))
+    power_ground = next(
+        choice for choice in power_dump["final_route_choices"] if choice["net_name"] == "GND"
+    )
+    digital_ground = next(
+        choice for choice in digital_dump["final_route_choices"] if choice["net_name"] == "GND"
+    )
+
+    assert power_dump["heuristic_profile_name"] == "power_supply"
+    assert digital_dump["heuristic_profile_name"] == "generic_digital"
+    assert power_dump["routing_heuristic_policy"]["enable_compact_local_ground_clusters"] is True
+    assert digital_dump["routing_heuristic_policy"]["enable_compact_local_ground_clusters"] is False
+    assert power_ground["strategy"] == "power_symbols"
+    assert power_ground["heuristic_override"] == "compact_local_ground_cluster"
+    assert digital_ground["strategy"] == "power_symbols"
+    assert digital_ground["heuristic_override"] is None
 
 
 def test_cmd_apply_netlist_forwards_heuristic_profile_name(tmp_path: Path, monkeypatch) -> None:

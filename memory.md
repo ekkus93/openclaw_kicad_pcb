@@ -1,5 +1,30 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-23T05:14:57Z - GPT-5.4 - Full repo validation is currently green after the profile-difference coverage work
+
+- Full-repo validation succeeded from `/home/ubo/work/openclaw_kicad_pcb` with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest`.
+- Ruff reported no issues.
+- Mypy reported success on 137 source files; the only output was the existing `annotation-unchecked` notes from untyped function bodies in `kicad-pcb/tests/unit/test_layout.py`.
+- Pytest finished with `2175 passed in 402.38s (0:06:42)`.
+
+## 2026-03-23T04:53:22Z - GPT-5.4 - Added end-to-end debug-dump coverage for the power_supply local ground-cluster profile split
+
+- Extended `tests/unit/test_netlist_commands.py` with an apply-netlist regression that runs the same 3-pin `GND` cluster fixture through `heuristic_profile="power_supply"` and `heuristic_profile="generic_digital"`, then compares the debug dumps to prove only `power_supply` reports `heuristic_override="compact_local_ground_cluster"` for the `GND` route decision.
+- The working command-layer fixture uses `TestLib:Conn3` pin `3` plus `TestLib:R` pin `2` on `R5`/`R7`, with the mocked layout positions `J2=(222.25,162.56,0.0)`, `R5=(213.36,147.32,270.0)`, and `R7=(238.76,162.56,270.0)`; earlier endpoint-tight placements failed because the compact lane crossed a symbol body and the helper correctly fell back to generic `power_symbols` routing.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'writes_debug_dump or profile_specific_output_tail_route or power_profile_ground_cluster_route'`.
+
+## 2026-03-23T04:02:01Z - GPT-5.4 - Added apply-netlist debug-dump coverage for named profile routing differences
+
+- Extended `tests/unit/test_netlist_commands.py` with an end-to-end `cmd_apply_netlist(...)` regression that runs the same compact output-tail fixture twice, once with `heuristic_profile="analog_audio"` and once with `heuristic_profile="generic_digital"`, then compares the emitted debug dumps rather than the lower-level router objects.
+- The working fixture uses `TestLib:R` plus `TestLib:Conn3` with a monkeypatched `_resolve_layout(...)` returning explicit positions/rotations so the generated `HP_L_OUT` net lands on `compact_signal_tail` for `analog_audio` and `shared_lane` for `generic_digital`.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'writes_debug_dump or profile_specific_output_tail_route'`.
+
+## 2026-03-23T00:23:23Z - GPT-5.4 - Added fixture-level coverage proving named heuristic profiles change behavior
+
+- Added named-profile behavioral coverage in `tests/unit/test_phase4_layout.py` and `tests/unit/test_phase6_wire_simplification.py` instead of extending the command-layer metadata tests: the new layout regression compares `analog_audio` vs `generic_digital` on the same decoupling fixture, and the new routing regression compares those same profiles on the compact output-tail fixture.
+- Stable assertions that worked: layout compares decoupler alignment against the op-amp row rather than expecting the generic profile to leave all coordinates untouched, and routing compares `RouteDecision(strategy, heuristic_override)` plus differing wire/junction outputs rather than asserting one exact fallback spine segment.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_phase4_layout.py tests/unit/test_phase6_wire_simplification.py`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy tests/unit/test_phase4_layout.py tests/unit/test_phase6_wire_simplification.py`, and `.venv/bin/pytest -q tests/unit/test_phase4_layout.py tests/unit/test_phase6_wire_simplification.py -k 'named_layout_profiles_diverge_on_decoupling_fixture or named_routing_profiles_diverge_on_output_tail_fixture'`.
+
 ## 2026-03-22T23:04:39Z - GPT-5.4 - Synced the Phase 6 roadmap with the shipped profile and debug-dump surfacing work
 
 - Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so Phase `6.2 Add schematic-style profiles` is now `IN PROGRESS` and explicitly records the named profile registry, CLI `--heuristic-profile` selection, and human-readable `Heuristic profile: <name>` command output.

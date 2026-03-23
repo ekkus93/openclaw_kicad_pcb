@@ -37,6 +37,7 @@ import pytest
 from kicad_pcb.block_detection import BlockLayout, BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._project import minimal_schematic_text
+from kicad_pcb.commands._sch_apply import SCHEMATIC_HEURISTIC_PROFILES
 from kicad_pcb.component_types import component_type
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout.snap import (
@@ -4666,6 +4667,68 @@ class TestApplyPostLayoutSnaps:
         assert not math.isclose(disabled["CDEC"][0], positions["U1"][0], abs_tol=0.01)
         assert not math.isclose(
             disabled["CDEC"][1],
+            positions["U1"][1] - _gv_mod.GRID_ROW_MM,
+            abs_tol=0.01,
+        )
+
+    def test_named_layout_profiles_diverge_on_decoupling_fixture(self) -> None:
+        """Named profiles should produce different post-layout positions on the same fixture."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="CDEC", symbol="Device:C", value="100n"),
+            ],
+            nets=[
+                NetIR(
+                    name="VCC",
+                    pins=[PinRefIR(ref="U1", pin="7"), PinRefIR(ref="CDEC", pin="1")],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[PinRefIR(ref="U1", pin="4"), PinRefIR(ref="CDEC", pin="2")],
+                ),
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (101.6, 101.6, None),
+            "CDEC": (68.58, 149.86, None),
+        }
+        analog_audio = SCHEMATIC_HEURISTIC_PROFILES["analog_audio"]
+        generic_digital = SCHEMATIC_HEURISTIC_PROFILES["generic_digital"]
+
+        analog_layout = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={"CDEC": "U1"},
+            heuristic_policy=analog_audio.layout_policy,
+        )
+        digital_layout = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={"CDEC": "U1"},
+            heuristic_policy=generic_digital.layout_policy,
+        )
+
+        assert analog_audio.layout_policy.enable_decoupling_snap is True
+        assert generic_digital.layout_policy.enable_decoupling_snap is False
+        assert analog_layout != digital_layout
+        assert math.isclose(analog_layout["CDEC"][0], positions["U1"][0], abs_tol=0.01)
+        assert math.isclose(
+            analog_layout["CDEC"][1],
+            positions["U1"][1] - _gv_mod.GRID_ROW_MM,
+            abs_tol=0.01,
+        )
+        assert math.isclose(digital_layout["CDEC"][0], positions["CDEC"][0], abs_tol=0.01)
+        assert not math.isclose(digital_layout["CDEC"][0], positions["U1"][0], abs_tol=0.01)
+        assert not math.isclose(
+            digital_layout["CDEC"][1],
             positions["U1"][1] - _gv_mod.GRID_ROW_MM,
             abs_tol=0.01,
         )
