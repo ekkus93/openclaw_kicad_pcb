@@ -849,13 +849,55 @@ def test_named_routing_profiles_diverge_on_small_analog_input_chain_fixture() ->
     digital_choice = next(
         choice for choice in digital_routing.route_decisions if choice.net_name == "IN_L_AC"
     )
+    left_in_choice = next(
+        choice for choice in analog_routing.route_decisions if choice.net_name == "LEFT_IN"
+    )
 
     assert analog_audio.routing_policy.enable_small_analog_local_routing is True
     assert generic_digital.routing_policy.enable_small_analog_local_routing is False
+    assert left_in_choice.classification == "connector_attachment"
+    assert analog_choice.classification == "signal_chain"
+    assert digital_choice.classification == "signal_chain"
     assert analog_choice.strategy == "chain"
     assert analog_choice.heuristic_override == "small_analog_local_routing"
     assert digital_choice.strategy == "shared_lane"
     assert digital_choice.heuristic_override is None
+
+
+def test_route_nets_classifies_feedback_net_explicitly() -> None:
+    """Feedback-style nets should surface the first-class feedback routing category."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R4", symbol="Device:R", value="100k"),
+        ],
+        nets=[
+            NetIR(
+                name="U1A_INV",
+                pins=[
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="R4", pin="2"),
+                    PinRefIR(ref="U1", pin="2"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("R1", "2"): (54.61, 125.73, 90.0),
+            ("R4", "2"): (85.09, 125.73, 90.0),
+            ("U1", "2"): (69.85, 106.68, 270.0),
+        },
+        heuristic_policy=SCHEMATIC_HEURISTIC_PROFILES["analog_audio"].routing_policy,
+    )
+
+    choice = next(choice for choice in routing.route_decisions if choice.net_name == "U1A_INV")
+
+    assert choice.classification == "feedback"
 
 
 def test_route_nets_routes_full_preview_vol_l_out_as_downstream_continuation() -> None:

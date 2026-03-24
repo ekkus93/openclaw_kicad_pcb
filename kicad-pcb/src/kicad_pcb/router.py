@@ -26,14 +26,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from .component_types import (
+    component_type as _component_type,
+)
+from .component_types import (
+    is_ground_like_name,
+    power_rail_polarity,
+)
+from .component_types import (
+    is_power_net as _base_is_power_net_name,
+)
+from .errors import ErrorCode, UserError
+
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR, PinRefIR
     from .sch_doc import SchematicDoc
-
-from .component_types import component_type as _component_type
-from .component_types import is_power_net as _base_is_power_net_name
-from .component_types import power_rail_polarity
-from .errors import ErrorCode, UserError
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -471,13 +478,116 @@ class RouteDecision:
     """Debug summary of the final routing strategy selected for one net."""
 
     net_name: str
-    classification: Literal["power", "signal"]
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ]
     strategy: str
     pin_count: int
     known_pin_count: int
     unknown_pin_count: int
     use_bus: bool
     heuristic_override: str | None = None
+
+
+def _classify_routing_net(
+    net_name: str, refs: tuple[str, ...]
+) -> Literal[
+    "power",
+    "local_decoupling",
+    "shunt_ground",
+    "connector_only",
+    "connector_attachment",
+    "signal_chain",
+    "feedback",
+    "generic_signal",
+]:
+    """Return a first-class routing taxonomy for one net.
+
+    The taxonomy is intentionally pragmatic: it formalizes the categories the
+    router already treats differently in practice and provides a stable debug
+    surface for later policy work.
+    """
+    component_kinds = tuple(_component_type(ref) for ref in refs)
+    has_connector = any(kind == "connector" for kind in component_kinds)
+    has_ic = any(kind == "ic" for kind in component_kinds)
+    has_capacitor = any(ref.upper().startswith("C") for ref in refs)
+    all_connectors = bool(refs) and all(kind == "connector" for kind in component_kinds)
+    all_passive_or_connector = bool(refs) and all(
+        kind in {"passive", "connector"} for kind in component_kinds
+    )
+    upper_name = net_name.upper()
+
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ] = "generic_signal"
+
+    if _is_power_net_name(net_name):
+        if is_ground_like_name(net_name) and len(refs) <= 3 and all_passive_or_connector:
+            classification = "shunt_ground"
+        elif len(refs) <= 3 and has_capacitor and has_ic:
+            classification = "local_decoupling"
+        else:
+            classification = "power"
+    elif all_connectors:
+        classification = "connector_only"
+    elif any(token in upper_name for token in ("INV", "FB", "FEEDBACK")):
+        classification = "feedback"
+    elif has_connector and len(refs) <= 3:
+        classification = "connector_attachment"
+    elif (
+        has_ic
+        or has_connector
+        or any(token in upper_name for token in ("IN", "OUT", "BUF", "STAGE", "VOL", "HP"))
+    ):
+        classification = "signal_chain"
+
+    return classification
+
+
+def _classification_prefers_compact_tail(
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> bool:
+    """Return True when a routing class should try the compact tail heuristic."""
+    return classification in {"connector_attachment", "signal_chain"}
+
+
+def _classification_prefers_local_chain(
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> bool:
+    """Return True when a routing class should prefer a compact local chain."""
+    return classification in {"connector_attachment", "signal_chain", "feedback"}
 
 
 # ---------------------------------------------------------------------------
@@ -1889,6 +1999,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
 
     for net in sorted(ir.nets, key=lambda n: n.name):
         pins = sorted(net.pins, key=lambda p: (p.ref, p.pin))
+        net_refs = tuple(dict.fromkeys(pin.ref for pin in pins))
         known = [
             (
                 p,
@@ -1920,6 +2031,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             )
 
         is_power = _is_power_net_name(net.name)
+        net_classification = _classify_routing_net(net.name, net_refs)
         strategy = "local_labels"
         heuristic_override: str | None = None
 
@@ -2033,7 +2145,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             routing.route_decisions.append(
                 RouteDecision(
                     net_name=net.name,
-                    classification="power",
+                    classification=net_classification,
                     strategy="power_symbols",
                     pin_count=len(pins),
                     known_pin_count=len(known),
@@ -2079,7 +2191,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             routing.route_decisions.append(
                 RouteDecision(
                     net_name=net.name,
-                    classification="signal",
+                    classification=net_classification,
                     strategy=strategy,
                     pin_count=len(pins),
                     known_pin_count=len(known),
@@ -2111,16 +2223,20 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     else:
                         routing.wires.append(WireSegment(wx, wy, ex, ey))
                         stub_ends.append((ex, ey))
-                compact_tail_route = heuristic_policy.route_compact_signal_tail(
-                    stub_ends,
-                    inferred_plan=lane_plan,
-                    positions=positions,
-                )
+                compact_tail_route = None
+                if _classification_prefers_compact_tail(net_classification):
+                    compact_tail_route = heuristic_policy.route_compact_signal_tail(
+                        stub_ends,
+                        inferred_plan=lane_plan,
+                        positions=positions,
+                    )
                 if compact_tail_route is not None:
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
-                elif heuristic_policy.should_prefer_small_analog_chain(
+                elif _classification_prefers_local_chain(
+                    net_classification
+                ) and heuristic_policy.should_prefer_small_analog_chain(
                     stub_ends,
                     inferred_plan=lane_plan,
                     refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
@@ -2145,29 +2261,34 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
                     stub_ends.append((ex, ey))
                 compact_tail_plan = _infer_bounded_local_lane_plan(stub_ends)
-                if (
-                    use_bus
-                    and (
-                        compact_tail_route := heuristic_policy.route_compact_signal_tail(
-                            stub_ends,
-                            inferred_plan=compact_tail_plan,
-                            positions=positions,
-                        )
+                compact_tail_route = None
+                if use_bus and _classification_prefers_compact_tail(net_classification):
+                    compact_tail_route = heuristic_policy.route_compact_signal_tail(
+                        stub_ends,
+                        inferred_plan=compact_tail_plan,
+                        positions=positions,
                     )
-                    is not None
-                ):
+                if compact_tail_route is not None:
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
-                elif use_bus and heuristic_policy.should_prefer_small_analog_chain(
-                    stub_ends,
-                    inferred_plan=compact_tail_plan,
-                    refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                elif (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and heuristic_policy.should_prefer_small_analog_chain(
+                        stub_ends,
+                        inferred_plan=compact_tail_plan,
+                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                    )
                 ):
                     hub_segs, hub_junctions = _chain_route(stub_ends)
                     strategy = "chain"
                     heuristic_override = "small_analog_local_routing"
-                elif use_bus and _prefer_chain_route(stub_ends):
+                elif (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and _prefer_chain_route(stub_ends)
+                ):
                     hub_segs, hub_junctions = _chain_route(stub_ends)
                     strategy = "chain"
                 elif use_bus:
@@ -2181,7 +2302,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             routing.route_decisions.append(
                 RouteDecision(
                     net_name=net.name,
-                    classification="signal",
+                    classification=net_classification,
                     strategy=strategy,
                     pin_count=len(pins),
                     known_pin_count=len(known),
@@ -2218,7 +2339,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             routing.route_decisions.append(
                 RouteDecision(
                     net_name=net.name,
-                    classification="signal",
+                    classification=net_classification,
                     strategy=strategy,
                     pin_count=len(pins),
                     known_pin_count=len(known),
@@ -2256,7 +2377,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         routing.route_decisions.append(
             RouteDecision(
                 net_name=net.name,
-                classification="signal",
+                classification=net_classification,
                 strategy=strategy,
                 pin_count=len(pins),
                 known_pin_count=len(known),

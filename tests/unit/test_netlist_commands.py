@@ -734,14 +734,14 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     assert dump["heuristic_profile_name"] == "analog_audio"
     assert dump["net_classification"] == [
         {
-            "classification": "signal",
+            "classification": "signal_chain",
             "known_pin_count": 2,
             "net_name": "IN_A",
             "pin_count": 2,
             "unknown_pin_count": 0,
         },
         {
-            "classification": "signal",
+            "classification": "signal_chain",
             "known_pin_count": 2,
             "net_name": "OUT_A",
             "pin_count": 2,
