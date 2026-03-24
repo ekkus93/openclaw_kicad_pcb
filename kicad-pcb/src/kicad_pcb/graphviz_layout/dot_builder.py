@@ -61,7 +61,13 @@ if TYPE_CHECKING:
     from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
 
-from ..block_detection import BlockRole
+from ..block_detection import (
+    BlockRole,
+    is_core_like_role,
+    is_input_like_role,
+    is_output_like_role,
+    is_power_like_role,
+)
 from ..component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import is_power_net as _is_power_net
@@ -492,22 +498,22 @@ def _emit_block_zone_constraints(lines: list[str], block_layout: BlockLayout) ->
     input_refs = sorted(
         ref
         for ref, assignment in block_layout.assignments.items()
-        if assignment.role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+        if is_input_like_role(assignment.role)
     )
     core_refs = sorted(
         ref
         for ref, assignment in block_layout.assignments.items()
-        if assignment.role in {BlockRole.OPAMP_CORE, BlockRole.FEEDBACK}
+        if is_core_like_role(assignment.role)
     )
     output_refs = sorted(
         ref
         for ref, assignment in block_layout.assignments.items()
-        if assignment.role == BlockRole.OUTPUT
+        if is_output_like_role(assignment.role)
     )
     power_refs = sorted(
         ref
         for ref, assignment in block_layout.assignments.items()
-        if assignment.role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}
+        if is_power_like_role(assignment.role)
     )
     if not any((input_refs, core_refs, output_refs, power_refs)):
         return
@@ -660,9 +666,9 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
             role = block_layout.assignments[ref].role
             # Connector blocks (INPUT/OUTPUT) are pin-dense; give them extra width.
             # Op-amp core/feedback blocks get slightly larger sizing for clarity.
-            if role in {BlockRole.INPUT, BlockRole.OUTPUT}:
+            if is_input_like_role(role) or is_output_like_role(role):
                 width, height = 1.0, 0.6
-            elif role in {BlockRole.OPAMP_CORE, BlockRole.FEEDBACK}:
+            elif is_core_like_role(role):
                 width, height = 0.9, 0.55
             else:
                 width, height = 0.8, 0.5  # Default for POWER, PASSTHROUGH, UNASSIGNED

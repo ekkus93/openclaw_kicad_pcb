@@ -18,7 +18,12 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from .circuit_ir import CircuitIR
 
-from .block_detection import BlockLayout, BlockRole
+from .block_detection import (
+    BlockLayout,
+    BlockRole,
+    is_input_like_role,
+    is_output_like_role,
+)
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
@@ -1001,11 +1006,7 @@ def _normalize_passive_orientations_by_role(
                 all_in_opamp_col = _all_feedback_in_opamp_column(refs, ir, positions)
                 canonical_rot = 90 if all_in_opamp_col else 0
 
-        elif role in (
-            BlockRole.INPUT,
-            BlockRole.PRECONDITIONING,
-            BlockRole.OUTPUT,
-        ):
+        elif is_input_like_role(role) or is_output_like_role(role) or role == BlockRole.INTERSTAGE:
             # Input/preconditioning/output should prefer 0° (horizontal flow).
             # Default to 0°; position heuristic may disagree, but flow
             # direction preference overrides for consistent visibility.
@@ -1234,10 +1235,10 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
                                         continue
                     # Input/preconditioning/output roles: prefer horizontal (0°) to
                     # support left-to-right signal flow.
-                    elif role in (
-                        BlockRole.INPUT,
-                        BlockRole.PRECONDITIONING,
-                        BlockRole.OUTPUT,
+                    elif (
+                        is_input_like_role(role)
+                        or is_output_like_role(role)
+                        or role == BlockRole.INTERSTAGE
                     ):
                         # Default to horizontal unless position heuristic strongly disagrees.
                         position_rot = _series_passive_rotation(ref, positions, adjacency)

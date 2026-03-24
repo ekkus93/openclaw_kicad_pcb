@@ -30,6 +30,16 @@
       "min_y": 64.77,
       "width_mm": 29.209999999999994
     },
+    "interstage": {
+      "column_count": 1,
+      "count": 2,
+      "height_mm": 30.480000000000004,
+      "max_x": 173.99,
+      "max_y": 118.11,
+      "min_x": 173.99,
+      "min_y": 87.63,
+      "width_mm": 0.0
+    },
     "opamp_core": {
       "column_count": 1,
       "count": 1,
@@ -41,14 +51,24 @@
       "width_mm": 0.0
     },
     "output": {
-      "column_count": 5,
-      "count": 5,
+      "column_count": 1,
+      "count": 1,
+      "height_mm": 0.0,
+      "max_x": 82.55,
+      "max_y": 80.01,
+      "min_x": 82.55,
+      "min_y": 80.01,
+      "width_mm": 0.0
+    },
+    "output_conditioning": {
+      "column_count": 3,
+      "count": 3,
       "height_mm": 88.89999999999999,
       "max_x": 204.47,
       "max_y": 168.91,
-      "min_x": 82.55,
+      "min_x": 113.03,
       "min_y": 80.01,
-      "width_mm": 121.92
+      "width_mm": 91.44
     },
     "power_entry": {
       "column_count": 1,
@@ -62,15 +82,15 @@
     },
     "preconditioning": {
       "column_count": 2,
-      "count": 3,
-      "height_mm": 45.72,
+      "count": 2,
+      "height_mm": 38.099999999999994,
       "max_x": 173.99,
-      "max_y": 118.11,
+      "max_y": 110.49,
       "min_x": 53.34,
       "min_y": 72.39,
       "width_mm": 120.65
     }
   },
-  "u1_same_column_feedback_support": 8,
+  "u1_same_column_feedback_support": 7,
   "u1_same_column_non_power": 9
 }
