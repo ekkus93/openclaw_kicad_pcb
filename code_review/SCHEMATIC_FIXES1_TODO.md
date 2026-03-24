@@ -900,7 +900,7 @@ Different net types should route differently.
 ### Tasks
 
 #### 3.2.1 Classify nets
-Status: `IN PROGRESS`
+Status: `DONE`
 Classify nets into categories such as:
 - signal-chain nets,
 - feedback nets,
@@ -910,8 +910,9 @@ Classify nets into categories such as:
 - local decoupling nets.
 
 Current findings:
-- The current routing pass now effectively distinguishes several of these cases in the NE5532 fixture even though the classification is still heuristic and local rather than a first-class net taxonomy.
-- Output-tail signal nets such as `HP_L_OUT` can now skip overfit shared-lane plans and use a compact tail route, while tiny local `GND` clusters around output connectors use a dedicated compact ground-cluster route instead of the generic centroid-based power-cluster path.
+- `kicad-pcb/src/kicad_pcb/router.py` now exposes a first-class routing taxonomy through `RouteDecision.classification` and the debug-dump `net_classification` payload instead of collapsing every non-power net to `"signal"`.
+- The current taxonomy includes `power`, `local_decoupling`, `shunt_ground`, `connector_only`, `connector_attachment`, `signal_chain`, `feedback`, and `generic_signal`.
+- Classification is currently derived from the routed net name plus the participating ref families, which is enough to distinguish the stable analog-audio seams already in use: input/output path nets now classify as `signal_chain`, connector-plus-passive attachment nets classify as `connector_attachment`, and explicit inverting/feedback nets such as `U1A_INV` classify as `feedback`.
 
 #### 3.2.2 Route by net class
 Status: `IN PROGRESS`
@@ -924,6 +925,7 @@ Status: `IN PROGRESS`
 Current findings:
 - `kicad-pcb/src/kicad_pcb/router.py` now contains a compact rightward-tail carve-out plus `_compact_vertical_tail_route(...)`, which keeps short asymmetric output tails readable instead of forcing them onto a redundant local ladder trunk.
 - The same router module now uses `_compact_local_ground_cluster_route(...)` for tiny output-side `GND` clusters so connector/support ground returns use one calm horizontal lane with body-aware entry points instead of a small centroid knot.
+- The formal net taxonomy now directly gates those routing choices: compact tail routing is limited to `signal_chain` and `connector_attachment` nets, while the small analog chain preference is limited to `signal_chain`, `connector_attachment`, and `feedback` nets instead of firing on every compact 3-pin shape.
 - Focused regression coverage for both behaviors now lives in `tests/unit/test_phase6_wire_simplification.py`.
 
 #### 3.2.3 Prefer labels only when they improve clarity
