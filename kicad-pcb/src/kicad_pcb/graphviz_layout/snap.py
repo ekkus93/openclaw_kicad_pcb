@@ -105,6 +105,13 @@ if TYPE_CHECKING:
     from ..block_detection import BlockLayout
     from ..circuit_ir import CircuitIR
 
+from ..block_detection import (
+    BlockRole,
+    is_core_like_role,
+    is_input_like_role,
+    is_output_like_role,
+    is_power_like_role,
+)
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_ground_like_name as _is_ground_like_name
@@ -750,14 +757,13 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             if ref in result
             and ref != ic_ref
             and not _is_ic_ref(ref)
-            and role
-            in {
-                BlockRole.INPUT,
-                BlockRole.PRECONDITIONING,
-                BlockRole.FEEDBACK,
-                BlockRole.OUTPUT,
-                BlockRole.DECOUPLING,
-            }
+            and role is not None
+            and (
+                is_input_like_role(role)
+                or is_core_like_role(role)
+                or is_output_like_role(role)
+                or role == BlockRole.DECOUPLING
+            )
             and abs(result[ref][0] - ic_x) <= 2.0 * _GRID_COL_MM
             and abs(result[ref][1] - ic_y) <= 8.0 * GRID_ROW_MM
         }
@@ -787,14 +793,16 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
                 continue
             if is_decoupling or role == BlockRole.DECOUPLING:
                 continue
-            if role in (BlockRole.INPUT, BlockRole.PRECONDITIONING):
+            if role == BlockRole.INTERSTAGE:
+                handoff_like.append(ref)
+            elif role is not None and is_input_like_role(role):
                 if ic_ref in adjacency.get(ref, set()) and any(
-                    role_by_ref.get(nbr) == BlockRole.OUTPUT for nbr in adjacency.get(ref, set())
+                    is_output_like_role(role_by_ref.get(nbr)) for nbr in adjacency.get(ref, set())
                 ):
                     handoff_like.append(ref)
                 else:
                     input_like.append(ref)
-            elif role == BlockRole.OUTPUT:
+            elif role is not None and is_output_like_role(role):
                 output_like.append(ref)
 
         input_like.sort(key=_local_order_key)
@@ -860,7 +868,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
                 target_x = target_halo_left_x
             elif x > ic_x + 1.0:
                 target_x = target_halo_right_x
-            elif role not in (BlockRole.OUTPUT, BlockRole.FEEDBACK):
+            elif role != BlockRole.FEEDBACK and not is_output_like_role(role):
                 target_x = target_halo_left_x if idx % 2 == 0 else target_halo_right_x
 
             offset = idx - (len(halo_like) - 1) / 2
@@ -890,7 +898,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
 def _find_input_stage_members(
     positions: dict[str, tuple[float, float, float | None]],
-    role_by_ref: Mapping[str, object],
+    role_by_ref: Mapping[str, BlockRole],
     adjacency: Mapping[str, set[str]],
     *,
     ic_x: float,
@@ -923,7 +931,7 @@ def _find_input_stage_members(
                         continue
                     seen.add(nbr)
                     role = role_by_ref.get(nbr)
-                    if role in (BlockRole.INPUT, BlockRole.PRECONDITIONING):
+                    if role is not None and is_input_like_role(role):
                         stage_refs.add(nbr)
                         next_frontier.add(nbr)
             frontier = next_frontier
@@ -931,7 +939,7 @@ def _find_input_stage_members(
                 break
 
     for ref, role in role_by_ref.items():
-        if ref not in positions or role not in (BlockRole.INPUT, BlockRole.PRECONDITIONING):
+        if ref not in positions or role is None or not is_input_like_role(role):
             continue
         x, y, _ = positions[ref]
         if x <= ic_x and abs(y - ic_y) <= 6.0 * GRID_ROW_MM:
@@ -1006,15 +1014,13 @@ def _place_input_stage_lane(
 
 def _evict_input_lane_intruders(
     positions: dict[str, tuple[float, float, float | None]],
-    role_by_ref: Mapping[str, object],
+    role_by_ref: Mapping[str, BlockRole],
     stage_refs: set[str],
     *,
     precond_x: float,
     ic_y: float,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Keep unrelated roles out of the input lane."""
-    from ..block_detection import BlockRole  # noqa: PLC0415
-
     result = dict(positions)
     for ref, role in role_by_ref.items():
         if ref not in result or ref in stage_refs:
@@ -1022,9 +1028,9 @@ def _evict_input_lane_intruders(
         x, y, rot = result[ref]
         if x >= precond_x:
             continue
-        if role in (BlockRole.OUTPUT, BlockRole.FEEDBACK, BlockRole.OPAMP_CORE):
+        if role is not None and (is_output_like_role(role) or is_core_like_role(role)):
             result[ref] = (precond_x, y, rot)
-        elif role in (BlockRole.POWER_ENTRY, BlockRole.DECOUPLING):
+        elif role is not None and is_power_like_role(role):
             top_y = round(ic_y - 5.0 * GRID_ROW_MM, 2)
             result[ref] = (x, min(y, top_y), rot)
     return result
@@ -1045,7 +1051,7 @@ def _snap_input_stage_cohesion(
     if not ic_refs:
         return positions
 
-    anchor_ic = min(ic_refs, key=lambda ref: positions[ref][0])
+    anchor_ic = max(ic_refs, key=lambda ref: positions[ref][0])
     ic_x, ic_y, _ = positions[anchor_ic]
     adjacency = _build_signal_adjacency(ir)
 
@@ -1078,7 +1084,7 @@ def _snap_input_stage_cohesion(
 
 def _find_output_stage_members(
     positions: dict[str, tuple[float, float, float | None]],
-    role_by_ref: Mapping[str, object],
+    role_by_ref: Mapping[str, BlockRole],
     adjacency: Mapping[str, set[str]],
     *,
     ic_x: float,
@@ -1087,17 +1093,28 @@ def _find_output_stage_members(
     """Return ``(output_connectors, output_support, stage_ref_set)`` for Phase 7.2."""
     from ..block_detection import BlockRole  # noqa: PLC0415
 
+    def _is_output_stage_role(role: BlockRole | None) -> bool:
+        return role == BlockRole.INTERSTAGE or is_output_like_role(role)
+
     output_connectors = sorted(
         ref
         for ref, role in role_by_ref.items()
         if ref in positions and role == BlockRole.OUTPUT and _is_connector_ref(ref)
     )
     # Require an explicit output connector for this pass; without one, we can
-    # accidentally pull unrelated OUTPUT-tagged parts into the terminal lane.
+    # accidentally pull unrelated output-tagged parts into the terminal lane.
     if not output_connectors:
         return [], [], set()
 
-    stage_refs: set[str] = set(output_connectors)
+    # Seed the stage with explicit interstage handoff parts because the IR
+    # adjacency still uses unsplit IC refs while the placed schematic uses
+    # split-unit refs (for example U1A/U1B).
+    stage_refs: set[str] = {
+        ref
+        for ref, role in role_by_ref.items()
+        if ref in positions and role == BlockRole.INTERSTAGE
+    }
+    stage_refs.update(output_connectors)
     for start in output_connectors:
         frontier: set[str] = {start}
         seen: set[str] = {start}
@@ -1109,7 +1126,7 @@ def _find_output_stage_members(
                         continue
                     seen.add(nbr)
                     role = role_by_ref.get(nbr)
-                    if role == BlockRole.OUTPUT:
+                    if _is_output_stage_role(role):
                         stage_refs.add(nbr)
                         next_frontier.add(nbr)
             frontier = next_frontier
@@ -1117,7 +1134,7 @@ def _find_output_stage_members(
                 break
 
     for ref, role in role_by_ref.items():
-        if ref not in positions or role != BlockRole.OUTPUT:
+        if ref not in positions or not _is_output_stage_role(role):
             continue
         x, y, _ = positions[ref]
         if x >= ic_x and abs(y - ic_y) <= 6.0 * GRID_ROW_MM:
@@ -1132,7 +1149,7 @@ def _find_output_stage_members(
         key=lambda ref: positions[ref][1],
     )
     output_support = sorted(
-        [ref for ref in stage_refs if role_by_ref.get(ref) == BlockRole.OUTPUT],
+        [ref for ref in stage_refs if _is_output_stage_role(role_by_ref.get(ref))],
         key=lambda ref: positions[ref][1],
     )
     output_support = [ref for ref in output_support if ref not in output_connectors_sorted]
@@ -1244,15 +1261,13 @@ def _align_output_connectors_without_ic(
 
 def _evict_output_lane_intruders(
     positions: dict[str, tuple[float, float, float | None]],
-    role_by_ref: Mapping[str, object],
+    role_by_ref: Mapping[str, BlockRole],
     stage_refs: set[str],
     *,
     support_x: float,
     ic_y: float,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Keep unrelated roles out of the output lane."""
-    from ..block_detection import BlockRole  # noqa: PLC0415
-
     result = dict(positions)
     for ref, role in role_by_ref.items():
         if ref not in result or ref in stage_refs:
@@ -1260,14 +1275,9 @@ def _evict_output_lane_intruders(
         x, y, rot = result[ref]
         if x <= support_x:
             continue
-        if role in (
-            BlockRole.INPUT,
-            BlockRole.PRECONDITIONING,
-            BlockRole.OPAMP_CORE,
-            BlockRole.FEEDBACK,
-        ):
+        if role is not None and (is_input_like_role(role) or is_core_like_role(role)):
             result[ref] = (support_x, y, rot)
-        elif role in (BlockRole.POWER_ENTRY, BlockRole.DECOUPLING):
+        elif role is not None and is_power_like_role(role):
             bottom_y = round(ic_y + 5.0 * GRID_ROW_MM, 2)
             result[ref] = (x, max(y, bottom_y), rot)
     return result
@@ -1296,11 +1306,13 @@ def _snap_output_stage_cohesion(
         output_support = sorted(
             ref
             for ref, role in role_by_ref.items()
-            if ref in positions and role == BlockRole.OUTPUT and ref not in output_connectors
+            if ref in positions
+            and (role == BlockRole.INTERSTAGE or is_output_like_role(role))
+            and ref not in output_connectors
         )
         return _align_output_connectors_without_ic(positions, output_connectors, output_support)
 
-    anchor_ic = min(ic_refs, key=lambda ref: positions[ref][0])
+    anchor_ic = max(ic_refs, key=lambda ref: positions[ref][0])
     ic_x, ic_y, _ = positions[anchor_ic]
     adjacency = _build_signal_adjacency(ir)
 
@@ -1364,8 +1376,6 @@ def _snap_block_zones(
     page_max_x:
         Right page boundary.
     """
-    from ..block_detection import BlockRole  # noqa: PLC0415
-
     result = dict(positions)
 
     # Define block zones with stronger separation (Phase 3.1):
@@ -1391,7 +1401,7 @@ def _snap_block_zones(
         role = assignment.role
 
         # Bias power and decoupling components toward the top
-        if role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}:
+        if is_power_like_role(role):
             if y > TOP_ZONE_MAX_Y + 20.0:
                 # Pull up by 1 grid row (7.62mm) if way too low
                 new_y = round(y - GRID_ROW_MM, 2)
@@ -1405,7 +1415,7 @@ def _snap_block_zones(
                 result[ref] = (x, new_y, rot)
 
         # Strongly bias input/preconditioning toward left (Phase 3.1 fix)
-        elif role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}:
+        elif is_input_like_role(role):
             if x > LEFT_ZONE_MAX_X:
                 # Pull left aggressively; enforce INPUT_MAX_X hard limit
                 new_x = round(max(origin_x + 20.0, min(INPUT_MAX_X, x - 50.8)), 2)
@@ -1419,7 +1429,7 @@ def _snap_block_zones(
                 result[ref] = (new_x, y, rot)  # FIX: was (x, y, rot) — critical bug!
 
         # Strongly bias output toward right (Phase 3.1 enhancement)
-        elif role == BlockRole.OUTPUT and x < RIGHT_ZONE_MIN_X:
+        elif is_output_like_role(role) and x < RIGHT_ZONE_MIN_X:
             # Pull right aggressively; enforce OUTPUT_MIN_X hard limit
             # Use large 80mm nudge to overcome initial clustering
             new_x = round(max(OUTPUT_MIN_X, x + 80.0), 2)
@@ -2477,24 +2487,19 @@ def _snap_page_balance(
 
     from ..block_detection import BlockRole  # noqa: PLC0415
 
-    _SIGNAL_ROLES = {
-        BlockRole.INPUT,
-        BlockRole.PRECONDITIONING,
-        BlockRole.OPAMP_CORE,
-        BlockRole.FEEDBACK,
-        BlockRole.OUTPUT,
-        # DECOUPLING caps must move with their associated IC so that the
-        # carefully-computed cap/IC y-offsets established by earlier passes
-        # (e.g. _post_snap_decoupling_caps, _snap_opamp_locality) are
-        # preserved after the vertical balance nudge.
-        BlockRole.DECOUPLING,
-    }
-
     role_by_ref = {ref: a.role for ref, a in block_layout.assignments.items()}
     signal_refs = [
         ref
         for ref in positions
-        if role_by_ref.get(ref) in _SIGNAL_ROLES
+        if (
+            (role := role_by_ref.get(ref)) is not None
+            and (
+                is_input_like_role(role)
+                or is_core_like_role(role)
+                or is_output_like_role(role)
+                or role == BlockRole.DECOUPLING
+            )
+        )
         # Never move KiCad internal power/flag symbols (#PWR*, #FLG*, #NET*
         # etc.).  _snap_power_symbols pins them to specific page rows; moving
         # them afterward would violate that invariant.  Some circuits also
@@ -2587,17 +2592,20 @@ def _central_composition_refs(
 
     from ..block_detection import BlockRole  # noqa: PLC0415
 
-    signal_roles = {
-        BlockRole.INPUT,
-        BlockRole.PRECONDITIONING,
-        BlockRole.OPAMP_CORE,
-        BlockRole.FEEDBACK,
-        BlockRole.OUTPUT,
-        BlockRole.DECOUPLING,
-    }
     role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
     signal_refs = [
-        ref for ref in positions if role_by_ref.get(ref) in signal_roles and not ref.startswith("#")
+        ref
+        for ref in positions
+        if (
+            (role := role_by_ref.get(ref)) is not None
+            and (
+                is_input_like_role(role)
+                or is_core_like_role(role)
+                or is_output_like_role(role)
+                or role == BlockRole.DECOUPLING
+            )
+            and not ref.startswith("#")
+        )
     ]
     opamp_refs = [ref for ref in signal_refs if role_by_ref.get(ref) == BlockRole.OPAMP_CORE]
     return signal_refs, opamp_refs
@@ -2890,15 +2898,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     if block_layout is not None:
         from ..block_detection import BlockRole  # noqa: PLC0415
 
-        protected_text_roles = {
-            BlockRole.OPAMP_CORE,
-            BlockRole.FEEDBACK,
-            BlockRole.DECOUPLING,
-        }
+        protected_text_roles = {BlockRole.DECOUPLING}
         protected_text_refs = frozenset(
             ref
             for ref, assignment in block_layout.assignments.items()
-            if assignment.role in protected_text_roles
+            if assignment.role in protected_text_roles or is_core_like_role(assignment.role)
         )
     result = _apply_property_text_spacing(result, fixed_refs=protected_text_refs)
     # Use grid-safe max bounds so final clamped coordinates stay on the
@@ -2911,15 +2915,12 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     if block_layout is not None:
         from ..block_detection import BlockRole  # noqa: PLC0415
 
-        protected_roles = {
-            BlockRole.OPAMP_CORE,
-            BlockRole.FEEDBACK,
-            BlockRole.DECOUPLING,
-        }
         protected_by_x: dict[float, list[str]] = defaultdict(list)
         for ref, (x, _y, _rot) in result.items():
             assignment = block_layout.assignments.get(ref)
-            if assignment is None or assignment.role not in protected_roles:
+            if assignment is None or (
+                assignment.role != BlockRole.DECOUPLING and not is_core_like_role(assignment.role)
+            ):
                 continue
             protected_by_x[x].append(ref)
         for refs in protected_by_x.values():

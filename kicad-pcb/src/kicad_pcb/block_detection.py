@@ -15,7 +15,7 @@ Phase 1.1 of CODE_REVIEW6 readability improvements.
 
 from __future__ import annotations
 
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
@@ -44,8 +44,17 @@ class BlockRole(Enum):
     FEEDBACK = "feedback"
     """Feedback network around op-amp (resistors, caps)."""
 
+    INTERSTAGE = "interstage"
+    """Coupling and handoff members that bridge one active stage into the next."""
+
+    BUFFER_STAGE = "buffer_stage"
+    """A downstream op-amp stage acting primarily as a follower or output driver."""
+
     OUTPUT = "output"
     """Output coupling or output-stage connector."""
+
+    OUTPUT_CONDITIONING = "output_conditioning"
+    """Output-side support chain such as isolation, coupling, bleed, and load parts."""
 
     POWER_ENTRY = "power_entry"
     """Power supply connector and entry point."""
@@ -103,12 +112,50 @@ class BlockLayout:
 @dataclass(frozen=True)
 class _DetectionContext:
     nets_by_ref: dict[str, list[str]]
+    refs_by_net: dict[str, set[str]]
+    net_pins: dict[str, list[tuple[str, str]]]
     connector_roles: Mapping[str, str]
     path_index: dict[str, int]
     first_opamp_index: int | None
     opamp_dist: dict[str, int]
     input_dist: dict[str, int]
     output_dist: dict[str, int]
+    motif_roles: dict[str, tuple[BlockRole, str, float]]
+
+
+@dataclass(frozen=True)
+class _MotifInputs:
+    nets_by_ref: Mapping[str, list[str]]
+    refs_by_net: Mapping[str, set[str]]
+    net_pins: Mapping[str, list[tuple[str, str]]]
+    net_pin_units: Mapping[str, list[tuple[str, str, str | None]]]
+    active_refs: set[str]
+    connector_roles: Mapping[str, str]
+
+
+def is_input_like_role(role: BlockRole | None) -> bool:
+    """Return True when *role* belongs to the input-side group."""
+    return role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+
+
+def is_core_like_role(role: BlockRole | None) -> bool:
+    """Return True when *role* belongs to the active-stage core group."""
+    return role in {
+        BlockRole.OPAMP_CORE,
+        BlockRole.FEEDBACK,
+        BlockRole.INTERSTAGE,
+        BlockRole.BUFFER_STAGE,
+    }
+
+
+def is_output_like_role(role: BlockRole | None) -> bool:
+    """Return True when *role* belongs to the output-side group."""
+    return role in {BlockRole.OUTPUT, BlockRole.OUTPUT_CONDITIONING}
+
+
+def is_power_like_role(role: BlockRole | None) -> bool:
+    """Return True when *role* belongs to the power-support group."""
+    return role in {BlockRole.POWER_ENTRY, BlockRole.DECOUPLING}
 
 
 # Heuristics for block classification
@@ -146,6 +193,21 @@ def _signal_adjacency(ir: CircuitIR) -> dict[str, set[str]]:
                 adjacency.setdefault(ref_a, set()).add(ref_b)
                 adjacency.setdefault(ref_b, set()).add(ref_a)
     return adjacency
+
+
+def _net_pin_index(ir: CircuitIR) -> dict[str, list[tuple[str, str]]]:
+    """Return ``{net_name: [(ref, pin), ...]}`` for all nets in *ir*."""
+    return {net.name: [(pin.ref, pin.pin) for pin in net.pins] for net in ir.nets}
+
+
+def _net_pin_units(ir: CircuitIR) -> dict[str, list[tuple[str, str, str | None]]]:
+    """Return ``{net_name: [(ref, pin, unit), ...]}`` for all nets in *ir*."""
+    return {net.name: [(pin.ref, pin.pin, pin.unit) for pin in net.pins] for net in ir.nets}
+
+
+def _refs_by_net(net_pins: Mapping[str, list[tuple[str, str]]]) -> dict[str, set[str]]:
+    """Return ``{net_name: {ref, ...}}`` from a net pin index."""
+    return {net_name: {ref for ref, _pin in pins} for net_name, pins in net_pins.items()}
 
 
 def _bfs_distances(adjacency: dict[str, set[str]], seeds: list[str]) -> dict[str, int]:
@@ -313,6 +375,298 @@ def _classify_by_net_names(ref: str, connected_nets: list[str]) -> BlockRole | N
     return None
 
 
+def _is_two_pin_component(ref: str, nets_by_ref: Mapping[str, list[str]], prefix: str) -> bool:
+    """Return True when *ref* matches *prefix* and touches exactly two nets."""
+    return ref.upper().startswith(prefix) and len(nets_by_ref.get(ref, [])) == 2
+
+
+def _other_connected_net(
+    ref: str,
+    current_net: str,
+    nets_by_ref: Mapping[str, list[str]],
+) -> str | None:
+    """Return the opposite net for a two-pin component on *current_net*."""
+    for net_name in nets_by_ref.get(ref, []):
+        if net_name != current_net:
+            return net_name
+    return None
+
+
+def _is_output_connector_net(
+    net_name: str,
+    refs_by_net: Mapping[str, set[str]],
+    connector_roles: Mapping[str, str],
+) -> bool:
+    """Return True when *net_name* reaches an output connector."""
+    return any(connector_roles.get(ref) == "output" for ref in refs_by_net.get(net_name, set()))
+
+
+def _grounded_resistors_on_net(
+    net_name: str,
+    *,
+    refs_by_net: Mapping[str, set[str]],
+    nets_by_ref: Mapping[str, list[str]],
+) -> list[str]:
+    """Return two-pin resistor refs on *net_name* that also connect to ground."""
+    grounded_refs: list[str] = []
+    for ref in refs_by_net.get(net_name, set()):
+        if not _is_two_pin_component(ref, nets_by_ref, "R"):
+            continue
+        if any(_is_ground_like_net(other_net) for other_net in nets_by_ref.get(ref, [])):
+            grounded_refs.append(ref)
+    return sorted(grounded_refs)
+
+
+_SINGLE_UNIT_OPAMP_PIN_ROLES = {
+    "1": "out",
+    "2": "inv",
+    "3": "noninv",
+}
+
+_UB_PIN_ROLES = {
+    "5": "noninv",
+    "6": "inv",
+    "7": "out",
+}
+
+_UC_PIN_ROLES = {
+    "8": "out",
+    "9": "inv",
+    "10": "noninv",
+}
+
+_UD_PIN_ROLES = {
+    "12": "noninv",
+    "13": "inv",
+    "14": "out",
+}
+
+_DUAL_UNIT_OPAMP_PIN_ROLES = {
+    "A": _SINGLE_UNIT_OPAMP_PIN_ROLES,
+    "1": _SINGLE_UNIT_OPAMP_PIN_ROLES,
+    "B": _UB_PIN_ROLES,
+    "2": _UB_PIN_ROLES,
+    "C": _UC_PIN_ROLES,
+    "3": _UC_PIN_ROLES,
+    "D": _UD_PIN_ROLES,
+    "4": _UD_PIN_ROLES,
+}
+
+
+def _opamp_stage_pin_role(
+    ref: str,
+    pin: str,
+    unit: str | None,
+) -> tuple[str, str] | None:
+    """Return ``(stage_id, pin_role)`` when *pin* identifies an op-amp unit pin."""
+    stage_pin_role: tuple[str, str] | None = None
+
+    if unit is not None:
+        unit_key = unit.upper()
+        unit_roles = _DUAL_UNIT_OPAMP_PIN_ROLES.get(unit_key)
+        if unit_roles is not None and pin in unit_roles:
+            stage_pin_role = (f"{ref}:{unit_key}", unit_roles[pin])
+        elif pin in _SINGLE_UNIT_OPAMP_PIN_ROLES:
+            stage_pin_role = (f"{ref}:{unit_key}", _SINGLE_UNIT_OPAMP_PIN_ROLES[pin])
+        return stage_pin_role
+
+    if pin in _UD_PIN_ROLES:
+        stage_pin_role = (f"{ref}:D", _UD_PIN_ROLES[pin])
+    elif pin in _UC_PIN_ROLES:
+        stage_pin_role = (f"{ref}:C", _UC_PIN_ROLES[pin])
+    elif pin in _UB_PIN_ROLES:
+        stage_pin_role = (f"{ref}:B", _UB_PIN_ROLES[pin])
+    elif pin in _SINGLE_UNIT_OPAMP_PIN_ROLES:
+        stage_pin_role = (f"{ref}:A", _SINGLE_UNIT_OPAMP_PIN_ROLES[pin])
+
+    return stage_pin_role
+
+
+def _buffer_stage_roles(
+    *,
+    net_pin_units: Mapping[str, list[tuple[str, str, str | None]]],
+    opamp_like_refs: set[str],
+) -> dict[str, tuple[BlockRole, str, float]]:
+    """Detect explicit follower/buffer stages when unit identity is unambiguous."""
+    stage_feedback_nets: dict[str, str] = {}
+    stage_noninv_nets: dict[str, set[str]] = {}
+    stage_ref_by_id: dict[str, str] = {}
+    signal_stages_by_ref: dict[str, set[str]] = {}
+
+    for net_name, pin_members in net_pin_units.items():
+        if _is_supply_like_net(net_name):
+            continue
+
+        stage_roles_on_net: dict[str, set[str]] = {}
+        for ref, pin, unit in pin_members:
+            if ref not in opamp_like_refs:
+                continue
+            stage_pin_role = _opamp_stage_pin_role(ref, pin, unit)
+            if stage_pin_role is None:
+                continue
+
+            stage_id, pin_role = stage_pin_role
+            stage_ref_by_id[stage_id] = ref
+            signal_stages_by_ref.setdefault(ref, set()).add(stage_id)
+            stage_roles_on_net.setdefault(stage_id, set()).add(pin_role)
+            if pin_role == "noninv":
+                stage_noninv_nets.setdefault(stage_id, set()).add(net_name)
+
+        for stage_id, roles_on_net in stage_roles_on_net.items():
+            if {"out", "inv"}.issubset(roles_on_net):
+                stage_feedback_nets[stage_id] = net_name
+
+    buffer_roles: dict[str, tuple[BlockRole, str, float]] = {}
+    for stage_id, feedback_net in stage_feedback_nets.items():
+        noninv_nets = {
+            net_name
+            for net_name in stage_noninv_nets.get(stage_id, set())
+            if net_name != feedback_net
+        }
+        if not noninv_nets:
+            continue
+
+        ref = stage_ref_by_id[stage_id]
+        if len(signal_stages_by_ref.get(ref, set())) != 1:
+            continue
+
+        unit_name = stage_id.split(":", 1)[1]
+        buffer_roles[ref] = (
+            BlockRole.BUFFER_STAGE,
+            f"Follower/buffer unit {unit_name} shorts output to inverting input on {feedback_net}",
+            0.97,
+        )
+
+    return buffer_roles
+
+
+def _build_motif_roles(inputs: _MotifInputs) -> dict[str, tuple[BlockRole, str, float]]:
+    """Precompute structural role assignments for stage handoff motifs."""
+    motif_roles = _buffer_stage_roles(
+        net_pin_units=inputs.net_pin_units,
+        opamp_like_refs=inputs.active_refs,
+    )
+    buffer_output_nets = {
+        net_name
+        for net_name, pins in inputs.net_pins.items()
+        if any(
+            count >= 2
+            for count in Counter(ref for ref, _pin in pins if ref in inputs.active_refs).values()
+        )
+    }
+
+    for ref, connected_nets in inputs.nets_by_ref.items():
+        if not _is_two_pin_component(ref, inputs.nets_by_ref, "C"):
+            continue
+
+        signal_nets = [net_name for net_name in connected_nets if not _is_supply_like_net(net_name)]
+        if len(signal_nets) != 2:
+            continue
+
+        output_net = next(
+            (
+                net_name
+                for net_name in signal_nets
+                if _is_output_connector_net(
+                    net_name,
+                    inputs.refs_by_net,
+                    inputs.connector_roles,
+                )
+            ),
+            None,
+        )
+        if output_net is not None:
+            inner_net = signal_nets[1] if signal_nets[0] == output_net else signal_nets[0]
+            motif_roles[ref] = (
+                BlockRole.OUTPUT_CONDITIONING,
+                f"Output coupling into connector net {output_net}",
+                0.95,
+            )
+            for grounded_ref in _grounded_resistors_on_net(
+                output_net,
+                refs_by_net=inputs.refs_by_net,
+                nets_by_ref=inputs.nets_by_ref,
+            ):
+                motif_roles.setdefault(
+                    grounded_ref,
+                    (
+                        BlockRole.OUTPUT_CONDITIONING,
+                        f"Output-side load/bleed on {output_net}",
+                        0.92,
+                    ),
+                )
+
+            for member_ref in sorted(inputs.refs_by_net.get(inner_net, set())):
+                if member_ref == ref or not _is_two_pin_component(
+                    member_ref,
+                    inputs.nets_by_ref,
+                    "R",
+                ):
+                    continue
+                if any(
+                    _is_ground_like_net(net_name)
+                    for net_name in inputs.nets_by_ref.get(member_ref, [])
+                ):
+                    continue
+                upstream_net = _other_connected_net(member_ref, inner_net, inputs.nets_by_ref)
+                if upstream_net is None:
+                    continue
+                if upstream_net in buffer_output_nets or bool(
+                    inputs.refs_by_net.get(upstream_net, set()) & inputs.active_refs
+                ):
+                    motif_roles.setdefault(
+                        member_ref,
+                        (
+                            BlockRole.OUTPUT_CONDITIONING,
+                            f"Series output element between {upstream_net} and {inner_net}",
+                            0.9,
+                        ),
+                    )
+            continue
+
+        for downstream_net in signal_nets:
+            grounded_support = _grounded_resistors_on_net(
+                downstream_net,
+                refs_by_net=inputs.refs_by_net,
+                nets_by_ref=inputs.nets_by_ref,
+            )
+            if not grounded_support:
+                continue
+            if _is_output_connector_net(
+                downstream_net,
+                inputs.refs_by_net,
+                inputs.connector_roles,
+            ):
+                continue
+            if not (inputs.refs_by_net.get(downstream_net, set()) & inputs.active_refs):
+                continue
+
+            upstream_net = signal_nets[1] if signal_nets[0] == downstream_net else signal_nets[0]
+            if not (inputs.refs_by_net.get(upstream_net, set()) & inputs.active_refs):
+                continue
+
+            motif_roles.setdefault(
+                ref,
+                (
+                    BlockRole.INTERSTAGE,
+                    f"Interstage coupling between {upstream_net} and {downstream_net}",
+                    0.95,
+                ),
+            )
+            for grounded_ref in grounded_support:
+                motif_roles.setdefault(
+                    grounded_ref,
+                    (
+                        BlockRole.INTERSTAGE,
+                        f"Stage-handoff bias/load on {downstream_net}",
+                        0.9,
+                    ),
+                )
+            break
+
+    return motif_roles
+
+
 def _path_role(
     ref: str,
     *,
@@ -402,6 +756,10 @@ def _classify_component(
             f"Power-only support: {', '.join(connected_nets)}",
             0.85,
         )
+    elif component_ref in context.motif_roles and (
+        context.motif_roles[component_ref][0] == BlockRole.BUFFER_STAGE
+    ):
+        role, reason, confidence = context.motif_roles[component_ref]
     elif _is_operational_core(component_ref, component_symbol):
         role, reason, confidence = BlockRole.OPAMP_CORE, f"Active stage: {component_symbol}", 1.0
     elif _is_decoupling_component(component_ref, component_value, connected_nets):
@@ -416,6 +774,8 @@ def _classify_component(
             f"Supply support nets: {', '.join(connected_nets)}",
             0.8,
         )
+    elif component_ref in context.motif_roles:
+        role, reason, confidence = context.motif_roles[component_ref]
 
     if role is None:
         path_role = _path_role(
@@ -483,6 +843,9 @@ def classify_circuit(ir: CircuitIR) -> BlockLayout:
     layout = BlockLayout()
     refs = [component.ref for component in ir.components]
     nets_by_ref = _component_nets(ir)
+    net_pins = _net_pin_index(ir)
+    net_pin_units = _net_pin_units(ir)
+    refs_by_net = _refs_by_net(net_pins)
     adjacency = _signal_adjacency(ir)
     tiers = assign_tiers(ir)
     connector_roles = classify_connector_roles(refs, tiers, ir=ir)
@@ -494,6 +857,21 @@ def classify_circuit(ir: CircuitIR) -> BlockLayout:
         for component in ir.components
         if _is_operational_core(component.ref, component.symbol)
     ]
+    opamp_like_refs = {
+        component.ref
+        for component in ir.components
+        if "AMPLIFIER_OPERATIONAL" in component.symbol.upper()
+    }
+    motif_roles = _build_motif_roles(
+        _MotifInputs(
+            nets_by_ref=nets_by_ref,
+            refs_by_net=refs_by_net,
+            net_pins=net_pins,
+            net_pin_units=net_pin_units,
+            active_refs=opamp_like_refs,
+            connector_roles=connector_roles,
+        )
+    )
     first_opamp_index = min(
         (path_index[ref] for ref in opamp_refs if ref in path_index),
         default=None,
@@ -503,12 +881,15 @@ def classify_circuit(ir: CircuitIR) -> BlockLayout:
     output_seeds = sorted(ref for ref, role in connector_roles.items() if role == "output")
     context = _DetectionContext(
         nets_by_ref=nets_by_ref,
+        refs_by_net=refs_by_net,
+        net_pins=net_pins,
         connector_roles=connector_roles,
         path_index=path_index,
         first_opamp_index=first_opamp_index,
         opamp_dist=_bfs_distances(adjacency, opamp_refs),
         input_dist=_bfs_distances(adjacency, input_seeds),
         output_dist=_bfs_distances(adjacency, output_seeds),
+        motif_roles=motif_roles,
     )
 
     for component in ir.components:
@@ -543,7 +924,10 @@ def _set_default_zones(layout: BlockLayout) -> None:
         BlockRole.PRECONDITIONING: (origin_x, origin_y, 150.0, page_max_y - 15.0),
         BlockRole.OPAMP_CORE: (120.0, origin_y + 15.0, 195.0, 170.0),
         BlockRole.FEEDBACK: (120.0, origin_y, 195.0, 170.0),
+        BlockRole.INTERSTAGE: (150.0, origin_y + 15.0, 225.0, 170.0),
+        BlockRole.BUFFER_STAGE: (165.0, origin_y + 15.0, 235.0, 170.0),
         BlockRole.OUTPUT: (185.0, origin_y, page_max_x, page_max_y - 15.0),
+        BlockRole.OUTPUT_CONDITIONING: (210.0, origin_y, page_max_x, page_max_y - 15.0),
         BlockRole.POWER_ENTRY: (origin_x, origin_y, 175.0, 100.0),
         BlockRole.DECOUPLING: (120.0, origin_y, 220.0, 110.0),
     }

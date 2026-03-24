@@ -2588,9 +2588,10 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert analog_dump["heuristic_profile_name"] == "analog_audio"
     assert digital_dump["heuristic_profile_name"] == "generic_digital"
     assert analog_counts != digital_counts
-    assert analog_counts.get("shared_lane", 0) > digital_counts.get("shared_lane", 0)
-    assert analog_counts.get("spine", 0) < digital_counts.get("spine", 0)
-    assert analog_overrides == {}
+    assert analog_counts.get("shared_lane", 0) == digital_counts.get("shared_lane", 0)
+    assert analog_counts.get("chain", 0) < digital_counts.get("chain", 0)
+    assert analog_counts.get("spine", 0) > digital_counts.get("spine", 0)
+    assert analog_overrides == {"compact_local_ground_cluster": ["GND"]}
     assert digital_overrides == {}
 
 

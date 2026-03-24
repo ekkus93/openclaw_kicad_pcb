@@ -54,6 +54,7 @@ import math
 from collections import Counter
 from typing import TYPE_CHECKING
 
+from ..block_detection import is_core_like_role, is_input_like_role, is_output_like_role
 from ..component_types import is_power_net as _is_power_net
 from ..component_types import power_rail_polarity
 from ..layout import build_signal_adjacency, count_wire_crossings
@@ -771,19 +772,20 @@ def lint_layout_composition(
     if block_layout is not None:
         from ..block_detection import BlockRole  # noqa: PLC0415
 
-        signal_roles = {
-            BlockRole.INPUT,
-            BlockRole.PRECONDITIONING,
-            BlockRole.OPAMP_CORE,
-            BlockRole.FEEDBACK,
-            BlockRole.OUTPUT,
-            BlockRole.DECOUPLING,
-        }
         role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
         signal_refs = [
             ref
             for ref in comp_positions
-            if role_by_ref.get(ref) in signal_roles and not ref.startswith("#")
+            if (
+                (role := role_by_ref.get(ref)) is not None
+                and (
+                    is_input_like_role(role)
+                    or is_core_like_role(role)
+                    or is_output_like_role(role)
+                    or role == BlockRole.DECOUPLING
+                )
+                and not ref.startswith("#")
+            )
         ]
         opamp_refs = [ref for ref in signal_refs if role_by_ref.get(ref) == BlockRole.OPAMP_CORE]
 
