@@ -411,7 +411,7 @@ Status: `IN PROGRESS`
 
 ## 1.2 Fix or explicitly validate the `R1` / `C5` input network
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 The current netlist appears to place `R1` directly across `C5`, which is suspicious and likely not the intended input-coupling topology.
@@ -551,7 +551,7 @@ Current findings:
 - Current evidence therefore points to source-note intent or ambiguity, not a later normalization/transformation bug inside the schematic generator.
 
 #### 1.2.4 Decide and implement one of these two behaviors
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ##### Option A: fix the netlist-generation logic
 If the notes clearly imply a different intended topology:
@@ -568,11 +568,14 @@ If exact correction cannot be guaranteed:
   - improbable analog topologies.
 
 Current implementation status:
+- Chosen path: **Option B**.
+- The source notes and the derived JSON netlist agree that `R1` sits directly between `LEFT_IN` and `IN_L_AC`, so there is no justified upstream correction to make in the schematic generator for this fix pass.
 - `kicad-pcb/src/kicad_pcb/commands/_validate.py` now emits non-fatal advisory warnings for:
   - `INPUT_COUPLING_BYPASSED_BY_RESISTOR`
   - `OUTPUT_COUPLING_BYPASSED_BY_RESISTOR`
   - `CONNECTOR_UNUSED_PINS_AMBIGUOUS`
 - These warnings now surface through `validate-netlist`, `apply-netlist`, and `new-from-netlist` via the existing structured `warnings` result path.
+- Focused validation remains green for the warning path via `tests/unit/test_netlist_commands.py`, including the real `code_review/ne5532_headphone_amp_netlist.json` drift guard.
 
 #### 1.2.5 Add validation for suspicious analog topologies
 Status: `DONE`
