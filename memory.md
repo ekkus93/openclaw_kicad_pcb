@@ -255,6 +255,19 @@
 - Added regression coverage for the repaired behavior in `kicad-pcb/tests/unit/test_component_types.py`, `tests/unit/test_block_detection.py`, and `tests/unit/test_phase4_layout.py`, and updated stale profile/Phase 7 guardrail assertions in `tests/unit/test_netlist_commands.py` and `tests/unit/test_phase7_regression_guardrails.py` to match the verified post-fix layout/routing behavior.
 - Final repo-wide validation from `/home/ubo/work/openclaw_kicad_pcb` succeeded with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest -q`; mypy still emits the pre-existing `annotation-unchecked` notes in `kicad-pcb/tests/unit/test_layout.py` but reports `Success: no issues found in 137 source files`.
 
+## 2026-03-24T04:05:00Z - GPT-5.4 - Verified the R1/C5 advisory warning path and synced the roadmap
+
+- Audited Phase 1.2 after the user asked to work on the `R1` / `C5` topology warning path and confirmed the implementation was already present rather than missing: `kicad-pcb/src/kicad_pcb/commands/_validate.py` already emits `INPUT_COUPLING_BYPASSED_BY_RESISTOR`, and `kicad-pcb/src/kicad_pcb/commands/netlist.py` already surfaces advisory warnings through `validate-netlist`, `apply-netlist`, and `new-from-netlist`.
+- Re-ran focused validation with `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'Phase1WarningSuite or real_ne5532_fixture_warning_set_does_not_drift or cmd_apply_netlist_surfaces_input_coupling_warning or cmd_new_from_netlist_preserves_input_coupling_warning'` and `.venv/bin/ruff check tests/unit/test_netlist_commands.py kicad-pcb/src/kicad_pcb/commands/_validate.py kicad-pcb/src/kicad_pcb/commands/netlist.py`; both passed.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark Section 1.2 and item 1.2.4 as `DONE`, recording that Option B (preserve the source-faithful netlist and emit an advisory warning) is the verified resolution because the source notes themselves encode `R1` in parallel with `C5` across `LEFT_IN` and `IN_L_AC`.
+
+## 2026-03-24T04:22:56Z - GPT-5.4 - Repo-wide validation passed after the Phase 1.2 roadmap sync
+
+- Repo-wide validation from `/home/ubo/work/openclaw_kicad_pcb` using the repo-local `.venv` succeeded with `.venv/bin/ruff check .`, `MYPYPATH=kicad-pcb/src .venv/bin/mypy .`, and `.venv/bin/pytest -q`.
+- Ruff reported no findings.
+- Mypy reported `Success: no issues found in 137 source files`; the only output was the existing `annotation-unchecked` note-only messages in `kicad-pcb/tests/unit/test_layout.py`.
+- The full pytest suite completed successfully with no failures.
+
 ## 2026-03-23T19:12:37Z - GPT-5.4 - Fixed VOL_L_OUT rightward-stub shared-lane detours
 
 - Updated `kicad-pcb/src/kicad_pcb/router.py` so 3-pin shared-lane hub routes on horizontal lanes no longer force the initial 5.08 mm horizontal stub for pins that exit horizontally; those pins now route from the pin endpoint directly into `_shared_lane_route(...)`, which removes the visible right/left-then-up detour without changing electrical connectivity.
