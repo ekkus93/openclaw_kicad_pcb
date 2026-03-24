@@ -773,6 +773,91 @@ def test_plan_local_ladder_routes_can_disable_compact_output_tail_policy() -> No
     assert plans["HP_L_OUT"] == SharedLanePlan("vertical", 213.36, 123.19, 165.1)
 
 
+def test_small_analog_local_routing_prefers_chain_over_compact_lane() -> None:
+    """Analog small-circuit mode should drop a compact lane when a chain is cleaner."""
+    endpoints = [(54.61, 114.30), (54.61, 125.73), (85.09, 129.54)]
+    lane_plan = SharedLanePlan("vertical", 54.61, 114.30, 129.54)
+    analog_audio = SCHEMATIC_HEURISTIC_PROFILES["analog_audio"]
+
+    assert DEFAULT_ROUTING_HEURISTIC_POLICY.enable_small_analog_local_routing is False
+    assert analog_audio.routing_policy.enable_small_analog_local_routing is True
+    assert analog_audio.routing_policy.should_prefer_small_analog_chain(
+        endpoints,
+        inferred_plan=lane_plan,
+    )
+    assert not RoutingHeuristicPolicy(
+        enable_small_analog_local_routing=False,
+    ).should_prefer_small_analog_chain(
+        endpoints,
+        inferred_plan=lane_plan,
+    )
+
+
+def test_named_routing_profiles_diverge_on_small_analog_input_chain_fixture() -> None:
+    """Analog small-circuit mode should prefer a chain where digital keeps a lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+            ComponentIR(ref="C5", symbol="Device:C", value="1u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="C5", pin="1"),
+                    PinRefIR(ref="R1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="IN_L_AC",
+                pins=[
+                    PinRefIR(ref="C5", pin="2"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="RV1", pin="1"),
+                ],
+            ),
+        ],
+    )
+    pin_endpoints = {
+        ("J1", "1"): (39.37, 123.19, 180.0),
+        ("C5", "1"): (54.61, 106.68, 270.0),
+        ("R1", "1"): (54.61, 118.11, 270.0),
+        ("C5", "2"): (54.61, 114.30, 90.0),
+        ("R1", "2"): (54.61, 125.73, 90.0),
+        ("RV1", "1"): (85.09, 129.54, 270.0),
+    }
+    analog_audio = SCHEMATIC_HEURISTIC_PROFILES["analog_audio"]
+    generic_digital = SCHEMATIC_HEURISTIC_PROFILES["generic_digital"]
+
+    analog_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        heuristic_policy=analog_audio.routing_policy,
+    )
+    digital_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        heuristic_policy=generic_digital.routing_policy,
+    )
+    analog_choice = next(
+        choice for choice in analog_routing.route_decisions if choice.net_name == "IN_L_AC"
+    )
+    digital_choice = next(
+        choice for choice in digital_routing.route_decisions if choice.net_name == "IN_L_AC"
+    )
+
+    assert analog_audio.routing_policy.enable_small_analog_local_routing is True
+    assert generic_digital.routing_policy.enable_small_analog_local_routing is False
+    assert analog_choice.strategy == "chain"
+    assert analog_choice.heuristic_override == "small_analog_local_routing"
+    assert digital_choice.strategy == "shared_lane"
+    assert digital_choice.heuristic_override is None
+
+
 def test_route_nets_routes_full_preview_vol_l_out_as_downstream_continuation() -> None:
     """Full-preview VOL_L_OUT should read as RV1 continuing downstream into U1."""
     ir = CircuitIR(

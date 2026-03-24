@@ -107,6 +107,7 @@ class RoutingHeuristicPolicy:
 
     enable_compact_output_tails: bool = True
     enable_compact_local_ground_clusters: bool = True
+    enable_small_analog_local_routing: bool = False
 
     def should_skip_shared_lane_plan(
         self,
@@ -117,6 +118,22 @@ class RoutingHeuristicPolicy:
         if not self.enable_compact_output_tails or inferred_plan is None:
             return False
         return _should_skip_inferred_lane_plan(endpoints, inferred_plan)
+
+    def should_prefer_small_analog_chain(
+        self,
+        endpoints: list[tuple[float, float]],
+        *,
+        inferred_plan: SharedLanePlan | None = None,
+        refs: tuple[str, ...] = (),
+    ) -> bool:
+        """Return True when compact local analog nets should avoid a trunk route."""
+        if not self.enable_small_analog_local_routing:
+            return False
+        return _prefer_small_analog_chain_route(
+            endpoints,
+            inferred_plan=inferred_plan,
+            refs=refs,
+        )
 
     def route_compact_signal_tail(
         self,
@@ -431,6 +448,7 @@ class LadderLanePlannerContext:
     candidate_degree: dict[str, int]
     shared_lane_by_net: dict[str, tuple[str, float]]
     endpoints_by_net: dict[str, list[tuple[float, float]]]
+    refs_by_net: dict[str, tuple[str, ...]]
     connector_entry_x_by_net: dict[str, float]
     heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY
 
@@ -897,11 +915,18 @@ def _plan_single_grouped_ladder_lane(
     axis: str,
     base_coordinate: float,
     endpoints: list[tuple[float, float]],
+    refs: tuple[str, ...] = (),
     heuristic_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY,
 ) -> SharedLanePlan | None:
     """Return the single-net lane plan, or ``None`` when chain routing should win."""
     candidate_plan = SharedLanePlan(axis, base_coordinate)
-    if heuristic_policy.should_skip_shared_lane_plan(endpoints, candidate_plan):
+    if heuristic_policy.should_skip_shared_lane_plan(
+        endpoints, candidate_plan
+    ) or heuristic_policy.should_prefer_small_analog_chain(
+        endpoints,
+        inferred_plan=candidate_plan,
+        refs=refs,
+    ):
         return None
 
     if axis == "horizontal":
@@ -1280,6 +1305,7 @@ def _collect_local_ladder_candidates(
     dict[str, int],
     dict[str, tuple[str, float]],
     dict[str, list[tuple[float, float]]],
+    dict[str, tuple[str, ...]],
     dict[str, float],
 ]:
     """Collect compact local nets that may participate in ladder routing."""
@@ -1287,6 +1313,7 @@ def _collect_local_ladder_candidates(
     candidate_degree: dict[str, int] = {}
     shared_lane_by_net: dict[str, tuple[str, float]] = {}
     endpoints_by_net: dict[str, list[tuple[float, float]]] = {}
+    refs_by_net: dict[str, tuple[str, ...]] = {}
     connector_entry_x_by_net: dict[str, float] = {}
 
     for net in ir.nets:
@@ -1307,6 +1334,7 @@ def _collect_local_ladder_candidates(
             continue
 
         endpoints_by_net[net.name] = endpoints
+        refs_by_net[net.name] = tuple(pin.ref for pin in net.pins)
         xs = [point[0] for point in endpoints]
         ys = [point[1] for point in endpoints]
         candidate_boxes[net.name] = (min(xs), max(xs), min(ys), max(ys))
@@ -1324,6 +1352,7 @@ def _collect_local_ladder_candidates(
         candidate_degree,
         shared_lane_by_net,
         endpoints_by_net,
+        refs_by_net,
         connector_entry_x_by_net,
     )
 
@@ -1401,6 +1430,7 @@ def _assign_grouped_ladder_lanes(
                 axis=axis,
                 base_coordinate=base_coordinate,
                 endpoints=endpoints,
+                refs=context.refs_by_net.get(grouped_names[0], ()),
                 heuristic_policy=context.heuristic_policy,
             )
             if single_lane_plan is None:
@@ -1435,6 +1465,10 @@ def _assign_grouped_ladder_lanes(
         if context.heuristic_policy.should_skip_shared_lane_plan(
             context.endpoints_by_net[net_name],
             inferred_plan,
+        ) or context.heuristic_policy.should_prefer_small_analog_chain(
+            context.endpoints_by_net[net_name],
+            inferred_plan=inferred_plan,
+            refs=context.refs_by_net.get(net_name, ()),
         ):
             continue
         planned_routes[net_name] = inferred_plan
@@ -1464,12 +1498,14 @@ def _plan_local_ladder_routes(
         candidate_degree,
         shared_lane_by_net,
         endpoints_by_net,
+        refs_by_net,
         connector_entry_x_by_net,
     ) = _collect_local_ladder_candidates(ir, resolved_anchors)
     planner_context = LadderLanePlannerContext(
         candidate_degree=candidate_degree,
         shared_lane_by_net=shared_lane_by_net,
         endpoints_by_net=endpoints_by_net,
+        refs_by_net=refs_by_net,
         connector_entry_x_by_net=connector_entry_x_by_net,
         heuristic_policy=heuristic_policy,
     )
@@ -1533,6 +1569,26 @@ def _route_length(segments: list[WireSegment]) -> float:
     return sum(_manhattan(seg.x1, seg.y1, seg.x2, seg.y2) for seg in segments)
 
 
+def _route_visual_cost(
+    segments: list[WireSegment],
+    junctions: list[JunctionPoint],
+) -> float:
+    """Return a small readability-oriented cost for local routing alternatives."""
+    short_segment_threshold = WIRE_EXTEND_MM + 0.05
+    short_segment_count = sum(
+        1
+        for seg in segments
+        if _manhattan(seg.x1, seg.y1, seg.x2, seg.y2) <= short_segment_threshold
+    )
+    bend_count = max(len(segments) - 1, 0)
+    return (
+        _route_length(segments)
+        + (len(junctions) * (2 * WIRE_EXTEND_MM))
+        + (bend_count * (WIRE_EXTEND_MM / 2))
+        + (short_segment_count * (WIRE_EXTEND_MM / 4))
+    )
+
+
 def _prefer_chain_route(endpoints: list[tuple[float, float]]) -> bool:
     """Return True when a local 3-pin net reads better as a chain than a spine."""
     if len(endpoints) != 3:
@@ -1548,6 +1604,40 @@ def _prefer_chain_route(endpoints: list[tuple[float, float]]) -> bool:
 
     return math.isclose(chain_length, spine_length, abs_tol=0.01) and len(chain_segs) <= len(
         spine_segs
+    )
+
+
+def _prefer_small_analog_chain_route(
+    endpoints: list[tuple[float, float]],
+    *,
+    inferred_plan: SharedLanePlan | None = None,
+    refs: tuple[str, ...] = (),
+) -> bool:
+    """Return True when a compact local analog net reads better as a chain."""
+    if len(endpoints) != 3 or not _is_local_ladder_net(endpoints):
+        return False
+    if refs and all(ref.upper().startswith("R") for ref in refs):
+        return False
+
+    chain_segs, chain_junctions = _chain_route(endpoints)
+    if inferred_plan is None:
+        candidate_segs, candidate_junctions = _spine_route(endpoints)
+    else:
+        candidate_segs, candidate_junctions = _shared_lane_route(
+            endpoints,
+            axis=inferred_plan.axis,
+            coordinate=inferred_plan.coordinate,
+            min_bound=inferred_plan.min_orthogonal,
+            max_bound=inferred_plan.max_orthogonal,
+        )
+
+    return (
+        _route_visual_cost(chain_segs, chain_junctions)
+        <= _route_visual_cost(
+            candidate_segs,
+            candidate_junctions,
+        )
+        + 0.01
     )
 
 
@@ -2030,6 +2120,14 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
+                elif heuristic_policy.should_prefer_small_analog_chain(
+                    stub_ends,
+                    inferred_plan=lane_plan,
+                    refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                ):
+                    hub_segs, hub_junctions = _chain_route(stub_ends)
+                    strategy = "chain"
+                    heuristic_override = "small_analog_local_routing"
                 else:
                     hub_segs, hub_junctions = _shared_lane_route(
                         stub_ends,
@@ -2061,6 +2159,14 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
+                elif use_bus and heuristic_policy.should_prefer_small_analog_chain(
+                    stub_ends,
+                    inferred_plan=compact_tail_plan,
+                    refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                ):
+                    hub_segs, hub_junctions = _chain_route(stub_ends)
+                    strategy = "chain"
+                    heuristic_override = "small_analog_local_routing"
                 elif use_bus and _prefer_chain_route(stub_ends):
                     hub_segs, hub_junctions = _chain_route(stub_ends)
                     strategy = "chain"
