@@ -157,7 +157,14 @@ class SchematicHeuristicProfile:
     routing_policy: RoutingHeuristicPolicy = DEFAULT_ROUTING_HEURISTIC_POLICY
 
 
-ANALOG_AUDIO_HEURISTIC_PROFILE = SchematicHeuristicProfile(name="analog_audio")
+ANALOG_AUDIO_HEURISTIC_PROFILE = SchematicHeuristicProfile(
+    name="analog_audio",
+    routing_policy=RoutingHeuristicPolicy(
+        enable_compact_output_tails=True,
+        enable_compact_local_ground_clusters=True,
+        enable_small_analog_local_routing=True,
+    ),
+)
 GENERIC_DIGITAL_HEURISTIC_PROFILE = SchematicHeuristicProfile(
     name="generic_digital",
     layout_policy=LayoutHeuristicPolicy(
@@ -169,6 +176,7 @@ GENERIC_DIGITAL_HEURISTIC_PROFILE = SchematicHeuristicProfile(
     routing_policy=RoutingHeuristicPolicy(
         enable_compact_output_tails=False,
         enable_compact_local_ground_clusters=False,
+        enable_small_analog_local_routing=False,
     ),
 )
 POWER_SUPPLY_HEURISTIC_PROFILE = SchematicHeuristicProfile(
@@ -182,6 +190,7 @@ POWER_SUPPLY_HEURISTIC_PROFILE = SchematicHeuristicProfile(
     routing_policy=RoutingHeuristicPolicy(
         enable_compact_output_tails=False,
         enable_compact_local_ground_clusters=True,
+        enable_small_analog_local_routing=False,
     ),
 )
 DENSE_DEBUG_HEURISTIC_PROFILE = SchematicHeuristicProfile(
@@ -195,6 +204,7 @@ DENSE_DEBUG_HEURISTIC_PROFILE = SchematicHeuristicProfile(
     routing_policy=RoutingHeuristicPolicy(
         enable_compact_output_tails=False,
         enable_compact_local_ground_clusters=False,
+        enable_small_analog_local_routing=False,
     ),
 )
 SCHEMATIC_HEURISTIC_PROFILES: dict[str, SchematicHeuristicProfile] = {

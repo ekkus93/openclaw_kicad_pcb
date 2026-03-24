@@ -873,12 +873,17 @@ Status: `IN PROGRESS`
   - avoidable junction proliferation.
 
 #### 3.1.3 Add a “small analog circuit” routing mode
-Status: `NOT STARTED`
+Status: `DONE`
 - For compact analog circuits, prefer:
   - short local direct routes,
   - one or two bends max for local nets,
   - minimal trunk/spine use,
   - minimal labels unless needed.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` now exposes `RoutingHeuristicPolicy.enable_small_analog_local_routing`, and the `analog_audio` profile enables it explicitly while the generic/default routing policy and the non-analog profiles leave it disabled.
+- The router now compares compact local 3-pin chain routes against their shared-lane or spine alternatives with a small visual-cost model that penalizes trunk junctions, extra bends, and short jog fragments; when the chain is cleaner, analog mode chooses `strategy="chain"` with `heuristic_override="small_analog_local_routing"`.
+- Focused regression coverage in `tests/unit/test_phase6_wire_simplification.py` now proves the analog profile prefers a chain on a compact local input-stage fixture where `generic_digital` still keeps the grouped shared-lane plan, and the real NE5532 profile-difference regression in `tests/unit/test_netlist_commands.py` now locks the higher-chain / lower-shared-lane analog summary contract.
 
 ---
 
