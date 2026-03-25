@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T06:46:38Z - GPT-5.4 - Closed out stale Phase 0 roadmap bookkeeping
+
+- Audited Phase 0 against the already-landed readability fixture, baseline artifacts, and review tooling, and confirmed the remaining `IN PROGRESS` markers were stale bookkeeping rather than missing implementation.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark Phase 0 plus 0.3 and 0.4 as `DONE`, since the canonical NE5532 fixture, preserved baseline outputs, and runnable regression/review paths are already checked in.
+
 ## 2026-03-25T06:36:43Z - GPT-5.4 - Closed out stale Phase 4 roadmap statuses after code-and-test audit
 
 - Audited the Phase 4 roadmap items against the live snap/layout and label-policy implementation in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, `kicad-pcb/src/kicad_pcb/router.py`, and the focused regressions in `tests/unit/test_phase8_layout.py`, `tests/unit/test_phase4_layout.py`, `tests/unit/test_phase7_ux.py`, `tests/unit/test_presentation.py`, and `tests/unit/test_netlist_commands.py`.
