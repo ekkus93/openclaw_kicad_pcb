@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T21:44:46Z - GPT-5.4 - Provisioned Graphviz for the GitHub Actions integration job
+
+- Updated `.github/workflows/ci.yml` so the `integration-tests` job installs `graphviz` alongside `kicad`, resolves the runner's `dot` binary with `command -v dot`, and exports that path via `GRAPHVIZ_DOT` in `$GITHUB_ENV` before pytest runs.
+- Root cause came from the latest `master` workflow run `23564813060`: unit CI had already gone green, but integration failures in `tests/integration/test_phase0_smoke.py` and `tests/integration/test_phase6_integration.py` all traced to `RuntimeError: Graphviz 'dot' binary not found...` on the GitHub runner.
+
 ## 2026-03-25T20:15:31Z - GPT-5.4 - Committed the remaining baseline fixture and pushed master
 
 - Committed the remaining tracked baseline schematic churn as `904d187 test: refresh readability baseline fixture`, after the earlier Phase 1 closeout commit `2b4fd95 feat: close out phase1 multi-unit support`.
