@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from argparse import Namespace
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -20,6 +21,7 @@ from kicad_pcb.commands.netlist import (
 )
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.layout import compute_orientations
+from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
@@ -2337,6 +2339,74 @@ def _distance_mm(left: tuple[float, float], right: tuple[float, float]) -> float
     return math.hypot(left[0] - right[0], left[1] - right[1])
 
 
+def _net_bound_refs(doc: SchematicDoc) -> dict[str, set[str]]:
+    positions = _symbol_positions(doc)
+    refs_by_net: dict[str, set[str]] = defaultdict(set)
+    for binding in doc.extract_pin_label_bindings():
+        net_name = binding["net_name"]
+        ref = binding["ref"]
+        if isinstance(net_name, str) and isinstance(ref, str) and ref in positions:
+            refs_by_net[net_name].add(ref)
+    return refs_by_net
+
+
+def _max_ref_span_mm(
+    positions: dict[str, tuple[float, float]],
+    refs: set[str],
+) -> float:
+    ref_positions = [positions[ref] for ref in sorted(refs) if ref in positions]
+    if len(ref_positions) < 2:
+        return 0.0
+
+    return max(
+        _distance_mm(left, right)
+        for index, left in enumerate(ref_positions)
+        for right in ref_positions[index + 1 :]
+    )
+
+
+def _route_quality_metrics(doc: SchematicDoc) -> dict[str, float | dict[str, float]]:
+    segments = _collect_wire_segments(doc.root.items)
+    incident_orientations: dict[tuple[float, float], list[str]] = defaultdict(list)
+    for x1, y1, x2, y2 in segments:
+        orientation = "h" if round(y1, 2) == round(y2, 2) else "v"
+        incident_orientations[(round(x1, 2), round(y1, 2))].append(orientation)
+        incident_orientations[(round(x2, 2), round(y2, 2))].append(orientation)
+
+    bend_count = sum(
+        1
+        for orientations in incident_orientations.values()
+        if len(orientations) == 2 and set(orientations) == {"h", "v"}
+    )
+    junction_count = sum(
+        1 for orientations in incident_orientations.values() if len(orientations) >= 3
+    )
+
+    positions = _symbol_positions(doc)
+    refs_by_net = _net_bound_refs(doc)
+    local_net_names = (
+        "LEFT_IN",
+        "IN_L_AC",
+        "BUF_L_IN",
+        "U1A_INV",
+        "AFTER_R6",
+        "HP_L_OUT",
+    )
+    local_net_spans = {
+        net_name: _max_ref_span_mm(positions, refs_by_net.get(net_name, set()))
+        for net_name in local_net_names
+    }
+
+    return {
+        "wire_count": float(len(segments)),
+        "bend_count": float(bend_count),
+        "junction_count": float(junction_count),
+        "avg_local_net_span": sum(local_net_spans.values()) / len(local_net_spans),
+        "feedback_loop_max_span": _max_ref_span_mm(positions, refs_by_net.get("U1A_INV", set())),
+        "local_net_spans": local_net_spans,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Phase 1 — warning suite
 # ---------------------------------------------------------------------------
@@ -2646,6 +2716,36 @@ def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
             f"Feedback part {ref} should stay on the input/feedback side of U1A: "
             f"{positions[ref][0]:.2f} !< {stage1_pos[0]:.2f}"
         )
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532RouteQuality",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    metrics = _route_quality_metrics(managed_doc)
+    local_net_spans = cast(dict[str, float], metrics["local_net_spans"])
+
+    assert cast(float, metrics["wire_count"]) <= 150.0
+    assert cast(float, metrics["bend_count"]) <= 80.0
+    assert cast(float, metrics["junction_count"]) <= 20.0
+    assert cast(float, metrics["avg_local_net_span"]) <= 55.0
+    assert cast(float, metrics["feedback_loop_max_span"]) <= 55.0
+    assert local_net_spans["LEFT_IN"] <= 35.0
+    assert local_net_spans["IN_L_AC"] <= 35.0
+    assert local_net_spans["BUF_L_IN"] <= 65.0
+    assert local_net_spans["HP_L_OUT"] <= 65.0
 
 
 @_skip_no_system_symbols
