@@ -1,5 +1,9 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T06:05:26Z - GPT-5.4 - Closed out the remaining Phase 5.1 roadmap bookkeeping
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark `5.1 Add schematic-readability regression fixtures`, `5.1.2 Add expected structural assertions`, and `5.1.3 Add route-quality metrics` as `DONE` now that the NE5532 structural and route-quality guardrails are landed and full-repo validation is green.
+
 ## 2026-03-25T05:54:34Z - GPT-5.4 - Full repo validation is green after the 5.1.3 route-metric guardrail work
 
 - Re-ran `.venv/bin/ruff check .`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy .`, and `.venv/bin/pytest` from `/home/ubo/work/openclaw_kicad_pcb` after adding the real-NE5532 route-quality bounds.
