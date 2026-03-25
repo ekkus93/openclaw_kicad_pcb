@@ -76,7 +76,10 @@ jobs:
         run: |
           sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
           sudo apt-get update -q
-          sudo apt-get install -y kicad
+          sudo apt-get install -y graphviz kicad
+          DOT_BIN="$(command -v dot)"
+          echo "GRAPHVIZ_DOT=$DOT_BIN" >> "$GITHUB_ENV"
+          "$DOT_BIN" -V
           kicad-cli version
 
       # ── Python setup ─────────────────────────────────────────────────────────
