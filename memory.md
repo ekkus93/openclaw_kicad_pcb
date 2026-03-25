@@ -1,5 +1,20 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T19:10:03Z - GPT-5.4 - Scoped commit excludes the UUID-only baseline churn
+
+- Prepared a commit containing the portable NE5532 symbol fixtures and the readability-baseline test gating change, while intentionally leaving `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch` dirty for a separate decision.
+- The baseline gating change was verified with `pytest tests/unit/test_readability_baseline.py -q`, which now skips fixture regeneration by default and leaves the tracked baseline checksum unchanged.
+
+## 2026-03-25T19:07:21Z - GPT-5.4 - Stopped routine pytest runs from rewriting the readability baseline fixture
+
+- Updated `tests/unit/test_readability_baseline.py` so `test_generate_baseline_schematic` only runs when `OPENCLAW_REGENERATE_READABILITY_BASELINE=1` is set; ordinary pytest now skips the fixture-writing test and keeps the tracked baseline schematic untouched.
+- Verified `pytest tests/unit/test_readability_baseline.py -q` now reports `s.` and the baseline fixture checksum remained unchanged across the rerun.
+
+## 2026-03-25T18:58:43Z - GPT-5.4 - Made NE5532 regression symbols portable across CI images
+
+- Added local test fixture libraries `tests/fixtures/symbols/Connector.kicad_sym` and `tests/fixtures/symbols/Amplifier_Operational.kicad_sym` so Phase 7 and NE5532 regression tests stop depending on distro-specific system KiCad symbol packages.
+- Validation after the fixture addition passed with `pytest tests/unit/test_phase7_regression_guardrails.py -q`, the representative NE5532 regression slice in `tests/unit/test_netlist_commands.py`, and a full `pytest` run (`2228 passed`).
+
 ## 2026-03-25T18:39:22Z - GPT-5.4 - Validated and prepared the CI plus NE5532 placement changes for check-in
 
 - Confirmed the full validation suite passes after the pending changes: `ruff check .`, `ruff format --check .`, `MYPYPATH=kicad-pcb/src mypy kicad-pcb/src`, and `pytest` all succeeded locally.

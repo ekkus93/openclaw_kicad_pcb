@@ -10,6 +10,7 @@ serves as the comparison point for Phases 1-4 readability improvements.
 from __future__ import annotations
 
 import json
+import os
 from argparse import Namespace
 from pathlib import Path
 from typing import cast
@@ -38,6 +39,7 @@ _READABILITY_FIXTURE_DIR = _READABILITY_FIXTURE.fixture_dir
 _CIRCUIT_IR_PATH = _READABILITY_FIXTURE.circuit_ir_path
 _BASELINE_SCH_PATH = cast(Path, _READABILITY_FIXTURE.baseline_schematic_path)
 _BASELINE_METRICS_PATH = _READABILITY_FIXTURE.baseline_metrics_path
+_REGENERATE_BASELINE = os.environ.get("OPENCLAW_REGENERATE_READABILITY_BASELINE") == "1"
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +48,11 @@ _BASELINE_METRICS_PATH = _READABILITY_FIXTURE.baseline_metrics_path
 
 
 @pytest.mark.skipif(
-    not _CIRCUIT_IR_PATH.exists(),
-    reason="Circuit IR fixture not found",
+    (not _CIRCUIT_IR_PATH.exists()) or (not _REGENERATE_BASELINE),
+    reason=(
+        "Circuit IR fixture not found or baseline regeneration not requested; "
+        "set OPENCLAW_REGENERATE_READABILITY_BASELINE=1 to rewrite the tracked fixture"
+    ),
 )
 def test_generate_baseline_schematic(tmp_path: Path) -> None:
     """Generate the baseline schematic from the headphone amp IR.
