@@ -1,5 +1,9 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T17:23:43Z - GPT-5.4 - Synced the roadmap priority summary with the closed Phase 4 and Phase 5 sections
+
+- Updated the top-level priority-order summary in `code_review/SCHEMATIC_FIXES1_TODO.md` so items 4 and 5 now read `DONE`, matching the already-closed Phase 4 and Phase 5 sections below.
+
 ## 2026-03-25T06:46:38Z - GPT-5.4 - Closed out stale Phase 0 roadmap bookkeeping
 
 - Audited Phase 0 against the already-landed readability fixture, baseline artifacts, and review tooling, and confirmed the remaining `IN PROGRESS` markers were stale bookkeeping rather than missing implementation.

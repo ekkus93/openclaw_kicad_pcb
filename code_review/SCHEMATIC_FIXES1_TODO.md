@@ -37,9 +37,9 @@ Implement in this order:
 3. **Reduce routing clutter**
   Status: `IN PROGRESS`
 4. **Improve page composition and readability**
-  Status: `IN PROGRESS`
+  Status: `DONE`
 5. **Add tests, fixtures, and regression protection**
-  Status: `IN PROGRESS`
+  Status: `DONE`
 
 ---
 
