@@ -14,7 +14,7 @@ jobs:
       KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install unit-test system dependencies
         run: |
@@ -27,7 +27,7 @@ jobs:
           test -d "$KICAD_SYMBOLS_DIR"
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -57,7 +57,7 @@ jobs:
       # ── Artifacts ────────────────────────────────────────────────────────────
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: coverage.xml
@@ -69,7 +69,7 @@ jobs:
     needs: unit-tests
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ── Install KiCad ────────────────────────────────────────────────────────
       - name: Add KiCad PPA and install
@@ -84,7 +84,7 @@ jobs:
 
       # ── Python setup ─────────────────────────────────────────────────────────
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -103,7 +103,7 @@ jobs:
       # ── Artifacts ────────────────────────────────────────────────────────────
       - name: Upload test results and logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: integration-test-artifacts-${{ github.run_id }}
           path: |
