@@ -45,7 +45,7 @@ Implement in this order:
 
 ## Phase 0 - Read and understand the current pipeline
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### 0.1 Identify the relevant pipeline entry points
 Status: `DONE`
@@ -83,7 +83,7 @@ Current findings:
 - The router consumes named nets with multi-pin memberships and derives route plans from those net groups rather than from explicit pairwise edges in the source JSON.
 
 ### 0.3 Create a developer fixture for the failing example
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add a stable fixture input for this exact amplifier example.
 - Include:
   - the design notes file,
@@ -138,7 +138,7 @@ Current findings:
    - If a small helper script is needed for local developer reproduction, keep it under `scripts/` and make it explicitly fixture-targeted
 
 ### 0.4 Save the current output as a regression baseline
-Status: `IN PROGRESS`
+Status: `DONE`
 - Preserve the current generated `.kicad_sch` and/or PNG output as a “before” artifact for comparison.
 - Do **not** treat the current output as correct.
 - Use it only as a baseline to show improvement.
