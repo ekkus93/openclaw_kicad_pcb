@@ -1,5 +1,20 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T18:39:22Z - GPT-5.4 - Validated and prepared the CI plus NE5532 placement changes for check-in
+
+- Confirmed the full validation suite passes after the pending changes: `ruff check .`, `ruff format --check .`, `MYPYPATH=kicad-pcb/src mypy kicad-pcb/src`, and `pytest` all succeeded locally.
+- The check-in scope bundles the GitHub Actions unit-job provisioning fix with the focused NE5532 multi-unit placement regression and the regenerated readability baseline fixture produced by the current schematic output.
+
+## 2026-03-25T18:21:56Z - GPT-5.4 - Fixed GitHub Actions unit job provisioning for Graphviz and KiCad symbols
+
+- Patched `.github/workflows/ci.yml` so the unit-test job installs `graphviz` and `kicad-symbols`, exports `KICAD_SYMBOLS_DIR=/usr/share/kicad/symbols`, and verifies both `dot` and the symbol directory before lint/type/unit steps.
+- Root cause was CI provisioning drift: the unit suite exercises real Graphviz layout and system KiCad symbol resolution, but the workflow previously installed only Python dependencies.
+
+## 2026-03-25T18:00:31Z - GPT-5.4 - Added a focused final-placement regression for the remaining Phase 1.1 sibling constraints
+
+- Extended `tests/unit/test_netlist_commands.py` with a real-NE5532 placement regression that locks the current final multi-unit relationships: `U1A` stays left of `U1B`, the two signal units remain in nearby columns and within a bounded overall distance, and `U1P` stays laterally tied to the signal-unit neighborhood rather than drifting toward the audio connectors.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive or new_from_real_ne5532_fixture_splits_u1_into_explicit_units or new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a or new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region'`.
+
 ## 2026-03-25T17:38:51Z - GPT-5.4 - Narrowed the priority summary to remove the closed R1/C5 correctness bullet
 
 - Updated item 1 in `code_review/SCHEMATIC_FIXES1_TODO.md` to remove the stale `R1`/`C5` bullet now that Phase 1.2 is fully `DONE`, leaving the summary aligned to the still-open multi-unit work in Phase 1.1.
