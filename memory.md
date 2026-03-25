@@ -1,5 +1,15 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T22:06:00Z - GPT-5.4 - Bumped CI marketplace actions to Node 24-capable major versions
+
+- Updated `.github/workflows/ci.yml` from `actions/checkout@v4` to `@v6`, `actions/setup-python@v5` to `@v6`, and `actions/upload-artifact@v4` to `@v6` in both jobs after checking the upstream releases.
+- Chose `upload-artifact@v6` as the smaller Node 24-capable jump instead of `@v7`, since the user asked for the recommended bump now rather than the latest possible major migration.
+
+## 2026-03-25T21:56:44Z - GPT-5.4 - Verified the Graphviz workflow fix on GitHub Actions
+
+- The push of `406396d` triggered workflow run `23565795293`, which completed `success` on GitHub for the `CI` workflow.
+- The previously failing `Integration tests (KiCad required)` job also completed `success` as job `68617260725`, confirming the runner now gets past the missing `Graphviz 'dot' binary not found` failure.
+
 ## 2026-03-25T21:44:46Z - GPT-5.4 - Provisioned Graphviz for the GitHub Actions integration job
 
 - Updated `.github/workflows/ci.yml` so the `integration-tests` job installs `graphviz` alongside `kicad`, resolves the runner's `dot` binary with `command -v dot`, and exports that path via `GRAPHVIZ_DOT` in `$GITHUB_ENV` before pytest runs.
