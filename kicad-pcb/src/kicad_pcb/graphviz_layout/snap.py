@@ -96,6 +96,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections import defaultdict, deque
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -140,6 +141,14 @@ def _is_connector_ref(ref: str) -> bool:
     """Return True if *ref* looks like a connector designator (J*, P*, CON*, etc)."""
     r = ref.upper()
     return any(r.startswith(p) for p in _CONNECTOR_PREFIXES_CT)
+
+
+def _multi_unit_base_ref(ref: str) -> str | None:
+    """Return the shared base ref for a split-unit IC reference, if any."""
+    match = re.match(r"^([A-Za-z]+[0-9]+)([A-Za-z]+)$", ref)
+    if match is None:
+        return None
+    return match.group(1)
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +229,10 @@ _MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM: float = GRID_ROW_MM
 # separation without disturbing the compact geometry inside each block.
 _MAJOR_BLOCK_MIN_GAP_MM: float = _GRID_COL_MM
 _MAJOR_BLOCK_MAX_GAP_MM: float = 2.0 * _GRID_COL_MM
+
+# Keep adjacent split-unit signal symbols within a single KiCad lane so the
+# final post-snap layout preserves the intended multi-stage IC grouping.
+_MULTI_UNIT_SIGNAL_SIBLING_GAP_MM: float = _GRID_COL_MM
 
 # Fraction of the usable vertical extent beyond which the op-amp centre is
 # considered "too low" (0.75 → y > ORIGIN_Y + 75 % × height triggers a nudge).
@@ -1707,6 +1720,84 @@ def _center_ics_in_columns(
     return result
 
 
+def _snap_multi_unit_sibling_cohesion(
+    positions: dict[str, tuple[float, float, float | None]],
+    *,
+    unit_sibling_pairs: tuple[tuple[str, str], ...] = (),
+    power_unit_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Compact split-unit IC siblings into one readable x-cluster.
+
+    Graphviz sibling constraints help the initial layout, but later snap,
+    spacing, and deoverlap passes can still leave ordered unit siblings spread
+    too far apart. This pass re-applies the intended left-to-right grouping to
+    the final coordinates by compacting each sibling chain into adjacent KiCad
+    lanes and re-centering any power-only unit above that signal-unit cluster.
+    """
+    if not unit_sibling_pairs and not power_unit_refs:
+        return positions
+
+    successors: dict[str, str] = {}
+    predecessors: dict[str, str] = {}
+    for left_ref, right_ref in unit_sibling_pairs:
+        successors[left_ref] = right_ref
+        predecessors[right_ref] = left_ref
+
+    ordered_groups: list[list[str]] = []
+    visited: set[str] = set()
+    sibling_refs = {ref for pair in unit_sibling_pairs for ref in pair}
+    for start_ref in sorted(sibling_refs):
+        if start_ref in predecessors or start_ref in visited:
+            continue
+        group: list[str] = []
+        current_ref: str = start_ref
+        while current_ref not in visited:
+            group.append(current_ref)
+            visited.add(current_ref)
+            next_ref = successors.get(current_ref)
+            if next_ref is None:
+                break
+            current_ref = next_ref
+        if len(group) >= 2:
+            ordered_groups.append(group)
+
+    if not ordered_groups:
+        return positions
+
+    power_units_by_base: dict[str, str] = {}
+    for power_unit_ref in sorted(power_unit_refs):
+        base_ref = _multi_unit_base_ref(power_unit_ref)
+        if base_ref is not None:
+            power_units_by_base[base_ref] = power_unit_ref
+
+    result = dict(positions)
+    for group in ordered_groups:
+        placed_signal_units = [ref for ref in group if ref in result]
+        if len(placed_signal_units) < 2:
+            continue
+
+        min_signal_x = min(result[ref][0] for ref in placed_signal_units)
+        anchor_x = round(min_signal_x, 2)
+        for index, ref in enumerate(placed_signal_units):
+            _old_x, y, rotation = result[ref]
+            target_x = round(anchor_x + index * _MULTI_UNIT_SIGNAL_SIBLING_GAP_MM, 2)
+            result[ref] = (target_x, y, rotation)
+
+        base_ref = _multi_unit_base_ref(placed_signal_units[0])
+        grouped_power_ref = power_units_by_base.get(base_ref or "")
+        if grouped_power_ref is None or grouped_power_ref not in result:
+            continue
+
+        cluster_center_x = round(
+            sum(result[ref][0] for ref in placed_signal_units) / len(placed_signal_units),
+            2,
+        )
+        _power_x, power_y, power_rotation = result[grouped_power_ref]
+        result[grouped_power_ref] = (cluster_center_x, power_y, power_rotation)
+
+    return result
+
+
 def _apply_stereo_split(
     positions: dict[str, tuple[float, float, float | None]],
     channels: Mapping[str, str],
@@ -3132,6 +3223,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     decoupling_map: dict[str, str],
     roles: Mapping[str, str] | None = None,
     halo: Mapping[str, str] | None = None,
+    power_unit_refs: frozenset[str] = frozenset(),
+    unit_sibling_pairs: tuple[tuple[str, str], ...] = (),
     block_layout: BlockLayout | None = None,
     heuristic_policy: LayoutHeuristicPolicy = DEFAULT_LAYOUT_HEURISTIC_POLICY,
     strict: bool = False,
@@ -3206,7 +3299,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     7j. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally
         tied to the active/signal cluster so the power block still reads as
         part of the same design after the signal path recenters.
-    7k. :func:`_apply_property_text_spacing` — reserve extra vertical space
+    7k. :func:`_snap_multi_unit_sibling_cohesion` — compact ordered multi-unit
+        IC siblings into adjacent x-lanes and re-center any power-only unit
+        over that signal-unit cluster so the final coordinates preserve the
+        intended grouping after later locality/composition passes.
+    7l. :func:`_apply_property_text_spacing` — reserve extra vertical space
         for components that share the same or a nearby x-lane so visible
         ``Reference``/``Value`` text does not collapse onto nearby symbol
         bodies or short local wire corridors.
@@ -3275,6 +3372,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     result = _snap_major_signal_axis(result, block_layout)
     result = _snap_major_block_spacing(result, block_layout)
     result = _snap_power_block_cohesion(result, block_layout, decoupling_map=decoupling_map)
+    result = _snap_multi_unit_sibling_cohesion(
+        result,
+        power_unit_refs=power_unit_refs,
+        unit_sibling_pairs=unit_sibling_pairs,
+    )
     protected_text_refs: frozenset[str] = frozenset()
     if block_layout is not None:
         from ..block_detection import BlockRole  # noqa: PLC0415

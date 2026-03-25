@@ -646,6 +646,8 @@ class GraphvizLayoutEngine:
             decoupling_map=decoupling_map,
             roles=_roles or None,
             halo=halo or None,
+            power_unit_refs=frozenset(_power_unit_refs),
+            unit_sibling_pairs=tuple(_unit_sibling_pairs),
             block_layout=block_layout,
             heuristic_policy=self._layout_heuristic_policy,
             strict=self._strict,

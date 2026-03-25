@@ -33,12 +33,26 @@ def test_symbol_index_reads_unit_pins_from_explicit_dir(fixture_symbols_dir: Pat
     }
 
 
+def test_symbol_index_reads_power_unit_from_explicit_dir(fixture_symbols_dir: Path) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+
+    assert index.get_power_unit("TestLib:DualOpAmp") == "3"
+
+
 def test_symbol_index_returns_empty_unit_pins_for_single_unit_symbol(
     fixture_symbols_dir: Path,
 ) -> None:
     index = SymbolIndex(symbols_dir=fixture_symbols_dir)
 
     assert index.get_unit_pins("TestLib:R") == {}
+
+
+def test_symbol_index_returns_none_when_symbol_has_no_power_unit(
+    fixture_symbols_dir: Path,
+) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+
+    assert index.get_power_unit("TestLib:R") is None
 
 
 def test_symbol_index_missing_symbol_raises_coded_error(fixture_symbols_dir: Path) -> None:
@@ -119,4 +133,25 @@ def test_symbol_index_caches_unit_pin_reads(
     second = index.get_unit_pins("TestLib:DualOpAmp")
 
     assert first == second
+    assert calls["count"] == 1
+
+
+def test_symbol_index_caches_power_unit_reads(
+    fixture_symbols_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    calls = {"count": 0}
+    original = si_mod.read_lib_symbol_power_unit
+
+    def _wrapped(*args, **kwargs):
+        calls["count"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(si_mod, "read_lib_symbol_power_unit", _wrapped)
+
+    first = index.get_power_unit("TestLib:DualOpAmp")
+    second = index.get_power_unit("TestLib:DualOpAmp")
+
+    assert first == second == "3"
     assert calls["count"] == 1

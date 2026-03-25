@@ -29,8 +29,7 @@ This document is written as an implementation plan for GitHub Copilot. It is int
 Implement in this order:
 
 1. **Fix correctness blockers**
-  Status: `IN PROGRESS`
-   - multi-unit op-amp handling
+  Status: `DONE`
 2. **Add analog-aware placement and grouping**
   Status: `IN PROGRESS`
 3. **Reduce routing clutter**
@@ -201,11 +200,11 @@ Implement the before-baseline work in this order.
 
 ## Phase 1 - Fix correctness blockers
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ## 1.1 Implement proper multi-unit symbol support
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 The circuit uses both halves of an `NE5532`, but the generated schematic is not representing this clearly as distinct units such as `U1A` and `U1B`.
@@ -330,13 +329,17 @@ Status: `DONE`
   - mapping back to parent device.
 
 #### 1.1.3 Add symbol metadata for multi-unit parts
-Status: `IN PROGRESS`
+Status: `DONE`
 - Ensure the symbol lookup layer can answer:
   - total number of units,
   - which pins belong to each unit,
   - whether there is a separate power unit,
   - how KiCad expects unit numbering to be emitted.
 - If the current symbol parsing layer does not expose this, extend it.
+
+Current audit findings:
+- `kicad-pcb/src/kicad_pcb/lib_symbol.py` and `kicad-pcb/src/kicad_pcb/symbol_index.py` already expose unit-numbered pin membership (`read_lib_symbol_unit_pins(...)`, `SymbolIndex.get_unit_pins(...)`) and unit-local pin geometry (`read_lib_symbol_unit_pin_at(...)`, `SymbolIndex.get_unit_pin_at(...)`). The returned unit keys also match the KiCad unit numbers currently emitted downstream.
+- `kicad-pcb/src/kicad_pcb/lib_symbol.py` now also exposes `read_lib_symbol_power_unit(...)`, and `kicad-pcb/src/kicad_pcb/symbol_index.py` now caches that metadata via `SymbolIndex.get_power_unit(...)`, so the symbol-definition layer can explicitly identify a dedicated power-only unit instead of relying only on later net-usage heuristics.
 
 #### 1.1.4 Split `NE5532` into separate drawable units
 Status: `DONE`
@@ -347,7 +350,7 @@ Status: `DONE`
 - Ensure each routed net attaches to the correct unit pins.
 
 #### 1.1.5 Update placement to operate on placed units, not just parent devices
-Status: `IN PROGRESS`
+Status: `DONE`
 - The layout engine must place `U1A` and `U1B` separately.
 - It must still know they belong to the same parent device.
 - Add optional constraints for sibling units:
@@ -366,7 +369,7 @@ Status: `DONE`
 - Verify the output opens cleanly in KiCad without silently collapsing units or misassigning pins.
 
 #### 1.1.8 Add tests for multi-unit parts
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add tests for:
   - dual op-amp split into two units,
   - routing to correct pins,
@@ -375,23 +378,26 @@ Status: `IN PROGRESS`
 
 ### Phase 1.1 first-slice progress
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 - The first vertical slice is now implemented in the generation path.
 - `kicad-pcb/src/kicad_pcb/lib_symbol.py` exposes KiCad unit pin groups from flattened symbol metadata, which is enough to derive the `NE5532` unit split from the inherited `LM2904` sub-symbols.
 - `kicad-pcb/src/kicad_pcb/symbol_index.py` now caches both flat symbol pins and per-unit pin maps, so validation and generation no longer re-read KiCad unit metadata separately.
 - `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` now expands a single device ref into explicit placed-unit refs for generation (`U1A`, `U1B`, and `U1P` for the real system `NE5532` fixture) and emits only the unit-local pin subset for each placed symbol.
 - `kicad-pcb/src/kicad_pcb/lib_symbol.py` and `kicad-pcb/src/kicad_pcb/symbol_index.py` now expose and cache unit-local pin geometry, not just unit pin membership, so placed-unit endpoint calculation can use the exact KiCad sub-symbol coordinates.
+- `kicad-pcb/src/kicad_pcb/lib_symbol.py` and `kicad-pcb/src/kicad_pcb/symbol_index.py` now also expose and cache explicit dedicated power-unit metadata from the symbol definition itself via `read_lib_symbol_power_unit(...)` / `SymbolIndex.get_power_unit(...)`.
 - `kicad-pcb/src/kicad_pcb/layout.py` now accepts optional placed-pin subsets during orientation calculation, so fallback orientation heuristics ignore any net memberships outside the placed unit's own pins.
 - `kicad-pcb/src/kicad_pcb/layout_engine.py` now documents placement outputs in terms of placed refs, so the layout contract explicitly allows multi-unit results such as `U1A` and `U1P` rather than only parent-device refs.
 - `kicad-pcb/src/kicad_pcb/tier.py` now exposes signal-unit sibling metadata for multi-unit groups and can derive ordered sibling constraints that exclude a power-only unit from the main signal chain.
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` and `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` now pass and emit invisible sibling-order constraints so signal units like `U1A` and `U1B` stay visually related while a power unit remains outside that chain.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now re-enforces split-unit sibling cohesion in the final post-layout coordinates, compacting ordered signal units into adjacent x-lanes and re-centering a power-only unit over that cluster after the late locality/composition passes.
 - `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` now resolves pin endpoints from unit-local geometry for each placed symbol and passes the placed pin subset into fallback orientation computation instead of relying on whole-symbol metadata.
 - `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` now returns explicit `PinAnchor` ownership metadata for each placed pin, and `kicad-pcb/src/kicad_pcb/router.py` now routes against that richer anchor map instead of inferring known pins only from the flattened endpoint dictionary.
 - `kicad-pcb/src/kicad_pcb/sch_doc/nodes.py` and `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py` now write the actual KiCad `unit` number into both the placed symbol node and the instance path metadata instead of hardcoding unit `1`.
 - Regression coverage now exists for:
   - unit metadata extraction via `TestLib:DualOpAmp`
   - unit-local pin geometry extraction in `tests/unit/test_sch_doc.py`
+  - dedicated power-unit metadata extraction and caching in `tests/unit/test_sch_doc.py` and `tests/unit/test_symbol_index.py`
   - cached unit metadata lookup in `tests/unit/test_symbol_index.py`
   - helper-level device-to-unit expansion and unit-local placed-pin geometry resolution in `tests/unit/test_sch_apply.py`
   - router-level anchor consumption coverage proving `route_nets(...)` can consume explicit pin anchors even when the legacy endpoint map is empty
@@ -402,6 +408,7 @@ Status: `IN PROGRESS`
   - command-level real-system NE5532 placement in `tests/unit/test_netlist_commands.py`
 - `kicad-pcb/src/kicad_pcb/ir/validate.py` now accepts explicit `PinRefIR.unit` only when the symbol exposes KiCad unit metadata, rejects unknown unit ids, and rejects pins that do not belong to the selected unit.
 - command-level real-fixture coverage now also locks the authoritative `code_review/ne5532_headphone_amp_netlist.json` path to explicit `U1A`, `U1B`, and `U1P` output plus the expected stage/power net bindings, so the real headphone-amp correctness target is no longer only implied by the synthetic system-library NE5532 regression.
+- phase-4 coordinator coverage now also locks the final post-snap sibling behavior in `tests/unit/test_phase4_layout.py`, proving ordered signal siblings compact into adjacent x-lanes, the power-only unit recenters over that cluster, and incomplete placed-unit position sets remain a no-op instead of failing.
 - Still pending in later Phase 1.1 slices:
   - router-side consumption of the richer placed-unit anchor model beyond endpoint generation
   - broader layout/routing refinements for the real NE5532 readability fixture
