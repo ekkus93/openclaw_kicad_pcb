@@ -726,12 +726,14 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     assert dump["unit_splitting"]["expanded_devices"][0]["source_ref"] == "U1"
     assert dump["schematic_debug_artifacts"] == [
         "heuristic_profile_name",
+        "label_mode_name",
         "unit_splitting",
         "net_classification",
         "final_route_choices",
         "routing_heuristic_policy",
     ]
     assert dump["heuristic_profile_name"] == "analog_audio"
+    assert dump["label_mode_name"] == "minimal"
     assert dump["net_classification"] == [
         {
             "classification": "signal_chain",
@@ -921,6 +923,7 @@ def test_cmd_apply_netlist_forwards_heuristic_profile_name(tmp_path: Path, monke
                 "nets_applied": 0,
                 "kicad_cli_used": False,
                 "heuristic_profile_name": "generic_digital",
+                "label_mode_name": "debug",
                 "dry_run": False,
                 "warnings": (),
                 "warning_report_path": None,
@@ -939,11 +942,13 @@ def test_cmd_apply_netlist_forwards_heuristic_profile_name(tmp_path: Path, monke
             force=True,
             dry_run=False,
             heuristic_profile="generic_digital",
+            label_mode="debug",
         )
     )
 
     assert captured_request is not None
     assert captured_request.heuristic_profile_name == "generic_digital"
+    assert captured_request.label_mode_name == "debug"
 
 
 def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, monkeypatch) -> None:
@@ -975,6 +980,7 @@ def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, mo
                 "nets_applied": 0,
                 "kicad_cli_used": False,
                 "heuristic_profile_name": "power_supply",
+                "label_mode_name": "always-show-important-labels",
                 "dry_run": False,
                 "warnings": (),
                 "warning_report_path": None,
@@ -996,6 +1002,7 @@ def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, mo
             validate=None,
             routing="bus",
             heuristic_profile="power_supply",
+            label_mode="always-show-important-labels",
             auto_fix=False,
             strict=False,
         )
@@ -1003,6 +1010,7 @@ def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, mo
 
     assert captured_request is not None
     assert captured_request.heuristic_profile_name == "power_supply"
+    assert captured_request.label_mode_name == "always-show-important-labels"
 
 
 def test_cmd_apply_netlist_surfaces_output_load_warning(
@@ -2591,7 +2599,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert analog_counts.get("shared_lane", 0) < digital_counts.get("shared_lane", 0)
     assert analog_counts.get("chain", 0) > digital_counts.get("chain", 0)
     assert analog_overrides == {
-        "compact_local_ground_cluster": ["GND"],
+        "compact_output_tail": ["HP_L_OUT"],
         "small_analog_local_routing": ["BUF_L_IN", "IN_L_AC", "LEFT_IN", "U1A_INV"],
     }
     assert digital_overrides == {}
@@ -2649,6 +2657,46 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
     }
     assert power_overrides == {}
     assert digital_overrides == {}
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_important_label_mode_surfaces_stage_seams(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532ImportantLabels",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+            label_mode="always-show-important-labels",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    label_names: set[str] = set()
+    for node in walk(managed_doc.root):
+        if (
+            isinstance(node, ListNode)
+            and node.key == "label"
+            and len(node.items) >= 2  # noqa: PLR2004
+            and isinstance(node.items[1], StringNode)
+        ):
+            label_names.add(node.items[1].value)
+
+    assert {
+        "LEFT_IN",
+        "IN_L_AC",
+        "VOL_L_OUT",
+        "OUT_L_STAGE1",
+        "BUF_L_IN",
+        "HP_L_OUT",
+    } <= label_names
+    assert "OUT_L_STAGE2_RAW" not in label_names
+    assert "AFTER_R6" not in label_names
+    assert "U1A_INV" not in label_names
 
 
 def _check_circuit_fidelity(ir_data: dict, managed_doc: SchematicDoc) -> None:

@@ -900,6 +900,111 @@ def test_route_nets_classifies_feedback_net_explicitly() -> None:
     assert choice.classification == "feedback"
 
 
+def test_short_signal_chain_net_stays_direct_before_label_fallback() -> None:
+    """Short local signal-chain nets should stay wired even when tier drift would label them."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="STAGE_L",
+                pins=[
+                    PinRefIR(ref="R1", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("R1", "1"): (30.0, 100.0, 0.0),
+            ("U1", "3"): (70.0, 100.0, 180.0),
+        },
+        tiers={"R1": 0, "U1": 2},
+    )
+
+    choice = next(choice for choice in routing.route_decisions if choice.net_name == "STAGE_L")
+
+    assert choice.classification == "signal_chain"
+    assert choice.strategy == "direct"
+    assert routing.labels == []
+
+
+def test_short_feedback_net_stays_direct_before_label_fallback() -> None:
+    """Short feedback nets should prefer a local wire over label fallback."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="U1A_INV",
+                pins=[
+                    PinRefIR(ref="R1", pin="1"),
+                    PinRefIR(ref="U1", pin="2"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("R1", "1"): (30.0, 100.0, 0.0),
+            ("U1", "2"): (70.0, 100.0, 180.0),
+        },
+        tiers={"R1": 0, "U1": 2},
+    )
+
+    choice = next(choice for choice in routing.route_decisions if choice.net_name == "U1A_INV")
+
+    assert choice.classification == "feedback"
+    assert choice.strategy == "direct"
+    assert routing.labels == []
+
+
+def test_short_connector_attachment_net_stays_direct_before_label_fallback() -> None:
+    """Short local connector-attachment nets should stay wired instead of labeling."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x02", value="IN"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_IN",
+                pins=[
+                    PinRefIR(ref="J1", pin="1"),
+                    PinRefIR(ref="U1", pin="3"),
+                ],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J1", "1"): (30.0, 100.0, 0.0),
+            ("U1", "3"): (69.0, 100.0, 180.0),
+        },
+        tiers={"J1": 0, "U1": 2},
+    )
+
+    choice = next(choice for choice in routing.route_decisions if choice.net_name == "LEFT_IN")
+
+    assert choice.classification == "connector_attachment"
+    assert choice.strategy == "direct"
+    assert routing.labels == []
+
+
 def test_route_nets_routes_full_preview_vol_l_out_as_downstream_continuation() -> None:
     """Full-preview VOL_L_OUT should read as RV1 continuing downstream into U1."""
     ir = CircuitIR(

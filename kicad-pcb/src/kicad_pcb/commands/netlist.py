@@ -163,6 +163,7 @@ def cmd_apply_netlist(args) -> ApplyNetlistResult:
             strict=bool(getattr(args, "strict", False)),
             layout_name=getattr(args, "layout", None),
             routing_name=getattr(args, "routing", None),
+            label_mode_name=getattr(args, "label_mode", None),
             heuristic_profile_name=getattr(args, "heuristic_profile", None),
             debug_dump_path=(
                 Path(getattr(args, "debug_dump")) if getattr(args, "debug_dump", None) else None
@@ -373,6 +374,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
             strict=bool(getattr(args, "strict", False)),
             layout_name=getattr(args, "layout", None),
             routing_name=getattr(args, "routing", None),
+            label_mode_name=getattr(args, "label_mode", None),
             heuristic_profile_name=getattr(args, "heuristic_profile", None),
             debug_dump_path=(
                 Path(getattr(args, "debug_dump")) if getattr(args, "debug_dump", None) else None
@@ -396,6 +398,7 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         nets_applied=apply_result.nets_applied,
         kicad_cli_used=apply_result.kicad_cli_used,
         heuristic_profile_name=apply_result.heuristic_profile_name,
+        label_mode_name=apply_result.label_mode_name,
         warnings=apply_result.warnings,
         warning_report_path=apply_result.warning_report_path,
         debug_dump_path=apply_result.debug_dump_path,
