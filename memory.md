@@ -1,5 +1,9 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T17:38:51Z - GPT-5.4 - Narrowed the priority summary to remove the closed R1/C5 correctness bullet
+
+- Updated item 1 in `code_review/SCHEMATIC_FIXES1_TODO.md` to remove the stale `R1`/`C5` bullet now that Phase 1.2 is fully `DONE`, leaving the summary aligned to the still-open multi-unit work in Phase 1.1.
+
 ## 2026-03-25T17:23:43Z - GPT-5.4 - Synced the roadmap priority summary with the closed Phase 4 and Phase 5 sections
 
 - Updated the top-level priority-order summary in `code_review/SCHEMATIC_FIXES1_TODO.md` so items 4 and 5 now read `DONE`, matching the already-closed Phase 4 and Phase 5 sections below.
