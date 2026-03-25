@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T06:21:12Z - GPT-5.4 - Closed out Phase 5 after auditing 5.2.1 analog warning coverage
+
+- Audited `kicad-pcb/src/kicad_pcb/commands/_validate.py`, `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, `tests/unit/test_sch_apply.py`, and `tests/unit/test_netlist_commands.py` against the 5.2.1 checklist and confirmed every listed warning family is already implemented and regression-covered.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark Phase 5, 5.2, 5.2.1, and 5.3 as `DONE`, since the remaining stale statuses were bookkeeping rather than missing implementation.
+
 ## 2026-03-25T06:05:26Z - GPT-5.4 - Closed out the remaining Phase 5.1 roadmap bookkeeping
 
 - Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark `5.1 Add schematic-readability regression fixtures`, `5.1.2 Add expected structural assertions`, and `5.1.3 Add route-quality metrics` as `DONE` now that the NE5532 structural and route-quality guardrails are landed and full-repo validation is green.

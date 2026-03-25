@@ -1121,7 +1121,7 @@ Current findings:
 
 ## Phase 5 - Add validation, tests, and regression protection
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ## 5.1 Add schematic-readability regression fixtures
 
@@ -1177,7 +1177,7 @@ Current findings:
 
 ## 5.2 Add topology warnings / linting
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Required result
 The tool should help catch suspicious circuits before drawing them prettily.
@@ -1185,7 +1185,7 @@ The tool should help catch suspicious circuits before drawing them prettily.
 ### Tasks
 
 #### 5.2.1 Add analog lint rules
-Status: `IN PROGRESS`
+Status: `DONE`
 Warn on:
 - coupling capacitor directly paralleled by resistor,
 - missing op-amp feedback,
@@ -1215,6 +1215,7 @@ Current findings:
 - A second sweep also removed the remaining ground-only alias duplication by adding shared `is_ground_like_name(...)` support in `kicad-pcb/src/kicad_pcb/component_types.py`; the `#PWR` / `#FLG` row-placement snap in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` and the ground-family classification logic in `kicad-pcb/src/kicad_pcb/block_detection.py` now both use the same GND/VSS/0V/AGND-family predicate instead of carrying local lists.
 - Focused regression coverage for the layout-side family now lives in `tests/unit/test_netlist_commands.py`, including the far-placement warning case, the nearby decoupler guard case, explicit positive- and negative-rail side-selection regressions, and propagation through `new-from-netlist`.
 - Additional warning families in the same advisory path now also cover missing/nonlocal op-amp feedback, output floating, output shorted to a rail, output coupling bypassed by resistor, and ambiguous unused connector pins, so Phase 5.2.1 is underway rather than untouched.
+- Audit confirmation: the live warning pipeline now covers every family listed in 5.2.1 across the advisory-validation path (`INPUT_COUPLING_BYPASSED_BY_RESISTOR`, `OPAMP_FEEDBACK_MISSING_OR_NONLOCAL`, `OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED`, `CONNECTOR_UNUSED_PINS_AMBIGUOUS`, `OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN`) plus the layout/apply path (`DECOUPLING_FAR_FROM_ACTIVE_DEVICE`), with focused helper-layer and command-layer regression coverage already present.
 
 #### 5.2.2 Add warning surfacing
 Status: `DONE`
@@ -1234,7 +1235,7 @@ Current findings:
 
 ## 5.3 Add before/after comparison tooling
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Required result
 Developers should be able to see whether layout quality actually improved.
