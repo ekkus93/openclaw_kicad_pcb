@@ -2719,6 +2719,65 @@ def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
 
 
 @_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532UnitPlacement",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    stage1_pos = positions["U1A"]
+    stage2_pos = positions["U1B"]
+    power_pos = positions["U1P"]
+    input_pos = positions["J1"]
+    output_pos = positions["J2"]
+
+    assert stage1_pos[0] < stage2_pos[0], (
+        f"Signal units should preserve left-to-right stage flow: "
+        f"U1A.x={stage1_pos[0]:.2f}, U1B.x={stage2_pos[0]:.2f}"
+    )
+    assert abs(stage2_pos[0] - stage1_pos[0]) <= 35.0, (
+        f"Signal units should stay in nearby x-columns: "
+        f"|U1B.x-U1A.x|={abs(stage2_pos[0] - stage1_pos[0]):.2f} mm"
+    )
+    assert _distance_mm(stage1_pos, stage2_pos) <= 70.0, (
+        f"Signal units should remain visually cohesive, not drift apart: "
+        f"distance(U1A,U1B)={_distance_mm(stage1_pos, stage2_pos):.2f} mm"
+    )
+
+    signal_unit_band_min_x = min(stage1_pos[0], stage2_pos[0]) - 10.0
+    signal_unit_band_max_x = max(stage1_pos[0], stage2_pos[0]) + 10.0
+    assert signal_unit_band_min_x <= power_pos[0] <= signal_unit_band_max_x, (
+        f"Power unit should stay laterally tied to the signal units: "
+        "U1P.x="
+        f"{power_pos[0]:.2f}, allowed=[{signal_unit_band_min_x:.2f}, "
+        f"{signal_unit_band_max_x:.2f}]"
+    )
+
+    nearest_signal_unit = min(
+        _distance_mm(power_pos, stage_pos) for stage_pos in (stage1_pos, stage2_pos)
+    )
+    nearest_connector = min(
+        _distance_mm(power_pos, connector_pos) for connector_pos in (input_pos, output_pos)
+    )
+    assert nearest_signal_unit < nearest_connector, (
+        f"Power unit should stay associated with the op-amp neighborhood, not the connectors: "
+        f"nearest signal unit={nearest_signal_unit:.2f} mm, "
+        f"nearest connector={nearest_connector:.2f} mm"
+    )
+
+
+@_skip_no_system_symbols
 def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
     tmp_path: Path,
 ) -> None:
