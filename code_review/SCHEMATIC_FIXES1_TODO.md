@@ -1125,7 +1125,7 @@ Status: `IN PROGRESS`
 
 ## 5.1 Add schematic-readability regression fixtures
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Required result
 The quality improvements should stay fixed.
@@ -1142,7 +1142,7 @@ Current findings:
 - Focused coverage in `tests/unit/test_readability_review_script.py` now locks the review script defaults to that named fixture registry, which makes the fixture durable as a reusable regression target rather than just a directory convention.
 
 #### 5.1.2 Add expected structural assertions
-Status: `IN PROGRESS`
+Status: `DONE`
 Assert that:
 - there are two distinct drawable op-amp units for `U1`,
 - decoupling is associated with the op-amp region,
@@ -1156,7 +1156,7 @@ Current findings:
 - `tests/unit/test_netlist_commands.py` now treats the real NE5532 source netlist as a shared named fixture and locks the remaining structure-specific guarantees that the readability fixture could not express: generation must split `U1` into drawable `U1A` / `U1B` / `U1P` units, keep `C1`-`C4` closer to the op-amp region than to the audio connectors, keep feedback parts `R2` / `R3` local to `U1A`, and still emit explicit no-connect markers for the unused TRS ring pins.
 
 #### 5.1.3 Add route-quality metrics
-Status: `IN PROGRESS`
+Status: `DONE`
 Track and compare:
 - wire count,
 - bend count,
