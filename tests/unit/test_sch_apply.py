@@ -352,6 +352,18 @@ _skip_no_system_symbols = pytest.mark.skipif(
     reason="KiCad system symbol libraries not installed at /usr/share/kicad/symbols",
 )
 
+_skip_no_real_ne5532_fixture_symbols = pytest.mark.skipif(
+    not all(
+        (
+            _FIXTURES_DIR / "Amplifier_Operational.kicad_sym",
+            _FIXTURES_DIR / "Connector.kicad_sym",
+            _FIXTURES_DIR / "Device.kicad_sym",
+            _FIXTURES_DIR / "Connector_Generic.kicad_sym",
+        )
+    ),
+    reason="Portable NE5532 regression symbol fixtures are missing",
+)
+
 
 class TestPhase1WarningSuite:
     @pytest.mark.parametrize(
@@ -627,10 +639,10 @@ class TestPhase1WarningSuite:
         }
         assert "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN" not in codes
 
-    @_skip_no_system_symbols
+    @_skip_no_real_ne5532_fixture_symbols
     def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:
         ir = CircuitIR.load(_REAL_NE5532_REVIEW_NETLIST)
-        warnings = advisory_warnings(ir, SymbolIndex(symbols_dir=_KICAD_SYSTEM_SYMBOLS))
+        warnings = advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
 
         assert _normalize_warning_entries(warnings) == [
             (

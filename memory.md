@@ -5,6 +5,21 @@
 - Committed the remaining tracked baseline schematic churn as `904d187 test: refresh readability baseline fixture`, after the earlier Phase 1 closeout commit `2b4fd95 feat: close out phase1 multi-unit support`.
 - Rebasing against `origin/master` reported `Current branch master is up to date`, then `git push origin master` advanced GitHub from `0c532cc` to `904d187`; the post-push branch state is clean with `## master...origin/master`.
 
+## 2026-03-25T20:36:45Z - GPT-5.4 - Current master no longer reproduces the reported unit-test CI failure
+
+- Re-ran the exact GitHub Actions unit command locally on `01abcd8` with `KICAD_SYMBOLS_DIR=/usr/share/kicad/symbols`: `.venv/bin/pytest tests/unit/ --cov --cov-report=xml:coverage.xml --cov-report=term-missing -v`.
+- The run completed green at `2198 passed, 1 skipped in 302.64s`, and the worktree remained clean on `## master...origin/master`, so the pasted failure looks stale or tied to an older remote run/environment rather than the current branch tip.
+
+## 2026-03-25T20:41:11Z - GPT-5.4 - Re-ran the latest failed GitHub Actions run on master
+
+- Used the cached GitHub credential from `git credential fill` to query the Actions API for `ekkus93/openclaw_kicad_pcb`; the latest failed `master` run was workflow `CI`, run `23561984835`, on head SHA `01abcd88cdf37c7d50cd93b6168a281ffa7632b4` (`docs: log phase1 push state`).
+- Triggered `POST /repos/ekkus93/openclaw_kicad_pcb/actions/runs/23561984835/rerun-failed-jobs`, which returned HTTP `201 Created`, and a follow-up status check confirmed the run is now `in_progress`.
+
+## 2026-03-25T20:58:51Z - GPT-5.4 - Fixed the rerun failure by making the real NE5532 regression tests portable
+
+- Pulled the failed job log for rerun attempt 2 of Actions run `23561984835` and confirmed the remote failure was not a warning-detail drift: the runner could not resolve `Connector:AudioJack3` during the real-NE5532 regression slice, causing the `test_netlist_commands.py` and `test_sch_apply.py` failures before their assertions even ran.
+- Retargeted the real-NE5532 regression tests to the checked-in `tests/fixtures/symbols` bundle and added minimal `Device.kicad_sym` plus `Connector_Generic.kicad_sym` fixtures so that slice no longer depends on distro-specific system KiCad symbol contents. Validation passed with Ruff, mypy, the focused real-NE5532 pytest slice, and the exact CI unit command: `.venv/bin/pytest tests/unit/ --cov --cov-report=xml:coverage.xml --cov-report=term-missing -v` (`2198 passed, 1 skipped`).
+
 ## 2026-03-25T20:00:57Z - GPT-5.4 - Broader Phase 1 multi-unit regression slice stayed green before check-in
 
 - Revalidated the accumulated Phase 1 multi-unit closeout changes with `.venv/bin/ruff check` over the touched layout/symbol-metadata/test files, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy` over the same set, and `.venv/bin/pytest -q tests/unit/test_phase4_layout.py tests/unit/test_sch_doc.py tests/unit/test_symbol_index.py tests/unit/test_sch_apply.py tests/unit/test_netlist_commands.py`.

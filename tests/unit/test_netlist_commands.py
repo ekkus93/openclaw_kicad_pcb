@@ -27,7 +27,7 @@ from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first, walk
 
-from tests import NE5532_HEADPHONE_REVIEW_FIXTURE
+from tests import NE5532_HEADPHONE_REVIEW_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 
 class _FakeLayoutEngine:
@@ -2286,11 +2286,24 @@ def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
 
 # Path to the system KiCad symbol libraries (installed by kicad package).
 _KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
+_REAL_NE5532_SYMBOLS = SYMBOLS_FIXTURE_DIR
 _REAL_NE5532_REVIEW_NETLIST = NE5532_HEADPHONE_REVIEW_FIXTURE.netlist_path
 
 _skip_no_system_symbols = pytest.mark.skipif(
     not (_KICAD_SYSTEM_SYMBOLS / "Amplifier_Operational.kicad_sym").exists(),
     reason="KiCad system symbol libraries not installed at /usr/share/kicad/symbols",
+)
+
+_skip_no_real_ne5532_fixture_symbols = pytest.mark.skipif(
+    not all(
+        (
+            _REAL_NE5532_SYMBOLS / "Amplifier_Operational.kicad_sym",
+            _REAL_NE5532_SYMBOLS / "Connector.kicad_sym",
+            _REAL_NE5532_SYMBOLS / "Device.kicad_sym",
+            _REAL_NE5532_SYMBOLS / "Connector_Generic.kicad_sym",
+        )
+    ),
+    reason="Portable NE5532 regression symbol fixtures are missing",
 )
 
 
@@ -2489,13 +2502,13 @@ class TestPhase1WarningSuite:
         codes = {warning["code"] for warning in result.warnings}
         assert expected_codes <= codes
 
-    @_skip_no_system_symbols
+    @_skip_no_real_ne5532_fixture_symbols
     def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:
         """The real NE5532 review fixture should keep the current exact warning mix."""
         result = cmd_validate_netlist(
             Namespace(
                 netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-                symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+                symbols_dir=str(_REAL_NE5532_SYMBOLS),
             )
         )
 
@@ -2530,7 +2543,7 @@ class TestPhase1WarningSuite:
         ]
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path) -> None:
     result = cmd_new_from_netlist(
         Namespace(
@@ -2538,7 +2551,7 @@ def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path)
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2548,7 +2561,7 @@ def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path)
     assert len(find_all(managed_doc.root, "no_connect")) == 2
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_splits_u1_into_explicit_units(tmp_path: Path) -> None:
     result = cmd_new_from_netlist(
         Namespace(
@@ -2556,7 +2569,7 @@ def test_new_from_real_ne5532_fixture_splits_u1_into_explicit_units(tmp_path: Pa
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2584,7 +2597,7 @@ def test_new_from_real_ne5532_fixture_splits_u1_into_explicit_units(tmp_path: Pa
     assert binding_index[("U1B", "7")] == "OUT_L_STAGE2_RAW"
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable(
     tmp_path: Path,
 ) -> None:
@@ -2594,7 +2607,7 @@ def test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2642,7 +2655,7 @@ def test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable(
     assert ("J2", "R") not in binding_index
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
     tmp_path: Path,
 ) -> None:
@@ -2652,7 +2665,7 @@ def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2678,7 +2691,7 @@ def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
         )
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
     tmp_path: Path,
 ) -> None:
@@ -2688,7 +2701,7 @@ def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2718,7 +2731,7 @@ def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
         )
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
     tmp_path: Path,
 ) -> None:
@@ -2728,7 +2741,7 @@ def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2777,7 +2790,7 @@ def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
     )
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
     tmp_path: Path,
 ) -> None:
@@ -2787,7 +2800,7 @@ def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
         )
     )
@@ -2807,7 +2820,7 @@ def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
     assert local_net_spans["HP_L_OUT"] <= 65.0
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> None:
     analog_result = cmd_new_from_netlist(
         Namespace(
@@ -2815,7 +2828,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
             heuristic_profile="analog_audio",
             debug_dump=str(tmp_path / "analog_audio_debug.json"),
@@ -2827,7 +2840,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
             heuristic_profile="generic_digital",
             debug_dump=str(tmp_path / "generic_digital_debug.json"),
@@ -2855,7 +2868,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert digital_overrides == {}
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
     tmp_path: Path,
 ) -> None:
@@ -2865,7 +2878,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
             heuristic_profile="power_supply",
             debug_dump=str(tmp_path / "power_supply_debug.json"),
@@ -2877,7 +2890,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
             heuristic_profile="generic_digital",
             debug_dump=str(tmp_path / "generic_digital_debug.json"),
@@ -2909,7 +2922,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
     assert digital_overrides == {}
 
 
-@_skip_no_system_symbols
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_important_label_mode_surfaces_stage_seams(
     tmp_path: Path,
 ) -> None:
@@ -2919,7 +2932,7 @@ def test_new_from_real_ne5532_fixture_important_label_mode_surfaces_stage_seams(
             out_dir=str(tmp_path),
             description="",
             netlist=str(_REAL_NE5532_REVIEW_NETLIST),
-            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
             mode="internal",
             label_mode="always-show-important-labels",
         )
