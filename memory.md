@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T06:36:43Z - GPT-5.4 - Closed out stale Phase 4 roadmap statuses after code-and-test audit
+
+- Audited the Phase 4 roadmap items against the live snap/layout and label-policy implementation in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, `kicad-pcb/src/kicad_pcb/router.py`, and the focused regressions in `tests/unit/test_phase8_layout.py`, `tests/unit/test_phase4_layout.py`, `tests/unit/test_phase7_ux.py`, `tests/unit/test_presentation.py`, and `tests/unit/test_netlist_commands.py`.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` to mark Phase 4, 4.1, 4.2, and 4.3 as `DONE`, since the remaining `IN PROGRESS` statuses were stale bookkeeping rather than unfinished implementation.
+
 ## 2026-03-25T06:21:12Z - GPT-5.4 - Closed out Phase 5 after auditing 5.2.1 analog warning coverage
 
 - Audited `kicad-pcb/src/kicad_pcb/commands/_validate.py`, `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, `tests/unit/test_sch_apply.py`, and `tests/unit/test_netlist_commands.py` against the 5.2.1 checklist and confirmed every listed warning family is already implemented and regression-covered.

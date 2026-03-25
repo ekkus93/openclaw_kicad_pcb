@@ -976,11 +976,11 @@ Current findings:
 
 ## Phase 4 - Improve page composition
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ## 4.1 Use the sheet intentionally
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 The circuit occupies only part of the page and does not look composed.
@@ -1024,7 +1024,7 @@ Current findings:
 
 ## 4.2 Improve block spacing and alignment
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 The stage boundaries are not strong enough visually.
@@ -1070,7 +1070,7 @@ Current findings:
 
 ## 4.3 Add optional important net labels
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 Internal nodes are harder to inspect than they need to be.
