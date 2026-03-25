@@ -31,7 +31,6 @@ Implement in this order:
 1. **Fix correctness blockers**
   Status: `IN PROGRESS`
    - multi-unit op-amp handling
-   - suspicious / likely incorrect netlist interpretation around `R1` and `C5`
 2. **Add analog-aware placement and grouping**
   Status: `IN PROGRESS`
 3. **Reduce routing clutter**
