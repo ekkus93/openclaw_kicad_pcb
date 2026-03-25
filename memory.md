@@ -1,5 +1,23 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T05:28:06Z - GPT-5.4 - Full repo validation is green after the 5.1.2 named-fixture assertion work
+
+- Re-ran `.venv/bin/ruff check .`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy .`, and `.venv/bin/pytest` from `/home/ubo/work/openclaw_kicad_pcb` after tightening the real NE5532 structural assertions.
+- Ruff passed cleanly, and mypy again reported success on 137 source files with only the existing `annotation-unchecked` notes from `kicad-pcb/tests/unit/test_layout.py`.
+- Pytest completed green at `2226 passed in 394.47s (0:06:34)`.
+
+## 2026-03-25T05:18:40Z - GPT-5.4 - Tightened 5.1.2 structural assertions around the real NE5532 named fixture
+
+- Added `NE5532_HEADPHONE_REVIEW_FIXTURE` to `tests/__init__.py` so the real review netlist at `code_review/ne5532_headphone_amp_netlist.json` is a shared named source fixture rather than an ad-hoc local constant.
+- Extended `tests/unit/test_netlist_commands.py` with the remaining structural guards required by 5.1.2: `C1`-`C4` must stay associated with the `U1A`/`U1B`/`U1P` region instead of drifting toward the audio connectors, and feedback parts `R2`/`R3` must stay local to `U1A` rather than the second stage or output tail. The existing real-fixture tests already covered split `U1A`/`U1B`/`U1P` units and explicit no-connect markers for unused TRS ring pins.
+- Focused validation passed with `.venv/bin/ruff check tests/__init__.py tests/unit/test_netlist_commands.py`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy tests/__init__.py tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'new_from_real_ne5532_fixture_splits_u1_into_explicit_units or new_from_real_ne5532_fixture_managed_schematic_structure_is_stable or new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region or new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a or new_from_real_ne5532_fixture_marks_unused_trs_ring_pins'`.
+
+## 2026-03-25T05:10:46Z - GPT-5.4 - Promoted the canonical NE5532 readability artifact into a shared named fixture
+
+- Added a shared readability-fixture registry in `tests/__init__.py` and registered both `ne5532_headphone_amp_left_current` and `ne5532_headphone_amp_left_regressed` as named fixtures with canonical IR, metrics, and schematic paths.
+- Repointed fixture-oriented tests and `scripts/review_schematic_readability.py` to the shared registry instead of duplicating raw `tests/fixtures/readability/...` paths, and added a focused assertion in `tests/unit/test_readability_review_script.py` that the review script defaults stay aligned to the named fixture registry.
+- Updated `tests/fixtures/readability/ne5532_headphone_amp_left_current/README.md` and `code_review/SCHEMATIC_FIXES1_TODO.md` so 5.1.1 is now documented as complete; focused validation passed with `.venv/bin/ruff check`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy`, and `.venv/bin/pytest -q tests/unit/test_readability_review_script.py tests/unit/test_readability_baseline.py tests/unit/test_phase0_regression.py tests/unit/test_phase7_regression_guardrails.py tests/unit/test_phase8_layout.py tests/unit/test_phase10_validation.py tests/unit/test_block_detection.py tests/integration/test_phase1_regression_path.py`.
+
 ## 2026-03-25T04:44:06Z - GPT-5.4 - The remaining NE5532 profile-diff failure was a stale summary assertion, not a new routing bug
 
 - After narrowing `_snap_major_block_spacing(...)` and `_snap_major_signal_axis(...)`, the only failing test was `tests/unit/test_netlist_commands.py::test_real_ne5532_fixture_profile_debug_dump_summary_diff`.

@@ -12,7 +12,6 @@ import json
 import math
 from argparse import Namespace
 from collections.abc import Mapping
-from pathlib import Path
 
 import pytest
 from kicad_pcb.block_detection import BlockLayout, BlockRole, classify_circuit
@@ -43,6 +42,8 @@ from kicad_pcb.graphviz_layout.snap import (
 from kicad_pcb.lint.sch import lint_layout_composition
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import page_region_density
+
+from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -830,13 +831,11 @@ class TestSnapPowerBlockCohesion:
 # ---------------------------------------------------------------------------
 
 
-_TEST_ROOT_84 = Path(__file__).resolve().parent.parent
-_READABILITY_FIXTURE_DIR_84 = (
-    _TEST_ROOT_84 / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
-)
-_CIRCUIT_IR_PATH_84 = _READABILITY_FIXTURE_DIR_84 / "circuit_ir.json"
-_BASELINE_METRICS_PATH_84 = _READABILITY_FIXTURE_DIR_84 / "baseline_metrics.json"
-_SYMBOLS_DIR_84 = _TEST_ROOT_84 / "fixtures" / "symbols"
+_READABILITY_FIXTURE_84 = NE5532_LEFT_CURRENT_READABILITY_FIXTURE
+_READABILITY_FIXTURE_DIR_84 = _READABILITY_FIXTURE_84.fixture_dir
+_CIRCUIT_IR_PATH_84 = _READABILITY_FIXTURE_84.circuit_ir_path
+_BASELINE_METRICS_PATH_84 = _READABILITY_FIXTURE_84.baseline_metrics_path
+_SYMBOLS_DIR_84 = SYMBOLS_FIXTURE_DIR
 
 # Grid-clamped page limits — identical to how _clamp_to_page computes them.
 _GRID_84 = 1.27

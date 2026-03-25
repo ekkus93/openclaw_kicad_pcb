@@ -26,11 +26,12 @@ from kicad_pcb.schematic_metrics import (
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.nodes import ListNode
 
-_TEST_ROOT_10 = Path(__file__).resolve().parent.parent
-_FIXTURE_DIR_10 = _TEST_ROOT_10 / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
-_CIRCUIT_IR_PATH_10 = _FIXTURE_DIR_10 / "circuit_ir.json"
-_BASELINE_METRICS_PATH_10 = _FIXTURE_DIR_10 / "baseline_metrics.json"
-_SYMBOLS_DIR_10 = _TEST_ROOT_10 / "fixtures" / "symbols"
+from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
+
+_FIXTURE_10 = NE5532_LEFT_CURRENT_READABILITY_FIXTURE
+_CIRCUIT_IR_PATH_10 = _FIXTURE_10.circuit_ir_path
+_BASELINE_METRICS_PATH_10 = _FIXTURE_10.baseline_metrics_path
+_SYMBOLS_DIR_10 = SYMBOLS_FIXTURE_DIR
 
 
 class _FakeCli(KicadCliAdapter):

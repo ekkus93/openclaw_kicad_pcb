@@ -25,6 +25,8 @@ from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first, walk
 
+from tests import NE5532_HEADPHONE_REVIEW_FIXTURE
+
 
 class _FakeLayoutEngine:
     def __init__(self, placements: dict[str, tuple[float, float, float | None]]) -> None:
@@ -2282,9 +2284,7 @@ def test_apply_netlist_aborts_on_invalid_pin_ref(tmp_path: Path) -> None:
 
 # Path to the system KiCad symbol libraries (installed by kicad package).
 _KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
-_REAL_NE5532_REVIEW_NETLIST = (
-    Path(__file__).resolve().parents[2] / "code_review" / "ne5532_headphone_amp_netlist.json"
-)
+_REAL_NE5532_REVIEW_NETLIST = NE5532_HEADPHONE_REVIEW_FIXTURE.netlist_path
 
 _skip_no_system_symbols = pytest.mark.skipif(
     not (_KICAD_SYSTEM_SYMBOLS / "Amplifier_Operational.kicad_sym").exists(),
@@ -2320,6 +2320,21 @@ def _summarize_route_choices(
         if isinstance(heuristic_override, str):
             overrides.setdefault(heuristic_override, []).append(net_name)
     return counts, overrides
+
+
+def _symbol_positions(doc: SchematicDoc) -> dict[str, tuple[float, float]]:
+    positions: dict[str, tuple[float, float]] = {}
+    for symbol in doc.list_symbols():
+        ref = symbol["ref"]
+        x = symbol["x"]
+        y = symbol["y"]
+        if isinstance(ref, str) and isinstance(x, float) and isinstance(y, float):
+            positions[ref] = (x, y)
+    return positions
+
+
+def _distance_mm(left: tuple[float, float], right: tuple[float, float]) -> float:
+    return math.hypot(left[0] - right[0], left[1] - right[1])
 
 
 # ---------------------------------------------------------------------------
@@ -2555,6 +2570,82 @@ def test_new_from_real_ne5532_fixture_managed_schematic_structure_is_stable(
 
     assert ("J1", "R") not in binding_index
     assert ("J2", "R") not in binding_index
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingRegion",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    opamp_region_refs = ("U1A", "U1B", "U1P")
+    audio_connector_refs = ("J1", "J2")
+
+    for ref in ("C1", "C2", "C3", "C4"):
+        nearest_opamp_region = min(
+            _distance_mm(positions[ref], positions[anchor_ref]) for anchor_ref in opamp_region_refs
+        )
+        nearest_audio_connector = min(
+            _distance_mm(positions[ref], positions[anchor_ref])
+            for anchor_ref in audio_connector_refs
+        )
+        assert nearest_opamp_region < nearest_audio_connector, (
+            f"Decoupling cap {ref} should stay associated with the op-amp region: "
+            f"nearest op-amp distance={nearest_opamp_region:.2f} mm, "
+            f"nearest audio connector distance={nearest_audio_connector:.2f} mm"
+        )
+
+
+@_skip_no_system_symbols
+def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532FeedbackLocality",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+    stage1_pos = positions["U1A"]
+    stage2_pos = positions["U1B"]
+    output_pos = positions["J2"]
+
+    for ref in ("R2", "R3"):
+        distance_to_stage1 = _distance_mm(positions[ref], stage1_pos)
+        distance_to_stage2 = _distance_mm(positions[ref], stage2_pos)
+        distance_to_output = _distance_mm(positions[ref], output_pos)
+
+        assert distance_to_stage1 < distance_to_stage2, (
+            f"Feedback part {ref} should remain closer to U1A than U1B: "
+            f"U1A={distance_to_stage1:.2f} mm, U1B={distance_to_stage2:.2f} mm"
+        )
+        assert distance_to_stage1 < distance_to_output, (
+            f"Feedback part {ref} should remain local to U1A, not the output tail: "
+            f"U1A={distance_to_stage1:.2f} mm, J2={distance_to_output:.2f} mm"
+        )
+        assert positions[ref][0] < stage1_pos[0], (
+            f"Feedback part {ref} should stay on the input/feedback side of U1A: "
+            f"{positions[ref][0]:.2f} !< {stage1_pos[0]:.2f}"
+        )
 
 
 @_skip_no_system_symbols
