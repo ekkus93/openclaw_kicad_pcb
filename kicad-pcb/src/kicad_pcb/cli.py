@@ -44,6 +44,7 @@ from .errors import KiCadError
 from .formatting import format_result, format_result_json
 from .lint import LINT_SUGGESTIONS, LintError, LintSeverity
 from .results import DoctorResult, LintFileResult, ValidateFileResult
+from .router import LABEL_MODE_POLICIES
 
 
 def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
@@ -190,6 +191,16 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         ),
     )
     p_apply.add_argument(
+        "--label-mode",
+        choices=sorted(LABEL_MODE_POLICIES),
+        default=None,
+        help=(
+            "Visible-label mode: minimal keeps sparse labels, "
+            "debug promotes broad signal labeling, "
+            "always-show-important-labels preserves labels on key stage seams"
+        ),
+    )
+    p_apply.add_argument(
         "--debug-dump",
         help="Optional path for a JSON debug dump covering layout, unit splitting, and routing",
     )
@@ -239,6 +250,16 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help=(
             "Named schematic heuristic profile for bundled layout and routing policies "
             "(default: analog_audio)"
+        ),
+    )
+    p_new_netlist.add_argument(
+        "--label-mode",
+        choices=sorted(LABEL_MODE_POLICIES),
+        default=None,
+        help=(
+            "Visible-label mode: minimal keeps sparse labels, "
+            "debug promotes broad signal labeling, "
+            "always-show-important-labels preserves labels on key stage seams"
         ),
     )
     p_new_netlist.add_argument(

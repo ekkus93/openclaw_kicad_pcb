@@ -49,6 +49,7 @@ from kicad_pcb.commands._sch_apply import (
     SCHEMATIC_HEURISTIC_PROFILES,
     SchematicHeuristicProfile,
     _resolve_heuristic_profile,
+    _resolve_label_policy,
     _resolve_layout,
     _resolve_mode,
     _resolve_routing,
@@ -58,7 +59,7 @@ from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout import GraphvizLayoutEngine, LayoutHeuristicPolicy
 from kicad_pcb.pipeline import ValidationMode
 from kicad_pcb.results import NewFromNetlistResult
-from kicad_pcb.router import RoutingHeuristicPolicy
+from kicad_pcb.router import LABEL_MODE_POLICIES, RoutingHeuristicPolicy
 from kicad_pcb.symbol_index import SymbolIndex
 
 pytestmark = pytest.mark.unit
@@ -562,6 +563,21 @@ class TestResolveRouting:
             _resolve_routing("catbus")
 
 
+class TestResolveLabelPolicy:
+    def test_none_returns_default_policy(self) -> None:
+        assert _resolve_label_policy(None) is LABEL_MODE_POLICIES["minimal"]
+
+    def test_known_name_returns_registered_policy(self) -> None:
+        assert _resolve_label_policy("debug") is LABEL_MODE_POLICIES["debug"]
+
+    def test_unknown_name_raises_user_error(self) -> None:
+        with pytest.raises(UserError, match="Unknown label mode") as exc_info:
+            _resolve_label_policy("loud")
+
+        details = exc_info.value.details or {}
+        assert details["allowed"] == sorted(LABEL_MODE_POLICIES)
+
+
 class TestResolveValidateMode:
     """Expanded _resolve_mode() handles all five validation levels."""
 
@@ -618,6 +634,7 @@ class TestCLINewFlags:
                 "--heuristic-profile",
                 "generic_digital",
             ],
+            ["apply-netlist", "--netlist", "x.json", "--label-mode", "debug"],
             ["new-from-netlist", "--name", "p", "--netlist", "x.json", "--routing", "labels"],
             ["new-from-netlist", "--name", "p", "--netlist", "x.json", "--validate", "syntax"],
             [
@@ -628,6 +645,15 @@ class TestCLINewFlags:
                 "x.json",
                 "--heuristic-profile",
                 "dense_debug",
+            ],
+            [
+                "new-from-netlist",
+                "--name",
+                "p",
+                "--netlist",
+                "x.json",
+                "--label-mode",
+                "always-show-important-labels",
             ],
         ],
     )
@@ -677,6 +703,14 @@ class TestCLINewFlags:
         parser = cli_mod.build_parser()
         ns = parser.parse_args(["apply-netlist", "--netlist", "x.json"])
         assert ns.heuristic_profile is None
+
+    def test_label_mode_default_is_none(self) -> None:
+        """When --label-mode is omitted, the parsed namespace has None."""
+        import kicad_pcb.cli as cli_mod  # noqa: PLC0415
+
+        parser = cli_mod.build_parser()
+        ns = parser.parse_args(["apply-netlist", "--netlist", "x.json"])
+        assert ns.label_mode is None
 
 
 # ---------------------------------------------------------------------------

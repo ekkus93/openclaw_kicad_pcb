@@ -180,6 +180,7 @@ def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
         f"   {items_label}: {r.managed_items_written}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
         f"   Heuristic profile: {r.heuristic_profile_name}",
+        f"   Label mode: {r.label_mode_name}",
     ]
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")
@@ -205,6 +206,7 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
         f"   Nets applied: {r.nets_applied}",
         f"   KiCad CLI used: {'yes' if r.kicad_cli_used else 'no'}",
         f"   Heuristic profile: {r.heuristic_profile_name}",
+        f"   Label mode: {r.label_mode_name}",
     ]
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")

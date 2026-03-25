@@ -935,6 +935,9 @@ Status: `IN PROGRESS`
 
 Current findings:
 - The new compact-tail and compact-ground local routes both reduce the need to fall through to noisier fallback behavior in the densest output-side neighborhood, which keeps more of the NE5532 output cluster readable as direct local wiring instead of label-style or over-spined routing.
+- `kicad-pcb/src/kicad_pcb/router.py` now lets short 2-pin `signal_chain`, `feedback`, and `connector_attachment` nets stay on a local direct wire even when tier inference would normally force label fallback, using `MAX_DIRECT_WIRE_MM` as the readability cap.
+- That override is still intentionally narrow: generic cross-tier nets keep the older label fallback, and the protected Phase 4 connector-to-IC tier-distance case remains label-routed because its geometry stays just beyond the short-local readability cutoff.
+- Focused regressions in `tests/unit/test_phase6_wire_simplification.py` now lock all three allowed seams: short `STAGE_L`, `U1A_INV`, and `LEFT_IN` nets remain label-free and route as `strategy="direct"`, while the older Phase 4 tier-distance label tests still define the generic and non-local connector fallback boundary.
 
 ---
 
@@ -988,19 +991,34 @@ The schematic should look intentionally arranged on the page.
 ### Tasks
 
 #### 4.1.1 Add page-level packing / centering
-Status: `IN PROGRESS`
+Status: `DONE`
 - After block placement, compute the overall circuit bounding box.
 - Recenter and scale spacing so the main circuit occupies a balanced region of the sheet.
 - Avoid leaving most of the page empty unless the design is truly tiny.
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` already contains `_snap_page_balance(...)`, which recenters the signal-path circuit vertically toward the page center using a grid-quantized corrective shift while leaving power-entry refs fixed and preserving relative IC/decoupling placement.
+- The pass is wired into the live Graphviz snap pipeline through `_apply_post_layout_snaps(...)`, so managed schematic generation already applies the page-balance correction after the local readability passes.
+- Focused coverage in `tests/unit/test_phase8_layout.py` now locks the page-balance metrics, dead-zone behavior, correction factor, and end-to-end headphone-amp composition guardrails.
+
 #### 4.1.2 Respect title block exclusion zone
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add or improve a keep-out region around the title block.
 - Ensure no meaningful circuitry crowds or overlaps that visual area.
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` already contains `_snap_central_composition(...)`, which enforces a bottom title-block clearance band, keeps the op-amp stage within a central vertical window, and preserves grid alignment while nudging only signal-path refs.
+- That same central-composition pass is already part of `_apply_post_layout_snaps(...)`, so the title-block keep-out runs automatically during managed schematic generation rather than existing only as a lint-time check.
+- `tests/unit/test_phase8_layout.py` now covers both the helper-level title-block/op-amp constraints and the end-to-end guarantee that the generated headphone-amp schematic stays out of the title-block zone and emits no Phase 8 composition lints.
+
 #### 4.1.3 Keep power block and main circuit visually connected
-Status: `IN PROGRESS`
+Status: `DONE`
 - Power/decoupling may be above the main path, but it should still read as part of the same design.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now includes `_snap_power_block_cohesion(...)`, a dedicated Phase 8 composition pass that keeps `POWER_ENTRY` refs laterally close to the active/signal anchor after the signal path has been re-centered. The pass prefers decoupling-target ICs when available, otherwise falls back to core refs and then the broader signal cluster.
+- The implementation only adjusts x-coordinates of non-`#PWR` power-entry refs, preserving the existing vertical page-balance and title-block behavior while preventing the power block from remaining stranded at the far left edge.
+- Focused coverage in `tests/unit/test_phase8_layout.py` now locks both anchor-selection paths: power-entry refs tether to the core/decoupling cluster when one exists, and otherwise fall back to the broader signal cluster.
 
 ---
 
@@ -1017,11 +1035,11 @@ Blocks should align clearly and read left-to-right.
 ### Tasks
 
 #### 4.2.1 Align major signal-path nodes horizontally
-Status: `IN PROGRESS`
+Status: `DONE`
 - Input block, stage 1, stage 2, and output block should share a coherent horizontal axis where appropriate.
 
 #### 4.2.2 Use consistent spacing between blocks
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add spacing rules for:
   - within-block compactness,
   - between-block separation,
@@ -1030,13 +1048,23 @@ Status: `IN PROGRESS`
 
 Current findings:
 - The snap pipeline now enforces more consistent local spacing for stage-edge blocks through `_snap_input_stage_cohesion(...)` and `_snap_output_stage_cohesion(...)` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also applies `_snap_major_signal_axis(...)` after central composition, aligning the representative input/core/output spine onto a shared grid-snapped y-axis while intentionally leaving feedback, decoupling, and power-support lanes alone.
+- The representative selection is deliberately narrow: prefer the input connector, explicit core device refs, and the output connector when present, falling back to a single non-connector stage representative only when a stage has no connector. This avoids over-correcting misclassified support passives.
 - Input-side staging is now explicitly left-bounded and compact, while output-side staging is explicitly right-bounded and compact; both sides can split longer support chains across inner/outer lanes without breaking the short left-to-right transition into and out of the op-amp.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also applies `_snap_major_block_spacing(...)` after `_snap_major_signal_axis(...)`, treating the input/core/output blocks as ordered groups and shifting later groups together when an adjacent x-gap is either too small or too large.
+- The new pass is intentionally block-level rather than component-level: it preserves each block's internal geometry while normalizing adjacent block separation into a bounded range, including passive-only fixtures that do not have an IC anchor.
 - Focused coverage in `tests/unit/test_phase4_layout.py` now checks compactness, left/right bounds, intrusion avoidance, and the new longer-chain lane behavior for both stage edges.
+- Focused coverage in `tests/unit/test_phase8_layout.py` now checks both the core-anchored and connector-fallback major-axis cases, the new overlarge/undersized adjacent block-gap cases, and an integration guard on the readability fixture's adjacent major-block span gaps.
 - Output connectors also now receive one extra snap-step of outward clearance beyond the nominal connector lane, which keeps the right-side attachment geometry readable without widening the whole stage.
 
 #### 4.2.3 Keep local loops compact
-Status: `IN PROGRESS`
+Status: `DONE`
 - Feedback loop and buffer loop should remain much tighter than the spacing between major functional blocks.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now treats true `BUFFER_STAGE` support parts as members of the compact output-side local loop, so small buffer/output handoff parts stay near the owning op-amp instead of drifting to major stage spacing.
+- The implementation explicitly excludes IC refs from that movable support set, which preserves the established second-stage/output composition on the real NE5532 fixture while still compacting the passive loop members.
+- Focused coverage in `tests/unit/test_phase4_layout.py` now locks both the existing feedback/output transition behavior and the new compact buffer-loop support behavior, and the real NE5532 command/guardrail regressions continue to protect the output neighborhood composition.
 
 ---
 
@@ -1053,14 +1081,19 @@ Important named nets can be shown when helpful.
 ### Tasks
 
 #### 4.3.1 Decide label policy
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add configuration for:
   - minimal labels,
   - debug labels,
   - always-show-important-labels.
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` now exposes an explicit bundled label-policy registry with the three requested modes: `minimal`, `debug`, and `always-show-important-labels`.
+- `kicad-pcb/src/kicad_pcb/cli.py` now surfaces `--label-mode` on both `apply-netlist` and `new-from-netlist`, and the selected mode is threaded through `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py`, `kicad-pcb/src/kicad_pcb/commands/netlist.py`, `kicad-pcb/src/kicad_pcb/results.py`, and `kicad-pcb/src/kicad_pcb/formatting.py`.
+- The debug sidecar now records `label_mode_name`, and focused coverage in `tests/unit/test_phase4_layout.py`, `tests/unit/test_phase7_ux.py`, `tests/unit/test_presentation.py`, and `tests/unit/test_netlist_commands.py` locks the resolver, CLI wiring, presentation output, and mode-specific routing behavior.
+
 #### 4.3.2 Identify important nets for display
-Status: `NOT STARTED`
+Status: `DONE`
 For this example, consider exposing:
 - `LEFT_IN`
 - `IN_L_AC`
@@ -1069,10 +1102,20 @@ For this example, consider exposing:
 - `BUF_L_IN`
 - `HP_L_OUT`
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` now identifies important display nets from explicit stage-seam structure when `BlockLayout` data is available, instead of relying on the earlier broad name-only fallback. The promoted seams now cover input entry (`LEFT_IN`), input-to-preconditioning handoff (`IN_L_AC`), preconditioning-to-op-amp handoff (`VOL_L_OUT`), op-amp-to-interstage handoff (`OUT_L_STAGE1`), interstage return into the second stage (`BUF_L_IN`), and final output-to-connector handoff (`HP_L_OUT`).
+- The same logic now explicitly excludes feedback-internal and raw/post-series internal nets such as `U1A_INV`, `OUT_L_STAGE2_RAW`, and `AFTER_R6` from important-label promotion.
+- Focused coverage in `tests/unit/test_phase4_layout.py` locks the seam selection logic on a synthetic left-channel slice, and `tests/unit/test_netlist_commands.py` now proves the real NE5532 fixture surfaces the expected visible labels when run with `--label-mode always-show-important-labels`.
+
 #### 4.3.3 Avoid label overuse
-Status: `IN PROGRESS`
+Status: `DONE`
 - Only place labels where they improve reading or debugging.
 - Do not replace good local wiring with gratuitous labels.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` no longer promotes an extra visible label for `always-show-important-labels` when a net already routes as a short direct 2-pin wire. This keeps trivial local seams readable as wiring first instead of annotating them redundantly.
+- Important-mode promotion still applies on the explicit multi-pin stage seams that benefit from inspection labels, so the real NE5532 fixture continues to surface `LEFT_IN`, `IN_L_AC`, `VOL_L_OUT`, `OUT_L_STAGE1`, `BUF_L_IN`, and `HP_L_OUT` without reintroducing labels on already-obvious local direct routes.
+- Focused coverage in `tests/unit/test_phase4_layout.py` now locks both sides of that boundary: direct important seams stay label-free, while multi-pin stage seams still get one visible label in important mode.
 
 ---
 

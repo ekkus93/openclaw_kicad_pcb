@@ -207,6 +207,20 @@ _PAGE_BALANCE_CORRECTION: float = 0.85
 # usable page area — the KiCad title block occupies roughly this band.
 _TITLE_BLOCK_CLEARANCE_MM: float = 30.0
 
+# Phase 8.3: keep power-entry blocks visually connected to the main circuit by
+# limiting how far they can drift laterally from the active/signal anchor.
+_POWER_BLOCK_MAX_X_OFFSET_MM: float = _GRID_COL_MM
+
+# Phase 8.4: align major left-to-right signal-path refs on a shared horizontal
+# axis so the main circuit reads as a coherent flow without flattening support
+# lanes such as feedback, decoupling, or power-entry components.
+_MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM: float = GRID_ROW_MM
+
+# Phase 8.5: keep adjacent major blocks at a readable, consistent horizontal
+# separation without disturbing the compact geometry inside each block.
+_MAJOR_BLOCK_MIN_GAP_MM: float = _GRID_COL_MM
+_MAJOR_BLOCK_MAX_GAP_MM: float = 2.0 * _GRID_COL_MM
+
 # Fraction of the usable vertical extent beyond which the op-amp centre is
 # considered "too low" (0.75 → y > ORIGIN_Y + 75 % × height triggers a nudge).
 _OPAMP_LOWER_LIMIT_FRACTION: float = 0.75
@@ -709,6 +723,12 @@ def _local_signal_distances(
     return distances
 
 
+def _is_output_local_loop_role(role: BlockRole | None) -> bool:
+    """Return True for roles that belong to the compact output-side local loop."""
+
+    return role in {BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE} or is_output_like_role(role)
+
+
 def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
     positions: Mapping[str, tuple[float, float, float | None]],
     ir: CircuitIR,
@@ -779,6 +799,8 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             return (local_distances.get(ref, 999), result[ref][1], ref)
 
         for ref in candidates:
+            if _is_ic_ref(ref):
+                continue
             role = role_by_ref.get(ref)
             is_feedback = bool(annotations.get(ref) and annotations[ref].feedback)
             is_decoupling = context.decoupling_map.get(ref) == ic_ref
@@ -802,7 +824,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
                     handoff_like.append(ref)
                 else:
                     input_like.append(ref)
-            elif role is not None and is_output_like_role(role):
+            elif _is_output_local_loop_role(role):
                 output_like.append(ref)
 
         input_like.sort(key=_local_order_key)
@@ -1091,11 +1113,6 @@ def _find_output_stage_members(
     ic_y: float,
 ) -> tuple[list[str], list[str], set[str]]:
     """Return ``(output_connectors, output_support, stage_ref_set)`` for Phase 7.2."""
-    from ..block_detection import BlockRole  # noqa: PLC0415
-
-    def _is_output_stage_role(role: BlockRole | None) -> bool:
-        return role == BlockRole.INTERSTAGE or is_output_like_role(role)
-
     output_connectors = sorted(
         ref
         for ref, role in role_by_ref.items()
@@ -1126,7 +1143,7 @@ def _find_output_stage_members(
                         continue
                     seen.add(nbr)
                     role = role_by_ref.get(nbr)
-                    if _is_output_stage_role(role):
+                    if _is_output_local_loop_role(role):
                         stage_refs.add(nbr)
                         next_frontier.add(nbr)
             frontier = next_frontier
@@ -1134,7 +1151,7 @@ def _find_output_stage_members(
                 break
 
     for ref, role in role_by_ref.items():
-        if ref not in positions or not _is_output_stage_role(role):
+        if ref not in positions or _is_ic_ref(ref) or not _is_output_local_loop_role(role):
             continue
         x, y, _ = positions[ref]
         if x >= ic_x and abs(y - ic_y) <= 6.0 * GRID_ROW_MM:
@@ -1149,7 +1166,7 @@ def _find_output_stage_members(
         key=lambda ref: positions[ref][1],
     )
     output_support = sorted(
-        [ref for ref in stage_refs if _is_output_stage_role(role_by_ref.get(ref))],
+        [ref for ref in stage_refs if _is_output_local_loop_role(role_by_ref.get(ref))],
         key=lambda ref: positions[ref][1],
     )
     output_support = [ref for ref in output_support if ref not in output_connectors_sorted]
@@ -1307,7 +1324,8 @@ def _snap_output_stage_cohesion(
             ref
             for ref, role in role_by_ref.items()
             if ref in positions
-            and (role == BlockRole.INTERSTAGE or is_output_like_role(role))
+            and not _is_ic_ref(ref)
+            and _is_output_local_loop_role(role)
             and ref not in output_connectors
         )
         return _align_output_connectors_without_ic(positions, output_connectors, output_support)
@@ -2749,6 +2767,356 @@ def _snap_central_composition(
     return result
 
 
+def _major_signal_axis_refs(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+) -> tuple[list[str], list[str], list[str]]:
+    """Return representative input/core/output refs for the main signal axis."""
+
+    input_refs: list[str] = []
+    core_refs: list[str] = []
+    output_refs: list[str] = []
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+
+    for ref in sorted(positions):
+        if ref.startswith("#"):
+            continue
+        role = role_by_ref.get(ref)
+        if role in {BlockRole.INPUT, BlockRole.PRECONDITIONING}:
+            input_refs.append(ref)
+        elif role in {BlockRole.OPAMP_CORE, BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE}:
+            core_refs.append(ref)
+        elif role in {BlockRole.OUTPUT, BlockRole.OUTPUT_CONDITIONING}:
+            output_refs.append(ref)
+
+    input_reps: list[str] = []
+    input_connectors = [ref for ref in input_refs if _is_connector_ref(ref)]
+    if input_connectors:
+        input_reps = [min(input_connectors, key=lambda ref: (positions[ref][0], ref))]
+    elif input_refs:
+        input_reps = [max(input_refs, key=lambda ref: (positions[ref][0], ref))]
+
+    preferred_core_refs = [
+        ref
+        for ref in core_refs
+        if block_layout.assignments[ref].role in {BlockRole.OPAMP_CORE, BlockRole.BUFFER_STAGE}
+    ]
+    core_reps = sorted(preferred_core_refs or core_refs)
+
+    output_reps: list[str] = []
+    output_connectors = [ref for ref in output_refs if _is_connector_ref(ref)]
+    if output_connectors:
+        output_reps = [max(output_connectors, key=lambda ref: (positions[ref][0], ref))]
+    elif output_refs:
+        output_reps = [min(output_refs, key=lambda ref: (positions[ref][0], ref))]
+
+    return input_reps, core_reps, output_reps
+
+
+def _align_refs_to_axis(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    refs: list[str],
+    *,
+    axis_y: float,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Return a copy of *positions* with the given refs moved onto *axis_y*."""
+
+    result = dict(positions)
+    for ref in refs:
+        x, y, rot = result[ref]
+        if abs(y - axis_y) < 0.01:
+            continue
+        result[ref] = (x, axis_y, rot)
+    return result
+
+
+def _shift_refs_x(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    refs: list[str],
+    delta_x: float,
+    *,
+    origin_x: float = ORIGIN_X,
+    page_max_x: float = PAGE_MAX_X,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Return a copy of *positions* with the selected refs shifted by *delta_x*."""
+
+    if not refs or abs(delta_x) < 0.01:
+        return dict(positions)
+
+    min_x = min(positions[ref][0] for ref in refs)
+    max_x = max(positions[ref][0] for ref in refs)
+    bounded_delta = min(max(delta_x, origin_x - min_x), page_max_x - max_x)
+    bounded_delta = round(round(bounded_delta / 1.27) * 1.27, 2)
+    if abs(bounded_delta) < 0.01:
+        return dict(positions)
+
+    result = dict(positions)
+    for ref in refs:
+        x, y, rot = result[ref]
+        result[ref] = (round(x + bounded_delta, 2), y, rot)
+    return result
+
+
+def _snap_major_signal_axis(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Align the major input/core/output path refs onto one shared horizontal axis.
+
+    This is intentionally narrower than the stage-cohesion passes: it only
+    touches the refs that visually define the main signal flow and leaves
+    feedback, decoupling, and power support lanes in place.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    input_refs, core_refs, output_refs = _major_signal_axis_refs(positions, block_layout)
+    stage_groups = [group for group in (input_refs, core_refs, output_refs) if group]
+    if len(stage_groups) < 2:
+        return dict(positions)
+
+    if core_refs:
+        axis_seed = sum(positions[ref][1] for ref in core_refs) / len(core_refs)
+        major_refs = sorted({ref for group in (input_refs, output_refs) for ref in group})
+    else:
+        connector_refs = [ref for ref in (*input_refs, *output_refs) if _is_connector_ref(ref)]
+        if connector_refs:
+            axis_seed = sum(positions[ref][1] for ref in connector_refs) / len(connector_refs)
+        else:
+            group_centres = [
+                sum(positions[ref][1] for ref in group) / len(group) for group in stage_groups
+            ]
+            axis_seed = sum(group_centres) / len(group_centres)
+        major_refs = sorted({ref for group in stage_groups for ref in group})
+
+    if not major_refs:
+        return dict(positions)
+
+    axis_y = round(
+        round(axis_seed / _MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM)
+        * _MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM,
+        2,
+    )
+    result = _align_refs_to_axis(positions, major_refs, axis_y=axis_y)
+
+    _log.debug(
+        "major signal axis: aligned %d refs to y=%.2f (core=%d input=%d output=%d)",
+        len(major_refs),
+        axis_y,
+        len(core_refs),
+        len(input_refs),
+        len(output_refs),
+    )
+    return result
+
+
+def _major_block_spacing_groups(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+) -> list[list[str]]:
+    """Return ordered major block groups used by the block-spacing pass."""
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    input_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and is_input_like_role(role_by_ref.get(ref))
+    )
+    core_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#")
+        and role_by_ref.get(ref)
+        in {BlockRole.OPAMP_CORE, BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE}
+    )
+    output_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and is_output_like_role(role_by_ref.get(ref))
+    )
+
+    return [group for group in (input_block, core_block, output_block) if group]
+
+
+def _snap_major_block_spacing(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    min_gap_mm: float = _MAJOR_BLOCK_MIN_GAP_MM,
+    max_gap_mm: float = _MAJOR_BLOCK_MAX_GAP_MM,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Normalize adjacent major-block x-gaps without disturbing internal geometry.
+
+    The earlier stage-cohesion passes already compact the contents of each
+    block. This pass operates one level up: it treats the input/core/output
+    blocks as ordered groups and keeps the horizontal gap between adjacent
+    groups within a readable range by shifting the later groups together.
+
+    The pass is intentionally limited to passive-only layouts that *lack* an
+    explicit core group. IC-anchored layouts already have stronger locality
+    guarantees from the decoupling, op-amp neighborhood, and stage-cohesion
+    passes; shifting those groups here can break the invariants those earlier
+    passes establish.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    groups = _major_block_spacing_groups(positions, block_layout)
+    if len(groups) < 2:
+        return dict(positions)
+    if any(_is_ic_ref(ref) for ref in positions):
+        return dict(positions)
+    has_core_group = any(
+        role in {BlockRole.OPAMP_CORE, BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE}
+        for role in (assignment.role for assignment in block_layout.assignments.values())
+    )
+    if has_core_group:
+        return dict(positions)
+
+    result = dict(positions)
+    for index, left_group in enumerate(groups[:-1]):
+        right_groups = groups[index + 1 :]
+        right_group = right_groups[0]
+        left_max_x = max(result[ref][0] for ref in left_group)
+        right_min_x = min(result[ref][0] for ref in right_group)
+        gap = round(right_min_x - left_max_x, 2)
+
+        delta_x = 0.0
+        if gap > max_gap_mm:
+            delta_x = max_gap_mm - gap
+        elif gap < min_gap_mm:
+            delta_x = min_gap_mm - gap
+        if abs(delta_x) < 0.01:
+            continue
+
+        refs_to_shift = sorted({ref for group in right_groups for ref in group})
+        result = _shift_refs_x(
+            result,
+            refs_to_shift,
+            delta_x,
+        )
+
+        new_right_min_x = min(result[ref][0] for ref in right_group)
+        _log.debug(
+            "major block spacing: adjusted gap %.2f → %.2f between groups %d and %d",
+            gap,
+            round(new_right_min_x - left_max_x, 2),
+            index,
+            index + 1,
+        )
+
+    return result
+
+
+def _snap_power_block_cohesion(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    decoupling_map: Mapping[str, str] | None = None,
+    origin_x: float = ORIGIN_X,
+    page_max_x: float = PAGE_MAX_X,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep POWER_ENTRY refs laterally close to the active signal cluster.
+
+    Page-balance and title-block passes intentionally treat POWER_ENTRY as a
+    separate class so supply connectors and power-only units can stay near the
+    top of the page. Without an additional cohesion pass, those refs can remain
+    stranded at the far left while the signal path recenters below them.
+
+    This pass only adjusts x-coordinates of ``BlockRole.POWER_ENTRY`` refs
+    (excluding KiCad ``#PWR`` / ``#FLG`` symbols). The anchor x-coordinate is
+    chosen in this order:
+
+    1. IC refs targeted by *decoupling_map*.
+    2. Any ``OPAMP_CORE`` / core-like refs.
+    3. The broader non-power signal-path refs.
+
+    Power refs are then re-slotted so the power block stays within
+    :data:`_POWER_BLOCK_MAX_X_OFFSET_MM` of the anchor while preserving left to
+    right ordering and existing y positions.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    power_refs = sorted(
+        ref
+        for ref in positions
+        if role_by_ref.get(ref) == BlockRole.POWER_ENTRY and not ref.startswith("#")
+    )
+    if not power_refs:
+        return dict(positions)
+
+    anchor_refs: list[str] = []
+    if decoupling_map:
+        anchor_refs = sorted({ic_ref for ic_ref in decoupling_map.values() if ic_ref in positions})
+    if not anchor_refs:
+        anchor_refs = sorted(
+            ref
+            for ref in positions
+            if (role := role_by_ref.get(ref)) is not None and is_core_like_role(role)
+        )
+    if not anchor_refs:
+        anchor_refs = sorted(
+            ref
+            for ref in positions
+            if (
+                (role := role_by_ref.get(ref)) is not None
+                and not is_power_like_role(role)
+                and (
+                    is_input_like_role(role)
+                    or is_core_like_role(role)
+                    or is_output_like_role(role)
+                    or role == BlockRole.DECOUPLING
+                )
+            )
+        )
+    if not anchor_refs:
+        return dict(positions)
+
+    anchor_x = sum(positions[ref][0] for ref in anchor_refs) / len(anchor_refs)
+    anchor_x = round(round(anchor_x / 1.27) * 1.27, 2)
+
+    slot_offsets: list[int] = [0]
+    step = 1
+    while len(slot_offsets) < len(power_refs):
+        slot_offsets.extend([-step, step])
+        step += 1
+    sorted_offsets = sorted(slot_offsets[: len(power_refs)])
+    target_slots = [
+        round(
+            min(
+                max(origin_x, anchor_x + offset * _POWER_BLOCK_MAX_X_OFFSET_MM),
+                page_max_x,
+            ),
+            2,
+        )
+        for offset in sorted_offsets
+    ]
+
+    ordered_power_refs = sorted(power_refs, key=lambda ref: (positions[ref][0], ref))
+    result = dict(positions)
+    for ref, target_x in zip(ordered_power_refs, target_slots):
+        x, y, rot = result[ref]
+        if abs(x - target_x) < 0.01:
+            continue
+        _log.debug(
+            "power cohesion: %r x %.2f → %.2f (anchor_x=%.2f)",
+            ref,
+            x,
+            target_x,
+            anchor_x,
+        )
+        result[ref] = (target_x, y, rot)
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Composite snap coordinator
 # ---------------------------------------------------------------------------
@@ -2828,7 +3196,17 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         (2) nudge when the op-amp (OPAMP_CORE) average y-coordinate falls
         outside the central 60 % of the vertical range; (3) emit a debug
         warning when the circuit vertical span is very small.
-    7h. :func:`_apply_property_text_spacing` — reserve extra vertical space
+    7h. :func:`_snap_major_signal_axis` — align representative input/core/
+        output refs onto a shared horizontal axis so the main left-to-right
+        flow reads as one continuous chain without flattening feedback or
+        power support lanes.
+    7i. :func:`_snap_major_block_spacing` — keep adjacent major input/core/
+        output blocks within a readable horizontal gap range by shifting later
+        blocks together while preserving each block's internal geometry.
+    7j. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally
+        tied to the active/signal cluster so the power block still reads as
+        part of the same design after the signal path recenters.
+    7k. :func:`_apply_property_text_spacing` — reserve extra vertical space
         for components that share the same or a nearby x-lane so visible
         ``Reference``/``Value`` text does not collapse onto nearby symbol
         bodies or short local wire corridors.
@@ -2894,6 +3272,9 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
+    result = _snap_major_signal_axis(result, block_layout)
+    result = _snap_major_block_spacing(result, block_layout)
+    result = _snap_power_block_cohesion(result, block_layout, decoupling_map=decoupling_map)
     protected_text_refs: frozenset[str] = frozenset()
     if block_layout is not None:
         from ..block_detection import BlockRole  # noqa: PLC0415

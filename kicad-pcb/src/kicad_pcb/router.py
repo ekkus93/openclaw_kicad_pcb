@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from .block_detection import BlockLayout, BlockRole, is_input_like_role, is_output_like_role
 from .component_types import (
     component_type as _component_type,
 )
@@ -70,6 +71,8 @@ _HUB_MAX_DEGREE: int = 6
 _POWER_CLUSTER_RADIUS_MM: float = 40.0
 _POWER_LABEL_CLEARANCE_MM: float = 6.35
 
+LabelModeName = Literal["minimal", "debug", "always-show-important-labels"]
+
 
 @dataclass(frozen=True)
 class LabelPolicy:
@@ -93,13 +96,41 @@ class LabelPolicy:
         a single *non-power* high-degree net (see :data:`_HUB_MAX_DEGREE`).
         Power nets use :class:`PowerSymbolPlacement` instead and are not
         subject to this cap.  Default: ``4``.
+    mode_name:
+        Human-readable label-mode identifier used by CLI/result/debug output.
+    force_important_labels:
+        When ``True``, preserve one visible label for structurally important
+        signal nets even when routing would otherwise be label-free.
+    force_all_signal_labels:
+        When ``True``, preserve one visible label for every non-power signal
+        net and relax label caps for debugging.
     """
 
     max_labels_per_net: int = 2
     max_global_labels_per_net: int = 4
+    mode_name: LabelModeName = "minimal"
+    force_important_labels: bool = False
+    force_all_signal_labels: bool = False
 
 
-DEFAULT_LABEL_POLICY: LabelPolicy = LabelPolicy()
+MINIMAL_LABEL_POLICY = LabelPolicy(mode_name="minimal")
+DEBUG_LABEL_POLICY = LabelPolicy(
+    max_labels_per_net=999,
+    max_global_labels_per_net=999,
+    mode_name="debug",
+    force_important_labels=True,
+    force_all_signal_labels=True,
+)
+IMPORTANT_LABEL_POLICY = LabelPolicy(
+    mode_name="always-show-important-labels",
+    force_important_labels=True,
+)
+LABEL_MODE_POLICIES: dict[LabelModeName, LabelPolicy] = {
+    "minimal": MINIMAL_LABEL_POLICY,
+    "debug": DEBUG_LABEL_POLICY,
+    "always-show-important-labels": IMPORTANT_LABEL_POLICY,
+}
+DEFAULT_LABEL_POLICY: LabelPolicy = MINIMAL_LABEL_POLICY
 
 
 @dataclass(frozen=True)
@@ -176,6 +207,46 @@ class RoutingHeuristicPolicy:
 
 
 DEFAULT_ROUTING_HEURISTIC_POLICY: RoutingHeuristicPolicy = RoutingHeuristicPolicy()
+
+
+_SIGNAL_LABEL_ROLE_PRIORITY: dict[BlockRole, int] = {
+    BlockRole.INPUT: 0,
+    BlockRole.INTERSTAGE: 0,
+    BlockRole.OUTPUT: 0,
+    BlockRole.PRECONDITIONING: 1,
+    BlockRole.OUTPUT_CONDITIONING: 1,
+    BlockRole.BUFFER_STAGE: 2,
+    BlockRole.OPAMP_CORE: 3,
+    BlockRole.FEEDBACK: 4,
+    BlockRole.POWER_ENTRY: 5,
+    BlockRole.DECOUPLING: 5,
+}
+
+_CONNECTOR_LABEL_ROLE_PRIORITY: dict[BlockRole, int] = {
+    BlockRole.INPUT: 0,
+    BlockRole.OUTPUT: 0,
+    BlockRole.PRECONDITIONING: 1,
+    BlockRole.OUTPUT_CONDITIONING: 1,
+    BlockRole.INTERSTAGE: 2,
+    BlockRole.BUFFER_STAGE: 2,
+    BlockRole.OPAMP_CORE: 3,
+    BlockRole.FEEDBACK: 4,
+    BlockRole.POWER_ENTRY: 5,
+    BlockRole.DECOUPLING: 5,
+}
+
+_FEEDBACK_LABEL_ROLE_PRIORITY: dict[BlockRole, int] = {
+    BlockRole.FEEDBACK: 0,
+    BlockRole.OPAMP_CORE: 1,
+    BlockRole.BUFFER_STAGE: 2,
+    BlockRole.INTERSTAGE: 3,
+    BlockRole.PRECONDITIONING: 4,
+    BlockRole.OUTPUT_CONDITIONING: 4,
+    BlockRole.INPUT: 5,
+    BlockRole.OUTPUT: 5,
+    BlockRole.POWER_ENTRY: 6,
+    BlockRole.DECOUPLING: 6,
+}
 
 
 def _is_power_net_name(net_name: str) -> bool:
@@ -496,8 +567,71 @@ class RouteDecision:
     heuristic_override: str | None = None
 
 
+def _net_member_roles(
+    refs: tuple[str, ...],
+    block_layout: BlockLayout | None,
+) -> set[BlockRole]:
+    """Return the set of block roles present on *refs* when available."""
+
+    if block_layout is None:
+        return set()
+    return {
+        assignment.role
+        for ref in refs
+        if (assignment := block_layout.assignments.get(ref)) is not None
+    }
+
+
+def _classify_routing_net_from_roles(
+    refs: tuple[str, ...],
+    *,
+    block_layout: BlockLayout | None,
+    has_connector: bool,
+) -> (
+    Literal[
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ]
+    | None
+):
+    """Return a structural routing class derived from block roles when possible."""
+
+    roles = _net_member_roles(refs, block_layout)
+    if not roles:
+        return None
+
+    if BlockRole.FEEDBACK in roles:
+        return "feedback"
+
+    if (
+        has_connector
+        and len(refs) <= 3
+        and any(is_input_like_role(role) or is_output_like_role(role) for role in roles)
+    ):
+        return "connector_attachment"
+
+    signal_roles = {
+        BlockRole.INPUT,
+        BlockRole.PRECONDITIONING,
+        BlockRole.OPAMP_CORE,
+        BlockRole.INTERSTAGE,
+        BlockRole.BUFFER_STAGE,
+        BlockRole.OUTPUT,
+        BlockRole.OUTPUT_CONDITIONING,
+    }
+    if roles & signal_roles:
+        return "signal_chain"
+
+    return None
+
+
 def _classify_routing_net(
-    net_name: str, refs: tuple[str, ...]
+    net_name: str,
+    refs: tuple[str, ...],
+    *,
+    block_layout: BlockLayout | None = None,
 ) -> Literal[
     "power",
     "local_decoupling",
@@ -544,16 +678,25 @@ def _classify_routing_net(
             classification = "power"
     elif all_connectors:
         classification = "connector_only"
-    elif any(token in upper_name for token in ("INV", "FB", "FEEDBACK")):
-        classification = "feedback"
-    elif has_connector and len(refs) <= 3:
-        classification = "connector_attachment"
-    elif (
-        has_ic
-        or has_connector
-        or any(token in upper_name for token in ("IN", "OUT", "BUF", "STAGE", "VOL", "HP"))
-    ):
-        classification = "signal_chain"
+    else:
+        structural_classification = _classify_routing_net_from_roles(
+            refs,
+            block_layout=block_layout,
+            has_connector=has_connector,
+        )
+        if structural_classification is not None:
+            return structural_classification
+
+        if any(token in upper_name for token in ("INV", "FB", "FEEDBACK")):
+            classification = "feedback"
+        elif has_connector and len(refs) <= 3:
+            classification = "connector_attachment"
+        elif (
+            has_ic
+            or has_connector
+            or any(token in upper_name for token in ("IN", "OUT", "BUF", "STAGE", "VOL", "HP"))
+        ):
+            classification = "signal_chain"
 
     return classification
 
@@ -588,6 +731,240 @@ def _classification_prefers_local_chain(
 ) -> bool:
     """Return True when a routing class should prefer a compact local chain."""
     return classification in {"connector_attachment", "signal_chain", "feedback"}
+
+
+def _classification_prefers_short_local_direct_route(
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> bool:
+    """Return True when a routing class should stay locally wired before using labels."""
+    return classification in {"connector_attachment", "signal_chain", "feedback"}
+
+
+def _label_role_priority(
+    role: BlockRole | None,
+    *,
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> int:
+    """Return the sort priority for visible label placement on a routed net."""
+
+    if role is None:
+        return 99
+    if classification == "feedback":
+        return _FEEDBACK_LABEL_ROLE_PRIORITY.get(role, 99)
+    if classification == "connector_attachment":
+        return _CONNECTOR_LABEL_ROLE_PRIORITY.get(role, 99)
+    if classification == "signal_chain":
+        return _SIGNAL_LABEL_ROLE_PRIORITY.get(role, 99)
+    return 99
+
+
+def _name_suggests_important_signal(net_name: str) -> bool:
+    """Return True when *net_name* reads like a user-meaningful stage handoff."""
+
+    upper_name = net_name.upper()
+    if any(token in upper_name for token in ("RAW", "INV", "FB", "FEEDBACK", "AFTER_")):
+        return False
+    return any(
+        token in upper_name
+        for token in (
+            "LEFT_IN",
+            "RIGHT_IN",
+            "_IN",
+            "IN_",
+            "VOL",
+            "STAGE",
+            "BUF",
+            "HP",
+            "_OUT",
+            "OUT_",
+        )
+    )
+
+
+def _roles_mark_important_display_seam(
+    roles: set[BlockRole],
+    *,
+    has_connector: bool,
+) -> bool:
+    """Return True when *roles* form a stage seam worth keeping visibly labeled."""
+
+    if has_connector and any(
+        is_input_like_role(role) or is_output_like_role(role) for role in roles
+    ):
+        return True
+    if BlockRole.INTERSTAGE in roles:
+        return True
+    if BlockRole.OPAMP_CORE in roles and BlockRole.PRECONDITIONING in roles:
+        return True
+    return BlockRole.INPUT in roles and BlockRole.PRECONDITIONING in roles
+
+
+def _net_is_important_for_display(
+    net_name: str,
+    refs: tuple[str, ...],
+    *,
+    block_layout: BlockLayout | None,
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> bool:
+    """Return True when a signal net should stay visibly labeled in important mode."""
+
+    roles = _net_member_roles(refs, block_layout)
+    if roles:
+        return _roles_mark_important_display_seam(
+            roles,
+            has_connector=any(_component_type(ref) == "connector" for ref in refs),
+        )
+
+    if classification not in {"connector_attachment", "signal_chain"}:
+        return False
+
+    return _name_suggests_important_signal(net_name)
+
+
+def _should_promote_visible_label(
+    net_name: str,
+    refs: tuple[str, ...],
+    *,
+    block_layout: BlockLayout | None,
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+    policy: LabelPolicy,
+) -> bool:
+    """Return True when the selected label mode should add a visible label."""
+
+    if classification in {"power", "local_decoupling", "shunt_ground"}:
+        return False
+    if policy.force_all_signal_labels:
+        return True
+    if not policy.force_important_labels:
+        return False
+    return _net_is_important_for_display(
+        net_name,
+        refs,
+        block_layout=block_layout,
+        classification=classification,
+    )
+
+
+def _prioritize_label_candidates(
+    known: list[tuple[PinRefIR, tuple[float, float, float]]],
+    *,
+    block_layout: BlockLayout | None,
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ],
+) -> list[tuple[PinRefIR, tuple[float, float, float]]]:
+    """Return *known* reordered so capped labels favor structurally important seams."""
+
+    if block_layout is None or classification not in {
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+    }:
+        return known
+
+    scored: list[tuple[int, int, tuple[PinRefIR, tuple[float, float, float]]]] = []
+    for index, candidate in enumerate(known):
+        pin_ref, _endpoint = candidate
+        scored.append(
+            (
+                _label_role_priority(
+                    block_layout.get_role(pin_ref.ref),
+                    classification=classification,
+                ),
+                index,
+                candidate,
+            )
+        )
+    return [candidate for _priority, _index, candidate in sorted(scored)]
+
+
+@dataclass(frozen=True)
+class _VisibleLabelPromotion:
+    net_name: str
+    refs: tuple[str, ...]
+    block_layout: BlockLayout | None
+    classification: Literal[
+        "power",
+        "local_decoupling",
+        "shunt_ground",
+        "connector_only",
+        "connector_attachment",
+        "signal_chain",
+        "feedback",
+        "generic_signal",
+    ]
+    label_candidates: list[tuple[PinRefIR, tuple[float, float, float]]]
+
+
+def _append_promoted_visible_label(
+    routing: NetRouting,
+    *,
+    promotion: _VisibleLabelPromotion,
+    policy: LabelPolicy,
+) -> None:
+    """Add one visible label when the selected mode promotes this signal net."""
+
+    if not promotion.label_candidates:
+        return
+
+    promoted_candidate = promotion.label_candidates[0]
+    pin_ref, (wx, wy, wa) = promoted_candidate
+    if not _should_promote_visible_label(
+        promotion.net_name,
+        promotion.refs,
+        block_layout=promotion.block_layout,
+        classification=promotion.classification,
+        policy=policy,
+    ):
+        return
+
+    ex, ey = _stub_end(wx, wy, wa)
+    label = NetLabel(promotion.net_name, ex, ey, int((wa + 180) % 360))
+    if label not in routing.labels:
+        routing.labels.append(label)
 
 
 # ---------------------------------------------------------------------------
@@ -1910,6 +2287,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     ir: CircuitIR,
     pin_endpoints: dict[tuple[str, str], tuple[float, float, float]],
     pin_anchors: Mapping[tuple[str, str], PinAnchor] | None = None,
+    block_layout: BlockLayout | None = None,
     use_bus: bool = True,
     tiers: dict[str, int] | None = None,
     positions: Mapping[str, tuple[float, float, float | None]] | None = None,
@@ -1961,6 +2339,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         anchor ownership plus endpoint geometry. When supplied, router helpers
         use this richer model as their source of truth and only fall back to
         *pin_endpoints* for legacy callers.
+    block_layout:
+        Optional functional block classification from
+        :func:`kicad_pcb.block_detection.classify_circuit`. When supplied,
+        net classification prefers structural roles before falling back to
+        net-name heuristics.
     use_bus:
         When ``True``, replace centroid-hub routing for multi-pin local nets
         with spine-style routing (:func:`_spine_route`).  Produces a cleaner
@@ -1977,7 +2360,8 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         Label deduplication policy; controls how many local and global
         labels are emitted per net.  Defaults to
         :data:`DEFAULT_LABEL_POLICY` (2 local labels per net, 4 global
-        labels per high-degree net).
+        labels per high-degree net). Use :data:`LABEL_MODE_POLICIES` for the
+        bundled ``minimal``, ``debug``, and ``always-show-important-labels`` modes.
     heuristic_policy:
         Analog-specific routing policy that governs compact output-tail and
         local-ground-cluster special cases while leaving generic routing
@@ -2031,7 +2415,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             )
 
         is_power = _is_power_net_name(net.name)
-        net_classification = _classify_routing_net(net.name, net_refs)
+        net_classification = _classify_routing_net(
+            net.name,
+            net_refs,
+            block_layout=block_layout,
+        )
         strategy = "local_labels"
         heuristic_override: str | None = None
 
@@ -2173,8 +2561,12 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 # manhattan cap (MAX_DIRECT_DIST_MM) guards physical wire length,
                 # matching the behaviour of the non-tier path.
                 tdist = _tier_distance(p0.ref, p1.ref, tiers)
+                short_local_override = (
+                    _classification_prefers_short_local_direct_route(net_classification)
+                    and manhattan <= MAX_DIRECT_WIRE_MM
+                )
                 can_direct = manhattan <= MAX_DIRECT_DIST_MM and (
-                    tdist <= 1 or _is_connector_passive_edge(p0.ref, p1.ref)
+                    tdist <= 1 or _is_connector_passive_edge(p0.ref, p1.ref) or short_local_override
                 )
             else:
                 can_direct = manhattan <= MAX_DIRECT_DIST_MM
@@ -2299,6 +2691,17 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     strategy = "hub"
             routing.wires.extend(hub_segs)
             routing.junctions.extend(hub_junctions)
+            _append_promoted_visible_label(
+                routing,
+                promotion=_VisibleLabelPromotion(
+                    net_name=net.name,
+                    refs=net_refs,
+                    block_layout=block_layout,
+                    classification=net_classification,
+                    label_candidates=known,
+                ),
+                policy=policy,
+            )
             routing.route_decisions.append(
                 RouteDecision(
                     net_name=net.name,
@@ -2316,10 +2719,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         # ----------------------------------------------------------------
         # High-degree non-power → global label per pin (capped by policy)
         # ----------------------------------------------------------------
+        label_candidates = _prioritize_label_candidates(
+            known,
+            block_layout=block_layout,
+            classification=net_classification,
+        )
+
         if len(known) > _HUB_MAX_DEGREE:
             strategy = "global_labels"
             global_label_count = 0
-            for pin_ref, (wx, wy, wa) in known:
+            for pin_ref, (wx, wy, wa) in label_candidates:
                 ex, ey = _stub_end(wx, wy, wa)
                 label_angle = int((wa + 180) % 360)
                 routing.wires.append(WireSegment(wx, wy, ex, ey))
@@ -2355,7 +2764,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         # Stub wires and bind markers are always emitted (every pin).
         # ----------------------------------------------------------------
         label_count = 0
-        for pin_ref, (wx, wy, wa) in known:
+        for pin_ref, (wx, wy, wa) in label_candidates:
             ex, ey = _stub_end(wx, wy, wa)
             label_angle = int((wa + 180) % 360)
             routing.wires.append(WireSegment(wx, wy, ex, ey))

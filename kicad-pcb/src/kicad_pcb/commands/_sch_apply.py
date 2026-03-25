@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TypedDict, cast
 
 from ..adapters import KicadCliAdapter
+from ..block_detection import classify_circuit
 from ..circuit_ir import CircuitIR
 from ..component_types import (
     TIER_SPACING_MM,
@@ -33,7 +34,11 @@ from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
 from ..results import ApplyNetlistResult
 from ..router import (
+    DEFAULT_LABEL_POLICY,
     DEFAULT_ROUTING_HEURISTIC_POLICY,
+    LABEL_MODE_POLICIES,
+    LabelModeName,
+    LabelPolicy,
     PinAnchor,
     RouteDecision,
     RoutingHeuristicPolicy,
@@ -235,6 +240,7 @@ class _ApplyNetlistRequest:
     strict: bool = False
     layout_name: str | None = None
     routing_name: str | None = None
+    label_mode_name: str | None = None
     heuristic_profile_name: str | None = None
     debug_dump_path: Path | None = None
     heuristic_profile: SchematicHeuristicProfile = DEFAULT_SCHEMATIC_HEURISTIC_PROFILE
@@ -266,6 +272,7 @@ def _apply_netlist_to_project(
         request.heuristic_profile_name,
         default=request.heuristic_profile,
     )
+    active_label_policy = _resolve_label_policy(request.label_mode_name)
     ir = CircuitIR.load(request.netlist_path)
     validate_circuit_ir(ir)
 
@@ -279,12 +286,14 @@ def _apply_netlist_to_project(
     debug_capture: dict[str, object] = {
         "schematic_debug_artifacts": [
             "heuristic_profile_name",
+            "label_mode_name",
             "unit_splitting",
             "net_classification",
             "final_route_choices",
             "routing_heuristic_policy",
         ],
         "heuristic_profile_name": active_heuristic_profile.name,
+        "label_mode_name": active_label_policy.mode_name,
         "unit_splitting": _build_unit_splitting_debug(
             source_ir=ir,
             generation_ir=generation_ir,
@@ -348,6 +357,7 @@ def _apply_netlist_to_project(
                 sheet_uuid=sheet_uuid,
                 request=request,
                 active_heuristic_profile=active_heuristic_profile,
+                active_label_policy=active_label_policy,
                 stats=stats,
                 warnings=warnings,
                 managed_sch_path=managed_sch_path,
@@ -410,6 +420,7 @@ def _apply_netlist_to_project(
         nets_applied=len(ir.nets),
         kicad_cli_used=cli is not None,
         heuristic_profile_name=active_heuristic_profile.name,
+        label_mode_name=active_label_policy.mode_name,
         dry_run=request.dry_run,
         warnings=tuple(warnings),
         warning_report_path=warning_report_path,
@@ -433,6 +444,7 @@ def _build_managed_mutator(  # noqa: PLR0913
     sheet_uuid: str,
     request: _ApplyNetlistRequest,
     active_heuristic_profile: SchematicHeuristicProfile,
+    active_label_policy: LabelPolicy,
     stats: dict[str, int],
     warnings: list[dict[str, object]],
     managed_sch_path: Path,
@@ -484,12 +496,15 @@ def _build_managed_mutator(  # noqa: PLR0913
             pin_endpoints=pin_endpoints,
         )
         _tiers = assign_tiers(generation_ir, strict=request.strict)
+        block_layout = classify_circuit(generation_ir)
         routing = route_nets(
             ir=generation_ir,
             pin_endpoints=pin_endpoints,
             pin_anchors=pin_anchors,
+            block_layout=block_layout,
             tiers=_tiers,
             positions=raw_layout,
+            policy=active_label_policy,
             use_bus=_resolve_routing(request.routing_name),
             heuristic_policy=active_heuristic_profile.routing_policy,
             strict=request.strict,
@@ -505,6 +520,7 @@ def _build_managed_mutator(  # noqa: PLR0913
                         active_heuristic_profile.routing_policy
                     ),
                     "heuristic_profile_name": active_heuristic_profile.name,
+                    "label_mode_name": active_label_policy.mode_name,
                 }
             )
         write_routing(
@@ -1269,6 +1285,25 @@ def _resolve_heuristic_profile(
             code=ErrorCode.USER_ERROR,
             details={"allowed": sorted(SCHEMATIC_HEURISTIC_PROFILES)},
         ) from exc
+
+
+def _resolve_label_policy(
+    label_mode_name: str | None,
+    *,
+    default: LabelPolicy = DEFAULT_LABEL_POLICY,
+) -> LabelPolicy:
+    """Return the bundled label policy requested by *label_mode_name*."""
+
+    if label_mode_name is None:
+        return default
+    name = label_mode_name.strip().lower()
+    if name not in LABEL_MODE_POLICIES:
+        raise UserError(
+            f"Unknown label mode '{label_mode_name}'",
+            code=ErrorCode.USER_ERROR,
+            details={"allowed": sorted(LABEL_MODE_POLICIES)},
+        )
+    return LABEL_MODE_POLICIES[cast(LabelModeName, name)]
 
 
 def _resolve_routing(routing_name: str | None) -> bool:
