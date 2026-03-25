@@ -1,5 +1,17 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T05:54:34Z - GPT-5.4 - Full repo validation is green after the 5.1.3 route-metric guardrail work
+
+- Re-ran `.venv/bin/ruff check .`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy .`, and `.venv/bin/pytest` from `/home/ubo/work/openclaw_kicad_pcb` after adding the real-NE5532 route-quality bounds.
+- Ruff passed cleanly, and mypy again reported success on 137 source files with only the existing `annotation-unchecked` notes from `kicad-pcb/tests/unit/test_layout.py`.
+- Pytest completed green at `2227 passed in 407.06s (0:06:47)`.
+
+## 2026-03-25T05:44:22Z - GPT-5.4 - Added bounded real-NE5532 route-quality metrics for 5.1.3
+
+- Extended `tests/unit/test_netlist_commands.py` with a real-fixture route-quality helper that measures total wire count, orthogonal bend count, junction count, average stage-local net span (`LEFT_IN`, `IN_L_AC`, `BUF_L_IN`, `U1A_INV`, `AFTER_R6`, `HP_L_OUT`), and the `U1A_INV` feedback-loop span from the generated NE5532 schematic.
+- Added a new regression test that keeps those metrics under tolerant upper bounds for `code_review/ne5532_headphone_amp_netlist.json` so 5.1.3 now protects overall routing sprawl in addition to the existing output-neighborhood short-segment guardrail.
+- Focused validation passed with `.venv/bin/ruff check tests/unit/test_netlist_commands.py`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy tests/unit/test_netlist_commands.py`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded or new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a or new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region or new_from_real_ne5532_fixture_splits_u1_into_explicit_units or new_from_real_ne5532_fixture_managed_schematic_structure_is_stable or new_from_real_ne5532_fixture_marks_unused_trs_ring_pins'`.
+
 ## 2026-03-25T05:28:06Z - GPT-5.4 - Full repo validation is green after the 5.1.2 named-fixture assertion work
 
 - Re-ran `.venv/bin/ruff check .`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy .`, and `.venv/bin/pytest` from `/home/ubo/work/openclaw_kicad_pcb` after tightening the real NE5532 structural assertions.

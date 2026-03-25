@@ -1171,6 +1171,7 @@ Current findings:
 - The new guardrail measures the local wire box around `C6`, `R5`, `R6`, `C7`, `R7`, and `J2`, and asserts that the generated schematic stays below the current small-jog threshold (`<= 12` short local segments and `<= 0.35` local short-segment ratio) while also remaining materially better than the captured regressed snapshot for the same neighborhood.
 - With the currently landed placement and routing work, that concrete output box now measures `32` total segments / `7` short segments (ratio `0.219`) in internal generation mode for `code_review/ne5532_headphone_amp_netlist.json`.
 - Current route-level regressions in `tests/unit/test_phase6_wire_simplification.py` now lock in the compact output-tail carve-outs and the compact output-side `GND` lane so those local improvements do not silently drift.
+- `tests/unit/test_netlist_commands.py` now adds a second real-fixture route-quality guardrail on the generated NE5532 schematic itself: total wire count, orthogonal bend count, junction count, average stage-local net span (`LEFT_IN`, `IN_L_AC`, `BUF_L_IN`, `U1A_INV`, `AFTER_R6`, `HP_L_OUT`), and the `U1A_INV` feedback-loop span all stay under tolerant upper bounds instead of drifting back toward sprawling routing.
 
 ---
 
