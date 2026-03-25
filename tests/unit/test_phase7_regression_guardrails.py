@@ -31,12 +31,13 @@ from kicad_pcb.schematic_metrics import (
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.utils import find_all
 
-_TEST_ROOT = Path(__file__).resolve().parent.parent
-_FIXTURE_DIR = _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
-_CIRCUIT_IR_PATH = _FIXTURE_DIR / "circuit_ir.json"
-_REGRESSED_SCH_PATH = _FIXTURE_DIR / "regressed_generated.kicad_sch"
-_REGRESSED_METRICS_PATH = _FIXTURE_DIR / "baseline_metrics.json"
-_SYMBOLS_DIR = _TEST_ROOT / "fixtures" / "symbols"
+from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
+
+_FIXTURE = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
+_CIRCUIT_IR_PATH = _FIXTURE.circuit_ir_path
+_REGRESSED_SCH_PATH = cast(Path, _FIXTURE.regressed_schematic_path)
+_REGRESSED_METRICS_PATH = _FIXTURE.baseline_metrics_path
+_SYMBOLS_DIR = SYMBOLS_FIXTURE_DIR
 
 
 def _positions_from_doc(doc: SchematicDoc) -> dict[str, tuple[float, float, float | None]]:

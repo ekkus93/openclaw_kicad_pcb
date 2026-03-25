@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.block_detection import BlockRole, classify_circuit
@@ -19,11 +20,12 @@ from kicad_pcb.schematic_metrics import (
     count_refs_in_same_x_column_as,
 )
 
-_TEST_ROOT = Path(__file__).resolve().parent.parent
-_FIXTURE_DIR = _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
-_REGRESSED_SCH_PATH = _FIXTURE_DIR / "regressed_generated.kicad_sch"
-_REGRESSED_IR_PATH = _FIXTURE_DIR / "circuit_ir.json"
-_REGRESSED_METRICS_PATH = _FIXTURE_DIR / "baseline_metrics.json"
+from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
+
+_FIXTURE = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
+_REGRESSED_SCH_PATH = cast(Path, _FIXTURE.regressed_schematic_path)
+_REGRESSED_IR_PATH = _FIXTURE.circuit_ir_path
+_REGRESSED_METRICS_PATH = _FIXTURE.baseline_metrics_path
 
 
 @pytest.mark.skipif(

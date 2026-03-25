@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from argparse import Namespace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
@@ -26,19 +27,17 @@ from kicad_pcb.schematic_metrics import (
     wire_stub_ratio,
 )
 
+from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
-_TEST_ROOT = Path(__file__).parent.parent
-_READABILITY_FIXTURE_DIR = (
-    _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
-)
-_CIRCUIT_IR_PATH = _READABILITY_FIXTURE_DIR / "circuit_ir.json"
-_BASELINE_SCH_PATH = _READABILITY_FIXTURE_DIR / "baseline_generated.kicad_sch"
-_BASELINE_METRICS_PATH = _READABILITY_FIXTURE_DIR / "baseline_metrics.json"
-
-_SYMBOLS_DIR = _TEST_ROOT / "fixtures" / "symbols"
+_READABILITY_FIXTURE = NE5532_LEFT_CURRENT_READABILITY_FIXTURE
+_READABILITY_FIXTURE_DIR = _READABILITY_FIXTURE.fixture_dir
+_CIRCUIT_IR_PATH = _READABILITY_FIXTURE.circuit_ir_path
+_BASELINE_SCH_PATH = cast(Path, _READABILITY_FIXTURE.baseline_schematic_path)
+_BASELINE_METRICS_PATH = _READABILITY_FIXTURE.baseline_metrics_path
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +73,7 @@ def test_generate_baseline_schematic(tmp_path: Path) -> None:
             out_dir=str(work_dir),
             description="Baseline headphone amp for readability testing",
             netlist=str(_CIRCUIT_IR_PATH),
-            symbols_dir=str(_SYMBOLS_DIR),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
             mode="internal",  # no kicad-cli required
             layout="graphviz",  # use Graphviz layout engine
             routing="bus",  # spine/hub routing (default)

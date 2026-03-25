@@ -3,6 +3,13 @@
 **Generated:** 2026-03-10  
 **Purpose:** Baseline "before" fixture for CODE_REVIEW6 readability improvements
 
+## Fixture Identity
+
+- Fixture name: `ne5532_headphone_amp_left_current`
+- Fixture class: named readability regression fixture
+- Paired regressed fixture: `ne5532_headphone_amp_left_regressed`
+- Canonical paths live in the shared `tests` fixture registry so tests and review tooling resolve this fixture by name instead of duplicating raw paths.
+
 ## Current Problems
 
 This schematic is the **baseline** output from the generator before Phase 1–4 readability improvements. It is electrically correct and passes structural lints, but it has the following readability problems:
@@ -88,7 +95,7 @@ After completing Phases 1-4 of CODE_REVIEW6_TODO, this schematic should:
 
 ## Source
 
-- **IR/Netlist:** Canonical headphone amp IR from `tests/fixtures/regressions/headphone_amp_ir.json`
+- **IR/Netlist:** Canonical headphone amp IR from `tests/fixtures/readability/ne5532_headphone_amp_left_current/circuit_ir.json`
 - **Generation:** `cmd_new_from_netlist` with current code (before readability improvements)
 - **Circuit:** Simplified dual-channel passive/resistive headphone amplifier (13 components, 9 nets)
 

@@ -10,6 +10,8 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.layout_engine import make_layout_engine
 
+from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
+
 pytestmark = pytest.mark.integration
 
 _dot_available = _gv_mod.find_dot_binary() is not None
@@ -18,9 +20,7 @@ requires_graphviz = pytest.mark.skipif(
     reason="graphviz dot not found on PATH or GRAPHVIZ_DOT",
 )
 
-_TEST_ROOT = Path(__file__).resolve().parent.parent
-_FIXTURE_DIR = _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
-_REGRESSED_IR_PATH = _FIXTURE_DIR / "circuit_ir.json"
+_REGRESSED_IR_PATH = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE.circuit_ir_path
 
 
 @pytest.mark.skipif(not _REGRESSED_IR_PATH.exists(), reason="Phase 0 regression IR missing")

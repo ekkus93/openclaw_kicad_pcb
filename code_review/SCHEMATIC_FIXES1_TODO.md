@@ -1133,8 +1133,13 @@ The quality improvements should stay fixed.
 ### Tasks
 
 #### 5.1.1 Add this amplifier as a named fixture
-Status: `IN PROGRESS`
+Status: `DONE`
 - Store the amplifier example as a durable regression fixture.
+
+Current findings:
+- The canonical NE5532 left-channel readability artifact is now treated as a named fixture, `ne5532_headphone_amp_left_current`, with its checked-in IR, baseline schematic, metrics, and README all living under `tests/fixtures/readability/ne5532_headphone_amp_left_current/`.
+- `tests/__init__.py` now provides the shared fixture registry used by fixture-oriented tests and the readability review utility, so the current and regressed NE5532 fixtures are resolved by name instead of repeated raw paths.
+- Focused coverage in `tests/unit/test_readability_review_script.py` now locks the review script defaults to that named fixture registry, which makes the fixture durable as a reusable regression target rather than just a directory convention.
 
 #### 5.1.2 Add expected structural assertions
 Status: `IN PROGRESS`
@@ -1148,6 +1153,7 @@ Assert that:
 Current findings:
 - Phase 7 guardrails in `tests/unit/test_phase7_regression_guardrails.py` now go beyond aggregate column/separation metrics and include a concrete NE5532 interstage/output neighborhood assertion.
 - That guardrail anchors itself to the rightmost placed `U1*` unit and locks in the local output-side composition: `C6`, `R5`, `C7`, `R6`, `R7`, and `J2` stay on the output side of the second stage, `R5` remains between the `C6` handoff and `R6`, and the final `R7` / `J2` tail stays farther outward than the handoff pair.
+- `tests/unit/test_netlist_commands.py` now treats the real NE5532 source netlist as a shared named fixture and locks the remaining structure-specific guarantees that the readability fixture could not express: generation must split `U1` into drawable `U1A` / `U1B` / `U1P` units, keep `C1`-`C4` closer to the op-amp region than to the audio connectors, keep feedback parts `R2` / `R3` local to `U1A`, and still emit explicit no-connect markers for the unused TRS ring pins.
 
 #### 5.1.3 Add route-quality metrics
 Status: `IN PROGRESS`

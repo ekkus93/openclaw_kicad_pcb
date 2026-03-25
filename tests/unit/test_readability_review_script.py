@@ -7,6 +7,12 @@ import json
 import sys
 from pathlib import Path
 
+from tests import (
+    NE5532_LEFT_CURRENT_READABILITY_FIXTURE,
+    NE5532_LEFT_REGRESSED_READABILITY_FIXTURE,
+    SYMBOLS_FIXTURE_DIR,
+)
+
 
 def _load_review_script_module():
     test_root = Path(__file__).resolve().parent.parent
@@ -52,19 +58,9 @@ def _write_fake_png(_svg_file: Path, png_file: Path) -> bool:
 
 def test_generate_review_report_writes_summary_bundle(tmp_path: Path) -> None:
     module = _load_review_script_module()
-    fixture_dir = (
-        Path(__file__).resolve().parent.parent
-        / "fixtures"
-        / "readability"
-        / "ne5532_headphone_amp_left_current"
-    )
-    regressed_fixture_dir = (
-        Path(__file__).resolve().parent.parent
-        / "fixtures"
-        / "readability"
-        / "ne5532_headphone_amp_left_regressed"
-    )
-    symbols_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    fixture_dir = NE5532_LEFT_CURRENT_READABILITY_FIXTURE.fixture_dir
+    regressed_fixture_dir = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE.fixture_dir
+    symbols_dir = SYMBOLS_FIXTURE_DIR
 
     artifacts = module.generate_review_report(
         module.ReviewRequest(
@@ -117,19 +113,9 @@ def test_generate_review_report_writes_summary_bundle(tmp_path: Path) -> None:
 
 def test_generate_review_report_falls_back_to_internal_svg_preview(tmp_path: Path) -> None:
     module = _load_review_script_module()
-    fixture_dir = (
-        Path(__file__).resolve().parent.parent
-        / "fixtures"
-        / "readability"
-        / "ne5532_headphone_amp_left_current"
-    )
-    regressed_fixture_dir = (
-        Path(__file__).resolve().parent.parent
-        / "fixtures"
-        / "readability"
-        / "ne5532_headphone_amp_left_regressed"
-    )
-    symbols_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    fixture_dir = NE5532_LEFT_CURRENT_READABILITY_FIXTURE.fixture_dir
+    regressed_fixture_dir = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE.fixture_dir
+    symbols_dir = SYMBOLS_FIXTURE_DIR
 
     artifacts = module.generate_review_report(
         module.ReviewRequest(
@@ -148,3 +134,14 @@ def test_generate_review_report_falls_back_to_internal_svg_preview(tmp_path: Pat
         assert preview.svg_file is not None and preview.svg_file.exists()
         assert preview.note is not None
         assert "internal schematic fallback" in preview.note
+
+
+def test_review_script_defaults_follow_named_fixture_registry() -> None:
+    module = _load_review_script_module()
+
+    assert NE5532_LEFT_CURRENT_READABILITY_FIXTURE.fixture_dir == module.DEFAULT_FIXTURE_DIR
+    assert (
+        NE5532_LEFT_REGRESSED_READABILITY_FIXTURE.fixture_dir
+        == module.DEFAULT_REGRESSED_FIXTURE_DIR
+    )
+    assert module.DEFAULT_SYMBOLS_DIR == SYMBOLS_FIXTURE_DIR

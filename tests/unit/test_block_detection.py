@@ -29,19 +29,20 @@ from kicad_pcb.graphviz_layout.snap import _snap_block_zones
 from kicad_pcb.router import _l_route, _spine_route, route_nets
 from kicad_pcb.sch_doc import SchematicDoc
 
+from tests import (
+    NE5532_LEFT_CURRENT_READABILITY_FIXTURE,
+    NE5532_LEFT_REGRESSED_READABILITY_FIXTURE,
+    SYMBOLS_FIXTURE_DIR,
+)
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
-_TEST_ROOT = Path(__file__).parent.parent
-_READABILITY_FIXTURE_DIR = (
-    _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
-)
-_CIRCUIT_IR_PATH = _READABILITY_FIXTURE_DIR / "circuit_ir.json"
-_REGRESSED_FIXTURE_DIR = (
-    _TEST_ROOT / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
-)
-_REGRESSED_IR_PATH = _REGRESSED_FIXTURE_DIR / "circuit_ir.json"
+_READABILITY_FIXTURE = NE5532_LEFT_CURRENT_READABILITY_FIXTURE
+_CIRCUIT_IR_PATH = _READABILITY_FIXTURE.circuit_ir_path
+_REGRESSED_FIXTURE = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
+_REGRESSED_IR_PATH = _REGRESSED_FIXTURE.circuit_ir_path
 
 
 # ---------------------------------------------------------------------------
@@ -883,7 +884,7 @@ def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
             out_dir=str(work_dir),
             description="Signal flow test schematic",
             netlist=str(ir_path),
-            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
             mode="internal",
             layout="graphviz",
             routing="bus",
@@ -970,7 +971,7 @@ def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
             out_dir=str(work_dir),
             description="Signal flow test schematic",
             netlist=str(ir_path),
-            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
             mode="internal",
             layout="graphviz",
             routing="bus",
@@ -1035,7 +1036,7 @@ def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
             out_dir=str(work_dir),
             description="Signal flow test schematic",
             netlist=str(_CIRCUIT_IR_PATH),
-            symbols_dir=str(_TEST_ROOT / "fixtures" / "symbols"),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
             mode="internal",
             layout="graphviz",
             routing="bus",

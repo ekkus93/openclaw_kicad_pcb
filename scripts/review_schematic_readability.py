@@ -23,8 +23,16 @@ from typing import Any, TypedDict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PACKAGE_SRC = REPO_ROOT / "kicad-pcb" / "src"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 if str(PACKAGE_SRC) not in sys.path:
     sys.path.insert(0, str(PACKAGE_SRC))
+
+from tests import (  # noqa: E402
+    NE5532_LEFT_CURRENT_READABILITY_FIXTURE,
+    NE5532_LEFT_REGRESSED_READABILITY_FIXTURE,
+    SYMBOLS_FIXTURE_DIR,
+)
 
 _NETLIST_MODULE = importlib.import_module("kicad_pcb.commands.netlist")
 _PROJECT_MODULE = importlib.import_module("kicad_pcb.commands._project")
@@ -55,13 +63,9 @@ count_short_wire_segments = _SCHEMATIC_METRICS_MODULE.count_short_wire_segments
 page_region_density = _SCHEMATIC_METRICS_MODULE.page_region_density
 wire_stub_ratio = _SCHEMATIC_METRICS_MODULE.wire_stub_ratio
 
-DEFAULT_FIXTURE_DIR = (
-    REPO_ROOT / "tests" / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
-)
-DEFAULT_REGRESSED_FIXTURE_DIR = (
-    REPO_ROOT / "tests" / "fixtures" / "readability" / "ne5532_headphone_amp_left_regressed"
-)
-DEFAULT_SYMBOLS_DIR = REPO_ROOT / "tests" / "fixtures" / "symbols"
+DEFAULT_FIXTURE_DIR = NE5532_LEFT_CURRENT_READABILITY_FIXTURE.fixture_dir
+DEFAULT_REGRESSED_FIXTURE_DIR = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE.fixture_dir
+DEFAULT_SYMBOLS_DIR = SYMBOLS_FIXTURE_DIR
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "code_review" / "generated" / "ne5532_headphone_amp_review"
 BASELINE_SCHEMATIC_NAME = "baseline_generated.kicad_sch"
 _GENERATION_ONLY_WARNING_CODES = {
