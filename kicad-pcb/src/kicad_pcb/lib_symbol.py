@@ -23,7 +23,7 @@ from pathlib import Path
 
 from .errors import ErrorCode, ParseError, UserError
 from .sexpr.builder import string
-from .sexpr.nodes import NO_POS, ListNode, Node, StringNode
+from .sexpr.nodes import NO_POS, AtomNode, ListNode, Node, StringNode
 from .sexpr.parser import parse_file
 from .sexpr.utils import find_first, walk
 
@@ -33,6 +33,7 @@ __all__ = [
     "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
+    "read_lib_symbol_power_unit",
     "read_lib_symbol_unit_pins",
     "read_lib_symbol_unit_pin_at",
 ]
@@ -176,6 +177,17 @@ def _collect_pin_at(
         except (ValueError, AttributeError):
             continue
         result[pin_num] = (x, y, a)
+    return result
+
+
+def _collect_pin_electrical_types(sym_node: ListNode) -> list[str]:
+    """Walk *sym_node* and return pin electrical types in encounter order."""
+    result: list[str] = []
+    for node in walk(sym_node):
+        if not (isinstance(node, ListNode) and node.key == "pin"):
+            continue
+        if len(node.items) >= 2 and isinstance(node.items[1], AtomNode):
+            result.append(node.items[1].value)
     return result
 
 
@@ -564,3 +576,43 @@ def read_lib_symbol_unit_pin_at(
         for pin_num, coords in subsymbol_pin_at.items():
             pins.setdefault(pin_num, coords)
     return unit_pin_at
+
+
+def read_lib_symbol_power_unit(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> str | None:
+    """Return the unit number for a dedicated power-only sub-unit, if present.
+
+    A symbol is considered to have a separate power unit when exactly one
+    numbered sub-symbol contains pins and every pin in that unit uses a
+    ``power_*`` electrical type, while at least one other numbered sub-symbol
+    contains a non-power pin type.
+    """
+    sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=symbols_dir)
+    if sym_def is None:
+        return None
+
+    power_only_units: list[str] = []
+    non_power_units = 0
+    for subsymbol in _collect_subsymbols(sym_def):
+        subsymbol_id = _symbol_id(subsymbol)
+        if subsymbol_id is None:
+            continue
+        match = _UNIT_SUBSYMBOL_RE.match(subsymbol_id)
+        if match is None:
+            continue
+        unit = match.group(1)
+        pin_types = _collect_pin_electrical_types(subsymbol)
+        if not pin_types:
+            continue
+        if all(pin_type.startswith("power_") for pin_type in pin_types):
+            power_only_units.append(unit)
+        else:
+            non_power_units += 1
+
+    if len(power_only_units) == 1 and non_power_units >= 1:
+        return power_only_units[0]
+    return None

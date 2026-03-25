@@ -27,6 +27,7 @@ from ..lib_symbol import (
     read_lib_symbol_def_flat,
     read_lib_symbol_pin_at,
     read_lib_symbol_pins,
+    read_lib_symbol_power_unit,
     read_lib_symbol_unit_pin_at,
     read_lib_symbol_unit_pins,
 )
@@ -65,6 +66,7 @@ __all__ = [
     "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
     "read_lib_symbol_pins",
+    "read_lib_symbol_power_unit",
     "read_lib_symbol_unit_pin_at",
     "read_lib_symbol_unit_pins",
 ]

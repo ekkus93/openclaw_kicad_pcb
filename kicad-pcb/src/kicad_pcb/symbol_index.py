@@ -8,7 +8,12 @@ from pathlib import Path
 
 from .config import SYMBOLS_CANDIDATES
 from .errors import ErrorCode, UserError
-from .sch_doc import read_lib_symbol_pins, read_lib_symbol_unit_pin_at, read_lib_symbol_unit_pins
+from .sch_doc import (
+    read_lib_symbol_pins,
+    read_lib_symbol_power_unit,
+    read_lib_symbol_unit_pin_at,
+    read_lib_symbol_unit_pins,
+)
 
 REPO_LOCAL_SYMBOLS_DIR = Path(__file__).resolve().parent / "resources" / "symbols"
 
@@ -75,6 +80,7 @@ class SymbolIndex:
                 },
             )
         self._pins_cache: dict[str, set[str]] = {}
+        self._power_unit_cache: dict[str, str | None] = {}
         self._unit_pins_cache: dict[str, dict[str, tuple[str, ...]]] = {}
         self._unit_pin_at_cache: dict[str, dict[str, dict[str, tuple[float, float, float]]]] = {}
 
@@ -170,6 +176,23 @@ class SymbolIndex:
 
         self._unit_pins_cache[symbol_id] = {}
         return {}
+
+    def get_power_unit(self, symbol_id: str) -> str | None:
+        """Return the cached dedicated power-unit number for *symbol_id*, if any."""
+        if symbol_id in self._power_unit_cache:
+            return self._power_unit_cache[symbol_id]
+
+        self.get_pins(symbol_id)
+
+        lib_name, sym_name = _split_symbol_id(symbol_id)
+        for directory in self._dirs:
+            power_unit = read_lib_symbol_power_unit(lib_name, sym_name, symbols_dir=directory)
+            if power_unit is not None:
+                self._power_unit_cache[symbol_id] = power_unit
+                return power_unit
+
+        self._power_unit_cache[symbol_id] = None
+        return None
 
     def get_unit_pin_at(
         self,

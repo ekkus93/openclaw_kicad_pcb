@@ -19,6 +19,7 @@ from kicad_pcb.sch_doc import (
     read_lib_symbol_def,
     read_lib_symbol_def_chain,
     read_lib_symbol_pins,
+    read_lib_symbol_power_unit,
     read_lib_symbol_unit_pin_at,
     read_lib_symbol_unit_pins,
 )
@@ -1193,3 +1194,15 @@ class TestReadLibSymbolUnitPinAt:
                 "8": (2.54, -5.08, 90.0),
             },
         }
+
+
+class TestReadLibSymbolPowerUnit:
+    def test_detects_dedicated_power_unit_from_fixture_dual_op_amp(self) -> None:
+        fixture_dir = Path(__file__).parent.parent / "fixtures" / "symbols"
+
+        assert read_lib_symbol_power_unit("TestLib", "DualOpAmp", symbols_dir=fixture_dir) == "3"
+
+    def test_returns_none_when_symbol_has_no_dedicated_power_unit(self) -> None:
+        fixture_dir = Path(__file__).parent.parent / "fixtures" / "symbols"
+
+        assert read_lib_symbol_power_unit("TestLib", "SingleOpAmp", symbols_dir=fixture_dir) is None

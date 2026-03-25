@@ -1,5 +1,45 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-25T20:00:57Z - GPT-5.4 - Broader Phase 1 multi-unit regression slice stayed green before check-in
+
+- Revalidated the accumulated Phase 1 multi-unit closeout changes with `.venv/bin/ruff check` over the touched layout/symbol-metadata/test files, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy` over the same set, and `.venv/bin/pytest -q tests/unit/test_phase4_layout.py tests/unit/test_sch_doc.py tests/unit/test_symbol_index.py tests/unit/test_sch_apply.py tests/unit/test_netlist_commands.py`.
+- The scoped check-in should include the Phase 1 code, test, roadmap, and memory updates while still leaving `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch` dirty and uncommitted, since that file remains UUID-only churn earmarked for a separate decision.
+
+## 2026-03-25T19:55:31Z - GPT-5.4 - Closed the top-level Phase 1 roadmap summary after the multi-unit and warning subtrees finished
+
+- Updated the opening priority summary in `code_review/SCHEMATIC_FIXES1_TODO.md` so item `1. Fix correctness blockers` is now `DONE` and no longer carries the stale `multi-unit op-amp handling` bullet.
+- Also synced the matching `## Phase 1 - Fix correctness blockers` parent section to `DONE`, because both `1.1 Implement proper multi-unit symbol support` and `1.2 Fix or explicitly validate the R1 / C5 input network` are now complete.
+
+## 2026-03-25T19:52:32Z - GPT-5.4 - Synced the parent Phase 1.1 roadmap statuses to done
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so both `## 1.1 Implement proper multi-unit symbol support` and the matching `### Phase 1.1 first-slice progress` subsection now read `DONE`, reflecting that all `1.1.x` child items are complete.
+- Kept the broader `Phase 1 - Fix correctness blockers` parent section untouched, so the roadmap sync stays scoped to the multi-unit subtree the user requested.
+
+## 2026-03-25T19:47:46Z - GPT-5.4 - Added explicit symbol-definition metadata for dedicated power units and closed roadmap item 1.1.3
+
+- Added `read_lib_symbol_power_unit(...)` in `kicad-pcb/src/kicad_pcb/lib_symbol.py`, re-exported it from `kicad-pcb/src/kicad_pcb/sch_doc/__init__.py`, and added `SymbolIndex.get_power_unit(...)` in `kicad-pcb/src/kicad_pcb/symbol_index.py` so the symbol metadata layer can identify a dedicated power-only unit directly from KiCad sub-symbol definitions.
+- Added focused coverage in `tests/unit/test_sch_doc.py` and `tests/unit/test_symbol_index.py`; validation passed with `.venv/bin/ruff check`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy`, and `.venv/bin/pytest -q tests/unit/test_sch_doc.py tests/unit/test_symbol_index.py -k 'power_unit or unit_pin'`. Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so `1.1.3 Add symbol metadata for multi-unit parts` is now `DONE`.
+
+## 2026-03-25T19:39:41Z - GPT-5.4 - Audited roadmap item 1.1.3 and kept it open for the remaining power-unit metadata gap
+
+- Verified that `kicad-pcb/src/kicad_pcb/lib_symbol.py` and `kicad-pcb/src/kicad_pcb/symbol_index.py` already ship the core multi-unit metadata surfaces: unit-numbered pin membership and unit-local pin geometry, with unit keys that match the KiCad unit numbers emitted downstream.
+- Left `code_review/SCHEMATIC_FIXES1_TODO.md` item `1.1.3 Add symbol metadata for multi-unit parts` as `IN PROGRESS` because neither metadata surface explicitly answers whether a symbol has a separate power unit; current power-unit detection still happens later from connected-net usage in `_sch_apply.py` / `tier.py`.
+
+## 2026-03-25T19:34:50Z - GPT-5.4 - Completed Phase 1.1.8 multi-unit test coverage and synced the roadmap
+
+- Added focused `tests/unit/test_phase4_layout.py` coverage for the final multi-unit post-snap behavior: ordered signal siblings compact into adjacent x-lanes, the power-only unit recenters over that sibling cluster, and incomplete placed-unit position sets remain a no-op instead of raising.
+- Validation passed with `.venv/bin/ruff check tests/unit/test_phase4_layout.py`, `export MYPYPATH=kicad-pcb/src && .venv/bin/mypy tests/unit/test_phase4_layout.py`, and `.venv/bin/pytest -q tests/unit/test_phase4_layout.py -k 'TestApplyPostLayoutSnaps or TestIcUnitGroups'`, and `code_review/SCHEMATIC_FIXES1_TODO.md` now marks `1.1.8 Add tests for multi-unit parts` as `DONE`.
+
+## 2026-03-25T19:29:37Z - GPT-5.4 - Synced roadmap item 1.1.5 to the landed split-unit placement work
+
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so `1.1.5 Update placement to operate on placed units, not just parent devices` is now marked `DONE`.
+- The roadmap entry now explicitly records the shipped late snap behavior in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`: ordered split-unit signal siblings are compacted into adjacent x-lanes in the final coordinates, and any power-only unit is re-centered over that cluster after the late locality/composition passes.
+
+## 2026-03-25T19:27:04Z - GPT-5.4 - Added a real final-coordinate sibling cohesion pass for split IC units
+
+- Threaded `power_unit_refs` and `unit_sibling_pairs` from `kicad_pcb/graphviz_layout/__init__.py` into `_apply_post_layout_snaps(...)`, then added `_snap_multi_unit_sibling_cohesion(...)` in `kicad_pcb/graphviz_layout/snap.py` to compact ordered split-unit signal siblings into adjacent x-lanes and re-center any power-only unit over that cluster after the late locality/composition passes.
+- Focused validation passed with `ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`, `export MYPYPATH=kicad-pcb/src && mypy kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py`, `pytest tests/unit/test_netlist_commands.py -q -k 'multi_unit_placement_cohesive or route_quality_metrics_bounded'`, and `pytest tests/unit/test_phase4_layout.py -q -k 'TestIcUnitGroups'`.
+
 ## 2026-03-25T19:10:03Z - GPT-5.4 - Scoped commit excludes the UUID-only baseline churn
 
 - Prepared a commit containing the portable NE5532 symbol fixtures and the readability-baseline test gating change, while intentionally leaving `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch` dirty for a separate decision.

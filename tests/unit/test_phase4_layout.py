@@ -3232,6 +3232,59 @@ class TestApplyPostLayoutSnaps:
         # Connector J1 is snapped to R1's y by _snap_connectors_to_ic_y (Rule 2).
         assert result["J1"][1] == pytest.approx(76.20)
 
+    def test_snap_compacts_multi_unit_signal_siblings_and_recenters_power_unit(self) -> None:
+        """Final post-snap layout keeps split-unit siblings as one compact cluster."""
+        ir = _multi_stage_unit_ir()
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 101.60, None),
+            "U1A": (50.80, 101.60, None),
+            "U1B": (127.00, 127.00, None),
+            "U1P": (203.20, 63.50, None),
+            "J2": (228.60, 127.00, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            power_unit_refs=frozenset({"U1P"}),
+            unit_sibling_pairs=(("U1A", "U1B"),),
+        )
+
+        assert result["U1A"][0] < result["U1B"][0]
+        assert result["U1B"][0] - result["U1A"][0] == pytest.approx(GRID_COL_MM)
+
+        sibling_center_x = (result["U1A"][0] + result["U1B"][0]) / 2.0
+        assert result["U1P"][0] == pytest.approx(sibling_center_x)
+
+    def test_snap_multi_unit_sibling_cohesion_skips_incomplete_position_sets(self) -> None:
+        """Missing sibling refs should not raise or disturb unrelated refs."""
+        ir = _multi_stage_unit_ir()
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 101.60, None),
+            "U1A": (50.80, 101.60, None),
+            "U1P": (203.20, 63.50, None),
+            "J2": (228.60, 127.00, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            power_unit_refs=frozenset({"U1P"}),
+            unit_sibling_pairs=(("U1A", "U1B"),),
+        )
+
+        assert set(result) == set(positions)
+        assert result["U1A"][0] == pytest.approx(positions["U1A"][0])
+        assert result["U1P"][0] == pytest.approx(positions["U1P"][0])
+
     def test_feedback_falls_back_to_any_neighbor_non_strict(self) -> None:
         """Non-strict mode preserves fallback from IC/connector anchor to any neighbor."""
         ir = CircuitIR(
