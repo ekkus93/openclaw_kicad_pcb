@@ -265,13 +265,17 @@ class TestPhase7RegressionGuardrails:
     ) -> None:
         positions = _positions_from_doc(generated_doc)
         output_stage_anchor = max(
-            (ref for ref in positions if ref.startswith("U1")),
+            (ref for ref in positions if ref.startswith("U1") and not ref.endswith("P")),
             key=lambda ref: positions[ref][0],
         )
         anchor_x, _anchor_y, _ = positions[output_stage_anchor]
+        stage1_x, _stage1_y, _ = positions["U1A"]
 
-        handoff_and_output_refs = ["C6", "R5", "C7", "R6", "R7", "J2"]
-        assert all(positions[ref][0] > anchor_x for ref in handoff_and_output_refs)
+        handoff_refs = ["C6", "R5"]
+        output_tail_refs = ["C7", "R6", "R7", "J2"]
+
+        assert all(stage1_x < positions[ref][0] <= anchor_x for ref in handoff_refs)
+        assert all(positions[ref][0] > anchor_x for ref in output_tail_refs)
 
         # Lock in the intended local story around the second stage: the
         # `C6`/`R5` handoff stays on the output side, `R5` remains between the

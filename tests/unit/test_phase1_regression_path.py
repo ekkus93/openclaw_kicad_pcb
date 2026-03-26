@@ -87,7 +87,11 @@ def test_graphviz_engine_writes_phase1_debug_dump(tmp_path: Path, monkeypatch) -
     result = engine.compute_symbol_positions(ir)
     dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
 
-    assert result["J_IN"][0] == 50.8
+    assert dump["raw_graphviz_positions"]["J_IN"]["x"] == 50.8
+    assert dump["raw_graphviz_positions"]["J_OUT"]["x"] == 203.2
+    assert dump["post_snap_positions"]["J_IN"]["x"] == result["J_IN"][0]
+    assert dump["post_snap_positions"]["J_OUT"]["x"] == result["J_OUT"][0]
+    assert result["J_IN"][0] < result["U1"][0] < result["J_OUT"][0]
     assert dump["cache_hit"] is False
     assert dump["artifact_manifest"] == {
         "version": 1,
