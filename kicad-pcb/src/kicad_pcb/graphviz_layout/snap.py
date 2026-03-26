@@ -3030,6 +3030,63 @@ def _major_block_spacing_groups(
     return [group for group in (input_block, core_block, output_block) if group]
 
 
+def _snap_core_anchored_major_block_spacing(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+    *,
+    min_gap_mm: float,
+    max_gap_mm: float,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Normalize input/core/output spacing while keeping the core fixed."""
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    input_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and is_input_like_role(role_by_ref.get(ref))
+    )
+    core_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and is_core_like_role(role_by_ref.get(ref))
+    )
+    output_block = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and is_output_like_role(role_by_ref.get(ref))
+    )
+    if not core_block:
+        return dict(positions)
+
+    result = dict(positions)
+    core_min_x = min(result[ref][0] for ref in core_block)
+    core_max_x = max(result[ref][0] for ref in core_block)
+
+    if input_block:
+        input_max_x = max(result[ref][0] for ref in input_block)
+        gap = round(core_min_x - input_max_x, 2)
+        delta_x = 0.0
+        if gap > max_gap_mm:
+            delta_x = gap - max_gap_mm
+        elif gap < min_gap_mm:
+            delta_x = gap - min_gap_mm
+        if abs(delta_x) >= 0.01:
+            result = _shift_refs_x(result, input_block, delta_x)
+
+    if output_block:
+        output_min_x = min(result[ref][0] for ref in output_block)
+        gap = round(output_min_x - core_max_x, 2)
+        delta_x = 0.0
+        if gap > max_gap_mm:
+            delta_x = max_gap_mm - gap
+        elif gap < min_gap_mm:
+            delta_x = min_gap_mm - gap
+        if abs(delta_x) >= 0.01:
+            result = _shift_refs_x(result, output_block, delta_x)
+
+    return result
+
+
 def _snap_major_block_spacing(
     positions: Mapping[str, tuple[float, float, float | None]],
     block_layout: BlockLayout | None = None,
@@ -3044,11 +3101,10 @@ def _snap_major_block_spacing(
     blocks as ordered groups and keeps the horizontal gap between adjacent
     groups within a readable range by shifting the later groups together.
 
-    The pass is intentionally limited to passive-only layouts that *lack* an
-    explicit core group. IC-anchored layouts already have stronger locality
-    guarantees from the decoupling, op-amp neighborhood, and stage-cohesion
-    passes; shifting those groups here can break the invariants those earlier
-    passes establish.
+    When an explicit core group exists, that group stays fixed and only the
+    outer input/output groups move. This preserves the op-amp-centric locality
+    invariants from the earlier passes while still enforcing a stronger
+    left-to-right block ordering around the anchored core.
     """
 
     if not positions or block_layout is None:
@@ -3057,14 +3113,18 @@ def _snap_major_block_spacing(
     groups = _major_block_spacing_groups(positions, block_layout)
     if len(groups) < 2:
         return dict(positions)
-    if any(_is_ic_ref(ref) for ref in positions):
-        return dict(positions)
     has_core_group = any(
         role in {BlockRole.OPAMP_CORE, BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE}
         for role in (assignment.role for assignment in block_layout.assignments.values())
     )
+
     if has_core_group:
-        return dict(positions)
+        return _snap_core_anchored_major_block_spacing(
+            positions,
+            block_layout,
+            min_gap_mm=min_gap_mm,
+            max_gap_mm=max_gap_mm,
+        )
 
     result = dict(positions)
     for index, left_group in enumerate(groups[:-1]):
@@ -3097,6 +3157,115 @@ def _snap_major_block_spacing(
             index,
             index + 1,
         )
+
+    return result
+
+
+def _transition_subband_groups(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout,
+) -> list[list[str]]:
+    """Return ordered refs for the core-to-output transition sub-bands."""
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    core_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.OPAMP_CORE
+    )
+    interstage_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.INTERSTAGE
+    )
+    buffer_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.BUFFER_STAGE
+    )
+    output_conditioning_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.OUTPUT_CONDITIONING
+    )
+    output_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.OUTPUT
+    )
+
+    return [
+        group
+        for group in (
+            core_group,
+            interstage_group,
+            buffer_group,
+            output_conditioning_group,
+            output_group,
+        )
+        if group
+    ]
+
+
+def _snap_output_transition_subbands(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+    *,
+    min_gap_mm: float = _MAJOR_BLOCK_MIN_GAP_MM,
+    max_gap_mm: float = _MAJOR_BLOCK_MAX_GAP_MM,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep downstream transition roles in distinct ordered x-bands.
+
+    The earlier locality and stage-cohesion passes intentionally compact the
+    output side near the op-amp. This pass runs later and only separates the
+    major downstream sub-bands so the transition still reads as
+    ``OPAMP_CORE -> INTERSTAGE -> BUFFER_STAGE -> OUTPUT_CONDITIONING -> OUTPUT``
+    without disturbing each sub-band's internal geometry.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    groups = _transition_subband_groups(positions, block_layout)
+    if len(groups) < 3 or groups[0] == groups[-1]:
+        return dict(positions)
+
+    current_gaps = [
+        round(
+            min(positions[right][0] for right in right_group)
+            - max(positions[left][0] for left in left_group),
+            2,
+        )
+        for left_group, right_group in zip(groups, groups[1:], strict=False)
+    ]
+    if all(min_gap_mm - 0.01 <= gap <= max_gap_mm + 0.01 for gap in current_gaps):
+        return dict(positions)
+
+    group_widths = [
+        round(max(positions[ref][0] for ref in group) - min(positions[ref][0] for ref in group), 2)
+        for group in groups
+    ]
+    first_group_end = max(positions[ref][0] for ref in groups[0])
+    last_group_start = min(positions[ref][0] for ref in groups[-1])
+    gap_count = len(groups) - 1
+    intermediate_width = sum(group_widths[1:-1])
+    natural_gap = 0.0
+    if gap_count > 0:
+        natural_gap = round(
+            (last_group_start - first_group_end - intermediate_width) / gap_count,
+            2,
+        )
+    target_gap = min(max_gap_mm, max(0.0, natural_gap))
+
+    result = dict(positions)
+    previous_group_end = max(result[ref][0] for ref in groups[0])
+    for index, group in enumerate(groups[1:], start=1):
+        current_group_start = min(result[ref][0] for ref in group)
+        target_group_start = round(previous_group_end + target_gap, 2)
+        delta_x = round(target_group_start - current_group_start, 2)
+        if abs(delta_x) >= 0.01:
+            result = _shift_refs_x(result, group, delta_x)
+        previous_group_end = max(result[ref][0] for ref in group)
 
     return result
 
@@ -3296,14 +3465,17 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     7i. :func:`_snap_major_block_spacing` — keep adjacent major input/core/
         output blocks within a readable horizontal gap range by shifting later
         blocks together while preserving each block's internal geometry.
-    7j. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally
+    7j. :func:`_snap_output_transition_subbands` — keep explicit downstream
+        transition roles in readable left-to-right sub-bands after the
+        op-amp/output-stage cohesion passes compact the local neighborhood.
+    7k. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally
         tied to the active/signal cluster so the power block still reads as
         part of the same design after the signal path recenters.
-    7k. :func:`_snap_multi_unit_sibling_cohesion` — compact ordered multi-unit
+    7l. :func:`_snap_multi_unit_sibling_cohesion` — compact ordered multi-unit
         IC siblings into adjacent x-lanes and re-center any power-only unit
         over that signal-unit cluster so the final coordinates preserve the
         intended grouping after later locality/composition passes.
-    7l. :func:`_apply_property_text_spacing` — reserve extra vertical space
+    7m. :func:`_apply_property_text_spacing` — reserve extra vertical space
         for components that share the same or a nearby x-lane so visible
         ``Reference``/``Value`` text does not collapse onto nearby symbol
         bodies or short local wire corridors.
@@ -3371,6 +3543,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     result = _snap_central_composition(result, block_layout)
     result = _snap_major_signal_axis(result, block_layout)
     result = _snap_major_block_spacing(result, block_layout)
+    result = _snap_output_transition_subbands(result, block_layout)
     result = _snap_power_block_cohesion(result, block_layout, decoupling_map=decoupling_map)
     result = _snap_multi_unit_sibling_cohesion(
         result,
@@ -3418,5 +3591,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     # edge-bound components back onto the same grid cell. Run one last deoverlap
     # pass on the final clamped coordinates.
     result = _deoverlap_positions(result, skip_pairs=frozenset(late_skip_pairs))
+    result = _snap_output_transition_subbands(result, block_layout)
+    result = _snap_multi_unit_sibling_cohesion(
+        result,
+        power_unit_refs=power_unit_refs,
+        unit_sibling_pairs=unit_sibling_pairs,
+    )
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result

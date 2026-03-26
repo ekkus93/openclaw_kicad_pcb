@@ -3285,6 +3285,44 @@ class TestApplyPostLayoutSnaps:
         assert result["U1A"][0] == pytest.approx(positions["U1A"][0])
         assert result["U1P"][0] == pytest.approx(positions["U1P"][0])
 
+    def test_late_transition_subbands_do_not_break_multi_unit_signal_cohesion(self) -> None:
+        """Final transition-band ordering must not pull split signal units apart."""
+        ir = _multi_stage_unit_ir()
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1A", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("C6", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 101.60, None),
+            "U1A": (97.79, 91.44, None),
+            "U1B": (171.45, 146.05, None),
+            "U1P": (113.03, 124.46, None),
+            "C6": (134.62, 153.67, None),
+            "R6": (208.27, 168.91, None),
+            "J2": (245.11, 121.92, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            power_unit_refs=frozenset({"U1P"}),
+            unit_sibling_pairs=(("U1A", "U1B"),),
+            block_layout=block_layout,
+        )
+
+        assert result["U1A"][0] < result["U1B"][0]
+        assert result["U1B"][0] - result["U1A"][0] == pytest.approx(GRID_COL_MM)
+
+        sibling_center_x = (result["U1A"][0] + result["U1B"][0]) / 2.0
+        assert result["U1P"][0] == pytest.approx(sibling_center_x)
+
     def test_feedback_falls_back_to_any_neighbor_non_strict(self) -> None:
         """Non-strict mode preserves fallback from IC/connector anchor to any neighbor."""
         ir = CircuitIR(
@@ -4299,6 +4337,72 @@ class TestApplyPostLayoutSnaps:
         )
         assert max(cout_y, jout_y) - min(rbuf_y, cout_y, jout_y) <= 2.5 * _gv_mod.GRID_ROW_MM, (
             "Buffer-loop support should remain in a compact local y-band"
+        )
+
+    def test_post_layout_snaps_separate_interstage_and_buffer_subbands(self) -> None:
+        """Phase 8.5: transition roles should read as ordered sub-bands after cohesion."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="CINT", symbol="Device:C", value="47n"),
+                ComponentIR(ref="RBUF", symbol="Device:R", value="100"),
+                ComponentIR(ref="COUT", symbol="Device:C", value="100n"),
+                ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_STAGE",
+                    pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="CINT", pin="1")],
+                ),
+                NetIR(
+                    name="HANDOFF",
+                    pins=[PinRefIR(ref="CINT", pin="2"), PinRefIR(ref="RBUF", pin="1")],
+                ),
+                NetIR(
+                    name="BUF_OUT",
+                    pins=[PinRefIR(ref="RBUF", pin="2"), PinRefIR(ref="COUT", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_TERM",
+                    pins=[PinRefIR(ref="COUT", pin="2"), PinRefIR(ref="JOUT", pin="1")],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("CINT", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("RBUF", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("COUT", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("JOUT", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (190.0, 100.0, None),
+            "CINT": (245.0, 84.0, None),
+            "RBUF": (168.0, 70.0, None),
+            "COUT": (228.0, 132.0, None),
+            "JOUT": (224.0, 122.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        ux, _uy, _ = result["U1"]
+        cint_x, _cint_y, _ = result["CINT"]
+        rbuf_x, _rbuf_y, _ = result["RBUF"]
+        cout_x, _cout_y, _ = result["COUT"]
+        jout_x, _jout_y, _ = result["JOUT"]
+
+        assert ux < cint_x < rbuf_x < cout_x < jout_x, (
+            f"Transition sub-bands should read core->interstage->buffer->output: {result}"
         )
 
     def test_output_stage_cohesion_avoids_unrelated_role_mixing(self) -> None:

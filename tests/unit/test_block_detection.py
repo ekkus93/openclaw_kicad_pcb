@@ -1086,6 +1086,87 @@ def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(
+    not _REGRESSED_IR_PATH.exists(),
+    reason="Regressed circuit IR fixture not found",
+)
+def test_regressed_ne5532_fixture_keeps_major_blocks_in_left_to_right_order(tmp_path: Path) -> None:
+    """The real NE5532 fixture should preserve readable block ordering around the core stage."""
+    ir = _load_regressed_test_circuit()
+    layout = classify_circuit(ir)
+
+    project_name = "SignalFlowRealFixture"
+    work_dir = tmp_path / "signal_flow_real_fixture"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd_new_from_netlist(
+        Namespace(
+            name=project_name,
+            out_dir=str(work_dir),
+            description="Signal flow real fixture schematic",
+            netlist=str(_REGRESSED_IR_PATH),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
+            mode="internal",
+            layout="graphviz",
+            routing="bus",
+            validate="internal",
+            strict=False,
+        )
+    )
+
+    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
+    assert managed_sch.exists(), "Managed sheet was not generated"
+    doc = SchematicDoc.load(managed_sch)
+    symbols: dict[str, tuple[float, float]] = {
+        cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
+    }
+
+    input_refs = [ref for ref in layout.components_by_role(BlockRole.INPUT) if ref in symbols]
+    core_anchor_refs = layout.components_by_role(BlockRole.OPAMP_CORE)
+    core_refs = [
+        placed_ref
+        for placed_ref in symbols
+        if any(placed_ref == ref or placed_ref.startswith(ref) for ref in core_anchor_refs)
+    ]
+    interstage_refs = [
+        ref for ref in layout.components_by_role(BlockRole.INTERSTAGE) if ref in symbols
+    ]
+    output_refs = [ref for ref in layout.components_by_role(BlockRole.OUTPUT) if ref in symbols]
+    output_cond_refs = [
+        ref for ref in layout.components_by_role(BlockRole.OUTPUT_CONDITIONING) if ref in symbols
+    ]
+
+    assert input_refs and core_refs and interstage_refs and output_refs and output_cond_refs
+
+    rightmost_input_x = max(symbols[ref][0] for ref in input_refs)
+    core_min_x = min(symbols[ref][0] for ref in core_refs)
+    core_max_x = max(symbols[ref][0] for ref in core_refs)
+    interstage_min_x = min(symbols[ref][0] for ref in interstage_refs)
+    interstage_max_x = max(symbols[ref][0] for ref in interstage_refs)
+    leftmost_output_support_x = min(symbols[ref][0] for ref in output_cond_refs)
+    leftmost_output_x = min(symbols[ref][0] for ref in output_refs)
+
+    assert rightmost_input_x < core_min_x, (
+        f"Input block should stay left of the core stage: {rightmost_input_x} !< {core_min_x}"
+    )
+    assert core_min_x < interstage_min_x, (
+        "Interstage handoff should stay to the right of the left edge of the core cluster: "
+        f"{core_min_x} !< {interstage_min_x}"
+    )
+    assert interstage_max_x < leftmost_output_support_x, (
+        "Output-conditioning block should stay to the right of the interstage handoff: "
+        f"{interstage_max_x} !< {leftmost_output_support_x}"
+    )
+    assert core_max_x < leftmost_output_support_x, (
+        "Output-conditioning block should stay to the right of the core stage: "
+        f"{core_max_x} !< {leftmost_output_support_x}"
+    )
+    assert leftmost_output_support_x <= leftmost_output_x, (
+        "Output connector block should not jump left of its output-conditioning chain: "
+        f"{leftmost_output_support_x} !<= {leftmost_output_x}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Phase 3.2: Signal-flow routing tests
 # ---------------------------------------------------------------------------
