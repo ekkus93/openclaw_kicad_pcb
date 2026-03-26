@@ -3010,9 +3010,11 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert analog_counts.get("chain", 0) > digital_counts.get("chain", 0)
     assert analog_overrides.get("small_analog_local_routing") == [
         "BUF_L_IN",
+        "HP_L_OUT",
         "IN_L_AC",
         "LEFT_IN",
         "OUT_L_STAGE1",
+        "OUT_L_STAGE2_RAW",
         "U1A_INV",
         "VOL_L_OUT",
     ]

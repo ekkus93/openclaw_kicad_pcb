@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-26T20:32:55Z - GPT-5.4 - Synced the strict analog profile override regression to the new U1B compact-tail behavior
+
+- Updated `tests/unit/test_netlist_commands.py` so `test_real_ne5532_fixture_profile_debug_dump_summary_diff` keeps an exact expected `small_analog_local_routing` membership list that now includes `HP_L_OUT` and `OUT_L_STAGE2_RAW` in addition to the earlier six nets. The U1B/output-tail locality work makes those two stage-2 nets compact enough to legitimately route as analog local chains.
+- Revalidated in `/home/ubo/work/openclaw_kicad_pcb` with `ruff check .` and `pytest -q`; both passed green, with the full pytest run still showing the single existing skipped test.
+
 ## 2026-03-26T17:13:23Z - GPT-5.4 - Added a final U1A feedback-span clamp after the late U1B locality passes
 
 - Reapplied `_snap_explicit_non_inverting_feedback_nodes(...)` at the very end of `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, after the U1B direct-output and output-tail locality passes, so the canonical U1A bridge/shunt pair remains compact even if later stage-2 refinements would otherwise leave the feedback node stretched.
