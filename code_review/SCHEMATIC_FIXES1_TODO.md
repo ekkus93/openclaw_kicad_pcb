@@ -661,7 +661,7 @@ The layout engine should identify and place analog functional blocks.
 ### Tasks
 
 #### 2.1.1 Add block classification rules
-Status: `IN PROGRESS`
+Status: `DONE`
 Implement heuristics to classify structures such as:
 - **input block**
   - connector/jack
@@ -687,14 +687,24 @@ Implement heuristics to classify structures such as:
   - local decoupling capacitors
   - local ground returns
 
+Current findings:
+- `kicad-pcb/src/kicad_pcb/block_detection.py` already exposes the Phase 2 role vocabulary needed by downstream layout and routing: `INPUT`, `PRECONDITIONING`, `OPAMP_CORE`, `FEEDBACK`, `INTERSTAGE`, `BUFFER_STAGE`, `OUTPUT`, `OUTPUT_CONDITIONING`, `POWER_ENTRY`, and `DECOUPLING`.
+- The classifier now covers the concrete analog structures called out here: connectors and input coupling parts, op-amp cores and feedback members, interstage coupling plus stage-handoff bias/load parts, explicit follower stages, output-conditioning chains, and local rail-decoupling support.
+- Focused regression coverage in `tests/unit/test_block_detection.py` already locks these families on both synthetic circuits and the canonical NE5532 regression fixture.
+
 #### 2.1.2 Build block membership from graph motifs
-Status: `IN PROGRESS`
+Status: `DONE`
 - Use graph patterns to infer membership:
   - op-amp output back to inverting input through a resistor = feedback member
   - series cap between connector and active node = input coupling member
   - resistor from output-side node to ground near connector = bleed/load member
   - capacitor from rail to ground near IC = decoupling member
 - Prefer deterministic rules over vague heuristics when possible.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/block_detection.py` now builds functional-block membership from explicit net-graph motifs instead of only broad net-name or reference heuristics. The current classifier detects follower stages from unit-aware op-amp pin roles, interstage coupling from active-to-active handoff nets, output-conditioning chains from connector-facing coupling and bleed/load motifs, and local decoupling from rail-to-ground support patterns.
+- The authoritative NE5532 regression fixture already lands in the intended membership buckets under `tests/unit/test_block_detection.py`: `C6` / `R5` classify as `INTERSTAGE`, `R6` / `C7` / `R7` classify as `OUTPUT_CONDITIONING`, `R2` / `R3` classify as `FEEDBACK`, and `C1`-`C4` classify as `DECOUPLING`.
+- The focused block-detection regression suite currently passes green (`python -m pytest -q tests/unit/test_block_detection.py`), so the remaining Phase 2 work is downstream placement policy rather than unfinished membership inference.
 
 #### 2.1.3 Add block-level layout constraints
 Status: `IN PROGRESS`
@@ -705,6 +715,12 @@ Status: `IN PROGRESS`
   - stage 2
   - output
 - Place power/decoupling above and around the active device(s), not as a disconnected island.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now strengthens the major left-to-right block-ordering pass for IC-anchored layouts instead of treating them as a no-op. The core block stays fixed while the outer input-side and output-side groups are shifted independently so their x-gaps around the anchored core stay within the readable major-block range.
+- This keeps the op-amp locality, feedback, and decoupling invariants from the earlier snap passes intact while still enforcing clearer input → core → output ordering at the block level.
+- A follow-on transition-band pass now preserves explicit downstream sub-band ordering after the later deoverlap/property-text snaps: `OPAMP_CORE → INTERSTAGE → BUFFER_STAGE → OUTPUT_CONDITIONING → OUTPUT` stays readable when space allows, and falls back to compressed but still strictly ordered bands near the right page edge.
+- Focused regression coverage now exists at both levels: helper coverage in `tests/unit/test_phase8_layout.py` for anchored core-gap normalization plus transition sub-band ordering, a full post-layout snap regression in `tests/unit/test_phase4_layout.py`, and a real-fixture managed-schematic regression in `tests/unit/test_block_detection.py` that asserts the canonical NE5532 interstage/output-conditioning chain stays between the core cluster and the output connector.
 
 ---
 

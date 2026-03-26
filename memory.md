@@ -1,5 +1,35 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-26T05:20:34Z - GPT-5.4 - Fixed the real NE5532 split-unit cohesion regression in the command path
+
+- Root cause was twofold: the late `_snap_output_transition_subbands(...)` pass needed a final `_snap_multi_unit_sibling_cohesion(...)` re-application so split IC siblings are not widened again at the end of the snap pipeline, and the Graphviz layout cache needed a revision bump because the command path was reusing stale pre-fix final positions keyed only to the old layout algorithm revision.
+- Re-applied `_snap_multi_unit_sibling_cohesion(...)` after the final late transition-band ordering in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, bumped `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v3` in `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py`, and added a focused regression in `tests/unit/test_phase4_layout.py` for the interaction between transition-band ordering and split-unit sibling cohesion. Validation passed with Ruff plus `python -m pytest -q tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py`.
+
+## 2026-03-26T04:58:11Z - GPT-5.4 - Broader placement-adjacent slice exposed two NE5532 downstream regressions
+
+- Running `python -m pytest -q tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py` after the transition-band change produced two failures, both in `tests/unit/test_netlist_commands.py`; `tests/unit/test_phase10_validation.py` stayed green.
+- The first failure is a real placement regression: `test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive` now measures `|U1B.x - U1A.x| = 73.66 mm`, breaking the existing `<= 35 mm` split-unit cohesion bound. The second looks like a heuristic-summary drift: `test_real_ne5532_fixture_profile_debug_dump_summary_diff` now reports `small_analog_local_routing = ["BUF_L_IN", "IN_L_AC", "LEFT_IN", "OUT_L_STAGE2_RAW", "U1A_INV"]`, adding `OUT_L_STAGE2_RAW` beyond the prior exact expectation.
+
+## 2026-03-26T04:50:44Z - GPT-5.4 - Broader Phase 4 and Phase 8 placement suites stayed green after the transition-band pass
+
+- Re-ran `python -m pytest -q tests/unit/test_phase4_layout.py tests/unit/test_phase8_layout.py` after landing the late `_snap_output_transition_subbands(...)` pass and the refactored core-anchored major-block spacing helper.
+- The full Phase 4/8 placement modules passed green with no additional regressions, which raises confidence that the late transition-band ordering does not break existing op-amp locality, output-stage cohesion, page-balance, or major-block-spacing expectations beyond the focused regression slices already added.
+
+## 2026-03-26T04:09:54Z - GPT-5.4 - Refined Phase 2.1.3 with explicit transition sub-band ordering
+
+- Added `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py::_snap_output_transition_subbands(...)` and wired it into the late post-layout pipeline so explicit downstream roles keep the readable sequence `OPAMP_CORE -> INTERSTAGE -> BUFFER_STAGE -> OUTPUT_CONDITIONING -> OUTPUT` after locality, spacing, text-spacing, and late deoverlap passes. The helper now uses readable one-grid spacing when room exists and compresses to strictly ordered bands when the right page edge leaves less room.
+- Added focused helper coverage in `tests/unit/test_phase8_layout.py`, a full post-layout snap regression in `tests/unit/test_phase4_layout.py`, and tightened the real NE5532 managed-schematic regression in `tests/unit/test_block_detection.py` to reflect the split-unit core cluster while still asserting that interstage/output-conditioning stay in the intended left-to-right transition. Focused Ruff plus the touched pytest nodeids passed green.
+
+## 2026-03-25T22:43:26Z - GPT-5.4 - Started Phase 2.1.3 with stronger core-anchored left-to-right block spacing
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py::_snap_major_block_spacing(...)` so IC-anchored layouts no longer short-circuit: the core block now stays fixed while the outer input and output groups are shifted independently to keep their x-gaps around the anchored core within the readable major-block range.
+- Added focused regressions in `tests/unit/test_phase8_layout.py` for helper-level core-anchored gap normalization and in `tests/unit/test_block_detection.py` for the real NE5532 managed-schematic ordering (`input` left of core, `output_conditioning` right of core, output connector not jumping ahead of its support chain). Focused pytest slices and Ruff on the touched files passed.
+
+## 2026-03-25T22:23:35Z - GPT-5.4 - Synced the Phase 2 functional-block membership roadmap to the landed classifier
+
+- Audited `kicad-pcb/src/kicad_pcb/block_detection.py` plus `tests/unit/test_block_detection.py` and confirmed the graph-motif membership work is already landed: the canonical regressed NE5532 fixture classifies `C6`/`R5` as `INTERSTAGE`, `R6`/`C7`/`R7` as `OUTPUT_CONDITIONING`, `R2`/`R3` as `FEEDBACK`, and `C1`-`C4` as `DECOUPLING`.
+- Updated `code_review/SCHEMATIC_FIXES1_TODO.md` so Phase `2.1.1 Add block classification rules` and `2.1.2 Build block membership from graph motifs` are now `DONE`; `2.1.3 Add block-level layout constraints` remains the next open step in that section.
+
 ## 2026-03-25T22:06:00Z - GPT-5.4 - Bumped CI marketplace actions to Node 24-capable major versions
 
 - Updated `.github/workflows/ci.yml` from `actions/checkout@v4` to `@v6`, `actions/setup-python@v5` to `@v6`, and `actions/upload-artifact@v4` to `@v6` in both jobs after checking the upstream releases.

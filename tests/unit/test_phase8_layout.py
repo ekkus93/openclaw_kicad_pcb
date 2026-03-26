@@ -36,6 +36,7 @@ from kicad_pcb.graphviz_layout.snap import (
     _snap_central_composition,
     _snap_major_block_spacing,
     _snap_major_signal_axis,
+    _snap_output_transition_subbands,
     _snap_page_balance,
     _snap_power_block_cohesion,
 )
@@ -688,8 +689,8 @@ class TestSnapMajorSignalAxis:
 # ---------------------------------------------------------------------------
 
 
-class TestSnapMajorBlockSpacing:
-    def test_is_no_op_when_explicit_core_ref_exists(self) -> None:
+class TestSnapMajorBlockSpacingCoreAnchored:
+    def test_normalizes_outer_block_gaps_around_fixed_core(self) -> None:
         bl = _bl_with_roles(
             {
                 "J1": BlockRole.INPUT,
@@ -707,7 +708,88 @@ class TestSnapMajorBlockSpacing:
 
         result = _snap_major_block_spacing(positions, bl)
 
+        assert result["U1"] == positions["U1"], "Core anchor must stay fixed"
+        left_gap = round(result["U1"][0] - result["J1"][0], 2)
+        right_gap = round(result["R7"][0] - result["U1"][0], 2)
+        assert _MAJOR_BLOCK_MIN_GAP_MM - 0.2 <= left_gap <= _MAJOR_BLOCK_MAX_GAP_MM + 0.2
+        assert _MAJOR_BLOCK_MIN_GAP_MM - 0.2 <= right_gap <= _MAJOR_BLOCK_MAX_GAP_MM + 0.2
+        assert round(result["J4"][0] - result["R7"][0], 2) == 30.0
+
+
+class TestSnapOutputTransitionSubbands:
+    def test_orders_explicit_transition_roles_into_distinct_x_bands(self) -> None:
+        bl = _bl_with_roles(
+            {
+                "U1": BlockRole.OPAMP_CORE,
+                "C6": BlockRole.INTERSTAGE,
+                "UB": BlockRole.BUFFER_STAGE,
+                "R6": BlockRole.OUTPUT_CONDITIONING,
+                "J4": BlockRole.OUTPUT,
+            }
+        )
+        positions = {
+            "U1": (130.0, 120.0, None),
+            "C6": (170.0, 120.0, None),
+            "UB": (142.0, 120.0, None),
+            "R6": (180.0, 120.0, None),
+            "J4": (260.0, 120.0, None),
+        }
+
+        result = _snap_output_transition_subbands(positions, bl)
+
+        assert result["U1"] == positions["U1"], "Core anchor must stay fixed"
+        ordered_refs = ["U1", "C6", "UB", "R6", "J4"]
+        for left_ref, right_ref in zip(ordered_refs, ordered_refs[1:], strict=False):
+            gap = round(result[right_ref][0] - result[left_ref][0], 2)
+            assert _MAJOR_BLOCK_MIN_GAP_MM - 0.2 <= gap <= _MAJOR_BLOCK_MAX_GAP_MM + 0.2
+
+    def test_preserves_existing_compact_transition_when_already_ordered(self) -> None:
+        bl = _bl_with_roles(
+            {
+                "U1": BlockRole.OPAMP_CORE,
+                "C6": BlockRole.INTERSTAGE,
+                "RBUF": BlockRole.BUFFER_STAGE,
+                "COUT": BlockRole.OUTPUT_CONDITIONING,
+                "JOUT": BlockRole.OUTPUT,
+            }
+        )
+        positions = {
+            "U1": (130.0, 120.0, None),
+            "C6": (160.48, 120.0, None),
+            "RBUF": (190.96, 120.0, None),
+            "COUT": (221.44, 120.0, None),
+            "JOUT": (251.92, 120.0, None),
+        }
+
+        result = _snap_output_transition_subbands(positions, bl)
+
         assert result == positions
+
+
+class TestSnapMajorBlockSpacing:
+    def test_expands_undersized_core_adjacent_gaps_without_moving_core(self) -> None:
+        bl = _bl_with_roles(
+            {
+                "J1": BlockRole.INPUT,
+                "U1": BlockRole.OPAMP_CORE,
+                "R7": BlockRole.OUTPUT_CONDITIONING,
+                "J4": BlockRole.OUTPUT,
+            }
+        )
+        positions = {
+            "J1": (118.0, 120.0, None),
+            "U1": (130.0, 120.0, None),
+            "R7": (140.0, 120.0, None),
+            "J4": (170.0, 120.0, None),
+        }
+
+        result = _snap_major_block_spacing(positions, bl)
+
+        assert result["U1"] == positions["U1"], "Core anchor must stay fixed"
+        left_gap = round(result["U1"][0] - result["J1"][0], 2)
+        right_gap = round(result["R7"][0] - result["U1"][0], 2)
+        assert _MAJOR_BLOCK_MIN_GAP_MM - 0.7 <= left_gap <= _MAJOR_BLOCK_MAX_GAP_MM + 0.2
+        assert _MAJOR_BLOCK_MIN_GAP_MM - 0.7 <= right_gap <= _MAJOR_BLOCK_MAX_GAP_MM + 0.2
 
     def test_compresses_overlarge_adjacent_block_gap(self) -> None:
         bl = _bl_with_roles(
