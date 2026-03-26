@@ -754,7 +754,7 @@ For a unity-gain buffer:
 - keep the local loop very short and visually obvious.
 
 #### 2.2.3 Keep stage-local parts close
-Status: `IN PROGRESS`
+Status: `DONE`
 - Add strong constraints that:
   - `R2` hugs `U1A`,
   - `R3` hangs locally from the inverting node to ground,
@@ -768,8 +768,12 @@ Current findings:
 - `_snap_output_stage_cohesion(...)` now keeps output connectors and output-support parts in compact right-side lanes, and longer output chains can use an inner op-amp-side support lane plus an outer connector-side support lane.
 - These lane refinements are covered in `tests/unit/test_phase4_layout.py`, including explicit regressions for longer input-side and output-side chains.
 
+Current progress note:
+- Implemented two narrow, late post-layout passes in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` that enforce stage-local compactness for the buffer/output chain: `_snap_buffer_stage_direct_output_support` and `_snap_buffer_stage_output_tail_locality`.
+- Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that validate U1B buffer-row shortness and compact output-tail locality. Focused test slices and ruff checks passed during validation.
+
 #### 2.2.4 Avoid stretching feedback loops across large distances
-Status: `IN PROGRESS`
+Status: `DONE`
 - Penalize placements where feedback members are far from their op-amp unit.
 - Add explicit cost terms or hard constraints for:
   - op-amp output to feedback resistor distance,
@@ -779,6 +783,10 @@ Status: `IN PROGRESS`
 Current findings:
 - The recent snap-pipeline work deliberately preserved the existing Phase 4 rule that core feedback parts stay in the op-amp column instead of being pushed into the new input/output support lanes.
 - Focused regressions in `tests/unit/test_phase4_layout.py` still assert that feedback support remains vertically local to the op-amp body while the input/output lane refinements only affect PRECONDITIONING and OUTPUT support staging.
+
+Current progress note:
+- Reapplied explicit feedback-node shaping at the end of the final snap pipeline to ensure feedback spans remain compact after the new U1B locality passes.
+- Added a focused regression that verifies U1A feedback spans remain within tightened bounds after late-stage locality passes; helper and real-fixture runs were validated green.
 
 ---
 

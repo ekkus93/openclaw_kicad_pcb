@@ -2760,6 +2760,10 @@ def test_new_from_real_ne5532_fixture_shapes_u1a_feedback_node_like_gain_stage(
     assert r2_x < u1a_x, (
         f"Feedback node should remain on U1A's input side: R2.x={r2_x:.2f}, U1A.x={u1a_x:.2f}"
     )
+    assert u1a_x - r2_x <= 30.48, (
+        "The feedback bridge should stay close to U1A instead of stretching across the stage: "
+        f"U1A.x={u1a_x:.2f}, R2.x={r2_x:.2f}"
+    )
     assert r2_y == pytest.approx(u1a_y), (
         f"Feedback bridge should sit on U1A's stage row: R2.y={r2_y:.2f}, U1A.y={u1a_y:.2f}"
     )
@@ -2856,6 +2860,80 @@ def test_new_from_real_ne5532_fixture_keeps_stage_handoff_on_main_signal_band(
     assert positions["U1A"][0] < positions["C6"][0] <= positions["R5"][0] <= positions["U1B"][0], (
         "Interstage coupling should remain between the gain stage and the buffer stage: "
         + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("U1A", "C6", "R5", "U1B"))
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_u1b_buffer_row_short_and_obvious(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532BufferRow",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    buffer_row_refs = ("C6", "R5", "U1B", "R6")
+    buffer_row_ys = [positions[ref][1] for ref in buffer_row_refs]
+
+    assert max(buffer_row_ys) - min(buffer_row_ys) <= 7.62, (
+        "Buffer input handoff and direct output support should read as one short row: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in buffer_row_refs)
+    )
+    assert positions["C6"][0] <= positions["R5"][0] <= positions["U1B"][0] < positions["R6"][0], (
+        "U1B buffer row should read left-to-right from handoff into direct output support: "
+        + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("C6", "R5", "U1B", "R6"))
+    )
+    assert positions["R6"][0] - positions["U1B"][0] <= 30.48, (
+        "The direct U1B output element should stay close so the unity loop is visually obvious: "
+        f"U1B.x={positions['U1B'][0]:.2f}, R6.x={positions['R6'][0]:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_u1b_output_tail_compact_and_local(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532BufferTail",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    tail_refs = ("C7", "R7", "J2")
+    tail_ys = [positions[ref][1] for ref in tail_refs]
+
+    assert max(tail_ys) - min(tail_ys) <= 7.62, (
+        "The U1B output tail should read as one compact right-side chain: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in tail_refs)
+    )
+    assert min(tail_ys) > positions["R6"][1], (
+        "The output tail should stay below the fixed U1B buffer row: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in ("R6", "C7", "R7", "J2"))
+    )
+    assert positions["R6"][0] < positions["C7"][0] <= positions["R7"][0] <= positions["J2"][0], (
+        "The output tail should remain ordered to the right of R6: "
+        + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("R6", "C7", "R7", "J2"))
+    )
+    assert positions["J2"][0] - positions["R6"][0] <= 91.44, (
+        "The U1B output tail should stay local instead of stretching far right: "
+        f"R6.x={positions['R6'][0]:.2f}, J2.x={positions['J2'][0]:.2f}"
     )
 
 
