@@ -650,7 +650,7 @@ Status: `IN PROGRESS`
 
 ## 2.1 Add functional-block detection for analog schematics
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 ### Problem
 The current result is better than before but still mostly reflects generic graph layout rather than intentional analog schematic drafting.
@@ -707,7 +707,7 @@ Current findings:
 - The focused block-detection regression suite currently passes green (`python -m pytest -q tests/unit/test_block_detection.py`), so the remaining Phase 2 work is downstream placement policy rather than unfinished membership inference.
 
 #### 2.1.3 Add block-level layout constraints
-Status: `IN PROGRESS`
+Status: `DONE`
 - Place blocks in natural signal-flow order from left to right:
   - input
   - stage 1
@@ -721,6 +721,7 @@ Current findings:
 - This keeps the op-amp locality, feedback, and decoupling invariants from the earlier snap passes intact while still enforcing clearer input → core → output ordering at the block level.
 - A follow-on transition-band pass now preserves explicit downstream sub-band ordering after the later deoverlap/property-text snaps: `OPAMP_CORE → INTERSTAGE → BUFFER_STAGE → OUTPUT_CONDITIONING → OUTPUT` stays readable when space allows, and falls back to compressed but still strictly ordered bands near the right page edge.
 - Focused regression coverage now exists at both levels: helper coverage in `tests/unit/test_phase8_layout.py` for anchored core-gap normalization plus transition sub-band ordering, a full post-layout snap regression in `tests/unit/test_phase4_layout.py`, and a real-fixture managed-schematic regression in `tests/unit/test_block_detection.py` that asserts the canonical NE5532 interstage/output-conditioning chain stays between the core cluster and the output connector.
+- Final closeout validation is green across the full supporting slice: `python -m pytest -q tests/unit/test_block_detection.py tests/unit/test_phase4_layout.py tests/unit/test_phase8_layout.py tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py` passed after the split-unit cohesion/cache follow-up, so the remaining open work now moves to the op-amp-specific placement rules in Phase 2.2 rather than block-level ordering.
 
 ---
 

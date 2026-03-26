@@ -3323,6 +3323,47 @@ class TestApplyPostLayoutSnaps:
         sibling_center_x = (result["U1A"][0] + result["U1B"][0]) / 2.0
         assert result["U1P"][0] == pytest.approx(sibling_center_x)
 
+    def test_multi_stage_opamp_chain_stays_on_readable_signal_band(self) -> None:
+        """Phase 2.2: split op-amp stages should read as one horizontal analog chain."""
+        ir = _multi_stage_unit_ir()
+        block_layout = BlockLayout()
+        block_layout.add_assignment("J1", BlockRole.INPUT)
+        block_layout.add_assignment("U1A", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("C6", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("R5", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "J1": (30.48, 121.92, None),
+            "U1A": (97.79, 91.44, None),
+            "C6": (134.62, 153.67, None),
+            "R5": (134.62, 161.29, None),
+            "U1B": (171.45, 146.05, None),
+            "R6": (208.27, 168.91, None),
+            "J2": (245.11, 121.92, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        main_band_refs = ("U1A", "C6", "R5", "U1B")
+        main_band_ys = [result[ref][1] for ref in main_band_refs]
+        assert max(main_band_ys) - min(main_band_ys) <= 2.0 * _gv_mod.GRID_ROW_MM, (
+            f"Multi-stage op-amp chain should stay on one readable horizontal band: {result}"
+        )
+        assert result["U1A"][0] < result["C6"][0] <= result["R5"][0] <= result["U1B"][0], (
+            f"Interstage handoff should stay between the two op-amp stages: {result}"
+        )
+
     def test_feedback_falls_back_to_any_neighbor_non_strict(self) -> None:
         """Non-strict mode preserves fallback from IC/connector anchor to any neighbor."""
         ir = CircuitIR(
@@ -3555,6 +3596,60 @@ class TestApplyPostLayoutSnaps:
         assert result["C6"][0] == pytest.approx(ux + GRID_COL_MM)
         assert result["R2"][0] != pytest.approx(ux)
         assert result["C6"][0] != pytest.approx(ux)
+
+    def test_opamp_locality_shapes_non_inverting_feedback_node(self) -> None:
+        """Bridge and shunt feedback parts should read like a gain-setting pair."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="RFB", symbol="Device:R", value="47k"),
+                ComponentIR(ref="RG", symbol="Device:R", value="4.7k"),
+            ],
+            nets=[
+                NetIR(
+                    name="INV",
+                    pins=[
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="RFB", pin="1"),
+                        PinRefIR(ref="RG", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="OUT",
+                    pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="RFB", pin="2")],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="RG", pin="2")]),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("RFB", BlockRole.FEEDBACK)
+        block_layout.add_assignment("RG", BlockRole.FEEDBACK)
+
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "RFB": (132.0, 88.0, None),
+            "RG": (140.0, 136.0, None),
+        }
+
+        result = _snap_opamp_locality(
+            positions,
+            ir,
+            annotations={
+                "RFB": ComponentAnnotation(feedback=True),
+                "RG": ComponentAnnotation(feedback=True),
+            },
+            context=_OpAmpLocalityContext(decoupling_map={}, block_layout=block_layout),
+        )
+
+        ux, uy, _ = result["U1"]
+        target_x = ux - GRID_COL_MM / 2.0
+        assert result["RFB"][0] == pytest.approx(target_x)
+        assert result["RG"][0] == pytest.approx(target_x)
+        assert result["RFB"][1] == pytest.approx(uy)
+        assert result["RG"][1] == pytest.approx(uy + _gv_mod.GRID_ROW_MM)
 
     def test_opamp_local_rules_input_output_feedback_decoupling(self) -> None:
         """Phase 4.1: op-amp neighborhood should stage local roles clearly."""

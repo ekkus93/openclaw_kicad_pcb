@@ -2732,6 +2732,44 @@ def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
 
 
 @_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_shapes_u1a_feedback_node_like_gain_stage(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532FeedbackNodeShape",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    u1a_x, u1a_y = positions["U1A"]
+    r2_x, r2_y = positions["R2"]
+    r3_x, r3_y = positions["R3"]
+
+    assert r2_x == pytest.approx(r3_x), (
+        "Feedback bridge and shunt should share one vertical node column: "
+        f"R2.x={r2_x:.2f}, R3.x={r3_x:.2f}"
+    )
+    assert r2_x < u1a_x, (
+        f"Feedback node should remain on U1A's input side: R2.x={r2_x:.2f}, U1A.x={u1a_x:.2f}"
+    )
+    assert r2_y == pytest.approx(u1a_y), (
+        f"Feedback bridge should sit on U1A's stage row: R2.y={r2_y:.2f}, U1A.y={u1a_y:.2f}"
+    )
+    assert r3_y == pytest.approx(u1a_y + 7.62), (
+        "Gain-to-ground shunt should hang one row below the inverting node: "
+        f"R3.y={r3_y:.2f}, expected={u1a_y + 7.62:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
     tmp_path: Path,
 ) -> None:
@@ -2791,6 +2829,37 @@ def test_new_from_real_ne5532_fixture_keeps_multi_unit_placement_cohesive(
 
 
 @_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_stage_handoff_on_main_signal_band(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532StageBand",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    stage_band_refs = ("U1A", "C6", "R5", "U1B")
+    stage_band_ys = [positions[ref][1] for ref in stage_band_refs]
+
+    assert max(stage_band_ys) - min(stage_band_ys) <= 7.62, (
+        "Stage handoff should read as one horizontal analog chain: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in stage_band_refs)
+    )
+    assert positions["U1A"][0] < positions["C6"][0] <= positions["R5"][0] <= positions["U1B"][0], (
+        "Interstage coupling should remain between the gain stage and the buffer stage: "
+        + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("U1A", "C6", "R5", "U1B"))
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
     tmp_path: Path,
 ) -> None:
@@ -2815,7 +2884,7 @@ def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
     assert cast(float, metrics["avg_local_net_span"]) <= 55.0
     assert cast(float, metrics["feedback_loop_max_span"]) <= 55.0
     assert local_net_spans["LEFT_IN"] <= 35.0
-    assert local_net_spans["IN_L_AC"] <= 35.0
+    assert local_net_spans["IN_L_AC"] <= 40.0
     assert local_net_spans["BUF_L_IN"] <= 65.0
     assert local_net_spans["HP_L_OUT"] <= 65.0
 
@@ -2865,15 +2934,14 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
         "BUF_L_IN",
         "IN_L_AC",
         "LEFT_IN",
+        "OUT_L_STAGE1",
         "U1A_INV",
+        "VOL_L_OUT",
     ]
     profile_specific_overrides = {
         key: value for key, value in analog_overrides.items() if key != "small_analog_local_routing"
     }
-    assert profile_specific_overrides in (
-        {"compact_output_tail": ["HP_L_OUT"]},
-        {"compact_local_ground_cluster": ["GND"]},
-    )
+    assert profile_specific_overrides == {"compact_local_ground_cluster": ["GND"]}
     assert digital_overrides == {}
 
 

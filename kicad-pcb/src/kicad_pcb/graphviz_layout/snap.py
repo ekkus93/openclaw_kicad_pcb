@@ -742,6 +742,114 @@ def _is_output_local_loop_role(role: BlockRole | None) -> bool:
     return role in {BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE} or is_output_like_role(role)
 
 
+def _feedback_net_membership(
+    ir: CircuitIR,
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """Return component/net membership maps used by feedback-node shaping."""
+
+    ref_to_nets: dict[str, set[str]] = defaultdict(set)
+    refs_by_net: dict[str, set[str]] = {}
+    for net in ir.nets:
+        net_refs = {pin.ref for pin in net.pins}
+        refs_by_net[net.name] = net_refs
+        for ref in net_refs:
+            ref_to_nets[ref].add(net.name)
+    return ref_to_nets, refs_by_net
+
+
+def _non_inverting_feedback_pair(
+    ic_ref: str,
+    feedback_refs: list[str],
+    *,
+    ref_to_nets: Mapping[str, set[str]],
+    refs_by_net: Mapping[str, set[str]],
+) -> tuple[str, str] | None:
+    """Return ``(bridge_ref, shunt_ref)`` for a canonical two-part gain node.
+
+    The target pattern is a shared signal net that connects the op-amp to two
+    feedback parts, where exactly one of those parts also connects to ground.
+    That corresponds to a typical non-inverting gain stage with a bridge
+    resistor back from the output and a shunt resistor down to ground.
+    """
+
+    net_anchor_refs = {ic_ref}
+    base_ref = _multi_unit_base_ref(ic_ref)
+    if base_ref is not None:
+        net_anchor_refs.add(base_ref)
+    candidate_feedback_refs = {ref for ref in feedback_refs if ref in ref_to_nets}
+    if len(candidate_feedback_refs) < 2:
+        return None
+
+    candidates: list[tuple[int, str, str, str]] = []
+    for net_name, net_refs in refs_by_net.items():
+        if not (net_anchor_refs & net_refs) or _is_power_net(net_name):
+            continue
+
+        shared_feedback_refs = sorted(candidate_feedback_refs & net_refs)
+        if len(shared_feedback_refs) != 2:
+            continue
+
+        grounded_feedback_refs = [
+            ref
+            for ref in shared_feedback_refs
+            if any(
+                _is_ground_like_name(other_net)
+                for other_net in ref_to_nets.get(ref, set())
+                if other_net != net_name
+            )
+        ]
+        if len(grounded_feedback_refs) != 1:
+            continue
+
+        shunt_ref = grounded_feedback_refs[0]
+        bridge_ref = next(ref for ref in shared_feedback_refs if ref != shunt_ref)
+        if not any(
+            not _is_power_net(other_net)
+            for other_net in ref_to_nets.get(bridge_ref, set())
+            if other_net != net_name
+        ):
+            continue
+
+        candidates.append((len(net_refs), net_name, bridge_ref, shunt_ref))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: (item[0], item[1], item[2], item[3]))
+    _member_count, _net_name, bridge_ref, shunt_ref = candidates[0]
+    return bridge_ref, shunt_ref
+
+
+def _place_non_inverting_feedback_pair(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    *,
+    ic_ref: str,
+    bridge_ref: str,
+    shunt_ref: str,
+    reserved_y: set[float] | frozenset[float] = frozenset(),
+) -> tuple[dict[str, tuple[float, float, float | None]], set[str]]:
+    """Place a bridge/shunt feedback pair as a readable non-inverting node."""
+
+    if ic_ref not in positions or bridge_ref not in positions or shunt_ref not in positions:
+        return dict(positions), set()
+
+    result = dict(positions)
+    ic_x, ic_y, _ = result[ic_ref]
+    lane_x = round(ic_x - 0.5 * _GRID_COL_MM, 2)
+    bridge_y = round(ic_y, 2)
+    shunt_y = round(ic_y + GRID_ROW_MM, 2)
+
+    while bridge_y in reserved_y or shunt_y in reserved_y:
+        bridge_y = round(bridge_y + GRID_ROW_MM, 2)
+        shunt_y = round(shunt_y + GRID_ROW_MM, 2)
+
+    _bridge_x, _bridge_old_y, bridge_rot = result[bridge_ref]
+    _shunt_x, _shunt_old_y, shunt_rot = result[shunt_ref]
+    result[bridge_ref] = (lane_x, bridge_y, bridge_rot)
+    result[shunt_ref] = (lane_x, shunt_y, shunt_rot)
+    return result, {bridge_ref, shunt_ref}
+
+
 def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
     positions: Mapping[str, tuple[float, float, float | None]],
     ir: CircuitIR,
@@ -767,6 +875,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
     result = dict(positions)
     adjacency = _build_signal_adjacency(ir)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
 
     ic_refs = sorted(ref for ref in result if _is_ic_ref(ref))
     if not ic_refs:
@@ -914,11 +1023,31 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
         # Keep feedback parts near the op-amp but in a distinct band below
         # the IC centerline, and avoid decoupling slots.
-        for idx, ref in enumerate(feedback_like):
+        placed_feedback_refs: set[str] = set()
+        feedback_pair = _non_inverting_feedback_pair(
+            ic_ref,
+            feedback_like,
+            ref_to_nets=ref_to_nets,
+            refs_by_net=refs_by_net,
+        )
+        used_feedback_y = set(reserved_decoupling_y)
+        if feedback_pair is not None:
+            bridge_ref, shunt_ref = feedback_pair
+            result, placed_feedback_refs = _place_non_inverting_feedback_pair(
+                result,
+                ic_ref=ic_ref,
+                bridge_ref=bridge_ref,
+                shunt_ref=shunt_ref,
+                reserved_y=used_feedback_y,
+            )
+            used_feedback_y.update(result[ref][1] for ref in placed_feedback_refs)
+
+        remaining_feedback = [ref for ref in feedback_like if ref not in placed_feedback_refs]
+        for idx, ref in enumerate(remaining_feedback):
             _x, _y, rot = result[ref]
-            level = idx + 1
+            level = 1
             fb_y = round(ic_y + level * GRID_ROW_MM, 2)
-            while fb_y in reserved_decoupling_y:
+            while fb_y in used_feedback_y:
                 level += 1
                 fb_y = round(ic_y + level * GRID_ROW_MM, 2)
             fb_x = round(ic_x, 2)
@@ -927,6 +1056,7 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
                 side_sign = -1 if idx % 2 == 0 else 1
                 fb_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
             result[ref] = (fb_x, fb_y, rot)
+            used_feedback_y.add(fb_y)
 
     return result
 
@@ -2963,13 +3093,39 @@ def _snap_major_signal_axis(
         return dict(positions)
 
     input_refs, core_refs, output_refs = _major_signal_axis_refs(positions, block_layout)
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    opamp_anchor_refs = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.OPAMP_CORE
+    )
+    core_chain_refs = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#")
+        and role_by_ref.get(ref)
+        in {
+            BlockRole.OPAMP_CORE,
+            BlockRole.INTERSTAGE,
+            BlockRole.BUFFER_STAGE,
+        }
+    )
     stage_groups = [group for group in (input_refs, core_refs, output_refs) if group]
     if len(stage_groups) < 2:
         return dict(positions)
 
     if core_refs:
-        axis_seed = sum(positions[ref][1] for ref in core_refs) / len(core_refs)
-        major_refs = sorted({ref for group in (input_refs, output_refs) for ref in group})
+        has_transition_chain = any(
+            role_by_ref.get(ref) in {BlockRole.INTERSTAGE, BlockRole.BUFFER_STAGE}
+            for ref in core_chain_refs
+        )
+        if opamp_anchor_refs and has_transition_chain:
+            axis_seed = sum(positions[ref][1] for ref in opamp_anchor_refs) / len(opamp_anchor_refs)
+            major_refs = core_chain_refs
+        else:
+            axis_seed = sum(positions[ref][1] for ref in core_refs) / len(core_refs)
+            major_refs = sorted({ref for group in (input_refs, output_refs) for ref in group})
+            major_refs = sorted(set(major_refs) | set(core_chain_refs))
     else:
         connector_refs = [ref for ref in (*input_refs, *output_refs) if _is_connector_ref(ref)]
         if connector_refs:
@@ -2999,6 +3155,162 @@ def _snap_major_signal_axis(
         len(input_refs),
         len(output_refs),
     )
+    return result
+
+
+def _snap_feedback_clusters_to_shifted_cores(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    annotations: Mapping[str, _ComponentAnnotation],
+    *,
+    block_layout: BlockLayout | None = None,
+    power_unit_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep feedback parts vertically local after the core chain shifts.
+
+    ``_snap_major_signal_axis`` can move the op-amp and buffer-stage refs onto a
+    cleaner horizontal band. Feedback parts intentionally stay off that band,
+    but they still need to remain within a short local y-span of their nearest
+    op-amp stage.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+
+    def _effective_role(ref: str) -> BlockRole | None:
+        direct_role = role_by_ref.get(ref)
+        if direct_role is not None:
+            return direct_role
+        base_ref = _multi_unit_base_ref(ref)
+        if base_ref is None:
+            return None
+        return role_by_ref.get(base_ref)
+
+    result = dict(positions)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+    ic_refs = sorted(
+        ref
+        for ref in result
+        if _is_ic_ref(ref)
+        and ref not in power_unit_refs
+        and _effective_role(ref) in {BlockRole.OPAMP_CORE, BlockRole.BUFFER_STAGE}
+    )
+    if not ic_refs:
+        return result
+
+    for ic_ref in ic_refs:
+        ic_x, ic_y, _ = result[ic_ref]
+        feedback_refs = sorted(
+            ref
+            for ref in result
+            if not _is_ic_ref(ref)
+            and (
+                bool(annotations.get(ref) and annotations[ref].feedback)
+                or role_by_ref.get(ref) == BlockRole.FEEDBACK
+            )
+            and abs(result[ref][0] - ic_x) <= 3.0 * _GRID_COL_MM
+        )
+
+        placed_feedback_refs: set[str] = set()
+        feedback_pair = _non_inverting_feedback_pair(
+            ic_ref,
+            feedback_refs,
+            ref_to_nets=ref_to_nets,
+            refs_by_net=refs_by_net,
+        )
+        used_feedback_y: set[float] = set()
+        if feedback_pair is not None:
+            bridge_ref, shunt_ref = feedback_pair
+            result, placed_feedback_refs = _place_non_inverting_feedback_pair(
+                result,
+                ic_ref=ic_ref,
+                bridge_ref=bridge_ref,
+                shunt_ref=shunt_ref,
+            )
+            used_feedback_y.update(result[ref][1] for ref in placed_feedback_refs)
+
+        remaining_feedback = [ref for ref in feedback_refs if ref not in placed_feedback_refs]
+        for idx, ref in enumerate(remaining_feedback):
+            x, _y, rot = result[ref]
+            level = 1
+            target_y = round(ic_y + level * GRID_ROW_MM, 2)
+            while target_y in used_feedback_y:
+                level += 1
+                target_y = round(ic_y + level * GRID_ROW_MM, 2)
+            result[ref] = (x, target_y, rot)
+            used_feedback_y.add(target_y)
+
+    return result
+
+
+def _snap_explicit_non_inverting_feedback_nodes(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    annotations: Mapping[str, _ComponentAnnotation],
+    *,
+    block_layout: BlockLayout | None = None,
+    power_unit_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Finalize readable bridge/shunt feedback-node shapes near placed op-amp units.
+
+    This pass runs late in the pipeline after deoverlap and stage compaction.
+    It only considers feedback refs that are already physically local to each
+    placed IC unit, which avoids ambiguity between split signal units and power
+    units that share the same base ref in the circuit IR.
+    """
+
+    if not positions:
+        return dict(positions)
+
+    role_by_ref: dict[str, BlockRole] = {}
+    if block_layout is not None:
+        role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+
+    def _effective_role(ref: str) -> BlockRole | None:
+        direct_role = role_by_ref.get(ref)
+        if direct_role is not None:
+            return direct_role
+        base_ref = _multi_unit_base_ref(ref)
+        if base_ref is None:
+            return None
+        return role_by_ref.get(base_ref)
+
+    def _is_feedback_ref(ref: str) -> bool:
+        return bool(annotations.get(ref) and annotations[ref].feedback) or (
+            _effective_role(ref) == BlockRole.FEEDBACK
+        )
+
+    result = dict(positions)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+    for ic_ref in sorted(ref for ref in result if _is_ic_ref(ref) and ref not in power_unit_refs):
+        ic_x, ic_y, _ = result[ic_ref]
+        nearby_refs = [
+            ref
+            for ref in result
+            if not _is_ic_ref(ref)
+            and abs(result[ref][0] - ic_x) <= 1.25 * _GRID_COL_MM
+            and abs(result[ref][1] - ic_y) <= 4.0 * GRID_ROW_MM
+        ]
+        if not any(_is_feedback_ref(ref) for ref in nearby_refs):
+            continue
+        feedback_pair = _non_inverting_feedback_pair(
+            ic_ref,
+            nearby_refs,
+            ref_to_nets=ref_to_nets,
+            refs_by_net=refs_by_net,
+        )
+        if feedback_pair is None:
+            continue
+        bridge_ref, shunt_ref = feedback_pair
+        result, _placed_feedback_refs = _place_non_inverting_feedback_pair(
+            result,
+            ic_ref=ic_ref,
+            bridge_ref=bridge_ref,
+            shunt_ref=shunt_ref,
+        )
+
     return result
 
 
@@ -3270,6 +3582,64 @@ def _snap_output_transition_subbands(
     return result
 
 
+def _snap_interstage_handoff_between_stages(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep interstage coupling parts between the gain stage and buffer stage.
+
+    Late multi-unit sibling cohesion can legitimately pull a ``BUFFER_STAGE``
+    unit back toward its ``OPAMP_CORE`` sibling. When that happens, the generic
+    downstream sub-band pass may no longer leave ``INTERSTAGE`` parts in the
+    handoff gap. This narrow late pass preserves the readable
+    ``OPAMP_CORE -> INTERSTAGE -> BUFFER_STAGE`` x-order without moving the
+    split op-amp units again.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    core_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.OPAMP_CORE
+    )
+    interstage_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.INTERSTAGE
+    )
+    buffer_group = sorted(
+        ref
+        for ref in positions
+        if not ref.startswith("#") and role_by_ref.get(ref) == BlockRole.BUFFER_STAGE
+    )
+    if not core_group or not interstage_group or not buffer_group:
+        return dict(positions)
+
+    core_end = max(positions[ref][0] for ref in core_group)
+    buffer_start = min(positions[ref][0] for ref in buffer_group)
+    interstage_start = min(positions[ref][0] for ref in interstage_group)
+    interstage_end = max(positions[ref][0] for ref in interstage_group)
+    if core_end - 0.01 <= interstage_start and interstage_end <= buffer_start + 0.01:
+        return dict(positions)
+
+    interstage_width = round(interstage_end - interstage_start, 2)
+    left_bound = core_end
+    right_bound = buffer_start - interstage_width
+    if right_bound < left_bound:
+        target_start = left_bound
+    else:
+        target_start = left_bound + (right_bound - left_bound) / 2.0
+    target_start = round(round(target_start / 1.27) * 1.27, 2)
+    delta_x = round(target_start - interstage_start, 2)
+    if abs(delta_x) < 0.01:
+        return dict(positions)
+
+    return _shift_refs_x(positions, interstage_group, delta_x)
+
+
 def _snap_power_block_cohesion(
     positions: Mapping[str, tuple[float, float, float | None]],
     block_layout: BlockLayout | None = None,
@@ -3475,7 +3845,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         IC siblings into adjacent x-lanes and re-center any power-only unit
         over that signal-unit cluster so the final coordinates preserve the
         intended grouping after later locality/composition passes.
-    7m. :func:`_apply_property_text_spacing` — reserve extra vertical space
+    7m. :func:`_snap_interstage_handoff_between_stages` — keep ``INTERSTAGE``
+        refs between the main gain stage and any buffer stage after late
+        sibling compaction re-tightens split op-amp units.
+    7n. :func:`_apply_property_text_spacing` — reserve extra vertical space
         for components that share the same or a nearby x-lane so visible
         ``Reference``/``Value`` text does not collapse onto nearby symbol
         bodies or short local wire corridors.
@@ -3542,6 +3915,14 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
     result = _snap_major_signal_axis(result, block_layout)
+    result = _snap_feedback_clusters_to_shifted_cores(
+        result,
+        ir,
+        annotations,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
     result = _snap_major_block_spacing(result, block_layout)
     result = _snap_output_transition_subbands(result, block_layout)
     result = _snap_power_block_cohesion(result, block_layout, decoupling_map=decoupling_map)
@@ -3596,6 +3977,26 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         result,
         power_unit_refs=power_unit_refs,
         unit_sibling_pairs=unit_sibling_pairs,
+    )
+    result = _snap_interstage_handoff_between_stages(result, block_layout)
+    result = _snap_feedback_clusters_to_shifted_cores(
+        result,
+        ir,
+        annotations,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = heuristic_policy.apply_input_stage_cohesion(
+        result,
+        ir,
+        block_layout=block_layout,
+    )
+    result = _snap_explicit_non_inverting_feedback_nodes(
+        result,
+        ir,
+        annotations,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
     )
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result

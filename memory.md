@@ -1,5 +1,25 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-26T08:30:26Z - GPT-5.4 - Fixed two stale layout regression tests after the Phase 2.2 placement changes
+
+- Updated `tests/unit/test_phase1_regression_path.py` so the debug-dump guardrail now checks the mocked raw Graphviz coordinates in `raw_graphviz_positions` and only asserts ordering/consistency on the post-snap result, because the current layout pipeline intentionally compacts the tiny input stage and no longer preserves the mocked connector x-coordinate in the final layout.
+- Updated `tests/unit/test_phase7_regression_guardrails.py` so the stage-2 neighborhood guardrail excludes the `U1P` power unit from the signal-stage anchor choice and treats `C6`/`R5` as an interstage handoff between `U1A` and `U1B`, while still requiring the real output tail (`C7`, `R6`, `R7`, `J2`) to stay to the right of stage 2. Validation passed with `ruff check tests/unit/test_phase1_regression_path.py tests/unit/test_phase7_regression_guardrails.py` and a full `pytest tests/unit -q` run.
+
+## 2026-03-26T08:12:49Z - GPT-5.4 - Refined Phase 2.2.1 with an explicit U1A bridge-and-shunt feedback node
+
+- Added a narrower Phase 2.2.1 readability rule in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` so canonical non-inverting gain nodes now read like a hand-drawn stage instead of a generic compact feedback cluster: `_non_inverting_feedback_pair(...)` detects a two-part op-amp feedback node with one grounded shunt, `_place_non_inverting_feedback_pair(...)` places that bridge/shunt pair in a dedicated lane just left of the op-amp with the bridge on the op-amp row and the shunt one row below, and `_snap_explicit_non_inverting_feedback_nodes(...)` reapplies that shape late using physically local refs so it works on both unsplit source IR and split generation IR.
+- Added focused regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` for the canonical bridge-over-shunt layout and the real NE5532 `U1A` stage, then revalidated with `ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py tests/unit/test_netlist_commands.py` plus `pytest -q tests/unit/test_phase4_layout.py tests/unit/test_phase8_layout.py tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py`.
+
+## 2026-03-26T07:29:27Z - GPT-5.4 - Started Phase 2.2 with op-amp stage-band shaping for the real NE5532 path
+
+- Added a first Phase 2.2 layout slice in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` that keeps split op-amp stage chains readable without reopening the Phase 2.1 sibling-cohesion bug: `_snap_major_signal_axis(...)` now anchors multi-stage analog chains to the `OPAMP_CORE` row and aligns the `INTERSTAGE`/`BUFFER_STAGE` chain to that band, `_snap_interstage_handoff_between_stages(...)` keeps `INTERSTAGE` refs between the gain stage and buffer stage after late sibling compaction, `_snap_feedback_clusters_to_shifted_cores(...)` keeps feedback parts vertically local to signal-stage units only, and the final pipeline now re-applies input-stage cohesion after late spacing so the left input chain stays compact.
+- Added focused Phase 2.2 regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` for stage-band readability in both the synthetic split-unit case and the real NE5532 command path, then revalidated with `ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py tests/unit/test_netlist_commands.py` plus `pytest -q tests/unit/test_phase4_layout.py tests/unit/test_phase8_layout.py tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py`.
+
+## 2026-03-26T05:34:39Z - GPT-5.4 - Closed Phase 2.1 after the block-level ordering suite went green
+
+- Marked `code_review/SCHEMATIC_FIXES1_TODO.md` section `2.1 Add functional-block detection for analog schematics` and child item `2.1.3 Add block-level layout constraints` as `DONE` because the full supporting validation slice passed green: `python -m pytest -q tests/unit/test_block_detection.py tests/unit/test_phase4_layout.py tests/unit/test_phase8_layout.py tests/unit/test_netlist_commands.py tests/unit/test_phase10_validation.py`.
+- Phase 2.1 now closes with three shipped pieces: graph-motif block membership, core-anchored major input/core/output spacing, and explicit downstream transition ordering that coexists with split-unit sibling cohesion. The next open roadmap work is Phase 2.2 op-amp-specific placement rules.
+
 ## 2026-03-26T05:20:34Z - GPT-5.4 - Fixed the real NE5532 split-unit cohesion regression in the command path
 
 - Root cause was twofold: the late `_snap_output_transition_subbands(...)` pass needed a final `_snap_multi_unit_sibling_cohesion(...)` re-application so split IC siblings are not widened again at the end of the snap pipeline, and the Graphviz layout cache needed a revision bump because the command path was reusing stale pre-fix final positions keyed only to the old layout algorithm revision.
