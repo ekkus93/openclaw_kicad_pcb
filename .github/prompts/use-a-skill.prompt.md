@@ -1,3 +1,10 @@
+---
+name: use-a-skill
+description: Choose and apply the most relevant shared skill for a task
+model: GPT-5.4
+agent: ask
+---
+
 Use the shared skills library for this task.
 
 First read:
