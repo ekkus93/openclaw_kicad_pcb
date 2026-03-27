@@ -1,8 +1,7 @@
 ---
 name: lint-test
 description: Run lint and tests for the current repository only
-model: GPT-5.4 mini
-agent: ask
+agent: agent
 ---
 
 Run lint and tests for the current repository only.
