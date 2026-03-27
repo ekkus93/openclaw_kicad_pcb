@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 
+from kicad_pcb.block_detection import BlockLayout, BlockRole
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._sch_apply import SCHEMATIC_HEURISTIC_PROFILES
 from kicad_pcb.router import (
@@ -791,6 +792,78 @@ def test_small_analog_local_routing_prefers_chain_over_compact_lane() -> None:
         endpoints,
         inferred_plan=lane_plan,
     )
+
+
+def test_small_analog_local_routing_draws_buffer_follower_as_local_loop_plus_branch() -> None:
+    """Analog mode should draw a buffer follower net as a compact local loop."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1B", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="R6", symbol="Device:R", value="47"),
+        ],
+        nets=[
+            NetIR(
+                name="OUT_L_STAGE2_RAW",
+                pins=[
+                    PinRefIR(ref="U1B", pin="6"),
+                    PinRefIR(ref="U1B", pin="7"),
+                    PinRefIR(ref="R6", pin="1"),
+                ],
+            ),
+        ],
+    )
+    pin_endpoints = {
+        ("U1B", "6"): (140.0, 100.0, 0.0),
+        ("U1B", "7"): (150.0, 100.0, 180.0),
+        ("R6", "1"): (170.0, 100.0, 0.0),
+    }
+    block_layout = BlockLayout()
+    block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+    block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+
+    analog_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        block_layout=block_layout,
+        heuristic_policy=SCHEMATIC_HEURISTIC_PROFILES["analog_audio"].routing_policy,
+    )
+    digital_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        block_layout=block_layout,
+        heuristic_policy=SCHEMATIC_HEURISTIC_PROFILES["generic_digital"].routing_policy,
+    )
+
+    analog_choice = analog_routing.route_decisions[0]
+    digital_choice = digital_routing.route_decisions[0]
+    analog_segments = {
+        (
+            round(seg.x1, 2),
+            round(seg.y1, 2),
+            round(seg.x2, 2),
+            round(seg.y2, 2),
+        )
+        for seg in analog_routing.wires
+    }
+    digital_segments = {
+        (
+            round(seg.x1, 2),
+            round(seg.y1, 2),
+            round(seg.x2, 2),
+            round(seg.y2, 2),
+        )
+        for seg in digital_routing.wires
+    }
+
+    assert analog_choice.strategy == "chain"
+    assert analog_choice.heuristic_override == "small_analog_local_routing"
+    assert digital_choice.heuristic_override is None
+    assert (134.92, 95.25, 155.08, 95.25) in analog_segments, analog_routing.wires
+    assert (134.92, 100.0, 134.92, 95.25) in analog_segments, analog_routing.wires
+    assert (155.08, 95.25, 155.08, 100.0) in analog_segments, analog_routing.wires
+    assert (170.0, 100.0, 155.08, 100.0) in analog_segments, analog_routing.wires
+    assert (134.92, 95.25, 155.08, 95.25) not in digital_segments, digital_routing.wires
 
 
 def test_named_routing_profiles_diverge_on_small_analog_input_chain_fixture() -> None:

@@ -20,7 +20,7 @@ from kicad_pcb.commands.netlist import (
     resolve_schematic_paths,
 )
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.layout import compute_orientations
+from kicad_pcb.layout import GRID_COL_MM, compute_orientations
 from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
@@ -2850,15 +2850,17 @@ def test_new_from_real_ne5532_fixture_keeps_stage_handoff_on_main_signal_band(
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
     positions = _symbol_positions(managed_doc)
 
-    stage_band_refs = ("U1A", "C6", "R5", "U1B")
-    stage_band_ys = [positions[ref][1] for ref in stage_band_refs]
-
-    assert max(stage_band_ys) - min(stage_band_ys) <= 7.62, (
-        "Stage handoff should read as one horizontal analog chain: "
-        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in stage_band_refs)
+    assert positions["C6"][1] == pytest.approx(positions["U1A"][1]), (
+        "The stage handoff bridge should stay on the main gain-to-buffer row: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in ("U1A", "C6", "U1B"))
     )
-    assert positions["U1A"][0] < positions["C6"][0] <= positions["R5"][0] <= positions["U1B"][0], (
-        "Interstage coupling should remain between the gain stage and the buffer stage: "
+    assert positions["R5"][1] == pytest.approx(positions["U1B"][1] + 7.62), (
+        "The local buffer shunt should hang one row below the U1B input node: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in ("C6", "R5", "U1B"))
+    )
+    assert positions["U1A"][0] <= positions["C6"][0] == positions["R5"][0] < positions["U1B"][0], (
+        "The bridge-plus-shunt input node should remain between the gain "
+        "stage and the buffer stage: "
         + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("U1A", "C6", "R5", "U1B"))
     )
 
@@ -2881,20 +2883,121 @@ def test_new_from_real_ne5532_fixture_keeps_u1b_buffer_row_short_and_obvious(
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
     positions = _symbol_positions(managed_doc)
 
-    buffer_row_refs = ("C6", "R5", "U1B", "R6")
-    buffer_row_ys = [positions[ref][1] for ref in buffer_row_refs]
-
-    assert max(buffer_row_ys) - min(buffer_row_ys) <= 7.62, (
-        "Buffer input handoff and direct output support should read as one short row: "
-        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in buffer_row_refs)
+    assert positions["C6"][1] == pytest.approx(positions["U1B"][1]), (
+        "The incoming handoff bridge should stay on the U1B stage row: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in ("C6", "U1B", "R6"))
     )
-    assert positions["C6"][0] <= positions["R5"][0] <= positions["U1B"][0] < positions["R6"][0], (
-        "U1B buffer row should read left-to-right from handoff into direct output support: "
+    assert positions["R5"][1] == pytest.approx(positions["U1B"][1] + 7.62), (
+        "The local shunt should sit below the short U1B buffer row instead of flattening onto it: "
+        + ", ".join(f"{ref}.y={positions[ref][1]:.2f}" for ref in ("C6", "R5", "U1B", "R6"))
+    )
+    assert positions["C6"][0] == positions["R5"][0] < positions["U1B"][0] < positions["R6"][0], (
+        "U1B should still read left-to-right from the input node into direct output support: "
         + ", ".join(f"{ref}.x={positions[ref][0]:.2f}" for ref in ("C6", "R5", "U1B", "R6"))
     )
     assert positions["R6"][0] - positions["U1B"][0] <= 30.48, (
         "The direct U1B output element should stay close so the unity loop is visually obvious: "
         f"U1B.x={positions['U1B'][0]:.2f}, R6.x={positions['R6'][0]:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_draws_u1b_feedback_as_compact_local_loop(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532BufferFeedbackLoop",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+            heuristic_profile="analog_audio",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+    segments = _collect_wire_segments(managed_doc.root.items)
+
+    u1b_x, u1b_y = positions["U1B"]
+    r6_x, _r6_y = positions["R6"]
+
+    horizontal_candidates: list[tuple[float, float, float]] = []
+    vertical_segments: list[tuple[float, float, float]] = []
+    for x1, y1, x2, y2 in segments:
+        if math.isclose(y1, y2, abs_tol=0.05):
+            x_min = round(min(x1, x2), 2)
+            x_max = round(max(x1, x2), 2)
+            y = round(y1, 2)
+            if (
+                y < round(u1b_y, 2)
+                and x_min >= round(u1b_x + 15.0, 2)
+                and x_max <= round(r6_x, 2)
+                and (x_max - x_min) <= 20.32
+            ):
+                horizontal_candidates.append((x_min, x_max, y))
+        elif math.isclose(x1, x2, abs_tol=0.05):
+            x = round(x1, 2)
+            y_min = round(min(y1, y2), 2)
+            y_max = round(max(y1, y2), 2)
+            vertical_segments.append((x, y_min, y_max))
+
+    matching_loop = None
+    for x_min, x_max, y in horizontal_candidates:
+        if any(
+            math.isclose(vertical_x, x_max, abs_tol=0.05)
+            and vertical_y_min <= y + 0.05
+            and vertical_y_max >= round(u1b_y, 2) - 0.05
+            for vertical_x, vertical_y_min, vertical_y_max in vertical_segments
+        ):
+            matching_loop = (x_min, x_max, y)
+            break
+
+    assert matching_loop is not None, (
+        "The U1B output-to-inverting feedback should draw as a compact local "
+        "jog before the R6 branch: "
+        f"U1B={positions['U1B']}, R6={positions['R6']}, segments={segments}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_shapes_u1b_input_as_bridge_plus_shunt_node(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532BufferInputNode",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    u1b_x, u1b_y = positions["U1B"]
+    c6_x, c6_y = positions["C6"]
+    r5_x, r5_y = positions["R5"]
+
+    assert c6_x == pytest.approx(r5_x), (
+        "The U1B handoff bridge and shunt should share one input-node column: "
+        f"C6={positions['C6']}, R5={positions['R5']}, U1B={positions['U1B']}"
+    )
+    assert u1b_x - c6_x == pytest.approx(GRID_COL_MM), (
+        "The U1B input-node column should sit one lane left of the buffer stage: "
+        f"C6.x={c6_x:.2f}, U1B.x={u1b_x:.2f}"
+    )
+    assert c6_y == pytest.approx(u1b_y), (
+        f"The incoming handoff should stay on the U1B stage row: C6.y={c6_y:.2f}, U1B.y={u1b_y:.2f}"
+    )
+    assert r5_y == pytest.approx(u1b_y + 7.62), (
+        "The local shunt support should hang one row below the U1B input node: "
+        f"R5.y={r5_y:.2f}, U1B.y={u1b_y:.2f}"
     )
 
 
@@ -3075,7 +3178,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
         "enable_compact_local_ground_clusters": False,
         "enable_compact_output_tails": False,
     }
-    assert power_overrides == {}
+    assert power_overrides == {"compact_local_ground_cluster": ["GND"]}
     assert digital_overrides == {}
 
 

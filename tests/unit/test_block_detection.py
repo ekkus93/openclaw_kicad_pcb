@@ -1149,9 +1149,10 @@ def test_regressed_ne5532_fixture_keeps_major_blocks_in_left_to_right_order(tmp_
     assert rightmost_input_x < core_min_x, (
         f"Input block should stay left of the core stage: {rightmost_input_x} !< {core_min_x}"
     )
-    assert core_min_x < interstage_min_x, (
-        "Interstage handoff should stay to the right of the left edge of the core cluster: "
-        f"{core_min_x} !< {interstage_min_x}"
+    assert core_min_x <= interstage_min_x, (
+        "Interstage handoff may share the core cluster's left edge, but should "
+        "not drift left of it: "
+        f"{core_min_x} !<= {interstage_min_x}"
     )
     assert interstage_max_x < leftmost_output_support_x, (
         "Output-conditioning block should stay to the right of the interstage handoff: "
