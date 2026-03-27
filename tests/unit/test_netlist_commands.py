@@ -20,6 +20,7 @@ from kicad_pcb.commands.netlist import (
     resolve_schematic_paths,
 )
 from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.graphviz_layout.snap import ORIGIN_X
 from kicad_pcb.layout import GRID_COL_MM, compute_orientations
 from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.models import ProjectRef
@@ -2769,6 +2770,111 @@ def test_new_from_real_ne5532_fixture_shapes_u1a_feedback_node_like_gain_stage(
     )
     assert r3_y == pytest.approx(u1a_y + 7.62), (
         "Gain-to-ground shunt should hang one row below the inverting node: "
+        f"R3.y={r3_y:.2f}, expected={u1a_y + 7.62:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_shapes_u1a_non_inverting_input_like_gain_stage(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532NonInvertingInputNode",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    u1a_x, u1a_y = positions["U1A"]
+    rv1_x, rv1_y = positions["RV1"]
+    r4_x, r4_y = positions["R4"]
+
+    assert rv1_x == pytest.approx(r4_x), (
+        "The U1A non-inverting bridge and shunt should share one input-node column: "
+        f"RV1={positions['RV1']}, R4={positions['R4']}, U1A={positions['U1A']}"
+    )
+    assert u1a_x - rv1_x == pytest.approx(GRID_COL_MM), (
+        "The U1A non-inverting input node should sit one grid lane left of the gain stage: "
+        f"RV1.x={rv1_x:.2f}, U1A.x={u1a_x:.2f}"
+    )
+    assert rv1_y == pytest.approx(u1a_y), (
+        "The non-inverting bridge should stay on the U1A stage row: "
+        f"RV1.y={rv1_y:.2f}, U1A.y={u1a_y:.2f}"
+    )
+    assert r4_y == pytest.approx(u1a_y + 7.62), (
+        "The local shunt on the non-inverting input should hang one row below the U1A node: "
+        f"R4.y={r4_y:.2f}, expected={u1a_y + 7.62:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_u1a_upstream_input_bundle_as_left_column(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532NonInvertingInputBundle",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    u1a_x, u1a_y = positions["U1A"]
+    c5_x, c5_y = positions["C5"]
+    r1_x, r1_y = positions["R1"]
+    rv1_x, rv1_y = positions["RV1"]
+    r2_x, r2_y = positions["R2"]
+    r3_x, r3_y = positions["R3"]
+
+    assert c5_x == pytest.approx(r1_x), (
+        "The parallel upstream input bridges should share one left-side column: "
+        f"C5={positions['C5']}, R1={positions['R1']}, RV1={positions['RV1']}"
+    )
+    assert c5_x == pytest.approx(ORIGIN_X), (
+        "The upstream bridge bundle should clamp as one shared left-margin column in the "
+        "real fixture: "
+        f"C5.x={c5_x:.2f}, R1.x={r1_x:.2f}, ORIGIN_X={ORIGIN_X:.2f}"
+    )
+    assert rv1_x - c5_x >= GRID_COL_MM, (
+        "The upstream bridge bundle should still sit at least one full grid lane left of the "
+        "non-inverting input node: "
+        f"C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}"
+    )
+    assert r2_x - rv1_x == pytest.approx(GRID_COL_MM / 2.0), (
+        "The feedback node should stay between the non-inverting input node and U1A: "
+        f"RV1.x={rv1_x:.2f}, R2.x={r2_x:.2f}, U1A.x={u1a_x:.2f}"
+    )
+    assert u1a_x - r2_x == pytest.approx(GRID_COL_MM / 2.0), (
+        "U1A should complete a readable three-column gain-stage chain: "
+        f"R2.x={r2_x:.2f}, U1A.x={u1a_x:.2f}"
+    )
+    assert sorted([c5_y, r1_y]) == pytest.approx([u1a_y - 7.62, u1a_y]), (
+        "The upstream bridge bundle should occupy one compact two-row column: "
+        f"C5.y={c5_y:.2f}, R1.y={r1_y:.2f}, U1A.y={u1a_y:.2f}"
+    )
+    assert rv1_y == pytest.approx(u1a_y), (
+        "The non-inverting bridge should still sit on the U1A row after upstream bundling: "
+        f"RV1.y={rv1_y:.2f}, U1A.y={u1a_y:.2f}"
+    )
+    assert r2_y == pytest.approx(u1a_y), (
+        "The feedback bridge should remain on the U1A row after upstream bundling: "
+        f"R2.y={r2_y:.2f}, U1A.y={u1a_y:.2f}"
+    )
+    assert r3_y == pytest.approx(u1a_y + 7.62), (
+        "The gain-to-ground shunt should remain one row below the feedback node: "
         f"R3.y={r3_y:.2f}, expected={u1a_y + 7.62:.2f}"
     )
 

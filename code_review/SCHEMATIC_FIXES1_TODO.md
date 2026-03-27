@@ -746,6 +746,13 @@ For a non-inverting amplifier:
 - place feedback resistor close to the op-amp output and inverting input,
 - place gain-to-ground resistor directly below the inverting input node.
 
+Current progress note:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now adds `_snap_opamp_stage_non_inverting_input_node_shape(...)`, which detects a canonical `OPAMP_CORE` non-inverting input motif with one preconditioning bridge element and one grounded shunt element, then reapplies it late so the bridge into `U1A` stays on the stage row while the local shunt hangs one row below in the same input-node column.
+- The matcher intentionally treats a pot wiper or similar bridge element as valid even when it also touches ground, as long as the true shunt element is the ref whose only other connection is ground; this keeps the real `RV1` / `R4` / `U1A` motif readable without misclassifying the pot as the grounded shunt.
+- Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the `RV1` bridge-on-row plus `R4` shunt-below node shape for the real NE5532 gain stage. Because this late snap changes final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to invalidate stale persisted layout caches.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also adds `_snap_opamp_stage_upstream_input_bundle(...)`, plus `_opamp_stage_upstream_bundle(...)` and `_place_opamp_stage_upstream_bundle(...)`, so upstream bridge parts such as the real `C5` / `R1` pair form one compact left-hand column feeding the `RV1` / `R4` input node instead of staying on half-row offsets from the generic input-stage lane spread. The resulting readable chain is `C5/R1 -> RV1/R4 -> R2/R3 -> U1A`, with the real fixture allowed to clamp that left bundle against the page margin.
+- Added a new helper regression and a new real-fixture regression in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the full U1A gain-stage column pattern, and bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` again to `graphviz-layout-v5` because this new late pass changes final managed coordinates without changing the Graphviz DOT input.
+
 #### 2.2.2 Voltage follower / buffer layout
 Status: `IN PROGRESS`
 For a unity-gain buffer:
