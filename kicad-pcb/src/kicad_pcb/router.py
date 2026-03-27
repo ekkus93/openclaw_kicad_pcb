@@ -2051,6 +2051,81 @@ def _chain_route(
     return _simplify_wires(segs, protected_points=protected), []
 
 
+def _buffer_follower_feedback_route(
+    known: list[tuple[PinRefIR, tuple[float, float, float]]],
+    stub_ends: list[tuple[float, float]],
+    *,
+    block_layout: BlockLayout | None,
+) -> tuple[list[WireSegment], list[JunctionPoint]] | None:
+    """Route a 3-pin buffer follower net as a short local loop plus branch.
+
+    This targets the common unity-gain-buffer pattern where two pins belong to
+    the same placed ``BUFFER_STAGE`` unit and the third pin is the first
+    downstream output-support element. Rather than drawing those three points as
+    a generic left-to-right chain, the route explicitly preserves a compact
+    output-to-inverting feedback loop around the buffer stage and lets the
+    output branch leave from the output-side pin.
+    """
+
+    if block_layout is None or len(known) != 3 or len(stub_ends) != 3:
+        return None
+
+    indices_by_ref: dict[str, list[int]] = {}
+    for index, (pin_ref, _endpoint) in enumerate(known):
+        indices_by_ref.setdefault(pin_ref.ref, []).append(index)
+
+    repeated_refs = [(ref, indices) for ref, indices in indices_by_ref.items() if len(indices) == 2]
+    if len(repeated_refs) != 1 or len(indices_by_ref) != 2:
+        return None
+
+    buffer_ref, shared_indices = repeated_refs[0]
+    if block_layout.get_role(buffer_ref) != BlockRole.BUFFER_STAGE:
+        return None
+
+    downstream_index = next(index for index in range(len(known)) if index not in shared_indices)
+    downstream_ref = known[downstream_index][0].ref
+    if block_layout.get_role(downstream_ref) not in {
+        BlockRole.OUTPUT_CONDITIONING,
+        BlockRole.OUTPUT,
+    }:
+        return None
+
+    first_index, second_index = shared_indices
+    first_point = stub_ends[first_index]
+    second_point = stub_ends[second_index]
+    downstream_point = stub_ends[downstream_index]
+
+    if abs(first_point[0] - second_point[0]) <= WIRE_EXTEND_MM:
+        return None
+
+    branch_index = (
+        first_index
+        if _manhattan(*first_point, *downstream_point)
+        <= _manhattan(*second_point, *downstream_point)
+        else second_index
+    )
+    feedback_index = second_index if branch_index == first_index else first_index
+
+    branch_x, branch_y = stub_ends[branch_index]
+    feedback_x, feedback_y = stub_ends[feedback_index]
+    downstream_x, downstream_y = downstream_point
+
+    loop_y = _snap_grid(min(branch_y, feedback_y) - WIRE_EXTEND_MM)
+    if loop_y >= min(branch_y, feedback_y) - 0.05:
+        loop_y = _snap_grid(loop_y - WIRE_EXTEND_MM)
+
+    segs: list[WireSegment] = []
+    if not math.isclose(feedback_y, loop_y, abs_tol=0.01):
+        segs.append(WireSegment(feedback_x, feedback_y, feedback_x, loop_y))
+    segs.append(WireSegment(feedback_x, loop_y, branch_x, loop_y))
+    if not math.isclose(branch_y, loop_y, abs_tol=0.01):
+        segs.append(WireSegment(branch_x, loop_y, branch_x, branch_y))
+    segs.extend(_l_route(branch_x, branch_y, downstream_x, downstream_y))
+
+    protected = {(round(x, 2), round(y, 2)) for x, y in stub_ends}
+    return _simplify_wires(segs, protected_points=protected), []
+
+
 def _route_length(segments: list[WireSegment]) -> float:
     """Return total Manhattan wire length for *segments*."""
     return sum(_manhattan(seg.x1, seg.y1, seg.x2, seg.y2) for seg in segments)
@@ -2626,6 +2701,22 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
+                elif (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and heuristic_policy.enable_small_analog_local_routing
+                    and (
+                        follower_feedback_route := _buffer_follower_feedback_route(
+                            known,
+                            stub_ends,
+                            block_layout=block_layout,
+                        )
+                    )
+                    is not None
+                ):
+                    hub_segs, hub_junctions = follower_feedback_route
+                    strategy = "chain"
+                    heuristic_override = "small_analog_local_routing"
                 elif _classification_prefers_local_chain(
                     net_classification
                 ) and heuristic_policy.should_prefer_small_analog_chain(
@@ -2664,6 +2755,22 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
                     heuristic_override = "compact_output_tail"
+                elif (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and heuristic_policy.enable_small_analog_local_routing
+                    and (
+                        follower_feedback_route := _buffer_follower_feedback_route(
+                            known,
+                            stub_ends,
+                            block_layout=block_layout,
+                        )
+                    )
+                    is not None
+                ):
+                    hub_segs, hub_junctions = follower_feedback_route
+                    strategy = "chain"
+                    heuristic_override = "small_analog_local_routing"
                 elif (
                     use_bus
                     and _classification_prefers_local_chain(net_classification)

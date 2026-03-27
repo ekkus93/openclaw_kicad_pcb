@@ -753,6 +753,12 @@ For a unity-gain buffer:
 - place the incoming signal at the non-inverting input,
 - keep the local loop very short and visually obvious.
 
+Current progress note:
+- `kicad-pcb/src/kicad_pcb/router.py` now recognizes a generic 3-pin `BUFFER_STAGE` follower net where two pins belong to the same op-amp unit and the third pin is the first downstream output-support element. Under the existing small-analog-routing policy, that net now routes as an explicit compact local feedback loop plus output branch instead of relying on a generic compact chain.
+- Added a routing-layer regression in `tests/unit/test_phase6_wire_simplification.py` for the generic follower motif and a real-fixture regression in `tests/unit/test_netlist_commands.py` that checks the managed NE5532 schematic still draws a compact local U1B feedback jog before the `R6` branch. Ruff plus full `pytest -q` validation passed.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now adds `_snap_buffer_stage_input_node_shape(...)`, which detects the canonical `BUFFER_STAGE` input motif of one interstage bridge plus one grounded shunt and reapplies it late so the handoff bridge stays on the U1B row while the shunt support hangs one row below in the same input-node column.
+- Added helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the bridge-plus-shunt input-node shape for the NE5532 stage-2 handoff, and updated the older real-fixture row tests so they now assert the intentional one-row shunt drop instead of the previous flattened-row expectation.
+
 #### 2.2.3 Keep stage-local parts close
 Status: `DONE`
 - Add strong constraints that:

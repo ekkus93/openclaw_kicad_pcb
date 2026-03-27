@@ -3451,6 +3451,84 @@ class TestApplyPostLayoutSnaps:
             f"Direct buffer output support should stay close to U1B: {result}"
         )
 
+    def test_buffer_stage_shapes_input_handoff_as_bridge_plus_shunt_node(self) -> None:
+        """Phase 2.2.2: the buffer input should read as handoff-on-row plus shunt-below."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1A", symbol="Amplifier:NE5532", value="NE5532"),
+                ComponentIR(ref="C6", symbol="Device:C", value="22u"),
+                ComponentIR(ref="R5", symbol="Device:R", value="100k"),
+                ComponentIR(ref="U1B", symbol="Amplifier:NE5532", value="NE5532"),
+                ComponentIR(ref="R6", symbol="Device:R", value="47"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_STAGE1",
+                    pins=[PinRefIR(ref="U1A", pin="1"), PinRefIR(ref="C6", pin="1")],
+                ),
+                NetIR(
+                    name="BUF_L_IN",
+                    pins=[
+                        PinRefIR(ref="C6", pin="2"),
+                        PinRefIR(ref="R5", pin="1"),
+                        PinRefIR(ref="U1B", pin="5"),
+                    ],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="R5", pin="2")]),
+                NetIR(
+                    name="OUT_L_STAGE2_RAW",
+                    pins=[
+                        PinRefIR(ref="U1B", pin="6"),
+                        PinRefIR(ref="U1B", pin="7"),
+                        PinRefIR(ref="R6", pin="1"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1A", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("C6", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("R5", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1A": (97.79, 91.44, None),
+            "C6": (105.41, 129.54, None),
+            "R5": (117.00, 137.16, None),
+            "U1B": (171.45, 144.78, None),
+            "R6": (208.27, 175.26, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        u1b_x, u1b_y, _ = result["U1B"]
+        c6_x, c6_y, _ = result["C6"]
+        r5_x, r5_y, _ = result["R5"]
+
+        assert c6_x == pytest.approx(r5_x), (
+            f"Buffer handoff bridge and shunt should share one input-node column: {result}"
+        )
+        assert u1b_x - c6_x == pytest.approx(GRID_COL_MM), (
+            f"Buffer input node should sit one readable lane left of U1B: {result}"
+        )
+        assert c6_y == pytest.approx(u1b_y), (
+            f"Incoming buffer handoff should stay on the U1B stage row: {result}"
+        )
+        assert r5_y == pytest.approx(u1b_y + _gv_mod.GRID_ROW_MM), (
+            f"Local shunt support should hang one row below the U1B input node: {result}"
+        )
+
     def test_buffer_stage_keeps_output_tail_as_compact_right_side_chain(self) -> None:
         """Phase 2.2.3: the U1B output tail should stay compact below the buffer row."""
         ir = CircuitIR(

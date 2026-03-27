@@ -3314,6 +3314,162 @@ def _snap_explicit_non_inverting_feedback_nodes(
     return result
 
 
+def _buffer_stage_input_pair(
+    buffer_ref: str,
+    input_refs: list[str],
+    *,
+    ref_to_nets: Mapping[str, set[str]],
+    refs_by_net: Mapping[str, set[str]],
+) -> tuple[str, str] | None:
+    """Return ``(bridge_ref, shunt_ref)`` for a canonical buffer input node.
+
+    The target pattern is a non-power signal net that connects a placed
+    ``BUFFER_STAGE`` unit to exactly two nearby passive refs, where exactly one
+    of those refs also connects to ground. That corresponds to the typical
+    follower-stage handoff node with an incoming coupling/support element and a
+    local shunt-to-ground support element at the non-inverting input.
+    """
+
+    net_anchor_refs = {buffer_ref}
+    base_ref = _multi_unit_base_ref(buffer_ref)
+    if base_ref is not None:
+        net_anchor_refs.add(base_ref)
+    candidate_input_refs = {ref for ref in input_refs if ref in ref_to_nets}
+    if len(candidate_input_refs) < 2:
+        return None
+
+    candidates: list[tuple[int, str, str, str]] = []
+    for net_name, net_refs in refs_by_net.items():
+        if not (net_anchor_refs & net_refs) or _is_power_net(net_name):
+            continue
+
+        shared_input_refs = sorted(candidate_input_refs & net_refs)
+        if len(shared_input_refs) != 2:
+            continue
+
+        grounded_input_refs = [
+            ref
+            for ref in shared_input_refs
+            if any(
+                _is_ground_like_name(other_net)
+                for other_net in ref_to_nets.get(ref, set())
+                if other_net != net_name
+            )
+        ]
+        if len(grounded_input_refs) != 1:
+            continue
+
+        shunt_ref = grounded_input_refs[0]
+        bridge_ref = next(ref for ref in shared_input_refs if ref != shunt_ref)
+        if not any(
+            not _is_power_net(other_net)
+            for other_net in ref_to_nets.get(bridge_ref, set())
+            if other_net != net_name
+        ):
+            continue
+
+        candidates.append((len(net_refs), net_name, bridge_ref, shunt_ref))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: (item[0], item[1], item[2], item[3]))
+    _member_count, _net_name, bridge_ref, shunt_ref = candidates[0]
+    return bridge_ref, shunt_ref
+
+
+def _place_buffer_stage_input_pair(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    *,
+    buffer_ref: str,
+    bridge_ref: str,
+    shunt_ref: str,
+) -> tuple[dict[str, tuple[float, float, float | None]], set[str]]:
+    """Place a readable follower-stage input node just left of a buffer unit."""
+
+    if buffer_ref not in positions or bridge_ref not in positions or shunt_ref not in positions:
+        return dict(positions), set()
+
+    result = dict(positions)
+    ic_x, ic_y, _ = result[buffer_ref]
+    lane_x = round(ic_x - _GRID_COL_MM, 2)
+    bridge_y = round(ic_y, 2)
+    shunt_y = round(ic_y + GRID_ROW_MM, 2)
+
+    _bridge_x, _bridge_y, bridge_rot = result[bridge_ref]
+    _shunt_x, _shunt_y, shunt_rot = result[shunt_ref]
+    result[bridge_ref] = (lane_x, bridge_y, bridge_rot)
+    result[shunt_ref] = (lane_x, shunt_y, shunt_rot)
+    return result, {bridge_ref, shunt_ref}
+
+
+def _snap_buffer_stage_input_node_shape(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    block_layout: BlockLayout | None = None,
+    power_unit_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Shape a canonical follower-stage input node near a ``BUFFER_STAGE`` unit.
+
+    A unity-gain follower reads more clearly when the incoming handoff stays on
+    the stage row and the local shunt support drops one row below the
+    non-inverting input node, rather than flattening every support part onto the
+    same horizontal row.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+
+    def _effective_role(ref: str) -> BlockRole | None:
+        direct_role = role_by_ref.get(ref)
+        if direct_role is not None:
+            return direct_role
+        base_ref = _multi_unit_base_ref(ref)
+        if base_ref is None:
+            return None
+        return role_by_ref.get(base_ref)
+
+    result = dict(positions)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+    buffer_refs = [
+        ref
+        for ref in result
+        if _is_ic_ref(ref)
+        and ref not in power_unit_refs
+        and _effective_role(ref) == BlockRole.BUFFER_STAGE
+    ]
+    for buffer_ref in sorted(buffer_refs):
+        ic_x, ic_y, _ = result[buffer_ref]
+        nearby_refs = [
+            ref
+            for ref in result
+            if not _is_ic_ref(ref)
+            and abs(result[ref][0] - ic_x) <= 2.0 * _GRID_COL_MM
+            and abs(result[ref][1] - ic_y) <= 4.0 * GRID_ROW_MM
+            and _effective_role(ref) in {BlockRole.INTERSTAGE, BlockRole.PRECONDITIONING}
+        ]
+        input_pair = _buffer_stage_input_pair(
+            buffer_ref,
+            nearby_refs,
+            ref_to_nets=ref_to_nets,
+            refs_by_net=refs_by_net,
+        )
+        if input_pair is None:
+            continue
+        bridge_ref, shunt_ref = input_pair
+        result, _placed_input_refs = _place_buffer_stage_input_pair(
+            result,
+            buffer_ref=buffer_ref,
+            bridge_ref=bridge_ref,
+            shunt_ref=shunt_ref,
+        )
+
+    return result
+
+
 def _snap_buffer_stage_direct_output_support(
     positions: Mapping[str, tuple[float, float, float | None]],
     ir: CircuitIR,
@@ -4187,6 +4343,12 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         result,
         ir,
         annotations,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = _snap_buffer_stage_input_node_shape(
+        result,
+        ir,
         block_layout=block_layout,
         power_unit_refs=power_unit_refs,
     )

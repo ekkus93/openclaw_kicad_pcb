@@ -274,15 +274,16 @@ class TestPhase7RegressionGuardrails:
         handoff_refs = ["C6", "R5"]
         output_tail_refs = ["C7", "R6", "R7", "J2"]
 
-        assert all(stage1_x < positions[ref][0] <= anchor_x for ref in handoff_refs)
+        assert all(stage1_x <= positions[ref][0] < anchor_x for ref in handoff_refs)
         assert all(positions[ref][0] > anchor_x for ref in output_tail_refs)
 
         # Lock in the intended local story around the second stage: the
         # `C6`/`R5` handoff stays on the output side, `R5` remains between the
         # coupling cap and the stage-2 output resistor, and the final `R7`/`J2`
         # tail stays farther outward than the handoff pair.
-        assert positions["C6"][0] <= positions["R5"][0] <= positions["R6"][0]
-        assert abs(positions["R5"][1] - positions["C6"][1]) <= 10.0
+        assert positions["C6"][0] == positions["R5"][0] <= positions["R6"][0]
+        assert positions["C6"][1] == positions[output_stage_anchor][1]
+        assert positions["R5"][1] == positions["C6"][1] + 7.62
         assert min(positions["R7"][0], positions["J2"][0]) > max(
             positions["C6"][0], positions["R5"][0]
         )
