@@ -2332,6 +2332,119 @@ class TestDecouplingCapCoLocation:
             f"Expected C1 to re-anchor to U1 after shared negative-rail refinement, got: {result}"
         )
 
+    def test_shared_negative_rail_refinement_uses_signal_siblings_when_only_power_unit_touches_rail(
+        self,
+    ) -> None:
+        """Shared rails should refine through sibling signal units when the rail only hits U1P."""
+        components = [
+            ComponentIR(ref="U1A", symbol="Amplifier_Operational:TL071", value="UpperActive"),
+            ComponentIR(ref="U1B", symbol="Amplifier_Operational:TL071", value="LowerActive"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:TL071", value="PowerUnit"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="Signal1"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Signal2"),
+        ]
+        nets = [
+            NetIR(
+                name="VEE",
+                pins=[PinRefIR(ref="U1P", pin="1"), PinRefIR(ref="C1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_A",
+                pins=[PinRefIR(ref="U1A", pin="2"), PinRefIR(ref="J1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_B",
+                pins=[PinRefIR(ref="U1B", pin="2"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="J1", pin="2"),
+                    PinRefIR(ref="J2", pin="2"),
+                    PinRefIR(ref="U1P", pin="2"),
+                ],
+            ),
+        ]
+
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        refined_map = _gv_mod.refine_shared_rail_decoupling_map(
+            ir,
+            {
+                "U1A": (88.9, 30.48, 0.0),
+                "U1B": (96.52, 83.82, 0.0),
+                "U1P": (92.71, 57.15, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 30.48, 0.0),
+                "J2": (30.48, 83.82, 0.0),
+            },
+            {"C1": "U1B"},
+        )
+        assert refined_map == {"C1": "U1A"}, (
+            "Expected sibling signal units to participate in shared negative-rail refinement "
+            f"when only the power unit touches the rail, got: {refined_map}"
+        )
+
+    def test_compute_symbol_positions_refines_shared_negative_rail_anchor_through_power_unit(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The engine should refine split-unit shared rails even when only U1P is on the rail."""
+        components = [
+            ComponentIR(ref="U1A", symbol="Amplifier_Operational:TL071", value="UpperActive"),
+            ComponentIR(ref="U1B", symbol="Amplifier_Operational:TL071", value="LowerActive"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:TL071", value="PowerUnit"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="Signal1"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Signal2"),
+        ]
+        nets = [
+            NetIR(
+                name="VEE",
+                pins=[PinRefIR(ref="U1P", pin="1"), PinRefIR(ref="C1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_A",
+                pins=[PinRefIR(ref="U1A", pin="2"), PinRefIR(ref="J1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_B",
+                pins=[PinRefIR(ref="U1B", pin="2"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="J1", pin="2"),
+                    PinRefIR(ref="J2", pin="2"),
+                    PinRefIR(ref="U1P", pin="2"),
+                ],
+            ),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+
+        def fake_run_dot(
+            self_engine: object, dot_source: str
+        ) -> dict[str, tuple[float, float, float | None]]:
+            return {
+                _gv_mod._safe_id("U1A"): (88.9, 30.48, 0.0),
+                _gv_mod._safe_id("U1B"): (96.52, 83.82, 0.0),
+                _gv_mod._safe_id("U1P"): (92.71, 57.15, 0.0),
+                _gv_mod._safe_id("C1"): (76.2, 76.2, 0.0),
+                _gv_mod._safe_id("J1"): (30.48, 30.48, 0.0),
+                _gv_mod._safe_id("J2"): (30.48, 83.82, 0.0),
+            }
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")
+
+        result = engine.compute_symbol_positions(ir)
+        assert round(result["C1"][0], 2) == round(result["U1A"][0], 2), (
+            "Expected the split-unit shared-rail decoupler to re-anchor through the sibling "
+            f"signal unit, got: {result}"
+        )
+
     def test_dot_source_unchanged_without_decoupling_map(self) -> None:
         """build_dot_source without decoupling_map must not contain invisible edges."""
         ir = _decoupling_ir()

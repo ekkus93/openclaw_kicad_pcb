@@ -217,6 +217,58 @@ def _prefer_decoupling_side_candidates_from_layout(
     return candidate_refs
 
 
+def _shared_rail_anchor_candidates_from_layout(
+    *,
+    rail_net: str,
+    component_nets: Mapping[str, set[str]],
+    raw_layout: Mapping[str, tuple[float, float, float | None]],
+) -> list[str]:
+    """Return active IC candidates for a shared rail, including split-unit siblings.
+
+    In expanded generation IR, a shared rail can touch only a dedicated power
+    unit such as ``U1P`` even though the visible signal stages are ``U1A`` and
+    ``U1B``. The initial decoupling detector already falls back from the power
+    unit to those sibling signal units. The raw-layout refinement must use the
+    same candidate set or it will silently skip the exact multi-unit case that
+    needs the geometry-aware tie-break.
+    """
+
+    active_ics_by_rail: dict[str, list[str]] = {}
+    signal_ic_refs: set[str] = set()
+    for component_ref, net_names in component_nets.items():
+        if component_type(component_ref) != "ic" or component_ref not in raw_layout:
+            continue
+        if not net_names or not any(not is_power_net(net_name) for net_name in net_names):
+            continue
+        signal_ic_refs.add(component_ref)
+        for net_name in net_names:
+            if power_rail_polarity(net_name) is not None:
+                active_ics_by_rail.setdefault(net_name, []).append(component_ref)
+
+    direct_candidates = active_ics_by_rail.get(rail_net, [])
+    if direct_candidates:
+        return sorted(set(direct_candidates))
+
+    sibling_candidates: list[str] = []
+    for component_ref, net_names in component_nets.items():
+        if (
+            rail_net not in net_names
+            or component_type(component_ref) != "ic"
+            or len(component_ref) < 2
+        ):
+            continue
+        suffix = component_ref[-1]
+        if not suffix.isalpha():
+            continue
+        parent_ref = component_ref[:-1]
+        sibling_candidates.extend(
+            candidate_ref
+            for candidate_ref in signal_ic_refs
+            if candidate_ref[:-1] == parent_ref and candidate_ref != component_ref
+        )
+    return sorted(set(sibling_candidates))
+
+
 def _refine_shared_rail_decoupling_map(
     ir: CircuitIR,
     raw_layout: Mapping[str, tuple[float, float, float | None]],
@@ -231,19 +283,6 @@ def _refine_shared_rail_decoupling_map(
         for pin_ref in net.pins:
             component_nets.setdefault(pin_ref.ref, set()).add(net.name)
 
-    active_ics_by_rail: dict[str, list[str]] = {}
-    for component in ir.components:
-        if component_type(component.ref) != "ic" or component.ref not in raw_layout:
-            continue
-
-        nets = component_nets.get(component.ref, set())
-        if not nets or not any(not is_power_net(net_name) for net_name in nets):
-            continue
-
-        for net_name in nets:
-            if power_rail_polarity(net_name) is not None:
-                active_ics_by_rail.setdefault(net_name, []).append(component.ref)
-
     refined_map = dict(decoupling_map)
     for cap_ref in decoupling_map:
         if cap_ref not in raw_layout:
@@ -255,7 +294,11 @@ def _refine_shared_rail_decoupling_map(
         if len(rail_nets) != 1 or len(ground_nets) != 1:
             continue
 
-        candidate_refs = active_ics_by_rail.get(rail_nets[0], [])
+        candidate_refs = _shared_rail_anchor_candidates_from_layout(
+            rail_net=rail_nets[0],
+            component_nets=component_nets,
+            raw_layout=raw_layout,
+        )
         if len(candidate_refs) <= 1:
             continue
 

@@ -3637,18 +3637,14 @@ def _snap_opamp_stage_non_inverting_input_node_shape(
         and _effective_role(ref) == BlockRole.OPAMP_CORE
     ]
     for opamp_ref in sorted(opamp_refs):
-        ic_x, ic_y, _ = result[opamp_ref]
-        nearby_refs = [
+        candidate_input_refs = [
             ref
             for ref in result
-            if not _is_ic_ref(ref)
-            and abs(result[ref][0] - ic_x) <= 2.1 * _GRID_COL_MM
-            and abs(result[ref][1] - ic_y) <= 4.0 * GRID_ROW_MM
-            and _effective_role(ref) == BlockRole.PRECONDITIONING
+            if not _is_ic_ref(ref) and is_input_like_role(_effective_role(ref))
         ]
         input_pair = _opamp_stage_input_pair(
             opamp_ref,
-            nearby_refs,
+            candidate_input_refs,
             ref_to_nets=ref_to_nets,
             refs_by_net=refs_by_net,
         )
@@ -3698,18 +3694,14 @@ def _snap_opamp_stage_upstream_input_bundle(
         and _effective_role(ref) == BlockRole.OPAMP_CORE
     ]
     for opamp_ref in sorted(opamp_refs):
-        ic_x, ic_y, _ = result[opamp_ref]
-        nearby_refs = [
+        candidate_input_refs = [
             ref
             for ref in result
-            if not _is_ic_ref(ref)
-            and abs(result[ref][0] - ic_x) <= 3.1 * _GRID_COL_MM
-            and abs(result[ref][1] - ic_y) <= 4.0 * GRID_ROW_MM
-            and _effective_role(ref) == BlockRole.PRECONDITIONING
+            if not _is_ic_ref(ref) and is_input_like_role(_effective_role(ref))
         ]
         input_pair = _opamp_stage_input_pair(
             opamp_ref,
-            nearby_refs,
+            candidate_input_refs,
             ref_to_nets=ref_to_nets,
             refs_by_net=refs_by_net,
         )
@@ -3720,7 +3712,7 @@ def _snap_opamp_stage_upstream_input_bundle(
         upstream_refs = _opamp_stage_upstream_bundle(
             bridge_ref,
             input_node_net,
-            nearby_refs,
+            candidate_input_refs,
             ref_to_nets=ref_to_nets,
             refs_by_net=refs_by_net,
         )
