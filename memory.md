@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-28T16:40:37Z - GPT-5.4 - Cleared the U1B follower-loop corridor of intrusive downstream tail parts
+
+- Added `_buffer_stage_direct_output_refs(...)` plus the new late `_snap_buffer_stage_feedback_corridor(...)` pass in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`. The direct output helper now feeds all three U1B late passes, and the new corridor pass moves downstream `OUTPUT_CONDITIONING` / `OUTPUT` refs out of the upper-right follower-loop corridor when Graphviz leaves them between `U1B` and `R6`.
+- Kept the existing short-row and compact-tail story intact by placing those obstructing refs onto the dedicated tail row before `_snap_buffer_stage_output_tail_locality(...)` runs, then bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` to `graphviz-layout-v8` because the final managed coordinates changed without a DOT change.
+- Added `tests/unit/test_phase4_layout.py::test_buffer_stage_clears_feedback_corridor_of_intrusive_tail_parts`, which starts `C7` / `R7` inside the U1B loop corridor and asserts they are evacuated below the row in normal right-side tail order.
+- Revalidated with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py tests/unit/test_phase4_layout.py`, `.venv/bin/pytest tests/unit/test_phase4_layout.py -k 'buffer_stage and (corridor or output_tail or input_handoff or buffer_row)'`, and `.venv/bin/pytest tests/unit/test_netlist_commands.py -k 'u1b and (buffer_row or feedback_as_compact_local_loop or input_as_bridge_plus_shunt_node or output_tail_compact_and_local)'`, all green.
+
 ## 2026-03-28T15:29:32Z - GPT-5.4 - Tightened Phase 2.3.2 decoupling-bank geometry with symmetric overflow lanes
 
 - Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py::_post_snap_decoupling_caps(...)` so overflow decouplers fan out symmetrically around the op-amp lane (`center, center, -1 lane, +1 lane, ...`) for both positive and negative rails instead of drifting farther to only one side.

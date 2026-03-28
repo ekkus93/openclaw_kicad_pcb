@@ -98,7 +98,7 @@ import logging
 import math
 import re
 from collections import defaultdict, deque
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
@@ -3825,6 +3825,49 @@ def _snap_buffer_stage_input_node_shape(
     return result
 
 
+def _buffer_stage_direct_output_refs(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    *,
+    buffer_ref: str,
+    refs_by_net: Mapping[str, set[str]],
+    effective_role: Callable[[str], BlockRole | None],
+) -> list[str]:
+    """Return same-net direct output-support refs for a placed buffer stage."""
+
+    if buffer_ref not in positions:
+        return []
+
+    ic_x, ic_y, _ = positions[buffer_ref]
+    net_anchor_refs = {buffer_ref}
+    base_ref = _multi_unit_base_ref(buffer_ref)
+    if base_ref is not None:
+        net_anchor_refs.add(base_ref)
+
+    for net_name, net_refs in refs_by_net.items():
+        if _is_power_net(net_name) or not (net_anchor_refs & net_refs):
+            continue
+        candidates = [
+            ref
+            for ref in net_refs
+            if ref in positions
+            and ref not in net_anchor_refs
+            and not _is_ic_ref(ref)
+            and effective_role(ref) == BlockRole.OUTPUT_CONDITIONING
+        ]
+        if not candidates:
+            continue
+        return sorted(
+            candidates,
+            key=lambda ref: (
+                abs(positions[ref][0] - ic_x),
+                abs(positions[ref][1] - ic_y),
+                ref,
+            ),
+        )
+
+    return []
+
+
 def _snap_buffer_stage_direct_output_support(
     positions: Mapping[str, tuple[float, float, float | None]],
     ir: CircuitIR,
@@ -3868,39 +3911,115 @@ def _snap_buffer_stage_direct_output_support(
     ]
     for buffer_ref in sorted(buffer_refs):
         ic_x, ic_y, _ = result[buffer_ref]
-        net_anchor_refs = {buffer_ref}
-        base_ref = _multi_unit_base_ref(buffer_ref)
-        if base_ref is not None:
-            net_anchor_refs.add(base_ref)
-
-        direct_output_refs: list[str] = []
-        for net_name, net_refs in refs_by_net.items():
-            if _is_power_net(net_name) or not (net_anchor_refs & net_refs):
-                continue
-            candidates = [
-                ref
-                for ref in net_refs
-                if ref in result
-                and ref not in net_anchor_refs
-                and not _is_ic_ref(ref)
-                and _effective_role(ref) == BlockRole.OUTPUT_CONDITIONING
-            ]
-            if not candidates:
-                continue
-            direct_output_refs = sorted(
-                candidates,
-                key=lambda ref: (
-                    abs(result[ref][0] - ic_x),
-                    abs(result[ref][1] - ic_y),
-                    ref,
-                ),
-            )
-            break
+        direct_output_refs = _buffer_stage_direct_output_refs(
+            result,
+            buffer_ref=buffer_ref,
+            refs_by_net=refs_by_net,
+            effective_role=_effective_role,
+        )
 
         for idx, ref in enumerate(direct_output_refs):
             _x, _y, rot = result[ref]
             target_x = round(ic_x + (idx + 1) * compact_step, 2)
             result[ref] = (target_x, round(ic_y, 2), rot)
+
+    return result
+
+
+def _snap_buffer_stage_feedback_corridor(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    block_layout: BlockLayout | None = None,
+    power_unit_refs: frozenset[str] = frozenset(),
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep downstream output parts out of the compact U1B feedback corridor.
+
+    The follower router draws the direct output-to-inverting loop in the
+    upper-right quadrant between the buffer unit and its first output-support
+    element. If Graphviz leaves later output parts inside that corridor, the
+    loop becomes visually ambiguous. This late pass evicts those downstream
+    parts onto the dedicated tail row so the loop stays obvious.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    adjacency = _build_signal_adjacency(ir)
+    _ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+
+    def _effective_role(ref: str) -> BlockRole | None:
+        direct_role = role_by_ref.get(ref)
+        if direct_role is not None:
+            return direct_role
+        base_ref = _multi_unit_base_ref(ref)
+        if base_ref is None:
+            return None
+        return role_by_ref.get(base_ref)
+
+    result = dict(positions)
+    compact_step = _GRID_COL_MM / 2.0
+    buffer_refs = [
+        ref
+        for ref in result
+        if _is_ic_ref(ref)
+        and ref not in power_unit_refs
+        and _effective_role(ref) == BlockRole.BUFFER_STAGE
+    ]
+    for buffer_ref in sorted(buffer_refs):
+        ic_x, ic_y, _ = result[buffer_ref]
+        net_anchor_refs = {buffer_ref}
+        base_ref = _multi_unit_base_ref(buffer_ref)
+        if base_ref is not None:
+            net_anchor_refs.add(base_ref)
+
+        direct_output_refs = _buffer_stage_direct_output_refs(
+            result,
+            buffer_ref=buffer_ref,
+            refs_by_net=refs_by_net,
+            effective_role=_effective_role,
+        )
+        if not direct_output_refs:
+            continue
+
+        anchor_ref = direct_output_refs[0]
+        anchor_x, _anchor_y, _anchor_rot = result[anchor_ref]
+        corridor_candidates = {
+            ref
+            for ref in result
+            if ref not in direct_output_refs
+            and ref not in net_anchor_refs
+            and not _is_ic_ref(ref)
+            and _effective_role(ref) in {BlockRole.OUTPUT_CONDITIONING, BlockRole.OUTPUT}
+            and ic_x <= result[ref][0] < anchor_x
+            and result[ref][1] <= ic_y
+            and result[ref][1] >= round(ic_y - 2.0 * GRID_ROW_MM, 2)
+        }
+        if not corridor_candidates:
+            continue
+
+        local_candidates = set(corridor_candidates)
+        local_candidates.add(anchor_ref)
+        distances = _local_signal_distances(anchor_ref, local_candidates, adjacency)
+        obstructing_refs = [ref for ref in corridor_candidates if ref in distances]
+        if not obstructing_refs:
+            continue
+
+        obstructing_refs.sort(
+            key=lambda ref: (
+                distances[ref],
+                1 if _effective_role(ref) == BlockRole.OUTPUT and _is_connector_ref(ref) else 0,
+                result[ref][0],
+                ref,
+            )
+        )
+
+        tail_y = round(ic_y + GRID_ROW_MM, 2)
+        for idx, ref in enumerate(obstructing_refs, start=1):
+            _x, _y, rot = result[ref]
+            target_x = round(anchor_x + idx * compact_step, 2)
+            result[ref] = (target_x, tail_y, rot)
 
     return result
 
@@ -3953,29 +4072,12 @@ def _snap_buffer_stage_output_tail_locality(
         if base_ref is not None:
             net_anchor_refs.add(base_ref)
 
-        direct_output_refs: list[str] = []
-        for net_name, net_refs in refs_by_net.items():
-            if _is_power_net(net_name) or not (net_anchor_refs & net_refs):
-                continue
-            candidates = [
-                ref
-                for ref in net_refs
-                if ref in result
-                and ref not in net_anchor_refs
-                and not _is_ic_ref(ref)
-                and _effective_role(ref) == BlockRole.OUTPUT_CONDITIONING
-            ]
-            if not candidates:
-                continue
-            direct_output_refs = sorted(
-                candidates,
-                key=lambda ref: (
-                    abs(result[ref][0] - ic_x),
-                    abs(result[ref][1] - ic_y),
-                    ref,
-                ),
-            )
-            break
+        direct_output_refs = _buffer_stage_direct_output_refs(
+            result,
+            buffer_ref=buffer_ref,
+            refs_by_net=refs_by_net,
+            effective_role=_effective_role,
+        )
         if not direct_output_refs:
             continue
 
@@ -4722,6 +4824,12 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         power_unit_refs=power_unit_refs,
     )
     result = _snap_buffer_stage_direct_output_support(
+        result,
+        ir,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = _snap_buffer_stage_feedback_corridor(
         result,
         ir,
         block_layout=block_layout,
