@@ -2349,6 +2349,24 @@ def _symbol_positions(doc: SchematicDoc) -> dict[str, tuple[float, float]]:
     return positions
 
 
+def _symbol_positions_by_id(doc: SchematicDoc, symbol_id: str) -> dict[str, tuple[float, float]]:
+    positions: dict[str, tuple[float, float]] = {}
+    for symbol in doc.list_symbols():
+        ref = symbol["ref"]
+        current_symbol_id = symbol["symbol_id"]
+        x = symbol["x"]
+        y = symbol["y"]
+        if (
+            isinstance(ref, str)
+            and isinstance(current_symbol_id, str)
+            and current_symbol_id == symbol_id
+            and isinstance(x, float)
+            and isinstance(y, float)
+        ):
+            positions[ref] = (x, y)
+    return positions
+
+
 def _distance_mm(left: tuple[float, float], right: tuple[float, float]) -> float:
     return math.hypot(left[0] - right[0], left[1] - right[1])
 
@@ -2718,6 +2736,40 @@ def test_new_from_real_ne5532_fixture_separates_positive_and_negative_decouplers
     for ref in ("C2", "C4"):
         assert positions[ref][1] > signal_band_y, (
             f"Negative-rail decoupler {ref} should sit below the op-amp signal band: {positions}"
+        )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_power_gnd_local_to_decoupling_bank(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingGroundLocality",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+    gnd_symbol_positions = _symbol_positions_by_id(managed_doc, "power:GND")
+
+    assert gnd_symbol_positions, "Expected the managed schematic to contain power:GND symbols"
+
+    max_local_decoupling_gnd_distance = 1.5 * GRID_COL_MM
+    for ref in ("C1", "C2", "C3", "C4"):
+        nearest_gnd_distance = min(
+            _distance_mm(positions[ref], gnd_position)
+            for gnd_position in gnd_symbol_positions.values()
+        )
+        assert nearest_gnd_distance <= max_local_decoupling_gnd_distance, (
+            f"Decoupling cap {ref} should have a local power:GND symbol near the bank: "
+            f"nearest power:GND distance={nearest_gnd_distance:.2f} mm, "
+            f"threshold={max_local_decoupling_gnd_distance:.2f} mm"
         )
 
 
@@ -3317,6 +3369,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
         "enable_compact_output_tails": False,
     }
     assert power_overrides == {
+        "compact_local_ground_cluster": ["GND"],
         "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
     }
     assert digital_overrides == {}
