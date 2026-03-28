@@ -2207,6 +2207,72 @@ class TestDecouplingCapCoLocation:
             f"C1.y ({c1_y}) should be U1.y - GRID_ROW_MM ({expected_y}), but got {c1_y}"
         )
 
+    def test_post_snap_keeps_mixed_polarity_decoupling_bank_compact(self) -> None:
+        """Mixed-polarity decouplers should stay in a compact symmetric bank around the IC lane."""
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "C1": (40.0, 40.0, None),
+            "C2": (45.0, 45.0, None),
+            "C3": (50.0, 50.0, None),
+            "C4": (55.0, 55.0, None),
+            "C5": (60.0, 60.0, None),
+            "C6": (65.0, 65.0, None),
+            "C7": (70.0, 70.0, None),
+            "C8": (75.0, 75.0, None),
+        }
+
+        result = _gv_mod.post_snap_decoupling_caps(
+            positions,
+            {
+                "C1": "U1",
+                "C2": "U1",
+                "C3": "U1",
+                "C4": "U1",
+                "C5": "U1",
+                "C6": "U1",
+                "C7": "U1",
+                "C8": "U1",
+            },
+            rail_polarities={
+                "C1": "positive",
+                "C2": "positive",
+                "C3": "positive",
+                "C4": "positive",
+                "C5": "negative",
+                "C6": "negative",
+                "C7": "negative",
+                "C8": "negative",
+            },
+        )
+
+        ux, uy, _ = result["U1"]
+        positive_refs = ("C1", "C2", "C3", "C4")
+        negative_refs = ("C5", "C6", "C7", "C8")
+        expected_xs = {
+            round(ux, 2),
+            round(ux - GRID_COL_MM, 2),
+            round(ux + GRID_COL_MM, 2),
+        }
+
+        positive_xs = {round(result[ref][0], 2) for ref in positive_refs}
+        negative_xs = {round(result[ref][0], 2) for ref in negative_refs}
+
+        assert positive_xs == expected_xs, (
+            f"Positive overflow bank should use compact symmetric x lanes: {result}"
+        )
+        assert negative_xs == expected_xs, (
+            f"Negative overflow bank should mirror the same compact x lanes: {result}"
+        )
+        assert all(result[ref][1] < uy for ref in positive_refs), (
+            f"Positive decouplers should stay above the IC row: {result}"
+        )
+        assert all(result[ref][1] > uy for ref in negative_refs), (
+            f"Negative decouplers should stay below the IC row: {result}"
+        )
+        assert max(result[ref][1] for ref in positive_refs) < min(
+            result[ref][1] for ref in negative_refs
+        ), f"Mixed-polarity banks should stay vertically separated around the IC: {result}"
+
     def test_compute_symbol_positions_refines_shared_negative_rail_anchor(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -4990,6 +5056,85 @@ class TestApplyPostLayoutSnaps:
         )
         assert round(ux, 2) in feedback_xs, "Primary feedback lane should remain aligned to U1"
         assert round(ux, 2) in decoupling_xs, "Primary decoupling lane should remain aligned to U1"
+
+    def test_opamp_locality_spreads_negative_decoupling_overflow_below_body(self) -> None:
+        """Negative-rail overflow should use compact x lanes while staying below the op-amp."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="CDEC1", symbol="Device:C", value="100n"),
+                ComponentIR(ref="CDEC2", symbol="Device:C", value="100n"),
+                ComponentIR(ref="CDEC3", symbol="Device:C", value="10u"),
+                ComponentIR(ref="CDEC4", symbol="Device:C", value="22u"),
+            ],
+            nets=[
+                NetIR(
+                    name="VMINUS15",
+                    pins=[
+                        PinRefIR(ref="U1", pin="4"),
+                        PinRefIR(ref="CDEC1", pin="1"),
+                        PinRefIR(ref="CDEC2", pin="1"),
+                        PinRefIR(ref="CDEC3", pin="1"),
+                        PinRefIR(ref="CDEC4", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="CDEC1", pin="2"),
+                        PinRefIR(ref="CDEC2", pin="2"),
+                        PinRefIR(ref="CDEC3", pin="2"),
+                        PinRefIR(ref="CDEC4", pin="2"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("CDEC1", BlockRole.DECOUPLING)
+        block_layout.add_assignment("CDEC2", BlockRole.DECOUPLING)
+        block_layout.add_assignment("CDEC3", BlockRole.DECOUPLING)
+        block_layout.add_assignment("CDEC4", BlockRole.DECOUPLING)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (110.0, 100.0, None),
+            "CDEC1": (70.0, 80.0, None),
+            "CDEC2": (72.0, 82.0, None),
+            "CDEC3": (74.0, 84.0, None),
+            "CDEC4": (76.0, 86.0, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={
+                "CDEC1": "U1",
+                "CDEC2": "U1",
+                "CDEC3": "U1",
+                "CDEC4": "U1",
+            },
+            block_layout=block_layout,
+        )
+
+        ux, uy, _ = result["U1"]
+        decoupling_xs = {round(result[ref][0], 2) for ref in ("CDEC1", "CDEC2", "CDEC3", "CDEC4")}
+        expected_xs = {
+            round(ux, 2),
+            round(ux - GRID_COL_MM, 2),
+            round(ux + GRID_COL_MM, 2),
+        }
+
+        assert decoupling_xs == expected_xs, (
+            f"Negative overflow bank should use compact symmetric x lanes: {result}"
+        )
+        assert all(result[ref][1] > uy for ref in ("CDEC1", "CDEC2", "CDEC3", "CDEC4")), (
+            "Negative decoupling overflow should remain below the op-amp body"
+        )
 
     def test_input_stage_cohesion_left_to_right_transition(self) -> None:
         """Phase 7.1: input stage should read connector -> preconditioning -> op-amp."""

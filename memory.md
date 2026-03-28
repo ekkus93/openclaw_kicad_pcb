@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-28T15:29:32Z - GPT-5.4 - Tightened Phase 2.3.2 decoupling-bank geometry with symmetric overflow lanes
+
+- Updated `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py::_post_snap_decoupling_caps(...)` so overflow decouplers fan out symmetrically around the op-amp lane (`center, center, -1 lane, +1 lane, ...`) for both positive and negative rails instead of drifting farther to only one side.
+- Bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` to `graphviz-layout-v7` because this changes final managed coordinates without changing the DOT source.
+- Added focused helper regressions in `tests/unit/test_phase4_layout.py` for mixed-polarity compact banks and negative-rail overflow, plus a stronger real-fixture regression in `tests/unit/test_netlist_commands.py` that locks the NE5532 decoupling bank to a compact x-span near `U1A/U1B/U1P`.
+- Revalidated with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py tests/unit/test_phase4_layout.py tests/unit/test_netlist_commands.py`, `.venv/bin/pytest -q tests/unit/test_phase4_layout.py -k 'decoupling or negative_decoupling_overflow or mixed_polarity_decoupling_bank'`, and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'decoupling_bank_compact_in_x or separates_positive_and_negative_decouplers or keeps_power_gnd_local_to_decoupling_bank or keeps_decoupling_caps_in_opamp_region'`, all green.
+
 ## 2026-03-28T14:53:37Z - GPT-5.4 - Synced the power-profile debug summary after the new decoupling-ground locality work
 
 - Full validation after adding the real-fixture `power:GND` locality regression exposed one stale expectation in `tests/unit/test_netlist_commands.py::test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff`: the `power_supply` heuristic profile now legitimately reports both `compact_local_decoupling_cluster: ["VMINUS15", "VPLUS15"]` and `compact_local_ground_cluster: ["GND"]` after the new local decoupling-ground routing helper.

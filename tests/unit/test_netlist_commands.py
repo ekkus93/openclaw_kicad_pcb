@@ -2740,6 +2740,45 @@ def test_new_from_real_ne5532_fixture_separates_positive_and_negative_decouplers
 
 
 @_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_decoupling_bank_compact_in_x(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingCompactBank",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    opamp_region_refs = ("U1A", "U1B", "U1P")
+    decoupling_refs = ("C1", "C2", "C3", "C4")
+    decoupling_xs = [positions[ref][0] for ref in decoupling_refs]
+    bank_span_x = max(decoupling_xs) - min(decoupling_xs)
+
+    assert bank_span_x <= 2.0 * GRID_COL_MM, (
+        "Decoupling bank should stay within compact op-amp support lanes: "
+        f"x-span={bank_span_x:.2f} mm, "
+        f"threshold={2.0 * GRID_COL_MM:.2f} mm, positions={positions}"
+    )
+
+    for ref in decoupling_refs:
+        nearest_opamp_x = min(
+            abs(positions[ref][0] - positions[anchor_ref][0]) for anchor_ref in opamp_region_refs
+        )
+        assert nearest_opamp_x <= GRID_COL_MM, (
+            f"Decoupling cap {ref} should remain within one op-amp support lane in x: "
+            f"nearest op-amp x-distance={nearest_opamp_x:.2f} mm, threshold={GRID_COL_MM:.2f} mm"
+        )
+
+
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_power_gnd_local_to_decoupling_bank(
     tmp_path: Path,
 ) -> None:
