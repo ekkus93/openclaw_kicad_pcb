@@ -896,7 +896,9 @@ Current findings:
 Current findings:
 - Output-stage connector placement in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now adds one extra snap step of outward clearance beyond the nominal output connector lane.
 - Focused coverage in `tests/unit/test_phase4_layout.py` now asserts that output connectors remain the outermost lane and keep at least that extra clearance, which prevents the left-facing output connector stub from collapsing back into the nearest output-support body column.
-- The remaining connector-orientation work is mostly policy and broader placement polish, not the specific `J2` drift problem from the NE5532 output cluster.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also adds `_snap_input_connector_signal_attachment(...)`, a late input-side cleanup that reattaches each input connector to the row of its first direct non-power signal handoff after the upstream input bundle has been shaped. When that would otherwise place the connector directly on top of the leftmost handoff column at the page margin, the pass reserves that margin lane for the connector and shifts the nearby handoff column half a lane right.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` now reapplies that connector-attachment cleanup one final time at the engine output boundary so the emitted managed schematic and cached final positions preserve the same left-margin reservation that the helper enforces on the final placement map.
+- Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock J1 to the `C5` handoff row in the NE5532 input path while keeping it left of the handoff chain, then revalidated the Phase 7 `LAY003` guardrail plus full `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `.venv/bin/pytest`. Because the final emitted coordinates changed again without a DOT change, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v11`.
 
 ---
 

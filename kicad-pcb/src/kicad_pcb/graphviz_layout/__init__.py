@@ -99,6 +99,7 @@ from .snap import (
     _post_snap_decoupling_caps,
     _post_stereo_barycentric,
     _snap_feedback_components,
+    _snap_input_connector_signal_attachment,
     _snap_power_symbols,
     snap_positions,
 )
@@ -754,6 +755,11 @@ class GraphvizLayoutEngine:
             ref: (x, y, float(_orientations.get(ref, 0)))
             for ref, (x, y, _) in post_snap_result.items()
         }
+        result = _snap_input_connector_signal_attachment(
+            result,
+            ir,
+            block_layout=block_layout,
+        )
 
         if self._debug_dump_path is not None:
             halo_alignment = _analyze_halo_column_alignment(raw_result, post_snap_result, halo)

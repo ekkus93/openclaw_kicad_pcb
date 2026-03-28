@@ -43,7 +43,7 @@ from typing import Any
 
 # Bump this when the cache JSON schema changes to invalidate all persisted caches.
 _CACHE_FORMAT_VERSION = 2
-_LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v8"
+_LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v11"
 
 
 @dataclass(frozen=True)

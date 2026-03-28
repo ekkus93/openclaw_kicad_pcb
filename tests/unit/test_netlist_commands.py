@@ -2963,14 +2963,14 @@ def test_new_from_real_ne5532_fixture_keeps_u1a_upstream_input_bundle_as_left_co
         "The parallel upstream input bridges should share one left-side column: "
         f"C5={positions['C5']}, R1={positions['R1']}, RV1={positions['RV1']}"
     )
-    assert c5_x == pytest.approx(ORIGIN_X), (
-        "The upstream bridge bundle should clamp as one shared left-margin column in the "
-        "real fixture: "
-        f"C5.x={c5_x:.2f}, R1.x={r1_x:.2f}, ORIGIN_X={ORIGIN_X:.2f}"
+    assert ORIGIN_X < c5_x < rv1_x, (
+        "The upstream bridge bundle should sit just right of the input connector margin while "
+        "remaining left of the non-inverting input node: "
+        f"C5.x={c5_x:.2f}, R1.x={r1_x:.2f}, RV1.x={rv1_x:.2f}, ORIGIN_X={ORIGIN_X:.2f}"
     )
-    assert rv1_x - c5_x >= GRID_COL_MM, (
-        "The upstream bridge bundle should still sit at least one full grid lane left of the "
-        "non-inverting input node: "
+    assert rv1_x - c5_x >= GRID_COL_MM / 2.0, (
+        "The upstream bridge bundle should still leave visible space before the non-inverting "
+        "input node: "
         f"C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}"
     )
     assert r2_x - rv1_x == pytest.approx(GRID_COL_MM / 2.0), (
@@ -2996,6 +2996,46 @@ def test_new_from_real_ne5532_fixture_keeps_u1a_upstream_input_bundle_as_left_co
     assert r3_y == pytest.approx(u1a_y + 7.62), (
         "The gain-to-ground shunt should remain one row below the feedback node: "
         f"R3.y={r3_y:.2f}, expected={u1a_y + 7.62:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_j1_attached_to_incoming_signal_row(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532InputConnectorAttachment",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    j1_x, j1_y = positions["J1"]
+    c5_x, c5_y = positions["C5"]
+    r4_x, r4_y = positions["R4"]
+    rv1_x, _rv1_y = positions["RV1"]
+
+    assert j1_y == pytest.approx(c5_y), (
+        "The input connector should align with the incoming AC-coupling handoff row: "
+        f"J1={positions['J1']}, C5={positions['C5']}, RV1={positions['RV1']}"
+    )
+    assert j1_y != pytest.approx(r4_y), (
+        "The input connector should not sit on the grounded shunt row: "
+        f"J1={positions['J1']}, R4={positions['R4']}"
+    )
+    assert j1_x == pytest.approx(ORIGIN_X), (
+        f"The input connector should remain clamped to the left page margin: J1.x={j1_x:.2f}"
+    )
+    assert j1_x <= c5_x < rv1_x, (
+        "The input connector should stay left of the handoff chain into the gain stage: "
+        f"J1.x={j1_x:.2f}, C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}, R4.x={r4_x:.2f}"
     )
 
 
