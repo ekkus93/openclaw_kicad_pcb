@@ -834,6 +834,8 @@ Current progress note:
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now derives rail polarity for anchored decouplers during the late snap pass, keeping positive-rail capacitors above the op-amp signal band while placing negative-rail capacitors below it instead of collapsing both onto the same top-side lane.
 - Because this late snap changes final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v6` so command-path layouts stop reusing stale pre-fix placements.
 - Added a focused snap regression in `tests/unit/test_phase4_layout.py` plus a real-fixture managed-schematic regression in `tests/unit/test_netlist_commands.py` that lock the NE5532 decoupling polarity split (`C1/C3` above, `C2/C4` below) while keeping all four capacitors local to the op-amp region.
+- `kicad-pcb/src/kicad_pcb/router.py` now gives tiny cap-only `GND` banks their own compact local-ground route instead of falling back to the generic centroid power-cluster path. This keeps the shared `power:GND` symbol attached to local decoupling banks, which is the first shipped slice of the remaining “keep the ground symbol local to those capacitors” requirement.
+- Added `tests/unit/test_phase6_wire_simplification.py::test_route_nets_uses_compact_local_ground_lane_for_decoupling_cap_bank` and revalidated it alongside the adjacent compact local ground/decoupling routing regressions, plus Ruff on the touched router/test files.
 
 #### 2.3.3 Draw rail connections cleanly
 - [x] Status: DONE

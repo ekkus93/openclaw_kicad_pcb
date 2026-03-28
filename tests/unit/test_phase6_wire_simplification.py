@@ -1782,6 +1782,52 @@ def test_route_nets_uses_compact_local_decoupling_lane_for_negative_rail_cluster
     )
 
 
+def test_route_nets_uses_compact_local_ground_lane_for_decoupling_cap_bank() -> None:
+    """A tiny cap-only GND bank should keep its GND symbol attached to the bank."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="C3", symbol="Device:C_Polarized", value="10u"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="C3", pin="2"),
+                ],
+            )
+        ],
+    )
+    pin_endpoints = {
+        ("C1", "2"): (76.2, 83.82, 270.0),
+        ("C3", "2"): (63.5, 76.2, 270.0),
+    }
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions={
+            "C1": (76.2, 87.63, 0.0),
+            "C3": (63.5, 80.01, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_ground_cluster"
+    power_symbol = routing.power_symbols[0]
+    assert power_symbol.net_name == "GND"
+    nearest_cap_distance = min(
+        math.hypot(power_symbol.x - x, power_symbol.y - y)
+        for x, y, _angle in pin_endpoints.values()
+    )
+    assert nearest_cap_distance <= 20.0, (
+        f"Local decoupling GND symbol should stay attached to the cap bank: {power_symbol}"
+    )
+    assert len(routing.junctions) >= 2
+
+
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:
     """Pin stubs that start on a symbol boundary must not be detoured."""
     stub = WireSegment(54.61, 106.68, 54.61, 101.60)

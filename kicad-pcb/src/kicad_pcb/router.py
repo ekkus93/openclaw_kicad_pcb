@@ -204,6 +204,12 @@ class RoutingHeuristicPolicy:
         if not self.enable_compact_local_ground_clusters:
             return None
         if net_name.upper() == "GND":
+            decoupling_ground_cluster = _compact_local_decoupling_ground_cluster_route(
+                cluster,
+                positions=positions,
+            )
+            if decoupling_ground_cluster is not None:
+                return decoupling_ground_cluster
             return _compact_local_ground_cluster_route(cluster, positions=positions)
         if power_rail_polarity(net_name) is None:
             return None
@@ -1647,6 +1653,97 @@ def _compact_local_ground_cluster_route(
 
         _score, lane_y, vertical_target_x = best_lane
         lane_x0 = min(lane_x0, *vertical_target_x.values())
+
+    segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
+    junctions: list[JunctionPoint] = []
+    for x, y in stub_ends:
+        target_x = vertical_target_x[(x, y)]
+        if not math.isclose(x, target_x, abs_tol=0.01):
+            segs.append(WireSegment(x, y, target_x, y))
+        if not math.isclose(y, lane_y, abs_tol=0.01):
+            segs.append(WireSegment(target_x, y, target_x, lane_y))
+        junctions.append(JunctionPoint(target_x, lane_y))
+
+    symbol_x = _snap_grid(lane_x1 + (2 * SYMBOL_HALF_SIZE_MM))
+    segs.append(WireSegment(lane_x1, lane_y, symbol_x, lane_y))
+    protected = {(round(x, 2), round(y, 2)) for x, y in stub_ends}
+    return _simplify_wires(segs, protected_points=protected), junctions, (symbol_x, lane_y)
+
+
+def _compact_local_decoupling_ground_cluster_route(
+    cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
+    *,
+    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+) -> tuple[list[WireSegment], list[JunctionPoint], tuple[float, float]] | None:
+    """Route a compact local GND lane for a small decoupling-cap bank."""
+    if len(cluster) < 2 or len(cluster) > 4:
+        return None
+    if any(not pin_ref.ref.upper().startswith("C") for pin_ref, _anchor in cluster):
+        return None
+
+    stub_ends = [_stub_end(x, y, angle) for _pin_ref, (x, y, angle) in cluster]
+    xs = [point[0] for point in stub_ends]
+    ys = [point[1] for point in stub_ends]
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+    if x_span > 50.0 or y_span > 60.0:
+        return None
+
+    lane_x0 = min(xs)
+    lane_x1 = max(xs)
+    avg_y = sum(ys) / len(ys)
+    lane_y = min(sorted(set(ys)), key=lambda y: abs(y - avg_y))
+    vertical_target_x: dict[tuple[float, float], float] = {(x, y): x for x, y in stub_ends}
+
+    if positions is not None:
+        cluster_positions = [
+            pos for pin_ref, _anchor in cluster if (pos := positions.get(pin_ref.ref)) is not None
+        ]
+        lane_candidates = sorted(set(ys))
+        best_lane: tuple[float, float, dict[tuple[float, float], float], float] | None = None
+        for candidate_y in lane_candidates:
+            candidate_targets = {(x, y): x for x, y in stub_ends}
+            for x, y in stub_ends:
+                if math.isclose(y, candidate_y, abs_tol=0.01):
+                    continue
+                clearance_x = x
+                for bx, by, _rotation in cluster_positions:
+                    if _wire_crosses_box(x, y, x, candidate_y, bx, by, SYMBOL_HALF_SIZE_MM):
+                        clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
+                candidate_targets[(x, y)] = _snap_grid(clearance_x)
+
+            candidate_x0 = min(lane_x0, *candidate_targets.values())
+            blocked = any(
+                _wire_crosses_box(
+                    candidate_x0,
+                    candidate_y,
+                    lane_x1,
+                    candidate_y,
+                    bx,
+                    by,
+                    SYMBOL_HALF_SIZE_MM,
+                )
+                for bx, by, _rotation in cluster_positions
+            )
+            if blocked:
+                continue
+
+            vertical_cost = sum(abs(y - candidate_y) for _x, y in stub_ends)
+            horizontal_cost = sum(abs(x - candidate_targets[(x, y)]) for x, y in stub_ends)
+            centering_cost = abs(candidate_y - avg_y)
+            score = vertical_cost + horizontal_cost + centering_cost
+            if (
+                best_lane is None
+                or score < best_lane[0]
+                or (
+                    math.isclose(score, best_lane[0], abs_tol=0.01)
+                    and centering_cost < abs(best_lane[1] - avg_y)
+                )
+            ):
+                best_lane = (score, candidate_y, candidate_targets, candidate_x0)
+
+        if best_lane is not None:
+            _score, lane_y, vertical_target_x, lane_x0 = best_lane
 
     segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
     junctions: list[JunctionPoint] = []

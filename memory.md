@@ -1,5 +1,22 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-28T14:53:37Z - GPT-5.4 - Synced the power-profile debug summary after the new decoupling-ground locality work
+
+- Full validation after adding the real-fixture `power:GND` locality regression exposed one stale expectation in `tests/unit/test_netlist_commands.py::test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff`: the `power_supply` heuristic profile now legitimately reports both `compact_local_decoupling_cluster: ["VMINUS15", "VPLUS15"]` and `compact_local_ground_cluster: ["GND"]` after the new local decoupling-ground routing helper.
+- Updated that expectation and revalidated with `.venv/bin/ruff check tests/unit/test_netlist_commands.py` plus full `.venv/bin/pytest`, now green at `2271 passed`.
+
+## 2026-03-28T14:27:16Z - GPT-5.4 - Added a real-fixture power:GND locality regression for the NE5532 decoupling bank
+
+- `tests/unit/test_netlist_commands.py` now includes `test_new_from_real_ne5532_fixture_keeps_power_gnd_local_to_decoupling_bank`, which filters placed symbols by `symbol_id == "power:GND"` and asserts each real-fixture decoupler (`C1`-`C4`) has a nearby local ground symbol within `1.5 * GRID_COL_MM`.
+- Added a small helper `_symbol_positions_by_id(...)` in the same test module so future real-fixture regressions can target placed power-symbol families without depending on brittle `#PWRnn` ref ordering.
+- Revalidated with `.venv/bin/ruff check tests/unit/test_netlist_commands.py` and `.venv/bin/pytest -q tests/unit/test_netlist_commands.py -k 'keeps_decoupling_caps_in_opamp_region or separates_positive_and_negative_decouplers or keeps_power_gnd_local_to_decoupling_bank'`, all green.
+
+## 2026-03-28T14:09:15Z - GPT-5.4 - Started Phase 2.3.2 ground-symbol locality for decoupling banks
+
+- `kicad-pcb/src/kicad_pcb/router.py` now special-cases tiny cap-only `GND` clusters (2-4 capacitor pins) with `_compact_local_decoupling_ground_cluster_route(...)` before the older generic 3-pin ground-cluster helper. This keeps the shared `power:GND` symbol attached to local decoupling banks instead of falling back to a detached centroid route.
+- Added `tests/unit/test_phase6_wire_simplification.py::test_route_nets_uses_compact_local_ground_lane_for_decoupling_cap_bank` and revalidated it with the adjacent compact-ground and compact-decoupling routing regressions plus `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`.
+- This is a bounded first slice of TODO 2.3.2: cap polarity-aware placement was already landed in `snap.py`; the new routing helper closes the local GND-symbol side for small decoupling banks, while broader real-fixture cluster/readability follow-up is still open.
+
 ## 2026-03-28T13:11:35Z - GPT-5.4 - Removed the dead readability baseline regeneration test
 
 - Deleted `tests/unit/test_readability_baseline.py::test_generate_baseline_schematic`, which only existed as an opt-in fixture-regeneration helper behind `OPENCLAW_REGENERATE_READABILITY_BASELINE=1` and was the source of the suite's lone routine skip.
