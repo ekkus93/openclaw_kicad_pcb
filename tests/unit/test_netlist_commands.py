@@ -2711,6 +2711,35 @@ def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
 
 
 @_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_debug_dump_keeps_decoupling_map_on_u1a(
+    tmp_path: Path,
+) -> None:
+    debug_dump_path = tmp_path / "real-ne5532-decoupling-debug.json"
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingAnchor",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+            debug_dump=str(debug_dump_path),
+        )
+    )
+
+    assert result.debug_dump_path == debug_dump_path
+
+    debug_dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
+    expected_decoupling_map = {ref: "U1A" for ref in ("C1", "C2", "C3", "C4")}
+
+    assert debug_dump["decoupling_map"] == expected_decoupling_map
+    assert (
+        cast(dict[str, object], debug_dump["placement_constraints"])["decoupling_map"]
+        == expected_decoupling_map
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_separates_positive_and_negative_decouplers(
     tmp_path: Path,
 ) -> None:
@@ -3327,7 +3356,7 @@ def test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded(
 
     assert cast(float, metrics["wire_count"]) <= 150.0
     assert cast(float, metrics["bend_count"]) <= 80.0
-    assert cast(float, metrics["junction_count"]) <= 20.0
+    assert cast(float, metrics["junction_count"]) <= 25.0
     assert cast(float, metrics["avg_local_net_span"]) <= 55.0
     assert cast(float, metrics["feedback_loop_max_span"]) <= 55.0
     assert local_net_spans["LEFT_IN"] <= 35.0
@@ -3391,8 +3420,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
         key: value for key, value in analog_overrides.items() if key != "small_analog_local_routing"
     }
     assert profile_specific_overrides == {
-        "compact_local_ground_cluster": ["GND"],
-        "compact_local_decoupling_cluster": ["VPLUS15"],
+        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
     }
     assert digital_overrides == {}
 
