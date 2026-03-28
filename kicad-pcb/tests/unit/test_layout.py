@@ -510,6 +510,30 @@ class TestComputeSignalDistanceScores:
         # C1 is a decoupling cap anchored to U1 → inherits SDS=0.5
         assert pytest.approx(sds["C1"], abs=1e-9) == 0.5
 
+    def test_local_rail_cap_prefers_ic_anchor_over_passive_neighbor(self):
+        """A decoupling cap on a shared local rail should inherit the active IC SDS."""
+        ir = _make_ir(
+            [
+                ("J1", "Connector", "J1"),
+                ("R1", "R", "1k"),
+                ("U1", "TL071", "U"),
+                ("J2", "Connector", "J2"),
+                ("C1", "C", "100n"),
+            ],
+            [
+                ("N_in", [("J1", "1"), ("R1", "1")]),
+                ("LOCAL_BIAS", [("R1", "2"), ("U1", "3"), ("C1", "1")]),
+                ("N_out", [("U1", "2"), ("J2", "1")]),
+                ("GND", [("C1", "2")]),
+            ],
+        )
+        roles = {"J1": "input", "J2": "output"}
+        sds = compute_signal_distance_scores(ir, roles)
+
+        assert pytest.approx(sds["R1"], abs=1e-9) == (1.0 / 3.0)
+        assert pytest.approx(sds["U1"], abs=1e-9) == (2.0 / 3.0)
+        assert pytest.approx(sds["C1"], abs=1e-9) == pytest.approx(sds["U1"], abs=1e-9)
+
     def test_true_bypass_cap_on_active_rail_inherits_ic_sds(self):
         """A rail-to-ground bypass cap on an active IC rail inherits that IC's SDS."""
         ir = _make_ir(

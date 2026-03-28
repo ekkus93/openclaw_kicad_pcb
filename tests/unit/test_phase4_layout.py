@@ -803,6 +803,22 @@ class TestGraphvizLayoutCacheHelpers:
         assert loaded["C1"][0] == pytest.approx(40.0)
         assert loaded["C1"][1] == pytest.approx(60.0)
 
+    def test_cache_entry_roundtrip_persists_decoupling_map(self, tmp_path: Path) -> None:
+        cache_file: Path = tmp_path / "layout.json"
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (30.0, 50.0, 0.0),
+            "C1": (40.0, 60.0, 90.0),
+        }
+        decoupling_map = {"C1": "U1"}
+        key = "deadbeef" * 8
+
+        _gv_mod.save_layout_cache(cache_file, key, positions, decoupling_map=decoupling_map)
+        loaded_entry = _gv_mod.load_layout_cache_entry(cache_file, key)
+
+        assert loaded_entry is not None
+        assert loaded_entry.positions == positions
+        assert loaded_entry.decoupling_map == decoupling_map
+
     def test_load_cache_miss_on_key_mismatch(self, tmp_path: Path) -> None:
         cache_file: Path = tmp_path / "layout.json"
         _gv_mod.save_layout_cache(cache_file, "key-A" * 12 + "key-", {"R1": (1.0, 2.0, None)})
@@ -837,12 +853,32 @@ class TestGraphvizLayoutCacheHelpers:
         """Malformed positions payload must raise RuntimeError."""
         cache_file: Path = tmp_path / "layout.json"
         cache_file.write_text(
-            json.dumps({"version": 1, "key": "k", "positions": {"R1": "bad"}}),
+            json.dumps(
+                {"version": 2, "key": "k", "positions": {"R1": "bad"}, "decoupling_map": {}}
+            ),
             encoding="utf-8",
         )
 
         with pytest.raises(RuntimeError, match="Invalid layout cache entry"):
             _gv_mod.load_layout_cache(cache_file, "k")
+
+    def test_load_cache_invalid_decoupling_map_shape_raises(self, tmp_path: Path) -> None:
+        """Malformed decoupling_map payload must raise RuntimeError."""
+        cache_file: Path = tmp_path / "layout.json"
+        cache_file.write_text(
+            json.dumps(
+                {
+                    "version": 2,
+                    "key": "k",
+                    "positions": {"R1": [1.0, 2.0, None]},
+                    "decoupling_map": {"C1": ["U1"]},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(RuntimeError, match="Invalid decoupling_map entry"):
+            _gv_mod.load_layout_cache_entry(cache_file, "k")
 
 
 # ---------------------------------------------------------------------------
@@ -861,7 +897,11 @@ class TestGraphvizLayoutEngineCache:
             "C1": (41.0, 61.0, None),
         }
         cache_file: Path = tmp_path / "layout.json"
-        monkeypatch.setattr(_gv_mod, "_load_layout_cache", lambda *_args: positions)
+        monkeypatch.setattr(
+            _gv_mod,
+            "_load_layout_cache_entry",
+            lambda *_args: _gv_mod.LayoutCacheEntry(positions=positions, decoupling_map={}),
+        )
 
         run_dot_called = False
 
@@ -929,6 +969,95 @@ class TestGraphvizLayoutEngineCache:
         after_json = {p.resolve() for p in Path().iterdir() if p.suffix == ".json"}
         created_json = sorted(str(p) for p in (after_json - before_json))
         assert not created_json, f"unexpected .json file created in cwd: {created_json}"
+
+    def test_cache_hit_debug_dump_uses_cached_decoupling_map_without_recomputing(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Cache-hit debug metadata should use the persisted refined decoupling map."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="UpperActive"),
+                ComponentIR(ref="U2", symbol="Amplifier_Operational:TL071", value="LowerActive"),
+                ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="Signal1"),
+                ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Signal2"),
+            ],
+            nets=[
+                NetIR(
+                    name="VEE",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="U2", pin="1"),
+                        PinRefIR(ref="C1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="SIG_A",
+                    pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="J1", pin="1")],
+                ),
+                NetIR(
+                    name="SIG_B",
+                    pins=[PinRefIR(ref="U2", pin="2"), PinRefIR(ref="J2", pin="1")],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="C1", pin="2"),
+                        PinRefIR(ref="J1", pin="2"),
+                        PinRefIR(ref="J2", pin="2"),
+                    ],
+                ),
+            ],
+        )
+        cached_positions: dict[str, tuple[float, float, float | None]] = {
+            "U1": (88.9, 30.48, 0.0),
+            "U2": (96.52, 83.82, 0.0),
+            "C1": (88.9, 10.16, 90.0),
+            "J1": (30.48, 30.48, 0.0),
+            "J2": (30.48, 83.82, 180.0),
+        }
+        cache_file = tmp_path / "layout.json"
+        debug_dump = tmp_path / "layout-debug.json"
+
+        monkeypatch.setattr(
+            _gv_mod,
+            "_load_layout_cache_entry",
+            lambda *_args: _gv_mod.LayoutCacheEntry(
+                positions=cached_positions,
+                decoupling_map={"C1": "U1"},
+            ),
+        )
+
+        def fail_if_refine_called(*_args: object, **_kwargs: object) -> dict[str, str]:
+            raise AssertionError("cache hit should not recompute decoupling_map refinement")
+
+        monkeypatch.setattr(_gv_mod, "_refine_shared_rail_decoupling_map", fail_if_refine_called)
+
+        run_dot_called = False
+
+        def fake_run_dot(self: object, dot_source: str) -> dict[str, tuple[float, float, None]]:
+            nonlocal run_dot_called
+            run_dot_called = True
+            return {}
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+
+        engine = _gv_mod.GraphvizLayoutEngine(
+            dot_path="dot",
+            cache_path=cache_file,
+            debug_dump_path=debug_dump,
+        )
+        result = engine.compute_symbol_positions(ir)
+
+        assert not run_dot_called, "_run_dot was called despite a cache hit"
+        payload = json.loads(debug_dump.read_text(encoding="utf-8"))
+        assert payload["cache_hit"] is True
+        assert payload["decoupling_map"] == {"C1": "U1"}
+        assert payload["placement_constraints"]["decoupling_map"] == {"C1": "U1"}
+        assert result["C1"][0] == pytest.approx(88.9)
 
 
 # ---------------------------------------------------------------------------
@@ -1745,6 +1874,42 @@ class TestFindDecouplingCaps:
             f"Expected C1 to be mapped to U1 as decoupling cap, got: {result}"
         )
 
+    def test_cap_with_shared_local_rail_prefers_ic_over_passive(self) -> None:
+        """A local rail cap should anchor to the active stage, not the first passive on that net."""
+        components = [
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+        ]
+        nets = [
+            NetIR(
+                name="IN_SIG",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="R1", pin="1")],
+            ),
+            NetIR(
+                name="LOCAL_BIAS",
+                pins=[
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="U1", pin="7"),
+                    PinRefIR(ref="C1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="OUT_SIG",
+                pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(name="GND", pins=[PinRefIR(ref="C1", pin="2")]),
+        ]
+
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {"C1": "U1"}, (
+            "Expected decoupling cap to prefer the active IC anchor over the upstream resistor, "
+            f"got: {result}"
+        )
+
     def test_true_bypass_cap_not_detected(self) -> None:
         """C1 with both VCC and GND (both power nets) → not treated as decoupling cap."""
         components = [
@@ -1790,6 +1955,64 @@ class TestFindDecouplingCaps:
         result = _gv_mod.find_decoupling_caps(ir)
         assert result == {"C1": "U1"}, (
             f"Expected power-only bypass cap C1 to anchor to active IC U1, got: {result}"
+        )
+
+    def test_shared_negative_rail_refinement_prefers_device_above_decoupler(self) -> None:
+        """Shared negative rails should refine to the active device above the capacitor."""
+        components = [
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="UpperActive"),
+            ComponentIR(ref="U2", symbol="Amplifier_Operational:TL071", value="LowerActive"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="Signal1"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Signal2"),
+        ]
+        nets = [
+            NetIR(
+                name="VEE",
+                pins=[
+                    PinRefIR(ref="U1", pin="1"),
+                    PinRefIR(ref="U2", pin="1"),
+                    PinRefIR(ref="C1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="SIG_A",
+                pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="J1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_B",
+                pins=[PinRefIR(ref="U2", pin="2"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="J1", pin="2"),
+                    PinRefIR(ref="J2", pin="2"),
+                ],
+            ),
+        ]
+
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        initial_map = _gv_mod.find_decoupling_caps(ir)
+        assert initial_map == {"C1": "U2"}, (
+            f"Expected stable pre-refinement anchor U2, got: {initial_map}"
+        )
+
+        refined_map = _gv_mod.refine_shared_rail_decoupling_map(
+            ir,
+            {
+                "U1": (88.9, 30.48, 0.0),
+                "U2": (96.52, 83.82, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 30.48, 0.0),
+                "J2": (30.48, 83.82, 0.0),
+            },
+            initial_map,
+        )
+        assert refined_map == {"C1": "U1"}, (
+            "Expected the shared negative-rail decoupler to refine to the upper active device, "
+            f"got: {refined_map}"
         )
 
     def test_true_bypass_cap_stays_out_of_cluster_power_with_block_layout(self) -> None:
@@ -1982,6 +2205,65 @@ class TestDecouplingCapCoLocation:
         expected_y = u1_y - _gv_mod.GRID_ROW_MM
         assert c1_y == pytest.approx(expected_y), (
             f"C1.y ({c1_y}) should be U1.y - GRID_ROW_MM ({expected_y}), but got {c1_y}"
+        )
+
+    def test_compute_symbol_positions_refines_shared_negative_rail_anchor(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The engine should re-anchor ambiguous negative-rail decouplers after raw layout."""
+        components = [
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="UpperActive"),
+            ComponentIR(ref="U2", symbol="Amplifier_Operational:TL071", value="LowerActive"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="Signal1"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Signal2"),
+        ]
+        nets = [
+            NetIR(
+                name="VEE",
+                pins=[
+                    PinRefIR(ref="U1", pin="1"),
+                    PinRefIR(ref="U2", pin="1"),
+                    PinRefIR(ref="C1", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="SIG_A",
+                pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="J1", pin="1")],
+            ),
+            NetIR(
+                name="SIG_B",
+                pins=[PinRefIR(ref="U2", pin="2"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="J1", pin="2"),
+                    PinRefIR(ref="J2", pin="2"),
+                ],
+            ),
+        ]
+        ir = CircuitIR(version="1", components=components, nets=nets)
+
+        def fake_run_dot(
+            self_engine: object, dot_source: str
+        ) -> dict[str, tuple[float, float, float | None]]:
+            return {
+                _gv_mod._safe_id("U1"): (88.9, 30.48, 0.0),
+                _gv_mod._safe_id("U2"): (96.52, 83.82, 0.0),
+                _gv_mod._safe_id("C1"): (76.2, 76.2, 0.0),
+                _gv_mod._safe_id("J1"): (30.48, 30.48, 0.0),
+                _gv_mod._safe_id("J2"): (30.48, 83.82, 0.0),
+            }
+
+        monkeypatch.setattr(_gv_mod.GraphvizLayoutEngine, "_run_dot", fake_run_dot)
+        engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")
+
+        result = engine.compute_symbol_positions(ir)
+        assert round(result["C1"][0], 2) == round(result["U1"][0], 2), (
+            f"Expected C1 to re-anchor to U1 after shared negative-rail refinement, got: {result}"
         )
 
     def test_dot_source_unchanged_without_decoupling_map(self) -> None:

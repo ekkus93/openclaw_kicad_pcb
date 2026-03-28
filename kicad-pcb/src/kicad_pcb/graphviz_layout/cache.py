@@ -1,19 +1,22 @@
 """Layout-result cache for the Graphviz schematic layout engine.
 
-Provides SHA-256–keyed JSON persistence for ``{ref: (x, y, rotation)}``
-position maps produced by :class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.
+Provides SHA-256–keyed JSON persistence for final layout metadata produced by
+:class:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine`.
 
 Cache format
 ------------
 A single JSON file with the structure::
 
     {
-        "version": 1,
+        "version": 2,
         "key": "<sha256-hex-of-dot-source>",
         "positions": {
             "R1": [30.48, 50.80, 0.0],
             "C1": [60.96, 50.80, 90.0],
             "U1": [91.44, 50.80, null]
+        },
+        "decoupling_map": {
+            "C1": "U1"
         }
     }
 
@@ -34,12 +37,21 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 # Bump this when the cache JSON schema changes to invalidate all persisted caches.
-_CACHE_FORMAT_VERSION = 1
+_CACHE_FORMAT_VERSION = 2
 _LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v6"
+
+
+@dataclass(frozen=True)
+class _LayoutCacheEntry:
+    """Materialized layout cache payload stored on disk."""
+
+    positions: dict[str, tuple[float, float, float | None]]
+    decoupling_map: dict[str, str]
 
 
 def _layout_cache_key(dot_source: str) -> str:
@@ -53,11 +65,11 @@ def _layout_cache_key(dot_source: str) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def _load_layout_cache(
+def _load_layout_cache_entry(
     cache_path: Path,
     cache_key: str,
-) -> dict[str, tuple[float, float, float | None]] | None:
-    """Return cached symbol positions if *cache_path* exists and *cache_key* matches.
+) -> _LayoutCacheEntry | None:
+    """Return cached layout metadata if *cache_path* exists and *cache_key* matches.
 
     Returns ``None`` only for a normal cache miss (missing file, key mismatch,
     version mismatch). Any cache read/parse/shape error raises
@@ -85,7 +97,7 @@ def _load_layout_cache(
             f"Invalid layout cache format in '{cache_path}': 'positions' must be an object"
         )
 
-    loaded: dict[str, tuple[float, float, float | None]] = {}
+    loaded_positions: dict[str, tuple[float, float, float | None]] = {}
     for ref, value in raw.items():
         if not isinstance(ref, str):
             raise RuntimeError(
@@ -103,15 +115,44 @@ def _load_layout_cache(
             raise RuntimeError(
                 f"Invalid numeric values in layout cache '{cache_path}' for {ref!r}: {value!r}"
             ) from exc
-        loaded[ref] = (x, y, rot)
+        loaded_positions[ref] = (x, y, rot)
 
-    return loaded
+    raw_decoupling_map: Any = data.get("decoupling_map")
+    if not isinstance(raw_decoupling_map, dict):
+        raise RuntimeError(
+            f"Invalid layout cache format in '{cache_path}': 'decoupling_map' must be an object"
+        )
+
+    loaded_decoupling_map: dict[str, str] = {}
+    for cap_ref, anchor_ref in raw_decoupling_map.items():
+        if not isinstance(cap_ref, str) or not isinstance(anchor_ref, str):
+            raise RuntimeError(
+                f"Invalid decoupling_map entry in '{cache_path}': expected string-to-string mapping"
+            )
+        loaded_decoupling_map[cap_ref] = anchor_ref
+
+    return _LayoutCacheEntry(
+        positions=loaded_positions,
+        decoupling_map=loaded_decoupling_map,
+    )
+
+
+def _load_layout_cache(
+    cache_path: Path,
+    cache_key: str,
+) -> dict[str, tuple[float, float, float | None]] | None:
+    """Return cached symbol positions if *cache_path* exists and *cache_key* matches."""
+    entry = _load_layout_cache_entry(cache_path, cache_key)
+    if entry is None:
+        return None
+    return entry.positions
 
 
 def _save_layout_cache(
     cache_path: Path,
     cache_key: str,
     positions: Mapping[str, tuple[float, float, float | None]],
+    decoupling_map: Mapping[str, str] | None = None,
 ) -> None:
     """Persist *positions* to *cache_path*.
 
@@ -124,6 +165,7 @@ def _save_layout_cache(
             "version": _CACHE_FORMAT_VERSION,
             "key": cache_key,
             "positions": {ref: [x, y, rot] for ref, (x, y, rot) in positions.items()},
+            "decoupling_map": dict(sorted((decoupling_map or {}).items())),
         }
         cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     except Exception as exc:  # noqa: BLE001

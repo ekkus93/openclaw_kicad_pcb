@@ -3261,7 +3261,7 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     }
     assert profile_specific_overrides == {
         "compact_local_ground_cluster": ["GND"],
-        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
+        "compact_local_decoupling_cluster": ["VPLUS15"],
     }
     assert digital_overrides == {}
 
@@ -3316,7 +3316,9 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
         "enable_compact_local_ground_clusters": False,
         "enable_compact_output_tails": False,
     }
-    assert power_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert power_overrides == {
+        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
+    }
     assert digital_overrides == {}
 
 
