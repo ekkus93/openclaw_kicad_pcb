@@ -18,9 +18,9 @@ This document is written as an implementation plan for GitHub Copilot. It is int
 
 ## Status legend
 
-- `DONE` — completed and reflected in the current repo/docs state
-- `IN PROGRESS` — partially implemented, analyzed, or planned in enough detail to continue directly
-- `NOT STARTED` — not yet implemented for this fix pass
+- [x] `DONE` — completed and reflected in the current repo/docs state
+- [ ] `IN PROGRESS` — partially implemented, analyzed, or planned in enough detail to continue directly
+- [ ] `NOT STARTED` — not yet implemented for this fix pass
 
 ---
 
@@ -28,25 +28,20 @@ This document is written as an implementation plan for GitHub Copilot. It is int
 
 Implement in this order:
 
-1. **Fix correctness blockers**
-  Status: `DONE`
-2. **Add analog-aware placement and grouping**
-  Status: `IN PROGRESS`
-3. **Reduce routing clutter**
-  Status: `IN PROGRESS`
-4. **Improve page composition and readability**
-  Status: `DONE`
-5. **Add tests, fixtures, and regression protection**
-  Status: `DONE`
+1. [x] **Fix correctness blockers**
+2. [ ] **Add analog-aware placement and grouping**
+3. [ ] **Reduce routing clutter**
+4. [x] **Improve page composition and readability**
+5. [x] **Add tests, fixtures, and regression protection**
 
 ---
 
 ## Phase 0 - Read and understand the current pipeline
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### 0.1 Identify the relevant pipeline entry points
-Status: `DONE`
+- [x] Status: DONE
 - Find the code path that:
   - reads or constructs the normalized circuit/netlist representation,
   - maps devices to KiCad symbols,
@@ -62,7 +57,7 @@ Status: `DONE`
   - any symbol-library or multi-unit-device handling layer.
 
 ### 0.2 Trace how `U1`, `R1`, `C5`, `R2`, `R3`, `R6`, `R7`, `J1`, and `J2` are represented internally
-Status: `DONE`
+- [x] Status: DONE
 - Log or inspect the internal representation for the op-amp amplifier example.
 - Confirm:
   - whether multi-unit symbols are modeled at all,
@@ -81,7 +76,7 @@ Current findings:
 - The router consumes named nets with multi-pin memberships and derives route plans from those net groups rather than from explicit pairwise edges in the source JSON.
 
 ### 0.3 Create a developer fixture for the failing example
-Status: `DONE`
+- [x] Status: DONE
 - Add a stable fixture input for this exact amplifier example.
 - Include:
   - the design notes file,
@@ -92,7 +87,7 @@ Status: `DONE`
 
 #### Concrete file map for fixture creation
 
-Status: `DONE`
+- [x] Status: DONE
 
 Implement the fixture work in this order.
 
@@ -136,14 +131,14 @@ Current findings:
    - If a small helper script is needed for local developer reproduction, keep it under `scripts/` and make it explicitly fixture-targeted
 
 ### 0.4 Save the current output as a regression baseline
-Status: `DONE`
+- [x] Status: DONE
 - Preserve the current generated `.kicad_sch` and/or PNG output as a “before” artifact for comparison.
 - Do **not** treat the current output as correct.
 - Use it only as a baseline to show improvement.
 
 #### Concrete file map for baseline preservation
 
-Status: `DONE`
+- [x] Status: DONE
 
 Implement the before-baseline work in this order.
 
@@ -200,11 +195,11 @@ Implement the before-baseline work in this order.
 
 ## Phase 1 - Fix correctness blockers
 
-Status: `DONE`
+- [x] Status: DONE
 
 ## 1.1 Implement proper multi-unit symbol support
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 The circuit uses both halves of an `NE5532`, but the generated schematic is not representing this clearly as distinct units such as `U1A` and `U1B`.
@@ -214,7 +209,7 @@ The internal model and KiCad output must support multi-unit devices properly.
 
 ### Concrete change map for device-vs-unit support
 
-Status: `DONE`
+- [x] Status: DONE
 
 Implement the multi-unit work in this dependency order. Do **not** spend major effort on routing polish until steps 1 through 5 are complete.
 
@@ -306,7 +301,7 @@ Implement the multi-unit work in this dependency order. Do **not** spend major e
 ### Tasks
 
 #### 1.1.1 Audit current symbol-instance modeling
-Status: `DONE`
+- [x] Status: DONE
 - Determine whether the current code treats every reference designator as a single placed drawable object.
 - Identify where the assumption “one refdes = one drawn symbol body” exists.
 - Document all places where this assumption affects:
@@ -316,7 +311,7 @@ Status: `DONE`
   - symbol emission.
 
 #### 1.1.2 Add an internal concept of “device” vs “placed unit”
-Status: `DONE`
+- [x] Status: DONE
 - Introduce or formalize two different concepts:
   - **physical/logical device**: e.g. `U1`
   - **placed unit**: e.g. `U1A`, `U1B`, optionally power unit
@@ -329,7 +324,7 @@ Status: `DONE`
   - mapping back to parent device.
 
 #### 1.1.3 Add symbol metadata for multi-unit parts
-Status: `DONE`
+- [x] Status: DONE
 - Ensure the symbol lookup layer can answer:
   - total number of units,
   - which pins belong to each unit,
@@ -342,7 +337,7 @@ Current audit findings:
 - `kicad-pcb/src/kicad_pcb/lib_symbol.py` now also exposes `read_lib_symbol_power_unit(...)`, and `kicad-pcb/src/kicad_pcb/symbol_index.py` now caches that metadata via `SymbolIndex.get_power_unit(...)`, so the symbol-definition layer can explicitly identify a dedicated power-only unit instead of relying only on later net-usage heuristics.
 
 #### 1.1.4 Split `NE5532` into separate drawable units
-Status: `DONE`
+- [x] Status: DONE
 - For the headphone amp example, `U1` must produce:
   - one drawable symbol for stage 1 op-amp,
   - one drawable symbol for stage 2 op-amp,
@@ -350,7 +345,7 @@ Status: `DONE`
 - Ensure each routed net attaches to the correct unit pins.
 
 #### 1.1.5 Update placement to operate on placed units, not just parent devices
-Status: `DONE`
+- [x] Status: DONE
 - The layout engine must place `U1A` and `U1B` separately.
 - It must still know they belong to the same parent device.
 - Add optional constraints for sibling units:
@@ -359,17 +354,17 @@ Status: `DONE`
   - power unit near or above/below the main units if drawn.
 
 #### 1.1.6 Update routing to use placed-unit pin anchors
-Status: `DONE`
+- [x] Status: DONE
 - Ensure pin anchor calculations use the correct placed unit and pin subset.
 - Eliminate any routing ambiguity caused by shared parent device state.
 
 #### 1.1.7 Update KiCad emitter for unit-aware symbol instances
-Status: `DONE`
+- [x] Status: DONE
 - Emit the correct unit information into `.kicad_sch`.
 - Verify the output opens cleanly in KiCad without silently collapsing units or misassigning pins.
 
 #### 1.1.8 Add tests for multi-unit parts
-Status: `DONE`
+- [x] Status: DONE
 - Add tests for:
   - dual op-amp split into two units,
   - routing to correct pins,
@@ -378,7 +373,7 @@ Status: `DONE`
 
 ### Phase 1.1 first-slice progress
 
-Status: `DONE`
+- [x] Status: DONE
 
 - The first vertical slice is now implemented in the generation path.
 - `kicad-pcb/src/kicad_pcb/lib_symbol.py` exposes KiCad unit pin groups from flattened symbol metadata, which is enough to derive the `NE5532` unit split from the inherited `LM2904` sub-symbols.
@@ -417,7 +412,7 @@ Status: `DONE`
 
 ## 1.2 Fix or explicitly validate the `R1` / `C5` input network
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 The current netlist appears to place `R1` directly across `C5`, which is suspicious and likely not the intended input-coupling topology.
@@ -429,7 +424,7 @@ The tool must either:
 
 ### Concrete change map for the `R1` / `C5` warning work
 
-Status: `DONE`
+- [x] Status: DONE
 
 Implement the suspicious-topology work in this dependency order. Default behavior for this fix pass is: preserve the extracted netlist unless upstream intent is provably different, and emit a warning rather than silently correcting the circuit.
 
@@ -508,7 +503,7 @@ Implement the suspicious-topology work in this dependency order. Default behavio
 ### Tasks
 
 #### 1.2.1 Confirm the exact current connectivity
-Status: `DONE`
+- [x] Status: DONE
 - Trace these nets from the JSON netlist:
   - `LEFT_IN`
   - `IN_L_AC`
@@ -524,7 +519,7 @@ Current findings from `code_review/ne5532_headphone_amp_netlist.json`:
 - This confirms the current netlist encodes `R1` directly in parallel with `C5` across the input coupling boundary.
 
 #### 1.2.2 Compare the netlist to the design notes
-Status: `DONE`
+- [x] Status: DONE
 - Read the design notes carefully and determine the intended role of `R1`.
 - Decide whether `R1` was intended to be:
   - input impedance to ground,
@@ -541,7 +536,7 @@ Current findings:
 - Therefore the current JSON netlist matches the authored notes on this point; the suspicious `R1` / `C5` parallel topology originates in the source notes/design artifact itself, not in a later discrepancy between notes and netlist.
 
 #### 1.2.3 Find where the netlist was derived from the notes
-Status: `DONE`
+- [x] Status: DONE
 - Identify the code or prompt layer that produced the JSON netlist from the notes.
 - Determine whether the issue is:
   - source-note ambiguity,
@@ -557,7 +552,7 @@ Current findings:
 - Current evidence therefore points to source-note intent or ambiguity, not a later normalization/transformation bug inside the schematic generator.
 
 #### 1.2.4 Decide and implement one of these two behaviors
-Status: `DONE`
+- [x] Status: DONE
 
 ##### Option A: fix the netlist-generation logic
 If the notes clearly imply a different intended topology:
@@ -584,7 +579,7 @@ Current implementation status:
 - Focused validation remains green for the warning path via `tests/unit/test_netlist_commands.py`, including the real `code_review/ne5532_headphone_amp_netlist.json` drift guard.
 
 #### 1.2.5 Add validation for suspicious analog topologies
-Status: `DONE`
+- [x] Status: DONE
 - Implement a lightweight rule checker that can flag:
   - coupling capacitor directly paralleled by a resistor,
   - output coupling capacitor bypassed by low-value path,
@@ -617,7 +612,7 @@ Current findings:
   - `OPAMP_OUTPUT_SHORTED_TO_RAIL`
 
 #### 1.2.6 Add tests for the `R1/C5` case
-Status: `DONE`
+- [x] Status: DONE
 - Add at least one test that reproduces the suspicious topology.
 - Verify:
   - it is either corrected upstream,
@@ -646,11 +641,11 @@ Current findings:
 
 ## Phase 2 - Improve analog-aware grouping and placement
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ## 2.1 Add functional-block detection for analog schematics
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 The current result is better than before but still mostly reflects generic graph layout rather than intentional analog schematic drafting.
@@ -661,7 +656,7 @@ The layout engine should identify and place analog functional blocks.
 ### Tasks
 
 #### 2.1.1 Add block classification rules
-Status: `DONE`
+- [x] Status: DONE
 Implement heuristics to classify structures such as:
 - **input block**
   - connector/jack
@@ -693,7 +688,7 @@ Current findings:
 - Focused regression coverage in `tests/unit/test_block_detection.py` already locks these families on both synthetic circuits and the canonical NE5532 regression fixture.
 
 #### 2.1.2 Build block membership from graph motifs
-Status: `DONE`
+- [x] Status: DONE
 - Use graph patterns to infer membership:
   - op-amp output back to inverting input through a resistor = feedback member
   - series cap between connector and active node = input coupling member
@@ -707,7 +702,7 @@ Current findings:
 - The focused block-detection regression suite currently passes green (`python -m pytest -q tests/unit/test_block_detection.py`), so the remaining Phase 2 work is downstream placement policy rather than unfinished membership inference.
 
 #### 2.1.3 Add block-level layout constraints
-Status: `DONE`
+- [x] Status: DONE
 - Place blocks in natural signal-flow order from left to right:
   - input
   - stage 1
@@ -727,7 +722,7 @@ Current findings:
 
 ## 2.2 Add op-amp-specific placement rules
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 Feedback and stage topology are not visually obvious.
@@ -738,7 +733,7 @@ An op-amp stage should look like a human-drawn op-amp stage.
 ### Tasks
 
 #### 2.2.1 Non-inverting stage layout
-Status: `DONE`
+- [x] Status: DONE
 For a non-inverting amplifier:
 - place the op-amp triangle pointing right,
 - place the non-inverting input path coming from the left,
@@ -754,7 +749,7 @@ Current progress note:
 - Added a new helper regression and a new real-fixture regression in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the full U1A gain-stage column pattern, and bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` again to `graphviz-layout-v5` because this new late pass changes final managed coordinates without changing the Graphviz DOT input.
 
 #### 2.2.2 Voltage follower / buffer layout
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 For a unity-gain buffer:
 - place the op-amp with clear feedback from output directly to inverting input,
 - place the incoming signal at the non-inverting input,
@@ -767,7 +762,7 @@ Current progress note:
 - Added helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the bridge-plus-shunt input-node shape for the NE5532 stage-2 handoff, and updated the older real-fixture row tests so they now assert the intentional one-row shunt drop instead of the previous flattened-row expectation.
 
 #### 2.2.3 Keep stage-local parts close
-Status: `DONE`
+- [x] Status: DONE
 - Add strong constraints that:
   - `R2` hugs `U1A`,
   - `R3` hangs locally from the inverting node to ground,
@@ -786,7 +781,7 @@ Current progress note:
 - Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that validate U1B buffer-row shortness and compact output-tail locality. Focused test slices and ruff checks passed during validation.
 
 #### 2.2.4 Avoid stretching feedback loops across large distances
-Status: `DONE`
+- [x] Status: DONE
 - Penalize placements where feedback members are far from their op-amp unit.
 - Add explicit cost terms or hard constraints for:
   - op-amp output to feedback resistor distance,
@@ -805,7 +800,7 @@ Current progress note:
 
 ## 2.3 Place decoupling correctly
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 The decoupling network is visually too far from the op-amp.
@@ -816,17 +811,20 @@ Decoupling must appear local to the IC it serves.
 ### Tasks
 
 #### 2.3.1 Detect decoupling components
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Identify capacitors that connect from supply rails to ground near active devices.
 - Associate them with the nearest relevant active device, especially op-amps.
 
 Current progress note:
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py::_find_decoupling_caps(...)` and the mirrored `kicad-pcb/src/kicad_pcb/layout.py::_find_decoupling_caps_layout(...)` now treat true rail-to-ground bypass caps as local decouplers when they share a supply rail with an active IC, instead of only recognizing the earlier one-signal-net-plus-power-net pattern.
 - The matcher now also handles split multi-unit devices in generation IR: when a rail only touches the dedicated power unit (for example `U1P`), it falls back to sibling signal units in the same parent device family so the decoupling anchor still lands in the visible op-amp region.
-- Added focused helper coverage in `tests/unit/test_phase4_layout.py` and SDS coverage in `kicad-pcb/tests/unit/test_layout.py` that lock both the new power-only detection path and the inherited active-device association.
+- The shared-net detector now ranks anchor candidates instead of taking the first non-connector neighbor, so a local support capacitor prefers the actual active stage over an incidental passive that happens to sit on the same support net.
+- The Graphviz engine now also refines ambiguous shared-rail rail-to-ground anchors after the initial raw layout exists, reusing the same polarity-aware nearest-stage logic as the decoupling-distance warning path so multi-stage rails stop collapsing onto a stable-but-arbitrary stage choice.
+- The persisted Graphviz layout cache schema now stores the final refined `decoupling_map` alongside final symbol positions, and cache hits consume that stored metadata directly instead of recomputing the shared-rail refinement path just to rebuild debug or placement-constraint payloads.
+- Added focused helper coverage in `tests/unit/test_phase4_layout.py` and SDS coverage in `kicad-pcb/tests/unit/test_layout.py` that lock the power-only detection path, the inherited active-device association, the passive-vs-active anchor preference, the shared negative-rail refinement path, the cache-schema round-trip, and the cache-hit metadata-consistency follow-up.
 
 #### 2.3.2 Add local-decoupling placement rules
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Place positive-rail decouplers above the op-amp unit area.
 - Place negative-rail decouplers below or near the lower rail area.
 - Keep the ground symbol local to those capacitors.
@@ -838,7 +836,7 @@ Current progress note:
 - Added a focused snap regression in `tests/unit/test_phase4_layout.py` plus a real-fixture managed-schematic regression in `tests/unit/test_netlist_commands.py` that lock the NE5532 decoupling polarity split (`C1/C3` above, `C2/C4` below) while keeping all four capacitors local to the op-amp region.
 
 #### 2.3.3 Draw rail connections cleanly
-Status: `DONE`
+- [x] Status: DONE
 - Prefer short vertical or horizontal rail drops.
 - Avoid meandering rail wires for local decouplers.
 
@@ -851,7 +849,7 @@ Current progress note:
 
 ## 2.4 Improve connector handling
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 The TRS connectors are left-channel-only in usage, but the unused ring behavior is not very clear.
@@ -862,7 +860,7 @@ Connectors should be explicit and unambiguous.
 ### Tasks
 
 #### 2.4.1 Decide on left-channel-only symbol strategy
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 Implement one of:
 - use mono connector symbols where appropriate,
 - or keep TRS symbols but mark unused pins explicitly,
@@ -874,7 +872,7 @@ Current findings:
 - The remaining decision is product-level policy, not basic schematic clarity: whether this fixture should keep the current TRS-plus-no-connect presentation or later switch to a simpler mono/channel-specific symbol strategy.
 
 #### 2.4.2 Mark unused pins explicitly
-Status: `DONE`
+- [x] Status: DONE
 - If TRS symbols remain, emit no-connect markers on unused pins where appropriate.
 - Avoid leaving the reader guessing whether a pin was forgotten.
 
@@ -884,7 +882,7 @@ Current findings:
 - Focused regression coverage now exists in `tests/unit/test_sch_doc.py` and `tests/unit/test_netlist_commands.py`, including the real-system NE5532 command path asserting two no-connect markers for the unused TRS ring pins on `J1` and `J2`.
 
 #### 2.4.3 Improve connector orientation and attachment
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Input connector should clearly face into the circuit from the left.
 - Output connector should clearly face out of the circuit on the right.
 - Avoid awkward connector placement that hides signal flow.
@@ -898,11 +896,11 @@ Current findings:
 
 ## Phase 3 - Reduce routing clutter
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ## 3.1 Prefer placement that eliminates routing complexity
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 The current routing looks too busy for a small analog circuit.
@@ -913,7 +911,7 @@ A simple analog circuit should have calm, short, obvious wiring.
 ### Tasks
 
 #### 3.1.1 Rebalance placement vs routing
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Move complexity reduction earlier into placement.
 - Prefer placing related parts close enough that routing becomes trivial.
 - Do not rely on elaborate router behavior to compensate for weak placement.
@@ -923,7 +921,7 @@ Current findings:
 - That small placement bias removed the specific connector-column drift that was forcing the `J2` neighborhood back toward nearby support bodies, while leaving the broader compact-routing heuristics to clean up only the remaining local nets.
 
 #### 3.1.2 Penalize excessive bends and junctions
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Add routing cost penalties for:
   - extra bends,
   - unnecessary jogs,
@@ -932,7 +930,7 @@ Status: `IN PROGRESS`
   - avoidable junction proliferation.
 
 #### 3.1.3 Add a “small analog circuit” routing mode
-Status: `DONE`
+- [x] Status: DONE
 - For compact analog circuits, prefer:
   - short local direct routes,
   - one or two bends max for local nets,
@@ -948,7 +946,7 @@ Current findings:
 
 ## 3.2 Add net-class-specific routing preferences
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 All nets appear to be treated too generically.
@@ -959,7 +957,7 @@ Different net types should route differently.
 ### Tasks
 
 #### 3.2.1 Classify nets
-Status: `DONE`
+- [x] Status: DONE
 Classify nets into categories such as:
 - signal-chain nets,
 - feedback nets,
@@ -974,7 +972,7 @@ Current findings:
 - Classification is currently derived from the routed net name plus the participating ref families, which is enough to distinguish the stable analog-audio seams already in use: input/output path nets now classify as `signal_chain`, connector-plus-passive attachment nets classify as `connector_attachment`, and explicit inverting/feedback nets such as `U1A_INV` classify as `feedback`.
 
 #### 3.2.2 Route by net class
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - **feedback nets**: shortest and most local possible
 - **shunt-to-ground nets**: prefer short vertical drop to nearby ground
 - **power nets**: clean local rail presentation
@@ -988,7 +986,7 @@ Current findings:
 - Focused regression coverage for both behaviors now lives in `tests/unit/test_phase6_wire_simplification.py`.
 
 #### 3.2.3 Prefer labels only when they improve clarity
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Avoid label fallback for short readable local nets.
 - Use labels only when they reduce crossing/clutter or improve comprehension.
 
@@ -1002,7 +1000,7 @@ Current findings:
 
 ## 3.3 Improve ground presentation
 
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 
 ### Problem
 Grounded passive parts are not always presented in the clearest analog style.
@@ -1013,7 +1011,7 @@ Grounded shunt parts should be visually obvious.
 ### Tasks
 
 #### 3.3.1 Add local ground-drop preference
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - For resistors/caps that terminate to ground:
   - prefer placing the grounded end downward,
   - add a local ground symbol directly below,
@@ -1023,7 +1021,7 @@ Current findings:
 - The current output-side `GND` refinement is not yet a full generic local-ground drop policy, but it does now keep the `J2.S` / `R5.2` / `R7.2` cluster on a local horizontal lane with a nearby ground symbol instead of routing those pins through a more distant shared centroid.
 
 #### 3.3.2 Keep stage-local grounds stage-local in drawing
-Status: `IN PROGRESS`
+- [ ] Status: IN PROGRESS
 - Do not over-centralize grounds in the visual layout.
 - Preserve clarity over theoretical “single common ground symbol” compactness.
 
@@ -1035,11 +1033,11 @@ Current findings:
 
 ## Phase 4 - Improve page composition
 
-Status: `DONE`
+- [x] Status: DONE
 
 ## 4.1 Use the sheet intentionally
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 The circuit occupies only part of the page and does not look composed.
@@ -1050,7 +1048,7 @@ The schematic should look intentionally arranged on the page.
 ### Tasks
 
 #### 4.1.1 Add page-level packing / centering
-Status: `DONE`
+- [x] Status: DONE
 - After block placement, compute the overall circuit bounding box.
 - Recenter and scale spacing so the main circuit occupies a balanced region of the sheet.
 - Avoid leaving most of the page empty unless the design is truly tiny.
@@ -1061,7 +1059,7 @@ Current findings:
 - Focused coverage in `tests/unit/test_phase8_layout.py` now locks the page-balance metrics, dead-zone behavior, correction factor, and end-to-end headphone-amp composition guardrails.
 
 #### 4.1.2 Respect title block exclusion zone
-Status: `DONE`
+- [x] Status: DONE
 - Add or improve a keep-out region around the title block.
 - Ensure no meaningful circuitry crowds or overlaps that visual area.
 
@@ -1071,7 +1069,7 @@ Current findings:
 - `tests/unit/test_phase8_layout.py` now covers both the helper-level title-block/op-amp constraints and the end-to-end guarantee that the generated headphone-amp schematic stays out of the title-block zone and emits no Phase 8 composition lints.
 
 #### 4.1.3 Keep power block and main circuit visually connected
-Status: `DONE`
+- [x] Status: DONE
 - Power/decoupling may be above the main path, but it should still read as part of the same design.
 
 Current findings:
@@ -1083,7 +1081,7 @@ Current findings:
 
 ## 4.2 Improve block spacing and alignment
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 The stage boundaries are not strong enough visually.
@@ -1094,11 +1092,11 @@ Blocks should align clearly and read left-to-right.
 ### Tasks
 
 #### 4.2.1 Align major signal-path nodes horizontally
-Status: `DONE`
+- [x] Status: DONE
 - Input block, stage 1, stage 2, and output block should share a coherent horizontal axis where appropriate.
 
 #### 4.2.2 Use consistent spacing between blocks
-Status: `DONE`
+- [x] Status: DONE
 - Add spacing rules for:
   - within-block compactness,
   - between-block separation,
@@ -1117,7 +1115,7 @@ Current findings:
 - Output connectors also now receive one extra snap-step of outward clearance beyond the nominal connector lane, which keeps the right-side attachment geometry readable without widening the whole stage.
 
 #### 4.2.3 Keep local loops compact
-Status: `DONE`
+- [x] Status: DONE
 - Feedback loop and buffer loop should remain much tighter than the spacing between major functional blocks.
 
 Current findings:
@@ -1129,7 +1127,7 @@ Current findings:
 
 ## 4.3 Add optional important net labels
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Problem
 Internal nodes are harder to inspect than they need to be.
@@ -1140,7 +1138,7 @@ Important named nets can be shown when helpful.
 ### Tasks
 
 #### 4.3.1 Decide label policy
-Status: `DONE`
+- [x] Status: DONE
 - Add configuration for:
   - minimal labels,
   - debug labels,
@@ -1152,7 +1150,7 @@ Current findings:
 - The debug sidecar now records `label_mode_name`, and focused coverage in `tests/unit/test_phase4_layout.py`, `tests/unit/test_phase7_ux.py`, `tests/unit/test_presentation.py`, and `tests/unit/test_netlist_commands.py` locks the resolver, CLI wiring, presentation output, and mode-specific routing behavior.
 
 #### 4.3.2 Identify important nets for display
-Status: `DONE`
+- [x] Status: DONE
 For this example, consider exposing:
 - `LEFT_IN`
 - `IN_L_AC`
@@ -1167,7 +1165,7 @@ Current findings:
 - Focused coverage in `tests/unit/test_phase4_layout.py` locks the seam selection logic on a synthetic left-channel slice, and `tests/unit/test_netlist_commands.py` now proves the real NE5532 fixture surfaces the expected visible labels when run with `--label-mode always-show-important-labels`.
 
 #### 4.3.3 Avoid label overuse
-Status: `DONE`
+- [x] Status: DONE
 - Only place labels where they improve reading or debugging.
 - Do not replace good local wiring with gratuitous labels.
 
@@ -1176,15 +1174,50 @@ Current findings:
 - Important-mode promotion still applies on the explicit multi-pin stage seams that benefit from inspection labels, so the real NE5532 fixture continues to surface `LEFT_IN`, `IN_L_AC`, `VOL_L_OUT`, `OUT_L_STAGE1`, `BUF_L_IN`, and `HP_L_OUT` without reintroducing labels on already-obvious local direct routes.
 - Focused coverage in `tests/unit/test_phase4_layout.py` now locks both sides of that boundary: direct important seams stay label-free, while multi-pin stage seams still get one visible label in important mode.
 
+## 4.4 Normalize similar part presentation
+
+- [x] Status: DONE
+
+### Problem
+Equivalent passive parts in the same stage can appear arbitrarily rotated, which weakens visual grammar even when the connectivity is correct.
+
+### Required result
+Similar passives in the same functional role should share a consistent presentation without disturbing already-readable local layouts.
+
+### Tasks
+
+#### 4.4.1 Normalize passive orientation by role
+- [x] Status: DONE
+- [x] Identify passive components that belong to the same functional role in the laid-out circuit.
+- [x] Group candidate passives by role, including at least `FEEDBACK`, `INPUT`, `PRECONDITIONING`, `OUTPUT`, and `INTERSTAGE` where present.
+- [x] Define one canonical orientation per role instead of letting equivalent parts drift independently.
+- [x] Keep feedback passives vertically aligned when they sit in the same op-amp column and visually participate in the local feedback loop.
+- [x] Keep input, preconditioning, output, and interstage passives horizontally aligned by default to reinforce left-to-right signal flow.
+- [x] Apply normalization only after the initial per-component orientation pass has assigned baseline rotations.
+- [x] Skip normalization for single-component role groups so lone parts are not forced into artificial conventions.
+- [x] Preserve already-coherent local layouts instead of rewriting valid placement intent just to satisfy a global rule.
+- [x] Keep normalization scoped by role so one role's canonical orientation does not leak into another role's presentation.
+- [x] Add focused unit coverage for feedback-role consistency.
+- [x] Add focused unit coverage for input-role consistency.
+- [x] Add focused unit coverage for output-role consistency.
+- [x] Add focused unit coverage for mixed-role independence.
+- [x] Add focused unit coverage for preserving already-good layouts.
+- [x] Re-run broader orientation and layout regression suites after any normalization change.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/layout.py` now normalizes passive orientations by role through `_normalize_passive_orientations_by_role(...)`, keeping feedback parts vertically aligned when they sit in the op-amp column and keeping input, preconditioning, output, and interstage passives horizontally aligned by default.
+- Focused regression coverage in `tests/unit/test_phase9_normalization.py` now locks feedback-role consistency, input-role consistency, output-role consistency, mixed-role independence, and preservation of already-good layouts.
+- Focused validation for the normalization and analysis surfaces passed green with `export PYTHONPATH=kicad-pcb/src && .venv/bin/pytest -q tests/unit/test_phase9_normalization.py tests/unit/test_schematic_metrics.py`.
+
 ---
 
 ## Phase 5 - Add validation, tests, and regression protection
 
-Status: `DONE`
+- [x] Status: DONE
 
 ## 5.1 Add schematic-readability regression fixtures
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Required result
 The quality improvements should stay fixed.
@@ -1192,7 +1225,7 @@ The quality improvements should stay fixed.
 ### Tasks
 
 #### 5.1.1 Add this amplifier as a named fixture
-Status: `DONE`
+- [x] Status: DONE
 - Store the amplifier example as a durable regression fixture.
 
 Current findings:
@@ -1201,7 +1234,7 @@ Current findings:
 - Focused coverage in `tests/unit/test_readability_review_script.py` now locks the review script defaults to that named fixture registry, which makes the fixture durable as a reusable regression target rather than just a directory convention.
 
 #### 5.1.2 Add expected structural assertions
-Status: `DONE`
+- [x] Status: DONE
 Assert that:
 - there are two distinct drawable op-amp units for `U1`,
 - decoupling is associated with the op-amp region,
@@ -1215,7 +1248,7 @@ Current findings:
 - `tests/unit/test_netlist_commands.py` now treats the real NE5532 source netlist as a shared named fixture and locks the remaining structure-specific guarantees that the readability fixture could not express: generation must split `U1` into drawable `U1A` / `U1B` / `U1P` units, keep `C1`-`C4` closer to the op-amp region than to the audio connectors, keep feedback parts `R2` / `R3` local to `U1A`, and still emit explicit no-connect markers for the unused TRS ring pins.
 
 #### 5.1.3 Add route-quality metrics
-Status: `DONE`
+- [x] Status: DONE
 Track and compare:
 - wire count,
 - bend count,
@@ -1236,7 +1269,7 @@ Current findings:
 
 ## 5.2 Add topology warnings / linting
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Required result
 The tool should help catch suspicious circuits before drawing them prettily.
@@ -1244,7 +1277,7 @@ The tool should help catch suspicious circuits before drawing them prettily.
 ### Tasks
 
 #### 5.2.1 Add analog lint rules
-Status: `DONE`
+- [x] Status: DONE
 Warn on:
 - coupling capacitor directly paralleled by resistor,
 - missing op-amp feedback,
@@ -1277,7 +1310,7 @@ Current findings:
 - Audit confirmation: the live warning pipeline now covers every family listed in 5.2.1 across the advisory-validation path (`INPUT_COUPLING_BYPASSED_BY_RESISTOR`, `OPAMP_FEEDBACK_MISSING_OR_NONLOCAL`, `OUTPUT_CAP_NO_DEFINED_LOAD_OR_BLEED`, `CONNECTOR_UNUSED_PINS_AMBIGUOUS`, `OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN`) plus the layout/apply path (`DECOUPLING_FAR_FROM_ACTIVE_DEVICE`), with focused helper-layer and command-layer regression coverage already present.
 
 #### 5.2.2 Add warning surfacing
-Status: `DONE`
+- [x] Status: DONE
 - Ensure warnings can appear in:
   - CLI output,
   - logs,
@@ -1294,7 +1327,7 @@ Current findings:
 
 ## 5.3 Add before/after comparison tooling
 
-Status: `DONE`
+- [x] Status: DONE
 
 ### Required result
 Developers should be able to see whether layout quality actually improved.
@@ -1302,7 +1335,7 @@ Developers should be able to see whether layout quality actually improved.
 ### Tasks
 
 #### 5.3.1 Save render snapshots during tests or dev mode
-Status: `DONE`
+- [x] Status: DONE
 - Generate PNG or equivalent preview renders for:
   - current baseline,
   - improved output.
@@ -1313,7 +1346,7 @@ Current findings:
 - Focused coverage in `tests/unit/test_readability_review_script.py` now verifies both the normal preview-export path and the internal preview renderer path, so `review_report.json` always carries direct visual before/after artifacts alongside the metric drift data.
 
 #### 5.3.2 Add a schematic-quality review script
-Status: `DONE`
+- [x] Status: DONE
 - Create a simple developer utility that:
   - generates the fixture,
   - reports warnings,
@@ -1329,10 +1362,10 @@ Current findings:
 
 ## Phase 6 - Optional but strongly recommended cleanup
 
-Status: `DONE`
+- [x] Status: DONE
 
 ## 6.1 Separate generic graph heuristics from analog-specific drafting heuristics
-Status: `DONE`
+- [x] Status: DONE
 - Refactor so generic placement logic is not tangled with analog-special-case logic.
 - Keep analog rules in a clear module or strategy layer.
 
@@ -1341,7 +1374,7 @@ Current findings:
 - `LayoutHeuristicPolicy` now isolates the analog-only decoupling, op-amp locality, input-stage cohesion, and output-stage cohesion passes from the generic post-layout snap pipeline.
 
 ## 6.2 Add schematic-style profiles
-Status: `DONE`
+- [x] Status: DONE
 - Add output profiles such as:
   - generic digital,
   - analog audio,
@@ -1356,7 +1389,7 @@ Current findings:
 - Focused behavioral regression coverage now proves the named profiles are not just plumbing: fixture-level tests in `tests/unit/test_phase4_layout.py` and `tests/unit/test_phase6_wire_simplification.py` show `analog_audio`, `generic_digital`, and `power_supply` produce intentionally different layout and routing outcomes on the same local fixtures.
 
 ## 6.3 Improve internal debug introspection
-Status: `DONE`
+- [x] Status: DONE
 - Add optional debug dumps for:
   - block classification,
   - unit splitting,

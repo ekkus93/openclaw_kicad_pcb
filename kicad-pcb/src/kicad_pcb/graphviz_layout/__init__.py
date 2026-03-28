@@ -45,6 +45,12 @@ if TYPE_CHECKING:
     from ..circuit_ir import CircuitIR
     from ..layout import ComponentAnnotation
 
+from ..component_types import (
+    component_type,
+    is_power_net,
+    normalize_gnd_net_name,
+    power_rail_polarity,
+)
 from ..errors import ErrorCode, UserError
 from ..layout import _compute_opamp_halo as _compute_opamp_halo_layout
 from ..layout import compute_affinity_groups as _compute_affinity_groups
@@ -57,7 +63,13 @@ from ..tier import assign_ic_units_to_tiers as _assign_ic_units_to_tiers
 from ..tier import assign_tiers as _assign_tiers
 from ..tier import build_ic_unit_sibling_constraints as _build_ic_unit_sibling_constraints
 from ..tier import classify_connector_roles as _classify_connector_roles
-from .cache import _layout_cache_key, _load_layout_cache, _save_layout_cache
+from .cache import (
+    _layout_cache_key,
+    _LayoutCacheEntry,
+    _load_layout_cache,
+    _load_layout_cache_entry,
+    _save_layout_cache,
+)
 from .dot_builder import (
     _assign_bfs_tiers,
     _build_dot_source,
@@ -185,6 +197,80 @@ def _serialize_placement_constraints(
         "power_unit_refs": sorted(power_unit_refs),
         "unit_sibling_pairs": [list(pair) for pair in sorted(unit_sibling_pairs)],
     }
+
+
+def _prefer_decoupling_side_candidates_from_layout(
+    *,
+    cap_y: float,
+    rail_polarity: str | None,
+    candidate_refs: list[str],
+    raw_layout: Mapping[str, tuple[float, float, float | None]],
+) -> list[str]:
+    """Prefer the active-device side that matches the rail polarity."""
+    if rail_polarity == "positive":
+        same_side = [ref for ref in candidate_refs if raw_layout[ref][1] > cap_y]
+        return same_side or candidate_refs
+    if rail_polarity == "negative":
+        same_side = [ref for ref in candidate_refs if raw_layout[ref][1] < cap_y]
+        return same_side or candidate_refs
+    return candidate_refs
+
+
+def _refine_shared_rail_decoupling_map(
+    ir: CircuitIR,
+    raw_layout: Mapping[str, tuple[float, float, float | None]],
+    decoupling_map: Mapping[str, str],
+) -> dict[str, str]:
+    """Refine ambiguous shared-rail decoupling anchors using raw layout geometry."""
+    if not decoupling_map or not raw_layout:
+        return dict(decoupling_map)
+
+    component_nets: dict[str, set[str]] = {}
+    for net in ir.nets:
+        for pin_ref in net.pins:
+            component_nets.setdefault(pin_ref.ref, set()).add(net.name)
+
+    active_ics_by_rail: dict[str, list[str]] = {}
+    for component in ir.components:
+        if component_type(component.ref) != "ic" or component.ref not in raw_layout:
+            continue
+
+        nets = component_nets.get(component.ref, set())
+        if not nets or not any(not is_power_net(net_name) for net_name in nets):
+            continue
+
+        for net_name in nets:
+            if power_rail_polarity(net_name) is not None:
+                active_ics_by_rail.setdefault(net_name, []).append(component.ref)
+
+    refined_map = dict(decoupling_map)
+    for cap_ref in decoupling_map:
+        if cap_ref not in raw_layout:
+            continue
+
+        net_names = sorted(component_nets.get(cap_ref, set()))
+        rail_nets = [name for name in net_names if power_rail_polarity(name) is not None]
+        ground_nets = [name for name in net_names if normalize_gnd_net_name(name) == "GND"]
+        if len(rail_nets) != 1 or len(ground_nets) != 1:
+            continue
+
+        candidate_refs = active_ics_by_rail.get(rail_nets[0], [])
+        if len(candidate_refs) <= 1:
+            continue
+
+        cap_x, cap_y, _ = raw_layout[cap_ref]
+        filtered_candidates = _prefer_decoupling_side_candidates_from_layout(
+            cap_y=cap_y,
+            rail_polarity=power_rail_polarity(rail_nets[0]),
+            candidate_refs=candidate_refs,
+            raw_layout=raw_layout,
+        )
+        refined_map[cap_ref] = min(
+            filtered_candidates,
+            key=lambda ref: (abs(raw_layout[ref][0] - cap_x), abs(raw_layout[ref][1] - cap_y), ref),
+        )
+
+    return refined_map
 
 
 def _analyze_legacy_sds_fallback(roles: Mapping[str, str]) -> dict[str, object]:
@@ -561,9 +647,11 @@ class GraphvizLayoutEngine:
 
         # --- Cache hit: return immediately without invoking dot. ---
         if self._cache_path is not None:
-            cached = _load_layout_cache(self._cache_path, cache_key)
-            if cached is not None:
+            cached_entry = _load_layout_cache_entry(self._cache_path, cache_key)
+            if cached_entry is not None:
+                cached = cached_entry.positions
                 _log.debug("Layout cache hit (key %s…); skipping dot.", cache_key[:8])
+                decoupling_map = dict(cached_entry.decoupling_map)
                 if self._debug_dump_path is not None:
                     _write_layout_debug_dump(
                         self._debug_dump_path,
@@ -632,6 +720,7 @@ class GraphvizLayoutEngine:
         raw_result: dict[str, tuple[float, float, float | None]] = {
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
+        decoupling_map = _refine_shared_rail_decoupling_map(ir, raw_result, decoupling_map)
 
         # Post-layout: apply all snap passes in canonical order (grid → power
         # → feedback → stereo split → decoupling caps).  See
@@ -712,7 +801,12 @@ class GraphvizLayoutEngine:
 
         # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
-            _save_layout_cache(self._cache_path, cache_key, result)
+            _save_layout_cache(
+                self._cache_path,
+                cache_key,
+                result,
+                decoupling_map=decoupling_map,
+            )
             _log.debug("Layout cache written (key %s…).", cache_key[:8])
 
         return result
@@ -834,11 +928,14 @@ compute_net_weights = _compute_net_weights
 deoverlap_positions = _deoverlap_positions
 emit_decoupling_constraints = _emit_decoupling_constraints
 find_decoupling_caps = _find_decoupling_caps
+refine_shared_rail_decoupling_map = _refine_shared_rail_decoupling_map
 fit_to_page = _fit_to_page
 is_capacitor = _is_capacitor
 is_connector = _is_connector
 layout_cache_key = _layout_cache_key
 load_layout_cache = _load_layout_cache
+load_layout_cache_entry = _load_layout_cache_entry
+LayoutCacheEntry = _LayoutCacheEntry
 parse_plain_positions = _parse_plain_positions
 post_snap_decoupling_caps = _post_snap_decoupling_caps
 post_stereo_barycentric = _post_stereo_barycentric

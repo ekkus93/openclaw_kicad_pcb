@@ -92,6 +92,36 @@ def _is_capacitor(ref: str) -> bool:
     return any(r.startswith(p) for p in _CAPACITOR_PREFIXES_CT)
 
 
+def _preferred_decoupling_anchor(
+    candidate_refs: list[str],
+    ref_to_nets: Mapping[str, list[str]],
+) -> str | None:
+    """Return the most relevant anchor ref for a decoupling capacitor.
+
+    Prefer explicit IC refs first, then components that participate in more
+    non-power nets. This prevents local rail passives from stealing the anchor
+    when the same net also touches the actual active stage the capacitor serves.
+    """
+    unique_candidates = sorted(set(candidate_refs))
+    if not unique_candidates:
+        return None
+
+    def _sort_key(ref: str) -> tuple[int, int, int, str]:
+        nets_for_ref = ref_to_nets.get(ref, [])
+        signal_net_count = sum(1 for net_name in nets_for_ref if not _is_power_net(net_name))
+        rail_net_count = sum(
+            1 for net_name in nets_for_ref if power_rail_polarity(net_name) is not None
+        )
+        return (
+            1 if component_type(ref) == "ic" else 0,
+            signal_net_count,
+            rail_net_count,
+            ref,
+        )
+
+    return max(unique_candidates, key=_sort_key)
+
+
 def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
     """Return ``{cap_ref: ic_ref}`` for decoupling/bypass capacitors.
 
@@ -167,14 +197,16 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
         if len(signal_nets_for_cap) == 1 and power_nets_for_cap:
             # Exactly one signal net — find the IC on that shared net.
             signal_net = signal_nets_for_cap[0]
-            for neighbor_ref in net_to_refs.get(signal_net, []):
-                if neighbor_ref == comp.ref:
-                    continue
-                if _is_connector(neighbor_ref) or _is_capacitor(neighbor_ref):
-                    continue
-                # First non-connector, non-capacitor neighbor → treated as the IC.
-                result[comp.ref] = neighbor_ref
-                break
+            candidate_refs = [
+                neighbor_ref
+                for neighbor_ref in net_to_refs.get(signal_net, [])
+                if neighbor_ref != comp.ref
+                and not _is_connector(neighbor_ref)
+                and not _is_capacitor(neighbor_ref)
+            ]
+            anchor_ref = _preferred_decoupling_anchor(candidate_refs, ref_to_nets)
+            if anchor_ref is not None:
+                result[comp.ref] = anchor_ref
 
         if comp.ref in result:
             continue
@@ -185,8 +217,9 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
             continue
 
         candidate_refs = _rail_anchor_candidates(rail_nets_for_cap[0])
-        if candidate_refs:
-            result[comp.ref] = candidate_refs[0]
+        anchor_ref = _preferred_decoupling_anchor(candidate_refs, ref_to_nets)
+        if anchor_ref is not None:
+            result[comp.ref] = anchor_ref
 
     return result
 

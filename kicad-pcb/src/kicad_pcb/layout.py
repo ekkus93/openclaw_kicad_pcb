@@ -170,6 +170,31 @@ def _bfs_distances(
     return dist
 
 
+def _preferred_decoupling_anchor_layout(
+    candidate_refs: list[str],
+    ref_to_nets: Mapping[str, list[str]],
+) -> str | None:
+    """Return the most relevant anchor ref for a decoupling capacitor."""
+    unique_candidates = sorted(set(candidate_refs))
+    if not unique_candidates:
+        return None
+
+    def _sort_key(ref: str) -> tuple[int, int, int, str]:
+        nets_for_ref = ref_to_nets.get(ref, [])
+        signal_net_count = sum(1 for net_name in nets_for_ref if not _is_power_net_layout(net_name))
+        rail_net_count = sum(
+            1 for net_name in nets_for_ref if power_rail_polarity(net_name) is not None
+        )
+        return (
+            1 if component_type(ref) == "ic" else 0,
+            signal_net_count,
+            rail_net_count,
+            ref,
+        )
+
+    return max(unique_candidates, key=_sort_key)
+
+
 def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0912, PLR0915
     """Return ``{cap_ref: ic_ref}`` for bypass/decoupling capacitors.
 
@@ -231,16 +256,16 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
         power_nets = [n for n in nets_for_cap if _is_power_net_layout(n)]
         if len(signal_nets) == 1 and power_nets:
             signal_net = signal_nets[0]
-            for neighbor_ref in net_to_refs.get(signal_net, []):
-                if neighbor_ref == comp.ref:
-                    continue
-                neighbor_upper = neighbor_ref.upper()
-                if any(neighbor_upper.startswith(p) for p in _CONNECTOR_PREFIXES_CT):
-                    continue
-                if neighbor_upper.startswith("C"):
-                    continue
-                result[comp.ref] = neighbor_ref
-                break
+            candidate_refs = [
+                neighbor_ref
+                for neighbor_ref in net_to_refs.get(signal_net, [])
+                if neighbor_ref != comp.ref
+                and not any(neighbor_ref.upper().startswith(p) for p in _CONNECTOR_PREFIXES_CT)
+                and not neighbor_ref.upper().startswith("C")
+            ]
+            anchor_ref = _preferred_decoupling_anchor_layout(candidate_refs, ref_to_nets)
+            if anchor_ref is not None:
+                result[comp.ref] = anchor_ref
 
         if comp.ref in result:
             continue
@@ -251,8 +276,9 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
             continue
 
         candidate_refs = _rail_anchor_candidates(rail_nets[0])
-        if candidate_refs:
-            result[comp.ref] = candidate_refs[0]
+        anchor_ref = _preferred_decoupling_anchor_layout(candidate_refs, ref_to_nets)
+        if anchor_ref is not None:
+            result[comp.ref] = anchor_ref
     return result
 
 
