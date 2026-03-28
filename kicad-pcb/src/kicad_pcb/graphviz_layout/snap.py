@@ -1763,6 +1763,14 @@ def _post_snap_decoupling_caps(
     cap was not returned by Graphviz because it was isolated).
     """
     result = dict(positions)
+
+    def _decoupling_bank_x(anchor_x: float, lane_index: int) -> float:
+        if lane_index <= 1:
+            return round(anchor_x, 2)
+        side_step = ((lane_index - 2) // 2) + 1
+        side_sign = -1 if lane_index % 2 == 0 else 1
+        return round(anchor_x + side_sign * side_step * _GRID_COL_MM, 2)
+
     caps_by_ic: dict[str, list[str]] = defaultdict(list)
     for cap_ref, ic_ref in decoupling_map.items():
         if cap_ref in result and ic_ref in result:
@@ -1777,19 +1785,11 @@ def _post_snap_decoupling_caps(
             cap_ref for cap_ref in cap_refs if (rail_polarities or {}).get(cap_ref) == "negative"
         )
         for idx, cap_ref in enumerate(positive_caps):
-            cap_x = round(ic_x, 2)
-            if idx >= 2:
-                side_step = idx - 1
-                side_sign = -1 if idx % 2 == 0 else 1
-                cap_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            cap_x = _decoupling_bank_x(ic_x, idx)
             cap_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
         for idx, cap_ref in enumerate(negative_caps):
-            cap_x = round(ic_x, 2)
-            if idx >= 2:
-                side_step = idx - 1
-                side_sign = -1 if idx % 2 == 0 else 1
-                cap_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            cap_x = _decoupling_bank_x(ic_x, idx)
             cap_y = round(ic_y + (idx + 1) * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
     return result
