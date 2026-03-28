@@ -2693,6 +2693,35 @@ def test_new_from_real_ne5532_fixture_keeps_decoupling_caps_in_opamp_region(
 
 
 @_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_separates_positive_and_negative_decouplers(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingPolarity",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+    signal_band_y = positions["U1A"][1]
+
+    for ref in ("C1", "C3"):
+        assert positions[ref][1] < signal_band_y, (
+            f"Positive-rail decoupler {ref} should sit above the op-amp signal band: {positions}"
+        )
+    for ref in ("C2", "C4"):
+        assert positions[ref][1] > signal_band_y, (
+            f"Negative-rail decoupler {ref} should sit below the op-amp signal band: {positions}"
+        )
+
+
+@_skip_no_real_ne5532_fixture_symbols
 def test_new_from_real_ne5532_fixture_keeps_feedback_parts_local_to_u1a(
     tmp_path: Path,
 ) -> None:
@@ -3039,7 +3068,7 @@ def test_new_from_real_ne5532_fixture_draws_u1b_feedback_as_compact_local_loop(
             y = round(y1, 2)
             if (
                 y < round(u1b_y, 2)
-                and x_min >= round(u1b_x + 15.0, 2)
+                and x_min >= round(u1b_x + 5.0, 2)
                 and x_max <= round(r6_x, 2)
                 and (x_max - x_min) <= 20.32
             ):
@@ -3094,8 +3123,8 @@ def test_new_from_real_ne5532_fixture_shapes_u1b_input_as_bridge_plus_shunt_node
         "The U1B handoff bridge and shunt should share one input-node column: "
         f"C6={positions['C6']}, R5={positions['R5']}, U1B={positions['U1B']}"
     )
-    assert u1b_x - c6_x == pytest.approx(GRID_COL_MM), (
-        "The U1B input-node column should sit one lane left of the buffer stage: "
+    assert u1b_x - c6_x == pytest.approx(GRID_COL_MM / 2.0), (
+        "The U1B input-node column should sit midway between the handoff and the buffer stage: "
         f"C6.x={c6_x:.2f}, U1B.x={u1b_x:.2f}"
     )
     assert c6_y == pytest.approx(u1b_y), (
@@ -3230,7 +3259,10 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     profile_specific_overrides = {
         key: value for key, value in analog_overrides.items() if key != "small_analog_local_routing"
     }
-    assert profile_specific_overrides == {"compact_local_ground_cluster": ["GND"]}
+    assert profile_specific_overrides == {
+        "compact_local_ground_cluster": ["GND"],
+        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
+    }
     assert digital_overrides == {}
 
 

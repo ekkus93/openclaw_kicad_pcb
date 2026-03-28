@@ -200,10 +200,18 @@ class RoutingHeuristicPolicy:
         cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
         positions: Mapping[str, tuple[float, float, float | None]] | None = None,
     ) -> tuple[list[WireSegment], list[JunctionPoint], tuple[float, float]] | None:
-        """Return the analog local-ground cluster route when that policy applies."""
-        if not self.enable_compact_local_ground_clusters or net_name.upper() != "GND":
+        """Return the analog compact power-cluster route when that policy applies."""
+        if not self.enable_compact_local_ground_clusters:
             return None
-        return _compact_local_ground_cluster_route(cluster, positions=positions)
+        if net_name.upper() == "GND":
+            return _compact_local_ground_cluster_route(cluster, positions=positions)
+        if power_rail_polarity(net_name) is None:
+            return None
+        return _compact_local_decoupling_power_cluster_route(
+            net_name,
+            cluster,
+            positions=positions,
+        )
 
 
 DEFAULT_ROUTING_HEURISTIC_POLICY: RoutingHeuristicPolicy = RoutingHeuristicPolicy()
@@ -1580,9 +1588,11 @@ def _compact_local_ground_cluster_route(
     stub_ends = [_stub_end(x, y, angle) for _pin_ref, (x, y, angle) in cluster]
     xs = [point[0] for point in stub_ends]
     ys = [point[1] for point in stub_ends]
-    if (max(xs) - min(xs)) > 80.0 or (max(ys) - min(ys)) > 30.0:
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+    if x_span > 80.0 or y_span > 30.0:
         return None
-    if (max(xs) - min(xs)) < (max(ys) - min(ys)):
+    if x_span + 2.54 < y_span:
         return None
 
     lane_y = min(ys)
@@ -1637,6 +1647,125 @@ def _compact_local_ground_cluster_route(
 
         _score, lane_y, vertical_target_x = best_lane
         lane_x0 = min(lane_x0, *vertical_target_x.values())
+
+    segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
+    junctions: list[JunctionPoint] = []
+    for x, y in stub_ends:
+        target_x = vertical_target_x[(x, y)]
+        if not math.isclose(x, target_x, abs_tol=0.01):
+            segs.append(WireSegment(x, y, target_x, y))
+        if not math.isclose(y, lane_y, abs_tol=0.01):
+            segs.append(WireSegment(target_x, y, target_x, lane_y))
+        junctions.append(JunctionPoint(target_x, lane_y))
+
+    symbol_x = _snap_grid(lane_x1 + (2 * SYMBOL_HALF_SIZE_MM))
+    segs.append(WireSegment(lane_x1, lane_y, symbol_x, lane_y))
+    protected = {(round(x, 2), round(y, 2)) for x, y in stub_ends}
+    return _simplify_wires(segs, protected_points=protected), junctions, (symbol_x, lane_y)
+
+
+def _compact_local_decoupling_power_cluster_route(  # noqa: PLR0911, PLR0915
+    net_name: str,
+    cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
+    *,
+    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+) -> tuple[list[WireSegment], list[JunctionPoint], tuple[float, float]] | None:
+    """Route a compact decoupling rail on one calm horizontal lane.
+
+    This targets small local supply groups such as ``U1P/C1/C3`` or
+    ``U1P/C2/C4`` where the generic centroid cluster route produces a noisy
+    rail knot around the decoupler bank.  The rail is pulled onto a single
+    horizontal lane near the IC/capacitor members so the decouplers read as
+    short local drops from a compact local rail.
+    """
+    if len(cluster) < 3 or len(cluster) > 4:
+        return None
+    if power_rail_polarity(net_name) is None:
+        return None
+
+    component_kinds = [_component_type(pin_ref.ref) for pin_ref, _anchor in cluster]
+    has_capacitor = any(pin_ref.ref.upper().startswith("C") for pin_ref, _anchor in cluster)
+    if "ic" not in component_kinds or not has_capacitor:
+        return None
+
+    stub_ends = [_stub_end(x, y, angle) for _pin_ref, (x, y, angle) in cluster]
+    xs = [point[0] for point in stub_ends]
+    ys = [point[1] for point in stub_ends]
+    x_span = max(xs) - min(xs)
+    y_span = max(ys) - min(ys)
+    if x_span > 90.0 or y_span > 70.0:
+        return None
+    if x_span + 15.0 < y_span:
+        return None
+
+    local_points = [
+        stub_ends[index]
+        for index, (pin_ref, _anchor) in enumerate(cluster)
+        if _component_type(pin_ref.ref) != "connector"
+    ]
+    if len(local_points) < 2:
+        return None
+
+    lane_x1 = max(xs)
+    lane_y = max(point[1] for point in local_points)
+    vertical_target_x: dict[tuple[float, float], float] = {(x, y): x for x, y in stub_ends}
+
+    if positions is not None:
+        positioned_cluster = [
+            (pin_ref.ref, pos, stub_ends[index])
+            for index, (pin_ref, _anchor) in enumerate(cluster)
+            if (pos := positions.get(pin_ref.ref)) is not None
+        ]
+        lane_candidates = sorted({point[1] for point in local_points}, reverse=True)
+        best_lane: tuple[float, float, dict[tuple[float, float], float], float] | None = None
+        for candidate_y in lane_candidates:
+            candidate_targets = {(x, y): x for x, y in stub_ends}
+            for x, y in stub_ends:
+                if math.isclose(y, candidate_y, abs_tol=0.01):
+                    continue
+                clearance_x = x
+                for _ref, (bx, by, _rotation), _member_stub in positioned_cluster:
+                    if _wire_crosses_box(x, y, x, candidate_y, bx, by, SYMBOL_HALF_SIZE_MM):
+                        clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
+                candidate_targets[(x, y)] = _snap_grid(clearance_x)
+
+            candidate_x0 = min(*xs, *candidate_targets.values())
+            blocked_positions = [
+                pos
+                for _ref, pos, (_stub_x, stub_y) in positioned_cluster
+                if not math.isclose(stub_y, candidate_y, abs_tol=0.01)
+            ]
+            blocked = any(
+                _wire_crosses_box(
+                    candidate_x0,
+                    candidate_y,
+                    lane_x1,
+                    candidate_y,
+                    bx,
+                    by,
+                    SYMBOL_HALF_SIZE_MM,
+                )
+                for bx, by, _rotation in blocked_positions
+            )
+            if blocked:
+                continue
+
+            vertical_cost = sum(abs(y - candidate_y) for _x, y in local_points)
+            horizontal_cost = sum(abs(x - candidate_targets[(x, y)]) for x, y in stub_ends)
+            score = vertical_cost + horizontal_cost
+            if (
+                best_lane is None
+                or score < best_lane[0]
+                or (math.isclose(score, best_lane[0], abs_tol=0.01) and candidate_y > best_lane[1])
+            ):
+                best_lane = (score, candidate_y, candidate_targets, candidate_x0)
+
+        if best_lane is not None:
+            _score, lane_y, vertical_target_x, lane_x0 = best_lane
+        else:
+            lane_x0 = min(xs)
+    else:
+        lane_x0 = min(xs)
 
     segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
     junctions: list[JunctionPoint] = []
@@ -2502,7 +2631,63 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
         # Power nets → cluster-based power symbol placement (Phase 5.1)
         # ----------------------------------------------------------------
         if is_power:
-            used_compact_ground_cluster = False
+            compact_power_override: str | None = None
+            whole_power_cluster = heuristic_policy.route_compact_power_cluster(
+                net_name=net.name,
+                cluster=known,
+                positions=positions,
+            )
+            if whole_power_cluster is not None:
+                compact_power_override = (
+                    "compact_local_ground_cluster"
+                    if net.name.upper() == "GND"
+                    else "compact_local_decoupling_cluster"
+                )
+                cluster_segs, cluster_junctions, (px, py) = whole_power_cluster
+                routing.wires.extend(cluster_segs)
+                routing.junctions.extend(cluster_junctions)
+                routing.bind_markers.extend(
+                    BindMarker(pin_ref.ref, pin_ref.pin, net.name) for pin_ref, _anchor in known
+                )
+                routing.power_symbols.append(
+                    PowerSymbolPlacement(
+                        net.name,
+                        px,
+                        py,
+                        _power_symbol_angle(net.name, 0),
+                    )
+                )
+                for pin_ref in unknown:
+                    wx, wy = -1200.0, fallback_y
+                    ex, ey = wx + WIRE_EXTEND_MM, wy
+                    power_angle = _power_symbol_angle(net.name, 0)
+                    px, py = _offset_point_along_angle(
+                        ex,
+                        ey,
+                        power_angle,
+                        _POWER_LABEL_CLEARANCE_MM,
+                    )
+                    routing.wires.append(WireSegment(wx, wy, ex, ey))
+                    routing.wires.append(WireSegment(ex, ey, px, py))
+                    routing.power_symbols.append(
+                        PowerSymbolPlacement(net.name, px, py, power_angle)
+                    )
+                    routing.bind_markers.append(BindMarker(pin_ref.ref, pin_ref.pin, net.name))
+                    fallback_y -= 10.0
+                routing.route_decisions.append(
+                    RouteDecision(
+                        net_name=net.name,
+                        classification=net_classification,
+                        strategy="power_symbols",
+                        pin_count=len(pins),
+                        known_pin_count=len(known),
+                        unknown_pin_count=len(unknown),
+                        use_bus=use_bus,
+                        heuristic_override=compact_power_override,
+                    )
+                )
+                continue
+
             # Cluster known pins by proximity to share power symbols
             clusters = _cluster_power_pins(known, radius=_POWER_CLUSTER_RADIUS_MM)
 
@@ -2533,7 +2718,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         positions=positions,
                     )
                     if compact_ground_cluster is not None:
-                        used_compact_ground_cluster = True
+                        compact_power_override = (
+                            "compact_local_ground_cluster"
+                            if net.name.upper() == "GND"
+                            else "compact_local_decoupling_cluster"
+                        )
                         cluster_segs, cluster_junctions, (px, py) = compact_ground_cluster
                         routing.wires.extend(cluster_segs)
                         routing.junctions.extend(cluster_junctions)
@@ -2614,9 +2803,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     known_pin_count=len(known),
                     unknown_pin_count=len(unknown),
                     use_bus=use_bus,
-                    heuristic_override=(
-                        "compact_local_ground_cluster" if used_compact_ground_cluster else None
-                    ),
+                    heuristic_override=compact_power_override,
                 )
             )
             continue

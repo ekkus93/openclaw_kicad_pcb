@@ -117,6 +117,7 @@ from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from ..component_types import is_ground_like_name as _is_ground_like_name
 from ..component_types import is_power_net as _is_power_net
+from ..component_types import power_rail_polarity
 from ..errors import ErrorCode, UserError
 from ..layout import GRID_COL_MM as _GRID_COL_MM
 from ..layout import ComponentAnnotation as _ComponentAnnotation
@@ -666,11 +667,17 @@ class LayoutHeuristicPolicy:
         self,
         positions: Mapping[str, tuple[float, float, float | None]],
         decoupling_map: Mapping[str, str],
+        ir: CircuitIR | None = None,
     ) -> dict[str, tuple[float, float, float | None]]:
         """Apply the decoupling-cap snap when enabled."""
         if not self.enable_decoupling_snap or not decoupling_map:
             return dict(positions)
-        return _post_snap_decoupling_caps(dict(positions), dict(decoupling_map))
+        rail_polarities = _decoupling_rail_polarities(ir, decoupling_map)
+        return _post_snap_decoupling_caps(
+            dict(positions),
+            dict(decoupling_map),
+            rail_polarities=rail_polarities,
+        )
 
     def apply_opamp_locality(
         self,
@@ -1743,6 +1750,8 @@ def _apply_density_spreading(  # noqa: PLR0912, PLR0915
 def _post_snap_decoupling_caps(
     positions: dict[str, tuple[float, float, float | None]],
     decoupling_map: dict[str, str],
+    *,
+    rail_polarities: Mapping[str, str | None] | None = None,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Snap each decoupling cap to sit directly above its associated IC.
 
@@ -1761,7 +1770,13 @@ def _post_snap_decoupling_caps(
 
     for ic_ref, cap_refs in caps_by_ic.items():
         ic_x, ic_y, _ = result[ic_ref]
-        for idx, cap_ref in enumerate(sorted(cap_refs)):
+        positive_caps = sorted(
+            cap_ref for cap_ref in cap_refs if (rail_polarities or {}).get(cap_ref) != "negative"
+        )
+        negative_caps = sorted(
+            cap_ref for cap_ref in cap_refs if (rail_polarities or {}).get(cap_ref) == "negative"
+        )
+        for idx, cap_ref in enumerate(positive_caps):
             cap_x = round(ic_x, 2)
             if idx >= 2:
                 side_step = idx - 1
@@ -1769,6 +1784,43 @@ def _post_snap_decoupling_caps(
                 cap_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
             cap_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
+        for idx, cap_ref in enumerate(negative_caps):
+            cap_x = round(ic_x, 2)
+            if idx >= 2:
+                side_step = idx - 1
+                side_sign = -1 if idx % 2 == 0 else 1
+                cap_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+            cap_y = round(ic_y + (idx + 1) * GRID_ROW_MM, 2)
+            result[cap_ref] = (cap_x, cap_y, None)
+    return result
+
+
+def _decoupling_rail_polarities(
+    ir: CircuitIR | None,
+    decoupling_map: Mapping[str, str],
+) -> dict[str, str | None]:
+    """Return the rail polarity for each decoupling capacitor in *decoupling_map*."""
+    if ir is None or not decoupling_map:
+        return {}
+
+    cap_refs = set(decoupling_map)
+    cap_nets: dict[str, set[str]] = {cap_ref: set() for cap_ref in cap_refs}
+    for net in ir.nets:
+        for pin_ref in net.pins:
+            if pin_ref.ref in cap_refs:
+                cap_nets[pin_ref.ref].add(net.name)
+
+    result: dict[str, str | None] = {}
+    for cap_ref, net_names in cap_nets.items():
+        polarity: str | None = None
+        for net_name in sorted(net_names):
+            if _is_ground_like_name(net_name):
+                continue
+            rail_polarity = power_rail_polarity(net_name)
+            if rail_polarity is not None:
+                polarity = rail_polarity
+                break
+        result[cap_ref] = polarity
     return result
 
 
@@ -3433,6 +3485,12 @@ def _place_opamp_stage_input_pair(
 
     result = dict(positions)
     ic_x, ic_y, _ = result[opamp_ref]
+    upstream_lane_x = round(ic_x - 2.0 * _GRID_COL_MM, 2)
+    if upstream_lane_x < ORIGIN_X:
+        delta_x = round(ORIGIN_X - upstream_lane_x, 2)
+        refs_to_shift = [ref for ref, (x, _y, _rot) in result.items() if x >= ic_x - _GRID_COL_MM]
+        result = _shift_refs_x(result, refs_to_shift, delta_x)
+        ic_x, ic_y, _ = result[opamp_ref]
     lane_x = round(ic_x - _GRID_COL_MM, 2)
     bridge_y = round(ic_y, 2)
     shunt_y = round(ic_y + GRID_ROW_MM, 2)
@@ -3689,7 +3747,7 @@ def _place_buffer_stage_input_pair(
 
     result = dict(positions)
     ic_x, ic_y, _ = result[buffer_ref]
-    lane_x = round(ic_x - _GRID_COL_MM, 2)
+    lane_x = round(ic_x - 0.5 * _GRID_COL_MM, 2)
     bridge_y = round(ic_y, 2)
     shunt_y = round(ic_y + GRID_ROW_MM, 2)
 
@@ -3799,6 +3857,7 @@ def _snap_buffer_stage_direct_output_support(
         return role_by_ref.get(base_ref)
 
     result = dict(positions)
+    compact_step = _GRID_COL_MM / 2.0
     _ref_to_nets, refs_by_net = _feedback_net_membership(ir)
     buffer_refs = [
         ref
@@ -3840,7 +3899,7 @@ def _snap_buffer_stage_direct_output_support(
 
         for idx, ref in enumerate(direct_output_refs):
             _x, _y, rot = result[ref]
-            target_x = round(ic_x + (idx + 1) * _GRID_COL_MM, 2)
+            target_x = round(ic_x + (idx + 1) * compact_step, 2)
             result[ref] = (target_x, round(ic_y, 2), rot)
 
     return result
@@ -3879,6 +3938,7 @@ def _snap_buffer_stage_output_tail_locality(
         return role_by_ref.get(base_ref)
 
     result = dict(positions)
+    compact_step = _GRID_COL_MM / 2.0
     buffer_refs = [
         ref
         for ref in result
@@ -3953,7 +4013,7 @@ def _snap_buffer_stage_output_tail_locality(
         tail_y = round(ic_y + GRID_ROW_MM, 2)
         for idx, ref in enumerate(tail_refs, start=1):
             _x, _y, rot = result[ref]
-            target_x = round(anchor_x + idx * _GRID_COL_MM, 2)
+            target_x = round(anchor_x + idx * compact_step, 2)
             result[ref] = (target_x, tail_y, rot)
 
     return result
@@ -4523,7 +4583,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         result = _post_stereo_barycentric(result, ir, channels)
     result = _compact_y_gap(result, ir)
     result = _center_ics_in_columns(result, halo=halo)
-    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
     # Build canonical skip-pairs from the decoupling map so that intentional
     # one-grid-row cap/IC co-locations are not nudged by _deoverlap_positions.
     decouple_skip: frozenset[tuple[str, str]] = frozenset(
@@ -4556,7 +4616,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     )
     result, page_balance_shift = _snap_page_balance(result, block_layout)
     if page_balance_shift != 0.0:
-        result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
+        result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
     # 7g: Phase 8.2 — central composition (title-block clearance + op-amp vertical bounds).
     result = _snap_central_composition(result, block_layout)
     result = _snap_major_signal_axis(result, block_layout)
@@ -4567,7 +4627,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         block_layout=block_layout,
         power_unit_refs=power_unit_refs,
     )
-    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map)
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
     result = _snap_major_block_spacing(result, block_layout)
     result = _snap_output_transition_subbands(result, block_layout)
     result = _snap_power_block_cohesion(result, block_layout, decoupling_map=decoupling_map)

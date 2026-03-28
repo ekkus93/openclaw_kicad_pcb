@@ -39,7 +39,7 @@ from typing import Any
 
 # Bump this when the cache JSON schema changes to invalidate all persisted caches.
 _CACHE_FORMAT_VERSION = 1
-_LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v5"
+_LAYOUT_ALGORITHM_REVISION = "graphviz-layout-v6"
 
 
 def _layout_cache_key(dot_source: str) -> str:

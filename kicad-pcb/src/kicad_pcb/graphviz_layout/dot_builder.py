@@ -70,6 +70,8 @@ from ..block_detection import (
 )
 from ..component_types import CAPACITOR_PREFIXES as _CAPACITOR_PREFIXES_CT
 from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
+from ..component_types import component_type, power_rail_polarity
+from ..component_types import is_ground_like_name as _is_ground_like_name
 from ..component_types import is_power_net as _is_power_net
 from ..tier import assign_tiers as _assign_tiers
 
@@ -117,6 +119,44 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
             ref_to_nets.setdefault(pin.ref, []).append(net.name)
             net_to_refs.setdefault(net.name, []).append(pin.ref)
 
+    active_ics_by_rail: dict[str, list[str]] = {}
+    for comp in ir.components:
+        if component_type(comp.ref) != "ic":
+            continue
+        nets_for_ic = ref_to_nets.get(comp.ref, [])
+        if not any(not _is_power_net(net_name) for net_name in nets_for_ic):
+            continue
+        for net_name in nets_for_ic:
+            if power_rail_polarity(net_name) is not None:
+                active_ics_by_rail.setdefault(net_name, []).append(comp.ref)
+
+    signal_ic_refs = {
+        comp.ref
+        for comp in ir.components
+        if component_type(comp.ref) == "ic"
+        and any(not _is_power_net(net_name) for net_name in ref_to_nets.get(comp.ref, []))
+    }
+
+    def _rail_anchor_candidates(rail_net: str) -> list[str]:
+        direct_candidates = active_ics_by_rail.get(rail_net, [])
+        if direct_candidates:
+            return direct_candidates
+
+        sibling_candidates: list[str] = []
+        for neighbor_ref in net_to_refs.get(rail_net, []):
+            if component_type(neighbor_ref) != "ic" or len(neighbor_ref) < 2:
+                continue
+            suffix = neighbor_ref[-1]
+            if not suffix.isalpha():
+                continue
+            parent_ref = neighbor_ref[:-1]
+            sibling_candidates.extend(
+                candidate_ref
+                for candidate_ref in signal_ic_refs
+                if candidate_ref[:-1] == parent_ref and candidate_ref != neighbor_ref
+            )
+        return sorted(set(sibling_candidates))
+
     result: dict[str, str] = {}
     for comp in ir.components:
         if not _is_capacitor(comp.ref):
@@ -124,18 +164,29 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
         nets_for_cap = ref_to_nets.get(comp.ref, [])
         signal_nets_for_cap = [n for n in nets_for_cap if not _is_power_net(n)]
         power_nets_for_cap = [n for n in nets_for_cap if _is_power_net(n)]
-        if len(signal_nets_for_cap) != 1 or not power_nets_for_cap:
+        if len(signal_nets_for_cap) == 1 and power_nets_for_cap:
+            # Exactly one signal net — find the IC on that shared net.
+            signal_net = signal_nets_for_cap[0]
+            for neighbor_ref in net_to_refs.get(signal_net, []):
+                if neighbor_ref == comp.ref:
+                    continue
+                if _is_connector(neighbor_ref) or _is_capacitor(neighbor_ref):
+                    continue
+                # First non-connector, non-capacitor neighbor → treated as the IC.
+                result[comp.ref] = neighbor_ref
+                break
+
+        if comp.ref in result:
             continue
-        # Exactly one signal net — find the IC on that shared net.
-        signal_net = signal_nets_for_cap[0]
-        for neighbor_ref in net_to_refs.get(signal_net, []):
-            if neighbor_ref == comp.ref:
-                continue
-            if _is_connector(neighbor_ref) or _is_capacitor(neighbor_ref):
-                continue
-            # First non-connector, non-capacitor neighbor → treated as the IC.
-            result[comp.ref] = neighbor_ref
-            break
+
+        ground_nets_for_cap = [n for n in nets_for_cap if _is_ground_like_name(n)]
+        rail_nets_for_cap = [n for n in nets_for_cap if power_rail_polarity(n) is not None]
+        if signal_nets_for_cap or len(ground_nets_for_cap) != 1 or len(rail_nets_for_cap) != 1:
+            continue
+
+        candidate_refs = _rail_anchor_candidates(rail_nets_for_cap[0])
+        if candidate_refs:
+            result[comp.ref] = candidate_refs[0]
 
     return result
 
