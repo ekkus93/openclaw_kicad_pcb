@@ -1,5 +1,18 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-28T19:12:08Z - GPT-5.4 - Fixed the emitted J1 margin-lane overlap and restored full validation
+
+- The remaining 2.4.3 regression after the initial J1 row-attachment work was not the helper logic itself but the emitted final placement map: the real NE5532 command path still wrote `J1/C5` onto the same left-margin cell, which pushed Phase 7 `LAY003` from `14` to `15`.
+- Kept the late `_snap_input_connector_signal_attachment(...)` cleanup in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`, tightened its geometric left-margin reservation for nearby `INPUT` / `PRECONDITIONING` refs, and then re-applied that cleanup one final time in `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` after the engine builds its final placement map so emitted/cached positions match the helper's intended output.
+- Bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` to `graphviz-layout-v11`, confirmed the focused real-fixture slice (`keeps_j1_attached_to_incoming_signal_row`, `keeps_u1a_upstream_input_bundle_as_left_column`, `keeps_u1b_output_tail_compact_and_local`) and the Phase 7 guardrail pass again, then finished the requested full validation with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and full `.venv/bin/pytest`, green at `2277 passed`.
+
+## 2026-03-28T17:49:39Z - GPT-5.4 - Reattached the input connector to the real incoming signal row
+
+- Added `_snap_input_connector_signal_attachment(...)` in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` and run it late, after the upstream input bundle is shaped. The pass follows each `BlockRole.INPUT` connector's direct non-power signal neighbors and snaps the connector back onto that first handoff row instead of leaving it on a lower shunt/support row.
+- This fixes the real NE5532 geometry where `J1` had drifted onto the `R4` shunt row (`106.68 mm`) instead of staying attached to the `C5` incoming handoff row (`91.44 mm`), while keeping `J1` clamped to the left page margin.
+- Added `tests/unit/test_phase4_layout.py::test_input_connector_stays_on_incoming_signal_handoff_row` plus `tests/unit/test_netlist_commands.py::test_new_from_real_ne5532_fixture_keeps_j1_attached_to_incoming_signal_row`, and bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` to `graphviz-layout-v9` because this late snap changes final managed coordinates without changing the DOT source.
+- Revalidated with `.venv/bin/ruff check kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py tests/unit/test_phase4_layout.py tests/unit/test_netlist_commands.py`, `.venv/bin/pytest tests/unit/test_phase4_layout.py -k 'input_connector_stays_on_incoming_signal_handoff_row or output_stage_cohesion_gives_connector_extra_clearance'`, and `.venv/bin/pytest tests/unit/test_netlist_commands.py -k 'keeps_j1_attached_to_incoming_signal_row or keeps_u1a_upstream_input_bundle_as_left_column or keeps_u1b_output_tail_compact_and_local'`, all green.
+
 ## 2026-03-28T16:40:37Z - GPT-5.4 - Cleared the U1B follower-loop corridor of intrusive downstream tail parts
 
 - Added `_buffer_stage_direct_output_refs(...)` plus the new late `_snap_buffer_stage_feedback_corridor(...)` pass in `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py`. The direct output helper now feeds all three U1B late passes, and the new corridor pass moves downstream `OUTPUT_CONDITIONING` / `OUTPUT` refs out of the upper-right follower-loop corridor when Graphviz leaves them between `U1B` and `R6`.

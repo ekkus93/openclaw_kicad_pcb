@@ -5846,6 +5846,71 @@ class TestApplyPostLayoutSnaps:
         assert result["JOUT"][0] >= expected_connector_x - 0.01
         assert result["RISO"][0] < result["JOUT"][0]
 
+    def test_input_connector_stays_on_incoming_signal_handoff_row(self) -> None:
+        """Phase 2.4.3: the input connector should attach to the first signal handoff row."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+                ComponentIR(ref="CIN", symbol="Device:C", value="1u"),
+                ComponentIR(ref="RIN", symbol="Device:R", value="100k"),
+                ComponentIR(ref="RSH", symbol="Device:R", value="100k"),
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ],
+            nets=[
+                NetIR(
+                    name="LEFT_IN",
+                    pins=[PinRefIR(ref="JIN", pin="1"), PinRefIR(ref="CIN", pin="1")],
+                ),
+                NetIR(
+                    name="IN_L_AC",
+                    pins=[
+                        PinRefIR(ref="CIN", pin="2"),
+                        PinRefIR(ref="RIN", pin="1"),
+                        PinRefIR(ref="U1", pin="3"),
+                        PinRefIR(ref="RSH", pin="1"),
+                    ],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="RSH", pin="2")]),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("JIN", BlockRole.INPUT)
+        block_layout.add_assignment("CIN", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("RIN", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("RSH", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("U1", BlockRole.OPAMP_CORE)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "JIN": (30.48, 106.68, None),
+            "CIN": (45.72, 91.44, None),
+            "RIN": (60.96, 99.06, None),
+            "RSH": (60.96, 106.68, None),
+            "U1": (91.44, 99.06, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        assert result["JIN"][1] == pytest.approx(result["CIN"][1]), (
+            f"The input connector should align to the first incoming signal handoff row: {result}"
+        )
+        assert result["JIN"][1] != pytest.approx(result["RSH"][1]), (
+            f"The input connector should not collapse onto the grounded shunt row: {result}"
+        )
+        assert result["JIN"][0] <= result["CIN"][0], (
+            "The input connector should stay on the left side of the incoming handoff path: "
+            f"{result}"
+        )
+
     def test_layout_policy_can_disable_decoupling_snap(self) -> None:
         """The layout policy should be able to leave decoupling positions untouched."""
         positions = {

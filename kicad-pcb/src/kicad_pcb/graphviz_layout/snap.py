@@ -1254,6 +1254,70 @@ def _snap_input_stage_cohesion(
     )
 
 
+def _snap_input_connector_signal_attachment(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep each input connector attached to its incoming signal row.
+
+    The early connector-y snap and broader input-stage cohesion pass can leave
+    a connector aligned to the stage centerline or a shunt row instead of the
+    first real signal handoff into the circuit. For readability, the connector
+    should visually feed the bridge element on its direct non-power signal net.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    adjacency = _build_signal_adjacency(ir)
+    result = dict(positions)
+
+    input_connectors = sorted(
+        ref
+        for ref, role in role_by_ref.items()
+        if ref in result and role == BlockRole.INPUT and _is_connector_ref(ref)
+    )
+    for connector_ref in input_connectors:
+        signal_neighbors = [
+            ref
+            for ref in adjacency.get(connector_ref, set())
+            if ref in result
+            and not _is_connector_ref(ref)
+            and role_by_ref.get(ref) in {BlockRole.INPUT, BlockRole.PRECONDITIONING}
+        ]
+        if not signal_neighbors:
+            continue
+
+        signal_neighbors.sort(key=lambda ref: (result[ref][0], result[ref][1], ref))
+        target_ref = signal_neighbors[0]
+        target_x_neighbor, target_y, _target_rot = result[target_ref]
+        x, _y, rot = result[connector_ref]
+        target_x = max(ORIGIN_X, round(target_x_neighbor - _GRID_COL_MM, 2))
+        result[connector_ref] = (min(round(x, 2), target_x), round(target_y, 2), rot)
+
+        connector_x, connector_y, _connector_rot = result[connector_ref]
+        if math.isclose(connector_x, ORIGIN_X, abs_tol=0.01):
+            shifted_x = round(connector_x + _GRID_COL_MM / 2.0, 2)
+            for ref, role in role_by_ref.items():
+                if ref == connector_ref or ref not in result or _is_connector_ref(ref):
+                    continue
+                if role not in {BlockRole.INPUT, BlockRole.PRECONDITIONING}:
+                    continue
+                ref_x, ref_y, ref_rot = result[ref]
+                if not math.isclose(ref_x, connector_x, abs_tol=0.01):
+                    continue
+                if abs(ref_y - connector_y) > 2.0 * GRID_ROW_MM:
+                    continue
+                result[ref] = (shifted_x, ref_y, ref_rot)
+
+    return result
+
+
 def _find_output_stage_members(
     positions: dict[str, tuple[float, float, float | None]],
     role_by_ref: Mapping[str, BlockRole],
@@ -3507,6 +3571,7 @@ def _place_opamp_stage_upstream_bundle(
     *,
     opamp_ref: str,
     upstream_refs: list[str],
+    reserve_input_connector_margin: bool = False,
 ) -> tuple[dict[str, tuple[float, float, float | None]], set[str]]:
     """Place upstream bridge parts into one readable column left of the input node."""
 
@@ -3520,6 +3585,8 @@ def _place_opamp_stage_upstream_bundle(
     result = dict(positions)
     ic_x, ic_y, _ = result[opamp_ref]
     lane_x = round(ic_x - 2.0 * _GRID_COL_MM, 2)
+    if reserve_input_connector_margin and lane_x <= ORIGIN_X + 0.01:
+        lane_x = round(ORIGIN_X + _GRID_COL_MM / 2.0, 2)
     ordered_refs.sort(key=lambda ref: (result[ref][1], result[ref][0], ref))
     start_y = round(ic_y - (len(ordered_refs) - 1) * GRID_ROW_MM, 2)
 
@@ -3660,10 +3727,16 @@ def _snap_opamp_stage_upstream_input_bundle(
         if not upstream_refs:
             continue
 
+        reserve_input_connector_margin = any(
+            ref in result and _is_connector_ref(ref) and _effective_role(ref) == BlockRole.INPUT
+            for ref in result
+        )
+
         result, _placed_upstream_refs = _place_opamp_stage_upstream_bundle(
             result,
             opamp_ref=opamp_ref,
             upstream_refs=upstream_refs,
+            reserve_input_connector_margin=reserve_input_connector_margin,
         )
 
     return result
@@ -4810,6 +4883,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         block_layout=block_layout,
         power_unit_refs=power_unit_refs,
     )
+    result = _snap_input_connector_signal_attachment(
+        result,
+        ir,
+        block_layout=block_layout,
+    )
     result = _snap_explicit_non_inverting_feedback_nodes(
         result,
         ir,
@@ -4847,6 +4925,11 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         annotations,
         block_layout=block_layout,
         power_unit_refs=power_unit_refs,
+    )
+    result = _snap_input_connector_signal_attachment(
+        result,
+        ir,
+        block_layout=block_layout,
     )
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result
