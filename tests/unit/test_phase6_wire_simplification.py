@@ -1527,6 +1527,70 @@ def test_route_nets_can_disable_compact_local_ground_cluster_policy() -> None:
     )
 
 
+def test_route_nets_uses_compact_local_ground_lane_for_near_square_input_cluster() -> None:
+    """A nearly square 3-pin input-side GND cluster should still use the compact lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="Connector:AudioJack3", value="IN"),
+            ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+            ComponentIR(ref="R4", symbol="Device:R", value="100k"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="J1", pin="S"),
+                    PinRefIR(ref="RV1", pin="3"),
+                    PinRefIR(ref="R4", pin="2"),
+                ],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J1", "S"): (35.56, 201.93, 180.0),
+            ("RV1", "3"): (30.48, 195.58, 90.0),
+            ("R4", "2"): (30.48, 195.58, 90.0),
+        },
+        positions={
+            "J1": (30.48, 199.39, 0.0),
+            "RV1": (30.48, 199.39, 0.0),
+            "R4": (30.48, 199.39, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_ground_cluster"
+    power_symbol = routing.power_symbols[0]
+    assert power_symbol.net_name == "GND"
+    assert math.isclose(power_symbol.x, 50.8, abs_tol=0.01)
+    assert math.isclose(power_symbol.y, 190.5, abs_tol=0.01)
+    assert any(
+        math.isclose(seg.y1, 190.5, abs_tol=0.01)
+        and math.isclose(seg.y2, 190.5, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 30.48, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 40.64, abs_tol=0.01)
+        for seg in routing.wires
+    )
+    assert any(
+        math.isclose(seg.x1, 40.64, abs_tol=0.01)
+        and math.isclose(seg.x2, 40.64, abs_tol=0.01)
+        and math.isclose(min(seg.y1, seg.y2), 190.5, abs_tol=0.01)
+        and math.isclose(max(seg.y1, seg.y2), 201.93, abs_tol=0.01)
+        for seg in routing.wires
+    )
+    assert any(
+        math.isclose(seg.y1, 190.5, abs_tol=0.01)
+        and math.isclose(seg.y2, 190.5, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 40.64, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 50.8, abs_tol=0.01)
+        for seg in routing.wires
+    )
+
+
 def test_route_nets_uses_middle_lane_for_compressed_output_ground_cluster() -> None:
     """Compressed output-side GND clusters should be able to use a higher clear lane."""
     ir = CircuitIR(
@@ -1595,6 +1659,127 @@ def test_route_nets_uses_middle_lane_for_compressed_output_ground_cluster() -> N
         and (round(seg.x2, 2), round(seg.y2, 2)) not in protected
     ]
     assert short_non_stub != []
+
+
+def test_route_nets_uses_compact_local_decoupling_lane_for_positive_rail_cluster() -> None:
+    """A compact VPLUS decoupling cluster should use one local horizontal rail lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x03", value="PWR"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="C3", symbol="Device:C_Polarized", value="10u"),
+        ],
+        nets=[
+            NetIR(
+                name="VPLUS15",
+                pins=[
+                    PinRefIR(ref="J3", pin="1"),
+                    PinRefIR(ref="U1P", pin="8"),
+                    PinRefIR(ref="C1", pin="1"),
+                    PinRefIR(ref="C3", pin="1"),
+                ],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J3", "1"): (40.64, 50.8, 180.0),
+            ("U1P", "8"): (91.44, 58.42, 180.0),
+            ("C1", "1"): (76.2, 83.82, 90.0),
+            ("C3", "1"): (63.5, 76.2, 90.0),
+        },
+        positions={
+            "J3": (45.72, 53.34, 0.0),
+            "U1P": (96.52, 58.42, 0.0),
+            "C1": (76.2, 87.63, 0.0),
+            "C3": (63.5, 80.01, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_decoupling_cluster"
+    power_symbol = routing.power_symbols[0]
+    assert power_symbol.net_name == "VPLUS15"
+    assert math.isclose(power_symbol.x, 106.68, abs_tol=0.01)
+    assert math.isclose(power_symbol.y, 71.12, abs_tol=0.01)
+    assert any(
+        math.isclose(seg.y1, 71.12, abs_tol=0.01)
+        and math.isclose(seg.y2, 71.12, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 35.56, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 106.68, abs_tol=0.01)
+        for seg in routing.wires
+    )
+    assert any(
+        math.isclose(seg.x1, 86.36, abs_tol=0.01)
+        and math.isclose(seg.x2, 86.36, abs_tol=0.01)
+        and math.isclose(min(seg.y1, seg.y2), 58.42, abs_tol=0.01)
+        and math.isclose(max(seg.y1, seg.y2), 71.12, abs_tol=0.01)
+        for seg in routing.wires
+    )
+
+
+def test_route_nets_uses_compact_local_decoupling_lane_for_negative_rail_cluster() -> None:
+    """A slightly taller VMINUS decoupling cluster should still use a local rail lane."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J3", symbol="Connector_Generic:Conn_01x03", value="PWR"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="C2", symbol="Device:C", value="100n"),
+            ComponentIR(ref="C4", symbol="Device:C_Polarized", value="10u"),
+        ],
+        nets=[
+            NetIR(
+                name="VMINUS15",
+                pins=[
+                    PinRefIR(ref="J3", pin="3"),
+                    PinRefIR(ref="U1P", pin="4"),
+                    PinRefIR(ref="C2", pin="1"),
+                    PinRefIR(ref="C4", pin="2"),
+                ],
+            )
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("J3", "3"): (52.07, 48.26, 0.0),
+            ("U1P", "4"): (105.41, 60.96, 270.0),
+            ("C2", "1"): (87.63, 110.49, 270.0),
+            ("C4", "2"): (87.63, 110.49, 90.0),
+        },
+        positions={
+            "J3": (57.15, 50.8, 0.0),
+            "U1P": (102.87, 58.42, 0.0),
+            "C2": (87.63, 106.68, 0.0),
+            "C4": (87.63, 114.3, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_decoupling_cluster"
+    power_symbol = routing.power_symbols[0]
+    assert math.isclose(power_symbol.x, 115.57, abs_tol=0.01)
+    assert math.isclose(power_symbol.y, 66.04, abs_tol=0.01)
+    assert any(
+        math.isclose(seg.y1, 66.04, abs_tol=0.01)
+        and math.isclose(seg.y2, 66.04, abs_tol=0.01)
+        and math.isclose(min(seg.x1, seg.x2), 46.99, abs_tol=0.01)
+        and math.isclose(max(seg.x1, seg.x2), 115.57, abs_tol=0.01)
+        for seg in routing.wires
+    )
+    assert any(
+        math.isclose(seg.x1, 77.47, abs_tol=0.01)
+        and math.isclose(seg.x2, 77.47, abs_tol=0.01)
+        and math.isclose(min(seg.y1, seg.y2), 66.04, abs_tol=0.01)
+        and math.isclose(max(seg.y1, seg.y2), 115.57, abs_tol=0.01)
+        for seg in routing.wires
+    )
 
 
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:

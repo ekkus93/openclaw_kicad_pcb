@@ -738,7 +738,7 @@ An op-amp stage should look like a human-drawn op-amp stage.
 ### Tasks
 
 #### 2.2.1 Non-inverting stage layout
-Status: `IN PROGRESS`
+Status: `DONE`
 For a non-inverting amplifier:
 - place the op-amp triangle pointing right,
 - place the non-inverting input path coming from the left,
@@ -820,6 +820,11 @@ Status: `IN PROGRESS`
 - Identify capacitors that connect from supply rails to ground near active devices.
 - Associate them with the nearest relevant active device, especially op-amps.
 
+Current progress note:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py::_find_decoupling_caps(...)` and the mirrored `kicad-pcb/src/kicad_pcb/layout.py::_find_decoupling_caps_layout(...)` now treat true rail-to-ground bypass caps as local decouplers when they share a supply rail with an active IC, instead of only recognizing the earlier one-signal-net-plus-power-net pattern.
+- The matcher now also handles split multi-unit devices in generation IR: when a rail only touches the dedicated power unit (for example `U1P`), it falls back to sibling signal units in the same parent device family so the decoupling anchor still lands in the visible op-amp region.
+- Added focused helper coverage in `tests/unit/test_phase4_layout.py` and SDS coverage in `kicad-pcb/tests/unit/test_layout.py` that lock both the new power-only detection path and the inherited active-device association.
+
 #### 2.3.2 Add local-decoupling placement rules
 Status: `IN PROGRESS`
 - Place positive-rail decouplers above the op-amp unit area.
@@ -827,10 +832,20 @@ Status: `IN PROGRESS`
 - Keep the ground symbol local to those capacitors.
 - Ensure the decoupling cluster reads as attached to the op-amp, not floating elsewhere.
 
+Current progress note:
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now derives rail polarity for anchored decouplers during the late snap pass, keeping positive-rail capacitors above the op-amp signal band while placing negative-rail capacitors below it instead of collapsing both onto the same top-side lane.
+- Because this late snap changes final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v6` so command-path layouts stop reusing stale pre-fix placements.
+- Added a focused snap regression in `tests/unit/test_phase4_layout.py` plus a real-fixture managed-schematic regression in `tests/unit/test_netlist_commands.py` that lock the NE5532 decoupling polarity split (`C1/C3` above, `C2/C4` below) while keeping all four capacitors local to the op-amp region.
+
 #### 2.3.3 Draw rail connections cleanly
-Status: `IN PROGRESS`
+Status: `DONE`
 - Prefer short vertical or horizontal rail drops.
 - Avoid meandering rail wires for local decouplers.
+
+Current progress note:
+- `kicad-pcb/src/kicad_pcb/router.py` now gives small analog power clusters a decoupling-specific compact rail route before generic power clustering splits the net, so the real NE5532 `VPLUS15` and `VMINUS15` rails both collapse onto one local horizontal lane with short drops instead of noisy centroid-driven cleanup fragments.
+- The decoupling helper now accepts slightly taller-but-still-local capacitor banks, which was required for the real negative-rail geometry where the raw command-path layout is a little taller than it is wide even though the desired visual route is still a short local rail.
+- Added routing-level coverage in `tests/unit/test_phase6_wire_simplification.py` for both positive and negative local decoupling clusters, and tightened `tests/unit/test_netlist_commands.py` so the real-fixture debug dump explicitly locks the `compact_local_decoupling_cluster` override on both rails.
 
 ---
 

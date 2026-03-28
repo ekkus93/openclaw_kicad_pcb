@@ -27,6 +27,8 @@ from .block_detection import (
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
+from .component_types import component_type, power_rail_polarity
+from .component_types import is_ground_like_name as _is_ground_like_name
 from .errors import ErrorCode, UserError
 from .tier import assign_tiers as _assign_tiers
 from .tier import classify_connector_roles as _classify_connector_roles
@@ -168,7 +170,7 @@ def _bfs_distances(
     return dist
 
 
-def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0912
+def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0912, PLR0915
     """Return ``{cap_ref: ic_ref}`` for bypass/decoupling capacitors.
 
     Mirrors :func:`~kicad_pcb.graphviz_layout.dot_builder._find_decoupling_caps`
@@ -182,6 +184,44 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
             ref_to_nets.setdefault(pin.ref, []).append(net.name)
             net_to_refs.setdefault(net.name, []).append(pin.ref)
 
+    active_ics_by_rail: dict[str, list[str]] = {}
+    for comp in ir.components:
+        if component_type(comp.ref) != "ic":
+            continue
+        nets_for_ic = ref_to_nets.get(comp.ref, [])
+        if not any(not _is_power_net_layout(net_name) for net_name in nets_for_ic):
+            continue
+        for net_name in nets_for_ic:
+            if power_rail_polarity(net_name) is not None:
+                active_ics_by_rail.setdefault(net_name, []).append(comp.ref)
+
+    signal_ic_refs = {
+        comp.ref
+        for comp in ir.components
+        if component_type(comp.ref) == "ic"
+        and any(not _is_power_net_layout(net_name) for net_name in ref_to_nets.get(comp.ref, []))
+    }
+
+    def _rail_anchor_candidates(rail_net: str) -> list[str]:
+        direct_candidates = active_ics_by_rail.get(rail_net, [])
+        if direct_candidates:
+            return direct_candidates
+
+        sibling_candidates: list[str] = []
+        for neighbor_ref in net_to_refs.get(rail_net, []):
+            if component_type(neighbor_ref) != "ic" or len(neighbor_ref) < 2:
+                continue
+            suffix = neighbor_ref[-1]
+            if not suffix.isalpha():
+                continue
+            parent_ref = neighbor_ref[:-1]
+            sibling_candidates.extend(
+                candidate_ref
+                for candidate_ref in signal_ic_refs
+                if candidate_ref[:-1] == parent_ref and candidate_ref != neighbor_ref
+            )
+        return sorted(set(sibling_candidates))
+
     result: dict[str, str] = {}
     for comp in ir.components:
         if not comp.ref.upper().startswith("C"):
@@ -189,19 +229,30 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
         nets_for_cap = ref_to_nets.get(comp.ref, [])
         signal_nets = [n for n in nets_for_cap if not _is_power_net_layout(n)]
         power_nets = [n for n in nets_for_cap if _is_power_net_layout(n)]
-        if len(signal_nets) != 1 or not power_nets:
+        if len(signal_nets) == 1 and power_nets:
+            signal_net = signal_nets[0]
+            for neighbor_ref in net_to_refs.get(signal_net, []):
+                if neighbor_ref == comp.ref:
+                    continue
+                neighbor_upper = neighbor_ref.upper()
+                if any(neighbor_upper.startswith(p) for p in _CONNECTOR_PREFIXES_CT):
+                    continue
+                if neighbor_upper.startswith("C"):
+                    continue
+                result[comp.ref] = neighbor_ref
+                break
+
+        if comp.ref in result:
             continue
-        signal_net = signal_nets[0]
-        for neighbor_ref in net_to_refs.get(signal_net, []):
-            if neighbor_ref == comp.ref:
-                continue
-            neighbor_upper = neighbor_ref.upper()
-            if any(neighbor_upper.startswith(p) for p in _CONNECTOR_PREFIXES_CT):
-                continue
-            if neighbor_upper.startswith("C"):
-                continue
-            result[comp.ref] = neighbor_ref
-            break
+
+        ground_nets = [n for n in nets_for_cap if _is_ground_like_name(n)]
+        rail_nets = [n for n in nets_for_cap if power_rail_polarity(n) is not None]
+        if signal_nets or len(ground_nets) != 1 or len(rail_nets) != 1:
+            continue
+
+        candidate_refs = _rail_anchor_candidates(rail_nets[0])
+        if candidate_refs:
+            result[comp.ref] = candidate_refs[0]
     return result
 
 

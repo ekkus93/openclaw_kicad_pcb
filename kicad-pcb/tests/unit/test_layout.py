@@ -510,6 +510,28 @@ class TestComputeSignalDistanceScores:
         # C1 is a decoupling cap anchored to U1 → inherits SDS=0.5
         assert pytest.approx(sds["C1"], abs=1e-9) == 0.5
 
+    def test_true_bypass_cap_on_active_rail_inherits_ic_sds(self):
+        """A rail-to-ground bypass cap on an active IC rail inherits that IC's SDS."""
+        ir = _make_ir(
+            [
+                ("J1", "Connector", "J1"),
+                ("U1", "TL071", "U"),
+                ("J2", "Connector", "J2"),
+                ("C1", "C", "100n"),
+            ],
+            [
+                ("N_in", [("J1", "1"), ("U1", "1")]),
+                ("N_out", [("U1", "2"), ("J2", "1")]),
+                ("VCC", [("U1", "3"), ("C1", "1")]),
+                ("GND", [("U1", "4"), ("C1", "2")]),
+            ],
+        )
+        roles = {"J1": "input", "J2": "output"}
+        sds = compute_signal_distance_scores(ir, roles)
+
+        assert pytest.approx(sds["U1"], abs=1e-9) == 0.5
+        assert pytest.approx(sds["C1"], abs=1e-9) == 0.5
+
     def test_no_connectors_returns_half_for_all(self):
         """No input/output connectors → sentinel distances → SDS=0.5 for all."""
         ir = _make_ir(

@@ -1759,6 +1759,39 @@ class TestFindDecouplingCaps:
         result = _gv_mod.find_decoupling_caps(ir)
         assert result == {}, f"Expected empty map for true bypass cap, got: {result}"
 
+    def test_true_bypass_cap_on_active_rail_detected(self) -> None:
+        """A rail-to-ground bypass cap should anchor to the active IC on that rail."""
+        components = [
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Out"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+        ]
+        nets = [
+            NetIR(
+                name="IN_SIG",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="U1", pin="3")],
+            ),
+            NetIR(
+                name="OUT_SIG",
+                pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="VCC",
+                pins=[PinRefIR(ref="U1", pin="7"), PinRefIR(ref="C1", pin="1")],
+            ),
+            NetIR(
+                name="GND",
+                pins=[PinRefIR(ref="U1", pin="4"), PinRefIR(ref="C1", pin="2")],
+            ),
+        ]
+
+        ir = CircuitIR(version="1", components=components, nets=nets)
+        result = _gv_mod.find_decoupling_caps(ir)
+        assert result == {"C1": "U1"}, (
+            f"Expected power-only bypass cap C1 to anchor to active IC U1, got: {result}"
+        )
+
     def test_true_bypass_cap_stays_out_of_cluster_power_with_block_layout(self) -> None:
         """Block-classified decouplers should not be dumped into cluster_power."""
         components = [
@@ -3519,8 +3552,8 @@ class TestApplyPostLayoutSnaps:
         assert c6_x == pytest.approx(r5_x), (
             f"Buffer handoff bridge and shunt should share one input-node column: {result}"
         )
-        assert u1b_x - c6_x == pytest.approx(GRID_COL_MM), (
-            f"Buffer input node should sit one readable lane left of U1B: {result}"
+        assert u1b_x - c6_x == pytest.approx(GRID_COL_MM / 2.0), (
+            f"Buffer input node should sit midway between the handoff and U1B: {result}"
         )
         assert c6_y == pytest.approx(u1b_y), (
             f"Incoming buffer handoff should stay on the U1B stage row: {result}"
@@ -5338,6 +5371,57 @@ class TestApplyPostLayoutSnaps:
         assert disabled == positions
         assert math.isclose(enabled["CDEC"][0], 100.0, abs_tol=0.01)
         assert math.isclose(enabled["CDEC"][1], 100.0 - _gv_mod.GRID_ROW_MM, abs_tol=0.01)
+
+    def test_decoupling_snap_places_negative_rail_caps_below_anchor(self) -> None:
+        """Negative-rail decouplers should be snapped below the active device."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="In"),
+                ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="Out"),
+                ComponentIR(ref="CPLUS", symbol="Device:C", value="100n"),
+                ComponentIR(ref="CMINUS", symbol="Device:C", value="100n"),
+            ],
+            nets=[
+                NetIR(
+                    name="IN_SIG",
+                    pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="U1", pin="3")],
+                ),
+                NetIR(
+                    name="OUT_SIG",
+                    pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="J2", pin="1")],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[PinRefIR(ref="U1", pin="7"), PinRefIR(ref="CPLUS", pin="1")],
+                ),
+                NetIR(
+                    name="VEE",
+                    pins=[PinRefIR(ref="U1", pin="4"), PinRefIR(ref="CMINUS", pin="1")],
+                ),
+                NetIR(
+                    name="GND",
+                    pins=[PinRefIR(ref="CPLUS", pin="2"), PinRefIR(ref="CMINUS", pin="2")],
+                ),
+            ],
+        )
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "CPLUS": (70.0, 150.0, None),
+            "CMINUS": (130.0, 40.0, None),
+        }
+
+        result = _gv_mod.DEFAULT_LAYOUT_HEURISTIC_POLICY.apply_decoupling_snap(
+            positions,
+            {"CPLUS": "U1", "CMINUS": "U1"},
+            ir,
+        )
+
+        assert math.isclose(result["CPLUS"][0], 100.0, abs_tol=0.01)
+        assert math.isclose(result["CMINUS"][0], 100.0, abs_tol=0.01)
+        assert math.isclose(result["CPLUS"][1], 100.0 - _gv_mod.GRID_ROW_MM, abs_tol=0.01)
+        assert math.isclose(result["CMINUS"][1], 100.0 + _gv_mod.GRID_ROW_MM, abs_tol=0.01)
 
     def test_layout_policy_can_disable_opamp_locality(self) -> None:
         """The layout policy should be able to skip op-amp locality staging."""
