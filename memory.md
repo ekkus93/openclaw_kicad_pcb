@@ -1,5 +1,11 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-03-28T13:11:35Z - GPT-5.4 - Removed the dead readability baseline regeneration test
+
+- Deleted `tests/unit/test_readability_baseline.py::test_generate_baseline_schematic`, which only existed as an opt-in fixture-regeneration helper behind `OPENCLAW_REGENERATE_READABILITY_BASELINE=1` and was the source of the suite's lone routine skip.
+- Kept the real tracked-fixture regression `test_baseline_metrics_regression`, since it validates checked-in baseline artifacts without mocks or manual env toggles.
+- Revalidated with `.venv/bin/ruff check tests/unit/test_readability_baseline.py`, `.venv/bin/pytest -q tests/unit/test_readability_baseline.py`, and full `.venv/bin/pytest`, now green at `2269 passed` with no skipped tests.
+
 ## 2026-03-28T11:52:29Z - GPT-5.4 - Synced stale real-fixture regression expectations after the decoupling/cache work
 
 - The four remaining pytest failures after the Phase 2.3.1 cache-schema work were stale real-fixture guardrails, not new functional breakage. The current verified route-summary contract is: `analog_audio` reports `small_analog_local_routing` plus `compact_local_ground_cluster: ["GND"]` and `compact_local_decoupling_cluster: ["VPLUS15"]`, while `power_supply` reports only `compact_local_decoupling_cluster: ["VMINUS15", "VPLUS15"]` on the real NE5532 fixture.
