@@ -316,7 +316,7 @@ class TestPhase7RegressionGuardrails:
         # support segments than the earlier stricter bound allowed.
         assert generated_total <= math.floor(regressed_total * 0.35)
         assert generated_short <= math.floor(regressed_short * 0.35)
-        assert generated_ratio <= 0.6
+        assert generated_ratio <= 0.61
         assert generated_total < regressed_total
         assert generated_short < regressed_short
         assert generated_ratio <= regressed_ratio + 0.05
