@@ -2263,6 +2263,49 @@ class TestDecouplingCapCoLocation:
         assert negative_xs == expected_xs, (
             f"Negative overflow bank should mirror the same compact x lanes: {result}"
         )
+
+    def test_post_snap_centers_split_unit_decoupling_bank_on_family_x(self) -> None:
+        """Split-unit decouplers should align to the visible device family, not one sibling lane."""
+        positions = {
+            "U1A": (91.44, 99.06, None),
+            "U1B": (121.92, 99.06, None),
+            "U1P": (106.68, 129.54, None),
+            "C1": (40.0, 40.0, None),
+            "C2": (45.0, 45.0, None),
+            "C3": (50.0, 50.0, None),
+            "C4": (55.0, 55.0, None),
+        }
+
+        result = _gv_mod.post_snap_decoupling_caps(
+            positions,
+            {
+                "C1": "U1A",
+                "C2": "U1A",
+                "C3": "U1A",
+                "C4": "U1A",
+            },
+            rail_polarities={
+                "C1": "positive",
+                "C2": "negative",
+                "C3": "positive",
+                "C4": "negative",
+            },
+        )
+
+        family_center_x = round((positions["U1A"][0] + positions["U1B"][0]) / 2.0, 2)
+        decoupling_xs = {round(result[ref][0], 2) for ref in ("C1", "C2", "C3", "C4")}
+        positive_refs = ("C1", "C3")
+        negative_refs = ("C2", "C4")
+        uy = positions["U1A"][1]
+
+        assert family_center_x in decoupling_xs, (
+            "Split-unit decoupling bank should keep its primary lane on the family centerline: "
+            f"family_center_x={family_center_x}, decoupling_xs={sorted(decoupling_xs)}"
+        )
+        assert round(positions["U1A"][0], 2) not in decoupling_xs, (
+            "Split-unit decoupling bank should not stay pinned to only the refined anchor lane: "
+            f"anchor_x={positions['U1A'][0]:.2f}, decoupling_xs={sorted(decoupling_xs)}"
+        )
         assert all(result[ref][1] < uy for ref in positive_refs), (
             f"Positive decouplers should stay above the IC row: {result}"
         )
@@ -2440,9 +2483,14 @@ class TestDecouplingCapCoLocation:
         engine = _gv_mod.GraphvizLayoutEngine(dot_path="dot")
 
         result = engine.compute_symbol_positions(ir)
-        assert round(result["C1"][0], 2) == round(result["U1A"][0], 2), (
-            "Expected the split-unit shared-rail decoupler to re-anchor through the sibling "
-            f"signal unit, got: {result}"
+        family_center_x = round((result["U1A"][0] + result["U1B"][0]) / 2.0, 2)
+        assert round(result["C1"][0], 2) == family_center_x, (
+            "Expected the split-unit shared-rail decoupler to stay centered on the final "
+            f"signal-family span after sibling refinement, got: {result}"
+        )
+        assert round(result["C1"][0], 2) == round(result["U1P"][0], 2), (
+            "Expected the split-unit shared-rail decoupler to follow the recentered power unit "
+            f"over the sibling signal span, got: {result}"
         )
 
     def test_dot_source_unchanged_without_decoupling_map(self) -> None:
@@ -4098,6 +4146,77 @@ class TestApplyPostLayoutSnaps:
         )
         assert result["J2"][0] - result["R6"][0] <= 3.0 * GRID_COL_MM, (
             f"Output tail should stay local to U1B instead of stretching rightward: {result}"
+        )
+
+    def test_buffer_stage_keeps_output_connector_on_tail_row_and_outermost_lane(self) -> None:
+        """Phase 2.4.3: the output connector should stay attached to the final tail row."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1B", symbol="Amplifier:NE5532", value="NE5532"),
+                ComponentIR(ref="R6", symbol="Device:R", value="47"),
+                ComponentIR(ref="C7", symbol="Device:C", value="220u"),
+                ComponentIR(ref="R7", symbol="Device:R", value="33"),
+                ComponentIR(ref="J2", symbol="Connector:Conn_01x01", value="OUT"),
+            ],
+            nets=[
+                NetIR(
+                    name="OUT_L_STAGE2_RAW",
+                    pins=[
+                        PinRefIR(ref="U1B", pin="6"),
+                        PinRefIR(ref="U1B", pin="7"),
+                        PinRefIR(ref="R6", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="AFTER_R6",
+                    pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="C7", pin="1")],
+                ),
+                NetIR(
+                    name="HP_L_OUT",
+                    pins=[
+                        PinRefIR(ref="C7", pin="2"),
+                        PinRefIR(ref="R7", pin="1"),
+                        PinRefIR(ref="J2", pin="1"),
+                    ],
+                ),
+            ],
+        )
+
+        block_layout = BlockLayout()
+        block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("C7", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("R7", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "U1B": (171.45, 144.78, None),
+            "R6": (208.27, 175.26, None),
+            "C7": (246.38, 205.74, None),
+            "R7": (262.89, 220.98, None),
+            "J2": (297.18, 205.74, None),
+        }
+
+        result = _gv_mod.apply_post_layout_snaps(
+            positions,
+            ir,
+            feedback_refs=set(),
+            annotations={},
+            channels={ref: "mono" for ref in positions},
+            decoupling_map={},
+            block_layout=block_layout,
+        )
+
+        assert result["J2"][1] == pytest.approx(result["C7"][1]), (
+            f"Output connector should stay on the coupling-cap tail row: {result}"
+        )
+        assert result["J2"][1] == pytest.approx(result["R7"][1]), (
+            "Output connector should stay attached to the final "
+            f"resistor/capacitor tail row: {result}"
+        )
+        assert result["R7"][0] < result["J2"][0], (
+            f"Output connector should remain the outermost element on the output-tail row: {result}"
         )
 
     def test_buffer_stage_clears_feedback_corridor_of_intrusive_tail_parts(self) -> None:
@@ -6024,6 +6143,17 @@ class TestApplyPostLayoutSnaps:
             f"{result}"
         )
 
+        snapped_positions = {ref: (coords[0], coords[1]) for ref, coords in result.items()}
+        orientations = compute_orientations(
+            ir,
+            snapped_positions,
+            tiers=assign_tiers(ir),
+        )
+        assert orientations["JIN"] == 0, (
+            "The input connector should keep its inward-facing 0° orientation on the "
+            f"incoming handoff row: {orientations}"
+        )
+
     def test_layout_policy_can_disable_decoupling_snap(self) -> None:
         """The layout policy should be able to leave decoupling positions untouched."""
         positions = {
@@ -6340,17 +6470,17 @@ class TestApplyPostLayoutSnaps:
             heuristic_policy=disabled_policy,
         )
 
-        assert math.isclose(enabled["CDEC"][0], positions["U1"][0], abs_tol=0.01)
+        assert math.isclose(enabled["CDEC"][0], enabled["U1"][0], abs_tol=0.01)
         assert math.isclose(
             enabled["CDEC"][1],
-            positions["U1"][1] - _gv_mod.GRID_ROW_MM,
+            enabled["U1"][1] - _gv_mod.GRID_ROW_MM,
             abs_tol=0.01,
         )
         assert math.isclose(disabled["CDEC"][0], positions["CDEC"][0], abs_tol=0.01)
-        assert not math.isclose(disabled["CDEC"][0], positions["U1"][0], abs_tol=0.01)
+        assert not math.isclose(disabled["CDEC"][0], disabled["U1"][0], abs_tol=0.01)
         assert not math.isclose(
             disabled["CDEC"][1],
-            positions["U1"][1] - _gv_mod.GRID_ROW_MM,
+            disabled["U1"][1] - _gv_mod.GRID_ROW_MM,
             abs_tol=0.01,
         )
 
@@ -6402,10 +6532,10 @@ class TestApplyPostLayoutSnaps:
         assert analog_audio.layout_policy.enable_decoupling_snap is True
         assert generic_digital.layout_policy.enable_decoupling_snap is False
         assert analog_layout != digital_layout
-        assert math.isclose(analog_layout["CDEC"][0], positions["U1"][0], abs_tol=0.01)
+        assert math.isclose(analog_layout["CDEC"][0], analog_layout["U1"][0], abs_tol=0.01)
         assert math.isclose(
             analog_layout["CDEC"][1],
-            positions["U1"][1] - _gv_mod.GRID_ROW_MM,
+            analog_layout["U1"][1] - _gv_mod.GRID_ROW_MM,
             abs_tol=0.01,
         )
         assert math.isclose(digital_layout["CDEC"][0], positions["CDEC"][0], abs_tol=0.01)

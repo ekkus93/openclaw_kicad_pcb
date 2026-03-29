@@ -90,6 +90,7 @@ phases must improve.
 - This is still the same left-channel NE5532 headphone-amp circuit represented by the authoritative repo netlist in `code_review/ne5532_headphone_amp_netlist.json`.
 - The regression is about placement and composition, not missing connectivity. The schematic should remain electrically faithful while later phases improve block separation and page composition.
 - `J1` and `J2` remain mono-left TRS connectors in this fixture. Their ring pins are intentionally unused and should appear as explicit KiCad `no_connect` markers in generated managed schematics.
+- Policy decision for this fixture: keep `J1` and `J2` on the authored `Connector:AudioJack3` symbols. Follow-up readability work may improve placement and annotation, but it should not silently rewrite the connectors to mono/channel-specific symbols.
 - The regressed layout is allowed to be visually poor, but it is not allowed to silently drop components, rename key nets, or reinterpret the authored `R1` / `C5` topology.
 
 ## Regression Guardrails

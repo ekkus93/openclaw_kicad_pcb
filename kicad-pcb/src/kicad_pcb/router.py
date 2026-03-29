@@ -1670,15 +1670,126 @@ def _compact_local_ground_cluster_route(
     return _simplify_wires(segs, protected_points=protected), junctions, (symbol_x, lane_y)
 
 
+def _decoupling_ground_members(
+    cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
+) -> (
+    tuple[
+        list[tuple[PinRefIR, tuple[float, float, float]]],
+        list[tuple[PinRefIR, tuple[float, float, float]]],
+    ]
+    | None
+):
+    """Return decoupling-cap and support members for a local decoupling GND cluster."""
+    if not 2 <= len(cluster) <= 5:
+        return None
+
+    capacitor_members = [
+        (pin_ref, anchor) for pin_ref, anchor in cluster if pin_ref.ref.upper().startswith("C")
+    ]
+    support_members = [
+        (pin_ref, anchor) for pin_ref, anchor in cluster if not pin_ref.ref.upper().startswith("C")
+    ]
+    if len(capacitor_members) < 2 or len(support_members) > 2:
+        return None
+    for support_pin_ref, _anchor in support_members:
+        support_kind = _component_type(support_pin_ref.ref)
+        if support_kind not in {"ic", "passive"}:
+            return None
+
+    return capacitor_members, support_members
+
+
+def _choose_compact_ground_lane(
+    *,
+    cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
+    stub_ends: list[tuple[float, float]],
+    lane_bounds: tuple[float, float],
+    avg_y: float,
+    positions: Mapping[str, tuple[float, float, float | None]] | None,
+) -> tuple[float, dict[tuple[float, float], float], float]:
+    """Return the best local ground lane candidate for a compact cluster."""
+    ys = [point[1] for point in stub_ends]
+    lane_y = min(sorted(set(ys)), key=lambda y: abs(y - avg_y))
+    vertical_target_x: dict[tuple[float, float], float] = {(x, y): x for x, y in stub_ends}
+    lane_x0, lane_x1 = lane_bounds
+    if positions is None:
+        return lane_y, vertical_target_x, lane_x0
+
+    cluster_positions = [
+        pos for pin_ref, _anchor in cluster if (pos := positions.get(pin_ref.ref)) is not None
+    ]
+    lane_candidates = sorted(set(ys))
+    best_lane: tuple[float, float, dict[tuple[float, float], float], float] | None = None
+    for candidate_y in lane_candidates:
+        candidate_targets = {(x, y): x for x, y in stub_ends}
+        for x, y in stub_ends:
+            if math.isclose(y, candidate_y, abs_tol=0.01):
+                continue
+            clearance_x = x
+            for bx, by, _rotation in cluster_positions:
+                if _wire_crosses_box(x, y, x, candidate_y, bx, by, SYMBOL_HALF_SIZE_MM):
+                    clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
+            candidate_targets[(x, y)] = _snap_grid(clearance_x)
+
+        candidate_x0 = min(lane_x0, *candidate_targets.values())
+        blocked = any(
+            _wire_crosses_box(
+                candidate_x0,
+                candidate_y,
+                lane_x1,
+                candidate_y,
+                bx,
+                by,
+                SYMBOL_HALF_SIZE_MM,
+            )
+            for bx, by, _rotation in cluster_positions
+        )
+        if blocked:
+            continue
+
+        vertical_cost = sum(abs(y - candidate_y) for _x, y in stub_ends)
+        horizontal_cost = sum(abs(x - candidate_targets[(x, y)]) for x, y in stub_ends)
+        centering_cost = abs(candidate_y - avg_y)
+        score = vertical_cost + horizontal_cost + centering_cost
+        if (
+            best_lane is None
+            or score < best_lane[0]
+            or (
+                math.isclose(score, best_lane[0], abs_tol=0.01)
+                and centering_cost < abs(best_lane[1] - avg_y)
+            )
+        ):
+            best_lane = (score, candidate_y, candidate_targets, candidate_x0)
+
+    if best_lane is None:
+        return lane_y, vertical_target_x, lane_x0
+
+    _score, lane_y, vertical_target_x, lane_x0 = best_lane
+    return lane_y, vertical_target_x, lane_x0
+
+
 def _compact_local_decoupling_ground_cluster_route(
     cluster: list[tuple[PinRefIR, tuple[float, float, float]]],
     *,
     positions: Mapping[str, tuple[float, float, float | None]] | None = None,
 ) -> tuple[list[WireSegment], list[JunctionPoint], tuple[float, float]] | None:
-    """Route a compact local GND lane for a small decoupling-cap bank."""
-    if len(cluster) < 2 or len(cluster) > 4:
+    """Route a compact local GND lane for a small decoupling support cluster.
+
+    This extends the original cap-only helper by allowing up to two nearby
+    local support members such as power-unit ground pins or shunt elements to
+    share the same calm ground lane as the decoupling bank.
+    """
+    members = _decoupling_ground_members(cluster)
+    if members is None:
         return None
-    if any(not pin_ref.ref.upper().startswith("C") for pin_ref, _anchor in cluster):
+    capacitor_members, _support_members = members
+
+    cap_stub_ends = [_stub_end(x, y, angle) for _pin_ref, (x, y, angle) in capacitor_members]
+    cap_xs = [point[0] for point in cap_stub_ends]
+    cap_ys = [point[1] for point in cap_stub_ends]
+    cap_x_span = max(cap_xs) - min(cap_xs)
+    cap_y_span = max(cap_ys) - min(cap_ys)
+    if cap_x_span > 50.0 or cap_y_span > 60.0:
         return None
 
     stub_ends = [_stub_end(x, y, angle) for _pin_ref, (x, y, angle) in cluster]
@@ -1686,64 +1797,19 @@ def _compact_local_decoupling_ground_cluster_route(
     ys = [point[1] for point in stub_ends]
     x_span = max(xs) - min(xs)
     y_span = max(ys) - min(ys)
-    if x_span > 50.0 or y_span > 60.0:
+    if x_span > 80.0 or y_span > 60.0:
         return None
 
     lane_x0 = min(xs)
     lane_x1 = max(xs)
-    avg_y = sum(ys) / len(ys)
-    lane_y = min(sorted(set(ys)), key=lambda y: abs(y - avg_y))
-    vertical_target_x: dict[tuple[float, float], float] = {(x, y): x for x, y in stub_ends}
-
-    if positions is not None:
-        cluster_positions = [
-            pos for pin_ref, _anchor in cluster if (pos := positions.get(pin_ref.ref)) is not None
-        ]
-        lane_candidates = sorted(set(ys))
-        best_lane: tuple[float, float, dict[tuple[float, float], float], float] | None = None
-        for candidate_y in lane_candidates:
-            candidate_targets = {(x, y): x for x, y in stub_ends}
-            for x, y in stub_ends:
-                if math.isclose(y, candidate_y, abs_tol=0.01):
-                    continue
-                clearance_x = x
-                for bx, by, _rotation in cluster_positions:
-                    if _wire_crosses_box(x, y, x, candidate_y, bx, by, SYMBOL_HALF_SIZE_MM):
-                        clearance_x = min(clearance_x, bx - (2 * SYMBOL_HALF_SIZE_MM))
-                candidate_targets[(x, y)] = _snap_grid(clearance_x)
-
-            candidate_x0 = min(lane_x0, *candidate_targets.values())
-            blocked = any(
-                _wire_crosses_box(
-                    candidate_x0,
-                    candidate_y,
-                    lane_x1,
-                    candidate_y,
-                    bx,
-                    by,
-                    SYMBOL_HALF_SIZE_MM,
-                )
-                for bx, by, _rotation in cluster_positions
-            )
-            if blocked:
-                continue
-
-            vertical_cost = sum(abs(y - candidate_y) for _x, y in stub_ends)
-            horizontal_cost = sum(abs(x - candidate_targets[(x, y)]) for x, y in stub_ends)
-            centering_cost = abs(candidate_y - avg_y)
-            score = vertical_cost + horizontal_cost + centering_cost
-            if (
-                best_lane is None
-                or score < best_lane[0]
-                or (
-                    math.isclose(score, best_lane[0], abs_tol=0.01)
-                    and centering_cost < abs(best_lane[1] - avg_y)
-                )
-            ):
-                best_lane = (score, candidate_y, candidate_targets, candidate_x0)
-
-        if best_lane is not None:
-            _score, lane_y, vertical_target_x, lane_x0 = best_lane
+    avg_y = sum(cap_ys) / len(cap_ys)
+    lane_y, vertical_target_x, lane_x0 = _choose_compact_ground_lane(
+        cluster=cluster,
+        stub_ends=stub_ends,
+        lane_bounds=(lane_x0, lane_x1),
+        avg_y=avg_y,
+        positions=positions,
+    )
 
     segs = [WireSegment(lane_x0, lane_y, lane_x1, lane_y)]
     junctions: list[JunctionPoint] = []

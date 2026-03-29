@@ -25,7 +25,7 @@ from kicad_pcb.layout import GRID_COL_MM, compute_orientations
 from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
-from kicad_pcb.sexpr.nodes import ListNode, StringNode
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first, walk
 
 from tests import NE5532_HEADPHONE_REVIEW_FIXTURE, SYMBOLS_FIXTURE_DIR
@@ -2367,6 +2367,37 @@ def _symbol_positions_by_id(doc: SchematicDoc, symbol_id: str) -> dict[str, tupl
     return positions
 
 
+def _symbol_angles(doc: SchematicDoc) -> dict[str, int]:
+    angles: dict[str, int] = {}
+    for node in doc.root.items:
+        if not isinstance(node, ListNode) or node.key != "symbol":
+            continue
+
+        ref: str | None = None
+        angle: int | None = None
+        for child in node.items:
+            if not isinstance(child, ListNode):
+                continue
+            if child.key == "property" and len(child.items) >= 3:
+                name_node = child.items[1]
+                value_node = child.items[2]
+                if (
+                    isinstance(name_node, StringNode)
+                    and name_node.value == "Reference"
+                    and isinstance(value_node, StringNode)
+                ):
+                    ref = value_node.value
+            elif (
+                child.key == "at" and len(child.items) >= 4 and isinstance(child.items[3], AtomNode)
+            ):
+                angle = int(float(child.items[3].value))
+
+        if ref is not None and angle is not None:
+            angles[ref] = angle
+
+    return angles
+
+
 def _distance_mm(left: tuple[float, float], right: tuple[float, float]) -> float:
     return math.hypot(left[0] - right[0], left[1] - right[1])
 
@@ -2578,6 +2609,28 @@ def test_new_from_real_ne5532_fixture_marks_unused_trs_ring_pins(tmp_path: Path)
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
 
     assert len(find_all(managed_doc.root, "no_connect")) == 2
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_authored_trs_connector_symbols(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532ConnectorPolicy",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
+
+    assert placed_symbols["J1"]["symbol_id"] == "Connector:AudioJack3"
+    assert placed_symbols["J2"]["symbol_id"] == "Connector:AudioJack3"
 
 
 @_skip_no_real_ne5532_fixture_symbols
@@ -2805,6 +2858,39 @@ def test_new_from_real_ne5532_fixture_keeps_decoupling_bank_compact_in_x(
             f"Decoupling cap {ref} should remain within one op-amp support lane in x: "
             f"nearest op-amp x-distance={nearest_opamp_x:.2f} mm, threshold={GRID_COL_MM:.2f} mm"
         )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_centers_decoupling_bank_on_u1_family(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532DecouplingFamilyCenter",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+
+    family_center_x = (positions["U1A"][0] + positions["U1B"][0]) / 2.0
+    decoupling_refs = ("C1", "C2", "C3", "C4")
+    centered_caps = [
+        ref
+        for ref in decoupling_refs
+        if math.isclose(positions[ref][0], family_center_x, abs_tol=0.01)
+    ]
+
+    assert centered_caps, (
+        "Real NE5532 decoupling bank should use the split-unit family centerline "
+        "as its primary x lane: "
+        f"family_center_x={family_center_x:.2f}, positions={positions}"
+    )
 
 
 @_skip_no_real_ne5532_fixture_symbols
@@ -3065,6 +3151,46 @@ def test_new_from_real_ne5532_fixture_keeps_j1_attached_to_incoming_signal_row(
     assert j1_x <= c5_x < rv1_x, (
         "The input connector should stay left of the handoff chain into the gain stage: "
         f"J1.x={j1_x:.2f}, C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}, R4.x={r4_x:.2f}"
+    )
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_new_from_real_ne5532_fixture_keeps_connectors_attached_and_facing_inward(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532ConnectorGeometry",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    positions = _symbol_positions(managed_doc)
+    angles = _symbol_angles(managed_doc)
+
+    assert angles["J1"] == 0, (
+        f"Input connector should face into the circuit: J1 angle={angles['J1']}"
+    )
+    assert angles["J2"] == 180, (
+        "Output connector should face back toward the circuit from the right edge: "
+        f"J2 angle={angles['J2']}"
+    )
+    assert positions["J2"][1] == pytest.approx(positions["C7"][1]), (
+        "The output connector should stay on the final output-tail row with the coupling cap: "
+        f"J2={positions['J2']}, C7={positions['C7']}, R7={positions['R7']}"
+    )
+    assert positions["J2"][1] == pytest.approx(positions["R7"][1]), (
+        "The output connector should remain attached to the resistor/capacitor tail row: "
+        f"J2={positions['J2']}, C7={positions['C7']}, R7={positions['R7']}"
+    )
+    assert positions["R7"][0] < positions["J2"][0], (
+        "The output connector should remain the outermost element on the final output row: "
+        f"R7.x={positions['R7'][0]:.2f}, J2.x={positions['J2'][0]:.2f}"
     )
 
 
@@ -3420,7 +3546,8 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
         key: value for key, value in analog_overrides.items() if key != "small_analog_local_routing"
     }
     assert profile_specific_overrides == {
-        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
+        "compact_local_ground_cluster": ["GND"],
+        "compact_local_decoupling_cluster": ["VPLUS15"],
     }
     assert digital_overrides == {}
 

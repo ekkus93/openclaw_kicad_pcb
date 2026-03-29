@@ -1828,6 +1828,110 @@ def test_route_nets_uses_compact_local_ground_lane_for_decoupling_cap_bank() -> 
     assert len(routing.junctions) >= 2
 
 
+def test_route_nets_uses_compact_local_ground_lane_for_mixed_decoupling_support_cluster() -> None:
+    """A local decoupling bank may share its ground lane with one nearby support member."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="C3", symbol="Device:C_Polarized", value="10u"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="U1P", pin="2"),
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="C3", pin="2"),
+                ],
+            )
+        ],
+    )
+    pin_endpoints = {
+        ("U1P", "2"): (105.41, 130.81, 270.0),
+        ("C1", "2"): (106.68, 125.73, 270.0),
+        ("C3", "2"): (106.68, 118.11, 270.0),
+    }
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions={
+            "U1P": (106.68, 134.62, 0.0),
+            "C1": (106.68, 129.54, 0.0),
+            "C3": (106.68, 121.92, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_ground_cluster"
+    power_symbol = routing.power_symbols[0]
+    cap_positions = [pin_endpoints[("C1", "2")], pin_endpoints[("C3", "2")]]
+    nearest_cap_distance = min(
+        math.hypot(power_symbol.x - x, power_symbol.y - y) for x, y, _angle in cap_positions
+    )
+    assert nearest_cap_distance <= 20.0, (
+        "Mixed local decoupling support cluster should keep the GND symbol near the cap bank: "
+        f"{power_symbol}"
+    )
+    assert len(routing.junctions) >= 3
+
+
+def test_route_nets_uses_compact_local_ground_lane_for_two_support_decoupling_cluster() -> None:
+    """A local decoupling bank may keep one calm GND lane with two nearby support members."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="R5", symbol="Device:R", value="10k"),
+            ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+            ComponentIR(ref="C3", symbol="Device:C_Polarized", value="10u"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="U1P", pin="2"),
+                    PinRefIR(ref="R5", pin="2"),
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="C3", pin="2"),
+                ],
+            )
+        ],
+    )
+    pin_endpoints = {
+        ("U1P", "2"): (105.41, 130.81, 270.0),
+        ("R5", "2"): (114.30, 132.08, 270.0),
+        ("C1", "2"): (106.68, 125.73, 270.0),
+        ("C3", "2"): (106.68, 118.11, 270.0),
+    }
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions={
+            "U1P": (106.68, 134.62, 0.0),
+            "R5": (114.30, 135.89, 0.0),
+            "C1": (106.68, 129.54, 0.0),
+            "C3": (106.68, 121.92, 0.0),
+        },
+    )
+
+    assert len(routing.power_symbols) == 1
+    assert routing.route_decisions[0].heuristic_override == "compact_local_ground_cluster"
+    power_symbol = routing.power_symbols[0]
+    cap_positions = [pin_endpoints[("C1", "2")], pin_endpoints[("C3", "2")]]
+    nearest_cap_distance = min(
+        math.hypot(power_symbol.x - x, power_symbol.y - y) for x, y, _angle in cap_positions
+    )
+    assert nearest_cap_distance <= 22.0, (
+        "Two-support decoupling cluster should keep the GND symbol near the cap bank: "
+        f"{power_symbol}"
+    )
+    assert len(routing.junctions) >= 4
+
+
 def test_detect_body_crossings_preserves_pin_stub_touching_own_box() -> None:
     """Pin stubs that start on a symbol boundary must not be detoured."""
     stub = WireSegment(54.61, 106.68, 54.61, 101.60)

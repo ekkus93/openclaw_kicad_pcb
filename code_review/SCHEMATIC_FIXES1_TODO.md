@@ -826,7 +826,7 @@ Current progress note:
 - Added focused helper coverage in `tests/unit/test_phase4_layout.py` and SDS coverage in `kicad-pcb/tests/unit/test_layout.py` that lock the power-only detection path, the inherited active-device association, the passive-vs-active anchor preference, the shared negative-rail refinement path, the cache-schema round-trip, and the cache-hit metadata-consistency follow-up.
 
 #### 2.3.2 Add local-decoupling placement rules
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Place positive-rail decouplers above the op-amp unit area.
 - Place negative-rail decouplers below or near the lower rail area.
 - Keep the ground symbol local to those capacitors.
@@ -835,10 +835,15 @@ Current progress note:
 Current progress note:
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now derives rail polarity for anchored decouplers during the late snap pass, keeping positive-rail capacitors above the op-amp signal band while placing negative-rail capacitors below it instead of collapsing both onto the same top-side lane.
 - The late snap now also fans out overflow decoupling banks symmetrically around the op-amp column (`center, center, -1 lane, +1 lane, ...`) instead of drifting farther to only one side, so mixed positive/negative cap groups stay compact and read like one attached support cluster.
-- Because this late snap changes final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v7` so command-path layouts stop reusing stale pre-fix placements.
+- Split-unit decoupling banks now center on the visible device family span instead of staying pinned to whichever signal unit won the refined anchor map. For the real NE5532 command path, the final `C1`-`C4` bank now sits on the `U1A/U1B/U1P` family centerline (`106.68 mm`) rather than hanging off the `U1A` lane alone.
+- That family-center rule is now reapplied at the end of the late snap pipeline, after the final multi-unit sibling compaction, so split-unit power-support geometry cannot drift back onto stale pre-cohesion x lanes.
+- Because these late decoupling snaps change final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` through `graphviz-layout-v13` so command-path layouts stop reusing stale pre-fix placements.
 - Added a focused snap regression in `tests/unit/test_phase4_layout.py` plus a real-fixture managed-schematic regression in `tests/unit/test_netlist_commands.py` that lock the NE5532 decoupling polarity split (`C1/C3` above, `C2/C4` below) while keeping all four capacitors local to the op-amp region.
 - Added further helper and real-fixture regressions that lock compact x-lane behavior for the decoupling bank: mixed-polarity helper coverage now requires symmetric compact spill lanes, negative-rail overflow coverage now mirrors that geometry below the op-amp, and the real NE5532 fixture now asserts the `C1`-`C4` bank stays within a bounded x-span close to the `U1A/U1B/U1P` family.
 - `kicad-pcb/src/kicad_pcb/router.py` now gives tiny cap-only `GND` banks their own compact local-ground route instead of falling back to the generic centroid power-cluster path. This keeps the shared `power:GND` symbol attached to local decoupling banks, which is the first shipped slice of the remaining “keep the ground symbol local to those capacitors” requirement.
+- The same local-ground helper now also accepts a mostly-decoupling local support cluster with one nearby non-capacitor member (for example a power-unit ground pin or local shunt element), so decoupling-ground locality no longer falls back to the generic centroid cluster as soon as one support pin shares the local ground neighborhood.
+- The helper now tolerates up to two nearby local support members of kind `ic` or `passive`, which keeps the calm decoupling-ground lane available for slightly richer local support neighborhoods instead of dropping back to the generic centroid cluster as soon as a second nearby shunt/support pin shares that bank.
+- The current real NE5532 managed schematic now satisfies the full 2.3.2 story end-to-end: `C1`-`C4` stay on the `U1A/U1B/U1P` family centerline, positive and negative rails stay split above/below the op-amp band, and every decoupler has a nearby local `power:GND` symbol within the existing focused regression threshold.
 - Added `tests/unit/test_phase6_wire_simplification.py::test_route_nets_uses_compact_local_ground_lane_for_decoupling_cap_bank` and revalidated it alongside the adjacent compact local ground/decoupling routing regressions, plus Ruff on the touched router/test files.
 
 #### 2.3.3 Draw rail connections cleanly
@@ -866,7 +871,7 @@ Connectors should be explicit and unambiguous.
 ### Tasks
 
 #### 2.4.1 Decide on left-channel-only symbol strategy
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 Implement one of:
 - use mono connector symbols where appropriate,
 - or keep TRS symbols but mark unused pins explicitly,
@@ -875,7 +880,9 @@ Implement one of:
 Current findings:
 - The generator now emits explicit KiCad `no_connect` markers on unused connector pins during schematic generation.
 - Existing TRS symbols for the headphone-amp fixture therefore no longer leave the unused ring pins visually ambiguous.
-- The remaining decision is product-level policy, not basic schematic clarity: whether this fixture should keep the current TRS-plus-no-connect presentation or later switch to a simpler mono/channel-specific symbol strategy.
+- The 2.4.1 policy decision for this fixture is now explicit: keep the authored `Connector:AudioJack3` symbols for `J1` and `J2`, and rely on explicit KiCad `no_connect` markers for the unused ring pins instead of rewriting the fixture to mono/channel-specific connector symbols.
+- Rationale: the authoritative fixture IR is authored as TRS input/output jacks, the validator and fixture docs already describe the unused ring pins as intentional, the managed-schematic path now renders those pins unambiguously with explicit `no_connect` markers, and there is no existing generic symbol-rewrite path to reuse for a mono-only substitution without introducing a new translation policy.
+- `tests/unit/test_netlist_commands.py` now locks that policy at the generated-schematic level by asserting that the real NE5532 managed schematic still places `J1` and `J2` as `Connector:AudioJack3` while keeping the separate regression that requires two explicit `no_connect` markers.
 
 #### 2.4.2 Mark unused pins explicitly
 - [x] Status: DONE
@@ -898,6 +905,8 @@ Current findings:
 - Focused coverage in `tests/unit/test_phase4_layout.py` now asserts that output connectors remain the outermost lane and keep at least that extra clearance, which prevents the left-facing output connector stub from collapsing back into the nearest output-support body column.
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also adds `_snap_input_connector_signal_attachment(...)`, a late input-side cleanup that reattaches each input connector to the row of its first direct non-power signal handoff after the upstream input bundle has been shaped. When that would otherwise place the connector directly on top of the leftmost handoff column at the page margin, the pass reserves that margin lane for the connector and shifts the nearby handoff column half a lane right.
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/__init__.py` now reapplies that connector-attachment cleanup one final time at the engine output boundary so the emitted managed schematic and cached final positions preserve the same left-margin reservation that the helper enforces on the final placement map.
+- `tests/unit/test_netlist_commands.py` now also locks the real managed-schematic connector geometry directly: `J1` must still emit at `0°`, `J2` must emit at `180°`, and the final `J2` position must stay attached to the `C7/R7` output-tail row while remaining the outermost right-side element on that row.
+- `tests/unit/test_phase4_layout.py` now mirrors both helper-level connector contracts too: the output-tail fixture keeps `J2` on the `C7/R7` row as the outermost right-side lane, and the input-handoff fixture keeps `JIN` on the incoming signal row while preserving its inward-facing `0°` orientation.
 - Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock J1 to the `C5` handoff row in the NE5532 input path while keeping it left of the handoff chain, then revalidated the Phase 7 `LAY003` guardrail plus full `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `.venv/bin/pytest`. Because the final emitted coordinates changed again without a DOT change, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v11`.
 
 ---

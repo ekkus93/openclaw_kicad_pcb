@@ -152,6 +152,34 @@ def _multi_unit_base_ref(ref: str) -> str | None:
     return match.group(1)
 
 
+def _decoupling_family_anchor_x(
+    anchor_ref: str,
+    positions: Mapping[str, tuple[float, float, float | None]],
+) -> float:
+    """Return the x lane a decoupling bank should use for *anchor_ref*.
+
+    For split-unit devices, local supply support reads better when the bank is
+    centered on the visible family span rather than pinned to only one signal
+    sibling such as ``U1A``. Single-unit anchors keep their own x lane.
+    """
+    anchor_position = positions.get(anchor_ref)
+    if anchor_position is None:
+        return 0.0
+
+    base_ref = _multi_unit_base_ref(anchor_ref)
+    if base_ref is None:
+        return round(anchor_position[0], 2)
+
+    sibling_xs = sorted(
+        pos[0] for ref, pos in positions.items() if _multi_unit_base_ref(ref) == base_ref
+    )
+    if len(sibling_xs) < 2:
+        return round(anchor_position[0], 2)
+
+    family_center_x = (sibling_xs[0] + sibling_xs[-1]) / 2.0
+    return round(family_center_x, 2)
+
+
 # ---------------------------------------------------------------------------
 # Page-layout constants
 # ---------------------------------------------------------------------------
@@ -996,14 +1024,15 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
             if anchor == ic_ref and ref in result
         )
         reserved_decoupling_y: set[float] = set()
+        decoupling_anchor_x = _decoupling_family_anchor_x(ic_ref, result)
         for idx, dec_ref in enumerate(dec_refs):
             _x, _y, dec_rot = result[dec_ref]
             dec_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
-            dec_x = round(ic_x, 2)
+            dec_x = decoupling_anchor_x
             if idx >= 2:
                 side_step = idx - 1
                 side_sign = -1 if idx % 2 == 0 else 1
-                dec_x = round(ic_x + side_sign * side_step * _GRID_COL_MM, 2)
+                dec_x = round(decoupling_anchor_x + side_sign * side_step * _GRID_COL_MM, 2)
             result[dec_ref] = (dec_x, dec_y, dec_rot)
             reserved_decoupling_y.add(dec_y)
 
@@ -1842,6 +1871,7 @@ def _post_snap_decoupling_caps(
 
     for ic_ref, cap_refs in caps_by_ic.items():
         ic_x, ic_y, _ = result[ic_ref]
+        bank_anchor_x = _decoupling_family_anchor_x(ic_ref, result)
         positive_caps = sorted(
             cap_ref for cap_ref in cap_refs if (rail_polarities or {}).get(cap_ref) != "negative"
         )
@@ -1849,11 +1879,11 @@ def _post_snap_decoupling_caps(
             cap_ref for cap_ref in cap_refs if (rail_polarities or {}).get(cap_ref) == "negative"
         )
         for idx, cap_ref in enumerate(positive_caps):
-            cap_x = _decoupling_bank_x(ic_x, idx)
+            cap_x = _decoupling_bank_x(bank_anchor_x, idx)
             cap_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
         for idx, cap_ref in enumerate(negative_caps):
-            cap_x = _decoupling_bank_x(ic_x, idx)
+            cap_x = _decoupling_bank_x(bank_anchor_x, idx)
             cap_y = round(ic_y + (idx + 1) * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
     return result
@@ -4567,15 +4597,13 @@ def _snap_power_block_cohesion(
         anchor_refs = sorted(
             ref
             for ref in positions
-            if (
-                (role := role_by_ref.get(ref)) is not None
-                and not is_power_like_role(role)
-                and (
-                    is_input_like_role(role)
-                    or is_core_like_role(role)
-                    or is_output_like_role(role)
-                    or role == BlockRole.DECOUPLING
-                )
+            if (role := role_by_ref.get(ref)) is not None
+            and not is_power_like_role(role)
+            and (
+                is_input_like_role(role)
+                or is_core_like_role(role)
+                or is_output_like_role(role)
+                or role == BlockRole.DECOUPLING
             )
         )
     if not anchor_refs:
@@ -4923,5 +4951,6 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         ir,
         block_layout=block_layout,
     )
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result

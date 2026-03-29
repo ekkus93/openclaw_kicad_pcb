@@ -122,6 +122,7 @@ After completing Phases 1-4 of CODE_REVIEW6_TODO, this schematic should:
 - `U1` is a dual `NE5532`; generation should preserve explicit multi-unit handling rather than collapsing both stages into one ambiguous drawable instance.
 - `J1` and `J2` are TRS connectors used in mono-left mode for this fixture. Their sleeve pins join `0V` and their tip pins carry `LEFT_IN` / `HP_L_OUT`.
 - The ring pins on `J1` and `J2` are intentionally unused in this left-channel fixture. Generated managed schematics should therefore contain two explicit KiCad `no_connect` markers, one for each unused ring pin.
+- Policy decision for this fixture: keep the authored TRS symbols in generated schematics rather than rewriting them to mono/channel-specific connector symbols. Connector clarity comes from the explicit `no_connect` markers, not from substituting a different library symbol.
 - The `R1` / `C5` input topology is intentionally preserved as-authored by the fixture. Validation may warn about it, but generation must not silently rewrite it.
 
 ## Baseline Metrics Snapshot
