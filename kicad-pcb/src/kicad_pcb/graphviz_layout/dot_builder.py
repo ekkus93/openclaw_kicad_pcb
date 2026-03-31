@@ -384,11 +384,15 @@ def _emit_tier_subgraphs(
     """
     sorted_tier_vals = sorted(tier_groups)
     n_tiers = len(sorted_tier_vals)
+    previous_anchor: str | None = None
     for i, tier_val in enumerate(sorted_tier_vals):
         members = tier_groups[tier_val]
         rank_kw = _tier_rank_keyword(i, n_tiers)
+        anchor_id = f"__tier_{tier_val}__"
+        lines.append(f'  {anchor_id} [label="", shape=point, width=0, height=0, style=invis];')
         lines.append("  {")
         lines.append(f"    rank={rank_kw};")
+        lines.append(f"    {anchor_id};")
         if affinity_order is not None and tier_val in affinity_order:
             member_set = set(members)
             ref_list = [ref for ref in affinity_order[tier_val] if ref in member_set]
@@ -397,16 +401,29 @@ def _emit_tier_subgraphs(
         for ref in ref_list:
             lines.append(f"    {_safe_id(ref)};")
         lines.append("  }")
+        if previous_anchor is not None:
+            lines.append(f"  {previous_anchor} -> {anchor_id} [style=invis, weight=20];")
+        previous_anchor = anchor_id
 
 
 def _emit_unit_sibling_constraints(
     lines: list[str],
     unit_sibling_pairs: list[tuple[str, str]],
     tiers: dict[str, int],
+    col_source: dict[str, int] | None = None,
 ) -> None:
-    """Emit invisible constraints that keep sibling units visually related."""
+    """Emit invisible constraints that keep sibling units visually related.
+
+    When *col_source* is supplied (SDS-derived column indices), the hard
+    ``rank=same`` constraint is only applied to unit pairs that share the
+    same SDS column.  Pairs at different SDS columns (e.g. the two halves of
+    a dual op-amp used as cascaded stages) get a soft ``constraint=false``
+    invisible edge so Graphviz can separate them by rank while still biasing
+    them toward spatial proximity.
+    """
+    _col = col_source if col_source is not None else tiers
     for left_ref, right_ref in unit_sibling_pairs:
-        if tiers.get(left_ref) == tiers.get(right_ref):
+        if _col.get(left_ref) == _col.get(right_ref):
             lines.append("  {")
             lines.append("    rank=same;")
             lines.append(f"    {_safe_id(left_ref)};")
@@ -417,7 +434,13 @@ def _emit_unit_sibling_constraints(
                 "[style=invis, weight=8, constraint=false];"
             )
             continue
-        lines.append(f"  {_safe_id(left_ref)} -> {_safe_id(right_ref)} [style=invis, weight=8];")
+        # Different SDS columns: soft proximity bias only — no rank=same so
+        # the tier anchor chain can place the units in their respective stage
+        # columns without interference.
+        lines.append(
+            f"  {_safe_id(left_ref)} -> {_safe_id(right_ref)} "
+            "[style=invis, weight=4, constraint=false];"
+        )
 
 
 def _partition_power_unit_refs(
@@ -638,6 +661,31 @@ def _emit_block_zone_constraints(lines: list[str], block_layout: BlockLayout) ->
         safe = _safe_id(ref)
         lines.append(f"  {core_anchor} -> {safe} [style=invis, weight=12];")
 
+    stage_role_groups = [
+        sorted(
+            ref for ref, assignment in block_layout.assignments.items() if assignment.role == role
+        )
+        for role in (
+            BlockRole.INPUT,
+            BlockRole.PRECONDITIONING,
+            BlockRole.OPAMP_CORE,
+            BlockRole.INTERSTAGE,
+            BlockRole.BUFFER_STAGE,
+            BlockRole.OUTPUT_CONDITIONING,
+            BlockRole.OUTPUT,
+        )
+    ]
+    ordered_stage_groups = [group for group in stage_role_groups if group]
+    for left_group, right_group in zip(
+        ordered_stage_groups,
+        ordered_stage_groups[1:],
+        strict=False,
+    ):
+        for left_ref in left_group:
+            left_safe = _safe_id(left_ref)
+            for right_ref in right_group:
+                lines.append(f"  {left_safe} -> {_safe_id(right_ref)} [style=invis, weight=10];")
+
     lines.append(f"  {input_anchor} -> {power_anchor} [style=invis, weight=4, constraint=false];")
     for ref in power_refs:
         safe = _safe_id(ref)
@@ -764,7 +812,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     # rank=same for all intermediate tiers.
     _emit_tier_subgraphs(lines, tier_groups, affinity_order=affinity_order)
     if unit_sibling_pairs:
-        _emit_unit_sibling_constraints(lines, unit_sibling_pairs, _tiers)
+        _emit_unit_sibling_constraints(lines, unit_sibling_pairs, _tiers, col_source=_col_source)
 
     # Reinforce connector source/sink constraints (belt-and-suspenders on top
     # of the tier subgraphs; merged/idempotent if already in the correct tier).
@@ -783,8 +831,9 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
             f'  {net_id} [label="{net.name}", shape=ellipse, width=0.6, '
             "height=0.4, fixedsize=false];"
         )
-        # Sort by (tier, ref) for a stable, deterministic ordering.
-        sorted_pins = sorted(pin_refs, key=lambda r: (_tiers.get(r, 0), r))
+        # Sort by the same column source used for rank grouping so the net hub
+        # direction reinforces the intended left-to-right placement order.
+        sorted_pins = sorted(pin_refs, key=lambda r: (_col_source.get(r, 0), r))
         upstream = sorted_pins[0]
         w = net_weights.get(net.name, 1)
         weight_attr = f" [weight={w}]" if w > 1 else ""

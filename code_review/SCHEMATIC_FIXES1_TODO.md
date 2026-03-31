@@ -29,8 +29,8 @@ This document is written as an implementation plan for GitHub Copilot. It is int
 Implement in this order:
 
 1. [x] **Fix correctness blockers**
-2. [ ] **Add analog-aware placement and grouping**
-3. [ ] **Reduce routing clutter**
+2. [x] **Add analog-aware placement and grouping**
+3. [x] **Reduce routing clutter**
 4. [x] **Improve page composition and readability**
 5. [x] **Add tests, fixtures, and regression protection**
 
@@ -641,7 +641,7 @@ Current findings:
 
 ## Phase 2 - Improve analog-aware grouping and placement
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ## 2.1 Add functional-block detection for analog schematics
 
@@ -722,7 +722,7 @@ Current findings:
 
 ## 2.2 Add op-amp-specific placement rules
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 Feedback and stage topology are not visually obvious.
@@ -749,19 +749,20 @@ Current progress note:
 - Added a new helper regression and a new real-fixture regression in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the full U1A gain-stage column pattern, and bumped `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` again to `graphviz-layout-v5` because this new late pass changes final managed coordinates without changing the Graphviz DOT input.
 
 #### 2.2.2 Voltage follower / buffer layout
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 For a unity-gain buffer:
 - place the op-amp with clear feedback from output directly to inverting input,
 - place the incoming signal at the non-inverting input,
 - keep the local loop very short and visually obvious.
 
-Current progress note:
+Current findings:
 - `kicad-pcb/src/kicad_pcb/router.py` now recognizes a generic 3-pin `BUFFER_STAGE` follower net where two pins belong to the same op-amp unit and the third pin is the first downstream output-support element. Under the existing small-analog-routing policy, that net now routes as an explicit compact local feedback loop plus output branch instead of relying on a generic compact chain.
 - Added a routing-layer regression in `tests/unit/test_phase6_wire_simplification.py` for the generic follower motif and a real-fixture regression in `tests/unit/test_netlist_commands.py` that checks the managed NE5532 schematic still draws a compact local U1B feedback jog before the `R6` branch. Ruff plus full `pytest -q` validation passed.
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now adds `_snap_buffer_stage_input_node_shape(...)`, which detects the canonical `BUFFER_STAGE` input motif of one interstage bridge plus one grounded shunt and reapplies it late so the handoff bridge stays on the U1B row while the shunt support hangs one row below in the same input-node column.
 - Added helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock the bridge-plus-shunt input-node shape for the NE5532 stage-2 handoff, and updated the older real-fixture row tests so they now assert the intentional one-row shunt drop instead of the previous flattened-row expectation.
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/snap.py` now also adds `_snap_buffer_stage_direct_output_support(...)`, `_snap_buffer_stage_feedback_corridor(...)`, and `_snap_buffer_stage_output_tail_locality(...)` so the first output-support element stays on the U1B row, any downstream output parts that Graphviz leaves inside the upper-right follower-loop corridor get pushed onto the dedicated tail row, and the rest of the output chain stays compact to the right.
 - Added a focused helper regression in `tests/unit/test_phase4_layout.py` that starts `C7` and `R7` inside the U1B loop corridor and asserts the late snap evacuates them below the row in normal tail order. Because this changes final managed coordinates without changing the DOT source, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v8`.
+- The later placement-first stage-order work keeps the raw Graphviz stage chain monotonic left-to-right (`J1 -> RV1 -> U1A -> C6 -> U1B -> R6 -> J2`) without reopening the follower-loop geometry. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 #### 2.2.3 Keep stage-local parts close
 - [x] Status: DONE
@@ -802,7 +803,7 @@ Current progress note:
 
 ## 2.3 Place decoupling correctly
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 The decoupling network is visually too far from the op-amp.
@@ -813,17 +814,18 @@ Decoupling must appear local to the IC it serves.
 ### Tasks
 
 #### 2.3.1 Detect decoupling components
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Identify capacitors that connect from supply rails to ground near active devices.
 - Associate them with the nearest relevant active device, especially op-amps.
 
-Current progress note:
+Current findings:
 - `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py::_find_decoupling_caps(...)` and the mirrored `kicad-pcb/src/kicad_pcb/layout.py::_find_decoupling_caps_layout(...)` now treat true rail-to-ground bypass caps as local decouplers when they share a supply rail with an active IC, instead of only recognizing the earlier one-signal-net-plus-power-net pattern.
 - The matcher now also handles split multi-unit devices in generation IR: when a rail only touches the dedicated power unit (for example `U1P`), it falls back to sibling signal units in the same parent device family so the decoupling anchor still lands in the visible op-amp region.
 - The shared-net detector now ranks anchor candidates instead of taking the first non-connector neighbor, so a local support capacitor prefers the actual active stage over an incidental passive that happens to sit on the same support net.
 - The Graphviz engine now also refines ambiguous shared-rail rail-to-ground anchors after the initial raw layout exists, reusing the same polarity-aware nearest-stage logic as the decoupling-distance warning path so multi-stage rails stop collapsing onto a stable-but-arbitrary stage choice.
 - The persisted Graphviz layout cache schema now stores the final refined `decoupling_map` alongside final symbol positions, and cache hits consume that stored metadata directly instead of recomputing the shared-rail refinement path just to rebuild debug or placement-constraint payloads.
 - Added focused helper coverage in `tests/unit/test_phase4_layout.py` and SDS coverage in `kicad-pcb/tests/unit/test_layout.py` that lock the power-only detection path, the inherited active-device association, the passive-vs-active anchor preference, the shared negative-rail refinement path, the cache-schema round-trip, and the cache-hit metadata-consistency follow-up.
+- On the current placement-first real NE5532 fixture, the refined debug `decoupling_map` now intentionally splits by the final raw stage geometry (`C1/C3 -> U1B`, `C2/C4 -> U1A`) while the later family-centered snap keeps the visible decoupling bank attached to the `U1A/U1B/U1P` cluster. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 #### 2.3.2 Add local-decoupling placement rules
 - [x] Status: DONE
@@ -860,7 +862,7 @@ Current progress note:
 
 ## 2.4 Improve connector handling
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 The TRS connectors are left-channel-only in usage, but the unused ring behavior is not very clear.
@@ -895,7 +897,7 @@ Current findings:
 - Focused regression coverage now exists in `tests/unit/test_sch_doc.py` and `tests/unit/test_netlist_commands.py`, including the real-system NE5532 command path asserting two no-connect markers for the unused TRS ring pins on `J1` and `J2`.
 
 #### 2.4.3 Improve connector orientation and attachment
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Input connector should clearly face into the circuit from the left.
 - Output connector should clearly face out of the circuit on the right.
 - Avoid awkward connector placement that hides signal flow.
@@ -908,16 +910,17 @@ Current findings:
 - `tests/unit/test_netlist_commands.py` now also locks the real managed-schematic connector geometry directly: `J1` must still emit at `0°`, `J2` must emit at `180°`, and the final `J2` position must stay attached to the `C7/R7` output-tail row while remaining the outermost right-side element on that row.
 - `tests/unit/test_phase4_layout.py` now mirrors both helper-level connector contracts too: the output-tail fixture keeps `J2` on the `C7/R7` row as the outermost right-side lane, and the input-handoff fixture keeps `JIN` on the incoming signal row while preserving its inward-facing `0°` orientation.
 - Added focused helper and real-fixture regressions in `tests/unit/test_phase4_layout.py` and `tests/unit/test_netlist_commands.py` that lock J1 to the `C5` handoff row in the NE5532 input path while keeping it left of the handoff chain, then revalidated the Phase 7 `LAY003` guardrail plus full `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `.venv/bin/pytest`. Because the final emitted coordinates changed again without a DOT change, `kicad-pcb/src/kicad_pcb/graphviz_layout/cache.py` now bumps `_LAYOUT_ALGORITHM_REVISION` to `graphviz-layout-v11`.
+- The later placement-first stage-order pass keeps those connector contracts intact while improving the raw stage flow order. `J1` remains the leftmost inward-facing handoff anchor at `0°`, and `J2` remains the outermost right-side tail connector at `180°` on the `C7/R7` row. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 ---
 
 ## Phase 3 - Reduce routing clutter
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ## 3.1 Prefer placement that eliminates routing complexity
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 The current routing looks too busy for a small analog circuit.
@@ -928,7 +931,7 @@ A simple analog circuit should have calm, short, obvious wiring.
 ### Tasks
 
 #### 3.1.1 Rebalance placement vs routing
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Move complexity reduction earlier into placement.
 - Prefer placing related parts close enough that routing becomes trivial.
 - Do not rely on elaborate router behavior to compensate for weak placement.
@@ -936,15 +939,20 @@ A simple analog circuit should have calm, short, obvious wiring.
 Current findings:
 - The recent output-stage drift fix moved one part of the clutter reduction upstream into placement: output connectors now sit slightly farther outward, which protects the connector-side ground and output attachment geometry before the router runs.
 - That small placement bias removed the specific connector-column drift that was forcing the `J2` neighborhood back toward nearby support bodies, while leaving the broader compact-routing heuristics to clean up only the remaining local nets.
+- `kicad-pcb/src/kicad_pcb/graphviz_layout/dot_builder.py` now also reinforces stage order directly in the DOT source: tier subgraphs are chained by invisible anchor nodes, signal-unit sibling constraints stop forcing cross-stage op-amp halves into the same rank, net-hub ordering follows the same SDS column source used for rank grouping, and block-layout stage roles emit invisible left-to-right sequence edges. The real NE5532 raw Graphviz order is now locked by regression coverage in `tests/unit/test_netlist_commands.py` and `tests/unit/test_phase4_layout.py`.
 
 #### 3.1.2 Penalize excessive bends and junctions
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Add routing cost penalties for:
   - extra bends,
   - unnecessary jogs,
   - long orthogonal detours,
   - hub-and-spoke routing when a short direct route would do,
   - avoidable junction proliferation.
+
+Current findings:
+- `kicad-pcb/src/kicad_pcb/router.py` already applies a visual-cost model when deciding whether to keep a compact local chain instead of shared-lane or spine routing. That model penalizes trunk junctions, extra bends, and short jog fragments, and it now works together with the placement-first stage-order constraints so the calmer route is often available before fallback routing is considered.
+- The current real-fixture Phase 7 guardrail now treats absolute total and short-segment counts as the primary clutter signal in the densest output neighborhood, because the newer compact-local style intentionally uses more short local joins while still staying far below the regressed total/junction burden. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 #### 3.1.3 Add a “small analog circuit” routing mode
 - [x] Status: DONE
@@ -963,7 +971,7 @@ Current findings:
 
 ## 3.2 Add net-class-specific routing preferences
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 All nets appear to be treated too generically.
@@ -989,7 +997,7 @@ Current findings:
 - Classification is currently derived from the routed net name plus the participating ref families, which is enough to distinguish the stable analog-audio seams already in use: input/output path nets now classify as `signal_chain`, connector-plus-passive attachment nets classify as `connector_attachment`, and explicit inverting/feedback nets such as `U1A_INV` classify as `feedback`.
 
 #### 3.2.2 Route by net class
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - **feedback nets**: shortest and most local possible
 - **shunt-to-ground nets**: prefer short vertical drop to nearby ground
 - **power nets**: clean local rail presentation
@@ -1001,9 +1009,10 @@ Current findings:
 - The same router module now uses `_compact_local_ground_cluster_route(...)` for tiny output-side `GND` clusters so connector/support ground returns use one calm horizontal lane with body-aware entry points instead of a small centroid knot.
 - The formal net taxonomy now directly gates those routing choices: compact tail routing is limited to `signal_chain` and `connector_attachment` nets, while the small analog chain preference is limited to `signal_chain`, `connector_attachment`, and `feedback` nets instead of firing on every compact 3-pin shape.
 - Focused regression coverage for both behaviors now lives in `tests/unit/test_phase6_wire_simplification.py`.
+- The current routed real fixture also keeps `GND` on the local-ground cluster path while allowing the supply rails to remain clean `power_symbols` routes without requiring the older compact-local decoupling override summary. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 #### 3.2.3 Prefer labels only when they improve clarity
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Avoid label fallback for short readable local nets.
 - Use labels only when they reduce crossing/clutter or improve comprehension.
 
@@ -1017,7 +1026,7 @@ Current findings:
 
 ## 3.3 Improve ground presentation
 
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 
 ### Problem
 Grounded passive parts are not always presented in the clearest analog style.
@@ -1028,7 +1037,7 @@ Grounded shunt parts should be visually obvious.
 ### Tasks
 
 #### 3.3.1 Add local ground-drop preference
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - For resistors/caps that terminate to ground:
   - prefer placing the grounded end downward,
   - add a local ground symbol directly below,
@@ -1036,15 +1045,17 @@ Grounded shunt parts should be visually obvious.
 
 Current findings:
 - The current output-side `GND` refinement is not yet a full generic local-ground drop policy, but it does now keep the `J2.S` / `R5.2` / `R7.2` cluster on a local horizontal lane with a nearby ground symbol instead of routing those pins through a more distant shared centroid.
+- The same local-ground routing family now also covers the decoupling-bank `GND` case plus the earlier near-square input-side cluster, so the grounded shunt/support story is no longer limited to one hard-coded output-tail shape. Focused routing regressions already cover the output cluster, the near-square input cluster, and the decoupling-bank cluster, and the full repo is green on the current state.
 
 #### 3.3.2 Keep stage-local grounds stage-local in drawing
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Do not over-centralize grounds in the visual layout.
 - Preserve clarity over theoretical “single common ground symbol” compactness.
 
 Current findings:
 - The compact local ground-cluster route in `kicad-pcb/src/kicad_pcb/router.py` is the first concrete step here: the NE5532 output-side ground cluster now stays visually local to `J2`, `R5`, and `R7` instead of being absorbed into a noisier generic cluster presentation.
 - That change materially reduced the real output-neighborhood clutter while preserving local body avoidance.
+- The same stage-local-ground policy now also remains in force for the input-side near-square ground cluster and for the decoupling-bank ground lane, so the current routed schematic no longer depends on a single centralized `GND` presentation to keep the analog stages readable. Full validation is green on the current repo state with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 ---
 

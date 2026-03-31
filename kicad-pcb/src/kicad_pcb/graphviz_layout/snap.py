@@ -3432,6 +3432,9 @@ def _snap_explicit_non_inverting_feedback_nodes(
     ref_to_nets, refs_by_net = _feedback_net_membership(ir)
     for ic_ref in sorted(ref for ref in result if _is_ic_ref(ref) and ref not in power_unit_refs):
         ic_x, ic_y, _ = result[ic_ref]
+        role_feedback_refs = [
+            ref for ref in result if not _is_ic_ref(ref) and _is_feedback_ref(ref)
+        ]
         nearby_refs = [
             ref
             for ref in result
@@ -3439,11 +3442,12 @@ def _snap_explicit_non_inverting_feedback_nodes(
             and abs(result[ref][0] - ic_x) <= 1.25 * _GRID_COL_MM
             and abs(result[ref][1] - ic_y) <= 4.0 * GRID_ROW_MM
         ]
-        if not any(_is_feedback_ref(ref) for ref in nearby_refs):
+        candidate_feedback_refs = sorted(set(role_feedback_refs) | set(nearby_refs))
+        if not any(_is_feedback_ref(ref) for ref in candidate_feedback_refs):
             continue
         feedback_pair = _non_inverting_feedback_pair(
             ic_ref,
-            nearby_refs,
+            candidate_feedback_refs,
             ref_to_nets=ref_to_nets,
             refs_by_net=refs_by_net,
         )
