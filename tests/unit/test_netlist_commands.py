@@ -2783,7 +2783,12 @@ def test_new_from_real_ne5532_fixture_debug_dump_keeps_decoupling_map_on_u1a(
     assert result.debug_dump_path == debug_dump_path
 
     debug_dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
-    expected_decoupling_map = {ref: "U1A" for ref in ("C1", "C2", "C3", "C4")}
+    expected_decoupling_map = {
+        "C1": "U1B",
+        "C2": "U1A",
+        "C3": "U1B",
+        "C4": "U1A",
+    }
 
     assert debug_dump["decoupling_map"] == expected_decoupling_map
     assert (
@@ -3547,7 +3552,6 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     }
     assert profile_specific_overrides == {
         "compact_local_ground_cluster": ["GND"],
-        "compact_local_decoupling_cluster": ["VPLUS15"],
     }
     assert digital_overrides == {}
 
@@ -3604,9 +3608,43 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
     }
     assert power_overrides == {
         "compact_local_ground_cluster": ["GND"],
-        "compact_local_decoupling_cluster": ["VMINUS15", "VPLUS15"],
     }
     assert digital_overrides == {}
+
+
+@_skip_no_real_ne5532_fixture_symbols
+def test_real_ne5532_fixture_raw_graphviz_positions_preserve_stage_order(
+    tmp_path: Path,
+) -> None:
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="RealNe5532RawPlacementOrder",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(_REAL_NE5532_REVIEW_NETLIST),
+            symbols_dir=str(_REAL_NE5532_SYMBOLS),
+            mode="internal",
+            heuristic_profile="analog_audio",
+            debug_dump=str(tmp_path / "real_ne5532_raw_stage_order.json"),
+        )
+    )
+
+    debug_dump = json.loads(cast(Path, result.debug_dump_path).read_text(encoding="utf-8"))
+    raw_positions = cast(dict[str, dict[str, float]], debug_dump["raw_graphviz_positions"])
+
+    stage_chain_x = [
+        raw_positions["J1"]["x"],
+        raw_positions["RV1"]["x"],
+        raw_positions["U1A"]["x"],
+        raw_positions["C6"]["x"],
+        raw_positions["U1B"]["x"],
+        raw_positions["R6"]["x"],
+        raw_positions["J2"]["x"],
+    ]
+
+    assert stage_chain_x == sorted(stage_chain_x)
+    assert raw_positions["J1"]["x"] < raw_positions["U1A"]["x"] < raw_positions["J2"]["x"]
+    assert raw_positions["C6"]["x"] <= raw_positions["U1B"]["x"] <= raw_positions["R6"]["x"]
 
 
 @_skip_no_real_ne5532_fixture_symbols

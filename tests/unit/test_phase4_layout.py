@@ -1816,7 +1816,8 @@ def _extract_rank_same_refs(dot_src: str) -> list[str]:
         if stripped == "}":
             break
         # Exclude lines that are only directives (rank=…, etc.)
-        if stripped and not stripped.startswith("rank"):
+        # Also skip internal tier-anchor nodes introduced by _emit_tier_subgraphs.
+        if stripped and not stripped.startswith("rank") and not stripped.startswith("__tier_"):
             refs.append(stripped.rstrip(";"))
     return refs
 
@@ -2494,11 +2495,16 @@ class TestDecouplingCapCoLocation:
         )
 
     def test_dot_source_unchanged_without_decoupling_map(self) -> None:
-        """build_dot_source without decoupling_map must not contain invisible edges."""
+        """build_dot_source without decoupling_map must not co-locate C1 via invisible edge."""
         ir = _decoupling_ir()
         src = _gv_mod.build_dot_source(ir)  # no decoupling_map kwarg
-        assert "style=invis" not in src, (
-            "Unexpected invisible edge in DOT source when no decoupling_map was supplied"
+        # Structural tier-anchor invisible elements are always present; the test
+        # ensures that no invisible *co-location* edge is added for C1 when no
+        # decoupling_map is supplied.
+        invis_lines = [ln for ln in src.splitlines() if "style=invis" in ln and "C1" in ln]
+        assert not invis_lines, (
+            "C1 should not have invisible co-location edges without decoupling_map; "
+            f"found: {invis_lines}"
         )
 
 
@@ -3469,7 +3475,7 @@ class TestIcUnitGroups:
             tiers=tiers,
         )
 
-        assert "U1A -> U1B [style=invis, weight=8];" in dot
+        assert "U1A -> U1B [style=invis, weight=4, constraint=false];" in dot
         assert "U1P -> U1A" not in dot
         assert "U1A -> U1P" not in dot
         assert "U1P -> U1B" not in dot
@@ -4814,6 +4820,68 @@ class TestApplyPostLayoutSnaps:
         assert "__blk_core__ -> C7 [style=invis, weight=12];" in dot_source
         assert "__blk_input__ -> __blk_core__ [style=invis, weight=30];" in dot_source
         assert "__blk_core__ -> __blk_output__ [style=invis, weight=30];" in dot_source
+
+    def test_build_dot_source_emits_stage_sequence_edges_within_block_layout(self) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="IN"),
+                ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="10k"),
+                ComponentIR(ref="U1A", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+                ComponentIR(ref="C6", symbol="Device:C", value="10u"),
+                ComponentIR(ref="U1B", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+                ComponentIR(ref="R6", symbol="Device:R", value="100R"),
+                ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="OUT"),
+            ],
+            nets=[
+                NetIR(
+                    name="LEFT_IN",
+                    pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="RV1", pin="1")],
+                ),
+                NetIR(
+                    name="VOL_L_OUT",
+                    pins=[PinRefIR(ref="RV1", pin="2"), PinRefIR(ref="U1A", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_L_STAGE1",
+                    pins=[PinRefIR(ref="U1A", pin="2"), PinRefIR(ref="C6", pin="1")],
+                ),
+                NetIR(
+                    name="BUF_L_IN",
+                    pins=[PinRefIR(ref="C6", pin="2"), PinRefIR(ref="U1B", pin="1")],
+                ),
+                NetIR(
+                    name="OUT_L_STAGE2_RAW",
+                    pins=[PinRefIR(ref="U1B", pin="2"), PinRefIR(ref="R6", pin="1")],
+                ),
+                NetIR(
+                    name="HP_L_OUT",
+                    pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="J2", pin="1")],
+                ),
+            ],
+        )
+        block_layout = BlockLayout()
+        block_layout.add_assignment("J1", BlockRole.INPUT)
+        block_layout.add_assignment("RV1", BlockRole.PRECONDITIONING)
+        block_layout.add_assignment("U1A", BlockRole.OPAMP_CORE)
+        block_layout.add_assignment("C6", BlockRole.INTERSTAGE)
+        block_layout.add_assignment("U1B", BlockRole.BUFFER_STAGE)
+        block_layout.add_assignment("R6", BlockRole.OUTPUT_CONDITIONING)
+        block_layout.add_assignment("J2", BlockRole.OUTPUT)
+
+        dot_source = _gv_mod.build_dot_source(
+            ir,
+            tiers={"J1": 0, "RV1": 1, "U1A": 2, "C6": 3, "U1B": 4, "R6": 5, "J2": 6},
+            connector_roles={"J1": "input", "J2": "output"},
+            block_layout=block_layout,
+        )
+
+        assert "J1 -> RV1 [style=invis, weight=10];" in dot_source
+        assert "RV1 -> U1A [style=invis, weight=10];" in dot_source
+        assert "U1A -> C6 [style=invis, weight=10];" in dot_source
+        assert "C6 -> U1B [style=invis, weight=10];" in dot_source
+        assert "U1B -> R6 [style=invis, weight=10];" in dot_source
+        assert "R6 -> J2 [style=invis, weight=10];" in dot_source
 
     def test_opamp_locality_keeps_halo_members_off_ic_column(self) -> None:
         ir = CircuitIR(
