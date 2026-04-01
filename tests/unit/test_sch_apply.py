@@ -783,6 +783,110 @@ class TestPhase1WarningSuite:
 
         assert "TRS_STEREO_IMPLEMENTATION_INCOMPLETE" in codes
 
+    def test_footprint_warnings_flag_placeholder_and_mismatch_cases(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(
+                    ref="U1",
+                    symbol="Timer:NE555",
+                    value="NE555",
+                    footprint="Timer:NE555",
+                ),
+                ComponentIR(
+                    ref="Q1",
+                    symbol="Transistor_FET:Q_NMOS_GSD",
+                    value="AO3400",
+                    footprint="Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+                ),
+                ComponentIR(
+                    ref="J1",
+                    symbol="Connector:AudioJack3",
+                    value="Audio Out",
+                    footprint="Resistor_SMD:R_0402_1005Metric",
+                ),
+            ],
+            nets=[
+                NetIR(name="GND", pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="Q1", pin="2")]),
+                NetIR(name="VCC", pins=[PinRefIR(ref="U1", pin="8"), PinRefIR(ref="J1", pin="S")]),
+                NetIR(name="OUT", pins=[PinRefIR(ref="Q1", pin="3"), PinRefIR(ref="J1", pin="T")]),
+            ],
+        )
+
+        codes = {warning["code"] for warning in advisory_warnings(ir)}
+
+        assert "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID" in codes
+        assert "FOOTPRINT_CLASS_MISMATCH" in codes
+
+    def test_footprint_warnings_accept_expected_package_classes(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(
+                    ref="U1",
+                    symbol="Timer:NE555",
+                    value="NE555",
+                    footprint="Package_DIP:DIP-8_W7.62mm",
+                ),
+                ComponentIR(
+                    ref="Q1",
+                    symbol="Transistor_FET:Q_NMOS_GSD",
+                    value="AO3400",
+                    footprint="Package_TO_SOT_SMD:SOT-23",
+                ),
+                ComponentIR(
+                    ref="RV1",
+                    symbol="Device:R_Potentiometer",
+                    value="10k",
+                    footprint="Potentiometer_THT:Potentiometer_Bourns_3386P_Vertical",
+                ),
+                ComponentIR(
+                    ref="J1",
+                    symbol="Connector_Generic:Conn_01x02",
+                    value="Load",
+                    footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+                ),
+                ComponentIR(
+                    ref="J2",
+                    symbol="Connector:AudioJack3",
+                    value="Audio Out",
+                    footprint="Connector_Audio:Jack_3.5mm_CUI_SJ1-3523N_Horizontal",
+                ),
+            ],
+            nets=[
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="Q1", pin="2"),
+                        PinRefIR(ref="J2", pin="S"),
+                    ],
+                ),
+                NetIR(
+                    name="VCC",
+                    pins=[PinRefIR(ref="U1", pin="8"), PinRefIR(ref="J1", pin="1")],
+                ),
+                NetIR(
+                    name="GATE",
+                    pins=[PinRefIR(ref="Q1", pin="1"), PinRefIR(ref="RV1", pin="2")],
+                ),
+                NetIR(
+                    name="LOAD",
+                    pins=[
+                        PinRefIR(ref="Q1", pin="3"),
+                        PinRefIR(ref="J1", pin="2"),
+                        PinRefIR(ref="J2", pin="T"),
+                    ],
+                ),
+            ],
+        )
+
+        footprint_codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir)
+            if str(warning["code"]).startswith("FOOTPRINT_")
+        }
+
+        assert footprint_codes == set()
+
     def test_555_warning_set_accepts_valid_pwm_topology(self) -> None:
         ir = _make_ir(
             components=[

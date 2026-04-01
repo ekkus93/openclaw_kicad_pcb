@@ -114,6 +114,147 @@ def _component_kind(ref: str, symbol: str | None) -> str:
     return "other"
 
 
+_SYMBOL_LIKE_FOOTPRINT_LIBRARIES = frozenset(
+    {
+        "amplifier_operational",
+        "connector",
+        "connector_generic",
+        "device",
+        "testlib",
+        "timer",
+        "transistor_fet",
+    }
+)
+
+_IC_FOOTPRINT_TOKENS = (
+    "package_",
+    "dip",
+    "soic",
+    "ssop",
+    "tssop",
+    "msop",
+    "qfn",
+    "qfp",
+    "dfn",
+    "bga",
+    "lga",
+    "sot",
+)
+
+
+def _footprint_parts(footprint: str) -> tuple[str, str, str]:
+    if ":" in footprint:
+        library, package = footprint.split(":", 1)
+    else:
+        library, package = "", footprint
+    normalized = f"{library}:{package}".lower() if library else package.lower()
+    return library, package, normalized
+
+
+def _expected_footprint_category(component: ComponentIR) -> str | None:
+    kind = _component_kind(component.ref, component.symbol)
+    symbol_tail = _symbol_tail(component.symbol)
+
+    category_checks: tuple[tuple[bool, str], ...] = (
+        (_is_audio_jack(component), "audio_jack"),
+        (_looks_connector(component.ref, component.symbol), "connector"),
+        (symbol_tail == "r_potentiometer", "potentiometer"),
+        (_looks_timer_555(component.ref, component.symbol, component.value), "ic"),
+        (_looks_nmos(component.ref, component.symbol), "transistor"),
+        (kind in {"resistor", "capacitor"}, kind),
+        (component.ref.upper().startswith("D") or symbol_tail == "d", "diode"),
+        (component.ref.upper().startswith("U") or _looks_opamp_symbol(component.symbol), "ic"),
+    )
+    return next((category for matches, category in category_checks if matches), None)
+
+
+def _footprint_looks_placeholder_or_symbol_id(component: ComponentIR) -> bool:
+    if not component.footprint:
+        return False
+
+    library, package, normalized = _footprint_parts(component.footprint)
+    symbol_id = (component.symbol or "").lower()
+    if normalized == symbol_id:
+        return True
+    if not library:
+        return True
+    if library.lower() in _SYMBOL_LIKE_FOOTPRINT_LIBRARIES:
+        return True
+
+    lowered_package = package.lower()
+    return any(token in normalized for token in ("placeholder", "testlib")) or any(
+        token in lowered_package for token in ("generic", "symbol")
+    )
+
+
+def _footprint_matches_category(footprint: str, category: str) -> bool:
+    _library, package, normalized = _footprint_parts(footprint)
+    lowered_package = package.lower()
+
+    category_matchers: dict[str, bool] = {
+        "resistor": "resistor" in normalized or lowered_package.startswith("r_"),
+        "capacitor": "capacitor" in normalized or lowered_package.startswith(("c_", "cp_")),
+        "diode": "diode" in normalized or lowered_package.startswith("d_"),
+        "potentiometer": "potentiometer" in normalized,
+        "connector": any(
+            token in normalized for token in ("connector", "pinheader", "terminalblock")
+        ),
+        "audio_jack": any(token in normalized for token in ("audio", "jack")),
+        "transistor": any(token in normalized for token in ("package_to_sot", "sot", "to-", "to_")),
+        "ic": any(token in normalized for token in _IC_FOOTPRINT_TOKENS),
+    }
+    return category_matchers.get(category, True)
+
+
+def _footprint_quality_warnings(ir: CircuitIR) -> list[dict[str, object]]:
+    warnings: list[dict[str, object]] = []
+
+    for component in ir.components:
+        footprint = component.footprint
+        if footprint is None or not footprint.strip():
+            continue
+
+        expected_category = _expected_footprint_category(component)
+        if _footprint_looks_placeholder_or_symbol_id(component):
+            warnings.append(
+                {
+                    "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+                    "message": (
+                        f"Component {component.ref} uses footprint {footprint}, which looks like "
+                        "a symbol id or placeholder footprint rather than a concrete package."
+                    ),
+                    "details": {
+                        "ref": component.ref,
+                        "symbol": component.symbol,
+                        "footprint": footprint,
+                        "expected_category": expected_category,
+                    },
+                }
+            )
+            continue
+
+        if expected_category is None or _footprint_matches_category(footprint, expected_category):
+            continue
+
+        warnings.append(
+            {
+                "code": "FOOTPRINT_CLASS_MISMATCH",
+                "message": (
+                    f"Component {component.ref} uses footprint {footprint}, which does not look "
+                    f"compatible with its {expected_category.replace('_', ' ')} symbol class."
+                ),
+                "details": {
+                    "ref": component.ref,
+                    "symbol": component.symbol,
+                    "footprint": footprint,
+                    "expected_category": expected_category,
+                },
+            }
+        )
+
+    return warnings
+
+
 def _generic_connectivity_warnings(
     ir: CircuitIR,
     _symbol_index: SymbolIndex | None,
@@ -147,6 +288,8 @@ def _generic_connectivity_warnings(
                 "details": {"nets": single_pin_nets},
             }
         )
+
+    warnings.extend(_footprint_quality_warnings(ir))
 
     return warnings
 

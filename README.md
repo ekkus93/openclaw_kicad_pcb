@@ -119,6 +119,81 @@ own generated content from user-authored content.
 
 Default: `new-from-netlist` and `compile-netlist` use **`kicad`** (strict); `apply-netlist` uses **`internal`**.
 
+## Validated generation pipeline
+
+All supported schematic generation flows converge on the same validated path:
+
+```text
+Circuit IR JSON
+  -> CircuitIR.load(...)
+  -> validate_circuit_ir(...)
+  -> validate_ir_symbols(...)
+  -> advisory_warnings(...) / raise_for_blocking_advisories(...)
+  -> mutate_and_validate_sch(...)
+  -> validate_generated_schematic(...)
+  -> OpenClaw_Warnings.json + optional debug dump
+```
+
+Supported entry points:
+
+- `new-from-netlist`
+- `compile-netlist` (alias of `new-from-netlist`)
+- `apply-netlist`
+
+Unsupported or legacy side formats are not alternate public generation pipelines.
+They must be normalized into canonical Circuit IR before the validated path runs.
+
+## Hard-fail invariants
+
+These invariants are non-negotiable for supported generation:
+
+- Every `(ref, pin)` belongs to exactly one canonical net.
+- Every referenced symbol exists and every referenced pin is valid.
+- Blocking domain advisories stop generation before artifact success is reported.
+- Generated schematics must reparse through the project document model.
+- Non-empty generated designs must contain real symbols and, when routing expected wires, real wires.
+- Generated schematics must preserve declared pin-to-net bindings without missing, unexpected, or duplicated bindings.
+- Generated artifacts must carry enough structure to be trusted as real KiCad schematics.
+
+## Debugging generation failures
+
+Use these commands when generation fails or a readability regression is suspected.
+
+Validate the input IR without writing files:
+
+```bash
+python scripts/kicad_pcb.py validate-netlist \
+    --netlist circuit.json \
+    --symbols-dir tests/fixtures/symbols
+```
+
+Generate a new project and keep the structured debug dump:
+
+```bash
+python scripts/kicad_pcb.py new-from-netlist \
+    --name DebugProject \
+    --out-dir /tmp/openclaw-debug \
+    --netlist circuit.json \
+    --symbols-dir tests/fixtures/symbols \
+    --mode internal \
+    --debug-dump /tmp/openclaw-debug/OpenClaw_Debug.json
+```
+
+Inspect the generated warning sidecar and diagnostics:
+
+```bash
+cat /tmp/openclaw-debug/DebugProject/OpenClaw_Warnings.json
+python scripts/kicad_pcb.py info-sch --json
+```
+
+When a run fails, inspect these artifacts in order:
+
+1. The source Circuit IR JSON.
+2. `validate-netlist` output and advisory/blocking codes.
+3. The emitted managed schematic: `OpenClaw_Managed.kicad_sch`.
+4. The post-generation diagnostics in `OpenClaw_Warnings.json`.
+5. The optional debug dump stage markers and routing/layout summaries in `OpenClaw_Debug.json`.
+
 ## Schematic layout engine (Graphviz)
 
 When generating schematics from a Circuit IR the tool runs a **graph layout

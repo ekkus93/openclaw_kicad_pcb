@@ -1,5 +1,35 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-04-01T22:32:06Z - GPT-5.4 - Prepared the finalized CODE_REVIEW8 closeout tree for landing to GitHub master
+
+- The current uncommitted tree to land contains the final CODE_REVIEW8 closeout set: Phase 7 footprint-quality advisories/tests, the Phase 9 `_sch_apply_artifacts.py` extraction, the fully checked `code_review/CODE_REVIEW8_TODO.md`, and README documentation for the validated generation pipeline / invariants / debugging flow.
+- Immediately before the landing step, the repo was green on `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+- `HEAD` matched `origin/master` before the commit, so the landing action only needed a fresh commit plus `git push origin HEAD:master`.
+
+## 2026-04-01T22:02:00Z - GPT-5.4 - Closed CODE_REVIEW8 Phases 10 through 12 and normalized the roadmap
+
+- `code_review/CODE_REVIEW8_TODO.md` now has no unchecked checkbox items left; stale alternative branches were rewritten as explicit non-selected/not-applicable notes, all completed phases were marked, and the end-state acceptance checklist is fully checked.
+- Phase 10 status is now backed by existing code/tests rather than only intent: `schematic_metrics.py` plus `LAY006/LAY008/LAY012/LAY013` provide measurable readability checks, `tests/unit/test_phase10_validation.py` locks the NE5532 readability baseline, and `tests/unit/test_phase4_555_regression.py` locks the canonical 555 layout semantics.
+- Phase 11 is documented in `README.md` with the canonical validated generation path, hard-fail invariants, and a copy-pasteable debugging flow centered on `validate-netlist`, `new-from-netlist --debug-dump`, `OpenClaw_Warnings.json`, and `info-sch --json`.
+- Phase 12 artifacts were generated under `code_review/generated/code_review8_phase12/phase12_ne5532/` and `code_review/generated/code_review8_phase12/phase12_timer555/`; both warning sidecars show zero hard failures / unresolved refs / duplicate bindings, the NE5532 output carries only the expected headphone/coupling advisories, and the 555 canonical output carries only `VALIDATION_MODE_INTERNAL`.
+- The final closeout gate remained green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
+## 2026-04-01T21:41:41Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 9 god-file audit and first responsibility split
+
+- Phase 9 is now closed in `code_review/CODE_REVIEW8_TODO.md`: audited the current hotspot inventory as `router.py` 3390 LOC / 80 top-level defs/classes, `layout.py` 1636 / 24, `graphviz_layout/snap.py` 4960 / 84, and `commands/_sch_apply.py` 1656 / 39 before the refactor.
+- The lowest-risk first seam was `commands/_sch_apply.py`, so the generated-schematic artifact/reporting slice moved into the new internal helper module `kicad-pcb/src/kicad_pcb/commands/_sch_apply_artifacts.py` while `_sch_apply.py` kept the public import surface stable for existing tests and callers.
+- The extracted helper now owns structural post-generation validation, warning-report JSON serialization, pipeline-stage marker recording, deterministic managed-file cleanup, and root/managed schematic path resolution.
+- Expanded `tests/unit/test_netlist_commands.py` to assert the warning sidecar preserves `validation_mode` plus structured `generated_schematic_diagnostics`, complementing the existing cleanup and diagnostics regressions that guarded the extraction.
+- Phase 9 validation was green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
+## 2026-04-01T21:10:06Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 7 footprint audit and validation
+
+- Phase 7 is now closed in `code_review/CODE_REVIEW8_TODO.md`: the supported netlist path was audited and confirmed not to synthesize footprints; it only preserves incoming footprint strings from `ComponentIR` / legacy autofix conversion and writes them through `_write_symbols(...)`.
+- The old footprint gate was only `check_footprints_assigned(...)`, which catches missing footprints for explicit PCB-oriented pattern calls but did not classify placeholder-grade or incompatible footprints on the netlist validation path.
+- `kicad-pcb/src/kicad_pcb/commands/_validate.py` now emits `FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID` and `FOOTPRINT_CLASS_MISMATCH` advisories in the generic lint family so `validate-netlist` surfaces placeholder/symbol-id footprints and broad package-class mismatches without inventing new fallback footprints.
+- Added tests proving the expected package classes are accepted for NE555 DIP/THT, potentiometer, generic connector, MOSFET SOT-23, and audio-jack footprints, plus command-path coverage showing placeholder-like or mismatched footprints appear as warnings.
+- Phase 7 validation was green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
 ## 2026-04-01T19:49:06Z - GPT-5.4 - Landed the current CODE_REVIEW8 remediation bundle after a final green lint and test pass
 
 - The current landing bundle combines the earlier Phase 1/4/5/6/8 remediation work now present in the worktree: hard post-generation structural validation, canonical 555 legacy-side-format repair plus fixture coverage, the refreshed NE5532 readability fixture/test expectations, and the circuit-family lint registry with blocking 555 severity promotion.
