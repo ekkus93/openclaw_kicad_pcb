@@ -1,6 +1,20 @@
 (kicad_symbol_lib
   (version 20230121)
   (generator "test")
+  (symbol "Conn_01x02"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "Pin_1" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 0 -2.54 0)
+      (length 2.54)
+      (name "Pin_2" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
   (symbol "Conn_01x03"
     (pin passive line
       (at 0 0 0)

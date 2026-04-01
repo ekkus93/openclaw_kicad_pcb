@@ -1,5 +1,87 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-04-01T19:49:06Z - GPT-5.4 - Landed the current CODE_REVIEW8 remediation bundle after a final green lint and test pass
+
+- The current landing bundle combines the earlier Phase 1/4/5/6/8 remediation work now present in the worktree: hard post-generation structural validation, canonical 555 legacy-side-format repair plus fixture coverage, the refreshed NE5532 readability fixture/test expectations, and the circuit-family lint registry with blocking 555 severity promotion.
+- Immediately before landing, the tree was green on `.venv/bin/ruff check .` and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+- The requested GitHub landing action for this interaction was to commit the current tree and push it to `master`.
+
+## 2026-04-01T18:57:42Z - GPT-5.4 - Added circuit-family lint registry with blocking 555 severity and TRS stereo advisory
+
+- `kicad-pcb/src/kicad_pcb/commands/_validate.py` now has a circuit-family lint registry that emits structured advisory findings with both `family` and `severity`, while keeping the existing JSON warning shape for CLI/tests.
+- Mandatory 555 topology-role findings are no longer just warnings: key `TIMER555_*` issues now escalate to `hard_fail`, and `raise_for_blocking_advisories(...)` is enforced in `validate-netlist`, `apply-netlist`, and the `new-from-netlist` preflight.
+- `new-from-netlist` must now run domain-specific blocking lints before `_create_project(...)`; a stale test double that returned `None` from `full_validate(...)` had to be updated because the validated IR is now consumed during preflight.
+- Added `TRS_STEREO_IMPLEMENTATION_INCOMPLETE` for `Connector:AudioJack3` cases that wire both tip and ring without a readable left/right stereo pairing, plus command-level regressions proving semantically valid but topologically broken 555 inputs fail before generation succeeds.
+- Validation after this slice was fully green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
+## 2026-04-01T18:15:18Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 5 NE5532 remediation and repaired the stale NE5532 readability fixture
+
+- Closed the live Phase 5 NE5532 topology/policy work: `code_review/ne5532_headphone_amp_netlist.json` no longer includes the old `R1` bypass across `C5`, the real reviewed warning set is now `HEADPHONE_OUTPUT_IMPEDANCE_HIGH` plus `SPLIT_RAIL_INTERSTAGE_AC_COUPLING_PRESENT`, and `_validate.py` now also surfaces `OPAMP_PRESENTED_AS_SPEAKER_POWER_STAGE` while treating the settled mono `AudioJack3` plus explicit no-connect pattern as supported rather than ambiguous.
+- Repaired a major fixture-drift problem in `tests/fixtures/readability/ne5532_headphone_amp_left_current/`: the README already claimed it was the real NE5532 amp, but the checked-in `circuit_ir.json` and `baseline_generated.kicad_sch` were still a passive `TestLib:R` placeholder circuit. The fixture now mirrors the authoritative review netlist, carries regenerated baseline metrics/artifacts, and records `local_density_max` so Phase 10 readability tests compare against the fixture baseline instead of a stale hard-coded threshold.
+- Updated the fixture-driven block-detection/readability tests to the real NE5532 semantics (`J1` input, `J2` output, `C5` input, `R2/R3` feedback, `R5` interstage, `R6/R7` output conditioning) and relaxed the current-fixture composition test to allow only the tracked baseline `LAY012` warning while still forbidding any new composition-lint regressions.
+- Revalidated the final tree with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`, all green.
+
+## 2026-04-01T10:25:20Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 4 555 PWM remediation
+
+- Phase 4 is now closed in `code_review/CODE_REVIEW8_TODO.md`: the 555 PWM dimmer path has a checked-in canonical fixture, semantic placement coverage, full advisory coverage for the expected topology, and focused regressions for broken timing-cap and gate-pull-down wiring.
+- The legacy `/home/ubo/.openclaw/workspace/555_PWM_LED_Dimmer.net` side format no longer just passes through loose broken wiring. `kicad-pcb/src/kicad_pcb/ir/autofix.py` now explicitly rebuilds canonical 555 timing, steering, gate-drive, and load nets when that legacy motif is detected, and it normalizes load connectors like `LED_LOAD` onto connector-style refs so the supported layout/output-role path works.
+- The canonical 555 layout now stays stable enough for semantic readability assertions because `kicad-pcb/src/kicad_pcb/tier.py` treats load-oriented connector metadata as an output hint, which keeps the MOSFET/load block on the right side of the timer instead of collapsing left.
+- Added/updated regression coverage across `tests/unit/test_ir_autofix.py`, `tests/unit/test_netlist_commands.py`, `tests/unit/test_phase4_555_regression.py`, and `tests/unit/test_sch_apply.py` to lock in canonical fixture validity, explicit steering direction, timing-cap misplacement failures, gate-pull-down oscillator warnings, semantic placement, and the explicit legacy-net reconstruction.
+- Final Phase 4 gate on the current tree was green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
+## 2026-04-01T09:51:10Z - GPT-5.4 - Advanced CODE_REVIEW8 Phase 4 555 remediation without closing the phase yet
+
+- The reviewed `/home/ubo/.openclaw/workspace/555_PWM_LED_Dimmer.net` artifact is now handled by a deterministic legacy-side-format conversion in `kicad-pcb/src/kicad_pcb/ir/autofix.py`, which maps the old `designName` / `components[].name` / `nets[].connections[]` payload into canonical Circuit IR before the supported validation and generation path runs.
+- Added 555-specific advisory coverage in `kicad-pcb/src/kicad_pcb/commands/_validate.py` for mandatory 555 pin roles, timing-node structure, timing/CTRL capacitor targeting, steering-network shape, gate-drive rules, low-side load topology, and frequency-range sanity; focused Ruff/mypy/pytest slices stayed green as the rule set expanded.
+- Added local symbol fixtures for `Timer:NE555`, `Transistor_FET:Q_NMOS_GSD`, `Device:D`, and `Connector_Generic:Conn_01x02`, plus a checked-in canonical 555 PWM readability fixture under `tests/fixtures/readability/timer555_pwm_dimmer/`.
+- The canonical 555 fixture now has regression coverage for: zero 555-specific advisories on the intended design, structural generation/population, semantic placement of the timer/timing parts/output block, steering-diode direction, timing-capacitor misplacement to the supply rail, and gate-pull-down misplacement onto the timing node.
+- Tightening `_infer_connector_roles_from_ir(...)` to treat load-oriented connector metadata like `LED_LOAD` as an output hint materially improved 555 placement: the MOSFET/load block now lands to the right of the timer and is stable enough for semantic placement assertions.
+- Phase 4 remains open because the TODO still has unchecked items around explicit steering-network reconstruction, formal review of timing-value selection, and the last readability distinction bullet.
+
+## 2026-04-01T05:27:44Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 3 generation-path inventory and tracing
+
+- Verified that the only supported IR-driven schematic-generation entry points are `cmd_apply_netlist(...)` and `cmd_new_from_netlist(...)`, both of which converge on `_apply_netlist_to_project(...)` and therefore share schema validation, semantic validation, symbol/pin validation, managed-sheet mutation, and post-generation reparse validation.
+- Confirmed that `cmd_new(...)` plus `minimal_schematic_text()` only scaffold thin root project files, while `commands/sch.py` and `commands/patterns.py` mutate existing schematics through `mutate_and_validate_sch(...)`; they are not alternate netlist-generation/exporter paths.
+- The unsupported 555 artifact path remains an out-of-schema side format rather than a live public validated exporter bypass, so Phase 3 did not require a new quarantine flag in the CLI surface.
+- Added ordered `pipeline_stage_markers` and a `validated_pipeline_path` summary to the schematic debug dump so generation requests now explicitly record `ir_creation`, `semantic_validation`, `schematic_emission`, `post_generation_reparse`, and `artifact_finalize`.
+- Phase 3 validation was green with a focused Ruff/mypy/pytest slice and a repo-wide `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q` run that completed without any reported failures.
+
+## 2026-04-01T03:58:32Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 2 canonical pin-membership enforcement
+
+- Centralized canonical `(ref, pin)` membership handling in `kicad-pcb/src/kicad_pcb/ir/validate.py` with reusable `build_pin_membership_index(...)` and `find_pin_membership_collisions(...)` helpers plus a typed `PinMembershipAssignment` provenance record.
+- `validate_circuit_ir(...)` now uses that reusable index before emission and collision diagnostics include `ref`, `pin`, distinct conflicting `nets`, and per-assignment provenance (`net_index`, `pin_index`, optional `unit`) so duplicate assignments are traceable.
+- Added regression coverage proving invalid duplicated pin membership is rejected at three levels: direct IR validation in `tests/unit/test_circuit_ir.py`, `cmd_apply_netlist(...)` before managed-sheet write, and `cmd_new_from_netlist(...)` before project creation in `tests/unit/test_netlist_commands.py`.
+- Phase 2 audit found one canonical supported generation-path net representation; the only alias normalization on that path is ground-name canonicalization via `normalize_gnd_net_name(...)` during Circuit IR ingestion and schematic preflight, with no separate smart-merge or alternate-format net rewrite path in managed-sheet application.
+- Phase 2 validation was green with focused Ruff/mypy/pytest and repo-wide `.venv/bin/ruff check .` plus `.venv/bin/mypy kicad-pcb/src`; full `pytest -q` was rerun multiple times and showed only passing-dot output/no failure text, though the terminal wrapper was inconsistent about surfacing a final exit summary.
+
+## 2026-04-01T01:36:16Z - GPT-5.4 - Completed CODE_REVIEW8 Phase 1 hard output-validation gates
+
+- Added a reusable `validate_generated_schematic(...)` helper in `kicad-pcb/src/kicad_pcb/commands/_sch_apply.py` that reparses the generated managed schematic from the serialized AST before commit and raises hard `UserError`s on structural invalidity.
+- The enforced Phase 1 invariants are now: reparse must succeed; non-empty designs must emit enough placed symbols; routed designs that expected wires must still contain wires after reparse; every generated component ref must exist; and every expected pin-to-net binding must survive without missing, unexpected, or duplicated bindings.
+- Added typed `GeneratedSchematicDiagnostics` to `ApplyNetlistResult` and `NewFromNetlistResult`, included the diagnostics in CLI formatting and the warning-report sidecar JSON, and added focused tests covering success diagnostics, missing-wire hard failure, and missing-bind-marker hard failure.
+- Phase 1 validation after the changes was green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
+
+## 2026-04-01T00:45:59Z - GPT-5.4 - User clarified how to interpret CODE_REVIEW8 and CODE_REVIEW8_TODO
+
+- `code_review/CODE_REVIEW8.md` is a historical point-in-time review of the uploaded repo snapshot plus uploaded artifacts, not guaranteed current-branch truth. Any statement phrased as a present failure should be read as either observed in the uploaded artifacts or needing re-verification on the live branch.
+- The broken 555 findings were based on the uploaded 555 project bundle and note file, not on a documented reproducible HEAD command. Phase 4 should therefore start with provenance and reproduction before changing code.
+- The NE5532 connector policy should be treated as settled if the branch already uses authored TRS symbols plus explicit `no_connect` handling. The remaining question there is enforcement and regression coverage, not policy selection.
+- The TL071 vs NE5532 fixture mismatch should be treated as verify-current-status-first unless it has been rerun recently.
+- Acceptance criteria should be split into measurable-now items (`reparse cleanly`, symbol/wire counts, unique `(ref, pin)` net membership, required pins connected or explicitly allowed unconnected, explicit no-connects on unused connector pins) versus readability items that still need formal metrics.
+- For `CODE_REVIEW8_TODO`, keep the hard output-validation gates, post-generation reparse validation, unique pin-to-net hard fails, domain-specific linting, end-to-end golden tests, and formal readability metrics as likely still valuable; mark exact 555 reproduction path, branch-wide failure claims, TL071/NE5532 mismatch, legacy-exporter claims, and ambiguous-TRS claims as verify-first; and treat Graphviz/orientation items plus broad validation-failure statements as likely partly stale if the existing memory remains accurate.
+
+## 2026-04-01T00:40:42Z - GPT-5.4 - Reviewed CODE_REVIEW8 and its remediation plan as planning input rather than current ground truth
+
+- `code_review/CODE_REVIEW8.md` and `code_review/CODE_REVIEW8_TODO.md` are useful as a broad remediation map, especially around hard output-validation gates, pin-to-net uniqueness, 555 topology checks, and post-generation reparse validation.
+- Several review claims look stale against the later repo history already captured in memory: the current branch state has repeated full-green `ruff` / `mypy` / `pytest` validations, Phase 2/3 Graphviz and connector-orientation work has landed, and the NE5532 TRS policy was already explicitly chosen as authored `AudioJack3` plus explicit `no_connect` markers rather than a mono-symbol rewrite.
+- Treat CODE_REVIEW8 as a checklist to verify against the live tree, not as proof that every cited failure is still present. The most important unresolved clarification is the exact current 555 generation path and artifact source, since the review's strongest claims depend on that path being reproducible in the present codebase.
+
+## 2026-04-01T00:34:07Z - GPT-5.4 - Refreshed the onboarding baseline from README, project memory, and Phase 9.1 orientation conventions
+
+- The current project baseline is: Python KiCad automation that generates managed schematics and PCBs from Circuit IR, with Graphviz `dot` as the intended schematic placement engine, AST-based S-expression editing, transactional writes, built-in structural linting, and strict validation via `kicad-cli` when running in `kicad` mode.
+- The recent project state in memory remains centered on the NE5532 review fixture and the late Graphviz snap pipeline: Phase 2 and Phase 3 roadmap work is effectively closed, placement-first stage ordering is in place, the refined decoupling map is cached with final positions, and current verified expectations split decoupling ownership as `C1/C3 -> U1B` and `C2/C4 -> U1A` with full `ruff`, `mypy`, and `pytest` green on the last full validation.
+- Phase 9.1 orientation policy is now the active readability reference: input connectors face inward at `0°`, output connectors at `180°`, op-amps stay at `0°`, shunt passives rotate to `90°`, feedback passives near the op-amp column prefer `90°`, input/output-stage series passives prefer `0°`, and diodes stay at `0°`. The orientation rules are implemented in `compute_orientations()` and covered by dedicated unit and integration tests.
+
 ## 2026-03-29T21:47:54Z - GPT-5.4 - Landed the decoupling, connector, and Phase 8 cohesion bundle with full green validation
 
 - The current change set closes the remaining 2.3.2 decoupling-locality/doc follow-up, tightens 2.4.1/2.4.3 connector policy plus helper/real-fixture coverage, broadens the local decoupling-ground router to mixed/two-support clusters, and restores the Phase 8 power-block fallback anchor so `POWER_ENTRY` refs still follow the broader non-power signal cluster when no core exists.

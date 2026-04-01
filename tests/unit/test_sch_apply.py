@@ -439,6 +439,16 @@ class TestPhase1WarningSuite:
             ),
             (
                 _make_ir(
+                    components=[ComponentIR(ref="J1", symbol="Connector:AudioJack3")],
+                    nets=[
+                        NetIR(name="LEFT_IN", pins=[PinRefIR(ref="J1", pin="T")]),
+                        NetIR(name="GND", pins=[PinRefIR(ref="J1", pin="S")]),
+                    ],
+                ),
+                set(),
+            ),
+            (
+                _make_ir(
                     components=[
                         ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp"),
                         ComponentIR(ref="R1", symbol="TestLib:R"),
@@ -551,16 +561,42 @@ class TestPhase1WarningSuite:
                 ),
                 {"OPAMP_OUTPUT_SHORTED_TO_RAIL"},
             ),
+            (
+                _make_ir(
+                    components=[
+                        ComponentIR(
+                            ref="U1",
+                            symbol="Amplifier_Operational:NE5532",
+                            value="NE5532",
+                        ),
+                        ComponentIR(ref="J1", symbol="Connector:AudioJack3", value="Speaker Out"),
+                    ],
+                    nets=[
+                        NetIR(name="VIN", pins=[PinRefIR(ref="U1", pin="3")]),
+                        NetIR(name="U1_INV", pins=[PinRefIR(ref="U1", pin="2")]),
+                        NetIR(
+                            name="SPEAKER_OUT",
+                            pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="J1", pin="T")],
+                        ),
+                        NetIR(name="VMINUS15", pins=[PinRefIR(ref="U1", pin="4")]),
+                        NetIR(name="VPLUS15", pins=[PinRefIR(ref="U1", pin="8")]),
+                        NetIR(name="GND", pins=[PinRefIR(ref="J1", pin="S")]),
+                    ],
+                ),
+                {"OPAMP_PRESENTED_AS_SPEAKER_POWER_STAGE"},
+            ),
         ],
         ids=[
             "input-coupling",
             "output-coupling",
             "connector-ambiguity",
+            "mono-trs-policy",
             "missing-feedback",
             "output-cap-no-load-or-bleed",
             "stage-topology-likely-mistaken",
             "output-floating",
             "output-shorted-to-rail",
+            "speaker-power-stage",
         ],
     )
     def test_synthetic_warning_fixtures_cover_each_phase1_family(
@@ -639,6 +675,220 @@ class TestPhase1WarningSuite:
         }
         assert "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN" not in codes
 
+    def test_555_warning_set_detects_broken_pwm_topology(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="Timer:NE555", value="NE555"),
+                ComponentIR(ref="Q1", symbol="Transistor_FET:Q_NMOS_GSD", value="AO3400"),
+                ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="100k"),
+                ComponentIR(ref="D1", symbol="Device:D", value="1N4148"),
+                ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="100"),
+                ComponentIR(ref="R3", symbol="Device:R", value="100k"),
+                ComponentIR(ref="C1", symbol="Device:C", value="10uF"),
+                ComponentIR(ref="C2", symbol="Device:C", value="100nF"),
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x02", value="LED_LOAD"),
+            ],
+            nets=[
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="Q1", pin="2"),
+                        PinRefIR(ref="C1", pin="2"),
+                        PinRefIR(ref="J1", pin="2"),
+                    ],
+                ),
+                NetIR(
+                    name="+12V",
+                    pins=[
+                        PinRefIR(ref="U1", pin="8"),
+                        PinRefIR(ref="U1", pin="4"),
+                        PinRefIR(ref="R1", pin="1"),
+                        PinRefIR(ref="C1", pin="1"),
+                        PinRefIR(ref="C2", pin="1"),
+                        PinRefIR(ref="J1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="TRIG_ONLY",
+                    pins=[PinRefIR(ref="U1", pin="2"), PinRefIR(ref="RV1", pin="2")],
+                ),
+                NetIR(
+                    name="THRESH_ONLY",
+                    pins=[PinRefIR(ref="U1", pin="6"), PinRefIR(ref="R3", pin="1")],
+                ),
+                NetIR(name="CTRL", pins=[PinRefIR(ref="U1", pin="5"), PinRefIR(ref="C2", pin="1")]),
+                NetIR(
+                    name="DISCH",
+                    pins=[
+                        PinRefIR(ref="U1", pin="7"),
+                        PinRefIR(ref="R1", pin="2"),
+                        PinRefIR(ref="D1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="OUT_DRV", pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R2", pin="1")]
+                ),
+                NetIR(
+                    name="GATE",
+                    pins=[
+                        PinRefIR(ref="R2", pin="2"),
+                        PinRefIR(ref="Q1", pin="1"),
+                        PinRefIR(ref="R3", pin="1"),
+                    ],
+                ),
+                NetIR(name="LED_NEG", pins=[PinRefIR(ref="Q1", pin="3")]),
+            ],
+        )
+
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+
+        assert {
+            "TIMER555_TIMING_NODE_SPLIT",
+            "TIMER555_CTRL_CAP_WRONG_TARGET",
+            "TIMER555_STEERING_NETWORK_INVALID",
+            "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
+            "TIMER555_PWM_FREQUENCY_OUT_OF_RANGE",
+        } <= codes
+
+        severities = {
+            warning["code"]: warning.get("severity")
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+            if isinstance(warning.get("code"), str)
+        }
+        assert severities["TIMER555_TIMING_NODE_SPLIT"] == "hard_fail"
+        assert severities["TIMER555_CTRL_CAP_WRONG_TARGET"] == "hard_fail"
+        assert severities["TIMER555_STEERING_NETWORK_INVALID"] == "hard_fail"
+        assert severities["TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID"] == "hard_fail"
+        assert severities["TIMER555_PWM_FREQUENCY_OUT_OF_RANGE"] == "warning"
+
+    def test_stereo_trs_warning_fires_for_non_paired_tip_and_ring_nets(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="J1", symbol="Connector:AudioJack3", value="Stereo In"),
+            ],
+            nets=[
+                NetIR(name="LEFT_IN", pins=[PinRefIR(ref="J1", pin="T")]),
+                NetIR(name="AUX_SEND", pins=[PinRefIR(ref="J1", pin="R")]),
+                NetIR(name="GND", pins=[PinRefIR(ref="J1", pin="S")]),
+            ],
+        )
+
+        warnings = advisory_warnings(ir)
+        codes = {warning["code"] for warning in warnings}
+
+        assert "TRS_STEREO_IMPLEMENTATION_INCOMPLETE" in codes
+
+    def test_555_warning_set_accepts_valid_pwm_topology(self) -> None:
+        ir = _make_ir(
+            components=[
+                ComponentIR(ref="U1", symbol="Timer:NE555", value="NE555"),
+                ComponentIR(ref="Q1", symbol="Transistor_FET:Q_NMOS_GSD", value="AO3400"),
+                ComponentIR(ref="RV1", symbol="Device:R_Potentiometer", value="100k"),
+                ComponentIR(ref="D1", symbol="Device:D", value="1N4148"),
+                ComponentIR(ref="D2", symbol="Device:D", value="1N4148"),
+                ComponentIR(ref="R1", symbol="Device:R", value="1k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="100"),
+                ComponentIR(ref="R3", symbol="Device:R", value="100k"),
+                ComponentIR(ref="C1", symbol="Device:C", value="22nF"),
+                ComponentIR(ref="C2", symbol="Device:C", value="100nF"),
+                ComponentIR(ref="C3", symbol="Device:C_Polarized", value="47uF"),
+                ComponentIR(ref="C4", symbol="Device:C", value="10nF"),
+                ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x02", value="LED_LOAD"),
+            ],
+            nets=[
+                NetIR(
+                    name="GND",
+                    pins=[
+                        PinRefIR(ref="U1", pin="1"),
+                        PinRefIR(ref="Q1", pin="2"),
+                        PinRefIR(ref="R3", pin="2"),
+                        PinRefIR(ref="C1", pin="2"),
+                        PinRefIR(ref="C2", pin="2"),
+                        PinRefIR(ref="C3", pin="2"),
+                        PinRefIR(ref="C4", pin="2"),
+                    ],
+                ),
+                NetIR(
+                    name="+12V",
+                    pins=[
+                        PinRefIR(ref="U1", pin="8"),
+                        PinRefIR(ref="U1", pin="4"),
+                        PinRefIR(ref="R1", pin="1"),
+                        PinRefIR(ref="C2", pin="1"),
+                        PinRefIR(ref="C3", pin="1"),
+                        PinRefIR(ref="J1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="TIMING",
+                    pins=[
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="U1", pin="6"),
+                        PinRefIR(ref="RV1", pin="2"),
+                        PinRefIR(ref="C1", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="DISCH",
+                    pins=[
+                        PinRefIR(ref="U1", pin="7"),
+                        PinRefIR(ref="R1", pin="2"),
+                        PinRefIR(ref="D1", pin="1"),
+                        PinRefIR(ref="D2", pin="2"),
+                    ],
+                ),
+                NetIR(
+                    name="POT_A", pins=[PinRefIR(ref="RV1", pin="1"), PinRefIR(ref="D1", pin="2")]
+                ),
+                NetIR(
+                    name="POT_B", pins=[PinRefIR(ref="RV1", pin="3"), PinRefIR(ref="D2", pin="1")]
+                ),
+                NetIR(name="CTRL", pins=[PinRefIR(ref="U1", pin="5"), PinRefIR(ref="C4", pin="1")]),
+                NetIR(
+                    name="OUT_DRV", pins=[PinRefIR(ref="U1", pin="3"), PinRefIR(ref="R2", pin="1")]
+                ),
+                NetIR(
+                    name="GATE",
+                    pins=[
+                        PinRefIR(ref="R2", pin="2"),
+                        PinRefIR(ref="Q1", pin="1"),
+                        PinRefIR(ref="R3", pin="1"),
+                    ],
+                ),
+                NetIR(
+                    name="LED_NEG", pins=[PinRefIR(ref="Q1", pin="3"), PinRefIR(ref="J1", pin="2")]
+                ),
+            ],
+        )
+
+        codes = {
+            warning["code"]
+            for warning in advisory_warnings(ir, SymbolIndex(symbols_dir=_FIXTURES_DIR))
+        }
+
+        unexpected_codes = {
+            "TIMER555_GROUND_PIN_INVALID",
+            "TIMER555_VCC_PIN_INVALID",
+            "TIMER555_RESET_NOT_TIED_HIGH",
+            "TIMER555_TIMING_NODE_SPLIT",
+            "TIMER555_TIMING_CAP_NOT_TO_GROUND",
+            "TIMER555_TIMING_CAP_ACROSS_SUPPLY",
+            "TIMER555_CTRL_CAP_MISSING_TO_GROUND",
+            "TIMER555_CTRL_CAP_WRONG_TARGET",
+            "TIMER555_STEERING_NETWORK_INVALID",
+            "TIMER555_GATE_RESISTOR_MISSING",
+            "TIMER555_GATE_PULLDOWN_MISSING",
+            "TIMER555_GATE_PULLDOWN_TOUCHES_TIMING_NODE",
+            "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
+            "TIMER555_PWM_FREQUENCY_OUT_OF_RANGE",
+        }
+        assert codes.isdisjoint(unexpected_codes)
+
     @_skip_no_real_ne5532_fixture_symbols
     def test_real_ne5532_fixture_warning_set_does_not_drift(self) -> None:
         ir = CircuitIR.load(_REAL_NE5532_REVIEW_NETLIST)
@@ -646,30 +896,28 @@ class TestPhase1WarningSuite:
 
         assert _normalize_warning_entries(warnings) == [
             (
-                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                "HEADPHONE_OUTPUT_IMPEDANCE_HIGH",
                 (
-                    ("ref", "J1"),
-                    ("symbol", "Connector:AudioJack3"),
-                    ("unused_pins", ["R"]),
-                    ("used_pins", ["S", "T"]),
+                    ("connector_output_nets", ["HP_L_OUT"]),
+                    ("downstream_net", "AFTER_R6"),
+                    ("output_net", "OUT_L_STAGE2_RAW"),
+                    ("output_pin", "7"),
+                    ("ref", "U1"),
+                    ("resistor_refs", ["R6"]),
+                    ("series_ohms", 47.0),
+                    ("symbol", "Amplifier_Operational:NE5532"),
                 ),
             ),
             (
-                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                "SPLIT_RAIL_INTERSTAGE_AC_COUPLING_PRESENT",
                 (
-                    ("ref", "J2"),
-                    ("symbol", "Connector:AudioJack3"),
-                    ("unused_pins", ["R"]),
-                    ("used_pins", ["S", "T"]),
-                ),
-            ),
-            (
-                "INPUT_COUPLING_BYPASSED_BY_RESISTOR",
-                (
-                    ("bridge_component_refs", ["C5", "R1"]),
-                    ("capacitor_refs", ["C5"]),
-                    ("nets", ["IN_L_AC", "LEFT_IN"]),
-                    ("resistor_refs", ["R1"]),
+                    ("capacitor_refs", ["C6"]),
+                    ("coupled_net", "BUF_L_IN"),
+                    ("output_net", "OUT_L_STAGE1"),
+                    ("output_pin", "1"),
+                    ("ref", "U1"),
+                    ("symbol", "Amplifier_Operational:NE5532"),
+                    ("target_inputs", ["U1:5"]),
                 ),
             ),
         ]

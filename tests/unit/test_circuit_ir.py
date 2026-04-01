@@ -6,7 +6,11 @@ from pathlib import Path
 import pytest
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.ir.validate import validate_circuit_ir, validate_ir_symbols
+from kicad_pcb.ir.validate import (
+    build_pin_membership_index,
+    validate_circuit_ir,
+    validate_ir_symbols,
+)
 from kicad_pcb.symbol_index import SymbolIndex
 
 
@@ -76,6 +80,38 @@ def test_validate_circuit_ir_pin_collision() -> None:
 
     assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
     assert "pin_collisions" in exc_info.value.details
+    collision = exc_info.value.details["pin_collisions"][0]
+    assert collision["ref"] == "R1"
+    assert collision["pin"] == "1"
+    assert collision["nets"] == ["N1", "N2"]
+    assert collision["assignments"] == [
+        {"net": "N1", "unit": None, "net_index": 0, "pin_index": 0},
+        {"net": "N2", "unit": None, "net_index": 1, "pin_index": 0},
+    ]
+
+
+def test_build_pin_membership_index_tracks_assignment_sources() -> None:
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "U1", "symbol": "TestLib:DualOpAmp"}],
+            "nets": [
+                {"name": "IN_A", "pins": [{"ref": "U1", "pin": "1", "unit": "1"}]},
+                {"name": "IN_B", "pins": [{"ref": "U1", "pin": "5", "unit": "2"}]},
+            ],
+        }
+    )
+
+    index = build_pin_membership_index(ir)
+
+    assert index[("U1", "1")][0].net_name == "IN_A"
+    assert index[("U1", "1")][0].unit == "1"
+    assert index[("U1", "1")][0].net_index == 0
+    assert index[("U1", "1")][0].pin_index == 0
+    assert index[("U1", "5")][0].net_name == "IN_B"
+    assert index[("U1", "5")][0].unit == "2"
+    assert index[("U1", "5")][0].net_index == 1
+    assert index[("U1", "5")][0].pin_index == 0
 
 
 def test_validate_circuit_ir_unknown_component_ref() -> None:

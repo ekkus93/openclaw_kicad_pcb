@@ -69,6 +69,414 @@ def _write_ir(path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_pin_collision_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [{"ref": "R1", "symbol": "TestLib:R", "value": "10k"}],
+        "nets": [
+            {"name": "N1", "pins": [{"ref": "R1", "pin": "1"}]},
+            {"name": "N2", "pins": [{"ref": "R1", "pin": "1"}]},
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_legacy_555_side_format(path: Path) -> None:
+    payload = {
+        "version": 2,
+        "designName": "555_PWM_LED_Dimmer",
+        "components": [
+            {
+                "ref": "U1",
+                "name": "NE555",
+                "description": "Timer IC",
+                "footprint": "Package_DIP:DIP-8_W7.62mm",
+                "pins": [
+                    {"num": 1, "name": "GND"},
+                    {"num": 2, "name": "TRIG"},
+                    {"num": 3, "name": "OUT"},
+                    {"num": 4, "name": "RESET"},
+                    {"num": 5, "name": "CTRL"},
+                    {"num": 6, "name": "THRES"},
+                    {"num": 7, "name": "DISCH"},
+                    {"num": 8, "name": "VCC"},
+                ],
+            },
+            {
+                "ref": "Q1",
+                "name": "AO3400",
+                "description": "Logic-level N-MOSFET",
+                "footprint": "Package_TO_SOT_SMD:SOT-23",
+                "pins": [
+                    {"num": 1, "name": "G"},
+                    {"num": 2, "name": "S"},
+                    {"num": 3, "name": "D"},
+                ],
+            },
+            {
+                "ref": "RV1",
+                "name": "POT",
+                "description": "100k potentiometer",
+                "footprint": "Potentiometer_THT:Potentiometer_Bourns_3386P_Vertical",
+                "value": "100k",
+                "pins": [{"num": 1, "name": "1"}, {"num": 2, "name": "2"}, {"num": 3, "name": "3"}],
+            },
+            {
+                "ref": "D1",
+                "name": "1N4148",
+                "description": "Diode",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+                "pins": [{"num": 1, "name": "K"}, {"num": 2, "name": "A"}],
+            },
+            {
+                "ref": "D2",
+                "name": "1N4148",
+                "description": "Diode",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+                "pins": [{"num": 1, "name": "K"}, {"num": 2, "name": "A"}],
+            },
+            {
+                "ref": "R1",
+                "name": "RES",
+                "description": "Series resistor",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+                "value": "1k",
+                "pins": [{"num": 1, "name": "1"}, {"num": 2, "name": "2"}],
+            },
+            {
+                "ref": "R2",
+                "name": "RES",
+                "description": "Gate resistor",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+                "value": "100",
+                "pins": [{"num": 1, "name": "1"}, {"num": 2, "name": "2"}],
+            },
+            {
+                "ref": "R3",
+                "name": "RES",
+                "description": "Gate pulldown",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+                "value": "100k",
+                "pins": [{"num": 1, "name": "1"}, {"num": 2, "name": "2"}],
+            },
+            {
+                "ref": "C1",
+                "name": "CAP",
+                "description": "Timing capacitor",
+                "footprint": "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm",
+                "value": "22nF",
+                "pins": [{"num": 1, "name": "+"}, {"num": 2, "name": "-"}],
+            },
+            {
+                "ref": "C2",
+                "name": "CAP",
+                "description": "555 decoupling capacitor",
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+                "value": "100nF",
+                "pins": [{"num": 1, "name": "+"}, {"num": 2, "name": "-"}],
+            },
+            {
+                "ref": "C3",
+                "name": "CAP",
+                "description": "Bulk capacitor",
+                "footprint": "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm",
+                "value": "47uF",
+                "pins": [{"num": 1, "name": "+"}, {"num": 2, "name": "-"}],
+            },
+            {
+                "ref": "LED_LOAD",
+                "name": "CONN_2",
+                "description": "LED load connector",
+                "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+                "pins": [{"num": 1, "name": "POS"}, {"num": 2, "name": "NEG"}],
+            },
+        ],
+        "nets": [
+            {
+                "net": 0,
+                "description": "GND",
+                "connections": [
+                    {"component": "U1", "pin": 1},
+                    {"component": "Q1", "pin": 2},
+                    {"component": "R3", "pin": 2},
+                    {"component": "C1", "pin": 2},
+                    {"component": "C2", "pin": 2},
+                    {"component": "C3", "pin": 2},
+                ],
+            },
+            {
+                "net": 1,
+                "description": "+12V",
+                "connections": [
+                    {"component": "U1", "pin": 8},
+                    {"component": "U1", "pin": 4},
+                    {"component": "R1", "pin": 1},
+                    {"component": "C2", "pin": 1},
+                    {"component": "C3", "pin": 1},
+                    {"component": "LED_LOAD", "pin": 1},
+                ],
+            },
+            {
+                "net": 2,
+                "description": "TIMING",
+                "connections": [
+                    {"component": "U1", "pin": 2},
+                    {"component": "U1", "pin": 6},
+                    {"component": "RV1", "pin": 2},
+                    {"component": "C1", "pin": 1},
+                ],
+            },
+            {
+                "net": 3,
+                "description": "DISCH",
+                "connections": [
+                    {"component": "U1", "pin": 7},
+                    {"component": "R1", "pin": 2},
+                    {"component": "D1", "pin": 1},
+                    {"component": "D2", "pin": 2},
+                ],
+            },
+            {
+                "net": 4,
+                "description": "POT_A",
+                "connections": [{"component": "RV1", "pin": 1}, {"component": "D1", "pin": 2}],
+            },
+            {
+                "net": 5,
+                "description": "POT_B",
+                "connections": [{"component": "RV1", "pin": 3}, {"component": "D2", "pin": 1}],
+            },
+            {"net": 6, "description": "CTRL", "connections": [{"component": "U1", "pin": 5}]},
+            {
+                "net": 7,
+                "description": "OUT_DRV",
+                "connections": [{"component": "U1", "pin": 3}, {"component": "R2", "pin": 1}],
+            },
+            {
+                "net": 8,
+                "description": "GATE",
+                "connections": [
+                    {"component": "R2", "pin": 2},
+                    {"component": "Q1", "pin": 1},
+                    {"component": "R3", "pin": 1},
+                ],
+            },
+            {
+                "net": 9,
+                "description": "LED_NEG",
+                "connections": [{"component": "Q1", "pin": 3}, {"component": "LED_LOAD", "pin": 2}],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_valid_555_pwm_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {
+                "ref": "U1",
+                "symbol": "Timer:NE555",
+                "value": "NE555",
+                "footprint": "Package_DIP:DIP-8_W7.62mm",
+            },
+            {
+                "ref": "Q1",
+                "symbol": "Transistor_FET:Q_NMOS_GSD",
+                "value": "AO3400",
+                "footprint": "Package_TO_SOT_SMD:SOT-23",
+            },
+            {
+                "ref": "RV1",
+                "symbol": "Device:R_Potentiometer",
+                "value": "100k",
+                "footprint": "Potentiometer_THT:Potentiometer_Bourns_3386P_Vertical",
+            },
+            {
+                "ref": "D1",
+                "symbol": "Device:D",
+                "value": "1N4148",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+            },
+            {
+                "ref": "D2",
+                "symbol": "Device:D",
+                "value": "1N4148",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+            },
+            {
+                "ref": "R1",
+                "symbol": "Device:R",
+                "value": "1k",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "R2",
+                "symbol": "Device:R",
+                "value": "100",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "R3",
+                "symbol": "Device:R",
+                "value": "100k",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "C1",
+                "symbol": "Device:C",
+                "value": "22nF",
+                "footprint": "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm",
+            },
+            {
+                "ref": "C2",
+                "symbol": "Device:C",
+                "value": "100nF",
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            },
+            {
+                "ref": "C3",
+                "symbol": "Device:C_Polarized",
+                "value": "47uF",
+                "footprint": "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm",
+            },
+            {
+                "ref": "C4",
+                "symbol": "Device:C",
+                "value": "10nF",
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            },
+            {
+                "ref": "J1",
+                "symbol": "Connector_Generic:Conn_01x02",
+                "value": "LED_LOAD",
+                "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+            },
+        ],
+        "nets": [
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "Q1", "pin": "2"},
+                    {"ref": "R3", "pin": "2"},
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "C2", "pin": "2"},
+                    {"ref": "C3", "pin": "2"},
+                    {"ref": "C4", "pin": "2"},
+                ],
+            },
+            {
+                "name": "+12V",
+                "pins": [
+                    {"ref": "U1", "pin": "8"},
+                    {"ref": "U1", "pin": "4"},
+                    {"ref": "R1", "pin": "1"},
+                    {"ref": "C2", "pin": "1"},
+                    {"ref": "C3", "pin": "1"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "TIMING",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "U1", "pin": "6"},
+                    {"ref": "RV1", "pin": "2"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "DISCH",
+                "pins": [
+                    {"ref": "U1", "pin": "7"},
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "D1", "pin": "1"},
+                    {"ref": "D2", "pin": "2"},
+                ],
+            },
+            {"name": "POT_A", "pins": [{"ref": "RV1", "pin": "1"}, {"ref": "D1", "pin": "2"}]},
+            {"name": "POT_B", "pins": [{"ref": "RV1", "pin": "3"}, {"ref": "D2", "pin": "1"}]},
+            {"name": "CTRL", "pins": [{"ref": "U1", "pin": "5"}, {"ref": "C4", "pin": "1"}]},
+            {"name": "OUT_DRV", "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R2", "pin": "1"}]},
+            {
+                "name": "GATE",
+                "pins": [
+                    {"ref": "R2", "pin": "2"},
+                    {"ref": "Q1", "pin": "1"},
+                    {"ref": "R3", "pin": "1"},
+                ],
+            },
+            {"name": "LED_NEG", "pins": [{"ref": "Q1", "pin": "3"}, {"ref": "J1", "pin": "2"}]},
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_invalid_555_pwm_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "Timer:NE555", "value": "NE555"},
+            {"ref": "Q1", "symbol": "Transistor_FET:Q_NMOS_GSD", "value": "AO3400"},
+            {"ref": "RV1", "symbol": "Device:R_Potentiometer", "value": "100k"},
+            {"ref": "D1", "symbol": "Device:D", "value": "1N4148"},
+            {"ref": "R1", "symbol": "Device:R", "value": "1k"},
+            {"ref": "R2", "symbol": "Device:R", "value": "100"},
+            {"ref": "R3", "symbol": "Device:R", "value": "100k"},
+            {"ref": "C1", "symbol": "Device:C", "value": "10uF"},
+            {"ref": "C2", "symbol": "Device:C", "value": "100nF"},
+            {"ref": "J1", "symbol": "Connector_Generic:Conn_01x02", "value": "LED_LOAD"},
+        ],
+        "nets": [
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "Q1", "pin": "2"},
+                    {"ref": "R3", "pin": "2"},
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J1", "pin": "2"},
+                ],
+            },
+            {
+                "name": "+12V",
+                "pins": [
+                    {"ref": "U1", "pin": "8"},
+                    {"ref": "U1", "pin": "4"},
+                    {"ref": "R1", "pin": "1"},
+                    {"ref": "C1", "pin": "1"},
+                    {"ref": "C2", "pin": "1"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {"name": "TRIG_ONLY", "pins": [{"ref": "U1", "pin": "2"}, {"ref": "RV1", "pin": "2"}]},
+            {"name": "THRESH_ONLY", "pins": [{"ref": "U1", "pin": "6"}]},
+            {"name": "CTRL", "pins": [{"ref": "U1", "pin": "5"}, {"ref": "C2", "pin": "2"}]},
+            {
+                "name": "DISCH",
+                "pins": [
+                    {"ref": "U1", "pin": "7"},
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "D1", "pin": "1"},
+                ],
+            },
+            {"name": "OUT_DRV", "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R2", "pin": "1"}]},
+            {
+                "name": "GATE",
+                "pins": [
+                    {"ref": "R2", "pin": "2"},
+                    {"ref": "Q1", "pin": "1"},
+                    {"ref": "R3", "pin": "1"},
+                ],
+            },
+            {"name": "LED_NEG", "pins": [{"ref": "Q1", "pin": "3"}]},
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def _write_input_bypass_warning_ir(path: Path) -> None:
     payload = {
         "version": "1",
@@ -518,6 +926,39 @@ def _write_output_short_warning_ir(path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_speaker_driver_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {
+                "ref": "U1",
+                "symbol": "Amplifier_Operational:NE5532",
+                "value": "NE5532",
+            },
+            {
+                "ref": "J1",
+                "symbol": "Connector:AudioJack3",
+                "value": "Speaker Out",
+            },
+        ],
+        "nets": [
+            {"name": "VIN", "pins": [{"ref": "U1", "pin": "3"}]},
+            {"name": "U1_INV", "pins": [{"ref": "U1", "pin": "2"}]},
+            {
+                "name": "SPEAKER_OUT",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "J1", "pin": "T"},
+                ],
+            },
+            {"name": "VMINUS15", "pins": [{"ref": "U1", "pin": "4"}]},
+            {"name": "VPLUS15", "pins": [{"ref": "U1", "pin": "8"}]},
+            {"name": "GND", "pins": [{"ref": "J1", "pin": "S"}]},
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def _write_explicit_unit_valid_ir(path: Path) -> None:
     payload = {
         "version": "1",
@@ -595,6 +1036,33 @@ def test_fix_netlist_raises_when_symbol_index_init_fails(tmp_path: Path, monkeyp
 
     assert exc_info.value.code == ErrorCode.SYMBOL_DIR_MISSING
     assert not output_path.exists()
+
+
+def test_fix_netlist_converts_legacy_555_side_format(tmp_path: Path) -> None:
+    legacy_path = tmp_path / "555_PWM_LED_Dimmer.net"
+    output_path = tmp_path / "555_PWM_LED_Dimmer.fixed.json"
+    _write_legacy_555_side_format(legacy_path)
+
+    result = cmd_fix_netlist(
+        Namespace(
+            netlist=str(legacy_path),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
+            output=str(output_path),
+        )
+    )
+
+    assert result.fixed is True
+    fixed_payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert fixed_payload["components"][0]["symbol"] == "Timer:NE555"
+    assert fixed_payload["components"][1]["symbol"] == "Transistor_FET:Q_NMOS_GSD"
+    assert fixed_payload["components"][2]["symbol"] == "Device:R_Potentiometer"
+    assert fixed_payload["components"][-1]["symbol"] == "Connector_Generic:Conn_01x02"
+    assert fixed_payload["nets"][0]["name"] == "GND"
+    assert fixed_payload["nets"][0]["pins"][0] == {"ref": "U1", "pin": "1"}
+    assert any(
+        "converted legacy component/name + net/connections payload into canonical Circuit IR" in fix
+        for fix in result.fixes_applied
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -732,6 +1200,8 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     assert dump["schematic_debug_artifacts"] == [
         "heuristic_profile_name",
         "label_mode_name",
+        "validated_pipeline_path",
+        "pipeline_stage_markers",
         "unit_splitting",
         "net_classification",
         "final_route_choices",
@@ -739,6 +1209,22 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     ]
     assert dump["heuristic_profile_name"] == "analog_audio"
     assert dump["label_mode_name"] == "minimal"
+    assert dump["validated_pipeline_path"] == {
+        "entrypoint": "apply-netlist",
+        "schema_validation": "CircuitIR.load",
+        "semantic_validation": "validate_circuit_ir",
+        "symbol_pin_validation": "validate_ir_symbols",
+        "schematic_emission": "mutate_and_validate_sch",
+        "post_generation_reparse": "validate_generated_schematic",
+        "artifact_finalize": "warning_report_or_dry_run",
+    }
+    assert [marker["stage"] for marker in dump["pipeline_stage_markers"]] == [
+        "ir_creation",
+        "semantic_validation",
+        "schematic_emission",
+        "post_generation_reparse",
+        "artifact_finalize",
+    ]
     assert dump["net_classification"] == [
         {
             "classification": "signal_chain",
@@ -967,7 +1453,10 @@ def test_cmd_new_from_netlist_forwards_heuristic_profile_name(tmp_path: Path, mo
     )
     captured_request = None
 
-    monkeypatch.setattr("kicad_pcb.commands.netlist.full_validate", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "kicad_pcb.commands.netlist.full_validate",
+        lambda *_args, **_kwargs: CircuitIR.load(ir_path),
+    )
     monkeypatch.setattr("kicad_pcb.commands.netlist._create_project", lambda **_kwargs: project)
 
     def _fake_apply(project_arg, request_arg):
@@ -1328,6 +1817,38 @@ def test_cmd_apply_netlist_rejects_mismatched_explicit_unit_input(
     assert not (project_dir / "OpenClaw_Managed.kicad_sch").exists()
 
 
+def test_cmd_apply_netlist_rejects_pin_collision_before_write(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "pin_collision.json"
+    _write_pin_collision_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    assert exc_info.value.details["pin_collisions"][0]["nets"] == ["N1", "N2"]
+    assert not (project_dir / "OpenClaw_Managed.kicad_sch").exists()
+
+
 def test_cmd_new_from_netlist_creates_project_and_applies(tmp_path: Path) -> None:
     ir_path = tmp_path / "ir.json"
     _write_ir(ir_path)
@@ -1490,6 +2011,133 @@ def test_cmd_new_from_netlist_rejects_mismatched_explicit_unit_input(tmp_path: P
     assert not project_path.exists()
 
 
+def test_cmd_new_from_netlist_rejects_pin_collision_before_project_create(tmp_path: Path) -> None:
+    ir_path = tmp_path / "pin_collision.json"
+    _write_pin_collision_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    project_path = tmp_path / "PinCollisionProj"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_new_from_netlist(
+            Namespace(
+                name="PinCollisionProj",
+                out_dir=str(tmp_path),
+                description="",
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                auto_fix=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    assert exc_info.value.details["pin_collisions"][0]["nets"] == ["N1", "N2"]
+    assert not project_path.exists()
+
+
+def test_cmd_new_from_netlist_autofixes_legacy_555_side_format(tmp_path: Path) -> None:
+    legacy_path = tmp_path / "555_PWM_LED_Dimmer.net"
+    _write_legacy_555_side_format(legacy_path)
+    project_path = tmp_path / "PwmDimmer555"
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="PwmDimmer555",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(legacy_path),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
+            mode="internal",
+            auto_fix=True,
+            strict=False,
+        )
+    )
+
+    assert result.path == project_path
+    assert result.managed_schematic_path.exists()
+    fixed_path = legacy_path.with_suffix(".autofix.json")
+    assert fixed_path.exists()
+    fixed_payload = json.loads(fixed_path.read_text(encoding="utf-8"))
+    assert fixed_payload["components"][0]["symbol"] == "Timer:NE555"
+    fixed_nets = {net["name"]: net["pins"] for net in fixed_payload["nets"]}
+    assert {"TIMING", "DISCH", "POT_A", "POT_B", "CTRL", "GATE", "LED_NEG"} <= set(fixed_nets)
+    assert {"ref": "C2", "pin": "1"} in fixed_nets["CTRL"]
+    assert {"ref": "C2", "pin": "2"} in fixed_nets["GND"]
+    assert {"ref": "D1", "pin": "1"} in fixed_nets["DISCH"]
+    assert {"ref": "D2", "pin": "2"} in fixed_nets["DISCH"]
+    assert {"ref": "RV1", "pin": "1"} in fixed_nets["POT_A"]
+    assert {"ref": "RV1", "pin": "3"} in fixed_nets["POT_B"]
+    assert result.generated_schematic_diagnostics is not None
+    assert result.generated_schematic_diagnostics.symbol_count > 0
+    codes = {warning["code"] for warning in result.warnings}
+    assert "TIMER555_TIMING_NODE_SPLIT" not in codes
+    assert "TIMER555_GATE_RESISTOR_MISSING" not in codes
+
+
+def test_cmd_new_from_netlist_generates_valid_canonical_555_pwm_design(tmp_path: Path) -> None:
+    ir_path = tmp_path / "555_pwm_ir.json"
+    _write_valid_555_pwm_ir(ir_path)
+
+    result = cmd_new_from_netlist(
+        Namespace(
+            name="Canonical555Pwm",
+            out_dir=str(tmp_path),
+            description="",
+            netlist=str(ir_path),
+            symbols_dir=str(SYMBOLS_FIXTURE_DIR),
+            mode="internal",
+            auto_fix=False,
+            strict=False,
+        )
+    )
+
+    managed_doc = SchematicDoc.load(result.managed_schematic_path)
+    refs = {entry["ref"] for entry in managed_doc.list_symbols() if "ref" in entry}
+
+    assert {"U1", "Q1", "RV1", "J1"} <= refs
+    assert result.generated_schematic_diagnostics is not None
+    assert result.generated_schematic_diagnostics.symbol_count >= 13
+    codes = {warning["code"] for warning in result.warnings}
+    assert codes.isdisjoint(
+        {
+            "TIMER555_TIMING_NODE_SPLIT",
+            "TIMER555_TIMING_CAP_NOT_TO_GROUND",
+            "TIMER555_CTRL_CAP_WRONG_TARGET",
+            "TIMER555_STEERING_NETWORK_INVALID",
+            "TIMER555_GATE_RESISTOR_MISSING",
+            "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
+            "TIMER555_PWM_FREQUENCY_OUT_OF_RANGE",
+        }
+    )
+
+
+def test_cmd_new_from_netlist_rejects_blocking_555_lints_before_project_create(
+    tmp_path: Path,
+) -> None:
+    ir_path = tmp_path / "invalid_555_pwm.json"
+    _write_invalid_555_pwm_ir(ir_path)
+    project_path = tmp_path / "Invalid555Pwm"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_new_from_netlist(
+            Namespace(
+                name="Invalid555Pwm",
+                out_dir=str(tmp_path),
+                description="",
+                netlist=str(ir_path),
+                symbols_dir=str(SYMBOLS_FIXTURE_DIR),
+                mode="internal",
+                auto_fix=False,
+                strict=False,
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    blocking_codes = {finding["code"] for finding in exc_info.value.details["blocking_lints"]}
+    assert "TIMER555_TIMING_NODE_SPLIT" in blocking_codes
+    assert not project_path.exists()
+
+
 # ---------------------------------------------------------------------------
 # P7.2 — Integration test: new-from-netlist in internal mode
 # ---------------------------------------------------------------------------
@@ -1620,6 +2268,29 @@ def test_cmd_validate_netlist_rejects_pin_outside_selected_unit(tmp_path: Path) 
 
     assert exc_info.value.code == ErrorCode.PIN_INVALID
     assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
+
+
+def test_cmd_validate_netlist_rejects_blocking_555_lints(tmp_path: Path) -> None:
+    ir_path = tmp_path / "invalid_555_pwm.json"
+    _write_invalid_555_pwm_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    with pytest.raises(UserError) as exc_info:
+        cmd_validate_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
+    blocking_codes = {finding["code"] for finding in exc_info.value.details["blocking_lints"]}
+    assert {
+        "TIMER555_TIMING_NODE_SPLIT",
+        "TIMER555_CTRL_CAP_WRONG_TARGET",
+        "TIMER555_STEERING_NETWORK_INVALID",
+        "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
+    } <= blocking_codes
 
 
 # ---------------------------------------------------------------------------
@@ -1938,6 +2609,136 @@ def test_apply_netlist_requires_at_least_80_percent_components_placed(
     assert exc_info.value.details["found_symbols"] == 3
     assert exc_info.value.details["min_component_placement_ratio"] == 0.8
     assert exc_info.value.details["min_required_symbols"] == 4
+
+
+def test_apply_netlist_returns_generated_schematic_diagnostics(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Successful apply exposes structured post-generation diagnostics."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    diagnostics = result.generated_schematic_diagnostics
+    assert diagnostics is not None
+    assert diagnostics.symbol_count == 1
+    assert diagnostics.binding_marker_count == 1
+    assert diagnostics.unresolved_refs == ()
+    assert diagnostics.hard_failures == ()
+
+
+def test_apply_netlist_missing_expected_wires_raises_structural_validation_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """If routing expected wires but none are emitted, structural validation must fail."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "R1", "symbol": "TestLib:R", "value": "1k"},
+            {"ref": "R2", "symbol": "TestLib:R", "value": "2k"},
+        ],
+        "nets": [
+            {
+                "name": "N1",
+                "pins": [
+                    {"ref": "R1", "pin": "1"},
+                    {"ref": "R2", "pin": "1"},
+                ],
+            }
+        ],
+    }
+    ir_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(SchematicDoc, "add_wire", lambda *args, **kwargs: None)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    diagnostics = exc_info.value.details["generated_schematic_diagnostics"]
+    assert exc_info.value.code == ErrorCode.EMPTY_GENERATION
+    assert any(failure["code"] == "MISSING_WIRES" for failure in diagnostics["hard_failures"])
+    assert not (project_dir / "OpenClaw_Managed.kicad_sch").exists()
+
+
+def test_apply_netlist_missing_bind_markers_raises_structural_validation_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """A pseudo-populated schematic without bind markers must not be treated as success."""
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "ir.json"
+    _write_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+
+    original_add_text = SchematicDoc.add_text
+
+    def _drop_bind_markers(self, text, *args, **kwargs):
+        if isinstance(text, str) and text.startswith("OpenClaw:bind="):
+            return None
+        return original_add_text(self, text, *args, **kwargs)
+
+    monkeypatch.setattr(SchematicDoc, "add_text", _drop_bind_markers)
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    with pytest.raises(UserError) as exc_info:
+        cmd_apply_netlist(
+            Namespace(
+                netlist=str(ir_path),
+                symbols_dir=str(fixtures_dir),
+                mode="internal",
+                force=True,
+                dry_run=False,
+            )
+        )
+
+    diagnostics = exc_info.value.details["generated_schematic_diagnostics"]
+    assert exc_info.value.code == ErrorCode.EMPTY_GENERATION
+    assert any(failure["code"] == "MISSING_BINDINGS" for failure in diagnostics["hard_failures"])
+    assert not (project_dir / "OpenClaw_Managed.kicad_sch").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -2519,6 +3320,11 @@ class TestPhase1WarningSuite:
                 _write_output_short_warning_ir,
                 {"OPAMP_OUTPUT_SHORTED_TO_RAIL"},
             ),
+            (
+                "speaker_driver_warning_ir.json",
+                _write_speaker_driver_warning_ir,
+                {"OPAMP_PRESENTED_AS_SPEAKER_POWER_STAGE"},
+            ),
         ],
         ids=[
             "input-coupling",
@@ -2529,6 +3335,7 @@ class TestPhase1WarningSuite:
             "output-cap-no-load-or-bleed",
             "output-floating",
             "output-shorted-to-rail",
+            "speaker-power-stage",
         ],
     )
     def test_synthetic_warning_fixtures_cover_each_phase1_family(
@@ -2564,30 +3371,28 @@ class TestPhase1WarningSuite:
 
         assert _normalize_warning_entries(result.warnings) == [
             (
-                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                "HEADPHONE_OUTPUT_IMPEDANCE_HIGH",
                 (
-                    ("ref", "J1"),
-                    ("symbol", "Connector:AudioJack3"),
-                    ("unused_pins", ["R"]),
-                    ("used_pins", ["S", "T"]),
+                    ("connector_output_nets", ["HP_L_OUT"]),
+                    ("downstream_net", "AFTER_R6"),
+                    ("output_net", "OUT_L_STAGE2_RAW"),
+                    ("output_pin", "7"),
+                    ("ref", "U1"),
+                    ("resistor_refs", ["R6"]),
+                    ("series_ohms", 47.0),
+                    ("symbol", "Amplifier_Operational:NE5532"),
                 ),
             ),
             (
-                "CONNECTOR_UNUSED_PINS_AMBIGUOUS",
+                "SPLIT_RAIL_INTERSTAGE_AC_COUPLING_PRESENT",
                 (
-                    ("ref", "J2"),
-                    ("symbol", "Connector:AudioJack3"),
-                    ("unused_pins", ["R"]),
-                    ("used_pins", ["S", "T"]),
-                ),
-            ),
-            (
-                "INPUT_COUPLING_BYPASSED_BY_RESISTOR",
-                (
-                    ("bridge_component_refs", ["C5", "R1"]),
-                    ("capacitor_refs", ["C5"]),
-                    ("nets", ["IN_L_AC", "LEFT_IN"]),
-                    ("resistor_refs", ["R1"]),
+                    ("capacitor_refs", ["C6"]),
+                    ("coupled_net", "BUF_L_IN"),
+                    ("output_net", "OUT_L_STAGE1"),
+                    ("output_pin", "1"),
+                    ("ref", "U1"),
+                    ("symbol", "Amplifier_Operational:NE5532"),
+                    ("target_inputs", ["U1:5"]),
                 ),
             ),
         ]
@@ -2785,9 +3590,9 @@ def test_new_from_real_ne5532_fixture_debug_dump_keeps_decoupling_map_on_u1a(
     debug_dump = json.loads(debug_dump_path.read_text(encoding="utf-8"))
     expected_decoupling_map = {
         "C1": "U1B",
-        "C2": "U1A",
+        "C2": "U1B",
         "C3": "U1B",
-        "C4": "U1A",
+        "C4": "U1B",
     }
 
     assert debug_dump["decoupling_map"] == expected_decoupling_map
@@ -3074,22 +3879,18 @@ def test_new_from_real_ne5532_fixture_keeps_u1a_upstream_input_bundle_as_left_co
 
     u1a_x, u1a_y = positions["U1A"]
     c5_x, c5_y = positions["C5"]
-    r1_x, r1_y = positions["R1"]
     rv1_x, rv1_y = positions["RV1"]
     r2_x, r2_y = positions["R2"]
     r3_x, r3_y = positions["R3"]
 
-    assert c5_x == pytest.approx(r1_x), (
-        "The parallel upstream input bridges should share one left-side column: "
-        f"C5={positions['C5']}, R1={positions['R1']}, RV1={positions['RV1']}"
-    )
     assert ORIGIN_X < c5_x < rv1_x, (
-        "The upstream bridge bundle should sit just right of the input connector margin while "
-        "remaining left of the non-inverting input node: "
-        f"C5.x={c5_x:.2f}, R1.x={r1_x:.2f}, RV1.x={rv1_x:.2f}, ORIGIN_X={ORIGIN_X:.2f}"
+        "The upstream AC-coupling handoff should sit just right of the input connector margin "
+        "while remaining left of the non-inverting input node: "
+        f"C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}, ORIGIN_X={ORIGIN_X:.2f}"
     )
     assert rv1_x - c5_x >= GRID_COL_MM / 2.0, (
-        "The upstream bridge bundle should still leave visible space before the non-inverting "
+        "The incoming AC-coupling handoff should still leave visible space before "
+        "the non-inverting "
         "input node: "
         f"C5.x={c5_x:.2f}, RV1.x={rv1_x:.2f}"
     )
@@ -3101,9 +3902,10 @@ def test_new_from_real_ne5532_fixture_keeps_u1a_upstream_input_bundle_as_left_co
         "U1A should complete a readable three-column gain-stage chain: "
         f"R2.x={r2_x:.2f}, U1A.x={u1a_x:.2f}"
     )
-    assert sorted([c5_y, r1_y]) == pytest.approx([u1a_y - 7.62, u1a_y]), (
-        "The upstream bridge bundle should occupy one compact two-row column: "
-        f"C5.y={c5_y:.2f}, R1.y={r1_y:.2f}, U1A.y={u1a_y:.2f}"
+    assert c5_y == pytest.approx(u1a_y), (
+        "The coupling capacitor handoff should stay on the U1A input row after removing the "
+        "parallel bypass resistor: "
+        f"C5.y={c5_y:.2f}, U1A.y={u1a_y:.2f}"
     )
     assert rv1_y == pytest.approx(u1a_y), (
         "The non-inverting bridge should still sit on the U1A row after upstream bundling: "
@@ -3540,8 +4342,6 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     assert analog_overrides.get("small_analog_local_routing") == [
         "BUF_L_IN",
         "HP_L_OUT",
-        "IN_L_AC",
-        "LEFT_IN",
         "OUT_L_STAGE1",
         "OUT_L_STAGE2_RAW",
         "U1A_INV",
@@ -3604,9 +4404,7 @@ def test_real_ne5532_power_profile_debug_dump_surfaces_ground_cluster_diff(
         "enable_compact_local_ground_clusters": False,
         "enable_compact_output_tails": False,
     }
-    assert power_overrides == {
-        "compact_local_ground_cluster": ["GND"],
-    }
+    assert power_overrides == {}
     assert digital_overrides == {}
 
 
@@ -3673,8 +4471,6 @@ def test_new_from_real_ne5532_fixture_important_label_mode_surfaces_stage_seams(
             label_names.add(node.items[1].value)
 
     assert {
-        "LEFT_IN",
-        "IN_L_AC",
         "VOL_L_OUT",
         "OUT_L_STAGE1",
         "BUF_L_IN",

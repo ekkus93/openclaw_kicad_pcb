@@ -91,6 +91,40 @@ class InfoSchResult:
 
 
 @dataclass(frozen=True)
+class GeneratedSchematicDiagnostics:
+    """Structured post-generation validation summary for a managed schematic."""
+
+    symbol_count: int
+    wire_count: int
+    label_count: int
+    global_label_count: int = 0
+    junction_count: int = 0
+    binding_marker_count: int = 0
+    unresolved_refs: tuple[str, ...] = field(default_factory=tuple)
+    missing_bindings: tuple[str, ...] = field(default_factory=tuple)
+    unexpected_bindings: tuple[str, ...] = field(default_factory=tuple)
+    duplicate_bindings: tuple[str, ...] = field(default_factory=tuple)
+    hard_failures: tuple[dict[str, object], ...] = field(default_factory=tuple)
+
+    def as_dict(self) -> dict[str, object]:
+        """Return a stable JSON-serializable summary."""
+
+        return {
+            "symbol_count": self.symbol_count,
+            "wire_count": self.wire_count,
+            "label_count": self.label_count,
+            "global_label_count": self.global_label_count,
+            "junction_count": self.junction_count,
+            "binding_marker_count": self.binding_marker_count,
+            "unresolved_refs": list(self.unresolved_refs),
+            "missing_bindings": list(self.missing_bindings),
+            "unexpected_bindings": list(self.unexpected_bindings),
+            "duplicate_bindings": list(self.duplicate_bindings),
+            "hard_failures": list(self.hard_failures),
+        }
+
+
+@dataclass(frozen=True)
 class ApplyNetlistResult:
     """Result of the ``apply-netlist`` command."""
 
@@ -108,6 +142,7 @@ class ApplyNetlistResult:
     warning_report_path: Path | None = None
     debug_dump_path: Path | None = None
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
+    generated_schematic_diagnostics: GeneratedSchematicDiagnostics | None = None
 
 
 @dataclass(frozen=True)
@@ -127,6 +162,7 @@ class NewFromNetlistResult:
     warning_report_path: Path | None = None
     debug_dump_path: Path | None = None
     symbols_dirs_used: tuple[str, ...] = field(default_factory=tuple)
+    generated_schematic_diagnostics: GeneratedSchematicDiagnostics | None = None
     zip_path: Path | None = None
     session_path: Path | None = None
 

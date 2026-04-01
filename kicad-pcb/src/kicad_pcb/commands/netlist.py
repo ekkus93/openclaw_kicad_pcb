@@ -31,7 +31,7 @@ from ._sch_apply import (
     _write_symbols,  # noqa: F401 — re-export for callers (test_phase7_ux)
     resolve_schematic_paths,  # noqa: F401 — re-export for callers
 )
-from ._validate import advisory_warnings, full_validate
+from ._validate import advisory_warnings, full_validate, raise_for_blocking_advisories
 
 
 def cmd_info_sch(args) -> InfoSchResult:
@@ -129,6 +129,7 @@ def cmd_validate_netlist(args) -> ValidateNetlistResult:
 
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
     ir = full_validate(netlist_path, symbol_index)
+    raise_for_blocking_advisories(ir, symbol_index)
     warnings = advisory_warnings(ir, symbol_index)
 
     return ValidateNetlistResult(
@@ -321,7 +322,8 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
     symbol_index = SymbolIndex(symbols_dir=symbols_dir)
 
     try:
-        full_validate(netlist_path, symbol_index)
+        ir = full_validate(netlist_path, symbol_index)
+        raise_for_blocking_advisories(ir, symbol_index)
     except (UserError, Exception) as first_err:
         if not auto_fix:
             raise
@@ -343,7 +345,8 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         )
         # Retry validation on the repaired JSON
         try:
-            full_validate(fixed_path, symbol_index)
+            fixed_ir = full_validate(fixed_path, symbol_index)
+            raise_for_blocking_advisories(fixed_ir, symbol_index)
         except (UserError, Exception) as retry_err:
             fixes_summary = "\n".join(f"  • {f}" for f in outcome.fixes_applied) or "  (none)"
             raise UserError(
@@ -403,6 +406,9 @@ def cmd_new_from_netlist(args) -> NewFromNetlistResult:
         warning_report_path=apply_result.warning_report_path,
         debug_dump_path=apply_result.debug_dump_path,
         symbols_dirs_used=apply_result.symbols_dirs_used,
+        generated_schematic_diagnostics=getattr(
+            apply_result, "generated_schematic_diagnostics", None
+        ),
         zip_path=zip_path,
         session_path=session.path if session is not None else None,
     )
