@@ -453,7 +453,15 @@ def _infer_connector_roles_from_ir(
       ``IN``/``OUT`` are classified accordingly.
     """
     input_hints = (" IN ", " INPUT ", " AUDIO IN ", " TRS IN ")
-    output_hints = (" OUT ", " OUTPUT ", " AUDIO OUT ", " TRS OUT ", " HP OUT ")
+    output_hints = (
+        " OUT ",
+        " OUTPUT ",
+        " AUDIO OUT ",
+        " TRS OUT ",
+        " HP OUT ",
+        " LOAD ",
+        " LED LOAD ",
+    )
 
     def _is_supply_alias(net_name: str) -> bool:
         return power_rail_polarity(net_name) is not None

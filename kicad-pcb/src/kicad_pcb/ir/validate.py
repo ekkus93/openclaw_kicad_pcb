@@ -3,10 +3,75 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from dataclasses import dataclass
+from typing import TypeAlias
 
 from ..circuit_ir import CircuitIR
 from ..errors import ErrorCode, UserError
 from ..symbol_index import SymbolIndex
+
+PinMembershipKey: TypeAlias = tuple[str, str]
+
+
+@dataclass(frozen=True)
+class PinMembershipAssignment:
+    """One traceable `(ref, pin)` assignment within a canonical IR net."""
+
+    net_name: str
+    ref: str
+    pin: str
+    unit: str | None
+    net_index: int
+    pin_index: int
+
+
+PinMembershipIndex: TypeAlias = dict[
+    PinMembershipKey,
+    tuple[PinMembershipAssignment, ...],
+]
+
+
+def build_pin_membership_index(ir: CircuitIR) -> PinMembershipIndex:
+    """Return a canonical `(ref, pin)` membership index for *ir*."""
+    assignments: dict[PinMembershipKey, list[PinMembershipAssignment]] = defaultdict(list)
+    for net_index, net in enumerate(ir.nets):
+        for pin_index, pin_ref in enumerate(net.pins):
+            assignments[(pin_ref.ref, pin_ref.pin)].append(
+                PinMembershipAssignment(
+                    net_name=net.name,
+                    ref=pin_ref.ref,
+                    pin=pin_ref.pin,
+                    unit=pin_ref.unit,
+                    net_index=net_index,
+                    pin_index=pin_index,
+                )
+            )
+    return {key: tuple(value) for key, value in assignments.items()}
+
+
+def find_pin_membership_collisions(index: PinMembershipIndex) -> list[dict[str, object]]:
+    """Return traceable collisions for pins assigned more than once."""
+    collisions: list[dict[str, object]] = []
+    for (ref, pin), assignments in sorted(index.items()):
+        if len(assignments) < 2:
+            continue
+        collisions.append(
+            {
+                "ref": ref,
+                "pin": pin,
+                "nets": sorted({assignment.net_name for assignment in assignments}),
+                "assignments": [
+                    {
+                        "net": assignment.net_name,
+                        "unit": assignment.unit,
+                        "net_index": assignment.net_index,
+                        "pin_index": assignment.pin_index,
+                    }
+                    for assignment in assignments
+                ],
+            }
+        )
+    return collisions
 
 
 def validate_circuit_ir(ir: CircuitIR) -> None:
@@ -30,8 +95,6 @@ def validate_circuit_ir(ir: CircuitIR) -> None:
         )
 
     ref_set = {component.ref for component in ir.components}
-    missing_refs: list[dict[str, str]] = []
-    pin_to_net: dict[tuple[str, str], list[str]] = defaultdict(list)
 
     for net in ir.nets:
         if not net.pins:
@@ -40,10 +103,18 @@ def validate_circuit_ir(ir: CircuitIR) -> None:
                 code=ErrorCode.IR_SEMANTIC_INVALID,
                 details={"net": net.name},
             )
-        for pin_ref in net.pins:
-            if pin_ref.ref not in ref_set:
-                missing_refs.append({"net": net.name, "ref": pin_ref.ref, "pin": pin_ref.pin})
-            pin_to_net[(pin_ref.ref, pin_ref.pin)].append(net.name)
+
+    membership_index = build_pin_membership_index(ir)
+    missing_refs = [
+        {
+            "net": assignment.net_name,
+            "ref": assignment.ref,
+            "pin": assignment.pin,
+        }
+        for assignments in membership_index.values()
+        for assignment in assignments
+        if assignment.ref not in ref_set
+    ]
 
     if missing_refs:
         raise UserError(
@@ -52,11 +123,7 @@ def validate_circuit_ir(ir: CircuitIR) -> None:
             details={"missing_component_refs": missing_refs},
         )
 
-    collisions = [
-        {"ref": ref, "pin": pin, "nets": sorted(nets)}
-        for (ref, pin), nets in pin_to_net.items()
-        if len(nets) > 1
-    ]
+    collisions = find_pin_membership_collisions(membership_index)
     if collisions:
         raise UserError(
             "A pin appears in multiple nets",

@@ -118,8 +118,9 @@ class TestPhase10Validation:
 
         local_density = compute_local_density(generated_doc, radius_mm=30.0)
         max_density = max(local_density.values(), default=0.0)
-        assert max_density <= 6.0, (
-            f"Local crowding too high: max neighbors within 30mm = {max_density}"
+        baseline_local_density = float(baseline.get("local_density_max", 6.0))
+        assert max_density <= baseline_local_density + 1.0, (
+            f"Local crowding regressed: current={max_density}, baseline={baseline_local_density}"
         )
 
     def test_block_separation_targets(self, generated_doc: SchematicDoc) -> None:

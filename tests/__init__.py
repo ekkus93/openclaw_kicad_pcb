@@ -64,12 +64,14 @@ NE5532_LEFT_REGRESSED_READABILITY_FIXTURE = _readability_fixture(
     "ne5532_headphone_amp_left_regressed",
     regressed_schematic_name="regressed_generated.kicad_sch",
 )
+TIMER555_PWM_READABILITY_FIXTURE = _readability_fixture("timer555_pwm_dimmer")
 
 READABILITY_FIXTURES: dict[str, ReadabilityFixture] = {
     fixture.name: fixture
     for fixture in (
         NE5532_LEFT_CURRENT_READABILITY_FIXTURE,
         NE5532_LEFT_REGRESSED_READABILITY_FIXTURE,
+        TIMER555_PWM_READABILITY_FIXTURE,
     )
 }
 

@@ -30,6 +30,7 @@ from kicad_pcb.results import (
     ExportDrillResult,
     ExportGerbersResult,
     ExportPosResult,
+    GeneratedSchematicDiagnostics,
     ImportNetlistResult,
     InfoResult,
     NewFromNetlistResult,
@@ -255,12 +256,19 @@ class TestApplyNetlistResult:
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
             debug_dump_path=tmp_path / "OpenClaw_Debug.json",
+            generated_schematic_diagnostics=GeneratedSchematicDiagnostics(
+                symbol_count=2,
+                wire_count=3,
+                label_count=1,
+                junction_count=0,
+            ),
         )
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
         assert "OpenClaw_Debug.json" in text
         assert "generic_digital" in text
         assert "debug" in text
+        assert "Generated structure" in text
 
 
 class TestNewFromNetlistResult:
@@ -278,12 +286,19 @@ class TestNewFromNetlistResult:
             warnings=({"code": "WARN", "message": "example"},),
             warning_report_path=tmp_path / "OpenClaw_Warnings.json",
             debug_dump_path=tmp_path / "OpenClaw_Debug.json",
+            generated_schematic_diagnostics=GeneratedSchematicDiagnostics(
+                symbol_count=2,
+                wire_count=3,
+                label_count=1,
+                junction_count=0,
+            ),
         )
         text = joined(r)
         assert "OpenClaw_Warnings.json" in text
         assert "OpenClaw_Debug.json" in text
         assert "power_supply" in text
         assert "always-show-important-labels" in text
+        assert "Generated structure" in text
 
 
 # ---------------------------------------------------------------------------

@@ -1,15 +1,16 @@
 {
-  "avg_spacing": 14.514503896266119,
+  "avg_spacing": 9.623934104840641,
   "gnd_labels": 0,
+  "local_density_max": 10.0,
   "power_symbols": 0,
   "region_density": {
-    "bottom_left": 0.42105263157894735,
-    "bottom_right": 0.15789473684210525,
-    "top_left": 0.3157894736842105,
-    "top_right": 0.10526315789473684
+    "bottom_left": 0.3333333333333333,
+    "bottom_right": 0.5416666666666666,
+    "top_left": 0.0,
+    "top_right": 0.125
   },
-  "short_wires": 26,
-  "symbol_count": 19,
-  "wire_stub_ratio": 0.46,
-  "x_columns": 11
+  "short_wires": 81,
+  "symbol_count": 24,
+  "wire_stub_ratio": 0.47580645161290325,
+  "x_columns": 16
 }

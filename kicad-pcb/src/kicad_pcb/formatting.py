@@ -182,6 +182,13 @@ def _fmt_apply_netlist(r: ApplyNetlistResult) -> list[str]:
         f"   Heuristic profile: {r.heuristic_profile_name}",
         f"   Label mode: {r.label_mode_name}",
     ]
+    if r.generated_schematic_diagnostics is not None:
+        diag = r.generated_schematic_diagnostics
+        lines.append(
+            "   Generated structure: "
+            f"{diag.symbol_count} symbol(s), {diag.wire_count} wire(s), "
+            f"{diag.label_count} label(s), {diag.junction_count} junction(s)"
+        )
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")
     if r.debug_dump_path is not None:
@@ -208,6 +215,13 @@ def _fmt_new_from_netlist(r: NewFromNetlistResult) -> list[str]:
         f"   Heuristic profile: {r.heuristic_profile_name}",
         f"   Label mode: {r.label_mode_name}",
     ]
+    if r.generated_schematic_diagnostics is not None:
+        diag = r.generated_schematic_diagnostics
+        lines.append(
+            "   Generated structure: "
+            f"{diag.symbol_count} symbol(s), {diag.wire_count} wire(s), "
+            f"{diag.label_count} label(s), {diag.junction_count} junction(s)"
+        )
     if r.warning_report_path is not None:
         lines.append(f"   Warning report: {r.warning_report_path}")
     if r.debug_dump_path is not None:

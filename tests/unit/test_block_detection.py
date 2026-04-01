@@ -101,9 +101,8 @@ def test_input_connectors_classified() -> None:
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # J1, J2 should be input (audio in connectors)
+    # The real review fixture is mono-left: J1 is the input TRS jack.
     assert layout.get_role("J1") == BlockRole.INPUT
-    assert layout.get_role("J2") == BlockRole.INPUT
 
 
 @pytest.mark.skipif(
@@ -115,9 +114,8 @@ def test_output_connectors_classified() -> None:
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # J4, J5 should be output (headphone out connectors)
-    assert layout.get_role("J4") == BlockRole.OUTPUT
-    assert layout.get_role("J5") == BlockRole.OUTPUT
+    # The real review fixture uses J2 as the mono-left output TRS jack.
+    assert layout.get_role("J2") == BlockRole.OUTPUT
 
 
 @pytest.mark.skipif(
@@ -140,16 +138,15 @@ def test_power_entry_classified() -> None:
 def test_input_resistors_classified() -> None:
     """Test that input resistors are classified appropriately.
 
-    R1, R2 are connected to input nets (IN_L, IN_R).
+    The real review fixture uses C5 as the input coupling element and RV1/R4 as
+    the input-side support path into the first stage.
     """
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # R1, R2 connected to IN_L, IN_R should be INPUT or PRECONDITIONING
-    r1_role = layout.get_role("R1")
-    r2_role = layout.get_role("R2")
-    assert r1_role in (BlockRole.INPUT, BlockRole.PRECONDITIONING)
-    assert r2_role in (BlockRole.INPUT, BlockRole.PRECONDITIONING)
+    assert layout.get_role("C5") == BlockRole.INPUT
+    assert layout.get_role("RV1") == BlockRole.PRECONDITIONING
+    assert layout.get_role("R4") == BlockRole.PRECONDITIONING
 
 
 @pytest.mark.skipif(
@@ -157,16 +154,16 @@ def test_input_resistors_classified() -> None:
     reason="Circuit IR fixture not found",
 )
 def test_output_resistors_classified() -> None:
-    """Test that output resistors are classified as OUTPUT.
+    """Test that output-path passives stay on the output side.
 
-    R7, R8 are connected to OUT_L, OUT_R output nets.
+    In the real review fixture the series resistor and output bleed resistor are
+    part of the output-conditioning block ahead of the TRS output jack.
     """
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # R7, R8 connected to OUT_L, OUT_R should be OUTPUT
-    assert layout.get_role("R7") == BlockRole.OUTPUT
-    assert layout.get_role("R8") == BlockRole.OUTPUT
+    assert layout.get_role("R6") == BlockRole.OUTPUT_CONDITIONING
+    assert layout.get_role("R7") == BlockRole.OUTPUT_CONDITIONING
 
 
 def test_signal_support_caps_are_not_misclassified_as_decoupling() -> None:
@@ -344,9 +341,8 @@ def test_vss_ground_alias_keeps_supply_support_components_out_of_signal_roles() 
 def test_bias_resistors_classified() -> None:
     """Test that bias/divider resistors are classified appropriately.
 
-    R3, R4 form a bias divider connected to VCC and GND at MID_RAIL.
-    R3 (VCC side) should be power-related.
-    R4 (GND side) may be PRECONDITIONING, FEEDBACK, or related.
+    The real review fixture uses R2/R3 as the first-stage feedback pair and R4
+    as the non-inverting input bias/support path.
     """
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
@@ -354,16 +350,9 @@ def test_bias_resistors_classified() -> None:
     r3_role = layout.get_role("R3")
     r4_role = layout.get_role("R4")
 
-    # R3 on VCC should be power-related
-    assert r3_role == BlockRole.POWER_ENTRY
+    assert r3_role == BlockRole.FEEDBACK
 
-    # R4 should be classified to something reasonable (not arbitrary)
-    # Likely FEEDBACK or PRECONDITIONING (depends on value heuristics)
-    assert r4_role in (
-        BlockRole.PRECONDITIONING,
-        BlockRole.FEEDBACK,
-        BlockRole.OPAMP_CORE,
-    )
+    assert r4_role == BlockRole.PRECONDITIONING
 
 
 @pytest.mark.skipif(
@@ -373,18 +362,15 @@ def test_bias_resistors_classified() -> None:
 def test_feedback_resistors_classified() -> None:
     """Test that feedback resistors are classified as FEEDBACK or similar.
 
-    R5, R6 are connected to STAGE_L/R nets and MID_RAIL (feedback path).
+    The real review fixture keeps R2/R3 in the feedback path and R5 on the
+    inter-stage handoff.
     """
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    r5_role = layout.get_role("R5")
-    r6_role = layout.get_role("R6")
-
-    # These are feedback/signal path resistors
-    # May be classified as FEEDBACK, PRECONDITIONING, or OPAMP_CORE
-    assert r5_role in (BlockRole.FEEDBACK, BlockRole.PRECONDITIONING, BlockRole.OPAMP_CORE)
-    assert r6_role in (BlockRole.FEEDBACK, BlockRole.PRECONDITIONING, BlockRole.OPAMP_CORE)
+    assert layout.get_role("R2") == BlockRole.FEEDBACK
+    assert layout.get_role("R3") == BlockRole.FEEDBACK
+    assert layout.get_role("R5") == BlockRole.INTERSTAGE
 
 
 @pytest.mark.skipif(
@@ -460,12 +446,11 @@ def test_components_by_role_method() -> None:
     # Get input components
     input_components = layout.components_by_role(BlockRole.INPUT)
     assert "J1" in input_components
-    assert "J2" in input_components
+    assert "C5" in input_components
 
     # Get output components
     output_components = layout.components_by_role(BlockRole.OUTPUT)
-    assert "J4" in output_components
-    assert "J5" in output_components
+    assert "J2" in output_components
 
     # Every component should be in exactly one role
     all_components = set()
@@ -523,8 +508,8 @@ def test_confidence_scores() -> None:
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # Jacks should have high confidence (reference-based)
-    for ref in ("J1", "J2", "J3", "J4", "J5"):
+    # Named connectors in the real review fixture should keep high confidence.
+    for ref in ("J1", "J2", "J3"):
         assignment = layout.assignments[ref]
         assert assignment.confidence >= 0.8
 
@@ -577,19 +562,17 @@ def test_layout_preserves_electrical_groups() -> None:
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
 
-    # All input jacks should be INPUT
+    # The input connector and coupling cap should stay on the input side.
     input_refs = set(layout.components_by_role(BlockRole.INPUT))
-    input_jacks = {c.ref for c in ir.components if c.ref in ("J1", "J2")}
-    assert input_jacks.issubset(input_refs), "J1 and J2 should be INPUT"
+    assert {"J1", "C5"}.issubset(input_refs), "J1 and C5 should stay in INPUT"
 
     # Power jack should be POWER_ENTRY
     power_refs = set(layout.components_by_role(BlockRole.POWER_ENTRY))
     assert "J3" in power_refs, "J3 should be POWER_ENTRY"
 
-    # Output jacks should be OUTPUT
+    # The output jack should remain the terminal output block.
     output_refs = set(layout.components_by_role(BlockRole.OUTPUT))
-    output_jacks = {c.ref for c in ir.components if c.ref in ("J4", "J5")}
-    assert output_jacks.issubset(output_refs), "J4 and J5 should be OUTPUT"
+    assert "J2" in output_refs, "J2 should be OUTPUT"
 
 
 @pytest.mark.skipif(

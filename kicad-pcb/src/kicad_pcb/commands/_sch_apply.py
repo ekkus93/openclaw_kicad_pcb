@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import shutil
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -32,7 +33,7 @@ from ..layout_engine import (
 )
 from ..models import ProjectRef
 from ..pipeline import ValidationMode, mutate_and_validate_sch
-from ..results import ApplyNetlistResult
+from ..results import ApplyNetlistResult, GeneratedSchematicDiagnostics
 from ..router import (
     DEFAULT_LABEL_POLICY,
     DEFAULT_ROUTING_HEURISTIC_POLICY,
@@ -49,10 +50,11 @@ from ..runner import find_kicad_cli
 from ..sch_doc import SchematicDoc, read_lib_symbol_def_flat
 from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
+from ..sexpr.serializer import serialize
 from ..symbol_index import SymbolIndex
 from ..tier import assign_tiers
 from ._project import minimal_schematic_text
-from ._validate import advisory_warnings
+from ._validate import advisory_warnings, raise_for_blocking_advisories
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -113,6 +115,7 @@ def _write_warning_report(  # noqa: PLR0913
     stats: dict[str, int],
     kicad_cli_used: bool,
     symbols_dirs: tuple[str, ...],
+    generated_schematic_diagnostics: GeneratedSchematicDiagnostics | None,
 ) -> Path:
     """Write a deterministic advisory-warning sidecar for a generated project."""
     warning_report_path = project.path / WARNING_REPORT_FILE
@@ -127,11 +130,268 @@ def _write_warning_report(  # noqa: PLR0913
         "kicad_cli_used": kicad_cli_used,
         "symbols_dirs_used": list(symbols_dirs),
         "managed_stats": dict(stats),
+        "generated_schematic_diagnostics": (
+            generated_schematic_diagnostics.as_dict()
+            if generated_schematic_diagnostics is not None
+            else None
+        ),
         "warning_count": len(warnings),
         "warnings": list(warnings),
     }
     warning_report_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return warning_report_path
+
+
+def _format_binding_key(ref: str, pin: str, net_name: str) -> str:
+    return f"{ref}.{pin}@{net_name}"
+
+
+def _hard_failure(
+    code: str,
+    message: str,
+    *,
+    details: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "severity": "hard_fail",
+        "code": code,
+        "message": message,
+        "details": details,
+    }
+
+
+def _record_debug_stage(
+    debug_capture: dict[str, object] | None,
+    stage: str,
+    **details: object,
+) -> None:
+    if debug_capture is None:
+        return
+    stage_markers = cast(
+        list[dict[str, object]],
+        debug_capture.setdefault("pipeline_stage_markers", []),
+    )
+    stage_markers.append({"stage": stage, **details})
+
+
+def validate_generated_schematic(  # noqa: PLR0913
+    *,
+    doc: SchematicDoc,
+    generation_ir: CircuitIR,
+    managed_sch_path: Path,
+    expected_wire_count: int,
+    min_component_placement_ratio: float = MIN_COMPONENT_PLACEMENT_RATIO,
+) -> GeneratedSchematicDiagnostics:
+    """Reparse the generated schematic and enforce hard structural invariants."""
+
+    serialized = serialize(doc.root)
+    try:
+        reparsed_doc = SchematicDoc(cast(ListNode, parse(serialized)))
+    except Exception as exc:
+        failure = _hard_failure(
+            "REPARSE_FAILED",
+            "Generated schematic could not be reparsed by the internal document model.",
+            details={"managed_schematic_path": str(managed_sch_path)},
+        )
+        diagnostics = GeneratedSchematicDiagnostics(
+            symbol_count=0,
+            wire_count=0,
+            label_count=0,
+            global_label_count=0,
+            junction_count=0,
+            binding_marker_count=0,
+            hard_failures=(failure,),
+        )
+        raise UserError(
+            "Generated managed schematic failed reparse validation",
+            code=ErrorCode.PARSE_ERROR,
+            details={
+                "managed_schematic_path": str(managed_sch_path),
+                "generated_schematic_diagnostics": diagnostics.as_dict(),
+            },
+        ) from exc
+
+    expected_refs = sorted(component.ref for component in generation_ir.components)
+    actual_symbol_entries = reparsed_doc.list_symbols()
+    actual_refs = sorted(
+        {
+            ref
+            for entry in actual_symbol_entries
+            if isinstance((ref := entry.get("ref")), str) and ref in expected_refs
+        }
+    )
+    unresolved_refs = tuple(sorted(set(expected_refs) - set(actual_refs)))
+
+    expected_bindings = [
+        (pin.ref, pin.pin, net.name) for net in generation_ir.nets for pin in net.pins
+    ]
+    actual_bindings = [
+        (binding["ref"], binding["pin"], binding["net_name"])
+        for binding in reparsed_doc.extract_pin_label_bindings()
+    ]
+
+    expected_binding_counter = Counter(expected_bindings)
+    actual_binding_counter = Counter(actual_bindings)
+    missing_bindings = tuple(
+        sorted(
+            _format_binding_key(ref, pin, net_name)
+            for (ref, pin, net_name), count in (
+                expected_binding_counter - actual_binding_counter
+            ).items()
+            for _ in range(count)
+        )
+    )
+    unexpected_bindings = tuple(
+        sorted(
+            _format_binding_key(ref, pin, net_name)
+            for (ref, pin, net_name), count in (
+                actual_binding_counter - expected_binding_counter
+            ).items()
+            for _ in range(count)
+        )
+    )
+    duplicate_bindings = tuple(
+        sorted(
+            _format_binding_key(ref, pin, net_name)
+            for (ref, pin, net_name), count in actual_binding_counter.items()
+            if count > expected_binding_counter.get((ref, pin, net_name), 0)
+        )
+    )
+
+    symbol_count = reparsed_doc.count_nodes("symbol")
+    wire_count = reparsed_doc.count_nodes("wire")
+    local_label_count = reparsed_doc.count_nodes("label")
+    global_label_count = reparsed_doc.count_nodes("global_label")
+    label_count = local_label_count + global_label_count
+    junction_count = reparsed_doc.count_nodes("junction")
+    binding_marker_count = len(actual_bindings)
+    expected_components = len(expected_refs)
+    hard_failures: list[dict[str, object]] = []
+
+    if expected_components and symbol_count == 0:
+        hard_failures.append(
+            _hard_failure(
+                "EMPTY_SYMBOL_GRAPH",
+                "Generation produced no schematic symbols for a non-empty design.",
+                details={
+                    "expected_components": expected_components,
+                    "symbol_count": symbol_count,
+                },
+            )
+        )
+
+    if expected_components:
+        min_required = math.ceil(expected_components * min_component_placement_ratio)
+        if symbol_count < min_required:
+            hard_failures.append(
+                _hard_failure(
+                    "INSUFFICIENT_SYMBOLS",
+                    "Generated schematic contains fewer placed symbols than required.",
+                    details={
+                        "expected_components": expected_components,
+                        "symbol_count": symbol_count,
+                        "min_component_placement_ratio": min_component_placement_ratio,
+                        "min_required_symbols": min_required,
+                    },
+                )
+            )
+
+    if expected_wire_count > 0 and wire_count == 0:
+        hard_failures.append(
+            _hard_failure(
+                "MISSING_WIRES",
+                "Generated schematic is missing wires that the router expected to emit.",
+                details={
+                    "expected_wire_count": expected_wire_count,
+                    "wire_count": wire_count,
+                },
+            )
+        )
+
+    if unresolved_refs:
+        hard_failures.append(
+            _hard_failure(
+                "UNRESOLVED_REFS",
+                "Some generated component references are missing from the emitted schematic.",
+                details={"unresolved_refs": list(unresolved_refs)},
+            )
+        )
+
+    if missing_bindings:
+        hard_failures.append(
+            _hard_failure(
+                "MISSING_BINDINGS",
+                "Generated schematic is missing one or more declared net bindings.",
+                details={"missing_bindings": list(missing_bindings)},
+            )
+        )
+
+    if unexpected_bindings:
+        hard_failures.append(
+            _hard_failure(
+                "UNEXPECTED_BINDINGS",
+                "Generated schematic contains unexpected net bindings not declared in the IR.",
+                details={"unexpected_bindings": list(unexpected_bindings)},
+            )
+        )
+
+    if duplicate_bindings:
+        hard_failures.append(
+            _hard_failure(
+                "DUPLICATE_BINDINGS",
+                "Generated schematic contains duplicated pin-to-net bindings.",
+                details={"duplicate_bindings": list(duplicate_bindings)},
+            )
+        )
+
+    if expected_components and binding_marker_count == 0:
+        hard_failures.append(
+            _hard_failure(
+                "PSEUDO_POPULATED_SCHEMATIC",
+                (
+                    "Generated schematic lacks binding markers and does not carry "
+                    "enough structure to be trusted."
+                ),
+                details={
+                    "expected_binding_count": len(expected_bindings),
+                    "binding_marker_count": binding_marker_count,
+                },
+            )
+        )
+
+    diagnostics = GeneratedSchematicDiagnostics(
+        symbol_count=symbol_count,
+        wire_count=wire_count,
+        label_count=label_count,
+        global_label_count=global_label_count,
+        junction_count=junction_count,
+        binding_marker_count=binding_marker_count,
+        unresolved_refs=unresolved_refs,
+        missing_bindings=missing_bindings,
+        unexpected_bindings=unexpected_bindings,
+        duplicate_bindings=duplicate_bindings,
+        hard_failures=tuple(hard_failures),
+    )
+
+    if diagnostics.hard_failures:
+        raise UserError(
+            "Generated managed schematic failed structural validation",
+            code=ErrorCode.EMPTY_GENERATION,
+            details={
+                "managed_schematic_path": str(managed_sch_path),
+                "expected_components": expected_components,
+                "found_symbols": symbol_count,
+                "min_component_placement_ratio": min_component_placement_ratio,
+                "min_required_symbols": (
+                    math.ceil(expected_components * min_component_placement_ratio)
+                    if expected_components
+                    else 0
+                ),
+                "generated_schematic_diagnostics": diagnostics.as_dict(),
+            },
+        )
+
+    return diagnostics
 
 
 # ---------------------------------------------------------------------------
@@ -281,17 +541,29 @@ def _apply_netlist_to_project(
 
     symbol_index = SymbolIndex(symbols_dir=request.symbols_dir)
     validate_ir_symbols(ir, symbol_index)
+    raise_for_blocking_advisories(ir, symbol_index)
     warnings.extend(advisory_warnings(ir, symbol_index))
     generation_ir, placed_symbol_specs = _expand_generation_ir(ir, symbol_index)
     debug_capture: dict[str, object] = {
         "schematic_debug_artifacts": [
             "heuristic_profile_name",
             "label_mode_name",
+            "validated_pipeline_path",
+            "pipeline_stage_markers",
             "unit_splitting",
             "net_classification",
             "final_route_choices",
             "routing_heuristic_policy",
         ],
+        "validated_pipeline_path": {
+            "entrypoint": "apply-netlist",
+            "schema_validation": "CircuitIR.load",
+            "semantic_validation": "validate_circuit_ir",
+            "symbol_pin_validation": "validate_ir_symbols",
+            "schematic_emission": "mutate_and_validate_sch",
+            "post_generation_reparse": "validate_generated_schematic",
+            "artifact_finalize": "warning_report_or_dry_run",
+        },
         "heuristic_profile_name": active_heuristic_profile.name,
         "label_mode_name": active_label_policy.mode_name,
         "unit_splitting": _build_unit_splitting_debug(
@@ -300,6 +572,20 @@ def _apply_netlist_to_project(
             placed_symbol_specs=placed_symbol_specs,
         ),
     }
+    _record_debug_stage(
+        debug_capture,
+        "ir_creation",
+        netlist_path=str(request.netlist_path),
+        component_count=len(ir.components),
+        net_count=len(ir.nets),
+    )
+    _record_debug_stage(
+        debug_capture,
+        "semantic_validation",
+        validator="validate_circuit_ir+validate_ir_symbols",
+        component_count=len(ir.components),
+        net_count=len(ir.nets),
+    )
 
     # Pre-flight: check kicad-cli availability BEFORE touching the filesystem.
     # This prevents a half-initialised project where the root schematic has been
@@ -344,8 +630,16 @@ def _apply_netlist_to_project(
         "junctions": 0,
         "binding_markers": 0,
     }
+    diagnostics_capture: dict[str, GeneratedSchematicDiagnostics] = {}
 
     try:
+        _record_debug_stage(
+            debug_capture,
+            "schematic_emission",
+            managed_schematic_path=str(managed_sch_path),
+            validation_mode=mode.name,
+            dry_run=request.dry_run,
+        )
         mutate_and_validate_sch(
             managed_sch_path,
             _build_managed_mutator(
@@ -361,6 +655,7 @@ def _apply_netlist_to_project(
                 stats=stats,
                 warnings=warnings,
                 managed_sch_path=managed_sch_path,
+                diagnostics_capture=diagnostics_capture,
                 debug_capture=debug_capture,
             ),
             mode=mode,
@@ -393,9 +688,12 @@ def _apply_netlist_to_project(
                 },
             }
         )
-
-    if request.debug_dump_path is not None:
-        _write_schematic_debug_dump(request.debug_dump_path, debug_capture)
+        _record_debug_stage(
+            debug_capture,
+            "artifact_finalize",
+            status="dry_run",
+            managed_schematic_path=str(managed_sch_path),
+        )
 
     warning_report_path: Path | None = None
     if not request.dry_run:
@@ -407,7 +705,18 @@ def _apply_netlist_to_project(
             stats=stats,
             kicad_cli_used=cli is not None,
             symbols_dirs=tuple(str(d) for d in symbol_index.directories),
+            generated_schematic_diagnostics=diagnostics_capture.get("generated_schematic"),
         )
+        _record_debug_stage(
+            debug_capture,
+            "artifact_finalize",
+            status="written",
+            managed_schematic_path=str(managed_sch_path),
+            warning_report_path=str(warning_report_path),
+        )
+
+    if request.debug_dump_path is not None:
+        _write_schematic_debug_dump(request.debug_dump_path, debug_capture)
 
     return ApplyNetlistResult(
         schematic_path=project.sch_file,
@@ -426,6 +735,7 @@ def _apply_netlist_to_project(
         warning_report_path=warning_report_path,
         debug_dump_path=request.debug_dump_path,
         symbols_dirs_used=tuple(str(d) for d in symbol_index.directories),
+        generated_schematic_diagnostics=diagnostics_capture.get("generated_schematic"),
     )
 
 
@@ -448,6 +758,7 @@ def _build_managed_mutator(  # noqa: PLR0913
     stats: dict[str, int],
     warnings: list[dict[str, object]],
     managed_sch_path: Path,
+    diagnostics_capture: dict[str, GeneratedSchematicDiagnostics],
     debug_capture: dict[str, object] | None = None,
 ) -> Callable[[SchematicDoc], None]:
     """Return a ``SchematicDoc`` mutator that reconstructs the managed sheet from *ir*.
@@ -536,57 +847,6 @@ def _build_managed_mutator(  # noqa: PLR0913
             strict=request.strict,
         )
 
-        # Post-mutation AST invariants: a non-empty IR must produce symbols in
-        # the managed sheet. Check the live AST, not the stats counters.
-        found_symbols = len(doc.list_symbols())
-        expected_components = len(generation_ir.components)
-
-        if expected_components and found_symbols == 0:
-            if not request.dry_run:
-                raise UserError(
-                    "Generation produced an empty managed schematic for a non-empty IR",
-                    code=ErrorCode.EMPTY_GENERATION,
-                    details={
-                        "managed_schematic_path": str(managed_sch_path),
-                        "expected_components": expected_components,
-                        "found_symbols": 0,
-                    },
-                )
-            else:
-                warnings.append(
-                    {
-                        "code": ErrorCode.EMPTY_GENERATION,
-                        "message": (
-                            "Dry-run: managed schematic would be empty despite non-empty IR"
-                            f" ({expected_components} component(s) expected)."
-                        ),
-                        "details": {
-                            "expected_components": expected_components,
-                            "found_symbols": 0,
-                            "dry_run": True,
-                        },
-                    }
-                )
-
-        if expected_components:
-            placement_ratio = found_symbols / expected_components
-            if placement_ratio < MIN_COMPONENT_PLACEMENT_RATIO:
-                min_required = int(expected_components * MIN_COMPONENT_PLACEMENT_RATIO)
-                if min_required * 1.0 / expected_components < MIN_COMPONENT_PLACEMENT_RATIO:
-                    min_required += 1
-                raise UserError(
-                    "Generated schematic contains fewer placed symbols than required",
-                    code=ErrorCode.EMPTY_GENERATION,
-                    details={
-                        "managed_schematic_path": str(managed_sch_path),
-                        "expected_components": expected_components,
-                        "found_symbols": found_symbols,
-                        "min_component_placement_ratio": MIN_COMPONENT_PLACEMENT_RATIO,
-                        "min_required_symbols": min_required,
-                        "placement_ratio": round(placement_ratio, 4),
-                    },
-                )
-
         if symbol_defs_missing:
             warnings.append(
                 {
@@ -599,6 +859,20 @@ def _build_managed_mutator(  # noqa: PLR0913
         # Qualify all bare (path "/" …) entries so KiCad can resolve the
         # sub-sheet hierarchy and assign correct reference annotations.
         doc.update_managed_path(sheet_uuid)
+        diagnostics_capture["generated_schematic"] = validate_generated_schematic(
+            doc=doc,
+            generation_ir=generation_ir,
+            managed_sch_path=managed_sch_path,
+            expected_wire_count=len(routing.wires),
+        )
+        _record_debug_stage(
+            debug_capture,
+            "post_generation_reparse",
+            managed_schematic_path=str(managed_sch_path),
+            hard_failure_count=len(diagnostics_capture["generated_schematic"].hard_failures),
+            symbol_count=diagnostics_capture["generated_schematic"].symbol_count,
+            wire_count=diagnostics_capture["generated_schematic"].wire_count,
+        )
 
     return _mutate
 

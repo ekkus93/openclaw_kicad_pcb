@@ -12,7 +12,6 @@
 
     {"ref": "J1", "symbol": "Connector:AudioJack3", "value": "3.5mm TRS IN"},
     {"ref": "C5", "symbol": "Device:C", "value": "1u"},
-    {"ref": "R1", "symbol": "Device:R", "value": "100k"},
     {"ref": "RV1", "symbol": "Device:R_Potentiometer", "value": "10k log"},
 
     {"ref": "R2", "symbol": "Device:R", "value": "20k"},
@@ -60,13 +59,11 @@
 
     {"name": "LEFT_IN", "pins": [
       {"ref": "J1", "pin": "T"},
-      {"ref": "C5", "pin": "1"},
-      {"ref": "R1", "pin": "1"}
+      {"ref": "C5", "pin": "1"}
     ]},
 
     {"name": "IN_L_AC", "pins": [
       {"ref": "C5", "pin": "2"},
-      {"ref": "R1", "pin": "2"},
       {"ref": "RV1", "pin": "1"}
     ]},
 
