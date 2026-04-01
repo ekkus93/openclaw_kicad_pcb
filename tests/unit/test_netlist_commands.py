@@ -477,6 +477,161 @@ def _write_invalid_555_pwm_ir(path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_footprint_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {
+                "ref": "U1",
+                "symbol": "Timer:NE555",
+                "value": "NE555",
+                "footprint": "Package_DIP:DIP-8_W7.62mm",
+            },
+            {
+                "ref": "Q1",
+                "symbol": "Transistor_FET:Q_NMOS_GSD",
+                "value": "AO3400",
+                "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+            },
+            {
+                "ref": "RV1",
+                "symbol": "Device:R_Potentiometer",
+                "value": "100k",
+                "footprint": "Potentiometer_THT:Potentiometer_Bourns_3386P_Vertical",
+            },
+            {
+                "ref": "D1",
+                "symbol": "Device:D",
+                "value": "1N4148",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+            },
+            {
+                "ref": "D2",
+                "symbol": "Device:D",
+                "value": "1N4148",
+                "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+            },
+            {
+                "ref": "R1",
+                "symbol": "Device:R",
+                "value": "1k",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "R2",
+                "symbol": "Device:R",
+                "value": "100",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "R3",
+                "symbol": "Device:R",
+                "value": "100k",
+                "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+            },
+            {
+                "ref": "C1",
+                "symbol": "Device:C",
+                "value": "22nF",
+                "footprint": "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm",
+            },
+            {
+                "ref": "C2",
+                "symbol": "Device:C",
+                "value": "100nF",
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            },
+            {
+                "ref": "C3",
+                "symbol": "Device:C_Polarized",
+                "value": "47uF",
+                "footprint": "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm",
+            },
+            {
+                "ref": "C4",
+                "symbol": "Device:C",
+                "value": "10nF",
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            },
+            {
+                "ref": "J1",
+                "symbol": "Connector_Generic:Conn_01x02",
+                "value": "LOAD",
+                "footprint": "Connector_Generic:Conn_01x02",
+            },
+        ],
+        "nets": [
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "Q1", "pin": "2"},
+                    {"ref": "R3", "pin": "2"},
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "C2", "pin": "2"},
+                    {"ref": "C3", "pin": "2"},
+                    {"ref": "C4", "pin": "2"},
+                ],
+            },
+            {
+                "name": "+12V",
+                "pins": [
+                    {"ref": "U1", "pin": "8"},
+                    {"ref": "U1", "pin": "4"},
+                    {"ref": "R1", "pin": "1"},
+                    {"ref": "C2", "pin": "1"},
+                    {"ref": "C3", "pin": "1"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "TIMING",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "U1", "pin": "6"},
+                    {"ref": "RV1", "pin": "2"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "DISCH",
+                "pins": [
+                    {"ref": "U1", "pin": "7"},
+                    {"ref": "R1", "pin": "2"},
+                    {"ref": "D1", "pin": "1"},
+                    {"ref": "D2", "pin": "2"},
+                ],
+            },
+            {
+                "name": "POT_A",
+                "pins": [{"ref": "RV1", "pin": "1"}, {"ref": "D1", "pin": "2"}],
+            },
+            {
+                "name": "POT_B",
+                "pins": [{"ref": "RV1", "pin": "3"}, {"ref": "D2", "pin": "1"}],
+            },
+            {
+                "name": "CTRL",
+                "pins": [{"ref": "U1", "pin": "5"}, {"ref": "C4", "pin": "1"}],
+            },
+            {
+                "name": "OUT_DRV",
+                "pins": [{"ref": "U1", "pin": "3"}, {"ref": "R2", "pin": "1"}],
+            },
+            {
+                "name": "GATE",
+                "pins": [
+                    {"ref": "R2", "pin": "2"},
+                    {"ref": "Q1", "pin": "1"},
+                    {"ref": "R3", "pin": "1"},
+                ],
+            },
+            {"name": "LED_NEG", "pins": [{"ref": "Q1", "pin": "3"}, {"ref": "J1", "pin": "2"}]},
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def _write_input_bypass_warning_ir(path: Path) -> None:
     payload = {
         "version": "1",
@@ -1157,6 +1312,9 @@ def test_cmd_apply_netlist_surfaces_input_coupling_warning(
     report_codes = {warning["code"] for warning in report["warnings"]}
     assert codes <= report_codes
     assert report["managed_schematic_path"] == str(result.managed_schematic_path)
+    assert report["validation_mode"] == "internal"
+    assert report["generated_schematic_diagnostics"] is not None
+    assert report["generated_schematic_diagnostics"]["symbol_count"] >= 1
 
 
 def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> None:
@@ -2291,6 +2449,23 @@ def test_cmd_validate_netlist_rejects_blocking_555_lints(tmp_path: Path) -> None
         "TIMER555_STEERING_NETWORK_INVALID",
         "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
     } <= blocking_codes
+
+
+def test_cmd_validate_netlist_reports_footprint_quality_warnings(tmp_path: Path) -> None:
+    ir_path = tmp_path / "footprint_warnings.json"
+    _write_footprint_warning_ir(ir_path)
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+    result = cmd_validate_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+        )
+    )
+
+    warning_codes = {warning["code"] for warning in result.warnings}
+    assert "FOOTPRINT_CLASS_MISMATCH" in warning_codes
+    assert "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID" in warning_codes
 
 
 # ---------------------------------------------------------------------------
