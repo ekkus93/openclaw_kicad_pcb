@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T12:54:48Z - GPT-5.4 - Refreshed README framing to describe the current toolkit, not only the legacy skill
+
+- `README.md` now describes the repository as a KiCad project automation toolkit with both CLI and local FastAPI web app workflows, instead of presenting it only as an OpenClaw skill.
+- The feature list now explicitly includes the local web app alongside the existing CLI, validation, and Circuit IR capabilities so the docs match the current shipped surfaces.
+
 ## 2026-05-18T12:37:44Z - GPT-5.4 - Finished the web migration closeout, runtime smoke, and root src layout move
 
 - The repository source layout now lives at `src/kicad_pcb/` and `src/kicad_pcb_web/`; `pyproject.toml`, `scripts/validate.sh`, README quality-gate commands, and the archived legacy wrapper/test references were updated to use the root `src/` tree.

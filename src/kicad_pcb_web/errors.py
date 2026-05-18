@@ -56,9 +56,7 @@ async def handle_user_error(_: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=400, content=user_error_to_payload(exc))
 
 
-async def handle_request_validation_error(
-    _: Request, exc: Exception
-) -> JSONResponse:
+async def handle_request_validation_error(_: Request, exc: Exception) -> JSONResponse:
     """FastAPI exception handler for request validation failures."""
 
     if not isinstance(exc, RequestValidationError):

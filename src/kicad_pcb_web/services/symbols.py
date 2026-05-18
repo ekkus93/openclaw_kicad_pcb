@@ -33,9 +33,7 @@ def search_symbols(
     match_keywords = _keywords(stripped_query)
     cache = SymbolCache()
     directories = (
-        (symbols_dir,)
-        if symbols_dir is not None
-        else resolve_symbol_dirs(symbols_dir=None).dirs
+        (symbols_dir,) if symbols_dir is not None else resolve_symbol_dirs(symbols_dir=None).dirs
     )
     scored: list[tuple[int, SymbolSearchResult]] = []
 

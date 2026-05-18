@@ -1,2 +1,1 @@
 """Preview generation helpers."""
-

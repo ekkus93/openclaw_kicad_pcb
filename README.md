@@ -2,11 +2,12 @@
 
 [![CI](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml/badge.svg)](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml)
 
-KiCad PCB automation skill for [OpenClaw](https://openclaw.ai).
+KiCad project automation toolkit for [OpenClaw](https://openclaw.ai), with both
+a CLI workflow and a local FastAPI web app.
 
-Generates valid KiCad schematic and PCB files using proper S-expression parsing
-and structured document editing, with strong linting/validation and a full
-unit/integration test suite.
+Generates valid KiCad schematic and PCB files using proper S-expression parsing,
+structured document editing, synchronous web job execution, strong
+linting/validation, and a full unit/integration test suite.
 
 ## Features
 
@@ -16,6 +17,7 @@ unit/integration test suite.
 - **Circuit pattern library** — resistor divider, LED+resistor, connector breakout, decoupling cap
 - **Preflight checks** — duplicate refs, net name validation, symbol accessibility, footprint requirements
 - **KiCad CLI integration** — ERC/DRC/export via `kicad-cli` with version compatibility layer
+- **Local web app** — FastAPI + Jinja UI for validating Circuit IR, generating projects, and downloading artifacts
 - **Circuit IR pipeline** — deterministic Spec → IR → KiCad schematic generation (`new-from-netlist`, `apply-netlist`)
 - **JSON output** — all commands support `--json` for machine-friendly automation
 - **Dry-run mode** — validate without committing (`--dry-run`)

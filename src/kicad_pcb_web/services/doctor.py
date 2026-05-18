@@ -45,9 +45,7 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
             name="python",
             ok=sys.version_info >= (3, 11),
             detail=(
-                f"Python {sys.version_info.major}."
-                f"{sys.version_info.minor}."
-                f"{sys.version_info.micro}"
+                f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
             ),
         ),
         DoctorCheck(
