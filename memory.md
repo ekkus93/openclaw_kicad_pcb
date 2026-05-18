@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T13:24:14Z - GPT-5.4 - Captured the open questions from the web app review-fix spec/TODO in a handoff doc
+
+- Added `docs/responses1.md` as a copy-pasteable handoff summarizing the validated review findings plus the open decisions that still need clarification before implementing the next fix pass.
+- The main unresolved conflicts recorded there are whether `artifacts/job.json` should remain public versus becoming private, whether the Phase 7 regression-threshold changes should be reverted or explicitly justified, whether the new review docs should move to repo root, and how strongly the README should state the web app is LLM-free and OpenClaw-independent.
+
 ## 2026-05-18T12:54:48Z - GPT-5.4 - Refreshed README framing to describe the current toolkit, not only the legacy skill
 
 - `README.md` now describes the repository as a KiCad project automation toolkit with both CLI and local FastAPI web app workflows, instead of presenting it only as an OpenClaw skill.
