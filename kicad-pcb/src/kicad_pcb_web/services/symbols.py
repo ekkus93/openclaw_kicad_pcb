@@ -1,0 +1,2 @@
+"""KiCad symbol search services."""
+

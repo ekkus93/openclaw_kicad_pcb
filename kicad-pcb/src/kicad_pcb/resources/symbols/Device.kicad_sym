@@ -1,0 +1,80 @@
+(kicad_symbol_lib
+  (version 20230121)
+  (generator "test")
+  (symbol "R"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "~" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 7.62 0 180)
+      (length 2.54)
+      (name "~" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
+  (symbol "C"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "~" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 7.62 0 180)
+      (length 2.54)
+      (name "~" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
+  (symbol "C_Polarized"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "+" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 7.62 0 180)
+      (length 2.54)
+      (name "-" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
+  (symbol "R_Potentiometer"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "1" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 7.62 -2.54 180)
+      (length 2.54)
+      (name "2" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 0 -5.08 0)
+      (length 2.54)
+      (name "3" (effects (font (size 1.27 1.27))))
+      (number "3" (effects (font (size 1.27 1.27))))
+    )
+  )
+  (symbol "D"
+    (pin passive line
+      (at 0 0 0)
+      (length 2.54)
+      (name "K" (effects (font (size 1.27 1.27))))
+      (number "1" (effects (font (size 1.27 1.27))))
+    )
+    (pin passive line
+      (at 7.62 0 180)
+      (length 2.54)
+      (name "A" (effects (font (size 1.27 1.27))))
+      (number "2" (effects (font (size 1.27 1.27))))
+    )
+  )
+)

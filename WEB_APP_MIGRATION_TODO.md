@@ -10,7 +10,11 @@ The implementation must preserve the existing `kicad_pcb` engine and add a new `
 
 ## Task 0: Create and verify the git branch
 
+Status: DONE
+
 ### 0.1 Check the current git state
+
+Status: DONE
 
 Run:
 
@@ -37,6 +41,8 @@ git stash push -u -m "pre-webapp-migration"
 
 ### 0.2 Start from the main development branch
 
+Status: DONE
+
 Run one of these depending on the repository's actual default branch:
 
 ```bash
@@ -59,6 +65,8 @@ If there is no remote or no upstream, do not force anything. Continue from the l
 
 ### 0.3 Create the new branch
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -72,6 +80,8 @@ git checkout webapp
 ```
 
 ### 0.4 Confirm branch
+
+Status: DONE
 
 Run:
 
@@ -91,7 +101,11 @@ Do not proceed unless the current branch is `webapp`.
 
 ## Task 1: Add the migration documents to the repo
 
+Status: DONE
+
 ### 1.1 Copy these files into the repository root
+
+Status: DONE
 
 Add:
 
@@ -111,6 +125,8 @@ memory.md
 
 ### 1.2 Commit the planning docs
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -122,9 +138,13 @@ git commit -m "Add web app migration spec and TODO"
 
 ## Task 2: Decide the directory migration mode
 
+Status: DONE
+
 Use the low-risk mode first.
 
 ### 2.1 Keep the existing core package location for the first implementation
+
+Status: DONE
 
 Do not move this yet:
 
@@ -148,6 +168,8 @@ kicad-pcb/src/
 
 ### 2.2 Do not delete OpenClaw files yet
 
+Status: DONE
+
 Keep these during the first working web app implementation:
 
 ```text
@@ -160,6 +182,8 @@ kicad-pcb/scripts/kicad_pcb.py
 Reason: deleting or moving them early makes the diff noisy and risks breaking existing CLI/skill assumptions before the web path is proven.
 
 ### 2.3 Add a later cleanup task for optional root `src/` layout
+
+Status: DONE
 
 Do not perform this task until the FastAPI app and tests work.
 
@@ -190,7 +214,11 @@ If this optional move is done, also update imports/tests/scripts as needed and r
 
 ## Task 3: Update `pyproject.toml` for web dependencies
 
+Status: DONE
+
 ### 3.1 Add a `web` optional dependency group
+
+Status: DONE
 
 In `pyproject.toml`, keep the existing core dependency:
 
@@ -227,6 +255,8 @@ If FastAPI test support requires it in this environment, add `httpx` to `dev`:
 
 ### 3.2 Rename project metadata away from OpenClaw-only wording
 
+Status: DONE
+
 Change:
 
 ```toml
@@ -245,6 +275,8 @@ Do not rename the Python import package `kicad_pcb`.
 
 ### 3.3 Verify dependency installation
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -261,7 +293,11 @@ uv run python -c "import fastapi, jinja2; print('web deps ok')"
 
 ## Task 4: Create the `kicad_pcb_web` package skeleton
 
+Status: DONE
+
 ### 4.1 Create directories
+
+Status: DONE
 
 Run:
 
@@ -273,6 +309,8 @@ mkdir -p kicad-pcb/src/kicad_pcb_web/static
 ```
 
 ### 4.2 Create Python package files
+
+Status: DONE
 
 Create:
 
@@ -300,6 +338,8 @@ kicad-pcb/src/kicad_pcb_web/routes/api_doctor.py
 
 ### 4.3 Create template/static files
 
+Status: DONE
+
 Create:
 
 ```text
@@ -314,7 +354,11 @@ kicad-pcb/src/kicad_pcb_web/static/app.js
 
 ## Task 5: Implement web app settings
 
+Status: DONE
+
 ### 5.1 Implement `settings.py`
+
+Status: DONE
 
 Create a simple settings dataclass. Do not add `pydantic-settings` in v1 unless needed.
 
@@ -345,6 +389,8 @@ def load_settings() -> WebSettings:
 
 ### 5.2 Add `.gitignore` entries
 
+Status: DONE
+
 Ensure generated web data is ignored:
 
 ```gitignore
@@ -357,7 +403,11 @@ If the repo already ignores data/build folders, verify this case is covered.
 
 ## Task 6: Implement Pydantic web schemas
 
+Status: DONE
+
 ### 6.1 Implement `schemas.py`
+
+Status: DONE
 
 Add request and response models for:
 
@@ -375,6 +425,8 @@ ErrorResponse
 
 ### 6.2 Project name validation
 
+Status: DONE
+
 In `CreateJobFromNetlistRequest`, require:
 
 - Non-empty project name.
@@ -385,13 +437,19 @@ The service layer must still sanitize the name before writing directories.
 
 ### 6.3 Avoid raw Path objects in API responses
 
+Status: DONE
+
 Convert paths to strings, preferably paths relative to the job directory where possible.
 
 ---
 
 ## Task 7: Implement structured web error handling
 
+Status: DONE
+
 ### 7.1 Implement `errors.py`
+
+Status: DONE
 
 Map existing `kicad_pcb.errors.UserError` to HTTP 400.
 
@@ -411,6 +469,8 @@ def user_error_to_payload(exc: UserError) -> dict[str, object]:
 
 ### 7.2 Register exception handlers in `main.py`
 
+Status: DONE
+
 FastAPI app must register handlers for:
 
 ```text
@@ -425,7 +485,11 @@ Unexpected exceptions should produce a generic JSON response and should not expo
 
 ## Task 8: Implement the FastAPI app entrypoint
 
+Status: DONE
+
 ### 8.1 Implement `main.py`
+
+Status: DONE
 
 Required behavior:
 
@@ -455,6 +519,8 @@ app.include_router(api_jobs.router, prefix="/api")
 
 ### 8.2 Verify import
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -471,7 +537,11 @@ KiCad PCB Web App
 
 ## Task 9: Implement job workspace service
 
+Status: IN PROGRESS
+
 ### 9.1 Implement `services/jobs.py`
+
+Status: IN PROGRESS
 
 Required functions:
 
@@ -487,6 +557,8 @@ def update_job_status(...): ...
 
 ### 9.2 Required job directory layout
 
+Status: PENDING
+
 For every job:
 
 ```text
@@ -497,6 +569,8 @@ data/jobs/<job_id>/job.json
 ```
 
 ### 9.3 Required job statuses
+
+Status: PENDING
 
 Use only:
 
@@ -509,6 +583,8 @@ cancelled
 ```
 
 ### 9.4 Path safety
+
+Status: PENDING
 
 Reject any `job_id` containing:
 

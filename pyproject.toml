@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kicad-pcb-skill"
+name = "kicad-pcb-webapp"
 version = "0.1.0"
-description = "KiCad PCB automation skill for OpenClaw"
+description = "Python web app for generating KiCad projects from Circuit IR"
 license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.11"
 dependencies = [
@@ -19,6 +19,13 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4",
     "mypy>=1.10",
+    "httpx>=0.27",
+]
+web = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
 ]
 
 [tool.pytest.ini_options]

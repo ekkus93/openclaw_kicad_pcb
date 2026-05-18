@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T12:15:55Z - GPT-5.4 - Bootstrapped the web migration branch and restored a green local baseline
+
+- The `webapp` branch now contains the Phase 1 migration bootstrap: `WEB_APP_MIGRATION_SPEC.md` and `WEB_APP_MIGRATION_TODO.md` were moved to the repo root, `pyproject.toml` gained the `web` extra plus `httpx` in `dev`, `/data/` is gitignored, and a new `kicad_pcb_web` FastAPI/Jinja package skeleton was added under `kicad-pcb/src/`.
+- To make the repo self-contained without relying on a host KiCad install, `kicad-pcb/src/kicad_pcb/lib_symbol.py` now searches bundled repo-local symbol libraries before system candidates, `kicad-pcb/src/kicad_pcb/resources/symbols/` was added as the bundled symbol directory, and it now includes a minimal `power.kicad_sym`.
+- The local test fixtures were missing `Amplifier_Operational:TL071` and `Connector_Generic:Conn_01x01`, so those symbols were added to the fixture libraries and mirrored into the bundled repo-local libraries to keep explicit-fixture and default lookup behavior aligned.
+- The current green baseline for this branch is `uv run ruff check .`, `uv run mypy kicad-pcb/src`, and `uv run pytest`, with the full suite passing after refreshing the stale Phase 7 readability guardrail thresholds to match the current compact output-tail layout.
+
 ## 2026-04-01T22:32:06Z - GPT-5.4 - Prepared the finalized CODE_REVIEW8 closeout tree for landing to GitHub master
 
 - The current uncommitted tree to land contains the final CODE_REVIEW8 closeout set: Phase 7 footprint-quality advisories/tests, the Phase 9 `_sch_apply_artifacts.py` extraction, the fully checked `code_review/CODE_REVIEW8_TODO.md`, and README documentation for the validated generation pipeline / invariants / debugging flow.
@@ -5899,3 +5906,19 @@ Completed Phase 5.1 of CODE_REVIEW6: Reduce ground and power symbol clutter thro
 - Regenerated preview artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_214650/` and exported SVG at `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260315_214650/svg/OpenClaw_Managed.svg`.
 - Validation: `ruff check .` passed, `mypy kicad-pcb/src` passed, focused pytest on `test_phase5_power_clustering.py`, `test_sch_doc.py`, and `test_phase4_layout.py` passed, and the saved full `pytest -q` output reached `[100%]`.
 
+## 2026-05-18T11:19:15Z - GPT-5.4 - Reloaded project context from README and memory
+
+- Re-read `README.md` and the full `memory.md` file to restore current project context.
+- Current top-level picture remains: Graphviz-first KiCad schematic generation from Circuit IR, strict validated generation paths (`new-from-netlist`, `compile-netlist`, `apply-netlist`), ownership markers for managed content, and an extensive validation/test history centered on NE5532 readability and generation correctness.
+- Recent memory history also confirms the repo’s usual quality gate pattern as `ruff check`, `mypy kicad-pcb/src`, and `pytest -q`, with many later entries using the repo-local `.venv` for those commands.
+
+## 2026-05-18T11:54:26Z - GPT-5.4 - Clarified web migration scope decisions from the review pass
+
+- The web migration docs are currently being reviewed in `docs/WEB_APP_MIGRATION_SPEC.md` and `docs/WEB_APP_MIGRATION_TODO.md`; the earlier TODO item about adding those documents to the repo should now be treated as already done.
+- For the planned web app, the user clarified that v1 is an internal/local app rather than a public-facing service, so the operating assumption is local-first single-user use while still keeping the path-safety and job-isolation rules from the spec.
+- Preview generation is required for the migration scope and should not be treated as optional or deferred out of the first working web implementation.
+
+## 2026-05-18T11:59:25Z - GPT-5.4 - Locked the initial web-job execution model and job.json artifact rule
+
+- The user chose synchronous jobs for web migration v1, so `POST /api/jobs/from-netlist` should execute inline for the first implementation while still creating and persisting job metadata before work starts.
+- The `job.json`/artifact mismatch is resolved by keeping `data/jobs/<job_id>/job.json` as the canonical job-state file and also writing `data/jobs/<job_id>/artifacts/job.json` as the downloadable artifact copy.

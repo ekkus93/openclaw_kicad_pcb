@@ -21,6 +21,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
+from .config import SYMBOLS_CANDIDATES
 from .errors import ErrorCode, ParseError, UserError
 from .sexpr.builder import string
 from .sexpr.nodes import NO_POS, AtomNode, ListNode, Node, StringNode
@@ -42,6 +43,30 @@ __all__ = [
 # ``symbols_dir`` parameter on the public functions to point at a custom
 # location.
 _DEFAULT_SYMBOLS_DIR: Path = Path("/usr/share/kicad/symbols")
+_REPO_LOCAL_SYMBOLS_DIR: Path = Path(__file__).resolve().parent / "resources" / "symbols"
+
+
+def _iter_symbol_dirs(symbols_dir: Path | None) -> tuple[Path, ...]:
+    """Return symbol-library search directories in precedence order."""
+    if symbols_dir is not None:
+        return (symbols_dir,)
+
+    ordered: list[Path] = []
+    if _REPO_LOCAL_SYMBOLS_DIR.is_dir():
+        ordered.append(_REPO_LOCAL_SYMBOLS_DIR)
+
+    for candidate in (_DEFAULT_SYMBOLS_DIR, *SYMBOLS_CANDIDATES):
+        if candidate.is_dir():
+            ordered.append(candidate)
+
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for path in ordered:
+        resolved = path.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+            deduped.append(resolved)
+    return tuple(deduped)
 
 
 @lru_cache(maxsize=64)
@@ -227,10 +252,13 @@ def _resolve_sym_chain(
       termination.  Callers that require the full chain should reject
       ``complete=False`` results.
     """
-    if symbols_dir is None:
-        symbols_dir = _DEFAULT_SYMBOLS_DIR
-    lib_file = symbols_dir / f"{lib_name}.kicad_sym"
-    if not lib_file.exists():
+    lib_file: Path | None = None
+    for candidate_dir in _iter_symbol_dirs(symbols_dir):
+        candidate_file = candidate_dir / f"{lib_name}.kicad_sym"
+        if candidate_file.exists():
+            lib_file = candidate_file
+            break
+    if lib_file is None:
         return None
     try:
         lib_root = _parse_lib_file(lib_file)
