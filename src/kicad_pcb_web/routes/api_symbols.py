@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/symbols/search", response_model=SymbolSearchResponse)
 def symbol_search(
-    q: str = Query(..., min_length=1),
+    q: str = Query(""),
     limit: int = Query(20, ge=1, le=100),
     symbols_dir: str | None = None,
 ) -> SymbolSearchResponse:

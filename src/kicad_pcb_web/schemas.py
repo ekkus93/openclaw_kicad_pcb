@@ -32,7 +32,7 @@ class CreateJobFromNetlistRequest(BaseModel):
     project_name: str
     netlist_json: dict[str, Any]
     symbols_dir: str | None = None
-    validation: str = "kicad"
+    validation: str = "internal"
     layout: str | None = None
     routing: str | None = None
     heuristic_profile: str | None = None

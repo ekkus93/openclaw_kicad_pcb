@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 import tempfile
 from pathlib import Path
@@ -15,15 +16,17 @@ from kicad_pcb.commands._validate import (
     full_validate,
     raise_for_blocking_advisories,
 )
-from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.errors import ErrorCode, KiCadError, UserError
 from kicad_pcb.ir.autofix import autofix_circuit_ir
 from kicad_pcb.symbol_index import SymbolIndex
 
-from ..errors import unexpected_error_to_payload, user_error_to_payload
+from ..errors import kicad_error_to_payload, unexpected_error_to_payload
 from ..schemas import CreateJobFromNetlistRequest, JobDetail, ValidateNetlistResponse
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
 from .jobs import JobRecord, create_job_workspace, update_job_status, write_job
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -212,11 +215,12 @@ def generate_project_from_netlist_job(
         }
         record = update_job_status(record, status="succeeded", result=result_payload, error=None)
         return record.to_detail(artifacts=list_artifacts(record.work_dir))
-    except UserError as exc:
-        error_payload = cast(dict[str, Any], user_error_to_payload(exc)["error"])
+    except KiCadError as exc:
+        error_payload = cast(dict[str, Any], kicad_error_to_payload(exc)["error"])
         record = update_job_status(record, status="failed", error=error_payload, result=None)
         return record.to_detail(artifacts=list_artifacts(record.work_dir))
     except Exception:
+        LOGGER.exception("Unexpected web job failure for %s", record.id)
         error_payload = cast(dict[str, Any], unexpected_error_to_payload()["error"])
         record = update_job_status(record, status="failed", error=error_payload, result=None)
         write_job(record)

@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T13:36:17Z - GPT-5.4 - Completed the backend review-fix phase for web errors, artifact privacy, and package data
+
+- `WEB_APP_CODE_REVIEW_FIX_SPEC.md` and `WEB_APP_CODE_REVIEW_FIX_TODO.md` were moved to the repo root, and the review TODO now marks Tasks 0 through 5 as complete with backend-related test coverage underway under Task 11.
+- The web layer now preserves structured `KiCadError` payloads (including `ToolError`) instead of collapsing them into `INTERNAL_SERVER_ERROR`, and job generation records failed domain/tool errors as structured failed-job payloads while logging only truly unexpected exceptions server-side.
+- Web job creation now defaults to `validation="internal"`, empty symbol search is handled as a structured HTTP 400 domain error, and private `data/jobs/<job_id>/job.json` is no longer copied into `artifacts/` or exposed by artifact listing/download routes.
+- `pyproject.toml` now includes bundled `resources/symbols/*.kicad_sym` as package data, and new regression tests cover structured tool errors, artifact privacy, empty symbol search, package resource visibility, and the internal-validation default.
+
 ## 2026-05-18T13:24:14Z - GPT-5.4 - Captured the open questions from the web app review-fix spec/TODO in a handoff doc
 
 - Added `docs/responses1.md` as a copy-pasteable handoff summarizing the validated review findings plus the open decisions that still need clarification before implementing the next fix pass.

@@ -10,11 +10,11 @@ The current branch already contains the initial FastAPI web app migration. Do **
 
 ## Task 0: Confirm branch and baseline
 
-Status: TODO
+Status: DONE
 
 ### 0.1 Confirm current branch
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -36,7 +36,7 @@ git checkout webapp
 
 ### 0.2 Check current working tree
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -53,7 +53,7 @@ If there are unrelated local changes, commit or stash them before continuing.
 
 ### 0.3 Run baseline web tests
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -74,11 +74,11 @@ Do not start this patch until you know whether the current web tests are passing
 
 ## Task 1: Fix structured KiCad/domain error handling
 
-Status: TODO
+Status: DONE
 
 ### 1.1 Inspect existing error classes
 
-Status: TODO
+Status: DONE
 
 Inspect:
 
@@ -101,7 +101,7 @@ Do not guess field names. Use the real classes.
 
 ### 1.2 Add a generic KiCad error payload helper
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -135,7 +135,7 @@ Requirements:
 
 ### 1.3 Keep `UserError` mapping compatible
 
-Status: TODO
+Status: DONE
 
 If `user_error_to_payload()` already exists, keep it working.
 
@@ -143,7 +143,7 @@ It is acceptable for `user_error_to_payload()` to call the broader `kicad_error_
 
 ### 1.4 Register a `KiCadError` exception handler
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -167,7 +167,7 @@ Prefer consistency with the existing error model.
 
 ### 1.5 Handle `KiCadError` in job generation
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -186,7 +186,7 @@ Required behavior:
 
 ### 1.6 Log unexpected exceptions
 
-Status: TODO
+Status: DONE
 
 If unexpected exceptions are converted to failed jobs, log them server-side using Python logging.
 
@@ -196,11 +196,11 @@ Do not expose tracebacks in API responses.
 
 ## Task 2: Change web default validation to internal
 
-Status: TODO
+Status: DONE
 
 ### 2.1 Update request schema default
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -224,7 +224,7 @@ Only do this for the web request schema. Do not change CLI defaults unless expli
 
 ### 2.2 Verify browser UI behavior
 
-Status: TODO
+Status: DONE
 
 Inspect:
 
@@ -242,7 +242,7 @@ Avoid inconsistent UI/API defaults.
 
 ### 2.3 Optional: add visible validation mode control
 
-Status: TODO
+Status: SKIPPED
 
 If adding a validation mode selector is simple and low risk, add one with options:
 
@@ -260,11 +260,11 @@ Do not add this if it expands the patch too much.
 
 ## Task 3: Stop exposing private `job.json` as an artifact
 
-Status: TODO
+Status: DONE
 
 ### 3.1 Find where `job.json` is copied or written into artifacts
 
-Status: TODO
+Status: DONE
 
 Inspect:
 
@@ -284,7 +284,7 @@ or includes `job.json` in public artifact lists.
 
 ### 3.2 Remove public artifact copy
 
-Status: TODO
+Status: DONE
 
 Keep private metadata here:
 
@@ -300,7 +300,7 @@ data/jobs/<job_id>/artifacts/job.json
 
 ### 3.3 Ensure artifact listing excludes private metadata
 
-Status: TODO
+Status: DONE
 
 Update artifact listing logic so `job.json` is not returned as an artifact.
 
@@ -315,7 +315,7 @@ job_summary.json, only if intentionally sanitized
 
 ### 3.4 Optional: create sanitized `job_summary.json`
 
-Status: TODO
+Status: SKIPPED
 
 Only if needed, create:
 
@@ -344,7 +344,7 @@ warnings_count
 
 ### 3.5 Verify direct download behavior
 
-Status: TODO
+Status: DONE
 
 After the fix:
 
@@ -358,11 +358,11 @@ must return 404 unless there is an intentional sanitized public artifact with th
 
 ## Task 4: Add package-data config for bundled symbols
 
-Status: TODO
+Status: DONE
 
 ### 4.1 Confirm bundled symbol path
 
-Status: TODO
+Status: DONE
 
 Inspect:
 
@@ -378,7 +378,7 @@ Confirm the actual files and extensions, especially:
 
 ### 4.2 Update `pyproject.toml`
 
-Status: TODO
+Status: DONE
 
 Add package-data configuration.
 
@@ -393,7 +393,7 @@ If there is already package-data configuration, merge this into it without delet
 
 ### 4.3 Verify importlib resources can see bundled symbols
 
-Status: TODO
+Status: DONE
 
 Add a unit test or simple runtime check using `importlib.resources`.
 
@@ -414,11 +414,11 @@ Adjust for the actual package resource structure.
 
 ## Task 5: Fix empty symbol search response code
 
-Status: TODO
+Status: DONE
 
 ### 5.1 Update route validation
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -442,7 +442,7 @@ q: str = Query("")
 
 ### 5.2 Validate in service layer
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -463,7 +463,7 @@ Use the actual `UserError` constructor signature from the core package.
 
 ### 5.3 Add or update test
 
-Status: TODO
+Status: DONE
 
 Add a web test:
 
@@ -771,11 +771,11 @@ If not empty, leave it and document why.
 
 ## Task 11: Add web regression tests for this patch
 
-Status: TODO
+Status: IN PROGRESS
 
 ### 11.1 Add `test_web_error_handling.py`
 
-Status: TODO
+Status: DONE
 
 Create:
 
@@ -793,7 +793,7 @@ Use monkeypatching where needed to simulate a `ToolError` without relying on the
 
 ### 11.2 Add `test_web_artifact_privacy.py`
 
-Status: TODO
+Status: DONE
 
 Create or update:
 
@@ -810,7 +810,7 @@ Test:
 
 ### 11.3 Update symbol search tests
 
-Status: TODO
+Status: DONE
 
 Update:
 
@@ -826,7 +826,7 @@ GET /api/symbols/search?q= returns 400
 
 ### 11.4 Add package resource test
 
-Status: TODO
+Status: DONE
 
 Create or update:
 
@@ -1013,7 +1013,7 @@ resistor search returns results or a valid empty result set
 
 ## Task 14: Update migration documents status
 
-Status: TODO
+Status: IN PROGRESS
 
 ### 14.1 Do not mark old TODO as fully correct without fixes
 
@@ -1023,7 +1023,7 @@ Do not edit `WEB_APP_MIGRATION_TODO.md` to claim everything was correct unless t
 
 ### 14.2 Add this review-fix TODO to the repo root
 
-Status: TODO
+Status: DONE
 
 Ensure this file exists at repo root:
 
@@ -1033,7 +1033,7 @@ WEB_APP_CODE_REVIEW_FIX_TODO.md
 
 ### 14.3 Add this review-fix spec to the repo root
 
-Status: TODO
+Status: DONE
 
 Ensure this file exists at repo root:
 

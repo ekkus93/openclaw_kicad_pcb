@@ -94,12 +94,6 @@ class JobRecord:
 
         return self.work_dir / "job.json"
 
-    @property
-    def artifacts_job_json_path(self) -> Path:
-        """Return the downloadable job-state copy path."""
-
-        return self.artifacts_dir / "job.json"
-
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable record."""
 
@@ -165,12 +159,10 @@ class JobRecord:
 
 
 def write_job(record: JobRecord) -> None:
-    """Persist the canonical and artifact-copy job state files."""
+    """Persist the canonical private job-state file."""
 
     payload = json.dumps(record.to_dict(), indent=2, sort_keys=True)
     record.job_json_path.write_text(payload, encoding="utf-8")
-    record.artifacts_dir.mkdir(parents=True, exist_ok=True)
-    record.artifacts_job_json_path.write_text(payload, encoding="utf-8")
 
 
 def create_job_workspace(

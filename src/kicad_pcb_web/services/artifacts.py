@@ -8,6 +8,7 @@ from pathlib import Path
 from kicad_pcb.errors import ErrorCode, UserError
 
 _UNSAFE_ARTIFACT_PARTS = ("..", "/", "\\")
+_PRIVATE_ARTIFACT_NAMES = frozenset({"job.json"})
 
 
 def list_artifacts(job_dir: Path) -> list[str]:
@@ -16,12 +17,18 @@ def list_artifacts(job_dir: Path) -> list[str]:
     artifacts_dir = job_dir / "artifacts"
     if not artifacts_dir.is_dir():
         return []
-    return sorted(path.name for path in artifacts_dir.iterdir() if path.is_file())
+    return sorted(
+        path.name
+        for path in artifacts_dir.iterdir()
+        if path.is_file() and path.name not in _PRIVATE_ARTIFACT_NAMES
+    )
 
 
 def resolve_artifact_path(job_dir: Path, artifact_name: str) -> Path:
     """Resolve a safe artifact path under ``job_dir/artifacts``."""
 
+    if artifact_name in _PRIVATE_ARTIFACT_NAMES:
+        raise FileNotFoundError(artifact_name)
     if not artifact_name or any(part in artifact_name for part in _UNSAFE_ARTIFACT_PARTS):
         raise UserError(
             f"Unsafe artifact name: {artifact_name!r}",
