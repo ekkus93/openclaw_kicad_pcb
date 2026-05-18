@@ -1,13 +1,21 @@
-# openclaw_kicad_pcb
+# KiCad PCB Web App
 
 [![CI](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml/badge.svg)](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml)
 
-KiCad project automation toolkit for [OpenClaw](https://openclaw.ai), with both
-a CLI workflow and a local FastAPI web app.
+This branch provides a Python FastAPI web app for deterministic KiCad project
+generation from Circuit IR JSON.
 
-Generates valid KiCad schematic and PCB files using proper S-expression parsing,
-structured document editing, synchronous web job execution, strong
-linting/validation, and a full unit/integration test suite.
+The web app does not require OpenClaw, an LLM, an agent runtime, or any
+external AI service. Users provide explicit Circuit IR JSON, and the app
+validates it, generates KiCad project files, and exposes curated downloadable
+artifacts.
+
+The previous OpenClaw skill files are archived under
+`legacy/openclaw-skill/` for reference only.
+
+The repository still includes the underlying deterministic KiCad generation
+engine, an archived CLI workflow, strong linting/validation, and a full
+unit/integration test suite.
 
 ## Features
 
@@ -22,7 +30,7 @@ linting/validation, and a full unit/integration test suite.
 - **JSON output** — all commands support `--json` for machine-friendly automation
 - **Dry-run mode** — validate without committing (`--dry-run`)
 
-## Quick start
+## Archived CLI quick start
 
 ```bash
 pip install -e ".[dev]"
@@ -57,6 +65,7 @@ Default runtime settings:
 - Port: `8000`
 - Data dir: `./data`
 - Jobs dir: `./data/jobs`
+- Default validation mode for web job generation: `internal`
 
 Override the data directory with:
 
@@ -70,9 +79,13 @@ Generated web jobs are stored under:
 data/jobs/<job_id>/
 ```
 
-Each job keeps its input, generated project, job state, and downloadable artifacts
-inside that directory. The web UI and API expose artifact downloads from the job's
-`artifacts/` directory.
+Each job keeps its input, generated project, private canonical job metadata, and
+downloadable artifacts inside that directory. The web UI and API expose curated
+artifact downloads from the job's `artifacts/` directory.
+
+The web app defaults to `internal` validation for job generation. Optional KiCad
+CLI validation is available only when `kicad-cli` is installed and a request
+explicitly asks for `validation="kicad"`.
 
 The web app binds to `127.0.0.1` by default and is intended for local/internal use
 in v1. Do not expose it publicly without adding authentication, isolation, and
@@ -80,14 +93,19 @@ additional sandboxing around user-supplied netlists and generated artifacts.
 
 ## Circuit IR pipeline
 
-The skill supports a **compiler-style pipeline** for LLM-driven circuit generation:
+Circuit IR JSON is the canonical input format for both the web app and the
+archived CLI workflow:
 
 ```
-LLM output (Spec) → Circuit IR JSON → KiCad .kicad_sch
+Circuit IR JSON → KiCad .kicad_sch
 ```
 
-An LLM never draws wires by XY coordinates — it outputs a **Circuit IR JSON** file describing
-components and net connections. The tool compiles this into a deterministic KiCad schematic.
+The web app does not depend on any LLM integration. Historical OpenClaw or
+LLM-assisted workflows may still target this same Circuit IR format, but they
+are optional and external to the web app itself.
+
+Users provide a **Circuit IR JSON** file describing components and net
+connections. The deterministic engine compiles that IR into a KiCad schematic.
 
 ### Minimal Circuit IR example
 

@@ -36,6 +36,11 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.panel-note {
+  margin-bottom: 0;
+  margin-top: 1rem;
+}
+
 .grid {
   display: grid;
   gap: 1rem;
@@ -116,6 +121,16 @@ button:hover {
   margin: 0;
   overflow-x: auto;
   white-space: pre-wrap;
+}
+
+details {
+  margin-top: 0.75rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .job-list {

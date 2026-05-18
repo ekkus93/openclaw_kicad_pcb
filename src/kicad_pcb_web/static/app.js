@@ -17,6 +17,40 @@ function renderMessage(target, message, cssClass) {
   target.innerHTML = "<div class=\"" + cssClass + "\">" + escapeHtml(message) + "</div>";
 }
 
+function artifactUrl(jobId, artifactName) {
+  return "/api/jobs/" + encodeURIComponent(jobId) + "/artifacts/" + encodeURIComponent(artifactName);
+}
+
+function renderArtifactLinks(jobId, artifacts) {
+  if (!artifacts || artifacts.length === 0) {
+    return "<p class=\"muted\">No artifacts available yet.</p>";
+  }
+  const items = artifacts.map(
+    (artifact) =>
+      "<li><a href=\"" +
+      artifactUrl(jobId, artifact) +
+      "\">" +
+      escapeHtml(artifact) +
+      "</a></li>",
+  );
+  return "<ul class=\"job-list\">" + items.join("") + "</ul>";
+}
+
+function renderGenerateResult(target, payload) {
+  const jobLink =
+    "<p><a href=\"/jobs/" + encodeURIComponent(payload.id) + "\">Open job detail page</a></p>";
+  const summary =
+    "<p><strong>Status:</strong> " +
+    escapeHtml(payload.status) +
+    "</p><h3>Artifacts</h3>" +
+    renderArtifactLinks(payload.id, payload.artifacts || []);
+  const rawJson =
+    "<details><summary>Raw response JSON</summary><pre class=\"json-block\">" +
+    escapeHtml(JSON.stringify(payload, null, 2)) +
+    "</pre></details>";
+  target.innerHTML = jobLink + summary + rawJson;
+}
+
 function getParsedNetlist() {
   const textarea = document.getElementById("netlist-json");
   if (!textarea) {
@@ -123,10 +157,7 @@ function bindGenerate() {
           validation: "internal",
         }),
       });
-      const jobLink =
-        "<p><a href=\"/jobs/" + escapeHtml(payload.id) + "\">Open job detail page</a></p>";
-      results.innerHTML =
-        jobLink + "<pre class=\"json-block\">" + escapeHtml(JSON.stringify(payload, null, 2)) + "</pre>";
+      renderGenerateResult(results, payload);
     } catch (error) {
       renderJson(results, error.payload || { error: { message: error.message } });
     }

@@ -481,11 +481,11 @@ Use the existing test client fixture style.
 
 ## Task 6: Improve job detail UI
 
-Status: TODO
+Status: DONE
 
 ### 6.1 Update `job_detail.html`
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -509,7 +509,7 @@ Raw JSON
 
 ### 6.2 Render warnings outside raw JSON
 
-Status: TODO
+Status: DONE
 
 If warnings are present in the job result, render them as a list or table.
 
@@ -517,7 +517,7 @@ Do not make users inspect raw JSON to find warnings.
 
 ### 6.3 Render diagnostics/debug outside raw JSON
 
-Status: TODO
+Status: DONE
 
 If `debug.json` exists or diagnostics are present in the result, render:
 
@@ -530,7 +530,7 @@ Do not embed enormous debug JSON directly by default. A link is acceptable.
 
 ### 6.4 Keep raw JSON available for debugging
 
-Status: TODO
+Status: DONE
 
 Keep raw JSON in a collapsible `<details>` block or clearly labeled debug section.
 
@@ -538,11 +538,11 @@ Keep raw JSON in a collapsible `<details>` block or clearly labeled debug sectio
 
 ## Task 7: Improve Generate button artifact links
 
-Status: TODO
+Status: DONE
 
 ### 7.1 Update frontend generate result renderer
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -559,7 +559,7 @@ artifact download links
 
 ### 7.2 Use API artifact URLs only
 
-Status: TODO
+Status: DONE
 
 Artifact links must use:
 
@@ -571,7 +571,7 @@ Do not use local filesystem paths.
 
 ### 7.3 Handle no-artifact cases cleanly
 
-Status: TODO
+Status: DONE
 
 If there are no artifacts yet, display:
 
@@ -585,11 +585,11 @@ Do not crash the frontend.
 
 ## Task 8: Rewrite README webapp framing
 
-Status: TODO
+Status: DONE
 
 ### 8.1 Update README introduction
 
-Status: TODO
+Status: DONE
 
 In:
 
@@ -608,7 +608,7 @@ The web app does not require OpenClaw or an LLM.
 
 ### 8.2 Preserve web run instructions
 
-Status: TODO
+Status: DONE
 
 Ensure README includes:
 
@@ -619,7 +619,7 @@ uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 
 ### 8.3 Document data directory
 
-Status: TODO
+Status: DONE
 
 Ensure README documents:
 
@@ -631,7 +631,7 @@ data/jobs/<job_id>/
 
 ### 8.4 Document local-only default
 
-Status: TODO
+Status: DONE
 
 Ensure README states:
 
@@ -642,7 +642,7 @@ Do not expose it publicly without authentication and additional sandboxing.
 
 ### 8.5 Move OpenClaw/LLM content into legacy framing
 
-Status: TODO
+Status: DONE
 
 Any OpenClaw or LLM discussion should be clearly marked as:
 
@@ -771,7 +771,7 @@ If not empty, leave it and document why.
 
 ## Task 11: Add web regression tests for this patch
 
-Status: IN PROGRESS
+Status: DONE
 
 ### 11.1 Add `test_web_error_handling.py`
 
@@ -838,7 +838,7 @@ Test that bundled `.kicad_sym` resources are discoverable.
 
 ### 11.5 Optional UI contract test
 
-Status: TODO
+Status: DONE
 
 If feasible, add a simple template-level or route-level test that:
 

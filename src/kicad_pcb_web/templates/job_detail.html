@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% set result = job.result or {} %}
+{% set error = job.error or {} %}
+{% set warnings = result.get("warnings", []) if job.result else [] %}
+{% set diagnostics = result.get("generated_schematic_diagnostics") if job.result else None %}
+{% set debug_artifact = "debug.json" if "debug.json" in job.artifacts else None %}
+
 <section class="hero">
   <h1>Job {{ job.project_name }}</h1>
   <p class="job-meta">ID: {{ job.id }} · Status: <strong>{{ job.status }}</strong></p>
@@ -8,15 +14,25 @@
 
 <div class="grid two-column">
   <section class="panel">
-    <h2>Job Summary</h2>
+    <h2>Job Status</h2>
+    <p><strong>{{ job.status }}</strong></p>
+  </section>
+
+  <section class="panel">
+    <h2>Timestamps</h2>
     <dl class="summary-list">
       <dt>Created</dt>
       <dd>{{ job.created_at }}</dd>
       <dt>Updated</dt>
       <dd>{{ job.updated_at }}</dd>
-      <dt>Project name</dt>
-      <dd>{{ job.project_name }}</dd>
     </dl>
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Project Name</h2>
+    <p>{{ job.project_name }}</p>
   </section>
 
   <section class="panel">
@@ -37,21 +53,85 @@
 
 <div class="grid two-column">
   <section class="panel">
-    <h2>Request</h2>
-    <pre class="json-block">{{ job.request | tojson(indent=2) }}</pre>
-  </section>
-
-  <section class="panel">
     {% if job.error %}
-      <h2>Failure</h2>
-      <pre class="json-block">{{ job.error | tojson(indent=2) }}</pre>
+      <h2>Error Details</h2>
+      <pre class="json-block">{{ error | tojson(indent=2) }}</pre>
     {% else %}
-      <h2>Result</h2>
+      <h2>Result Summary</h2>
       {% if job.result %}
-        <pre class="json-block">{{ job.result | tojson(indent=2) }}</pre>
+        <dl class="summary-list">
+          <dt>Components</dt>
+          <dd>{{ result.get("component_count", "—") }}</dd>
+          <dt>Nets</dt>
+          <dd>{{ result.get("net_count", "—") }}</dd>
+          <dt>Symbols added</dt>
+          <dd>{{ result.get("symbols_added", "—") }}</dd>
+          <dt>Nets applied</dt>
+          <dd>{{ result.get("nets_applied", "—") }}</dd>
+          <dt>Validation mode</dt>
+          <dd>{{ "kicad" if result.get("kicad_cli_used") else "internal" }}</dd>
+        </dl>
       {% else %}
         <p class="muted">No result recorded yet.</p>
       {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Warnings</h2>
+    {% if warnings %}
+      <ul class="job-list">
+        {% for warning in warnings %}
+          <li>
+            <strong>{{ warning.get("code", "WARNING") }}</strong>:
+            {{ warning.get("message", warning) }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No warnings recorded.</p>
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Diagnostics / Debug</h2>
+    {% if diagnostics %}
+      <dl class="summary-list">
+        {% for key, value in diagnostics.items() %}
+          <dt>{{ key.replace("_", " ") }}</dt>
+          <dd>{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    {% else %}
+      <p class="muted">No diagnostic summary recorded.</p>
+    {% endif %}
+
+    {% if debug_artifact %}
+      <p>
+        <a href="/api/jobs/{{ job.id }}/artifacts/{{ debug_artifact }}">Download debug.json</a>
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Raw JSON</h2>
+    <details>
+      <summary>Request payload</summary>
+      <pre class="json-block">{{ job.request | tojson(indent=2) }}</pre>
+    </details>
+    {% if job.result %}
+      <details>
+        <summary>Result payload</summary>
+        <pre class="json-block">{{ result | tojson(indent=2) }}</pre>
+      </details>
+    {% endif %}
+    {% if job.error %}
+      <details>
+        <summary>Error payload</summary>
+        <pre class="json-block">{{ error | tojson(indent=2) }}</pre>
+      </details>
     {% endif %}
   </section>
 </div>

@@ -3,7 +3,10 @@
 {% block content %}
 <section class="hero">
   <h1>KiCad PCB Web App</h1>
-  <p>Validate Circuit IR, inspect system health, search symbols, and generate KiCad projects.</p>
+  <p>
+    Validate Circuit IR, inspect system health, search symbols, and generate KiCad
+    projects without requiring OpenClaw, an LLM, or any external AI service.
+  </p>
 </section>
 
 <div class="grid two-column">
@@ -25,6 +28,10 @@
       <button id="validate-button" type="button">Validate</button>
       <button id="generate-button" type="button">Generate</button>
     </div>
+    <p class="muted panel-note">
+      Generate uses <code>internal</code> validation by default. Optional KiCad CLI
+      validation requires <code>kicad-cli</code>.
+    </p>
   </section>
 
   <section class="panel">

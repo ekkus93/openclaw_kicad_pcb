@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T13:40:14Z - GPT-5.4 - Completed the UI and README review-fix phase
+
+- `job_detail.html` now surfaces Job Status, Timestamps, Project Name, Error Details, Result Summary, Warnings, Diagnostics / Debug, Artifacts, and Raw JSON as distinct sections instead of dumping only raw JSON.
+- `static/app.js` now renders direct artifact links from the public `/api/jobs/<job_id>/artifacts/<artifact_name>` API route after Generate succeeds and handles empty-artifact cases without crashing.
+- `README.md` now frames the branch as an LLM-free FastAPI web app for deterministic Circuit IR generation, states that archived OpenClaw files live under `legacy/openclaw-skill/`, and documents that web job generation defaults to `internal` validation while `kicad-cli` validation is optional.
+- Added `tests/web/test_web_ui_contract.py` so the job-detail HTML surface is locked to include the Warnings, Diagnostics / Debug, Artifacts, and Result Summary sections expected by the review-fix TODO.
+
 ## 2026-05-18T13:36:17Z - GPT-5.4 - Completed the backend review-fix phase for web errors, artifact privacy, and package data
 
 - `WEB_APP_CODE_REVIEW_FIX_SPEC.md` and `WEB_APP_CODE_REVIEW_FIX_TODO.md` were moved to the repo root, and the review TODO now marks Tasks 0 through 5 as complete with backend-related test coverage underway under Task 11.
