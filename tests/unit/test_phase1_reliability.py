@@ -17,12 +17,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 # ---------------------------------------------------------------------------
-# Import the script module (kicad_pcb.py lives in kicad-pcb/scripts/).
-# pytest.ini adds that directory to pythonpath, so a plain import works.
+# Import the package while separately checking the archived legacy wrapper path.
+# pytest.ini adds the root ``src/`` directory to pythonpath, so a plain import works.
 # ---------------------------------------------------------------------------
 import kicad_pcb  # noqa: E402
-import pytest
 
 pytestmark = pytest.mark.unit
 
@@ -31,7 +32,9 @@ pytestmark = pytest.mark.unit
 # Helpers
 # ---------------------------------------------------------------------------
 
-SCRIPT = Path(__file__).parent.parent.parent / "kicad-pcb" / "scripts" / "kicad_pcb.py"
+SCRIPT = (
+    Path(__file__).parent.parent.parent / "legacy" / "openclaw-skill" / "scripts" / "kicad_pcb.py"
+)
 
 VALID_SCH = """\
 (kicad_sch (version 20230121) (generator eeschema)

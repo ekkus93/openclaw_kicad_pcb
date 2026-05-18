@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T12:37:44Z - GPT-5.4 - Finished the web migration closeout, runtime smoke, and root src layout move
+
+- The repository source layout now lives at `src/kicad_pcb/` and `src/kicad_pcb_web/`; `pyproject.toml`, `scripts/validate.sh`, README quality-gate commands, and the archived legacy wrapper/test references were updated to use the root `src/` tree.
+- The old OpenClaw packaging files were archived under `legacy/openclaw-skill/`, and the legacy CLI wrapper now resolves the repository root `src/` directory from `legacy/openclaw-skill/scripts/kicad_pcb.py` so direct script execution still imports the current package.
+- The web UI/templates/frontend tests/docs closeout is complete: Tasks 17 through 25 in `WEB_APP_MIGRATION_TODO.md` are now marked done after the live app smoke covered `/`, `/jobs/{job_id}`, `/api/doctor`, `/api/netlists/validate`, synchronous job generation, `project.zip` download, and traversal rejection for `..%2Fjob.json`.
+- The current green post-move validation gate is `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest`, with the full suite passing at `2305 passed, 25 skipped`.
+
 ## 2026-05-18T12:22:57Z - GPT-5.4 - Completed the backend web service layer through jobs, artifacts, symbol search, and doctor
 
 - `kicad-pcb/src/kicad_pcb/commands/_project.py` now exposes `create_project_files(...)` as the no-global-state project scaffolding helper for web use, while `_create_project(...)` still wraps it and preserves CLI `current_project.json` behavior.

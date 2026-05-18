@@ -20,7 +20,7 @@ echo "==> ruff: format check"
 ruff format --check .
 
 echo "==> mypy"
-mypy kicad-pcb/src
+mypy src/kicad_pcb src/kicad_pcb_web
 
 echo "==> pytest (unit tests)"
 if [[ $FAST -eq 1 ]]; then

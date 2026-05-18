@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>KiCad PCB Web App</h1>
+  <p>Validate Circuit IR, inspect system health, search symbols, and generate KiCad projects.</p>
+</section>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Generate from Circuit IR</h2>
+    <label for="project-name">Project name</label>
+    <input id="project-name" name="project-name" type="text" value="WebDemo" />
+
+    <label for="symbols-dir">Symbols directory (optional)</label>
+    <input id="symbols-dir" name="symbols-dir" type="text" placeholder="/path/to/symbols" />
+
+    <label for="netlist-file">Load JSON file</label>
+    <input id="netlist-file" name="netlist-file" type="file" accept=".json,application/json" />
+
+    <label for="netlist-json">Circuit IR JSON</label>
+    <textarea id="netlist-json" name="netlist-json" rows="22">{{ example_netlist_json }}</textarea>
+
+    <div class="button-row">
+      <button id="validate-button" type="button">Validate</button>
+      <button id="generate-button" type="button">Generate</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Doctor</h2>
+    <div id="doctor-status" class="result-box">Loading backend health checks…</div>
+
+    <h2>Symbol Search</h2>
+    <label for="symbol-query">Query</label>
+    <div class="inline-controls">
+      <input id="symbol-query" name="symbol-query" type="text" placeholder="resistor" />
+      <button id="symbol-search-button" type="button">Search</button>
+    </div>
+    <div id="symbol-results" class="result-box">No symbol search run yet.</div>
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Validation / Generation Results</h2>
+    <div id="results-panel" class="result-box">No requests submitted yet.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Recent Jobs</h2>
+    {% if recent_jobs %}
+      <ul class="job-list">
+        {% for job in recent_jobs %}
+          <li>
+            <a href="/jobs/{{ job.id }}">{{ job.project_name }}</a>
+            <span class="job-meta">{{ job.status }} · {{ job.updated_at }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No jobs yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

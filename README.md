@@ -26,19 +26,55 @@ unit/integration test suite.
 pip install -e ".[dev]"
 
 # Create a new project
-python scripts/kicad_pcb.py new MyProject
+python legacy/openclaw-skill/scripts/kicad_pcb.py new MyProject
 
 # Add a resistor divider pattern
-python scripts/kicad_pcb.py apply-pattern MyProject resistor-divider \
+python legacy/openclaw-skill/scripts/kicad_pcb.py apply-pattern MyProject resistor-divider \
     --r1-ref R1 --r2-ref R2 \
     --vin-net VIN --vout-net VOUT --gnd-net GND
 
 # Lint the generated schematic
-python scripts/kicad_pcb.py lint-sch MyProject/MyProject.kicad_sch
+python legacy/openclaw-skill/scripts/kicad_pcb.py lint-sch MyProject/MyProject.kicad_sch
 
 # Check environment
-python scripts/kicad_pcb.py doctor
+python legacy/openclaw-skill/scripts/kicad_pcb.py doctor
 ```
+
+## Web App
+
+Install the web dependencies and start the local FastAPI app:
+
+```bash
+uv sync --extra dev --extra web
+uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Default runtime settings:
+
+- Bind host: `127.0.0.1`
+- Port: `8000`
+- Data dir: `./data`
+- Jobs dir: `./data/jobs`
+
+Override the data directory with:
+
+```bash
+export KICAD_PCB_WEB_DATA_DIR=/path/to/data
+```
+
+Generated web jobs are stored under:
+
+```text
+data/jobs/<job_id>/
+```
+
+Each job keeps its input, generated project, job state, and downloadable artifacts
+inside that directory. The web UI and API expose artifact downloads from the job's
+`artifacts/` directory.
+
+The web app binds to `127.0.0.1` by default and is intended for local/internal use
+in v1. Do not expose it publicly without adding authentication, isolation, and
+additional sandboxing around user-supplied netlists and generated artifacts.
 
 ## Circuit IR pipeline
 
@@ -72,7 +108,7 @@ components and net connections. The tool compiles this into a deterministic KiCa
 
 **Create a new project from Circuit IR** (strict validation by default):
 ```bash
-python scripts/kicad_pcb.py new-from-netlist \
+python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name MyProject \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
@@ -84,8 +120,8 @@ python scripts/kicad_pcb.py new-from-netlist \
 
 **Apply Circuit IR to the current/open project** (updates managed region):
 ```bash
-python scripts/kicad_pcb.py open MyProject/
-python scripts/kicad_pcb.py apply-netlist \
+python legacy/openclaw-skill/scripts/kicad_pcb.py open MyProject/
+python legacy/openclaw-skill/scripts/kicad_pcb.py apply-netlist \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
     --force               # adopt schematic if not already OpenClaw-managed
@@ -94,8 +130,8 @@ python scripts/kicad_pcb.py apply-netlist \
 
 **Inspect the current schematic**:
 ```bash
-python scripts/kicad_pcb.py info-sch
-python scripts/kicad_pcb.py info-sch --json   # machine-readable
+python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch
+python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json   # machine-readable
 ```
 
 ### Ownership model
@@ -162,7 +198,7 @@ Use these commands when generation fails or a readability regression is suspecte
 Validate the input IR without writing files:
 
 ```bash
-python scripts/kicad_pcb.py validate-netlist \
+python legacy/openclaw-skill/scripts/kicad_pcb.py validate-netlist \
     --netlist circuit.json \
     --symbols-dir tests/fixtures/symbols
 ```
@@ -170,7 +206,7 @@ python scripts/kicad_pcb.py validate-netlist \
 Generate a new project and keep the structured debug dump:
 
 ```bash
-python scripts/kicad_pcb.py new-from-netlist \
+python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name DebugProject \
     --out-dir /tmp/openclaw-debug \
     --netlist circuit.json \
@@ -183,7 +219,7 @@ Inspect the generated warning sidecar and diagnostics:
 
 ```bash
 cat /tmp/openclaw-debug/DebugProject/OpenClaw_Warnings.json
-python scripts/kicad_pcb.py info-sch --json
+python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json
 ```
 
 When a run fails, inspect these artifacts in order:
@@ -218,7 +254,7 @@ variable to its absolute path before running any command:
 
 ```bash
 export GRAPHVIZ_DOT=/opt/local/bin/dot
-python scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
+python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
 ```
 
 The discovery order is:
@@ -230,7 +266,7 @@ The discovery order is:
 Current releases do not ship a package-local Graphviz binary, so in normal use
 the active lookup path is `GRAPHVIZ_DOT` first and then the system `PATH`.
 
-Run `python scripts/kicad_pcb.py doctor` to see which binary is active and
+Run `python legacy/openclaw-skill/scripts/kicad_pcb.py doctor` to see which binary is active and
 its version.
 
 ### Layout mode
@@ -262,7 +298,7 @@ pytest tests/unit/ --cov --cov-report=term-missing
 # Static checks
 ruff check .
 ruff format --check .
-mypy kicad-pcb/src
+mypy src/kicad_pcb src/kicad_pcb_web
 
 # Integration tests (requires kicad-cli)
 pytest tests/integration/ -m requires_kicad
@@ -285,4 +321,3 @@ The S-expression serializer (`sexpr/`) builds a **basic AST** — a tree of list
 - **What it means in practice:** editing a file and writing it back may reformat its contents (comments are dropped; key order and whitespace may change).  A diff against the original will therefore include cosmetic changes alongside the real mutation.
 - **Why this approach:** implementing a comment-preserving concrete-syntax-tree (CST) round-tripper for KiCad S-expressions would add substantial complexity with little practical benefit for automation use-cases.  The canonical output is deterministic and diff-friendly once the initial reformat has been committed.
 - **Future work:** if lossless round-tripping becomes a priority a CST layer can be added without changing the public API; the basic-AST serializer would remain as the default formatter.
-

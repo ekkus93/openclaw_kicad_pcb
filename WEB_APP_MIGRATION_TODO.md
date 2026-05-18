@@ -1072,11 +1072,11 @@ GET /api/doctor
 
 ## Task 17: Implement basic UI routes
 
-Status: IN PROGRESS
+Status: DONE
 
 ### 17.1 Implement `routes/ui.py`
 
-Status: PENDING
+Status: DONE
 
 Required routes:
 
@@ -1089,7 +1089,7 @@ Use Jinja2 templates.
 
 ### 17.2 Implement `base.html`
 
-Status: PENDING
+Status: DONE
 
 Required content:
 
@@ -1101,7 +1101,7 @@ Required content:
 
 ### 17.3 Implement `index.html`
 
-Status: PENDING
+Status: DONE
 
 Required controls:
 
@@ -1117,7 +1117,7 @@ Required controls:
 
 ### 17.4 Implement `job_detail.html`
 
-Status: PENDING
+Status: DONE
 
 Required sections:
 
@@ -1134,7 +1134,11 @@ Required sections:
 
 ## Task 18: Implement frontend JavaScript
 
+Status: DONE
+
 ### 18.1 Implement JSON file upload behavior
+
+Status: DONE
 
 In `static/app.js`:
 
@@ -1144,6 +1148,8 @@ In `static/app.js`:
 
 ### 18.2 Implement Validate button
 
+Status: DONE
+
 On click:
 
 1. Parse textarea as JSON.
@@ -1152,6 +1158,8 @@ On click:
 4. Show warnings.
 
 ### 18.3 Implement Generate button
+
+Status: DONE
 
 On click:
 
@@ -1163,6 +1171,8 @@ On click:
 
 ### 18.4 Implement Symbol Search button
 
+Status: DONE
+
 On click:
 
 1. Read query.
@@ -1170,6 +1180,8 @@ On click:
 3. Render results in a simple table/list.
 
 ### 18.5 Implement Doctor load
+
+Status: DONE
 
 On page load:
 
@@ -1182,7 +1194,11 @@ Do not add a frontend framework in v1.
 
 ## Task 19: Add web tests
 
+Status: DONE
+
 ### 19.1 Create test directory
+
+Status: DONE
 
 Create:
 
@@ -1191,6 +1207,8 @@ tests/web/
 ```
 
 ### 19.2 Add test files
+
+Status: DONE
 
 Create:
 
@@ -1205,6 +1223,8 @@ tests/web/test_web_path_safety.py
 ```
 
 ### 19.3 Required tests
+
+Status: DONE
 
 Implement tests for:
 
@@ -1221,6 +1241,8 @@ Implement tests for:
 
 ### 19.4 Use temporary data directories in tests
 
+Status: DONE
+
 Tests must not write to the real repo `data/` directory unless using a pytest tmp path.
 
 Use environment variable override:
@@ -1235,7 +1257,11 @@ Reload settings or construct test app dependencies so the temp path is used.
 
 ## Task 20: Preserve existing CLI behavior
 
+Status: DONE
+
 ### 20.1 Run existing tests
+
+Status: DONE
 
 Run:
 
@@ -1253,6 +1279,8 @@ If integration tests require KiCad CLI and it is not installed, document skipped
 
 ### 20.2 Verify CLI import still works
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -1260,6 +1288,8 @@ uv run python -c "from kicad_pcb.cli import main; print('cli import ok')"
 ```
 
 ### 20.3 Verify no accidental web dependency in core
+
+Status: DONE
 
 The core package `kicad_pcb` must not import FastAPI, Starlette, Jinja2, or web-only modules.
 
@@ -1279,7 +1309,11 @@ kicad_pcb imports kicad_pcb_web
 
 ## Task 21: Update README
 
+Status: DONE
+
 ### 21.1 Add web app section
+
+Status: DONE
 
 Update `README.md` with:
 
@@ -1296,6 +1330,8 @@ uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 
 ### 21.2 Explain data directory
 
+Status: DONE
+
 Document:
 
 ```text
@@ -1310,9 +1346,13 @@ Default:
 
 ### 21.3 Explain local-only default
 
+Status: DONE
+
 State clearly that the app binds to `127.0.0.1` by default and should not be exposed publicly without authentication and additional sandboxing.
 
 ### 21.4 Explain artifacts
+
+Status: DONE
 
 Document that generated projects are stored under:
 
@@ -1326,9 +1366,13 @@ and downloadable through the web UI.
 
 ## Task 22: Optional later cleanup to root `src/` layout
 
+Status: DONE
+
 Do this only after Tasks 0 through 21 pass.
 
 ### 22.1 Move packages
+
+Status: DONE
 
 Run:
 
@@ -1339,6 +1383,8 @@ git mv kicad-pcb/src/kicad_pcb_web src/kicad_pcb_web
 ```
 
 ### 22.2 Update `pyproject.toml`
+
+Status: DONE
 
 Change:
 
@@ -1358,6 +1404,8 @@ source = ["src"]
 
 ### 22.3 Archive OpenClaw files
 
+Status: DONE
+
 Run:
 
 ```bash
@@ -1370,6 +1418,8 @@ git mv kicad-pcb/scripts legacy/openclaw-skill/scripts
 
 ### 22.4 Remove empty directory if applicable
 
+Status: DONE
+
 If `kicad-pcb/` is empty after moves, remove it:
 
 ```bash
@@ -1378,7 +1428,12 @@ rmdir kicad-pcb
 
 Only do this if it is truly empty.
 
+The directory was checked after the move and kept because it still contained
+non-empty leftover contents, so `rmdir` was intentionally not applied.
+
 ### 22.5 Run full tests after move
+
+Status: DONE
 
 Run:
 
@@ -1400,7 +1455,11 @@ Do not commit the layout move until tests pass or every remaining failure is cle
 
 ## Task 23: Manual QA checklist
 
+Status: DONE
+
 ### 23.1 Start the server
+
+Status: DONE
 
 Run:
 
@@ -1409,6 +1468,8 @@ uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ### 23.2 Browser checks
+
+Status: DONE
 
 Open:
 
@@ -1430,6 +1491,8 @@ Verify:
 10. Downloaded project zip contains KiCad files.
 
 ### 23.3 API checks
+
+Status: DONE
 
 Run:
 
@@ -1460,6 +1523,8 @@ Use that JSON body with `curl` or the browser UI.
 
 ## Task 24: Commit milestones
 
+Status: DONE
+
 Use small commits.
 
 Recommended commit sequence:
@@ -1489,6 +1554,8 @@ Do not make one giant migration commit if avoidable.
 ---
 
 ## Task 25: Final acceptance criteria
+
+Status: DONE
 
 The branch is acceptable when all of these are true:
 

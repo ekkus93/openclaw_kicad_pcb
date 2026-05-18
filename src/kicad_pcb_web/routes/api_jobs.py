@@ -67,7 +67,7 @@ def get_job_artifacts(
     return ArtifactListResponse(job_id=job_id, artifacts=list_artifacts(job_dir))
 
 
-@router.get("/jobs/{job_id}/artifacts/{artifact_name}")
+@router.get("/jobs/{job_id}/artifacts/{artifact_name:path}")
 def download_job_artifact(
     job_id: str,
     artifact_name: str,

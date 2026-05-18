@@ -7,12 +7,13 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}" />
   </head>
   <body>
-    <header>
-      <nav>
-        <a href="/">KiCad PCB Web App</a>
+    <header class="site-header">
+      <nav class="site-nav">
+        <a class="brand" href="/">KiCad PCB Web App</a>
+        <a href="/">Home</a>
       </nav>
     </header>
-    <main>
+    <main class="page-shell">
       {% block content %}{% endblock %}
     </main>
     <script src="{{ url_for('static', path='/app.js') }}"></script>

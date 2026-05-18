@@ -30,7 +30,7 @@ web = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["kicad-pcb/src"]
+pythonpath = ["src"]
 addopts = "-q --strict-markers"
 markers = [
     "integration: marks tests as integration tests (may require external tools)",
@@ -51,10 +51,10 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.coverage.run]
-source = ["kicad-pcb/src"]
+source = ["src"]
 
 [tool.setuptools.packages.find]
-where = ["kicad-pcb/src"]
+where = ["src"]
 
 [tool.coverage.report]
 show_missing = true
@@ -62,7 +62,7 @@ fail_under = 70
 
 [tool.mypy]
 python_version = "3.11"
-exclude = ['(^|/)kicad-pcb/scripts/kicad_pcb\.py$']
+exclude = ['(^|/)legacy/openclaw-skill/scripts/kicad_pcb\.py$']
 
 [[tool.mypy.overrides]]
 # cairosvg is an optional runtime dep (PNG preview); no type stubs available.

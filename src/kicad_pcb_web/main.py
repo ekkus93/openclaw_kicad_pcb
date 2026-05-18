@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
+
 from kicad_pcb.errors import UserError
 
 from .deps import STATIC_DIR

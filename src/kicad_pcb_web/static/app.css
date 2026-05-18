@@ -1,0 +1,162 @@
+body {
+  background: #f5f7fb;
+  color: #1b2430;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+
+.site-header {
+  background: #152033;
+  color: #fff;
+  padding: 1rem 1.5rem;
+}
+
+.site-nav {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+.site-nav a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand {
+  font-weight: 700;
+}
+
+.page-shell {
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 1.5rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.two-column {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+  padding: 1rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin: 0.75rem 0 0.35rem;
+}
+
+input,
+textarea,
+button {
+  box-sizing: border-box;
+  font: inherit;
+}
+
+input,
+textarea {
+  border: 1px solid #b8c4d6;
+  border-radius: 6px;
+  padding: 0.65rem;
+  width: 100%;
+}
+
+textarea {
+  min-height: 18rem;
+  resize: vertical;
+}
+
+button {
+  background: #1f6feb;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.7rem 1rem;
+}
+
+button:hover {
+  background: #195cc0;
+}
+
+.button-row,
+.inline-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.inline-controls input {
+  flex: 1;
+}
+
+.result-box {
+  background: #f8fafc;
+  border: 1px dashed #b8c4d6;
+  border-radius: 6px;
+  min-height: 4rem;
+  padding: 0.9rem;
+}
+
+.json-block {
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.job-list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.job-meta,
+.muted {
+  color: #5a697d;
+}
+
+.summary-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+}
+
+.summary-list dt {
+  font-weight: 700;
+}
+
+.results-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.results-table th,
+.results-table td {
+  border-bottom: 1px solid #d7dfeb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.error-box {
+  color: #b42318;
+}
+
+@media (max-width: 720px) {
+  .button-row,
+  .inline-controls {
+    flex-direction: column;
+  }
+}

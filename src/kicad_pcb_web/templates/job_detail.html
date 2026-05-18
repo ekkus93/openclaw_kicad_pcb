@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>Job {{ job.project_name }}</h1>
+  <p class="job-meta">ID: {{ job.id }} · Status: <strong>{{ job.status }}</strong></p>
+</section>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Job Summary</h2>
+    <dl class="summary-list">
+      <dt>Created</dt>
+      <dd>{{ job.created_at }}</dd>
+      <dt>Updated</dt>
+      <dd>{{ job.updated_at }}</dd>
+      <dt>Project name</dt>
+      <dd>{{ job.project_name }}</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Artifacts</h2>
+    {% if job.artifacts %}
+      <ul class="job-list">
+        {% for artifact in job.artifacts %}
+          <li>
+            <a href="/api/jobs/{{ job.id }}/artifacts/{{ artifact }}">{{ artifact }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No artifacts available.</p>
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Request</h2>
+    <pre class="json-block">{{ job.request | tojson(indent=2) }}</pre>
+  </section>
+
+  <section class="panel">
+    {% if job.error %}
+      <h2>Failure</h2>
+      <pre class="json-block">{{ job.error | tojson(indent=2) }}</pre>
+    {% else %}
+      <h2>Result</h2>
+      {% if job.result %}
+        <pre class="json-block">{{ job.result | tojson(indent=2) }}</pre>
+      {% else %}
+        <p class="muted">No result recorded yet.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
