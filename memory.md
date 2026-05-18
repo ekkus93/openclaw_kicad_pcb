@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T12:22:57Z - GPT-5.4 - Completed the backend web service layer through jobs, artifacts, symbol search, and doctor
+
+- `kicad-pcb/src/kicad_pcb/commands/_project.py` now exposes `create_project_files(...)` as the no-global-state project scaffolding helper for web use, while `_create_project(...)` still wraps it and preserves CLI `current_project.json` behavior.
+- The web backend now has real service implementations for jobs, artifacts, netlist validation/generation, symbol search, and doctor under `kicad-pcb/src/kicad_pcb_web/services/`, plus mounted API routes for `/api/netlists/validate`, `/api/jobs*`, `/api/jobs/{job_id}/artifacts*`, `/api/symbols/search`, and `/api/doctor`.
+- Web generation is now file-backed and synchronous per the migration decisions: it creates `data/jobs/<job_id>/`, writes canonical `job.json` plus `artifacts/job.json`, persists input/output/debug artifacts, calls the engine directly through `full_validate(...)`, `raise_for_blocking_advisories(...)`, `create_project_files(...)`, and `_apply_netlist_to_project(...)`, and never touches CLI current-project/session globals.
+- Added `tests/unit/test_project_scaffold.py` to lock the new project helper seam: the no-global-state helper must create `.kicad_pro` / `.kicad_sch` / `.kicad_pcb` without writing current-project state, while `_create_project(...)` must keep the old CLI side effect.
+
 ## 2026-05-18T12:15:55Z - GPT-5.4 - Bootstrapped the web migration branch and restored a green local baseline
 
 - The `webapp` branch now contains the Phase 1 migration bootstrap: `WEB_APP_MIGRATION_SPEC.md` and `WEB_APP_MIGRATION_TODO.md` were moved to the repo root, `pyproject.toml` gained the `web` extra plus `httpx` in `dev`, `/data/` is gitignored, and a new `kicad_pcb_web` FastAPI/Jinja package skeleton was added under `kicad-pcb/src/`.

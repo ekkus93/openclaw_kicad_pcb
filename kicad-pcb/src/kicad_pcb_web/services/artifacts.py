@@ -1,2 +1,57 @@
 """Artifact listing and download helpers."""
 
+from __future__ import annotations
+
+import zipfile
+from pathlib import Path
+
+from kicad_pcb.errors import ErrorCode, UserError
+
+_UNSAFE_ARTIFACT_PARTS = ("..", "/", "\\")
+
+
+def list_artifacts(job_dir: Path) -> list[str]:
+    """Return artifact filenames for one job."""
+
+    artifacts_dir = job_dir / "artifacts"
+    if not artifacts_dir.is_dir():
+        return []
+    return sorted(path.name for path in artifacts_dir.iterdir() if path.is_file())
+
+
+def resolve_artifact_path(job_dir: Path, artifact_name: str) -> Path:
+    """Resolve a safe artifact path under ``job_dir/artifacts``."""
+
+    if not artifact_name or any(part in artifact_name for part in _UNSAFE_ARTIFACT_PARTS):
+        raise UserError(
+            f"Unsafe artifact name: {artifact_name!r}",
+            code=ErrorCode.USER_ERROR,
+            details={"artifact_name": artifact_name},
+        )
+
+    artifacts_dir = (job_dir / "artifacts").resolve()
+    candidate = (artifacts_dir / artifact_name).resolve()
+    try:
+        candidate.relative_to(artifacts_dir)
+    except ValueError as exc:
+        raise UserError(
+            f"Unsafe artifact path: {artifact_name!r}",
+            code=ErrorCode.USER_ERROR,
+            details={"artifact_name": artifact_name},
+        ) from exc
+
+    if not candidate.is_file():
+        raise FileNotFoundError(candidate)
+    return candidate
+
+
+def create_project_zip(project_dir: Path, artifacts_dir: Path) -> Path:
+    """Zip the generated project tree into ``artifacts/project.zip``."""
+
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = artifacts_dir / "project.zip"
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(project_dir.rglob("*")):
+            if path.is_file():
+                archive.write(path, arcname=path.relative_to(project_dir.parent))
+    return zip_path

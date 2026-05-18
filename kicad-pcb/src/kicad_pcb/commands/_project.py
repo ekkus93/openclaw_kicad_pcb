@@ -50,16 +50,11 @@ def minimal_schematic_text() -> str:
 # ---------------------------------------------------------------------------
 
 
-def _create_project(*, name: str, out_dir: Path | None, description: str) -> ProjectRef:
-    """Create a new KiCad project directory, write seed files, and register it."""
+def create_project_files(*, name: str, out_dir: Path, description: str) -> ProjectRef:
+    """Create a new KiCad project directory and seed files without global state."""
     slug = name.replace(" ", "_")
-    if out_dir is None:
-        cfg = load_config()
-        base = Path(cfg.get("projects_dir", PROJECTS_DIR))
-    else:
-        base = out_dir
 
-    project_dir = base / slug
+    project_dir = out_dir / slug
     if project_dir.exists():
         raise UserError(f"Project already exists: {project_dir}")
 
@@ -100,6 +95,18 @@ def _create_project(*, name: str, out_dir: Path | None, description: str) -> Pro
         created=datetime.now().isoformat(),
         description=description,
     )
+    return project
+
+
+def _create_project(*, name: str, out_dir: Path | None, description: str) -> ProjectRef:
+    """Create a new KiCad project directory, write seed files, and register it."""
+    if out_dir is None:
+        cfg = load_config()
+        base = Path(cfg.get("projects_dir", PROJECTS_DIR))
+    else:
+        base = out_dir
+
+    project = create_project_files(name=name, out_dir=base, description=description)
     set_current_project(project)
     return project
 

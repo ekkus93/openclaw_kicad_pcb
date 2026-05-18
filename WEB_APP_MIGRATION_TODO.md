@@ -537,11 +537,11 @@ KiCad PCB Web App
 
 ## Task 9: Implement job workspace service
 
-Status: IN PROGRESS
+Status: DONE
 
 ### 9.1 Implement `services/jobs.py`
 
-Status: IN PROGRESS
+Status: DONE
 
 Required functions:
 
@@ -557,7 +557,7 @@ def update_job_status(...): ...
 
 ### 9.2 Required job directory layout
 
-Status: PENDING
+Status: DONE
 
 For every job:
 
@@ -570,7 +570,7 @@ data/jobs/<job_id>/job.json
 
 ### 9.3 Required job statuses
 
-Status: PENDING
+Status: DONE
 
 Use only:
 
@@ -584,7 +584,7 @@ cancelled
 
 ### 9.4 Path safety
 
-Status: PENDING
+Status: DONE
 
 Reject any `job_id` containing:
 
@@ -600,7 +600,11 @@ Also reject empty job IDs.
 
 ## Task 10: Extract project creation away from global CLI state
 
+Status: DONE
+
 ### 10.1 Inspect current project creation
+
+Status: DONE
 
 Current project creation is in:
 
@@ -618,6 +622,8 @@ That call is not acceptable in the web path.
 
 ### 10.2 Add a lower-level no-global-state function
 
+Status: DONE
+
 In `commands/_project.py`, add:
 
 ```python
@@ -629,6 +635,8 @@ def create_project_files(*, name: str, out_dir: Path, description: str) -> Proje
 Move the file-writing body from `_create_project()` into `create_project_files()`.
 
 ### 10.3 Keep CLI behavior unchanged
+
+Status: DONE
 
 Rewrite `_create_project()` to call the new helper and then set current project:
 
@@ -647,6 +655,8 @@ def _create_project(*, name: str, out_dir: Path | None, description: str) -> Pro
 
 ### 10.4 Add tests
 
+Status: DONE
+
 Add or update unit tests proving:
 
 1. `create_project_files()` creates `.kicad_pro`, `.kicad_sch`, and `.kicad_pcb`.
@@ -657,7 +667,11 @@ Add or update unit tests proving:
 
 ## Task 11: Implement netlist validation service
 
+Status: DONE
+
 ### 11.1 Implement `services/netlists.py` validation
+
+Status: DONE
 
 Create a function:
 
@@ -675,6 +689,8 @@ Implementation requirements:
 5. Do not touch current project/current session state.
 
 ### 11.2 Prefer direct engine calls over fake argparse
+
+Status: DONE
 
 Preferred path:
 
@@ -694,6 +710,8 @@ cmd_validate_netlist(args)
 
 ### 11.3 Add endpoint
 
+Status: DONE
+
 In `routes/api_netlists.py`, add:
 
 ```text
@@ -710,7 +728,11 @@ POST /api/netlists/validate
 
 ## Task 12: Implement project generation service
 
+Status: DONE
+
 ### 12.1 Implement generation request handling
+
+Status: DONE
 
 In `services/netlists.py`, add:
 
@@ -724,6 +746,8 @@ def generate_project_from_netlist_job(
 ```
 
 ### 12.2 Required behavior
+
+Status: DONE
 
 The service must:
 
@@ -742,6 +766,8 @@ The service must:
 
 ### 12.3 Do not use global session behavior
 
+Status: DONE
+
 Do not call:
 
 ```python
@@ -752,6 +778,8 @@ set_current_project()
 ```
 
 ### 12.4 Reuse `_apply_netlist_to_project()` carefully
+
+Status: DONE
 
 Existing apply logic is in:
 
@@ -790,6 +818,8 @@ If `_ApplyNetlistRequest` does not currently accept `backup`, match the actual d
 
 ### 12.5 Create zip artifact
 
+Status: DONE
+
 In `services/artifacts.py`, implement:
 
 ```python
@@ -809,7 +839,11 @@ It must preserve paths relative to `project_dir.parent` or `project_dir`, but mu
 
 ## Task 13: Implement jobs API routes
 
+Status: DONE
+
 ### 13.1 Add `POST /api/jobs/from-netlist`
+
+Status: DONE
 
 In `routes/api_jobs.py`, add:
 
@@ -827,6 +861,8 @@ It must accept `CreateJobFromNetlistRequest` and return `JobDetail`.
 
 ### 13.2 Add job listing route
 
+Status: DONE
+
 Add:
 
 ```text
@@ -842,6 +878,8 @@ GET /api/jobs
 Return newest jobs first.
 
 ### 13.3 Add job detail route
+
+Status: DONE
 
 Add:
 
@@ -861,7 +899,11 @@ Reject unsafe job IDs.
 
 ## Task 14: Implement artifacts service and routes
 
+Status: DONE
+
 ### 14.1 Implement `services/artifacts.py`
+
+Status: DONE
 
 Required functions:
 
@@ -872,6 +914,8 @@ def create_project_zip(project_dir: Path, artifacts_dir: Path) -> Path: ...
 ```
 
 ### 14.2 Artifact path safety
+
+Status: DONE
 
 `resolve_artifact_path()` must reject names containing:
 
@@ -890,6 +934,8 @@ It must only return paths inside:
 Use `Path.resolve()` and verify the resolved path is under the resolved artifacts directory.
 
 ### 14.3 Add artifact routes
+
+Status: DONE
 
 In `routes/api_jobs.py`, add:
 
@@ -911,7 +957,11 @@ The download route must return `FileResponse`.
 
 ## Task 15: Implement symbol search service and route
 
+Status: DONE
+
 ### 15.1 Inspect existing symbol search
+
+Status: DONE
 
 Existing code is in:
 
@@ -922,6 +972,8 @@ kicad-pcb/src/kicad_pcb/symbol_cache.py
 ```
 
 ### 15.2 Implement `services/symbols.py`
+
+Status: DONE
 
 Add:
 
@@ -942,6 +994,8 @@ aliases or keywords if available
 ```
 
 ### 15.3 Add route
+
+Status: DONE
 
 In `routes/api_symbols.py`, add:
 
@@ -964,7 +1018,11 @@ Validation:
 
 ## Task 16: Implement doctor service and route
 
+Status: DONE
+
 ### 16.1 Inspect existing doctor command
+
+Status: DONE
 
 Existing code is in:
 
@@ -973,6 +1031,8 @@ kicad-pcb/src/kicad_pcb/commands/doctor.py
 ```
 
 ### 16.2 Implement `services/doctor.py`
+
+Status: DONE
 
 Add:
 
@@ -994,6 +1054,8 @@ Do not fail the whole doctor call just because optional tools are missing. Retur
 
 ### 16.3 Add route
 
+Status: DONE
+
 In `routes/api_doctor.py`, add:
 
 ```text
@@ -1010,7 +1072,11 @@ GET /api/doctor
 
 ## Task 17: Implement basic UI routes
 
+Status: IN PROGRESS
+
 ### 17.1 Implement `routes/ui.py`
+
+Status: PENDING
 
 Required routes:
 
@@ -1023,6 +1089,8 @@ Use Jinja2 templates.
 
 ### 17.2 Implement `base.html`
 
+Status: PENDING
+
 Required content:
 
 - Page `<title>`.
@@ -1032,6 +1100,8 @@ Required content:
 - Script tag for `/static/app.js`.
 
 ### 17.3 Implement `index.html`
+
+Status: PENDING
 
 Required controls:
 
@@ -1046,6 +1116,8 @@ Required controls:
 9. Results/warnings area.
 
 ### 17.4 Implement `job_detail.html`
+
+Status: PENDING
 
 Required sections:
 

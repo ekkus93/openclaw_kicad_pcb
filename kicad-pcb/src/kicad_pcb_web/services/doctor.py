@@ -1,2 +1,85 @@
 """Environment and dependency diagnostic services."""
 
+from __future__ import annotations
+
+import shutil
+import sys
+from pathlib import Path
+
+from kicad_pcb.config import discover_symbols_dir
+from kicad_pcb.graphviz_layout import find_dot_source
+
+from ..schemas import DoctorCheck, DoctorResponse
+from ..settings import WebSettings
+
+
+def _jobs_dir_writable(path: Path) -> bool:
+    """Return whether the jobs dir is writable."""
+
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write_probe"
+        probe.write_text("probe", encoding="utf-8")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def run_doctor(settings: WebSettings) -> DoctorResponse:
+    """Return a lightweight backend health report."""
+
+    symbol_dir_result = discover_symbols_dir()
+    symbol_dir = symbol_dir_result.path if symbol_dir_result is not None else None
+    symbol_lib_count = (
+        sum(1 for _ in symbol_dir.glob("*.kicad_sym"))
+        if symbol_dir is not None and symbol_dir.is_dir()
+        else 0
+    )
+    dot_result = find_dot_source()
+    kicad_cli_path = shutil.which("kicad-cli")
+    preview_tool = shutil.which("rsvg-convert") or shutil.which("convert") or kicad_cli_path
+
+    checks = [
+        DoctorCheck(
+            name="python",
+            ok=sys.version_info >= (3, 11),
+            detail=(
+                f"Python {sys.version_info.major}."
+                f"{sys.version_info.minor}."
+                f"{sys.version_info.micro}"
+            ),
+        ),
+        DoctorCheck(
+            name="jobs_dir",
+            ok=_jobs_dir_writable(settings.jobs_dir),
+            detail=str(settings.jobs_dir),
+        ),
+        DoctorCheck(
+            name="symbols_dir",
+            ok=symbol_dir is not None and symbol_lib_count > 0,
+            detail=(
+                f"{symbol_dir} ({symbol_lib_count} libs)"
+                if symbol_dir is not None
+                else "No KiCad symbol directory discovered."
+            ),
+        ),
+        DoctorCheck(
+            name="graphviz_dot",
+            ok=dot_result is not None,
+            detail=dot_result[0] if dot_result is not None else "Graphviz dot not found.",
+        ),
+        DoctorCheck(
+            name="kicad_cli",
+            ok=kicad_cli_path is not None,
+            detail=kicad_cli_path or "kicad-cli not found; internal validation still works.",
+        ),
+        DoctorCheck(
+            name="preview_tooling",
+            ok=preview_tool is not None,
+            detail=preview_tool or "No optional preview tooling found.",
+        ),
+    ]
+    required_checks = {"python", "jobs_dir", "symbols_dir", "graphviz_dot"}
+    overall_ok = all(check.ok for check in checks if check.name in required_checks)
+    return DoctorResponse(ok=overall_ok, checks=checks)
