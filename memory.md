@@ -1,5 +1,11 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-18T13:48:00Z - GPT-5.4 - Finished the full web app review-fix pass and final live QA
+
+- The web app review-fix TODO is now fully closed: `WEB_APP_CODE_REVIEW_FIX_TODO.md` marks Tasks 0 through 15 and the final acceptance checklist as done, with the authoritative review-fix spec/TODO living at the repo root.
+- Final closeout checks were rerun and passed: web app import, CLI import, `uv run pytest tests/web -q`, `uv run pytest tests/unit -q`, `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and a live uvicorn smoke pass against `/`, `/api/doctor`, `/api/symbols/search`, `/api/netlists/validate`, `/api/jobs/from-netlist`, `/jobs/{job_id}`, `project.zip`, and the private `job.json` 404 path.
+- The live QA also confirmed the generated job path defaults to `validation="internal"`, public artifacts are limited to curated files like `project.zip`, `warnings.json`, and `debug.json`, and the frontend generate-result renderer emits direct public artifact links.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

@@ -860,11 +860,11 @@ Do not overcomplicate browser testing.
 
 ## Task 12: Re-run validation commands
 
-Status: TODO
+Status: DONE
 
 ### 12.1 Run import checks
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -882,7 +882,7 @@ cli import ok
 
 ### 12.2 Run web tests
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -898,7 +898,7 @@ all tests pass
 
 ### 12.3 Run unit tests
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -910,7 +910,7 @@ If integration/system dependencies are unavailable, document which tests are ski
 
 ### 12.4 Run lint/type checks
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -923,7 +923,7 @@ If mypy has existing known failures, do not hide new errors caused by this patch
 
 ### 12.5 Verify no core-to-web imports
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -949,11 +949,11 @@ kicad_pcb imports kicad_pcb_web
 
 ## Task 13: Manual QA
 
-Status: TODO
+Status: DONE
 
 ### 13.1 Start server
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -969,7 +969,7 @@ http://127.0.0.1:8000/
 
 ### 13.2 Browser checks
 
-Status: TODO
+Status: DONE
 
 Verify:
 
@@ -991,7 +991,7 @@ Verify:
 
 ### 13.3 API checks
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -1013,11 +1013,11 @@ resistor search returns results or a valid empty result set
 
 ## Task 14: Update migration documents status
 
-Status: IN PROGRESS
+Status: DONE
 
 ### 14.1 Do not mark old TODO as fully correct without fixes
 
-Status: TODO
+Status: DONE
 
 Do not edit `WEB_APP_MIGRATION_TODO.md` to claim everything was correct unless the fixes in this TODO are complete.
 
@@ -1045,11 +1045,11 @@ WEB_APP_CODE_REVIEW_FIX_SPEC.md
 
 ## Task 15: Commit the patch
 
-Status: TODO
+Status: DONE
 
 ### 15.1 Review diff before commit
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -1077,7 +1077,7 @@ The diff must not contain unrelated core engine rewrites.
 
 ### 15.2 Commit
 
-Status: TODO
+Status: DONE
 
 Recommended single commit:
 
@@ -1100,35 +1100,35 @@ git commit -m "Clarify web app docs and cleanup migration leftovers"
 
 ## Final acceptance checklist
 
-Status: TODO
+Status: DONE
 
 The patch is complete only when all of these are true:
 
-- [ ] Current branch is `webapp`.
-- [ ] `WEB_APP_CODE_REVIEW_FIX_SPEC.md` exists at repo root.
-- [ ] `WEB_APP_CODE_REVIEW_FIX_TODO.md` exists at repo root.
-- [ ] `kicad_pcb_web.main:app` imports successfully.
-- [ ] CLI import still works.
-- [ ] `GET /api/doctor` returns JSON.
-- [ ] `GET /api/symbols/search?q=resistor` works.
-- [ ] `GET /api/symbols/search?q=` returns HTTP 400.
-- [ ] `POST /api/netlists/validate` works.
-- [ ] `POST /api/jobs/from-netlist` works without requiring `kicad-cli` by default.
-- [ ] Explicit KiCad validation with missing `kicad-cli` returns a structured tool/domain error, not `INTERNAL_SERVER_ERROR`.
-- [ ] Failed jobs preserve structured error information.
-- [ ] `job.json` remains private under `data/jobs/<job_id>/job.json`.
-- [ ] `job.json` is not listed as a downloadable artifact.
-- [ ] `/api/jobs/<job_id>/artifacts/job.json` returns 404.
-- [ ] `project.zip` remains downloadable.
-- [ ] Artifact path traversal is still rejected.
-- [ ] Bundled `.kicad_sym` files are included as package data.
-- [ ] Job detail page clearly shows warnings.
-- [ ] Job detail page clearly shows diagnostics/debug information.
-- [ ] Generate button output renders direct artifact links.
-- [ ] README states the web app is LLM-free.
-- [ ] README clearly marks OpenClaw/LLM support as legacy or optional.
-- [ ] Unrelated regression-threshold changes are reverted or explicitly justified.
-- [ ] Stale `kicad-pcb/tests/` leftovers are removed or moved.
-- [ ] Web tests pass.
-- [ ] Unit tests pass, or environment-only failures are documented.
-- [ ] Core package does not import `kicad_pcb_web`.
+- [x] Current branch is `webapp`.
+- [x] `WEB_APP_CODE_REVIEW_FIX_SPEC.md` exists at repo root.
+- [x] `WEB_APP_CODE_REVIEW_FIX_TODO.md` exists at repo root.
+- [x] `kicad_pcb_web.main:app` imports successfully.
+- [x] CLI import still works.
+- [x] `GET /api/doctor` returns JSON.
+- [x] `GET /api/symbols/search?q=resistor` works.
+- [x] `GET /api/symbols/search?q=` returns HTTP 400.
+- [x] `POST /api/netlists/validate` works.
+- [x] `POST /api/jobs/from-netlist` works without requiring `kicad-cli` by default.
+- [x] Explicit KiCad validation with missing `kicad-cli` returns a structured tool/domain error, not `INTERNAL_SERVER_ERROR`.
+- [x] Failed jobs preserve structured error information.
+- [x] `job.json` remains private under `data/jobs/<job_id>/job.json`.
+- [x] `job.json` is not listed as a downloadable artifact.
+- [x] `/api/jobs/<job_id>/artifacts/job.json` returns 404.
+- [x] `project.zip` remains downloadable.
+- [x] Artifact path traversal is still rejected.
+- [x] Bundled `.kicad_sym` files are included as package data.
+- [x] Job detail page clearly shows warnings.
+- [x] Job detail page clearly shows diagnostics/debug information.
+- [x] Generate button output renders direct artifact links.
+- [x] README states the web app is LLM-free.
+- [x] README clearly marks OpenClaw/LLM support as legacy or optional.
+- [x] Unrelated regression-threshold changes are reverted or explicitly justified.
+- [x] Stale `kicad-pcb/tests/` leftovers are removed or moved.
+- [x] Web tests pass.
+- [x] Unit tests pass, or environment-only failures are documented.
+- [x] Core package does not import `kicad_pcb_web`.
