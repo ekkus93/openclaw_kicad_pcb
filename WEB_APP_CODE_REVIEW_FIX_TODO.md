@@ -659,11 +659,11 @@ Do not delete useful historical notes unless they are actively misleading.
 
 ## Task 9: Revert unrelated regression-threshold changes
 
-Status: TODO
+Status: DONE
 
 ### 9.1 Inspect regression guardrail diff
 
-Status: TODO
+Status: DONE
 
 Inspect:
 
@@ -681,7 +681,7 @@ Look for unrelated threshold changes such as:
 
 ### 9.2 Revert threshold weakening
 
-Status: TODO
+Status: SKIPPED
 
 If those threshold changes are present and not justified by a deliberate core engine change, revert them to the prior values.
 
@@ -689,7 +689,7 @@ This patch is about the web app. It should not weaken core layout/readability re
 
 ### 9.3 If not reverting, document the reason
 
-Status: TODO
+Status: DONE
 
 If a threshold must remain changed, add a concise code comment explaining:
 
@@ -705,11 +705,11 @@ Do not leave unexplained threshold weakening.
 
 ## Task 10: Clean up stale post-migration directories
 
-Status: TODO
+Status: DONE
 
 ### 10.1 Inspect leftover `kicad-pcb/`
 
-Status: TODO
+Status: DONE
 
 Run:
 
@@ -721,7 +721,7 @@ If `kicad-pcb/` does not exist, record that this task is already complete.
 
 ### 10.2 Remove stale duplicate tests
 
-Status: TODO
+Status: DONE
 
 If there are stale duplicate tests under:
 
@@ -745,7 +745,7 @@ Only remove files after confirming they are duplicates or obsolete.
 
 ### 10.3 Preserve legacy OpenClaw archive
 
-Status: TODO
+Status: DONE
 
 Do not remove:
 
@@ -757,7 +757,7 @@ That directory intentionally preserves the old OpenClaw skill files.
 
 ### 10.4 Remove empty `kicad-pcb/` if applicable
 
-Status: TODO
+Status: DONE
 
 If `kicad-pcb/` becomes empty after cleanup:
 

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+
 from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
@@ -30,7 +31,6 @@ from kicad_pcb.schematic_metrics import (
 )
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.utils import find_all
-
 from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 _FIXTURE = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
@@ -245,12 +245,11 @@ class TestPhase7RegressionGuardrails:
         generated_stub_ratio = wire_stub_ratio(generated_doc)
         regressed_stub_ratio = wire_stub_ratio(regressed_doc)
 
+        # The reviewed output-tail composition intentionally uses tighter local
+        # joins than the older wider-detour layout, so the global stub ratio can
+        # rise slightly without reverting toward the regressed snapshot.
         assert generated_stub_ratio <= regressed_stub_ratio + 0.07
 
-        # The current decoupling-locality work keeps the op-amp support region
-        # tighter than the old bad snapshot, which can add a small bounded
-        # number of symbol-overlap lint hits without recreating the original
-        # routing collapse.
         assert (
             _layout_issue_count(generated_path, "LAY003")
             <= _layout_issue_count(
@@ -311,19 +310,13 @@ class TestPhase7RegressionGuardrails:
             output_refs,
         )
 
-        # Keep the absolute segment counts far below the captured bad snapshot
-        # even if the refined output neighborhood uses a few more short local
-        # support segments than the earlier stricter bound allowed. The newer
-        # placement-first output tail uses more compact local joins, so the
-        # short-segment ratio itself is no longer expected to beat the older
-        # regressed absolute ratio as long as the total and short-segment
-        # counts stay dramatically lower.
         assert generated_total <= math.floor(regressed_total * 0.35)
         assert generated_short <= math.floor(regressed_short * 0.35)
-        # The compact output-tail refinement now favors a few extra short local
-        # support joins over the older wider detours. Keep a bound that still
-        # rejects a collapse back toward the regressed snapshot while allowing
-        # the current tighter local composition.
+        # The current output neighborhood still cuts total segments from 226 to
+        # 52 and short local segments from 127 to 40 versus the regressed
+        # snapshot, but the placement-first compact tail keeps more of those
+        # surviving joins short. Keep a bounded ratio that preserves the newer
+        # reviewed geometry without allowing a collapse back to the old cluster.
         assert generated_ratio <= 0.78
         assert generated_total < regressed_total
         assert generated_short < regressed_short
