@@ -33,21 +33,23 @@ unit/integration test suite.
 ## Archived CLI quick start
 
 ```bash
-pip install -e ".[dev]"
+uv sync --extra dev
 
 # Create a new project
-python legacy/openclaw-skill/scripts/kicad_pcb.py new MyProject
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new MyProject
 
 # Add a resistor divider pattern
-python legacy/openclaw-skill/scripts/kicad_pcb.py apply-pattern MyProject resistor-divider \
-    --r1-ref R1 --r2-ref R2 \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py open MyProject/
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py apply-pattern \
+  --pattern resistor-divider \
+  --r1 R1 --r2 R2 \
     --vin-net VIN --vout-net VOUT --gnd-net GND
 
 # Lint the generated schematic
-python legacy/openclaw-skill/scripts/kicad_pcb.py lint-sch MyProject/MyProject.kicad_sch
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py lint-sch MyProject/MyProject.kicad_sch
 
 # Check environment
-python legacy/openclaw-skill/scripts/kicad_pcb.py doctor
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py doctor
 ```
 
 ## Web App
@@ -128,20 +130,20 @@ connections. The deterministic engine compiles that IR into a KiCad schematic.
 
 **Create a new project from Circuit IR** (strict validation by default):
 ```bash
-python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name MyProject \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
-    --mode kicad          # default; requires kicad-cli
-    # --mode internal     # internal syntax+lint only; no kicad-cli required
+  --validate kicad      # default; requires kicad-cli
+  # --validate internal # internal syntax+lint only; no kicad-cli required
 ```
 
 `compile-netlist` is an alias for `new-from-netlist` with identical arguments.
 
 **Apply Circuit IR to the current/open project** (updates managed region):
 ```bash
-python legacy/openclaw-skill/scripts/kicad_pcb.py open MyProject/
-python legacy/openclaw-skill/scripts/kicad_pcb.py apply-netlist \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py open MyProject/
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py apply-netlist \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
     --force               # adopt schematic if not already OpenClaw-managed
@@ -150,8 +152,8 @@ python legacy/openclaw-skill/scripts/kicad_pcb.py apply-netlist \
 
 **Inspect the current schematic**:
 ```bash
-python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch
-python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json   # machine-readable
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json   # machine-readable
 ```
 
 ### Ownership model
@@ -218,7 +220,7 @@ Use these commands when generation fails or a readability regression is suspecte
 Validate the input IR without writing files:
 
 ```bash
-python legacy/openclaw-skill/scripts/kicad_pcb.py validate-netlist \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py validate-netlist \
     --netlist circuit.json \
     --symbols-dir tests/fixtures/symbols
 ```
@@ -226,12 +228,12 @@ python legacy/openclaw-skill/scripts/kicad_pcb.py validate-netlist \
 Generate a new project and keep the structured debug dump:
 
 ```bash
-python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name DebugProject \
     --out-dir /tmp/openclaw-debug \
     --netlist circuit.json \
     --symbols-dir tests/fixtures/symbols \
-    --mode internal \
+  --validate internal \
     --debug-dump /tmp/openclaw-debug/OpenClaw_Debug.json
 ```
 
@@ -239,7 +241,7 @@ Inspect the generated warning sidecar and diagnostics:
 
 ```bash
 cat /tmp/openclaw-debug/DebugProject/OpenClaw_Warnings.json
-python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py info-sch --json
 ```
 
 When a run fails, inspect these artifacts in order:
@@ -274,7 +276,7 @@ variable to its absolute path before running any command:
 
 ```bash
 export GRAPHVIZ_DOT=/opt/local/bin/dot
-python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist --netlist circuit.json ...
 ```
 
 The discovery order is:
@@ -286,7 +288,7 @@ The discovery order is:
 Current releases do not ship a package-local Graphviz binary, so in normal use
 the active lookup path is `GRAPHVIZ_DOT` first and then the system `PATH`.
 
-Run `python legacy/openclaw-skill/scripts/kicad_pcb.py doctor` to see which binary is active and
+Run `uv run python legacy/openclaw-skill/scripts/kicad_pcb.py doctor` to see which binary is active and
 its version.
 
 ### Layout mode
@@ -307,24 +309,24 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full details.
 
 ```bash
 # Install dev dependencies
-pip install -e ".[dev]"
+uv sync --extra dev --extra web
 
 # Run unit tests
-pytest tests/unit/
+uv run pytest tests/unit/
 
 # Run unit tests with coverage
-pytest tests/unit/ --cov --cov-report=term-missing
+uv run pytest tests/unit/ --cov --cov-report=term-missing
 
 # Static checks
-ruff check .
-ruff format --check .
-mypy src/kicad_pcb src/kicad_pcb_web
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src/kicad_pcb src/kicad_pcb_web
 
 # Integration tests (requires kicad-cli)
-pytest tests/integration/ -m requires_kicad
+uv run pytest tests/integration/ -m requires_kicad
 
 # Run all local quality gates at once (lint + type check + unit tests)
-bash scripts/validate.sh
+uv run bash scripts/validate.sh
 ```
 
 ## CI

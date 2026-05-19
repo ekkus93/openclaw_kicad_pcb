@@ -20,6 +20,12 @@
 - Two additional test drifts were repaired to restore a full green suite: `tests/integration/test_phase0_smoke.py` now points at `legacy/openclaw-skill/scripts/kicad_pcb.py` after the layout move, and `tests/unit/test_netlist_commands.py::test_search_symbols_kicad9_renamed_symbols` now queries `C_Polarized` via `"polarized"` to match the actual KiCad 9 Device library metadata.
 - Final validation on this tree is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, plus the focused FIX_WIRES routing slice and narrow Ruff/mypy checks on `src/kicad_pcb/router.py`.
 
+## 2026-05-19T23:14:31Z - GPT-5.4 - Refreshed README examples to match the uv workflow and current archived CLI surface
+
+- `README.md` now uses `uv` consistently for archived CLI and development examples instead of `pip install -e` plus bare tool invocations.
+- The archived `apply-pattern` quick-start example was corrected to the current parser shape: open the project first, then call `apply-pattern --pattern resistor-divider ...` with `--r1` / `--r2` rather than the stale positional project argument and old flag names.
+- The archived netlist/debugging/Graphviz examples now prefer `uv run python legacy/openclaw-skill/scripts/kicad_pcb.py ...`, and the recommended validation flag in docs is `--validate ...` rather than the older deprecated `--mode ...` examples.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.
