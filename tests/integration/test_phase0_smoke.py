@@ -22,13 +22,14 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.commands.netlist import MANAGED_SHEET_FILE
 from kicad_pcb.sch_doc import SchematicDoc
 
 pytestmark = pytest.mark.integration
 
-SCRIPTS_DIR = Path(__file__).parent.parent.parent / "kicad-pcb" / "scripts"
-KICAD_PCB_PY = SCRIPTS_DIR / "kicad_pcb.py"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+KICAD_PCB_PY = REPO_ROOT / "legacy" / "openclaw-skill" / "scripts" / "kicad_pcb.py"
 PYTHON = sys.executable
 
 

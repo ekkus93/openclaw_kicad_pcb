@@ -15,6 +15,7 @@ import contextlib
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.errors import ParseError
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.parser import parse, parse_file

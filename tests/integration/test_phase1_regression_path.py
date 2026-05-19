@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
+
+import kicad_pcb.graphviz_layout as _gv_mod
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.layout_engine import make_layout_engine
-
 from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
 
 pytestmark = pytest.mark.integration

@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 
 import pytest
+
 from kicad_pcb.cli import _build_parser
 from kicad_pcb.commands.doctor import cmd_doctor
 from kicad_pcb.commands.lint import (

@@ -34,9 +34,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
 import kicad_pcb
 import kicad_pcb.runner as runner_module
-import pytest
 from kicad_pcb.adapters import FakeRunner, KicadCliAdapter, RunResult
 from kicad_pcb.commands.validation import cmd_drc
 from kicad_pcb.config import set_current_project

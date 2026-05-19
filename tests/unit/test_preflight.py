@@ -14,6 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb import lib_symbol as _lib_symbol
 from kicad_pcb.errors import UserError
 from kicad_pcb.patterns import (

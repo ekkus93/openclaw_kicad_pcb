@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+
 from kicad_pcb_web.main import app
 
 _VALID_NETLIST = {

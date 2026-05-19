@@ -22,8 +22,9 @@ import re
 from pathlib import Path
 from types import SimpleNamespace
 
-import kicad_pcb
 import pytest
+
+import kicad_pcb
 from kicad_pcb.commands.lint import cmd_lint_sch, cmd_validate_pcb, cmd_validate_sch
 from kicad_pcb.errors import ParseError
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode

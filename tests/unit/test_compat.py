@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.adapters import FakeFs, FakeRunner, KicadCliAdapter, RunResult
 from kicad_pcb.compat import (
     CAPABILITY_MAP,

@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.commands.netlist import cmd_info_sch
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.fs import _new_uuid

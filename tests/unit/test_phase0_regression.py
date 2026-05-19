@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+
 from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.sch_doc import SchematicDoc
@@ -19,7 +20,6 @@ from kicad_pcb.schematic_metrics import (
     count_non_power_symbols_in_same_x_column_as,
     count_refs_in_same_x_column_as,
 )
-
 from tests import NE5532_LEFT_REGRESSED_READABILITY_FIXTURE
 
 _FIXTURE = NE5532_LEFT_REGRESSED_READABILITY_FIXTURE

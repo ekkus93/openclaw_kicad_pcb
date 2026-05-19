@@ -24,6 +24,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from kicad_pcb.cli import _build_parser, main  # noqa: PLC2701
 from kicad_pcb.commands.pcb import cmd_import_netlist, cmd_set_board_size
 from kicad_pcb.commands.sch import cmd_add_net

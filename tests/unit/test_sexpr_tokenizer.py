@@ -13,6 +13,7 @@ Phase 3.1 coverage:
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.errors import ParseError
 from kicad_pcb.sexpr.tokenizer import tokenize
 

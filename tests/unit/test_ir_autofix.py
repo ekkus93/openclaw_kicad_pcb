@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.ir.autofix import autofix_circuit_ir
 

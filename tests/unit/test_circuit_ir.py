@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.ir.validate import (

@@ -14,6 +14,7 @@ from argparse import Namespace
 from collections.abc import Mapping
 
 import pytest
+
 from kicad_pcb.block_detection import BlockLayout, BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
@@ -43,7 +44,6 @@ from kicad_pcb.graphviz_layout.snap import (
 from kicad_pcb.lint.sch import lint_layout_composition
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import page_region_density
-
 from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 # ---------------------------------------------------------------------------

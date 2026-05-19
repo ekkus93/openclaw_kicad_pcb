@@ -7,6 +7,7 @@ from argparse import Namespace
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.adapters import KicadCliAdapter, RunResult
 from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
@@ -25,7 +26,6 @@ from kicad_pcb.schematic_metrics import (
 )
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.nodes import ListNode
-
 from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 _FIXTURE_10 = NE5532_LEFT_CURRENT_READABILITY_FIXTURE

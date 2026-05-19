@@ -27,8 +27,9 @@ from argparse import Namespace
 from pathlib import Path
 from typing import cast
 
-import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
+
+import kicad_pcb.graphviz_layout as _gv_mod
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.errors import ErrorCode, UserError

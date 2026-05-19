@@ -7,13 +7,13 @@ from argparse import Namespace
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR, NetIR, PinRefIR
 from kicad_pcb.commands._validate import advisory_warnings
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.ir.validate import validate_circuit_ir
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.symbol_index import SymbolIndex
-
 from tests import SYMBOLS_FIXTURE_DIR, TIMER555_PWM_READABILITY_FIXTURE
 
 _FIXTURE = TIMER555_PWM_READABILITY_FIXTURE

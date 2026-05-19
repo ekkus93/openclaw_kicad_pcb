@@ -2,8 +2,8 @@
 
 ## Current baseline
 
-- Active router baseline file: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
-- Active focused regression file: `/home/ubo/work/openclaw_kicad_pcb/tests/unit/test_phase6_wire_simplification.py`
+- Active router baseline file: `src/kicad_pcb/router.py`
+- Active focused regression file: `tests/unit/test_phase6_wire_simplification.py`
 - Current review artifact: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/svg/OpenClaw_Managed.svg`
 - Matching PNG: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview_20260312_230958/png/OpenClaw_Managed.png`
 - Prior review baseline: `/home/ubo/kicad-projects/sessions/ne5532_headphone_amp_fa070cbe/ne5532_headphone_amp_preview/svg/OpenClaw_Managed.svg`
@@ -46,7 +46,7 @@ Status: DONE
 - Goal: make `IN_L_AC` stop drawing a box around the `C5/R1` neighborhood.
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
 - Proposed fix:
-	- [ ] add a targeted planner rule for the secondary lane in the connector-led input ladder group
+	- [x] add a targeted planner rule for the secondary lane in the connector-led input ladder group
 	- [x] prefer a shorter downstream continuation lane instead of a full-height parallel box
 	- [x] avoid changing `LEFT_IN` while doing this
 - Current result:
@@ -66,10 +66,10 @@ Status: DONE
 - Goal: compress the `J1/C5/R1/RV1` area so it reads as one compact local stage.
 - Code area: `/home/ubo/work/openclaw_kicad_pcb/kicad-pcb/src/kicad_pcb/router.py`
 - Proposed fix:
-	- [ ] keep the two local nets on distinct lanes when needed
-	- [ ] treat the `VOL_L_OUT` route as the remaining height driver, not `LEFT_IN` / `IN_L_AC`
-	- [ ] replace the current tall shared-lane shape with a shorter local continuation tied to the actual participating taps near `R4`, `RV1` pin `2`, and `U1` pin `3`
-	- [ ] avoid introducing a new top wraparound lane above `RV1` unless it is visibly shorter than the current `y=142.24` route
+	- [x] keep the two local nets on distinct lanes when needed
+	- [x] treat the `VOL_L_OUT` route as the remaining height driver, not `LEFT_IN` / `IN_L_AC`
+	- [x] replace the current tall shared-lane shape with a shorter local continuation tied to the actual participating taps near `R4`, `RV1` pin `2`, and `U1` pin `3`
+	- [x] avoid introducing a new top wraparound lane above `RV1` unless it is visibly shorter than the current `y=142.24` route
 - Current diagnosis:
 	- [x] `LEFT_IN` / `IN_L_AC` are no longer the dominant height problem after item 2; their local planner output is already compact
 	- [x] the remaining vertical span is now dominated by the adjacent `VOL_L_OUT` neighborhood (`R4`, `RV1` pin `2`, `U1` pin `3`)
@@ -126,20 +126,21 @@ Status: DONE
 
 ### 6. Regenerate and review after each routing change
 
-Status: IN PROGRESS
+Status: DONE
 
 - Goal: catch visual regressions immediately.
 - Commands:
 
 ```bash
-python kicad-pcb/scripts/kicad_pcb.py new-from-netlist \
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
 	--name <preview_name> \
-	--netlist /home/ubo/work/openclaw_kicad_pcb/code_review/ne5532_headphone_amp_netlist.json \
+	--netlist code_review/ne5532_headphone_amp_netlist.json \
+	--out-dir <preview_root> \
 	--symbols-dir /usr/share/kicad/symbols \
-	--mode kicad
+	--validate kicad
 
 kicad-cli sch export svg \
-	--output <preview_dir>/svg \
+	--output <preview_dir>/export/ \
 	<preview_dir>/OpenClaw_Managed.kicad_sch
 ```
 
@@ -152,21 +153,22 @@ kicad-cli sch export svg \
 	- [x] regenerated and reviewed preview `..._212047`
 	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview`
 	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview_20260312_230958`
-	- [ ] regenerate after item 3 is implemented
+	- [x] regenerated after item 3/item 4 completion using the current `uv`-managed repo environment on 2026-05-19
 	- [x] regenerated and reviewed preview `ne5532_headphone_amp_preview_20260323_193514` after item 4
 	- [x] compared that preview directly against `..._212047`, `..._152500`, `..._094046`, and the problem preview `..._230958`
 	- [x] confirmed the old `RV1` / `VOL_L_OUT` scaffold geometry from the March 12 baselines is gone in the regenerated preview
+	- [x] confirmed a fresh KiCad-mode preview exported cleanly from `code_review/ne5532_headphone_amp_netlist.json` in the current repo layout, and the resulting managed schematic still reads as `J1 -> C5/R1 -> RV1 -> U1` on the input side while preserving the improved output neighborhood
 	- [x] note: the fresh preview also moved the overall stage placement, so the sign-off is semantic (shape/flow improvement) rather than a same-coordinates visual overlay
 
 ## Validation checklist
 
-- [x] `uv run --frozen ruff check .`
-- [x] `uv run --frozen mypy kicad-pcb/src`
-- [x] `uv run --frozen pytest -q`
-- [x] `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`
-- `uv run --frozen pytest -q tests/unit/test_phase6_wire_simplification.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`
-- `uv run --frozen ruff check kicad-pcb/src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`
-- `uv run --frozen mypy kicad-pcb/src/kicad_pcb/router.py`
+- [x] `uv sync --extra dev --extra web --frozen`
+- [x] `uv run ruff check .`
+- [x] `uv run mypy src/kicad_pcb src/kicad_pcb_web`
+- [x] `uv run pytest -q`
+- [x] `uv run pytest -q tests/unit/test_phase6_wire_simplification.py tests/unit/test_phase6_coverage.py tests/unit/test_block_detection.py -k 'chain or ladder or spine or zero_length or vplus or collision_safe'`
+- [x] `uv run ruff check src/kicad_pcb/router.py tests/unit/test_phase6_wire_simplification.py`
+- [x] `uv run mypy src/kicad_pcb/router.py`
 
 ## Implementation order
 

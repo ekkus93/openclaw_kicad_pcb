@@ -18,6 +18,7 @@ Rule 4  — Larger layout scale: ``SCALE_MM_PER_GV = 24.0``.
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout.dot_builder import _build_dot_source

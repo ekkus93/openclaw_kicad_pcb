@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.errors import ErrorCode, ParseError, UserError
 from kicad_pcb.sch_doc import (
     SchematicDoc,

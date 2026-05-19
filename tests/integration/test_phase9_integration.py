@@ -15,8 +15,9 @@ Assertions
 
 from __future__ import annotations
 
-import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
+
+import kicad_pcb.graphviz_layout as _gv_mod
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.graphviz_layout import GraphvizLayoutEngine
 from kicad_pcb.layout_engine import make_layout_engine, make_layout_engine_with_ir

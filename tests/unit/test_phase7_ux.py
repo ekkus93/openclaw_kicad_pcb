@@ -39,6 +39,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._sch_apply import (
     ANALOG_AUDIO_HEURISTIC_PROFILE,

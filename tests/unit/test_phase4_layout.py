@@ -32,8 +32,9 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
-import kicad_pcb.graphviz_layout as _gv_mod
 import pytest
+
+import kicad_pcb.graphviz_layout as _gv_mod
 from kicad_pcb.block_detection import BlockLayout, BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._project import minimal_schematic_text

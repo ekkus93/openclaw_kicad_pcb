@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.block_detection import BlockLayout, BlockRole
 from kicad_pcb.errors import ParseError
 from kicad_pcb.lint import LINT_SUGGESTIONS

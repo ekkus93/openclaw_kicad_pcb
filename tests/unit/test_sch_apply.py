@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from pytest import approx
+
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.commands._sch_apply import (
     _expand_generation_ir,
@@ -27,7 +29,6 @@ from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse
 from kicad_pcb.sexpr.nodes import ListNode
 from kicad_pcb.symbol_index import SymbolIndex
-from pytest import approx
 
 pytestmark = pytest.mark.unit
 

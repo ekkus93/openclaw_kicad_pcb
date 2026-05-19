@@ -26,8 +26,9 @@ import uuid
 from argparse import Namespace
 from pathlib import Path
 
-import kicad_pcb.commands.netlist as netlist_mod
 import pytest
+
+import kicad_pcb.commands.netlist as netlist_mod
 from kicad_pcb.models import SessionRef
 from kicad_pcb.results import NewFromNetlistResult
 

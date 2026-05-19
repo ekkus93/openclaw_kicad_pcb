@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import (
     average_symbol_spacing,
@@ -24,7 +25,6 @@ from kicad_pcb.schematic_metrics import (
     page_region_density,
     wire_stub_ratio,
 )
-
 from tests import NE5532_LEFT_CURRENT_READABILITY_FIXTURE
 
 # ---------------------------------------------------------------------------

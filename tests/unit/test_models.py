@@ -6,6 +6,7 @@ from argparse import Namespace
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.errors import UserError
 from kicad_pcb.models import (
     BoardOutlineRect,

@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.adapters import KicadCliAdapter, RunResult
 from kicad_pcb.errors import KiCadError, ParseError, ToolError
 from kicad_pcb.fs import _new_uuid

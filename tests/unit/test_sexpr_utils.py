@@ -13,6 +13,7 @@ Phase 3.4 coverage:
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.parser import parse
 from kicad_pcb.sexpr.utils import (

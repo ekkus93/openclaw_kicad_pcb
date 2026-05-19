@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+
 from kicad_pcb.block_detection import (
     BlockAssignment,
     BlockLayout,
@@ -28,7 +29,6 @@ from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.graphviz_layout.snap import _snap_block_zones
 from kicad_pcb.router import _l_route, _spine_route, route_nets
 from kicad_pcb.sch_doc import SchematicDoc
-
 from tests import (
     NE5532_LEFT_CURRENT_READABILITY_FIXTURE,
     NE5532_LEFT_REGRESSED_READABILITY_FIXTURE,

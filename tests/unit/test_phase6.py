@@ -17,8 +17,9 @@ import json
 import textwrap
 from pathlib import Path
 
-import kicad_pcb
 import pytest
+
+import kicad_pcb
 from kicad_pcb.commands.lint import (
     cmd_format_pcb,
     cmd_format_sch,

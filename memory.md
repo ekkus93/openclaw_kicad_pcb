@@ -6,6 +6,20 @@
 - Final closeout checks were rerun and passed: web app import, CLI import, `uv run pytest tests/web -q`, `uv run pytest tests/unit -q`, `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and a live uvicorn smoke pass against `/`, `/api/doctor`, `/api/symbols/search`, `/api/netlists/validate`, `/api/jobs/from-netlist`, `/jobs/{job_id}`, `project.zip`, and the private `job.json` 404 path.
 - The live QA also confirmed the generated job path defaults to `validation="internal"`, public artifacts are limited to curated files like `project.zip`, `warnings.json`, and `debug.json`, and the frontend generate-result renderer emits direct public artifact links.
 
+## 2026-05-19T22:41:58Z - GPT-5.4 - Captured the current src package architecture snapshot
+
+- `src/` currently contains two top-level packages: `kicad_pcb` as the deterministic KiCad engine/CLI surface and `kicad_pcb_web` as the thin FastAPI web layer over that engine.
+- `kicad_pcb` is organized around Circuit IR ingestion/validation, Graphviz-driven schematic layout, orthogonal routing, AST-based schematic/PCB document mutation, command handlers, linting, symbol lookup, and typed result/error/config adapters.
+- `kicad_pcb_web` is organized as a thin dependency-injected shell with FastAPI routes, Pydantic API schemas, file-backed job/artifact services, and local filesystem settings; it delegates validation and project generation to `kicad_pcb.commands` rather than reimplementing engine logic.
+
+## 2026-05-19T23:10:14Z - GPT-5.4 - Closed FIX_WIRES TODO status drift under the uv-managed workflow and restored a green repo gate
+
+- `code_review/FIX_WIRES_TODO.md` now reflects the real current state: the stale unchecked subtasks in items 2 and 3 are marked done, Phase 6 is marked done, and its command/validation examples now use the repo's actual `uv` + `legacy/openclaw-skill/scripts/kicad_pcb.py` workflow instead of the old `kicad-pcb/` tree.
+- Verified the FIX_WIRES closeout with a fresh KiCad-mode preview generated from `code_review/ne5532_headphone_amp_netlist.json`, exported `OpenClaw_Managed.svg`, converted it to PNG, and visually confirmed the intended `J1 -> C5/R1 -> RV1 -> U1` input-side story still holds while preserving the improved output neighborhood.
+- The repo had a real green-gate blocker unrelated to FIX_WIRES logic: 53 test files had stale Ruff `I001` import-order violations after the environment was synced with `uv`, so `uv run ruff check . --fix` was applied to normalize import order across the test suite.
+- Two additional test drifts were repaired to restore a full green suite: `tests/integration/test_phase0_smoke.py` now points at `legacy/openclaw-skill/scripts/kicad_pcb.py` after the layout move, and `tests/unit/test_netlist_commands.py::test_search_symbols_kicad9_renamed_symbols` now queries `C_Polarized` via `"polarized"` to match the actual KiCad 9 Device library metadata.
+- Final validation on this tree is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, plus the focused FIX_WIRES routing slice and narrow Ruff/mypy checks on `src/kicad_pcb/router.py`.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

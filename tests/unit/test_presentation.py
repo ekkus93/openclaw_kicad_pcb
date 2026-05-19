@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.formatting import format_result
 from kicad_pcb.models import FootprintMoveSpec, LintIssue, ProjectRef, ValidationResult
 from kicad_pcb.results import (

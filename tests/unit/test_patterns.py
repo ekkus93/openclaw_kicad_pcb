@@ -16,6 +16,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+
 from kicad_pcb import lib_symbol as _lib_symbol
 from kicad_pcb.cli import _build_parser
 from kicad_pcb.commands import patterns as _cmd_patterns

@@ -17,6 +17,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
 from kicad_pcb.commands.search import (
     _grep_matching_files,
     _parse_file_to_cached,

@@ -20,6 +20,7 @@ import re
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.lint import LintSeverity, lint_pcb, lint_schematic
 from kicad_pcb.sexpr import parse, serialize
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode

@@ -16,6 +16,7 @@ Verifies the three-layer contract introduced by P2.2:
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.pcb_doc import PcbDoc
 from kicad_pcb.sexpr.builder import atom, fnum, fnum_or_keep
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Position

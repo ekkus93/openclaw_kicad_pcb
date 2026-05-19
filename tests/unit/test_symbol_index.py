@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import kicad_pcb.symbol_index as si_mod
 import pytest
+
+import kicad_pcb.symbol_index as si_mod
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.symbol_index import SymbolIndex, resolve_symbol_dirs
 

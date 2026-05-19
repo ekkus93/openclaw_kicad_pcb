@@ -32,9 +32,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 import kicad_pcb
 import kicad_pcb.fs as fs_mod
-import pytest
 from kicad_pcb.errors import (
     DocLintError,
     DocSyntaxError,

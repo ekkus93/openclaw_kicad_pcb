@@ -8,6 +8,7 @@ needed.
 from __future__ import annotations
 
 import pytest
+
 from kicad_pcb.lint import (
     LintIssue,
     LintSeverity,

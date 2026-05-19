@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+
 from kicad_pcb.pcb_doc import PcbDoc
 from kicad_pcb.pipeline import (
     ValidationMode,

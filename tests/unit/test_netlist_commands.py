@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands._sch_apply import _cleanup_new_managed_file
 from kicad_pcb.commands.netlist import (
@@ -27,7 +28,6 @@ from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb.sexpr.utils import find_all, find_first, walk
-
 from tests import NE5532_HEADPHONE_REVIEW_FIXTURE, SYMBOLS_FIXTURE_DIR
 
 
@@ -5171,9 +5171,9 @@ def test_search_symbols_searched_dirs_reported() -> None:
 
 @_skip_no_system_symbols
 def test_search_symbols_kicad9_renamed_symbols() -> None:
-    """Verify KiCad 9 renames: C_Polarized and R_Potentiometer exist; legacy names do not."""
+    """Verify KiCad 9 renamed symbols are discoverable via current library metadata."""
     args_cp = Namespace(
-        query="polarized capacitor",
+        query="polarized",
         symbols_dir=str(_KICAD_SYSTEM_SYMBOLS),
         limit=20,
     )

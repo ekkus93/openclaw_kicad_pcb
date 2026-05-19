@@ -7,9 +7,10 @@ import types
 import uuid
 from pathlib import Path
 
+import pytest
+
 import kicad_pcb.commands.session as session_mod
 import kicad_pcb.config as cfg_mod
-import pytest
 from kicad_pcb.commands.session import cmd_close_session, cmd_new_session, cmd_session_info
 from kicad_pcb.config import (
     clear_current_session,

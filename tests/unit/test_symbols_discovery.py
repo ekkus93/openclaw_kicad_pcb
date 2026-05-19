@@ -24,8 +24,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import kicad_pcb.config as cfg_module
 import pytest
+
+import kicad_pcb.config as cfg_module
 from kicad_pcb.adapters import FakeRunner
 from kicad_pcb.cli import _build_parser
 from kicad_pcb.commands.doctor import cmd_doctor

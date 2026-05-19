@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.errors import ParseError
 from kicad_pcb.pcb_doc import PcbDoc, make_gr_line_node
 from kicad_pcb.sexpr import find_all, find_first, parse, serialize

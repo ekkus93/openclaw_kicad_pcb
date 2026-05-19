@@ -22,6 +22,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from kicad_pcb.commands.project import (
     _PCB_LAYERS,
     _build_pcb_skeleton,
