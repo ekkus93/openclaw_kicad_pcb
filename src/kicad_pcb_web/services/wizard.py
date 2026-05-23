@@ -109,6 +109,24 @@ def read_wizard_session(settings: WebSettings, session_id: str) -> WizardSession
     return WizardSessionDetail.model_validate_json(path.read_text(encoding="utf-8"))
 
 
+def update_wizard_session_metadata(
+    *,
+    settings: WebSettings,
+    session_id: str,
+    project_name: str | None,
+    symbols_dir: str | None,
+) -> WizardSessionDetail:
+    session = read_wizard_session(settings, session_id)
+    updated = session.model_copy(
+        update={
+            "project_name": project_name,
+            "symbols_dir": symbols_dir,
+            "updated_at": _utc_now(),
+        }
+    )
+    return _persist_session(settings, updated)
+
+
 def _append_message(
     session: WizardSessionDetail,
     *,
@@ -432,7 +450,14 @@ def generate_wizard_ir(
     if session.spec is None or not session.spec_approved:
         raise UserError("Approve the circuit spec before generating Circuit IR.")
 
-    session = session.model_copy(update={"status": "drafting_ir", "updated_at": _utc_now()})
+    session = session.model_copy(
+        update={
+            "status": "drafting_ir",
+            "latest_job_id": None,
+            "error": None,
+            "updated_at": _utc_now(),
+        }
+    )
     last_error: str | None = None
     prior_ir_json: dict[str, object] | None = None
     try:

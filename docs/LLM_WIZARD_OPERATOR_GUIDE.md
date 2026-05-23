@@ -106,18 +106,38 @@ The wizard is organized around four visible steps:
 3. `Review Circuit IR`
 4. `Generate Project`
 
+Route family:
+
+```text
+/wizard
+/wizard/{session_id}
+/wizard/{session_id}/describe
+/wizard/{session_id}/spec
+/wizard/{session_id}/ir
+/wizard/{session_id}/generate
+```
+
 Normal operator flow:
 
 1. Open `/wizard`.
-2. Enter the first circuit request in the action rail.
-3. Use the `Describe Circuit` step until the wizard produces a reviewable spec.
-4. In `Review Spec`, either click `Approve Spec` or send one concise revision note.
-5. In `Review Circuit IR`, review the validation banner, fixes, warnings, and optional raw JSON.
-6. Click `Generate Project` when the IR is valid.
+2. Create a new session from the landing page.
+3. Use `/wizard/{session_id}/describe` until the wizard produces a reviewable spec.
+4. Move to `/wizard/{session_id}/spec` and either click `Approve Spec` or send a concise revision note.
+5. Move to `/wizard/{session_id}/ir`, review the validation banner, fixes, warnings, and optional raw JSON, then generate or repair IR as needed.
+6. Move to `/wizard/{session_id}/generate` when the IR is valid.
 7. Open the generated job detail page from the final result card.
 
-If a provider call takes a while, the inline status box in the action rail now
-shows an explicit in-progress message instead of leaving the page visually idle.
+Route rules:
+
+- `/wizard/{session_id}` redirects to the canonical active step.
+- Deep-linking to a future step redirects to the blocking step.
+- Earlier completed steps remain revisitable, but editing them can invalidate later work.
+
+Invalidation rules:
+
+- Sending another message from `Describe Circuit` clears spec approval, current Circuit IR, and the active generation result link.
+- Sending a revision note from `Review Spec` clears current Circuit IR and the active generation result link.
+- Generating Circuit IR again from `Review Circuit IR` clears the active generation result link before the new IR becomes current.
 
 ## What the Wizard Stores
 
@@ -158,11 +178,11 @@ Check:
 ### Spec will not approve
 
 Inspect the `Open Questions` and `Unsupported Constraints` boxes, then send one
-clarification or revision note from the action rail.
+clarification or revision note from the earlier step.
 
 ### IR generation fails
 
-Inspect the `Circuit IR Review` panel for the exact validation error and any
+Inspect the `/wizard/{session_id}/ir` page for the exact validation error and any
 deterministic fixes already applied.
 
 ### Project generation fails
@@ -173,6 +193,11 @@ Open the generated job detail page and inspect:
 - diagnostics/debug
 - raw result JSON
 - raw error JSON if present
+
+### A step URL redirects somewhere else
+
+The server only renders steps that are currently unlocked. If a route redirects,
+the target route is the blocking or canonical step for that session.
 
 ## Safety Notes
 

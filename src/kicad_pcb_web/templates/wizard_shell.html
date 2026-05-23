@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero wizard-hero wizard-hero-shell wizard-route-shell">
+  <div>
+    <p class="wizard-eyebrow">LLM-assisted circuit flow</p>
+    <h1>{{ current_step_meta.heading }}</h1>
+    <p class="wizard-lead">{{ current_step_meta.lead }}</p>
+  </div>
+  <div class="wizard-hero-aside">
+    <p class="wizard-hero-label">Provider</p>
+    <p class="wizard-provider-name">{{ llm_provider }}</p>
+    <p class="wizard-hero-status">Session {{ session.id }} · {{ session.status.replace("_", " ") }}</p>
+  </div>
+</section>
+
+<section class="panel wizard-progress-panel">
+  <h2 class="wizard-section-title">Wizard Steps</h2>
+  <ol class="wizard-step-tracker" aria-label="Wizard step tracker">
+    {% for item in step_items %}
+      <li class="wizard-step is-{{ item.state }}" data-step="{{ item.name }}">
+        <span class="wizard-step-index">{{ loop.index }}</span>
+        <div class="wizard-step-copy">
+          {% if item.url %}
+            <a class="wizard-step-link" href="{{ item.url }}">{{ item.label }}</a>
+          {% else %}
+            <span class="wizard-step-link is-disabled">{{ item.label }}</span>
+          {% endif %}
+          <p>{{ item.summary }}</p>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<div class="wizard-layout wizard-route-layout">
+  <aside class="panel sticky-panel wizard-action-rail wizard-route-rail">
+    <div class="wizard-rail-header wizard-shell-header">
+      <div>
+        <h2>{{ current_step_meta.sidebar_title }}</h2>
+        <p class="muted">{{ current_step_meta.sidebar_copy }}</p>
+      </div>
+      <a class="wizard-ghost-link" href="/wizard">New Session</a>
+    </div>
+
+    <dl class="summary-list compact-summary wizard-meta-summary">
+      <dt>Session</dt>
+      <dd>{{ session.id }}</dd>
+      <dt>Status</dt>
+      <dd><span class="status-pill {{ status_class }}">{{ session.status.replace("_", " ") }}</span></dd>
+      <dt>Provider</dt>
+      <dd>{{ session.llm_provider or llm_provider }}</dd>
+      <dt>Project</dt>
+      <dd>{{ session.project_name or (session.spec.project_name if session.spec else "Not set") }}</dd>
+    </dl>
+
+    {% if current_step != canonical_step %}
+      <div class="result-box status-warning wizard-rail-note">
+        <strong>Session is currently on {{ canonical_step_meta.label }}.</strong>
+        <p class="muted">You are reviewing an earlier step. Continuing returns to the active checkpoint.</p>
+        <a class="button-link wizard-inline-link" href="{{ canonical_step_url }}">Return to {{ canonical_step_meta.label }}</a>
+      </div>
+    {% endif %}
+
+    {% if wizard_notice %}
+      <div class="result-box {{ wizard_notice_level }} wizard-rail-note">
+        <strong>{{ wizard_notice }}</strong>
+      </div>
+    {% endif %}
+
+    {% if session.error %}
+      <div class="result-box status-error wizard-rail-note">
+        <strong>Wizard error</strong>
+        <p class="muted">{{ session.error.message }}</p>
+      </div>
+    {% endif %}
+
+    {% if invalidation_notice %}
+      <div class="result-box status-warning wizard-rail-note">
+        <strong>Changing this step clears later work.</strong>
+        <p class="muted">{{ invalidation_notice }}</p>
+      </div>
+    {% endif %}
+
+    {% if not llm_enabled %}
+      <div class="result-box status-error wizard-rail-note">
+        <strong>Wizard disabled</strong>
+        <p class="muted">Enable an LLM provider in the web-app config before using these workflow actions.</p>
+      </div>
+    {% endif %}
+
+    <div class="wizard-nav-stack">
+      {% if previous_step_url %}
+        <a class="button-link wizard-secondary-link" href="{{ previous_step_url }}">{{ previous_step_label }}</a>
+      {% endif %}
+      {% if continue_url %}
+        <a class="button-link" href="{{ continue_url }}">{{ continue_label }}</a>
+      {% elif continue_note %}
+        <p class="wizard-nav-note">{{ continue_note }}</p>
+      {% endif %}
+    </div>
+  </aside>
+
+  <div class="wizard-main-flow wizard-route-main">
+    <section class="panel wizard-focus-panel wizard-route-focus">
+      <div class="wizard-focus-header">
+        <div>
+          <p class="wizard-eyebrow">{{ current_step_meta.kicker }}</p>
+          <h2>{{ current_step_meta.title }}</h2>
+        </div>
+        <p class="wizard-focus-detail">{{ current_step_meta.detail }}</p>
+      </div>
+      <div class="wizard-stage-banner {{ banner_class }}">{{ banner_text }}</div>
+    </section>
+
+    {% block wizard_step_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

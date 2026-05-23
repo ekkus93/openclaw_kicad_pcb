@@ -131,14 +131,24 @@ explicitly asks for `validation="kicad"`.
 
 ## LLM Wizard
 
-The web app now includes a local-first LLM-assisted wizard at `/wizard`.
+The web app now includes a local-first LLM-assisted wizard with a start page at
+`/wizard`.
 
-The UI is step-driven:
+The routed workflow is step-driven:
 
 1. `Describe Circuit`
 2. `Review Spec`
 3. `Review Circuit IR`
 4. `Generate Project`
+
+Route family:
+
+- `/wizard` — start page for creating a new session
+- `/wizard/{session_id}` — redirector to the canonical active step
+- `/wizard/{session_id}/describe`
+- `/wizard/{session_id}/spec`
+- `/wizard/{session_id}/ir`
+- `/wizard/{session_id}/generate`
 
 Supported flow:
 
@@ -149,6 +159,9 @@ conversation -> circuit spec -> approved spec -> Circuit IR JSON -> validate/fix
 The LLM wizard does not write KiCad files directly. All schematic generation
 still goes through the same deterministic Circuit IR validation and project
 generation path used by the direct JSON workflow.
+
+The server is authoritative for route access. Illegal deep links redirect back
+to the blocking step instead of rendering an incomplete future page.
 
 Supported provider modes:
 
@@ -172,9 +185,18 @@ The wizard stores file-backed sessions under the web data directory and persists
 - current Circuit IR draft
 - latest generation job link
 
-The redesigned wizard keeps a persistent action rail visible on desktop so the
-current state, next action, and spec-approval boundary stay in reach while the
-active review panel changes by step.
+Invalidation rules for backward changes:
+
+- Sending another conversation message clears spec approval, active Circuit IR,
+  and the active generation result link.
+- Sending a revision note from the spec step clears active Circuit IR and the
+  active generation result link.
+- Regenerating Circuit IR clears the active generation result link before the
+  new IR becomes current.
+
+The routed wizard keeps a persistent action rail visible on desktop so the
+current state, next action, and checkpoint boundary stay in reach while each
+step gets its own page.
 
 The web app binds to `127.0.0.1` by default and is intended for local/internal use
 in v1. Do not expose it publicly without adding authentication, isolation, and

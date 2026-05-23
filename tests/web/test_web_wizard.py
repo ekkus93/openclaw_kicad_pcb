@@ -318,6 +318,63 @@ def test_wizard_retries_ir_generation_after_invalid_pin_regression(
     app.dependency_overrides.clear()
 
 
+def test_regenerating_ir_clears_previous_generation_link(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(
+        responses=[
+            json.dumps(
+                {
+                    "assistant_message": "Drafted a reviewable specification.",
+                    "next_state": "spec_ready_for_review",
+                    "spec": {
+                        "project_name": "RegenWizardAmp",
+                        "purpose": "A simple passive attenuation stage.",
+                    },
+                    "assumptions": [],
+                    "open_questions": [],
+                    "unsupported_reasons": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Converted the approved spec into Circuit IR.",
+                    "netlist_json": _VALID_NETLIST,
+                    "assumptions": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Regenerated the Circuit IR after review.",
+                    "netlist_json": _VALID_NETLIST,
+                    "assumptions": [],
+                }
+            ),
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "I want a simple passive attenuator."},
+    )
+    session_id = create_response.json()["id"]
+
+    client.post(f"/api/wizard/sessions/{session_id}/approve-spec")
+    client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+    project_response = client.post(f"/api/wizard/sessions/{session_id}/generate-project")
+    assert project_response.status_code == 200
+    assert project_response.json()["session"]["latest_job_id"] is not None
+
+    regenerated_response = client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+    assert regenerated_response.status_code == 200
+    regenerated_session = regenerated_response.json()
+    assert regenerated_session["status"] == "ir_ready_for_generation"
+    assert regenerated_session["latest_job_id"] is None
+
+    app.dependency_overrides.clear()
+
+
 def test_wizard_surfaces_ir_needs_repair_for_hallucinated_symbol_regression(
     tmp_path,
     monkeypatch,

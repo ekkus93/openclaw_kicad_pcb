@@ -342,6 +342,106 @@ details summary {
   padding: 1.25rem 1.25rem 0.9rem;
 }
 
+.wizard-route-layout,
+.wizard-start-layout {
+  align-items: start;
+}
+
+.wizard-route-shell {
+  margin-bottom: 1.5rem;
+}
+
+.wizard-route-rail {
+  display: grid;
+  gap: 1rem;
+}
+
+.wizard-route-main {
+  display: grid;
+  gap: 1rem;
+}
+
+.wizard-shell-header {
+  align-items: start;
+}
+
+.wizard-step-copy {
+  min-width: 0;
+}
+
+.wizard-step-link {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wizard-step-link:hover {
+  text-decoration: underline;
+}
+
+.wizard-step-link.is-disabled {
+  color: #6a7688;
+  cursor: default;
+  text-decoration: none;
+}
+
+.wizard-ghost-link,
+.wizard-secondary-link,
+.wizard-inline-link {
+  text-decoration: none;
+}
+
+.wizard-ghost-link {
+  border: 1px solid #b8c4d6;
+  border-radius: 999px;
+  color: #1b2430;
+  padding: 0.45rem 0.9rem;
+}
+
+.wizard-secondary-link {
+  background: #e8edf5;
+  color: #1b2430;
+}
+
+.wizard-inline-link {
+  margin-top: 0.75rem;
+}
+
+.wizard-rail-note {
+  min-height: 0;
+}
+
+.wizard-nav-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wizard-nav-note {
+  color: #5a697d;
+  margin: 0;
+}
+
+.wizard-page-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.wizard-form-grid {
+  margin-bottom: 0;
+}
+
+.wizard-kv-grid {
+  grid-template-columns: max-content 1fr;
+}
+
+.wizard-inline-note {
+  margin-top: 1rem;
+}
+
+.wizard-start-panel {
+  min-width: 0;
+}
+
 .wizard-section-title {
   margin-top: 0;
 }

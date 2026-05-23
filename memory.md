@@ -64,6 +64,18 @@
 - The sample `[llm]` TOML block in `README.md` now includes `debug_artifact_capture = false`, matching the current supported settings in `src/kicad_pcb_web/settings.py`.
 - The README-only refresh was revalidated with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and full `uv run pytest -q`.
 
+## 2026-05-23T15:01:40Z - GPT-5.4 - Added a dedicated route-per-step wizard workflow backlog
+
+- Added `docs/WIZARD_WORKFLOW_TODO.md` as a detailed implementation backlog for converting the current single-page wizard into separate step routes with forward/back navigation.
+- The new TODO centers on server-authoritative step routing, backward-navigation invalidation rules, dedicated describe/spec/IR/generate pages, redirect/deep-link behavior, and coverage for progression plus artifact invalidation.
+- The file is a planning artifact only; it does not implement the workflow rewrite yet.
+
+## 2026-05-23T15:31:44Z - GPT-5.4 - Completed the route-per-step wizard workflow rewrite and validation closeout
+
+- The wizard UI now uses a server-authoritative route family: `/wizard` start page, `/wizard/{session_id}` redirector, and dedicated `/describe`, `/spec`, `/ir`, and `/generate` pages with shared shell layout, route-local forms, and explicit back/continue controls.
+- `src/kicad_pcb_web/routes/ui.py` now owns canonical step resolution, deep-link guards, routed POST actions, and user-visible invalidation messaging; `src/kicad_pcb_web/services/wizard.py` also now clears `latest_job_id` when Circuit IR is regenerated so stale generation links do not survive IR changes.
+- Added focused regression coverage for route guards and IR-regeneration invalidation, updated README plus wizard design/operator docs, marked `docs/WIZARD_WORKFLOW_TODO.md` done, and revalidated with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, plus live HTTP route smokes for happy-path redirects and backward invalidation.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

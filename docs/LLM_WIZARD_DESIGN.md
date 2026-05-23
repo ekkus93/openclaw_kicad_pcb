@@ -94,6 +94,19 @@ Session states:
 - `completed`
 - `failed`
 
+Canonical UI route mapping:
+
+- `drafting_spec` -> `/wizard/{session_id}/describe`
+- `awaiting_user_clarification` -> `/wizard/{session_id}/describe`
+- `spec_ready_for_review` -> `/wizard/{session_id}/spec`
+- `spec_approved` -> `/wizard/{session_id}/ir`
+- `drafting_ir` -> `/wizard/{session_id}/ir`
+- `ir_needs_repair` -> `/wizard/{session_id}/ir`
+- `ir_ready_for_generation` -> `/wizard/{session_id}/generate`
+- `generation_started` -> `/wizard/{session_id}/generate`
+- `completed` -> `/wizard/{session_id}/generate`
+- `failed` -> nearest step with persisted state available
+
 ## Prompt Contracts
 
 The wizard uses two structured JSON contracts.
@@ -146,23 +159,37 @@ Wizard API routes:
 
 ## UI Surface
 
-The wizard UI lives at `/wizard`.
+The routed wizard UI uses:
 
-Primary visible controls:
+- `/wizard` as the start page for creating sessions
+- `/wizard/{session_id}` as the canonical-step redirector
+- dedicated describe, spec, IR, and generate pages for the active session
 
-- message box
-- start/send button
-- approve spec button
-- generate IR button
-- generate project button
+Shared layout surfaces:
 
-The page shows:
+- step tracker
+- session metadata rail
+- route-safe notice region
+- explicit back/continue navigation
 
-- transcript
-- spec summary
-- IR summary
-- open questions
-- generation result link
+Step-local surfaces:
+
+- `describe`: project inputs, message composer, transcript
+- `spec`: human-readable circuit spec plus revision/approval controls
+- `ir`: validation-first IR summary, repair action, raw JSON disclosure
+- `generate`: readiness summary, project-generation action, latest job result
+
+Route guard rules:
+
+- future-step URLs redirect to the blocking canonical step
+- earlier completed steps remain viewable
+- backward edits invalidate later derived artifacts deterministically
+
+Invalidation rules:
+
+- conversation changes clear spec approval, IR, and active job link
+- spec revision changes clear IR and active job link
+- IR regeneration clears the active job link before a new IR becomes current
 
 ## Security and Exposure Boundary
 
