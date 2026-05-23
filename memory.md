@@ -58,6 +58,12 @@
 - The canonical redesign backlog and completion record now lives at `docs/UIUX1_TODO.md`, the stale root copy became a pointer file, and additional redesign notes were captured in `docs/UIUX1_IMPLEMENTATION_NOTES.md` plus updated README/operator-guide text.
 - Final redesign validation is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, focused wizard UI tests, and live browser verification of representative active, blocked, and completion states.
 
+## 2026-05-23T14:54:13Z - GPT-5.4 - Synced the README with the shipped wizard-enabled web app
+
+- `README.md` no longer claims that the web app as a whole has no LLM integration; it now correctly states that the deterministic Circuit IR generation path is LLM-independent while the web app also ships the optional local `/wizard` flow.
+- The sample `[llm]` TOML block in `README.md` now includes `debug_artifact_capture = false`, matching the current supported settings in `src/kicad_pcb_web/settings.py`.
+- The README-only refresh was revalidated with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and full `uv run pytest -q`.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

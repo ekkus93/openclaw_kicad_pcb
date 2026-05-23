@@ -100,6 +100,7 @@ ir_max_repair_rounds = 2
 enable_streaming = false
 request_log_redaction = true
 network_probe_enabled = false
+debug_artifact_capture = false
 ```
 
 Environment variables still override config-file values when both are set.
@@ -188,9 +189,13 @@ archived CLI workflow:
 Circuit IR JSON → KiCad .kicad_sch
 ```
 
-The web app does not depend on any LLM integration. Historical OpenClaw or
-LLM-assisted workflows may still target this same Circuit IR format, but they
-are optional and external to the web app itself.
+The deterministic Circuit IR generation path does not depend on LLMs. The web
+app now optionally includes the local `/wizard` flow, but both the direct JSON
+workflow and the wizard converge on the same validated Circuit IR pipeline.
+
+Historical OpenClaw or other LLM-assisted workflows may still target this same
+Circuit IR format, but they are optional producers for the pipeline rather than
+alternate generation paths.
 
 Users provide a **Circuit IR JSON** file describing components and net
 connections. The deterministic engine compiles that IR into a KiCad schematic.
