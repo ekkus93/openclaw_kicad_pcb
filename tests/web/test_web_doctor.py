@@ -17,3 +17,5 @@ def test_web_doctor_returns_json(tmp_path, monkeypatch) -> None:
     payload = response.json()
     assert "ok" in payload
     assert isinstance(payload["checks"], list)
+    check_names = {check["name"] for check in payload["checks"]}
+    assert {"llm_provider", "llm_configuration", "llm_network_probe"} <= check_names

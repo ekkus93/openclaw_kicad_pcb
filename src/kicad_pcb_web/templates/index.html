@@ -10,6 +10,27 @@
 </section>
 
 <div class="grid two-column">
+  <section class="panel panel-accent">
+    <h2>LLM Wizard</h2>
+    <p class="panel-note">
+      Guided circuit conversation, spec approval, Circuit IR review, then normal
+      deterministic generation.
+    </p>
+    <p class="muted">Provider: {{ llm_provider }}</p>
+    <div class="button-row">
+      <a class="button-link" href="/wizard">Open Wizard</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Direct Circuit IR</h2>
+    <p class="panel-note">
+      Paste or upload canonical Circuit IR JSON and validate or generate it directly.
+    </p>
+  </section>
+</div>
+
+<div class="grid two-column">
   <section class="panel">
     <h2>Generate from Circuit IR</h2>
     <label for="project-name">Project name</label>

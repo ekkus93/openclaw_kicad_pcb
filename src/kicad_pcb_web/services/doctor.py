@@ -77,6 +77,47 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
             ok=preview_tool is not None,
             detail=preview_tool or "No optional preview tooling found.",
         ),
+        DoctorCheck(
+            name="llm_provider",
+            ok=True,
+            detail=(
+                f"Provider: {settings.llm.provider}; model: {settings.llm.model or 'not set'}"
+            ),
+        ),
+        DoctorCheck(
+            name="llm_configuration",
+            ok=(
+                not settings.llm.enabled
+                or (
+                    settings.llm.model is not None
+                    and (
+                        settings.llm.provider == "openai"
+                        or settings.llm.base_url is not None
+                    )
+                )
+            ),
+            detail=(
+                "LLM disabled."
+                if not settings.llm.enabled
+                else (
+                    f"Configured for {settings.llm.provider}; "
+                    f"base URL: {settings.llm.base_url or 'default'}; "
+                    f"prompt version: {settings.llm.system_prompt_version}"
+                )
+            ),
+        ),
+        DoctorCheck(
+            name="llm_network_probe",
+            ok=not settings.llm.enabled or not settings.llm.network_probe_enabled,
+            detail=(
+                "Probe disabled."
+                if not settings.llm.enabled or not settings.llm.network_probe_enabled
+                else (
+                    f"Probe enabled for {settings.llm.provider}, "
+                    "but active probing is not implemented yet."
+                )
+            ),
+        ),
     ]
     required_checks = {"python", "jobs_dir", "symbols_dir", "graphviz_dot"}
     overall_ok = all(check.ok for check in checks if check.name in required_checks)

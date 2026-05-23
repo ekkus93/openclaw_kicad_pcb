@@ -6,6 +6,7 @@ import json
 import logging
 import shutil
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
@@ -27,6 +28,19 @@ from .artifacts import create_project_zip, list_artifacts
 from .jobs import JobRecord, create_job_workspace, update_job_status, write_job
 
 LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class PreparedNetlist:
+    """Validated raw netlist payload plus deterministic repair metadata."""
+
+    netlist_json: dict[str, Any]
+    component_count: int
+    net_count: int
+    warnings: list[dict[str, Any]]
+    symbols_dirs_used: list[str]
+    fixes_applied: list[str]
+    auto_fixed: bool
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -74,12 +88,12 @@ def _validate_with_optional_autofix(
     raw_netlist_json: dict[str, Any],
     symbols_dir: Path | None,
     auto_fix: bool,
-) -> tuple[Path, SymbolIndex, Any]:
+) -> tuple[Path, SymbolIndex, Any, list[str]]:
     """Validate a netlist file, optionally repairing deterministic issues first."""
 
     try:
         symbol_index, ir = _validate_path(netlist_path=netlist_path, symbols_dir=symbols_dir)
-        return netlist_path, symbol_index, ir
+        return netlist_path, symbol_index, ir, []
     except UserError as first_error:
         if not auto_fix:
             raise
@@ -106,7 +120,38 @@ def _validate_with_optional_autofix(
                 f"Remaining error: {retry_error}",
                 code=ErrorCode.IR_SCHEMA_INVALID,
             ) from retry_error
-        return fixed_path, fixed_symbol_index, fixed_ir
+        return fixed_path, fixed_symbol_index, fixed_ir, list(outcome.fixes_applied)
+
+
+def prepare_netlist_dict(
+    *,
+    netlist_json: dict[str, Any],
+    symbols_dir: Path | None,
+    auto_fix: bool,
+) -> PreparedNetlist:
+    """Validate and optionally repair a raw Circuit IR payload."""
+
+    with tempfile.TemporaryDirectory(prefix="kicad-pcb-web-prepare-") as temp_dir:
+        netlist_path = Path(temp_dir) / "circuit_ir.json"
+        _write_json(netlist_path, netlist_json)
+        effective_path, symbol_index, ir, fixes_applied = _validate_with_optional_autofix(
+            netlist_path=netlist_path,
+            raw_netlist_json=netlist_json,
+            symbols_dir=symbols_dir,
+            auto_fix=auto_fix,
+        )
+        prepared_json = json.loads(effective_path.read_text(encoding="utf-8"))
+        warnings = advisory_warnings(ir, symbol_index)
+
+    return PreparedNetlist(
+        netlist_json=prepared_json,
+        component_count=len(ir.components),
+        net_count=len(ir.nets),
+        warnings=warnings,
+        symbols_dirs_used=[str(path) for path in symbol_index.directories],
+        fixes_applied=fixes_applied,
+        auto_fixed=bool(fixes_applied),
+    )
 
 
 def validate_netlist_dict(
@@ -116,18 +161,18 @@ def validate_netlist_dict(
 ) -> ValidateNetlistResponse:
     """Validate a raw Circuit IR payload without creating a project."""
 
-    with tempfile.TemporaryDirectory(prefix="kicad-pcb-web-validate-") as temp_dir:
-        netlist_path = Path(temp_dir) / "circuit_ir.json"
-        _write_json(netlist_path, netlist_json)
-        symbol_index, ir = _validate_path(netlist_path=netlist_path, symbols_dir=symbols_dir)
-        warnings = advisory_warnings(ir, symbol_index)
+    prepared = prepare_netlist_dict(
+        netlist_json=netlist_json,
+        symbols_dir=symbols_dir,
+        auto_fix=False,
+    )
 
     return ValidateNetlistResponse(
         valid=True,
-        component_count=len(ir.components),
-        net_count=len(ir.nets),
-        warnings=warnings,
-        symbols_dirs_used=[str(path) for path in symbol_index.directories],
+        component_count=prepared.component_count,
+        net_count=prepared.net_count,
+        warnings=prepared.warnings,
+        symbols_dirs_used=prepared.symbols_dirs_used,
     )
 
 
@@ -145,7 +190,7 @@ def generate_project_from_netlist_job(
     symbols_dir = _parse_symbols_dir(request.symbols_dir)
 
     try:
-        effective_netlist_path, symbol_index, ir = _validate_with_optional_autofix(
+        effective_netlist_path, symbol_index, ir, fixes_applied = _validate_with_optional_autofix(
             netlist_path=record.input_path,
             raw_netlist_json=request.netlist_json,
             symbols_dir=symbols_dir,
@@ -212,6 +257,8 @@ def generate_project_from_netlist_job(
                 if apply_result.generated_schematic_diagnostics is not None
                 else None
             ),
+            "fixes_applied": fixes_applied,
+            "auto_fixed": bool(fixes_applied),
         }
         record = update_job_status(record, status="succeeded", result=result_payload, error=None)
         return record.to_detail(artifacts=list_artifacts(record.work_dir))

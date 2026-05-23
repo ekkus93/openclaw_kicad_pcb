@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero wizard-hero">
+  <h1>LLM Circuit Wizard</h1>
+  <p>
+    Talk through the circuit you want, approve the structured spec, inspect the
+    generated Circuit IR, then hand off to the normal validated generation path.
+  </p>
+  <p class="job-meta">Provider: <strong>{{ llm_provider }}</strong></p>
+</section>
+
+<div class="grid wizard-top-grid">
+  <section class="panel sticky-panel">
+    <h2>Wizard Session</h2>
+    <label for="wizard-project-name">Project name (optional)</label>
+    <input id="wizard-project-name" name="wizard-project-name" type="text" placeholder="WizardDemo" />
+
+    <label for="wizard-symbols-dir">Symbols directory (optional)</label>
+    <input id="wizard-symbols-dir" name="wizard-symbols-dir" type="text" placeholder="/path/to/symbols" />
+
+    <label for="wizard-message-input">Message</label>
+    <textarea id="wizard-message-input" name="wizard-message-input" rows="5" placeholder="Describe the circuit you want."></textarea>
+
+    <div class="button-row wrap-row">
+      <button id="wizard-start-button" type="button" {% if not llm_enabled %}disabled{% endif %}>Start / Send</button>
+      <button id="wizard-approve-button" type="button" disabled>Approve Spec</button>
+      <button id="wizard-generate-ir-button" type="button" disabled>Generate IR</button>
+      <button id="wizard-generate-project-button" type="button" disabled>Generate Project</button>
+    </div>
+
+    <dl class="summary-list compact-summary">
+      <dt>Session</dt>
+      <dd id="wizard-session-id">Not started</dd>
+      <dt>Status</dt>
+      <dd><span id="wizard-status-pill" class="status-pill status-neutral">idle</span></dd>
+    </dl>
+
+    {% if not llm_enabled %}
+      <p class="error-box panel-note">
+        The wizard is disabled in the current server configuration.
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Conversation</h2>
+    <div id="wizard-transcript" class="transcript-box">
+      <p class="muted">No wizard session yet.</p>
+    </div>
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Spec Review</h2>
+    <div id="wizard-spec-summary" class="result-box">
+      <p class="muted">No circuit specification yet.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Circuit IR Review</h2>
+    <div id="wizard-ir-summary" class="result-box">
+      <p class="muted">No Circuit IR generated yet.</p>
+    </div>
+  </section>
+</div>
+
+<div class="grid two-column">
+  <section class="panel">
+    <h2>Open Questions</h2>
+    <div id="wizard-open-questions" class="result-box">
+      <p class="muted">No open questions.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Generation</h2>
+    <div id="wizard-generation-result" class="result-box">
+      <p class="muted">No project generation run yet.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{{ url_for('static', path='/wizard.js') }}"></script>
+{% endblock %}

@@ -26,6 +26,19 @@
 - The archived `apply-pattern` quick-start example was corrected to the current parser shape: open the project first, then call `apply-pattern --pattern resistor-divider ...` with `--r1` / `--r2` rather than the stale positional project argument and old flag names.
 - The archived netlist/debugging/Graphviz examples now prefer `uv run python legacy/openclaw-skill/scripts/kicad_pcb.py ...`, and the recommended validation flag in docs is `--validate ...` rather than the older deprecated `--mode ...` examples.
 
+## 2026-05-23T12:01:26Z - GPT-5.4 - Added file-backed web-app settings for future LLM provider wiring
+
+- `src/kicad_pcb_web/settings.py` now reads an optional TOML config file from `./kicad_pcb_web.toml` by default or `KICAD_PCB_WEB_CONFIG_FILE` when set, with environment variables still taking precedence.
+- The web settings model now includes `llm` configuration for `disabled`, `openai`, `ollama`, and `llama_server` provider modes, but this is config plumbing only; no provider calls or wizard UI are wired yet.
+- Relative `data_dir` paths inside the TOML config are resolved relative to the config file location, and coverage was added in `tests/web/test_web_settings.py` plus a narrow web regression slice.
+
+## 2026-05-23T12:44:42Z - GPT-5.4 - Completed the local LLM wizard workflow, observability tail, and coverage closeout
+
+- The LLM wizard is now implemented end-to-end in `src/kicad_pcb_web/` with provider-backed spec drafting, explicit spec approval, Circuit IR generation, deterministic validation/auto-fix, project handoff, and a dedicated `/wizard` UI plus API route family.
+- The final closeout added the remaining observability/testing slice: opt-in sanitized prompt/response debug artifacts behind `llm.debug_artifact_capture`, fixture-backed golden spec-to-IR tests, and regression coverage for invalid pin repair, hallucinated symbols, missing supply-rail clarification, and contradictory unsupported requests.
+- Documentation is now aligned across `README.md`, `docs/LLM_WIZARD_DESIGN.md`, `docs/LLM_WIZARD_OPERATOR_GUIDE.md`, and `docs/LLM_DESIGN_TODO.md`, with the TODO fully marked done.
+- Final validation on the completed tree is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and full `uv run pytest -q`.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

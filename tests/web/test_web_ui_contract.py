@@ -38,3 +38,28 @@ def test_job_detail_page_shows_review_fix_sections(tmp_path, monkeypatch) -> Non
     assert "Diagnostics / Debug" in html
     assert "Artifacts" in html
     assert "Result Summary" in html
+
+
+def test_home_page_links_to_wizard(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+
+    client = TestClient(app)
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "LLM Wizard" in response.text
+    assert "/wizard" in response.text
+
+
+def test_wizard_page_shows_key_controls(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+
+    client = TestClient(app)
+    response = client.get("/wizard")
+
+    assert response.status_code == 200
+    html = response.text
+    assert "Wizard Session" in html
+    assert "Approve Spec" in html
+    assert "Generate IR" in html
+    assert "Generate Project" in html

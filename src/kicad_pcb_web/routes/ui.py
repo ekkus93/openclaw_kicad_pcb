@@ -56,6 +56,26 @@ async def index(
             "page_title": "KiCad PCB Web App",
             "example_netlist_json": json.dumps(_EXAMPLE_NETLIST, indent=2),
             "recent_jobs": recent_jobs,
+            "llm_provider": settings.llm.provider,
+        },
+    )
+
+
+@router.get("/wizard", response_class=HTMLResponse)
+async def wizard_page(
+    request: Request,
+    settings: WebSettings = Depends(get_settings),
+) -> HTMLResponse:
+    """Render the LLM-assisted wizard page."""
+
+    templates = get_templates()
+    return templates.TemplateResponse(
+        request,
+        "wizard.html",
+        {
+            "page_title": "LLM Wizard",
+            "llm_provider": settings.llm.provider,
+            "llm_enabled": settings.llm.enabled,
         },
     )
 

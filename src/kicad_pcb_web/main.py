@@ -15,7 +15,7 @@ from .errors import (
     handle_unexpected_error,
     handle_user_error,
 )
-from .routes import api_doctor, api_jobs, api_netlists, api_symbols, ui
+from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_wizard, ui
 
 app = FastAPI(title="KiCad PCB Web App")
 
@@ -30,3 +30,4 @@ app.include_router(api_doctor.router, prefix="/api")
 app.include_router(api_symbols.router, prefix="/api")
 app.include_router(api_netlists.router, prefix="/api")
 app.include_router(api_jobs.router, prefix="/api")
+app.include_router(api_wizard.router, prefix="/api")

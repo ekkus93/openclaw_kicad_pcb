@@ -75,6 +75,45 @@ Override the data directory with:
 export KICAD_PCB_WEB_DATA_DIR=/path/to/data
 ```
 
+You can also keep web-app runtime settings in a local TOML config file. By
+default the app will read `./kicad_pcb_web.toml` when present, or you can point
+to another file with `KICAD_PCB_WEB_CONFIG_FILE`:
+
+```toml
+[web]
+data_dir = "./data"
+default_host = "127.0.0.1"
+default_port = 8000
+
+[llm]
+provider = "disabled" # or: openai, ollama, llama_server
+model = "gpt-4.1"
+base_url = "https://api.openai.com/v1"
+api_key = "replace-me"
+timeout_s = 60
+temperature = 0.2
+max_tokens = 4096
+system_prompt_version = "v1"
+spec_max_repair_rounds = 2
+ir_max_repair_rounds = 2
+enable_streaming = false
+request_log_redaction = true
+network_probe_enabled = false
+```
+
+Environment variables still override config-file values when both are set.
+The LLM settings are configuration only for now; the current web app does not
+yet expose an LLM-driven wizard flow.
+
+Provider expectations:
+
+- `disabled`: no provider client is constructed.
+- `openai`: requires `model` and `api_key`; `base_url` is optional.
+- `ollama`: requires `model` and `base_url`.
+- `llama_server`: requires `model` and `base_url`.
+
+Invalid provider configuration now fails fast when the app loads settings.
+
 Generated web jobs are stored under:
 
 ```text
@@ -88,6 +127,42 @@ artifact downloads from the job's `artifacts/` directory.
 The web app defaults to `internal` validation for job generation. Optional KiCad
 CLI validation is available only when `kicad-cli` is installed and a request
 explicitly asks for `validation="kicad"`.
+
+## LLM Wizard
+
+The web app now includes a local-first LLM-assisted wizard at `/wizard`.
+
+Supported flow:
+
+```text
+conversation -> circuit spec -> approved spec -> Circuit IR JSON -> validate/fix -> generate project
+```
+
+The LLM wizard does not write KiCad files directly. All schematic generation
+still goes through the same deterministic Circuit IR validation and project
+generation path used by the direct JSON workflow.
+
+Supported provider modes:
+
+- `disabled`
+- `openai`
+- `ollama`
+- `llama_server`
+
+Security boundary notes:
+
+- Provider credentials stay server-side in the config/env layer.
+- The local web app is still intended for local/internal use.
+- If the app is ever exposed remotely, add authentication and request isolation
+  at the API boundary before exposing `/api/wizard/*` routes.
+
+The wizard stores file-backed sessions under the web data directory and persists:
+
+- conversation transcript
+- current spec draft
+- approved spec state
+- current Circuit IR draft
+- latest generation job link
 
 The web app binds to `127.0.0.1` by default and is intended for local/internal use
 in v1. Do not expose it publicly without adding authentication, isolation, and

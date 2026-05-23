@@ -11,11 +11,13 @@
       <nav class="site-nav">
         <a class="brand" href="/">KiCad PCB Web App</a>
         <a href="/">Home</a>
+        <a href="/wizard">LLM Wizard</a>
       </nav>
     </header>
     <main class="page-shell">
       {% block content %}{% endblock %}
     </main>
     <script src="{{ url_for('static', path='/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
   </body>
 </html>

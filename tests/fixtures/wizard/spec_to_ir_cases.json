@@ -1,0 +1,124 @@
+[
+  {
+    "name": "passive_attenuator",
+    "request_message": "I want a simple passive attenuator.",
+    "spec_response": {
+      "assistant_message": "Drafted a reviewable specification.",
+      "next_state": "spec_ready_for_review",
+      "spec": {
+        "project_name": "WizardAmp",
+        "purpose": "A simple passive attenuation stage.",
+        "inputs": [{"name": "IN"}],
+        "outputs": [{"name": "OUT"}],
+        "blocks": [
+          {
+            "name": "Attenuator",
+            "block_type": "voltage_divider",
+            "summary": "A single resistor divider stage."
+          }
+        ],
+        "acceptance_criteria": ["Provide one input and one output."]
+      },
+      "assumptions": ["Passive attenuation only."],
+      "open_questions": [],
+      "unsupported_reasons": []
+    },
+    "ir_response": {
+      "assistant_message": "Converted the approved spec into Circuit IR.",
+      "netlist_json": {
+        "version": "1",
+        "components": [
+          {"ref": "J1", "symbol": "Connector_Generic:Conn_01x01", "value": "In"},
+          {"ref": "R1", "symbol": "Device:R", "value": "10k"},
+          {"ref": "J2", "symbol": "Connector_Generic:Conn_01x01", "value": "Out"}
+        ],
+        "nets": [
+          {
+            "name": "IN",
+            "pins": [
+              {"ref": "J1", "pin": "1"},
+              {"ref": "R1", "pin": "1"}
+            ]
+          },
+          {
+            "name": "OUT",
+            "pins": [
+              {"ref": "R1", "pin": "2"},
+              {"ref": "J2", "pin": "1"}
+            ]
+          }
+        ]
+      },
+      "assumptions": []
+    },
+    "expected_project_name": "WizardAmp",
+    "expected_component_refs": ["J1", "J2", "R1"],
+    "expected_net_names": ["IN", "OUT"]
+  },
+  {
+    "name": "rc_low_pass",
+    "request_message": "I want a passive RC low-pass filter with one input and one output.",
+    "spec_response": {
+      "assistant_message": "Drafted a reviewable RC filter specification.",
+      "next_state": "spec_ready_for_review",
+      "spec": {
+        "project_name": "RcFilter",
+        "purpose": "A passive RC low-pass filter stage.",
+        "inputs": [{"name": "IN"}],
+        "outputs": [{"name": "OUT"}],
+        "blocks": [
+          {
+            "name": "Filter",
+            "block_type": "filter_stage",
+            "summary": "Series resistor and shunt capacitor low-pass filter."
+          }
+        ],
+        "acceptance_criteria": ["Provide a first-order passive low-pass response."]
+      },
+      "assumptions": ["Ground reference is available."],
+      "open_questions": [],
+      "unsupported_reasons": []
+    },
+    "ir_response": {
+      "assistant_message": "Converted the approved RC filter into Circuit IR.",
+      "netlist_json": {
+        "version": "1",
+        "components": [
+          {"ref": "J1", "symbol": "Connector_Generic:Conn_01x01", "value": "In"},
+          {"ref": "R1", "symbol": "Device:R", "value": "10k"},
+          {"ref": "C1", "symbol": "Device:C", "value": "10n"},
+          {"ref": "J2", "symbol": "Connector_Generic:Conn_01x01", "value": "Out"},
+          {"ref": "J3", "symbol": "Connector_Generic:Conn_01x01", "value": "GND"}
+        ],
+        "nets": [
+          {
+            "name": "IN",
+            "pins": [
+              {"ref": "J1", "pin": "1"},
+              {"ref": "R1", "pin": "1"}
+            ]
+          },
+          {
+            "name": "OUT",
+            "pins": [
+              {"ref": "R1", "pin": "2"},
+              {"ref": "C1", "pin": "1"},
+              {"ref": "J2", "pin": "1"}
+            ]
+          },
+          {
+            "name": "GND",
+            "pins": [
+              {"ref": "C1", "pin": "2"},
+              {"ref": "J3", "pin": "1"}
+            ]
+          }
+        ]
+      },
+      "assumptions": ["Cutoff is set by the chosen R and C values."]
+    },
+    "expected_project_name": "RcFilter",
+    "expected_component_refs": ["C1", "J1", "J2", "J3", "R1"],
+    "expected_net_names": ["GND", "IN", "OUT"]
+  }
+]
