@@ -157,6 +157,8 @@ class WizardMessageRequest(BaseModel):
     """Request body for adding a user message to a wizard session."""
 
     message: str = Field(min_length=1, max_length=8000)
+    project_name: str | None = None
+    symbols_dir: str | None = None
 
 
 class WizardGenerateProjectResponse(BaseModel):

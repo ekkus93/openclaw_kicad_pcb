@@ -198,6 +198,18 @@
 - Added 555-specific advisory coverage in `kicad-pcb/src/kicad_pcb/commands/_validate.py` for mandatory 555 pin roles, timing-node structure, timing/CTRL capacitor targeting, steering-network shape, gate-drive rules, low-side load topology, and frequency-range sanity; focused Ruff/mypy/pytest slices stayed green as the rule set expanded.
 - Added local symbol fixtures for `Timer:NE555`, `Transistor_FET:Q_NMOS_GSD`, `Device:D`, and `Connector_Generic:Conn_01x02`, plus a checked-in canonical 555 PWM readability fixture under `tests/fixtures/readability/timer555_pwm_dimmer/`.
 - The canonical 555 fixture now has regression coverage for: zero 555-specific advisories on the intended design, structural generation/population, semantic placement of the timer/timing parts/output block, steering-diode direction, timing-capacitor misplacement to the supply rail, and gate-pull-down misplacement onto the timing node.
+
+## 2026-05-23T17:28:44Z - GPT-5.4 - Completed the full React + TypeScript frontend migration for the web UI
+
+- The browser UI now runs as a Vite-built React + TypeScript SPA under `frontend/`, with the production bundle emitted to `src/kicad_pcb_web/static/spa/` and served by FastAPI shell routes instead of the old server-rendered Jinja pages.
+- Added a frontend bootstrap API plus typed client fetch layer so the SPA can drive doctor, symbols, netlist validation/job creation, and the full wizard session flow against the existing backend JSON APIs.
+- The final validation gate for this migration is green with `cd frontend && npm run lint`, `cd frontend && npm run build`, `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and full `uv run pytest -q`.
+
+## 2026-05-23T17:34:39Z - GPT-5.4 - Removed the dead Jinja/template-era frontend files after the SPA migration
+
+- Deleted the unused `src/kicad_pcb_web/templates/` HTML files and the old `src/kicad_pcb_web/static/app.css`, `app.js`, and `wizard.js` assets now that browser routes are served exclusively from the React SPA bundle.
+- Removed the last dead Jinja renderer plumbing from `src/kicad_pcb_web/deps.py`, leaving only the settings, LLM client, and static-path dependency surfaces used by the current app.
+- Revalidated the cleanup with focused SPA UI contract tests plus full-repo `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest -q`.
 - Tightening `_infer_connector_roles_from_ir(...)` to treat load-oriented connector metadata like `LED_LOAD` as an output hint materially improved 555 placement: the MOSFET/load block now lands to the right of the timer and is stable enough for semantic placement assertions.
 - Phase 4 remains open because the TODO still has unchecked items around explicit steering-network reconstruction, formal review of timing-value selection, and the last readability distinction bullet.
 

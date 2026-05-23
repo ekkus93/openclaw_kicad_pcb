@@ -5,15 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import Depends
-from fastapi.templating import Jinja2Templates
 
 from .services.llm import LlmClient, build_llm_client
 from .settings import WebSettings, load_settings
 
 PACKAGE_DIR = Path(__file__).resolve().parent
-TEMPLATES_DIR = PACKAGE_DIR / "templates"
 STATIC_DIR = PACKAGE_DIR / "static"
-_TEMPLATES = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def get_settings() -> WebSettings:
@@ -26,9 +23,3 @@ def get_llm_client(settings: WebSettings = Depends(get_settings)) -> LlmClient |
     """Return the configured LLM client, or ``None`` when disabled."""
 
     return build_llm_client(settings)
-
-
-def get_templates() -> Jinja2Templates:
-    """Return the shared Jinja template renderer."""
-
-    return _TEMPLATES

@@ -126,3 +126,11 @@ class ErrorResponse(BaseModel):
     """Top-level error response envelope."""
 
     error: ErrorPayload
+
+
+class UiBootstrapResponse(BaseModel):
+    """Initial UI configuration payload for the frontend shell."""
+
+    llm_provider: str
+    llm_enabled: bool
+    example_netlist_json: dict[str, Any]

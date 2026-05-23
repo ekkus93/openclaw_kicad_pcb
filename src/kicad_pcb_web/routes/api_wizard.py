@@ -13,6 +13,7 @@ from ..services.wizard import (
     generate_wizard_project,
     post_wizard_message,
     read_wizard_session,
+    update_wizard_session_metadata,
 )
 from ..settings import WebSettings
 from ..wizard_models import (
@@ -57,6 +58,12 @@ def add_message(
     llm_client: LlmClient | None = Depends(get_llm_client),
 ) -> WizardSessionDetail:
     _read_session_or_404(settings, session_id)
+    update_wizard_session_metadata(
+        settings=settings,
+        session_id=session_id,
+        project_name=request.project_name,
+        symbols_dir=request.symbols_dir,
+    )
     return post_wizard_message(
         settings=settings,
         session_id=session_id,
