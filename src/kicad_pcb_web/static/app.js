@@ -203,10 +203,48 @@ function bindSymbolSearch() {
   });
 }
 
+function bindWizardFormFeedback() {
+  const forms = document.querySelectorAll(".wizard-page-form");
+  if (!forms.length) {
+    return;
+  }
+
+  forms.forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      if (typeof form.reportValidity === "function" && !form.reportValidity()) {
+        return;
+      }
+
+      const submitter =
+        event.submitter instanceof HTMLButtonElement
+          ? event.submitter
+          : form.querySelector('button[type="submit"]');
+      const feedback = form.querySelector(".wizard-submit-feedback");
+      const feedbackText = form.querySelector(".wizard-submit-feedback-text");
+      const submitMessage =
+        submitter instanceof HTMLButtonElement && submitter.dataset.submitMessage
+          ? submitter.dataset.submitMessage
+          : "Working...";
+
+      if (submitter instanceof HTMLButtonElement) {
+        submitter.disabled = true;
+        submitter.classList.add("is-loading");
+      }
+      if (feedback instanceof HTMLElement) {
+        feedback.hidden = false;
+      }
+      if (feedbackText instanceof HTMLElement) {
+        feedbackText.textContent = submitMessage;
+      }
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   bindFileUpload();
   bindValidate();
   bindGenerate();
   bindSymbolSearch();
+  bindWizardFormFeedback();
   loadDoctor();
 });

@@ -1,5 +1,11 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-23T16:59:40Z - GPT-5.4 - Prepared the current wizard UX/status batch for landing on webapp
+
+- The current pending batch on `webapp` includes the route-based wizard UI follow-up work plus docs cleanup: the stale repo-root web planning/spec files were moved under `docs/`, the routed wizard templates now expose per-action busy/status copy, and the root UI/nav continue to funnel users into `/wizard` as the only entry route.
+- The latest status-message pass makes long-running wizard actions explicit to the user, including provider-aware copy like talking to `llama_server` for spec drafting/revision, Circuit IR generation/validation progress, and deterministic project generation handoff.
+- Final pre-push validation on the tree is green with `uv run ruff check .` and full `uv run pytest -q`.
+
 ## 2026-05-18T13:48:00Z - GPT-5.4 - Finished the full web app review-fix pass and final live QA
 
 - The web app review-fix TODO is now fully closed: `WEB_APP_CODE_REVIEW_FIX_TODO.md` marks Tasks 0 through 15 and the final acceptance checklist as done, with the authoritative review-fix spec/TODO living at the repo root.

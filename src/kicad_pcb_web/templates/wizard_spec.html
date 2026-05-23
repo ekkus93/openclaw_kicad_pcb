@@ -109,10 +109,29 @@
     <label for="message">Revision Note</label>
     <textarea id="message" name="message" rows="7" placeholder="Describe what needs to change in the spec."></textarea>
     <div class="button-row wrap-row">
-      <button type="submit" {% if not llm_enabled %}disabled{% endif %}>Send Revision Note</button>
+      <button
+        type="submit"
+        data-submit-message="Talking to {{ llm_provider }} to revise the spec draft..."
+        {% if not llm_enabled %}disabled{% endif %}
+      >
+        Send Revision Note
+      </button>
       {% if can_approve_spec %}
-        <button class="wizard-secondary-button" type="submit" formaction="/wizard/{{ session.id }}/spec/approve" formmethod="post">Approve Spec</button>
+        <button
+          class="wizard-secondary-button"
+          type="submit"
+          formaction="/wizard/{{ session.id }}/spec/approve"
+          formmethod="post"
+          data-submit-message="Locking this spec checkpoint and moving to Circuit IR..."
+        >
+          Approve Spec
+        </button>
       {% endif %}
+    </div>
+
+    <div class="wizard-submit-feedback" aria-live="polite" hidden>
+      <span class="wizard-spinner" aria-hidden="true"></span>
+      <span class="wizard-submit-feedback-text">Processing your spec action...</span>
     </div>
   </form>
 

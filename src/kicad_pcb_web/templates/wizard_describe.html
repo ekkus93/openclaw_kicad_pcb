@@ -35,10 +35,21 @@
     </div>
 
     <label for="message">Circuit Request</label>
-    <textarea id="message" name="message" rows="9" placeholder="Describe the circuit goal, rails, inputs, outputs, and any must-use or must-avoid parts."></textarea>
+    <textarea id="message" name="message" rows="9" required placeholder="Describe the circuit goal, rails, inputs, outputs, and any must-use or must-avoid parts."></textarea>
 
     <div class="button-row wrap-row">
-      <button type="submit" {% if not llm_enabled %}disabled{% endif %}>{{ describe_submit_label }}</button>
+      <button
+        type="submit"
+        data-submit-message="Talking to {{ llm_provider }} to revise the spec draft..."
+        {% if not llm_enabled %}disabled{% endif %}
+      >
+        {{ describe_submit_label }}
+      </button>
+    </div>
+
+    <div class="wizard-submit-feedback" aria-live="polite" hidden>
+      <span class="wizard-spinner" aria-hidden="true"></span>
+      <span class="wizard-submit-feedback-text">Updating the spec draft...</span>
     </div>
   </form>
 </section>

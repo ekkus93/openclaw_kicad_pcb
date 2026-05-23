@@ -105,6 +105,12 @@ button:hover {
   background: #195cc0;
 }
 
+button:disabled,
+button.is-loading {
+  cursor: progress;
+  opacity: 0.85;
+}
+
 .button-link {
   align-items: center;
   background: #1f6feb;
@@ -440,6 +446,30 @@ details summary {
 
 .wizard-start-panel {
   min-width: 0;
+}
+
+.wizard-submit-feedback {
+  align-items: center;
+  color: #44556c;
+  display: inline-flex;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.wizard-spinner {
+  animation: wizard-spin 0.8s linear infinite;
+  border: 2px solid #d7dfeb;
+  border-radius: 999px;
+  border-top-color: #1f6feb;
+  display: inline-block;
+  height: 1rem;
+  width: 1rem;
+}
+
+@keyframes wizard-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .wizard-section-title {

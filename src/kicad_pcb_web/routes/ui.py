@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Literal
 from urllib.parse import urlencode
 
@@ -14,7 +13,7 @@ from kicad_pcb.errors import UserError
 
 from ..deps import get_llm_client, get_settings, get_templates
 from ..services.artifacts import list_artifacts
-from ..services.jobs import list_jobs, read_job
+from ..services.jobs import read_job
 from ..services.llm import LlmClient
 from ..services.wizard import (
     approve_wizard_spec,
@@ -424,25 +423,16 @@ def _render_wizard_step(
     return templates.TemplateResponse(request, f"wizard_{step}.html", context)
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/")
 async def index(
     request: Request,
     settings: WebSettings = Depends(get_settings),
-) -> HTMLResponse:
-    """Render the home page."""
+) -> RedirectResponse:
+    """Redirect the site root to the wizard landing page."""
 
-    templates = get_templates()
-    recent_jobs = [record.to_summary() for record in list_jobs(settings)[:10]]
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {
-            "page_title": "KiCad PCB Web App",
-            "example_netlist_json": json.dumps(_EXAMPLE_NETLIST, indent=2),
-            "recent_jobs": recent_jobs,
-            "llm_provider": settings.llm.provider,
-        },
-    )
+    del request
+    del settings
+    return _redirect("/wizard")
 
 
 @router.get("/wizard", response_class=HTMLResponse)

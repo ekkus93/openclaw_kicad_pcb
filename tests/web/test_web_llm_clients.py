@@ -132,6 +132,85 @@ def test_llama_server_uses_openai_compatible_contract() -> None:
     assert completion.request_id == "llama-req-1"
 
 
+def test_llama_server_honors_json_mode_and_request_overrides() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["authorization"] = request.headers.get("Authorization")
+        captured["payload"] = request.read().decode("utf-8")
+        return httpx.Response(
+            200,
+            json={
+                "id": "llama-req-2",
+                "model": "qwen36-27B-Q3KM-turbo",
+                "choices": [
+                    {
+                        "message": {
+                            "content": [
+                                {"type": "text", "text": '{"summary":'},
+                                {"type": "text", "text": '"ok"}'},
+                            ]
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+            },
+        )
+
+    settings = _make_settings(
+        provider="llama_server",
+        model="qwen36-27B-Q3KM-turbo",
+        base_url="http://127.0.0.1:8080",
+    )
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+
+    completion = client.complete(
+        LlmRequest(
+            messages=[LlmMessage(role="user", content="Return JSON only")],
+            response_format="json",
+            temperature=0.05,
+            max_tokens=1024,
+        )
+    )
+
+    assert completion.provider == "llama_server"
+    assert completion.model == "qwen36-27B-Q3KM-turbo"
+    assert completion.content == '{"summary":"ok"}'
+    assert completion.finish_reason == "stop"
+    assert completion.request_id == "llama-req-2"
+    assert captured["url"] == "http://127.0.0.1:8080/chat/completions"
+    assert captured["authorization"] == "Bearer test-key"
+    payload = str(captured["payload"])
+    assert '"response_format":{"type":"json_object"}' in payload
+    assert '"temperature":0.05' in payload
+    assert '"max_tokens":1024' in payload
+
+
+def test_llama_server_surfaces_provider_specific_parse_errors() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "llama-req-bad",
+                "model": "qwen2.5",
+                "choices": [],
+            },
+        )
+
+    settings = _make_settings(
+        provider="llama_server",
+        model="qwen2.5",
+        base_url="http://127.0.0.1:8080",
+    )
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+
+    with pytest.raises(ToolError, match="llama_server returned no completion choices"):
+        client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
+
+
 def test_retryable_provider_error_is_retried() -> None:
     attempts = {"count": 0}
 

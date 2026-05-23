@@ -27,7 +27,18 @@
 
   <form method="post" action="/wizard/{{ session.id }}/generate/project" class="wizard-page-form">
     <div class="button-row wrap-row">
-      <button type="submit" {% if not can_generate_project %}disabled{% endif %}>{{ generate_project_label }}</button>
+      <button
+        type="submit"
+        data-submit-message="Generating the KiCad project from the validated Circuit IR..."
+        {% if not can_generate_project %}disabled{% endif %}
+      >
+        {{ generate_project_label }}
+      </button>
+    </div>
+
+    <div class="wizard-submit-feedback" aria-live="polite" hidden>
+      <span class="wizard-spinner" aria-hidden="true"></span>
+      <span class="wizard-submit-feedback-text">Generating the KiCad project...</span>
     </div>
   </form>
 

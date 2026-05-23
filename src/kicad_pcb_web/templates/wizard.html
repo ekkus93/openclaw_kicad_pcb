@@ -94,10 +94,21 @@
       </div>
 
       <label for="message">Circuit Request</label>
-      <textarea id="message" name="message" rows="9" placeholder="Describe the circuit goal, inputs, outputs, rails, and any constraints."></textarea>
+      <textarea id="message" name="message" rows="9" required placeholder="Describe the circuit goal, inputs, outputs, rails, and any constraints."></textarea>
 
       <div class="button-row wrap-row">
-        <button type="submit" {% if not llm_enabled %}disabled{% endif %}>Start Wizard</button>
+        <button
+          type="submit"
+          data-submit-message="Talking to {{ llm_provider }} to draft the first spec..."
+          {% if not llm_enabled %}disabled{% endif %}
+        >
+          Start Session
+        </button>
+      </div>
+
+      <div class="wizard-submit-feedback" aria-live="polite" hidden>
+        <span class="wizard-spinner" aria-hidden="true"></span>
+        <span class="wizard-submit-feedback-text">Starting session...</span>
       </div>
     </form>
   </section>
