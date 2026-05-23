@@ -318,6 +318,325 @@ def test_wizard_retries_ir_generation_after_invalid_pin_regression(
     app.dependency_overrides.clear()
 
 
+def test_wizard_generate_ir_auto_fixes_common_schema_like_llm_mistakes(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(
+        responses=[
+            json.dumps(
+                {
+                    "assistant_message": "Drafted a reviewable specification.",
+                    "next_state": "spec_ready_for_review",
+                    "spec": {
+                        "project_name": "AutoFixIR",
+                        "purpose": "A two-resistor network.",
+                    },
+                    "assumptions": [],
+                    "open_questions": [],
+                    "unsupported_reasons": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Converted the approved spec into Circuit IR.",
+                    "netlist_json": {
+                        "version": "1",
+                        "components": [
+                            {"ref": "R1", "value": "10k"},
+                            {"ref": "R2", "value": "10k"},
+                        ],
+                        "nets": [
+                            {
+                                "name": "N1",
+                                "nodes": [{"ref": "R1", "pin": 1}, {"ref": "R2", "pin": 1}],
+                            },
+                            {
+                                "name": "N2",
+                                "nodes": [{"ref": "R1", "pin": 2}, {"ref": "R2", "pin": 2}],
+                            },
+                        ],
+                    },
+                    "assumptions": [],
+                }
+            ),
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "I want a simple two resistor network."},
+    )
+    session_id = create_response.json()["id"]
+    client.post(f"/api/wizard/sessions/{session_id}/approve-spec")
+
+    ir_response = client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+    assert ir_response.status_code == 200
+    ir_payload = ir_response.json()
+
+    assert ir_payload["status"] == "ir_ready_for_generation"
+    assert ir_payload["ir_validation"]["valid"] is True
+    assert ir_payload["ir_validation"]["auto_fixed"] is True
+    assert ir_payload["ir_json"]["components"] == [
+        {"ref": "R1", "value": "10k", "symbol": "Device:R"},
+        {"ref": "R2", "value": "10k", "symbol": "Device:R"},
+    ]
+    assert ir_payload["ir_json"]["nets"] == [
+        {"name": "N1", "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}]},
+        {"name": "N2", "pins": [{"ref": "R1", "pin": "2"}, {"ref": "R2", "pin": "2"}]},
+    ]
+    assert len(scripted.requests) == 2
+
+    app.dependency_overrides.clear()
+
+
+def test_wizard_ir_prompt_requires_symbol_and_pins_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(
+        responses=[
+            json.dumps(
+                {
+                    "assistant_message": "Drafted a reviewable specification.",
+                    "next_state": "spec_ready_for_review",
+                    "spec": {
+                        "project_name": "PromptContract",
+                        "purpose": "A simple passive attenuation stage.",
+                    },
+                    "assumptions": [],
+                    "open_questions": [],
+                    "unsupported_reasons": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Converted the approved spec into Circuit IR.",
+                    "netlist_json": _VALID_NETLIST,
+                    "assumptions": [],
+                }
+            ),
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "I want a simple passive attenuator."},
+    )
+    session_id = create_response.json()["id"]
+    client.post(f"/api/wizard/sessions/{session_id}/approve-spec")
+    client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+
+    ir_system_prompt = scripted.requests[1].messages[0].content
+    assert "every component object must include ref and symbol" in ir_system_prompt
+    assert "never use nodes instead of pins" in ir_system_prompt
+    assert "use the canonical symbol Timer:NE556" in ir_system_prompt
+    assert "use the optional unit field on pins" in ir_system_prompt
+
+    app.dependency_overrides.clear()
+
+
+def test_wizard_generate_ir_auto_fixes_compact_node_tokens_and_invalid_options(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(
+        responses=[
+            json.dumps(
+                {
+                    "assistant_message": "Drafted a reviewable specification.",
+                    "next_state": "spec_ready_for_review",
+                    "spec": {
+                        "project_name": "CompactNodeRepair",
+                        "purpose": "Connect two resistors in a simple netlist.",
+                    },
+                    "assumptions": [],
+                    "open_questions": [],
+                    "unsupported_reasons": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Converted the approved spec into Circuit IR.",
+                    "netlist_json": {
+                        "version": "1",
+                        "components": [
+                            {
+                                "ref": "R1",
+                                "value": "68k",
+                                "footprint": "Resistor_SMD:R_0603_1608Metric",
+                            },
+                            {
+                                "ref": "R2",
+                                "value": "100k",
+                                "footprint": "Resistor_SMD:R_0603_1608Metric",
+                            },
+                        ],
+                        "nets": [
+                            {"name": "N1", "nodes": ["R1.1", "R2.1"]},
+                            {"name": "N2", "nodes": ["R1.2", "R2.2"]},
+                        ],
+                        "options": {"notes": ["generated by llm"]},
+                    },
+                    "assumptions": [],
+                }
+            ),
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "I want a simple two resistor network."},
+    )
+    session_id = create_response.json()["id"]
+    client.post(f"/api/wizard/sessions/{session_id}/approve-spec")
+
+    ir_response = client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+    assert ir_response.status_code == 200
+    ir_payload = ir_response.json()
+
+    assert ir_payload["status"] == "ir_ready_for_generation"
+    assert ir_payload["ir_validation"]["valid"] is True
+    assert ir_payload["ir_validation"]["auto_fixed"] is True
+    assert ir_payload["ir_json"]["nets"] == [
+        {
+            "name": "N1",
+            "pins": [
+                {"ref": "R1", "pin": "1"},
+                {"ref": "R2", "pin": "1"},
+            ],
+        },
+        {
+            "name": "N2",
+            "pins": [{"ref": "R1", "pin": "2"}, {"ref": "R2", "pin": "2"}],
+        },
+    ]
+    assert "options" not in ir_payload["ir_json"]
+
+    app.dependency_overrides.clear()
+
+
+def test_wizard_generate_ir_accepts_simple_555_blinker_without_pwm_only_lints(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(
+        responses=[
+            json.dumps(
+                {
+                    "assistant_message": "Drafted a reviewable specification.",
+                    "next_state": "spec_ready_for_review",
+                    "spec": {
+                        "project_name": "Simple555Blinker",
+                        "purpose": (
+                            "Blink a single LED on and off at approximately 1 Hz "
+                            "using a 555 timer."
+                        ),
+                    },
+                    "assumptions": [],
+                    "open_questions": [],
+                    "unsupported_reasons": [],
+                }
+            ),
+            json.dumps(
+                {
+                    "assistant_message": "Converted the approved spec into Circuit IR.",
+                    "netlist_json": {
+                        "version": "1",
+                        "components": [
+                            {
+                                "ref": "U1",
+                                "value": "NE555",
+                                "footprint": "Package_DIP:DIP-8_W7.62mm",
+                            },
+                            {
+                                "ref": "R1",
+                                "value": "68k",
+                                "footprint": "Resistor_SMD:R_0603_1608Metric",
+                            },
+                            {
+                                "ref": "R2",
+                                "value": "68k",
+                                "footprint": "Resistor_SMD:R_0603_1608Metric",
+                            },
+                            {
+                                "ref": "C1",
+                                "value": "10uF",
+                                "footprint": "Capacitor_SMD:C_0805_2012Metric",
+                            },
+                            {
+                                "ref": "R3",
+                                "value": "330",
+                                "footprint": "Resistor_SMD:R_0603_1608Metric",
+                            },
+                            {
+                                "ref": "D1",
+                                "value": "red LED",
+                                "footprint": "LED_SMD:LED_0603_1608Metric",
+                            },
+                            {
+                                "ref": "C2",
+                                "value": "100nF",
+                                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+                            },
+                            {
+                                "ref": "C3",
+                                "value": "10nF",
+                                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+                            },
+                        ],
+                        "nets": [
+                            {"name": "VCC", "nodes": ["U1.8", "U1.4", "R1.1", "C2.1"]},
+                            {
+                                "name": "GND",
+                                "nodes": ["U1.1", "C1.2", "D1.2", "C2.2", "C3.2"],
+                            },
+                            {
+                                "name": "NET_TRIG_THRESH",
+                                "nodes": ["U1.2", "U1.6", "C1.1", "R2.2"],
+                            },
+                            {"name": "NET_DISCH", "nodes": ["U1.7", "R1.2", "R2.1"]},
+                            {"name": "NET_OUT", "nodes": ["U1.3", "R3.1"]},
+                            {"name": "NET_LED_ANODE", "nodes": ["R3.2", "D1.1"]},
+                            {"name": "NET_CTRL", "nodes": ["U1.5", "C3.1"]},
+                        ],
+                        "options": {"notes": ["generated by llm"]},
+                    },
+                    "assumptions": [],
+                }
+            ),
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "I want a simple 555 LED blinker."},
+    )
+    session_id = create_response.json()["id"]
+    client.post(f"/api/wizard/sessions/{session_id}/approve-spec")
+
+    ir_response = client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
+    assert ir_response.status_code == 200
+    ir_payload = ir_response.json()
+
+    assert ir_payload["status"] == "ir_ready_for_generation"
+    assert ir_payload["ir_validation"]["valid"] is True
+    assert ir_payload["ir_validation"]["auto_fixed"] is True
+    assert ir_payload["ir_json"]["components"][0]["symbol"] == "Timer:NE555"
+    assert any(net["name"] == "GND" for net in ir_payload["ir_json"]["nets"])
+
+    app.dependency_overrides.clear()
+
+
 def test_regenerating_ir_clears_previous_generation_link(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
     scripted = ScriptedLlmClient(

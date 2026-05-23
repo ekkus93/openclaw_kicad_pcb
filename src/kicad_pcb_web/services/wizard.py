@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 from uuid import uuid4
 
 from pydantic import BaseModel, ValidationError
@@ -37,6 +37,60 @@ LOGGER = logging.getLogger("uvicorn.error")
 
 _SAFE_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _MODEL_T = TypeVar("_MODEL_T", bound=BaseModel)
+
+
+def _ir_contract_text() -> str:
+    return (
+        "Canonical Circuit IR rules:\n"
+        "- netlist_json must use only top-level keys: version, components, nets, "
+        "optional options.\n"
+        "- every component object must include ref and symbol.\n"
+        "- symbol must be an exact KiCad library id like Device:R, Device:C, "
+        "Device:LED, or Timer:NE555.\n"
+        "- every net object must include name and pins.\n"
+        "- pins must be an array of objects with ref and pin, plus optional unit.\n"
+        "- when the design uses a dual timer such as a 556, use the canonical "
+        "symbol Timer:NE556 instead of inventing separate 555 packages.\n"
+        "- for a 556, keep one component ref such as U1 and use the optional unit "
+        "field on pins to distinguish timer A vs timer B when needed.\n"
+        "- for a 556, describe each timer half with its own trigger/threshold/" 
+        "discharge/output topology rather than merging both timing sections onto one node.\n"
+        "- never use nodes instead of pins.\n"
+        "- never omit component symbol fields.\n"
+        "- never wrap the netlist in metadata, data, or other outer objects."
+    )
+
+
+def _format_error_location(location: Any) -> str:
+    if not isinstance(location, (list, tuple)):
+        return str(location)
+    parts: list[str] = []
+    for item in location:
+        if isinstance(item, int):
+            if parts:
+                parts[-1] = f"{parts[-1]}.{item}"
+            else:
+                parts.append(str(item))
+        else:
+            parts.append(str(item))
+    return ".".join(parts)
+
+
+def _format_ir_repair_error(exc: UserError) -> str:
+    lines = [str(exc), f"Error code: {exc.code}"]
+    errors = exc.details.get("errors") if isinstance(exc.details, dict) else None
+    if isinstance(errors, list) and errors:
+        lines.append("Field-level validation errors:")
+        for entry in errors[:12]:
+            if not isinstance(entry, dict):
+                continue
+            location = _format_error_location(entry.get("loc", []))
+            message = str(entry.get("msg", "invalid value"))
+            if location:
+                lines.append(f"- {location}: {message}")
+            else:
+                lines.append(f"- {message}")
+    return "\n".join(lines)
 
 
 def _utc_now() -> str:
@@ -199,8 +253,8 @@ def _build_ir_messages(
         "Convert the approved circuit specification into canonical Circuit IR JSON "
         "for the KiCad web wizard. "
         "Return JSON only with keys: assistant_message, netlist_json, assumptions. "
-        "The netlist_json must use top-level keys version, components, nets, and optional "
-        "options. "
+        + _ir_contract_text()
+        + " "
         "Do not include prose outside the JSON object. "
         f"Prompt version: {settings.llm.system_prompt_version}."
     )
@@ -221,6 +275,8 @@ def _build_ir_messages(
                 content=(
                     "The previous Circuit IR draft failed validation. "
                     f"Repair it using this exact error context:\n{repair_error}\n\n"
+                    + _ir_contract_text()
+                    + "\n\n"
                     "Previous netlist JSON:\n"
                     + json.dumps(prior_ir_json, indent=2)
                 ),
@@ -610,7 +666,7 @@ def generate_wizard_ir(
                 )
                 return _persist_session(settings, session)
             except UserError as exc:
-                last_error = str(exc)
+                last_error = _format_ir_repair_error(exc)
                 prior_ir_json = output.netlist_json
 
         session = session.model_copy(

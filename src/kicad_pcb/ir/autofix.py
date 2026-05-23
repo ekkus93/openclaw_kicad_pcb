@@ -64,6 +64,10 @@ _ALLOWED_COMPONENT_FIELDS: frozenset[str] = frozenset(
     {"ref", "symbol", "value", "footprint", "fields"}
 )
 
+_ALLOWED_OPTION_FIELDS: frozenset[str] = frozenset(
+    {"tech", "default_res_package", "default_cap_package", "power_net_names"}
+)
+
 _LEGACY_SYMBOL_BY_NAME: dict[str, str] = {
     "1N4148": "Device:D",
     "AO3400": "Transistor_FET:Q_NMOS_GSD",
@@ -72,6 +76,8 @@ _LEGACY_SYMBOL_BY_NAME: dict[str, str] = {
     "POT": "Device:R_Potentiometer",
     "RES": "Device:R",
 }
+
+_POLARIZED_CAP_FOOTPRINT_MARKERS: tuple[str, ...] = ("CP_", "CP-", "ELECT", "TANT")
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +157,37 @@ def _infer_legacy_symbol(component: dict[str, Any]) -> str | None:
             symbol = "Connector_Generic:Conn_01x02"
 
     return symbol
+
+
+def _infer_component_symbol(component: dict[str, Any]) -> str | None:
+    """Infer a canonical KiCad symbol for a canonical-ish component entry.
+
+    This is intentionally conservative and only covers common LLM omissions that
+    can be repaired deterministically from the ref/value/footprint combination.
+    """
+
+    symbol = component.get("symbol")
+    if isinstance(symbol, str) and symbol.strip():
+        return symbol.strip()
+
+    ref = str(component.get("ref", "")).strip().upper()
+    value = str(component.get("value", "")).strip().upper()
+    footprint = str(component.get("footprint", "")).strip().upper()
+
+    inferred_symbol: str | None = None
+    if ref.startswith("R"):
+        inferred_symbol = "Device:R"
+    elif ref.startswith("C"):
+        if any(marker in footprint for marker in _POLARIZED_CAP_FOOTPRINT_MARKERS):
+            inferred_symbol = "Device:C_Polarized"
+        else:
+            inferred_symbol = "Device:C"
+    elif ref.startswith("D"):
+        inferred_symbol = "Device:LED" if "LED" in value or "LED_" in footprint else "Device:D"
+    elif ref.startswith("U") and "555" in value:
+        inferred_symbol = "Timer:NE555"
+
+    return inferred_symbol
 
 
 def _legacy_component(
@@ -509,6 +546,10 @@ def _fix_components(
                 fc[k] = v
             else:
                 fixes.append(f'{ref}: removed forbidden component field "{k}"')
+        inferred_symbol = _infer_component_symbol(fc)
+        if inferred_symbol is not None and fc.get("symbol") != inferred_symbol:
+            fc["symbol"] = inferred_symbol
+            fixes.append(f'{ref}: inferred missing symbol as "{inferred_symbol}"')
         fixed.append(fc)
 
     return fixed, fixes
@@ -533,14 +574,23 @@ def _fix_net_pin_types(
         fn: dict[str, Any] = {k: v for k, v in net.items() if k != "pins"}
         fixed_pins: list[dict[str, Any]] = []
         for pin_ref in net.get("pins") or []:
-            if not isinstance(pin_ref, dict):
+            if isinstance(pin_ref, str):
+                parsed = _parse_pin_membership_token(pin_ref)
+                if parsed is None:
+                    continue
+                fpr = parsed
+                fixes.append(
+                    f'net "{net_name}": converted compact pin token "{pin_ref}" into ref/pin object'
+                )
+            elif isinstance(pin_ref, dict):
+                fpr = dict(pin_ref)
+            else:
                 continue
-            fpr = dict(pin_ref)
             if isinstance(fpr.get("pin"), int):
                 old = fpr["pin"]
                 fpr["pin"] = str(old)
                 fixes.append(
-                    f'net "{net_name}" {pin_ref.get("ref", "?")} '
+                    f'net "{net_name}" {fpr.get("ref", "?")} '
                     f'pin {old} (int) → "{fpr["pin"]}" (str)'
                 )
             fixed_pins.append(fpr)
@@ -548,6 +598,69 @@ def _fix_net_pin_types(
         fixed.append(fn)
 
     return fixed, fixes
+
+
+def _parse_pin_membership_token(token: str) -> dict[str, str] | None:
+    """Parse compact membership tokens like ``U1.8`` into ref/pin objects."""
+
+    compact_token = token.strip()
+    if not compact_token:
+        return None
+
+    for separator in (".", ":", "-"):
+        if separator not in compact_token:
+            continue
+        ref, pin = compact_token.rsplit(separator, 1)
+        ref = ref.strip()
+        pin = pin.strip()
+        if ref and pin:
+            return {"ref": ref, "pin": pin}
+
+    return None
+
+
+def _fix_net_membership_keys(
+    raw_nets: list[Any],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Normalize common net membership key mistakes such as ``nodes`` -> ``pins``."""
+
+    fixes: list[str] = []
+    fixed: list[dict[str, Any]] = []
+
+    for net in raw_nets:
+        if not isinstance(net, dict):
+            continue
+        net_name = str(net.get("name", "?"))
+        fixed_net = copy.deepcopy(net)
+        pins = fixed_net.get("pins")
+        nodes = fixed_net.get("nodes")
+        if not isinstance(pins, list) and isinstance(nodes, list):
+            fixed_net["pins"] = nodes
+            fixes.append(f'net "{net_name}": renamed membership key "nodes" -> "pins"')
+        if "nodes" in fixed_net:
+            del fixed_net["nodes"]
+            if isinstance(pins, list):
+                fixes.append(f'net "{net_name}": removed forbidden membership key "nodes"')
+        fixed.append(fixed_net)
+
+    return fixed, fixes
+
+
+def _fix_options(options: Any) -> tuple[dict[str, Any] | None, list[str]]:
+    """Remove unsupported option keys and drop empty option objects."""
+
+    if not isinstance(options, dict):
+        return None, []
+
+    fixes: list[str] = []
+    fixed_options: dict[str, Any] = {}
+    for key, value in options.items():
+        if key in _ALLOWED_OPTION_FIELDS:
+            fixed_options[key] = value
+        else:
+            fixes.append(f'options: removed unsupported key "{key}"')
+
+    return (fixed_options or None), fixes
 
 
 # ---------------------------------------------------------------------------
@@ -671,8 +784,17 @@ def autofix_circuit_ir(
 
     # -- Layer 3: net pin types --
     if isinstance(data.get("nets"), list):
+        data["nets"], membership_fixes = _fix_net_membership_keys(data["nets"])
+        all_fixes.extend(membership_fixes)
         data["nets"], net_fixes = _fix_net_pin_types(data["nets"])
         all_fixes.extend(net_fixes)
+
+    fixed_options, option_fixes = _fix_options(data.get("options"))
+    all_fixes.extend(option_fixes)
+    if fixed_options is None:
+        data.pop("options", None)
+    else:
+        data["options"] = fixed_options
 
     # -- Layer 4: pin aliases (library-dependent) --
     if symbol_index is not None:

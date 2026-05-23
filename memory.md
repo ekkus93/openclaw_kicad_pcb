@@ -218,6 +218,31 @@
 - The legacy `/home/ubo/.openclaw/workspace/555_PWM_LED_Dimmer.net` side format no longer just passes through loose broken wiring. `kicad-pcb/src/kicad_pcb/ir/autofix.py` now explicitly rebuilds canonical 555 timing, steering, gate-drive, and load nets when that legacy motif is detected, and it normalizes load connectors like `LED_LOAD` onto connector-style refs so the supported layout/output-role path works.
 - The canonical 555 layout now stays stable enough for semantic readability assertions because `kicad-pcb/src/kicad_pcb/tier.py` treats load-oriented connector metadata as an output hint, which keeps the MOSFET/load block on the right side of the timer instead of collapsing left.
 - Added/updated regression coverage across `tests/unit/test_ir_autofix.py`, `tests/unit/test_netlist_commands.py`, `tests/unit/test_phase4_555_regression.py`, and `tests/unit/test_sch_apply.py` to lock in canonical fixture validity, explicit steering direction, timing-cap misplacement failures, gate-pull-down oscillator warnings, semantic placement, and the explicit legacy-net reconstruction.
+
+## 2026-05-23T20:07:59Z - GPT-5.4 - Hardened wizard IR auto-repair so users are not forced into manual JSON repair for common LLM mistakes
+
+- The wizard IR failure on the live 555 session was caused by two concrete gaps: the IR prompt allowed underspecified output, and the repair loop only fed the model a generic schema-failed message instead of field-level validation errors.
+- `src/kicad_pcb_web/services/wizard.py` now injects an explicit canonical Circuit IR contract into IR generation and repair prompts, including `components[].symbol`, `nets[].pins`, and a direct ban on `nodes`.
+- `src/kicad_pcb/ir/autofix.py` now auto-repairs the common LLM shape drift `nodes -> pins` and infers a small conservative set of missing symbols (`Device:R`, `Device:C`, `Device:C_Polarized`, `Device:LED`, `Timer:NE555`) so the web wizard can recover in one `/generate-ir` call instead of dumping the user into manual repair for these cases.
+- Focused validation for this slice is green: `uv run pytest -q tests/unit/test_ir_autofix.py tests/web/test_web_wizard.py` and `uv run ruff check src/kicad_pcb/ir/autofix.py src/kicad_pcb_web/services/wizard.py tests/unit/test_ir_autofix.py tests/web/test_web_wizard.py`.
+
+## 2026-05-23T20:21:03Z - GPT-5.4 - Fixed the deeper 555 wizard dead-end and verified the live session now advances
+
+- The remaining blocker after schema repair was not UI-state alone: `_timer555_warnings()` in `src/kicad_pcb/commands/_validate.py` was running PWM-dimmer-only hard-fail checks against every 555 design, so a plain astable LED blinker was rejected for lacking the diode-steered potentiometer/MOSFET topology.
+- The validator now applies the steering/gate/load PWM checks only when the 555 context actually includes PWM-like hardware (`pot`, `mosfet`, or output connector), while still preserving the generic 555 pin/timing/control checks.
+- `src/kicad_pcb/ir/autofix.py` was also extended to repair the exact live payload shape: compact `nodes` tokens like `"U1.8"` are converted into `{"ref", "pin"}` objects and unsupported `options.notes` is stripped.
+- Live verification succeeded on the user’s real session `wiz_20260523_194543_a9f49915`: after restarting uvicorn and POSTing `/api/wizard/sessions/wiz_20260523_194543_a9f49915/generate-ir`, the session moved to `status = "ir_ready_for_generation"` with `ir_validation.valid = true`.
+
+## 2026-05-23T20:24:00Z - GPT-5.4 - Added explicit 556 guidance to the wizard IR prompt
+
+- `src/kicad_pcb_web/services/wizard.py` now teaches the IR prompt to use the canonical `Timer:NE556` symbol for dual-timer designs instead of inventing two separate 555 packages.
+- The prompt now also tells the model to keep one component ref (for example `U1`), use the optional `unit` field on pin memberships to distinguish timer A vs timer B when needed, and keep each timer half on its own timing/output topology.
+- Focused validation is green with `uv run pytest -q tests/web/test_web_wizard.py -k prompt_requires_symbol_and_pins_contract` and `uv run ruff check src/kicad_pcb_web/services/wizard.py tests/web/test_web_wizard.py`.
+
+## 2026-05-23T20:30:18Z - GPT-5.4 - Updated repo instructions to require frontend TypeScript validation explicitly
+
+- `.github/copilot-instructions.md` now has a dedicated `Frontend Validation` section that requires running `cd frontend && npm run lint` and `cd frontend && npm run build` whenever frontend TypeScript/React code is touched.
+- The instruction file now also requires running any configured frontend test script if one exists in the future and explicitly telling the user when no frontend test script is configured instead of implying TypeScript tests were run.
 - Final Phase 4 gate on the current tree was green with `.venv/bin/ruff check .`, `.venv/bin/mypy kicad-pcb/src`, and `PYTHONPATH=kicad-pcb/src .venv/bin/pytest -q`.
 
 ## 2026-04-01T09:51:10Z - GPT-5.4 - Advanced CODE_REVIEW8 Phase 4 555 remediation without closing the phase yet

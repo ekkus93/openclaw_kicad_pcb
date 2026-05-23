@@ -32,6 +32,15 @@ You are an expert Python developer and code reviewer. Your goal is to help users
 - Runtime: avoid blocking I/O in async code; for async HTTP prefer **httpx**/**aiohttp**; for sync prefer **requests**
 - Config: environment variables via a thin settings layer (e.g., pydantic-settings if project already uses Pydantic)
 
+## Frontend Validation
+- When a task touches the TypeScript/React frontend under `frontend/`, run the frontend validation commands in addition to the Python checks.
+- Use the repo's configured scripts instead of inventing alternatives:
+    - `cd frontend && npm run lint`
+    - `cd frontend && npm run build`
+- If the repo adds a frontend test script (for example `npm test`, `npm run test`, or `vitest`), run it when TypeScript/frontend code changes.
+- If no frontend test script exists, say that explicitly in the final response instead of claiming the TypeScript tests were run.
+- Do not treat Python-only lint/test passes as sufficient validation for TypeScript changes.
+
 > If the repo already has `.github/copilot-instructions.md`, **merge** with these rules instead of replacing. Prefer the repo’s specifics when in conflict.
 
 ---

@@ -326,6 +326,12 @@ def _timer555_warnings(
     return _timer555_pwm_warnings(ir)
 
 
+def _looks_timer555_pwm_topology(context: _Timer555Context) -> bool:
+    return any(
+        component is not None for component in (context.pot, context.mosfet, context.connector)
+    )
+
+
 def _symbol_tail(symbol: str | None) -> str:
     return (symbol or "").rsplit(":", 1)[-1].lower()
 
@@ -1416,8 +1422,9 @@ def _timer555_pwm_warnings(ir: CircuitIR) -> list[dict[str, object]]:
             component_nets,
             warnings,
         )
-        _append_timer555_steering_warnings(context, ir, pin_to_net, warnings)
-        _append_timer555_gate_and_load_warnings(context, pin_to_net, bridges, warnings)
+        if _looks_timer555_pwm_topology(context):
+            _append_timer555_steering_warnings(context, ir, pin_to_net, warnings)
+            _append_timer555_gate_and_load_warnings(context, pin_to_net, bridges, warnings)
         _append_timer555_frequency_warning(
             context,
             bridges,
