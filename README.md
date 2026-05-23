@@ -26,7 +26,7 @@ unit/integration test suite.
 - **Circuit pattern library** — resistor divider, LED+resistor, connector breakout, decoupling cap
 - **Preflight checks** — duplicate refs, net name validation, symbol accessibility, footprint requirements
 - **KiCad CLI integration** — ERC/DRC/export via `kicad-cli` with version compatibility layer
-- **Local web app** — FastAPI + Jinja UI for validating Circuit IR, generating projects, and downloading artifacts
+- **Local web app** — FastAPI-served React + TypeScript SPA for validating Circuit IR, running the wizard, generating projects, and downloading artifacts
 - **Circuit IR pipeline** — deterministic Spec → IR → KiCad schematic generation (`new-from-netlist`, `apply-netlist`)
 - **JSON output** — all commands support `--json` for machine-friendly automation
 - **Dry-run mode** — validate without committing (`--dry-run`)
@@ -61,6 +61,14 @@ Install the web dependencies and start the local FastAPI app:
 uv sync --extra dev --extra web
 uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+The browser UI is a bundled React + TypeScript single-page app styled with
+Tailwind utilities and served by FastAPI shell routes. The primary browser
+routes are:
+
+- `/` — overview and direct Circuit IR tools
+- `/wizard` — wizard landing page
+- `/jobs/{job_id}` — generated job detail page
 
 Default runtime settings:
 
@@ -194,9 +202,9 @@ Invalidation rules for backward changes:
 - Regenerating Circuit IR clears the active generation result link before the
   new IR becomes current.
 
-The routed wizard keeps a persistent action rail visible on desktop so the
-current state, next action, and checkpoint boundary stay in reach while each
-step gets its own page.
+The routed wizard keeps the current session summary and checkpoint guidance in a
+dedicated side panel on larger screens, while smaller screens stack that panel
+under the main step content.
 
 The web app binds to `127.0.0.1` by default and is intended for local/internal use
 in v1. Do not expose it publicly without adding authentication, isolation, and

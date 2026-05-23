@@ -222,6 +222,35 @@
 - `frontend/src/App.tsx` no longer depends on the previous semantic class layer; the active UI now uses direct Tailwind utility strings in the JSX for layout, panels, banners, step states, and button styling.
 - After the JSX rewrite, the dead semantic component-layer CSS was removed from `frontend/src/index.css`, leaving only the Tailwind import plus base/global rules and design tokens.
 - Final validation for this pass is green with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T18:01:51Z - GPT-5.4 - Applied a visual polish pass on the direct-Tailwind React UI
+
+- The shared visual primitives in `frontend/src/App.tsx` were upgraded to a stronger visual language: richer hero surfaces, softer layered panels, more pronounced button depth, metric cards, and an image-backed hero side panel using the existing `frontend/src/assets/hero.png` asset.
+- The overview, wizard landing, active wizard session, and job detail routes now all use the new polish helpers so the pages read as designed product surfaces rather than flat tool screens.
+- Revalidated the polish pass with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T18:04:24Z - GPT-5.4 - Added a second wizard-focused polish pass for step clarity and mobile spacing
+
+- `frontend/src/App.tsx` now uses tighter mobile-first spacing on the main page shell, hero panels, content panels, and dashboard split so the wizard route stacks earlier and feels less cramped on smaller screens.
+- The wizard step tracker now exposes explicit states (`Current`, `Ready`, `Done`, `Locked`) with per-step action copy, and the session sidebar includes a `Current checkpoint` card that tells the user exactly what to do at the active gate.
+- Revalidated this pass with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T18:08:46Z - GPT-5.4 - Added a third wizard pass for mobile form density and textarea ergonomics
+
+- `frontend/src/App.tsx` now uses wizard-specific form section wrappers, tighter field grids, and full-width mobile action buttons on the new-session, describe, and spec-revision forms so the route wastes less vertical space on small screens.
+- Wizard textareas now use targeted placeholders plus dedicated sizing classes, while `frontend/src/index.css` adds denser small-screen input padding and `textarea[data-wizard-input='true']` behavior for smoother mobile entry.
+- Revalidated this pass with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T18:10:42Z - GPT-5.4 - Added a final wizard pass for transcript readability and composer behavior
+
+- `frontend/src/App.tsx` now renders wizard transcript turns as clearer speaker-separated cards with role badges and turn numbers instead of flat repeated blocks.
+- The wizard message inputs were consolidated behind a shared autosizing composer with a draft/ready status row and `Ctrl/Cmd+Enter` submit behavior, improving how the new-session, describe, and spec-revision composers feel without changing backend flows.
+- Revalidated this pass with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T18:12:59Z - GPT-5.4 - Refreshed the README to match the current web UI
+
+- `README.md` no longer describes the web UI as Jinja-based; it now calls out the FastAPI-served React + TypeScript SPA and notes the main browser routes.
+- The wizard layout description now matches the actual implementation by describing the larger-screen side panel and the stacked small-screen layout instead of claiming a persistent action rail.
 - Tightening `_infer_connector_roles_from_ir(...)` to treat load-oriented connector metadata like `LED_LOAD` as an output hint materially improved 555 placement: the MOSFET/load block now lands to the right of the timer and is stable enough for semantic placement assertions.
 - Phase 4 remains open because the TODO still has unchecked items around explicit steering-network reconstruction, formal review of timing-value selection, and the last readability distinction bullet.
 

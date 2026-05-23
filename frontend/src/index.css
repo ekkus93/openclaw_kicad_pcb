@@ -98,10 +98,18 @@
 
   input,
   textarea {
-    @apply rounded-2xl border px-4 py-[0.9rem] transition-[border-color,box-shadow];
+    @apply rounded-2xl border px-4 py-[0.82rem] transition-[border-color,box-shadow];
     background: rgba(255, 255, 255, 0.72);
     border-color: rgba(88, 63, 39, 0.22);
     color: var(--text);
+  }
+
+  @media (max-width: 640px) {
+    input,
+    textarea {
+      border-radius: 1rem;
+      padding: 0.78rem 0.9rem;
+    }
   }
 
   input:focus,
@@ -109,6 +117,11 @@
     outline: none;
     border-color: rgba(161, 69, 26, 0.55);
     box-shadow: 0 0 0 4px rgba(161, 69, 26, 0.12);
+  }
+
+  textarea[data-wizard-input='true'] {
+    line-height: 1.7;
+    overscroll-behavior: contain;
   }
 
   pre {

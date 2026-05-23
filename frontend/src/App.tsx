@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from 'react'
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import {
   BrowserRouter,
@@ -11,6 +11,7 @@ import {
   useParams,
 } from 'react-router-dom'
 
+import heroImage from './assets/hero.png'
 import { ApiError, api } from './api'
 import type {
   CircuitBlockSpec,
@@ -39,29 +40,29 @@ const WIZARD_STEP_META: Record<WizardStep, { label: string; summary: string }> =
   generate: { label: 'Generate Project', summary: 'Launch the deterministic KiCad generation path.' },
 }
 
-const pageStackClass = 'grid gap-5'
-const stackColumnClass = 'grid gap-5'
-const pageShellClass = 'mx-auto max-w-[1320px] px-6 py-6 lg:px-4'
-const dashboardGridClass = 'grid gap-5 [grid-template-columns:minmax(0,1.5fr)_minmax(320px,0.9fr)] lg:grid-cols-1'
+const pageStackClass = 'grid gap-4 sm:gap-5'
+const stackColumnClass = 'grid gap-4 sm:gap-5'
+const pageShellClass = 'relative mx-auto max-w-[1320px] px-4 py-4 sm:px-6 sm:py-6 lg:px-4'
+const dashboardGridClass = 'grid gap-4 xl:[grid-template-columns:minmax(0,1.5fr)_minmax(320px,0.9fr)] sm:gap-5'
 const heroPanelClass =
-  "relative grid gap-6 overflow-hidden rounded-[28px] border border-[rgba(109,47,20,0.14)] bg-[linear-gradient(135deg,rgba(255,249,241,0.88),rgba(255,239,213,0.92)),radial-gradient(circle_at_top_right,rgba(24,75,69,0.2),transparent_36%)] p-[1.8rem] shadow-[0_24px_60px_rgba(71,43,19,0.12)] [grid-template-columns:minmax(0,1.4fr)_minmax(240px,0.7fr)] after:pointer-events-none after:absolute after:inset-[auto_-40px_-80px_auto] after:h-[240px] after:w-[240px] after:bg-[radial-gradient(circle,rgba(242,196,138,0.58),transparent_70%)] after:content-[''] lg:grid-cols-1"
+  "relative grid gap-5 overflow-hidden rounded-[26px] border border-[rgba(109,47,20,0.16)] bg-[linear-gradient(140deg,rgba(255,248,238,0.98),rgba(245,230,203,0.94)),radial-gradient(circle_at_top_right,rgba(16,78,74,0.28),transparent_36%)] p-5 shadow-[0_28px_80px_rgba(71,43,19,0.14)] sm:gap-7 sm:rounded-[32px] sm:p-[2rem] xl:[grid-template-columns:minmax(0,1.35fr)_minmax(300px,0.75fr)] before:pointer-events-none before:absolute before:inset-x-[6%] before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent)] before:content-[''] after:pointer-events-none after:absolute after:inset-[auto_-48px_-92px_auto] after:h-[280px] after:w-[280px] after:bg-[radial-gradient(circle,rgba(242,196,138,0.7),transparent_70%)] after:content-['']"
 const heroCardClass =
-  'relative z-[1] grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-[1.35rem] shadow-[var(--shadow-soft)]'
+  'relative z-[1] grid gap-3 rounded-[24px] border border-[rgba(88,63,39,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,248,238,0.76))] p-4 shadow-[0_18px_40px_rgba(71,43,19,0.1)] backdrop-blur-sm sm:rounded-[28px] sm:p-[1.35rem]'
 const panelBaseClass =
-  'rounded-3xl border border-[var(--border)] p-[1.35rem] shadow-[var(--shadow-soft)]'
+  'rounded-[24px] border border-[rgba(88,63,39,0.12)] p-4 shadow-[0_16px_34px_rgba(71,43,19,0.08)] sm:rounded-[28px] sm:p-[1.35rem]'
 const panelSoftClass = `${panelBaseClass} bg-[linear-gradient(180deg,rgba(255,252,247,0.95),rgba(250,244,233,0.94))]`
-const panelAccentClass = `${panelBaseClass} bg-[linear-gradient(180deg,rgba(255,248,237,0.98),rgba(248,237,220,0.94))]`
+const panelAccentClass = `${panelBaseClass} bg-[linear-gradient(180deg,rgba(255,248,237,0.99),rgba(246,232,209,0.96))]`
 const headingGroupClass = 'mb-4 grid gap-1.5'
 const eyebrowClass = 'm-0 text-[0.83rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]'
 const mutedCopyClass = 'text-[var(--muted)]'
 const buttonRowClass = 'flex flex-wrap gap-3'
 const inputGridTwoUpClass = 'grid gap-4 md:grid-cols-2'
 const buttonBaseClass =
-  'rounded-full border-0 px-[1.2rem] py-[0.8rem] font-semibold no-underline transition-[transform,opacity] duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.55] disabled:transform-none'
+  'rounded-full border border-transparent px-[1.2rem] py-[0.8rem] font-semibold no-underline transition-[transform,opacity,box-shadow,background-color] duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.55] disabled:transform-none'
 const buttonPrimaryClass =
-  `${buttonBaseClass} bg-[linear-gradient(135deg,var(--brand)_0%,var(--brand-deep)_100%)] text-[#fff8f1] shadow-[0_14px_30px_rgba(109,47,20,0.18)]`
-const buttonSecondaryClass = `${buttonBaseClass} bg-[rgba(24,75,69,0.09)] text-[var(--accent)]`
-const bannerBaseClass = 'flex items-center gap-3 rounded-[18px] border px-[1.1rem] py-[0.9rem]'
+  `${buttonBaseClass} bg-[linear-gradient(135deg,var(--brand)_0%,var(--brand-deep)_100%)] text-[#fff8f1] shadow-[0_18px_36px_rgba(109,47,20,0.2)] hover:shadow-[0_22px_44px_rgba(109,47,20,0.24)]`
+const buttonSecondaryClass = `${buttonBaseClass} border-[rgba(24,75,69,0.12)] bg-[rgba(255,255,255,0.72)] text-[var(--accent)] hover:bg-[rgba(255,255,255,0.9)]`
+const bannerBaseClass = 'flex items-center gap-3 rounded-[18px] border px-[1.1rem] py-[0.9rem] shadow-[0_10px_24px_rgba(71,43,19,0.06)]'
 const spinnerClass = 'h-4 w-4 animate-spin rounded-full border-2 border-[rgba(13,76,116,0.16)] border-t-current'
 const jsonBlockClass =
   'overflow-auto rounded-[18px] bg-[rgba(40,31,23,0.95)] p-4 font-[var(--font-mono)] text-[0.85rem] leading-[1.55] whitespace-pre-wrap break-words text-[#f7ead6]'
@@ -74,10 +75,278 @@ const tagItemClass = 'rounded-full border border-[rgba(109,47,20,0.12)] bg-[rgba
 const detailListClass = 'm-0 grid list-none gap-x-3 gap-y-2 p-0 [grid-template-columns:max-content_minmax(0,1fr)]'
 const detailListGridClass = `${detailListClass} md:[grid-template-columns:repeat(2,max-content_minmax(0,1fr))]`
 const blockGridClass = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]'
-const blockCardClass = 'grid gap-2 rounded-[18px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.6)] p-4'
-const stepTrackerClass = 'm-0 grid list-none gap-4 p-0 md:grid-cols-4'
+const blockCardClass = 'grid gap-2 rounded-[20px] border border-[rgba(88,63,39,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.7),rgba(255,247,235,0.62))] p-4 shadow-[0_12px_28px_rgba(71,43,19,0.06)]'
+const stepTrackerClass = 'm-0 grid list-none gap-3 p-0 lg:grid-cols-4'
 const transcriptListClass = 'grid gap-4'
-const transcriptEntryClass = 'grid gap-1.5 rounded-[18px] border border-[rgba(88,63,39,0.14)] p-4'
+const transcriptEntryClass = 'grid gap-2 rounded-[22px] border p-4 shadow-[0_10px_24px_rgba(71,43,19,0.05)] sm:max-w-[88%]'
+const heroLeadClass = 'max-w-[60ch] text-[1.02rem] leading-7 text-[var(--muted)]'
+const heroStatGridClass = 'mt-6 grid gap-3 sm:grid-cols-3'
+const heroStatCardClass = 'rounded-[22px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.58)] px-4 py-3 backdrop-blur-sm'
+const sideKickerClass = 'text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]'
+const imageCardClass = 'relative isolate overflow-hidden rounded-[28px] border border-[rgba(88,63,39,0.12)] bg-[linear-gradient(160deg,rgba(24,75,69,0.92),rgba(64,31,16,0.86))] p-4 text-white shadow-[0_22px_50px_rgba(33,24,15,0.24)]'
+const imageFrameClass = 'relative overflow-hidden rounded-[20px] border border-white/20 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_50%)] p-3'
+const imageClass = 'h-[220px] w-full rounded-[16px] object-cover object-center shadow-[0_18px_40px_rgba(0,0,0,0.25)]'
+const sectionCardGridClass = 'grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]'
+const stepCardClass = 'grid gap-3 rounded-[22px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.7)] p-4 shadow-[0_10px_24px_rgba(71,43,19,0.05)]'
+const stepBadgeClass = 'inline-flex items-center rounded-full px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.12em]'
+const wizardFormClass = 'grid gap-4 sm:gap-5'
+const wizardFieldGridClass = 'grid gap-3 sm:gap-4 md:grid-cols-2'
+const wizardFieldSectionClass = 'grid gap-4 rounded-[22px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.46)] p-3.5 sm:p-4'
+const wizardTextareaClass =
+  'min-h-[10rem] text-base leading-7 sm:min-h-[12rem] sm:text-[1.02rem] [&::-webkit-resizer]:hidden'
+const wizardActionRowClass = 'flex flex-col gap-3 sm:flex-row sm:flex-wrap'
+const wizardPrimaryButtonClass = `${buttonPrimaryClass} w-full justify-center text-center sm:w-auto`
+const wizardSecondaryButtonClass = `${buttonSecondaryClass} w-full justify-center text-center sm:w-auto`
+const compactSupportCopyClass = 'text-sm leading-6 text-[var(--muted)]'
+const transcriptMetaClass = 'flex items-center justify-between gap-3 text-[0.76rem] font-semibold uppercase tracking-[0.12em]'
+const transcriptBodyClass = 'whitespace-pre-wrap break-words text-[0.98rem] leading-7 text-[var(--text)]'
+const composerCardClass = 'grid gap-3 rounded-[22px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.58)] p-3.5 shadow-[0_8px_20px_rgba(71,43,19,0.04)] sm:p-4'
+const composerMetaRowClass = 'flex items-center justify-between gap-3 text-[0.82rem] text-[var(--muted)] sm:text-[0.86rem]'
+
+function TranscriptEntryCard({
+  content,
+  index,
+  role,
+}: {
+  content: string
+  index: number
+  role: 'user' | 'assistant' | string
+}) {
+  const isUser = role === 'user'
+  return (
+    <article
+      className={joinClasses(
+        transcriptEntryClass,
+        isUser
+          ? 'ml-auto border-[rgba(22,93,143,0.14)] bg-[linear-gradient(180deg,rgba(236,245,243,0.96),rgba(226,240,238,0.88))]'
+          : 'mr-auto border-[rgba(161,69,26,0.14)] bg-[linear-gradient(180deg,rgba(255,245,228,0.94),rgba(251,239,217,0.9))]',
+      )}
+    >
+      <div className={transcriptMetaClass}>
+        <span className={joinClasses('inline-flex items-center rounded-full px-2.5 py-1', isUser ? 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]' : 'bg-[rgba(161,69,26,0.1)] text-[var(--brand-deep)]')}>
+          {isUser ? 'You' : 'Wizard'}
+        </span>
+        <span>Turn {index + 1}</span>
+      </div>
+      <p className={transcriptBodyClass}>{content}</p>
+    </article>
+  )
+}
+
+function WizardComposer({
+  label,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+  disabled: boolean
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    const node = textareaRef.current
+    if (!node) {
+      return
+    }
+    node.style.height = '0px'
+    node.style.height = `${Math.min(node.scrollHeight, 320)}px`
+  }, [value])
+
+  return (
+    <div className={composerCardClass}>
+      <label>
+        <span>{label}</span>
+        <textarea
+          ref={textareaRef}
+          className={wizardTextareaClass}
+          data-wizard-input="true"
+          disabled={disabled}
+          placeholder={placeholder}
+          required
+          rows={1}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault()
+              event.currentTarget.form?.requestSubmit()
+            }
+          }}
+        />
+      </label>
+      <div className={composerMetaRowClass}>
+        <span>{value.trim() ? 'Ready to send' : 'Draft a message'}</span>
+        <span>Ctrl/Cmd+Enter to send</span>
+      </div>
+    </div>
+  )
+}
+
+function wizardStepState(session: WizardSessionDetail, currentStep: WizardStep, step: WizardStep): 'current' | 'done' | 'ready' | 'locked' {
+  if (currentStep === step) {
+    return 'current'
+  }
+  if (WIZARD_STEP_ORDER[step] < WIZARD_STEP_ORDER[currentStep]) {
+    return 'done'
+  }
+  if (wizardStepUnlocked(session, step)) {
+    return 'ready'
+  }
+  return 'locked'
+}
+
+function wizardStepActionLabel(step: WizardStep): string {
+  if (step === 'describe') {
+    return 'Refine the brief'
+  }
+  if (step === 'spec') {
+    return 'Approve the drafted spec'
+  }
+  if (step === 'ir') {
+    return 'Validate the generated IR'
+  }
+  return 'Run project generation'
+}
+
+function wizardCurrentCheckpoint(session: WizardSessionDetail, step: WizardStep): { title: string; detail: string } {
+  if (step === 'describe') {
+    return {
+      title: 'Describe the circuit in enough detail to draft a reviewable spec.',
+      detail:
+        session.status === 'awaiting_user_clarification'
+          ? 'Answer the missing questions directly in the request box so the next spec draft closes the open gaps.'
+          : 'Include the circuit purpose, rails, I/O, and constraints. Keep iterating until the spec route unlocks.',
+    }
+  }
+  if (step === 'spec') {
+    return {
+      title: 'Treat this as the approval gate before any IR is generated.',
+      detail:
+        session.open_questions.length || session.unsupported_reasons.length
+          ? 'Resolve every open question and unsupported reason before approving the spec.'
+          : 'If the purpose, blocks, ports, rails, and constraints all match intent, approve the spec to unlock IR generation.',
+    }
+  }
+  if (step === 'ir') {
+    return {
+      title: 'Generate and inspect Circuit IR before handing off generation.',
+      detail: session.ir_validation?.valid
+        ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
+        : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',
+    }
+  }
+  return {
+    title: 'Use the validated IR as the deterministic handoff into project generation.',
+    detail: session.latest_job_id
+      ? 'A job already exists for this session. Review the latest artifacts or rerun generation if needed.'
+      : 'Once the IR is valid, generate the project and review artifacts and diagnostics on the linked job.',
+  }
+}
+
+function WizardStepCard({
+  session,
+  currentStep,
+  step,
+  sessionId,
+}: {
+  session: WizardSessionDetail
+  currentStep: WizardStep
+  step: WizardStep
+  sessionId: string
+}) {
+  const state = wizardStepState(session, currentStep, step)
+  const toneClass = {
+    current: 'border-[rgba(161,69,26,0.28)] bg-[linear-gradient(180deg,rgba(255,247,234,0.98),rgba(251,238,216,0.88))]',
+    done: 'border-[rgba(35,102,79,0.18)] bg-[rgba(235,247,241,0.82)]',
+    ready: 'border-[rgba(22,93,143,0.18)] bg-[rgba(236,245,251,0.76)]',
+    locked: 'opacity-75',
+  }[state]
+  const badgeToneClass = {
+    current: 'bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]',
+    done: 'bg-[rgba(35,102,79,0.12)] text-[var(--success)]',
+    ready: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
+    locked: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
+  }[state]
+  const badgeLabel = {
+    current: 'Current',
+    done: 'Done',
+    ready: 'Ready',
+    locked: 'Locked',
+  }[state]
+
+  return (
+    <li className={joinClasses(stepCardClass, toneClass)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(161,69,26,0.12)] font-bold text-[var(--brand-deep)]">
+          {WIZARD_STEP_ORDER[step] + 1}
+        </div>
+        <span className={joinClasses(stepBadgeClass, badgeToneClass)}>{badgeLabel}</span>
+      </div>
+      <div className="grid gap-1.5">
+        {state === 'locked' ? (
+          <strong>{WIZARD_STEP_META[step].label}</strong>
+        ) : (
+          <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/wizard/${sessionId}/${step}`}>
+            {WIZARD_STEP_META[step].label}
+          </Link>
+        )}
+        <p className={mutedCopyClass}>{WIZARD_STEP_META[step].summary}</p>
+      </div>
+      <p className="text-sm leading-6 text-[var(--muted)]">{wizardStepActionLabel(step)}</p>
+    </li>
+  )
+}
+
+function MetricCard({ label, value, tone = 'warm' }: { label: string; value: string; tone?: 'warm' | 'cool' | 'neutral' }) {
+  const toneClass = {
+    warm: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,242,224,0.64))]',
+    cool: 'bg-[linear-gradient(180deg,rgba(244,255,253,0.82),rgba(222,244,240,0.68))]',
+    neutral: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(244,239,230,0.7))]',
+  }[tone]
+  return (
+    <div className={joinClasses(heroStatCardClass, toneClass)}>
+      <div className="text-[0.73rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</div>
+    </div>
+  )
+}
+
+function HeroImageCard({ title, subtitle, provider }: { title: string; subtitle: string; provider: string }) {
+  return (
+    <div className={imageCardClass}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+      <div className="relative z-[1] grid gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-white/70">Live flow</div>
+            <div className="mt-1 text-lg font-semibold">{title}</div>
+          </div>
+          <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white/80">
+            {provider}
+          </div>
+        </div>
+        <div className={imageFrameClass}>
+          <img alt="Circuit design hero artwork" className={imageClass} src={heroImage} />
+        </div>
+        <p className="max-w-[30ch] text-sm leading-6 text-white/78">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
+function SectionSplit({ main, side }: { main: ReactNode; side: ReactNode }) {
+  return (
+    <div className={sectionCardGridClass}>
+      <div>{main}</div>
+      <div className={stackColumnClass}>{side}</div>
+    </div>
+  )
+}
 
 function joinClasses(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(' ')
@@ -463,19 +732,21 @@ function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
         <div>
           <p className={eyebrowClass}>React + TypeScript frontend</p>
           <h1>One frontend now owns the whole web UI.</h1>
-          <p className={mutedCopyClass}>
+          <p className={heroLeadClass}>
             The browser stays responsive while it talks to the FastAPI backend. Use the
             wizard for guided flows or work directly with Circuit IR and job artifacts here.
           </p>
+          <div className={heroStatGridClass}>
+            <MetricCard label="Surface" tone="warm" value="SPA + FastAPI" />
+            <MetricCard label="Wizard" tone="cool" value={bootstrap.llm_enabled ? 'Ready' : 'Disabled'} />
+            <MetricCard label="Workflow" tone="neutral" value="Validate, review, generate" />
+          </div>
         </div>
-        <div className={heroCardClass}>
-          <p className={eyebrowClass}>Wizard status</p>
-          <strong>{bootstrap.llm_enabled ? 'Ready to start' : 'Disabled in config'}</strong>
-          <span className={mutedCopyClass}>{bootstrap.llm_provider}</span>
-          <button type="button" className={buttonPrimaryClass} onClick={() => navigate('/wizard')}>
-            Open Wizard
-          </button>
-        </div>
+        <HeroImageCard
+          provider={bootstrap.llm_provider}
+          subtitle="The browser now keeps control while backend jobs, wizard drafting, and project generation run in the background."
+          title={bootstrap.llm_enabled ? 'Wizard ready to start' : 'Wizard disabled in config'}
+        />
       </section>
 
       {busyLabel ? (
@@ -485,72 +756,78 @@ function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
         </div>
       ) : null}
 
-      <div className={dashboardGridClass}>
-        <section className={panelAccentClass}>
-          <div className={headingGroupClass}>
-            <h2>Direct Circuit IR</h2>
-            <p className={mutedCopyClass}>Paste, validate, and generate without leaving the SPA.</p>
-          </div>
-          <div className={inputGridTwoUpClass}>
+      <SectionSplit
+        main={
+          <section className={panelAccentClass}>
+            <div className={headingGroupClass}>
+              <div className={sideKickerClass}>Direct tools</div>
+              <h2>Direct Circuit IR</h2>
+              <p className={mutedCopyClass}>Paste, validate, and generate without leaving the SPA.</p>
+            </div>
+            <div className={inputGridTwoUpClass}>
+              <label>
+                <span>Project Name</span>
+                <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+              </label>
+              <label>
+                <span>Symbols Directory</span>
+                <input
+                  value={symbolsDir}
+                  onChange={(event) => setSymbolsDir(event.target.value)}
+                  placeholder="/path/to/symbols"
+                />
+              </label>
+            </div>
             <label>
-              <span>Project Name</span>
-              <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+              <span>Load JSON File</span>
+              <input type="file" accept=".json,application/json" onChange={handleLoadFile} />
             </label>
             <label>
-              <span>Symbols Directory</span>
-              <input
-                value={symbolsDir}
-                onChange={(event) => setSymbolsDir(event.target.value)}
-                placeholder="/path/to/symbols"
-              />
+              <span>Circuit IR JSON</span>
+              <textarea rows={18} value={netlistText} onChange={(event) => setNetlistText(event.target.value)} />
             </label>
-          </div>
-          <label>
-            <span>Load JSON File</span>
-            <input type="file" accept=".json,application/json" onChange={handleLoadFile} />
-          </label>
-          <label>
-            <span>Circuit IR JSON</span>
-            <textarea rows={18} value={netlistText} onChange={(event) => setNetlistText(event.target.value)} />
-          </label>
-          <div className={buttonRowClass}>
-            <button type="button" className={buttonSecondaryClass} onClick={() => void handleValidate()}>
-              Validate
-            </button>
-            <button type="button" className={buttonPrimaryClass} onClick={() => void handleGenerate()}>
-              Generate
-            </button>
-          </div>
-        </section>
-
-        <div className={stackColumnClass}>
-          <section className={panelSoftClass}>
-            <div className={headingGroupClass}>
-              <h2>Doctor</h2>
-              <p className={mutedCopyClass}>Current backend health report.</p>
-            </div>
-            <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{doctorText}</pre>
-          </section>
-          <section className={panelSoftClass}>
-            <div className={headingGroupClass}>
-              <h2>Symbol Search</h2>
-              <p className={mutedCopyClass}>Query the installed symbol libraries without leaving the app.</p>
-            </div>
             <div className={buttonRowClass}>
-              <input
-                className="flex-1"
-                value={symbolQuery}
-                onChange={(event) => setSymbolQuery(event.target.value)}
-                placeholder="resistor"
-              />
-              <button type="button" className={buttonSecondaryClass} onClick={() => void handleSearchSymbols()}>
-                Search
+              <button type="button" className={buttonSecondaryClass} onClick={() => void handleValidate()}>
+                Validate
+              </button>
+              <button type="button" className={buttonPrimaryClass} onClick={() => void handleGenerate()}>
+                Generate
               </button>
             </div>
-            <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{symbolResults}</pre>
           </section>
-        </div>
-      </div>
+        }
+        side={
+          <>
+            <section className={panelSoftClass}>
+              <div className={headingGroupClass}>
+                <div className={sideKickerClass}>System health</div>
+                <h2>Doctor</h2>
+                <p className={mutedCopyClass}>Current backend health report.</p>
+              </div>
+              <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{doctorText}</pre>
+            </section>
+            <section className={panelSoftClass}>
+              <div className={headingGroupClass}>
+                <div className={sideKickerClass}>Lookup</div>
+                <h2>Symbol Search</h2>
+                <p className={mutedCopyClass}>Query the installed symbol libraries without leaving the app.</p>
+              </div>
+              <div className={buttonRowClass}>
+                <input
+                  className="flex-1"
+                  value={symbolQuery}
+                  onChange={(event) => setSymbolQuery(event.target.value)}
+                  placeholder="resistor"
+                />
+                <button type="button" className={buttonSecondaryClass} onClick={() => void handleSearchSymbols()}>
+                  Search
+                </button>
+              </div>
+              <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{symbolResults}</pre>
+            </section>
+          </>
+        }
+      />
 
       <div className={dashboardGridClass}>
         <section className={panelSoftClass}>
@@ -830,16 +1107,21 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
           <div>
             <p className={eyebrowClass}>Guided circuit workflow</p>
             <h1>Wizard flow, now on React + TypeScript.</h1>
-            <p className={mutedCopyClass}>
+            <p className={heroLeadClass}>
               The wizard runs through the same backend API, but the client now keeps the page alive
               while requests are in flight instead of blocking a full-page form submit.
             </p>
+            <div className={heroStatGridClass}>
+              <MetricCard label="Mode" tone="cool" value="Conversation first" />
+              <MetricCard label="Review gates" tone="warm" value="Spec, IR, generation" />
+              <MetricCard label="Backend" tone="neutral" value="Server-authoritative" />
+            </div>
           </div>
-          <div className={heroCardClass}>
-            <p className={eyebrowClass}>Provider</p>
-            <strong>{bootstrap.llm_provider}</strong>
-            <span className={mutedCopyClass}>{bootstrap.llm_enabled ? 'Enabled' : 'Disabled in config'}</span>
-          </div>
+          <HeroImageCard
+            provider={bootstrap.llm_provider}
+            subtitle="Start with intent and constraints, then move through explicit review checkpoints before deterministic project generation."
+            title={bootstrap.llm_enabled ? 'Provider online' : 'Provider disabled'}
+          />
         </section>
 
         {errorMessage ? (
@@ -862,25 +1144,33 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               while the request runs.
             </p>
           </div>
-          <form className="grid gap-5" onSubmit={(event) => void handleCreateSession(event)}>
-            <div className={inputGridTwoUpClass}>
-              <label>
-                <span>Project Name</span>
-                <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
-              </label>
-              <label>
-                <span>Symbols Directory</span>
-                <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
-              </label>
+          <form className={wizardFormClass} onSubmit={(event) => void handleCreateSession(event)}>
+            <div className={wizardFieldSectionClass}>
+              <div className={wizardFieldGridClass}>
+                <label>
+                  <span>Project Name</span>
+                  <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+                </label>
+                <label>
+                  <span>Symbols Directory</span>
+                  <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
+                </label>
+              </div>
+              <p className={compactSupportCopyClass}>Keep this short. Put the real detail into the request box.</p>
             </div>
-            <label>
-              <span>Circuit Request</span>
-              <textarea rows={10} required value={message} onChange={(event) => setMessage(event.target.value)} />
-            </label>
-            <div className={buttonRowClass}>
+            <div className={wizardFieldSectionClass}>
+              <WizardComposer
+                disabled={Boolean(busyMessage)}
+                label="Circuit Request"
+                placeholder="Goal, rails, inputs, outputs, constraints."
+                value={message}
+                onChange={setMessage}
+              />
+            </div>
+            <div className={wizardActionRowClass}>
               <button
                 type="submit"
-                className={buttonPrimaryClass}
+                className={wizardPrimaryButtonClass}
                 disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
               >
                 Start Session
@@ -917,6 +1207,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   const canGenerateIr = Boolean(session.spec) && session.spec_approved
   const canGenerateProject = Boolean(session.ir_validation?.valid)
   const visibleLatestJob = session.latest_job_id ? latestJob : null
+  const checkpoint = wizardCurrentCheckpoint(session, currentStep)
 
   return (
     <div className={pageStackClass}>
@@ -924,12 +1215,26 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
         <div>
           <p className={eyebrowClass}>Session {session.id}</p>
           <h1>{WIZARD_STEP_META[currentStep].label}</h1>
-          <p className={mutedCopyClass}>{bannerForSession(session)}</p>
+          <p className={heroLeadClass}>{bannerForSession(session)}</p>
+          <div className={heroStatGridClass}>
+            <MetricCard label="Provider" tone="cool" value={session.llm_provider ?? bootstrap.llm_provider} />
+            <MetricCard label="Stage" tone="warm" value={WIZARD_STEP_META[currentStep].label} />
+            <MetricCard label="Session status" tone="neutral" value={session.status.replaceAll('_', ' ')} />
+          </div>
         </div>
         <div className={heroCardClass}>
           <p className={eyebrowClass}>Current status</p>
           <StatusPill tone={statusTone(session.status)}>{session.status.replaceAll('_', ' ')}</StatusPill>
           <span className={mutedCopyClass}>{session.llm_provider ?? bootstrap.llm_provider}</span>
+          <p className="text-sm leading-6 text-[var(--muted)]">
+            {currentStep === 'describe'
+              ? 'Refine the brief until the spec is reviewable.'
+              : currentStep === 'spec'
+                ? 'Approve only when the spec matches the intended circuit behavior.'
+                : currentStep === 'ir'
+                  ? 'Use validation to confirm the IR before handing off generation.'
+                  : 'Generate a deterministic KiCad project from the approved IR.'}
+          </p>
         </div>
       </section>
 
@@ -951,34 +1256,21 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
       ) : null}
 
       <section className={panelSoftClass}>
+        <div className={headingGroupClass}>
+          <div className={sideKickerClass}>Workflow</div>
+          <h2>Step tracker</h2>
+          <p className={mutedCopyClass}>Each step says whether it is current, ready, done, or still locked.</p>
+        </div>
         <ol className={stepTrackerClass}>
-          {(Object.keys(WIZARD_STEP_META) as WizardStep[]).map((wizardStep, index) => {
-            const unlocked = wizardStepUnlocked(session, wizardStep)
-            const active = currentStep === wizardStep
+          {(Object.keys(WIZARD_STEP_META) as WizardStep[]).map((wizardStep) => {
             return (
-              <li
+              <WizardStepCard
                 key={wizardStep}
-                className={joinClasses(
-                  'grid gap-[0.55rem] rounded-[18px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.6)] p-[0.9rem] [grid-template-columns:2.2rem_minmax(0,1fr)]',
-                  active && 'border-[rgba(161,69,26,0.3)]',
-                  !active && unlocked && 'bg-[rgba(235,247,241,0.8)]',
-                  !active && !unlocked && 'opacity-70',
-                )}
-              >
-                <span className="inline-flex h-[2.2rem] w-[2.2rem] items-center justify-center rounded-full bg-[rgba(161,69,26,0.12)] font-bold">
-                  {index + 1}
-                </span>
-                <div>
-                  {unlocked ? (
-                    <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/wizard/${session.id}/${wizardStep}`}>
-                      {WIZARD_STEP_META[wizardStep].label}
-                    </Link>
-                  ) : (
-                    <strong>{WIZARD_STEP_META[wizardStep].label}</strong>
-                  )}
-                  <p className={mutedCopyClass}>{WIZARD_STEP_META[wizardStep].summary}</p>
-                </div>
-              </li>
+                currentStep={currentStep}
+                session={session}
+                sessionId={session.id}
+                step={wizardStep}
+              />
             )
           })}
         </ol>
@@ -1007,6 +1299,11 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               </Link>
             ) : null}
           </div>
+          <section className="mt-5 grid gap-2 rounded-[20px] border border-[rgba(161,69,26,0.12)] bg-[rgba(255,249,241,0.86)] p-4">
+            <div className={sideKickerClass}>Current checkpoint</div>
+            <strong className="text-[var(--text)]">{checkpoint.title}</strong>
+            <p className="text-sm leading-6 text-[var(--muted)]">{checkpoint.detail}</p>
+          </section>
         </aside>
 
         <div className={stackColumnClass}>
@@ -1017,25 +1314,33 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                   <h2>Describe Circuit</h2>
                   <p className={mutedCopyClass}>Keep refining the prompt until the spec is ready for review.</p>
                 </div>
-                <form className="grid gap-5" onSubmit={(event) => void handleSendMessage(event)}>
-                  <div className={inputGridTwoUpClass}>
-                    <label>
-                      <span>Project Name</span>
-                      <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
-                    </label>
-                    <label>
-                      <span>Symbols Directory</span>
-                      <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
-                    </label>
+                <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
+                  <div className={wizardFieldSectionClass}>
+                    <div className={wizardFieldGridClass}>
+                      <label>
+                        <span>Project Name</span>
+                        <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Symbols Directory</span>
+                        <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
+                      </label>
+                    </div>
+                    <p className={compactSupportCopyClass}>Adjust metadata only when the session context actually changed.</p>
                   </div>
-                  <label>
-                    <span>Circuit Request</span>
-                    <textarea rows={8} required value={message} onChange={(event) => setMessage(event.target.value)} />
-                  </label>
-                  <div className={buttonRowClass}>
+                  <div className={wizardFieldSectionClass}>
+                    <WizardComposer
+                      disabled={Boolean(busyMessage)}
+                      label="Circuit Request"
+                      placeholder="Clarify only the missing or changed details."
+                      value={message}
+                      onChange={setMessage}
+                    />
+                  </div>
+                  <div className={wizardActionRowClass}>
                     <button
                       type="submit"
-                      className={buttonPrimaryClass}
+                      className={wizardPrimaryButtonClass}
                       disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
                     >
                       {session.messages.length > 1 ? 'Send Revision Note' : 'Start Wizard'}
@@ -1047,21 +1352,16 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               <section className={panelSoftClass}>
                 <div className={headingGroupClass}>
                   <h2>Conversation</h2>
+                  <p className={mutedCopyClass}>Your notes stay separated from the wizard replies so each turn is easier to scan.</p>
                 </div>
                 <div className={transcriptListClass}>
                   {session.messages.map((entry, index) => (
-                    <article
+                    <TranscriptEntryCard
                       key={`${entry.role}-${index}`}
-                      className={joinClasses(
-                        transcriptEntryClass,
-                        entry.role === 'assistant'
-                          ? 'bg-[rgba(255,245,228,0.8)]'
-                          : 'bg-[rgba(236,245,243,0.78)]',
-                      )}
-                    >
-                      <strong>{entry.role === 'user' ? 'You' : 'Wizard'}</strong>
-                      <p className={mutedCopyClass}>{entry.content}</p>
-                    </article>
+                      content={entry.content}
+                      index={index}
+                      role={entry.role}
+                    />
                   ))}
                 </div>
               </section>
@@ -1119,22 +1419,27 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                 <div className={headingGroupClass}>
                   <h2>Revise or Approve</h2>
                 </div>
-                <form className="grid gap-5" onSubmit={(event) => void handleSendMessage(event)}>
-                  <label>
-                    <span>Revision Note</span>
-                    <textarea rows={6} value={message} onChange={(event) => setMessage(event.target.value)} />
-                  </label>
-                  <div className={buttonRowClass}>
+                <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
+                  <div className={wizardFieldSectionClass}>
+                    <WizardComposer
+                      disabled={Boolean(busyMessage)}
+                      label="Revision Note"
+                      placeholder="List only the specific spec changes you want."
+                      value={message}
+                      onChange={setMessage}
+                    />
+                  </div>
+                  <div className={wizardActionRowClass}>
                     <button
                       type="submit"
-                      className={buttonSecondaryClass}
+                      className={wizardSecondaryButtonClass}
                       disabled={!message.trim() || Boolean(busyMessage)}
                     >
                       Send Revision Note
                     </button>
                     <button
                       type="button"
-                      className={buttonPrimaryClass}
+                      className={wizardPrimaryButtonClass}
                       disabled={!canApproveSpec || Boolean(busyMessage)}
                       onClick={() => void handleApproveSpec()}
                     >
@@ -1293,12 +1598,20 @@ function JobPage() {
         <div>
           <p className={eyebrowClass}>Job {job.id}</p>
           <h1>{job.project_name}</h1>
-          <p className={mutedCopyClass}>Inspect the full generation result, artifacts, diagnostics, and raw payloads.</p>
+          <p className={heroLeadClass}>Inspect the full generation result, artifacts, diagnostics, and raw payloads.</p>
+          <div className={heroStatGridClass}>
+            <MetricCard label="Artifacts" tone="warm" value={String(job.artifacts.length)} />
+            <MetricCard label="Components" tone="cool" value={String(result.component_count ?? '—')} />
+            <MetricCard label="Nets" tone="neutral" value={String(result.net_count ?? '—')} />
+          </div>
         </div>
         <div className={heroCardClass}>
           <p className={eyebrowClass}>Status</p>
           <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
           <span className={mutedCopyClass}>{job.updated_at}</span>
+          <p className="text-sm leading-6 text-[var(--muted)]">
+            Review the artifact set first, then use warnings and diagnostics to understand any layout or generation issues.
+          </p>
         </div>
       </section>
 
