@@ -59,7 +59,12 @@ def test_wizard_page_shows_key_controls(tmp_path, monkeypatch) -> None:
 
     assert response.status_code == 200
     html = response.text
-    assert "Wizard Session" in html
-    assert "Approve Spec" in html
-    assert "Generate IR" in html
+    assert "Wizard Steps" in html
+    assert "Describe Circuit" in html
+    assert "Review Spec" in html
+    assert "Review Circuit IR" in html
     assert "Generate Project" in html
+    assert "Session Control" in html
+    assert "Start Wizard" in html
+    assert "Spec Review" in html
+    assert "Circuit IR Review" in html

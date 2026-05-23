@@ -210,3 +210,4 @@ __marimo__/
 tmp/
 code_review/generated/
 /data/
+kicad_pcb_web.toml

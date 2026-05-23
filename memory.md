@@ -39,6 +39,25 @@
 - Documentation is now aligned across `README.md`, `docs/LLM_WIZARD_DESIGN.md`, `docs/LLM_WIZARD_OPERATOR_GUIDE.md`, and `docs/LLM_DESIGN_TODO.md`, with the TODO fully marked done.
 - Final validation on the completed tree is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and full `uv run pytest -q`.
 
+## 2026-05-23T12:58:59Z - GPT-5.4 - Added a local llama-server web config convention
+
+- Created a repo-root `kicad_pcb_web.toml` for local wizard use with `provider = "llama_server"`, `model = "qwen36-27B-Q3KM-turbo"`, and `base_url = "http://127.0.0.1:8080"`.
+- Added `kicad_pcb_web.toml` to `.gitignore` so server credentials and local model settings stay untracked.
+- Verified the config loads through `kicad_pcb_web.settings.load_settings()` and resolves the expected provider, model, and base URL.
+
+## 2026-05-23T13:05:52Z - GPT-5.4 - Added a dedicated UI/UX redesign backlog for the wizard
+
+- Created a new repo-root planning file `UIUX1_TODO.md` that breaks the wizard redesign into detailed tasks and subtasks covering journey design, layout, visual language, copy, frontend logic, CSS, testing, live validation, and final acceptance.
+- The plan explicitly treats the wizard as a staged product flow rather than a dashboard shell and includes hard requirements around visible next actions, compact control placement, and keeping advanced technical detail secondary.
+- The file is intended as the implementation backlog for the next UI/UX pass, not as a speculative brainstorm document.
+
+## 2026-05-23T13:31:21Z - GPT-5.4 - Completed the wizard UI/UX redesign closeout and synced the canonical docs
+
+- The wizard UI is now step-driven end-to-end: `wizard.html`, `wizard.js`, and `app.css` were rebuilt around a hero, step tracker, persistent action rail, stage-specific review panels, and a central frontend state model in `deriveWizardUiState(...)`.
+- The redesign now surfaces stronger trust boundaries and review checkpoints: spec approval is explicit, Circuit IR review is validation-first, long-running actions show inline in-progress status, and generation completion reads as a final handoff with job follow-through.
+- The canonical redesign backlog and completion record now lives at `docs/UIUX1_TODO.md`, the stale root copy became a pointer file, and additional redesign notes were captured in `docs/UIUX1_IMPLEMENTATION_NOTES.md` plus updated README/operator-guide text.
+- Final redesign validation is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, focused wizard UI tests, and live browser verification of representative active, blocked, and completion states.
+
 ## 2026-05-18T13:45:02Z - GPT-5.4 - Completed the cleanup phase for stale post-migration files and Phase 7 guardrail review
 
 - The stale `kicad-pcb/` leftover tree from the root-`src` migration has been removed, including the obsolete `kicad-pcb/tests/` files and generated egg-info debris, while the intended archive under `legacy/openclaw-skill/` remains untouched.

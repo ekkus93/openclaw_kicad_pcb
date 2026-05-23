@@ -1,86 +1,191 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="hero wizard-hero">
-  <h1>LLM Circuit Wizard</h1>
-  <p>
-    Talk through the circuit you want, approve the structured spec, inspect the
-    generated Circuit IR, then hand off to the normal validated generation path.
-  </p>
-  <p class="job-meta">Provider: <strong>{{ llm_provider }}</strong></p>
+<section class="hero wizard-hero wizard-hero-shell">
+  <div>
+    <p class="wizard-eyebrow">LLM-assisted circuit flow</p>
+    <h1>Design a circuit in four deliberate steps.</h1>
+    <p class="wizard-lead">
+      Describe the circuit, review the drafted spec, inspect validated Circuit
+      IR, then hand off to the normal deterministic generation path.
+    </p>
+  </div>
+  <div class="wizard-hero-aside">
+    <p class="wizard-hero-label">Provider</p>
+    <p class="wizard-provider-name">{{ llm_provider }}</p>
+    <p id="wizard-stage-summary" class="wizard-hero-status">Ready to start.</p>
+  </div>
 </section>
 
-<div class="grid wizard-top-grid">
-  <section class="panel sticky-panel">
-    <h2>Wizard Session</h2>
-    <label for="wizard-project-name">Project name (optional)</label>
-    <input id="wizard-project-name" name="wizard-project-name" type="text" placeholder="WizardDemo" />
+<section class="panel wizard-progress-panel">
+  <h2 class="wizard-section-title">Wizard Steps</h2>
+  <ol id="wizard-step-tracker" class="wizard-step-tracker" aria-label="Wizard step tracker">
+    <li class="wizard-step is-active" data-step="describe">
+      <span class="wizard-step-index">1</span>
+      <div>
+        <strong>Describe Circuit</strong>
+        <p>Start the session and clarify the request.</p>
+      </div>
+    </li>
+    <li class="wizard-step" data-step="spec">
+      <span class="wizard-step-index">2</span>
+      <div>
+        <strong>Review Spec</strong>
+        <p>Approve the human-readable circuit specification.</p>
+      </div>
+    </li>
+    <li class="wizard-step" data-step="ir">
+      <span class="wizard-step-index">3</span>
+      <div>
+        <strong>Review Circuit IR</strong>
+        <p>Check validation, fixes, warnings, and raw IR if needed.</p>
+      </div>
+    </li>
+    <li class="wizard-step" data-step="generate">
+      <span class="wizard-step-index">4</span>
+      <div>
+        <strong>Generate Project</strong>
+        <p>Launch the final job and inspect the result.</p>
+      </div>
+    </li>
+  </ol>
+</section>
 
-    <label for="wizard-symbols-dir">Symbols directory (optional)</label>
-    <input id="wizard-symbols-dir" name="wizard-symbols-dir" type="text" placeholder="/path/to/symbols" />
-
-    <label for="wizard-message-input">Message</label>
-    <textarea id="wizard-message-input" name="wizard-message-input" rows="5" placeholder="Describe the circuit you want."></textarea>
-
-    <div class="button-row wrap-row">
-      <button id="wizard-start-button" type="button" {% if not llm_enabled %}disabled{% endif %}>Start / Send</button>
-      <button id="wizard-approve-button" type="button" disabled>Approve Spec</button>
-      <button id="wizard-generate-ir-button" type="button" disabled>Generate IR</button>
-      <button id="wizard-generate-project-button" type="button" disabled>Generate Project</button>
+<div class="wizard-layout">
+  <aside class="panel sticky-panel wizard-action-rail">
+    <div class="wizard-rail-header">
+      <div>
+        <h2>Session Control</h2>
+        <p class="muted">Keep the next action in reach.</p>
+      </div>
+      <button id="wizard-reset-button" class="wizard-ghost-button" type="button">New Session</button>
     </div>
 
-    <dl class="summary-list compact-summary">
+    <dl class="summary-list compact-summary wizard-meta-summary">
       <dt>Session</dt>
       <dd id="wizard-session-id">Not started</dd>
       <dt>Status</dt>
       <dd><span id="wizard-status-pill" class="status-pill status-neutral">idle</span></dd>
+      <dt>Provider</dt>
+      <dd>{{ llm_provider }}</dd>
     </dl>
+
+    <label for="wizard-project-name">Project Name</label>
+    <input id="wizard-project-name" name="wizard-project-name" type="text" placeholder="HeadphoneAmpWizard" />
+
+    <label for="wizard-symbols-dir">Symbols Directory</label>
+    <input id="wizard-symbols-dir" name="wizard-symbols-dir" type="text" placeholder="/path/to/symbols" />
+
+    <div id="wizard-action-copy" class="wizard-action-copy">
+      Start with the circuit goal, I/O, supply rails, and any must-use or must-avoid parts.
+    </div>
+
+    <label id="wizard-message-label" for="wizard-message-input">Circuit Request</label>
+    <textarea
+      id="wizard-message-input"
+      name="wizard-message-input"
+      rows="7"
+      placeholder="Describe the circuit you want. Include purpose, inputs, outputs, rails, and any constraints."
+    ></textarea>
+
+    <div class="wizard-action-row">
+      <button id="wizard-primary-button" type="button" {% if not llm_enabled %}disabled{% endif %}>Start Wizard</button>
+      <button id="wizard-secondary-button" class="wizard-secondary-button" type="button" hidden disabled>
+        Send Revision Note
+      </button>
+    </div>
+
+    <div id="wizard-inline-status" class="result-box wizard-inline-status">
+      <p class="muted">No requests submitted yet.</p>
+    </div>
 
     {% if not llm_enabled %}
       <p class="error-box panel-note">
         The wizard is disabled in the current server configuration.
       </p>
     {% endif %}
-  </section>
+  </aside>
 
-  <section class="panel">
-    <h2>Conversation</h2>
-    <div id="wizard-transcript" class="transcript-box">
-      <p class="muted">No wizard session yet.</p>
-    </div>
-  </section>
-</div>
+  <div class="wizard-main-flow">
+    <section class="panel wizard-focus-panel">
+      <div class="wizard-focus-header">
+        <div>
+          <p id="wizard-current-step-kicker" class="wizard-eyebrow">Step 1</p>
+          <h2 id="wizard-current-step-title">Describe the circuit</h2>
+        </div>
+        <p id="wizard-current-step-detail" class="wizard-focus-detail">
+          Start with the shape of the circuit you want, then refine it until the spec is ready to approve.
+        </p>
+      </div>
+      <div id="wizard-stage-banner" class="wizard-stage-banner status-neutral">
+        The wizard is ready to start a new session.
+      </div>
+    </section>
 
-<div class="grid two-column">
-  <section class="panel">
-    <h2>Spec Review</h2>
-    <div id="wizard-spec-summary" class="result-box">
-      <p class="muted">No circuit specification yet.</p>
-    </div>
-  </section>
+    <section id="wizard-stage-describe" class="panel wizard-stage-panel" data-step="describe">
+      <div class="wizard-stage-header">
+        <h3>Conversation</h3>
+        <p class="muted">Use this step to shape the request until the spec is coherent enough to review.</p>
+      </div>
+      <div class="wizard-guidance-grid">
+        <article class="wizard-guidance-card">
+          <h4>Include</h4>
+          <ul class="job-list">
+            <li>Purpose and signal path</li>
+            <li>Inputs, outputs, and rails</li>
+            <li>Packaging or part constraints</li>
+          </ul>
+        </article>
+        <article class="wizard-guidance-card">
+          <h4>Trust Boundary</h4>
+          <p class="muted">The wizard drafts the spec, but you approve the checkpoint before any Circuit IR is generated.</p>
+        </article>
+      </div>
+      <div id="wizard-transcript" class="transcript-box wizard-transcript-box">
+        <p class="muted">No wizard session yet.</p>
+      </div>
+    </section>
 
-  <section class="panel">
-    <h2>Circuit IR Review</h2>
-    <div id="wizard-ir-summary" class="result-box">
-      <p class="muted">No Circuit IR generated yet.</p>
-    </div>
-  </section>
-</div>
+    <section id="wizard-stage-spec" class="panel wizard-stage-panel" data-step="spec" hidden>
+      <div class="wizard-stage-header">
+        <h3>Spec Review</h3>
+        <p class="muted">Approve the drafted specification or send one revision note before moving on.</p>
+      </div>
+      <div class="grid two-column wizard-review-grid">
+        <div id="wizard-spec-summary" class="result-box wizard-rich-box">
+          <p class="muted">No circuit specification yet.</p>
+        </div>
+        <div>
+          <div id="wizard-open-questions" class="result-box wizard-rich-box">
+            <p class="muted">No open questions.</p>
+          </div>
+          <div id="wizard-unsupported-summary" class="result-box wizard-rich-box wizard-support-box">
+            <p class="muted">No unsupported constraints flagged.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-<div class="grid two-column">
-  <section class="panel">
-    <h2>Open Questions</h2>
-    <div id="wizard-open-questions" class="result-box">
-      <p class="muted">No open questions.</p>
-    </div>
-  </section>
+    <section id="wizard-stage-ir" class="panel wizard-stage-panel" data-step="ir" hidden>
+      <div class="wizard-stage-header">
+        <h3>Circuit IR Review</h3>
+        <p class="muted">Inspect validation first. Raw JSON stays available, but secondary.</p>
+      </div>
+      <div id="wizard-ir-summary" class="result-box wizard-rich-box">
+        <p class="muted">No Circuit IR generated yet.</p>
+      </div>
+    </section>
 
-  <section class="panel">
-    <h2>Generation</h2>
-    <div id="wizard-generation-result" class="result-box">
-      <p class="muted">No project generation run yet.</p>
-    </div>
-  </section>
+    <section id="wizard-stage-generate" class="panel wizard-stage-panel" data-step="generate" hidden>
+      <div class="wizard-stage-header">
+        <h3>Generate Project</h3>
+        <p class="muted">Launch the validated generation path and follow the resulting job.</p>
+      </div>
+      <div id="wizard-generation-result" class="result-box wizard-rich-box">
+        <p class="muted">No project generation run yet.</p>
+      </div>
+    </section>
+  </div>
 </div>
 {% endblock %}
 

@@ -99,14 +99,25 @@ provider = "disabled"
 
 ## Common Workflow
 
+The wizard is organized around four visible steps:
+
+1. `Describe Circuit`
+2. `Review Spec`
+3. `Review Circuit IR`
+4. `Generate Project`
+
+Normal operator flow:
+
 1. Open `/wizard`.
-2. Enter an initial circuit request.
-3. Iterate until the spec is ready for review.
-4. Click `Approve Spec`.
-5. Click `Generate IR`.
-6. Review deterministic fixes and warnings.
-7. Click `Generate Project`.
-8. Open the generated job detail page.
+2. Enter the first circuit request in the action rail.
+3. Use the `Describe Circuit` step until the wizard produces a reviewable spec.
+4. In `Review Spec`, either click `Approve Spec` or send one concise revision note.
+5. In `Review Circuit IR`, review the validation banner, fixes, warnings, and optional raw JSON.
+6. Click `Generate Project` when the IR is valid.
+7. Open the generated job detail page from the final result card.
+
+If a provider call takes a while, the inline status box in the action rail now
+shows an explicit in-progress message instead of leaving the page visually idle.
 
 ## What the Wizard Stores
 
@@ -146,7 +157,8 @@ Check:
 
 ### Spec will not approve
 
-Inspect the `Open Questions` panel and send another clarification message.
+Inspect the `Open Questions` and `Unsupported Constraints` boxes, then send one
+clarification or revision note from the action rail.
 
 ### IR generation fails
 

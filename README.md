@@ -3,12 +3,13 @@
 [![CI](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml/badge.svg)](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml)
 
 This branch provides a Python FastAPI web app for deterministic KiCad project
-generation from Circuit IR JSON.
+generation from Circuit IR JSON, plus an optional local-first LLM wizard that
+helps draft specs before handing off to the same deterministic pipeline.
 
-The web app does not require OpenClaw, an LLM, an agent runtime, or any
-external AI service. Users provide explicit Circuit IR JSON, and the app
-validates it, generates KiCad project files, and exposes curated downloadable
-artifacts.
+The web app does not require OpenClaw or any external AI service for its core
+generation path. Users can either provide explicit Circuit IR JSON directly or
+use the `/wizard` flow to iterate on a spec, approve it, generate Circuit IR,
+and then launch project generation.
 
 The previous OpenClaw skill files are archived under
 `legacy/openclaw-skill/` for reference only.
@@ -102,8 +103,7 @@ network_probe_enabled = false
 ```
 
 Environment variables still override config-file values when both are set.
-The LLM settings are configuration only for now; the current web app does not
-yet expose an LLM-driven wizard flow.
+The same LLM settings drive the `/wizard` flow when a provider is enabled.
 
 Provider expectations:
 
@@ -131,6 +131,13 @@ explicitly asks for `validation="kicad"`.
 ## LLM Wizard
 
 The web app now includes a local-first LLM-assisted wizard at `/wizard`.
+
+The UI is step-driven:
+
+1. `Describe Circuit`
+2. `Review Spec`
+3. `Review Circuit IR`
+4. `Generate Project`
 
 Supported flow:
 
@@ -163,6 +170,10 @@ The wizard stores file-backed sessions under the web data directory and persists
 - approved spec state
 - current Circuit IR draft
 - latest generation job link
+
+The redesigned wizard keeps a persistent action rail visible on desktop so the
+current state, next action, and spec-approval boundary stay in reach while the
+active review panel changes by step.
 
 The web app binds to `127.0.0.1` by default and is intended for local/internal use
 in v1. Do not expose it publicly without adding authentication, isolation, and
