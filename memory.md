@@ -210,6 +210,18 @@
 - Deleted the unused `src/kicad_pcb_web/templates/` HTML files and the old `src/kicad_pcb_web/static/app.css`, `app.js`, and `wizard.js` assets now that browser routes are served exclusively from the React SPA bundle.
 - Removed the last dead Jinja renderer plumbing from `src/kicad_pcb_web/deps.py`, leaving only the settings, LLM client, and static-path dependency surfaces used by the current app.
 - Revalidated the cleanup with focused SPA UI contract tests plus full-repo `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest -q`.
+
+## 2026-05-23T17:40:03Z - GPT-5.4 - Switched the React frontend styling stack onto Tailwind
+
+- Added `tailwindcss` plus `@tailwindcss/vite` to the `frontend/` toolchain and enabled the Tailwind Vite plugin in `frontend/vite.config.ts`.
+- Replaced the old standalone stylesheet implementation in `frontend/src/index.css` with a Tailwind-based layer file that preserves the current UI class structure while driving layout and component styling through Tailwind utilities.
+- Rebuilt the SPA bundle and revalidated with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
+
+## 2026-05-23T17:52:09Z - GPT-5.4 - Rewrote the React app to use direct Tailwind utility classes in JSX
+
+- `frontend/src/App.tsx` no longer depends on the previous semantic class layer; the active UI now uses direct Tailwind utility strings in the JSX for layout, panels, banners, step states, and button styling.
+- After the JSX rewrite, the dead semantic component-layer CSS was removed from `frontend/src/index.css`, leaving only the Tailwind import plus base/global rules and design tokens.
+- Final validation for this pass is green with `cd frontend && npm run build`, `cd frontend && npm run lint`, and `uv run pytest -q tests/web/test_web_ui_contract.py`.
 - Tightening `_infer_connector_roles_from_ir(...)` to treat load-oriented connector metadata like `LED_LOAD` as an output hint materially improved 555 placement: the MOSFET/load block now lands to the right of the timer and is stable enough for semantic placement assertions.
 - Phase 4 remains open because the TODO still has unchecked items around explicit steering-network reconstruction, formal review of timing-value selection, and the last readability distinction bullet.
 

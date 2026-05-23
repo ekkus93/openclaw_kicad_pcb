@@ -39,6 +39,50 @@ const WIZARD_STEP_META: Record<WizardStep, { label: string; summary: string }> =
   generate: { label: 'Generate Project', summary: 'Launch the deterministic KiCad generation path.' },
 }
 
+const pageStackClass = 'grid gap-5'
+const stackColumnClass = 'grid gap-5'
+const pageShellClass = 'mx-auto max-w-[1320px] px-6 py-6 lg:px-4'
+const dashboardGridClass = 'grid gap-5 [grid-template-columns:minmax(0,1.5fr)_minmax(320px,0.9fr)] lg:grid-cols-1'
+const heroPanelClass =
+  "relative grid gap-6 overflow-hidden rounded-[28px] border border-[rgba(109,47,20,0.14)] bg-[linear-gradient(135deg,rgba(255,249,241,0.88),rgba(255,239,213,0.92)),radial-gradient(circle_at_top_right,rgba(24,75,69,0.2),transparent_36%)] p-[1.8rem] shadow-[0_24px_60px_rgba(71,43,19,0.12)] [grid-template-columns:minmax(0,1.4fr)_minmax(240px,0.7fr)] after:pointer-events-none after:absolute after:inset-[auto_-40px_-80px_auto] after:h-[240px] after:w-[240px] after:bg-[radial-gradient(circle,rgba(242,196,138,0.58),transparent_70%)] after:content-[''] lg:grid-cols-1"
+const heroCardClass =
+  'relative z-[1] grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-[1.35rem] shadow-[var(--shadow-soft)]'
+const panelBaseClass =
+  'rounded-3xl border border-[var(--border)] p-[1.35rem] shadow-[var(--shadow-soft)]'
+const panelSoftClass = `${panelBaseClass} bg-[linear-gradient(180deg,rgba(255,252,247,0.95),rgba(250,244,233,0.94))]`
+const panelAccentClass = `${panelBaseClass} bg-[linear-gradient(180deg,rgba(255,248,237,0.98),rgba(248,237,220,0.94))]`
+const headingGroupClass = 'mb-4 grid gap-1.5'
+const eyebrowClass = 'm-0 text-[0.83rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]'
+const mutedCopyClass = 'text-[var(--muted)]'
+const buttonRowClass = 'flex flex-wrap gap-3'
+const inputGridTwoUpClass = 'grid gap-4 md:grid-cols-2'
+const buttonBaseClass =
+  'rounded-full border-0 px-[1.2rem] py-[0.8rem] font-semibold no-underline transition-[transform,opacity] duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.55] disabled:transform-none'
+const buttonPrimaryClass =
+  `${buttonBaseClass} bg-[linear-gradient(135deg,var(--brand)_0%,var(--brand-deep)_100%)] text-[#fff8f1] shadow-[0_14px_30px_rgba(109,47,20,0.18)]`
+const buttonSecondaryClass = `${buttonBaseClass} bg-[rgba(24,75,69,0.09)] text-[var(--accent)]`
+const bannerBaseClass = 'flex items-center gap-3 rounded-[18px] border px-[1.1rem] py-[0.9rem]'
+const spinnerClass = 'h-4 w-4 animate-spin rounded-full border-2 border-[rgba(13,76,116,0.16)] border-t-current'
+const jsonBlockClass =
+  'overflow-auto rounded-[18px] bg-[rgba(40,31,23,0.95)] p-4 font-[var(--font-mono)] text-[0.85rem] leading-[1.55] whitespace-pre-wrap break-words text-[#f7ead6]'
+const emptyCopyClass = 'text-[var(--muted)]'
+const recordListClass = 'm-0 grid list-none gap-3 p-0'
+const recordListItemClass = 'flex items-center justify-between gap-3 lg:flex-col lg:items-start'
+const compactListItemClass = 'flex items-baseline justify-between gap-3 lg:flex-col lg:items-start'
+const tagListClass = 'm-0 grid list-none gap-3 p-0 [grid-template-columns:repeat(auto-fit,minmax(160px,max-content))]'
+const tagItemClass = 'rounded-full border border-[rgba(109,47,20,0.12)] bg-[rgba(255,236,208,0.82)] px-[0.8rem] py-[0.45rem]'
+const detailListClass = 'm-0 grid list-none gap-x-3 gap-y-2 p-0 [grid-template-columns:max-content_minmax(0,1fr)]'
+const detailListGridClass = `${detailListClass} md:[grid-template-columns:repeat(2,max-content_minmax(0,1fr))]`
+const blockGridClass = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]'
+const blockCardClass = 'grid gap-2 rounded-[18px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.6)] p-4'
+const stepTrackerClass = 'm-0 grid list-none gap-4 p-0 md:grid-cols-4'
+const transcriptListClass = 'grid gap-4'
+const transcriptEntryClass = 'grid gap-1.5 rounded-[18px] border border-[rgba(88,63,39,0.14)] p-4'
+
+function joinClasses(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
+}
+
 function formatJson(payload: unknown): string {
   return JSON.stringify(payload, null, 2)
 }
@@ -55,6 +99,28 @@ function getErrorMessage(error: unknown): string {
     return error.message
   }
   return 'Unexpected error.'
+}
+
+function statusBannerToneClass(tone: ReturnType<typeof statusTone>): string {
+  const tones: Record<ReturnType<typeof statusTone>, string> = {
+    active: 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
+    success: 'border-[rgba(35,102,79,0.2)] bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
+    warning: 'border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
+    error: 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
+    neutral: 'border-[rgba(117,99,80,0.16)] bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
+  }
+  return tones[tone]
+}
+
+function statusPillToneClass(tone: ReturnType<typeof statusTone>): string {
+  const tones: Record<ReturnType<typeof statusTone>, string> = {
+    active: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
+    success: 'bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
+    warning: 'bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
+    error: 'bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
+    neutral: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
+  }
+  return tones[tone]
 }
 
 function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
@@ -143,28 +209,39 @@ function bannerForSession(session: WizardSessionDetail): string {
 }
 
 function StatusPill({ tone, children }: { tone: ReturnType<typeof statusTone>; children: string }) {
-  return <span className={`status-pill status-${tone}`}>{children}</span>
+  return (
+    <span
+      className={joinClasses(
+        'inline-flex items-center rounded-full px-[0.7rem] py-[0.35rem] text-[0.83rem] font-bold capitalize',
+        statusPillToneClass(tone),
+      )}
+    >
+      {children}
+    </span>
+  )
 }
 
 function JsonPanel({ title, payload }: { title: string; payload: unknown }) {
   return (
-    <section className="panel panel-soft">
-      <div className="section-heading compact-heading">
+    <section className={panelSoftClass}>
+      <div className={headingGroupClass}>
         <h2>{title}</h2>
       </div>
-      <pre className="json-block">{formatJson(payload)}</pre>
+      <pre className={jsonBlockClass}>{formatJson(payload)}</pre>
     </section>
   )
 }
 
 function LabelList({ items }: { items: string[] }) {
   if (!items.length) {
-    return <p className="empty-copy">None recorded.</p>
+    return <p className={emptyCopyClass}>None recorded.</p>
   }
   return (
-    <ul className="tag-list">
+    <ul className={tagListClass}>
       {items.map((item) => (
-        <li key={item}>{item}</li>
+        <li key={item} className={tagItemClass}>
+          {item}
+        </li>
       ))}
     </ul>
   )
@@ -172,14 +249,14 @@ function LabelList({ items }: { items: string[] }) {
 
 function PortList({ ports }: { ports: CircuitPortSpec[] }) {
   if (!ports.length) {
-    return <p className="empty-copy">None recorded.</p>
+    return <p className={emptyCopyClass}>None recorded.</p>
   }
   return (
-    <ul className="record-list compact-list">
+    <ul className={recordListClass}>
       {ports.map((port) => (
-        <li key={`${port.name}-${port.description ?? ''}`}>
+        <li key={`${port.name}-${port.description ?? ''}`} className={compactListItemClass}>
           <strong>{port.name}</strong>
-          <span>{port.description ?? port.signal_type ?? 'No detail'}</span>
+          <span className={mutedCopyClass}>{port.description ?? port.signal_type ?? 'No detail'}</span>
         </li>
       ))}
     </ul>
@@ -188,14 +265,14 @@ function PortList({ ports }: { ports: CircuitPortSpec[] }) {
 
 function RailList({ rails }: { rails: CircuitRailSpec[] }) {
   if (!rails.length) {
-    return <p className="empty-copy">None recorded.</p>
+    return <p className={emptyCopyClass}>None recorded.</p>
   }
   return (
-    <ul className="record-list compact-list">
+    <ul className={recordListClass}>
       {rails.map((rail) => (
-        <li key={`${rail.name}-${rail.nominal_voltage ?? ''}`}>
+        <li key={`${rail.name}-${rail.nominal_voltage ?? ''}`} className={compactListItemClass}>
           <strong>{rail.name}</strong>
-          <span>{rail.nominal_voltage ?? rail.description ?? 'No detail'}</span>
+          <span className={mutedCopyClass}>{rail.nominal_voltage ?? rail.description ?? 'No detail'}</span>
         </li>
       ))}
     </ul>
@@ -204,15 +281,15 @@ function RailList({ rails }: { rails: CircuitRailSpec[] }) {
 
 function BlockList({ blocks }: { blocks: CircuitBlockSpec[] }) {
   if (!blocks.length) {
-    return <p className="empty-copy">None recorded.</p>
+    return <p className={emptyCopyClass}>None recorded.</p>
   }
   return (
-    <div className="block-grid">
+    <div className={blockGridClass}>
       {blocks.map((block) => (
-        <article key={`${block.name}-${block.block_type}`} className="block-card">
+        <article key={`${block.name}-${block.block_type}`} className={blockCardClass}>
           <strong>{block.name}</strong>
-          <span>{block.block_type.replaceAll('_', ' ')}</span>
-          <p>{block.summary}</p>
+          <span className={mutedCopyClass}>{block.block_type.replaceAll('_', ' ')}</span>
+          <p className={mutedCopyClass}>{block.summary}</p>
         </article>
       ))}
     </div>
@@ -227,25 +304,48 @@ function Layout({
   children: ReactNode
 }) {
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="site-header__inner">
-          <Link className="brand-mark" to="/">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(245,239,226,0.82)] backdrop-blur-[18px]">
+        <div className="mx-auto grid max-w-[1320px] grid-cols-[auto_1fr_auto] items-center gap-4 px-6 py-4 lg:px-4">
+          <Link className="text-xl font-bold no-underline [font-family:var(--font-heading)] tracking-[0.01em]" to="/">
             KiCad PCB Web App
           </Link>
-          <nav className="site-nav">
-            <NavLink to="/" end>
+          <nav className="flex justify-center gap-3">
+            <NavLink
+              className={({ isActive }) =>
+                joinClasses(
+                  'rounded-full px-4 py-2 text-sm font-medium no-underline transition-all duration-150',
+                  isActive
+                    ? '-translate-y-px bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]'
+                    : 'text-[var(--muted)] hover:-translate-y-px hover:bg-[rgba(161,69,26,0.12)] hover:text-[var(--brand-deep)]',
+                )
+              }
+              to="/"
+              end
+            >
               Overview
             </NavLink>
-            <NavLink to="/wizard">Wizard</NavLink>
+            <NavLink
+              className={({ isActive }) =>
+                joinClasses(
+                  'rounded-full px-4 py-2 text-sm font-medium no-underline transition-all duration-150',
+                  isActive
+                    ? '-translate-y-px bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]'
+                    : 'text-[var(--muted)] hover:-translate-y-px hover:bg-[rgba(161,69,26,0.12)] hover:text-[var(--brand-deep)]',
+                )
+              }
+              to="/wizard"
+            >
+              Wizard
+            </NavLink>
           </nav>
-          <div className="provider-chip">
+          <div className="flex flex-col items-end gap-px text-right text-[0.86rem] text-[var(--muted)] lg:items-start lg:text-left">
             <span>Provider</span>
             <strong>{bootstrap?.llm_provider ?? 'loading'}</strong>
           </div>
         </div>
       </header>
-      <main className="page-shell">{children}</main>
+      <main className={pageShellClass}>{children}</main>
     </div>
   )
 }
@@ -358,47 +458,51 @@ function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   }
 
   return (
-    <div className="page-stack">
-      <section className="hero-panel hero-panel--overview">
+    <div className={pageStackClass}>
+      <section className={heroPanelClass}>
         <div>
-          <p className="eyebrow">React + TypeScript frontend</p>
+          <p className={eyebrowClass}>React + TypeScript frontend</p>
           <h1>One frontend now owns the whole web UI.</h1>
-          <p className="hero-copy">
+          <p className={mutedCopyClass}>
             The browser stays responsive while it talks to the FastAPI backend. Use the
             wizard for guided flows or work directly with Circuit IR and job artifacts here.
           </p>
         </div>
-        <div className="hero-card">
-          <p className="hero-card__label">Wizard status</p>
+        <div className={heroCardClass}>
+          <p className={eyebrowClass}>Wizard status</p>
           <strong>{bootstrap.llm_enabled ? 'Ready to start' : 'Disabled in config'}</strong>
-          <span>{bootstrap.llm_provider}</span>
-          <button type="button" className="button button-primary" onClick={() => navigate('/wizard')}>
+          <span className={mutedCopyClass}>{bootstrap.llm_provider}</span>
+          <button type="button" className={buttonPrimaryClass} onClick={() => navigate('/wizard')}>
             Open Wizard
           </button>
         </div>
       </section>
 
       {busyLabel ? (
-        <div className="status-banner status-active">
-          <span className="spinner" aria-hidden="true"></span>
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+          <span className={spinnerClass} aria-hidden="true"></span>
           <strong>{busyLabel}</strong>
         </div>
       ) : null}
 
-      <div className="dashboard-grid">
-        <section className="panel panel-accent">
-          <div className="section-heading">
+      <div className={dashboardGridClass}>
+        <section className={panelAccentClass}>
+          <div className={headingGroupClass}>
             <h2>Direct Circuit IR</h2>
-            <p>Paste, validate, and generate without leaving the SPA.</p>
+            <p className={mutedCopyClass}>Paste, validate, and generate without leaving the SPA.</p>
           </div>
-          <div className="field-grid two-up">
+          <div className={inputGridTwoUpClass}>
             <label>
               <span>Project Name</span>
               <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
             </label>
             <label>
               <span>Symbols Directory</span>
-              <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} placeholder="/path/to/symbols" />
+              <input
+                value={symbolsDir}
+                onChange={(event) => setSymbolsDir(event.target.value)}
+                placeholder="/path/to/symbols"
+              />
             </label>
           </div>
           <label>
@@ -409,66 +513,73 @@ function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
             <span>Circuit IR JSON</span>
             <textarea rows={18} value={netlistText} onChange={(event) => setNetlistText(event.target.value)} />
           </label>
-          <div className="button-row">
-            <button type="button" className="button button-secondary" onClick={() => void handleValidate()}>
+          <div className={buttonRowClass}>
+            <button type="button" className={buttonSecondaryClass} onClick={() => void handleValidate()}>
               Validate
             </button>
-            <button type="button" className="button button-primary" onClick={() => void handleGenerate()}>
+            <button type="button" className={buttonPrimaryClass} onClick={() => void handleGenerate()}>
               Generate
             </button>
           </div>
         </section>
 
-        <div className="stack-column">
-          <section className="panel panel-soft">
-            <div className="section-heading">
+        <div className={stackColumnClass}>
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
               <h2>Doctor</h2>
-              <p>Current backend health report.</p>
+              <p className={mutedCopyClass}>Current backend health report.</p>
             </div>
-            <pre className="json-block json-block--compact">{doctorText}</pre>
+            <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{doctorText}</pre>
           </section>
-          <section className="panel panel-soft">
-            <div className="section-heading">
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
               <h2>Symbol Search</h2>
-              <p>Query the installed symbol libraries without leaving the app.</p>
+              <p className={mutedCopyClass}>Query the installed symbol libraries without leaving the app.</p>
             </div>
-            <div className="inline-form">
-              <input value={symbolQuery} onChange={(event) => setSymbolQuery(event.target.value)} placeholder="resistor" />
-              <button type="button" className="button button-secondary" onClick={() => void handleSearchSymbols()}>
+            <div className={buttonRowClass}>
+              <input
+                className="flex-1"
+                value={symbolQuery}
+                onChange={(event) => setSymbolQuery(event.target.value)}
+                placeholder="resistor"
+              />
+              <button type="button" className={buttonSecondaryClass} onClick={() => void handleSearchSymbols()}>
                 Search
               </button>
             </div>
-            <pre className="json-block json-block--compact">{symbolResults}</pre>
+            <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{symbolResults}</pre>
           </section>
         </div>
       </div>
 
-      <div className="dashboard-grid dashboard-grid--results">
-        <section className="panel panel-soft">
-          <div className="section-heading">
+      <div className={dashboardGridClass}>
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
             <h2>Validation / Generation Results</h2>
-            <p>Raw API payloads are still available when you need detail.</p>
+            <p className={mutedCopyClass}>Raw API payloads are still available when you need detail.</p>
           </div>
-          <pre className="json-block">{resultText}</pre>
+          <pre className={jsonBlockClass}>{resultText}</pre>
         </section>
-        <section className="panel panel-soft">
-          <div className="section-heading">
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
             <h2>Recent Jobs</h2>
-            <p>Jump straight into job detail pages and artifact downloads.</p>
+            <p className={mutedCopyClass}>Jump straight into job detail pages and artifact downloads.</p>
           </div>
-          {jobsError ? <p className="empty-copy">{jobsError}</p> : null}
+          {jobsError ? <p className={emptyCopyClass}>{jobsError}</p> : null}
           {jobs.length ? (
-            <ul className="record-list">
+            <ul className={recordListClass}>
               {jobs.map((job) => (
-                <li key={job.id}>
-                  <Link to={`/jobs/${job.id}`}>{job.project_name}</Link>
+                <li key={job.id} className={recordListItemClass}>
+                  <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/jobs/${job.id}`}>
+                    {job.project_name}
+                  </Link>
                   <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
-                  <span>{job.updated_at}</span>
+                  <span className={mutedCopyClass}>{job.updated_at}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="empty-copy">No jobs yet.</p>
+            <p className={emptyCopyClass}>No jobs yet.</p>
           )}
         </section>
       </div>
@@ -481,27 +592,27 @@ function JobSummaryPanel({ job }: { job: JobDetail }) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
   const diagnostics = result.generated_schematic_diagnostics ?? null
   return (
-    <div className="stack-column">
-      <section className="panel panel-soft">
-        <div className="section-heading compact-heading">
+    <div className={stackColumnClass}>
+      <section className={panelSoftClass}>
+        <div className={headingGroupClass}>
           <h2>Latest Job</h2>
         </div>
-        <dl className="detail-list detail-list--grid">
-          <dt>Project</dt>
+        <dl className={detailListGridClass}>
+          <dt className={mutedCopyClass}>Project</dt>
           <dd>{job.project_name}</dd>
-          <dt>Status</dt>
+          <dt className={mutedCopyClass}>Status</dt>
           <dd>
             <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
           </dd>
-          <dt>Updated</dt>
+          <dt className={mutedCopyClass}>Updated</dt>
           <dd>{job.updated_at}</dd>
         </dl>
-        <div className="button-row wrap-row">
-          <Link className="button button-secondary" to={`/jobs/${job.id}`}>
+        <div className={buttonRowClass}>
+          <Link className={buttonSecondaryClass} to={`/jobs/${job.id}`}>
             Open Job Detail
           </Link>
           {job.artifacts.map((artifact) => (
-            <a key={artifact} className="button button-secondary" href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
+            <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
               {artifact}
             </a>
           ))}
@@ -714,38 +825,45 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
   if (!sessionId) {
     return (
-      <div className="page-stack">
-        <section className="hero-panel hero-panel--wizard">
+      <div className={pageStackClass}>
+        <section className={heroPanelClass}>
           <div>
-            <p className="eyebrow">Guided circuit workflow</p>
+            <p className={eyebrowClass}>Guided circuit workflow</p>
             <h1>Wizard flow, now on React + TypeScript.</h1>
-            <p className="hero-copy">
+            <p className={mutedCopyClass}>
               The wizard runs through the same backend API, but the client now keeps the page alive
               while requests are in flight instead of blocking a full-page form submit.
             </p>
           </div>
-          <div className="hero-card">
-            <p className="hero-card__label">Provider</p>
+          <div className={heroCardClass}>
+            <p className={eyebrowClass}>Provider</p>
             <strong>{bootstrap.llm_provider}</strong>
-            <span>{bootstrap.llm_enabled ? 'Enabled' : 'Disabled in config'}</span>
+            <span className={mutedCopyClass}>{bootstrap.llm_enabled ? 'Enabled' : 'Disabled in config'}</span>
           </div>
         </section>
 
-        {errorMessage ? <div className="status-banner status-error"><strong>{errorMessage}</strong></div> : null}
+        {errorMessage ? (
+          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
+            <strong>{errorMessage}</strong>
+          </div>
+        ) : null}
         {busyMessage ? (
-          <div className="status-banner status-active">
-            <span className="spinner" aria-hidden="true"></span>
+          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+            <span className={spinnerClass} aria-hidden="true"></span>
             <strong>{busyMessage}</strong>
           </div>
         ) : null}
 
-        <section className="panel panel-accent panel-form">
-          <div className="section-heading">
+        <section className={panelAccentClass}>
+          <div className={headingGroupClass}>
             <h2>Create a New Session</h2>
-            <p>Describe the goal, rails, inputs, outputs, and constraints. The client keeps control while the request runs.</p>
+            <p className={mutedCopyClass}>
+              Describe the goal, rails, inputs, outputs, and constraints. The client keeps control
+              while the request runs.
+            </p>
           </div>
-          <form className="form-stack" onSubmit={(event) => void handleCreateSession(event)}>
-            <div className="field-grid two-up">
+          <form className="grid gap-5" onSubmit={(event) => void handleCreateSession(event)}>
+            <div className={inputGridTwoUpClass}>
               <label>
                 <span>Project Name</span>
                 <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
@@ -759,8 +877,12 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               <span>Circuit Request</span>
               <textarea rows={10} required value={message} onChange={(event) => setMessage(event.target.value)} />
             </label>
-            <div className="button-row">
-              <button type="submit" className="button button-primary" disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}>
+            <div className={buttonRowClass}>
+              <button
+                type="submit"
+                className={buttonPrimaryClass}
+                disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+              >
                 Start Session
               </button>
             </div>
@@ -772,8 +894,8 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
   if (loading) {
     return (
-      <div className="status-banner status-active full-width-banner">
-        <span className="spinner" aria-hidden="true"></span>
+      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
+        <span className={spinnerClass} aria-hidden="true"></span>
         <strong>Loading wizard session...</strong>
       </div>
     )
@@ -781,7 +903,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
   if (!session) {
     return (
-      <div className="status-banner status-error full-width-banner">
+      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
         <strong>{errorMessage ?? 'Wizard session not found.'}</strong>
       </div>
     )
@@ -797,44 +919,64 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   const visibleLatestJob = session.latest_job_id ? latestJob : null
 
   return (
-    <div className="page-stack">
-      <section className="hero-panel hero-panel--session">
+    <div className={pageStackClass}>
+      <section className={heroPanelClass}>
         <div>
-          <p className="eyebrow">Session {session.id}</p>
+          <p className={eyebrowClass}>Session {session.id}</p>
           <h1>{WIZARD_STEP_META[currentStep].label}</h1>
-          <p className="hero-copy">{bannerForSession(session)}</p>
+          <p className={mutedCopyClass}>{bannerForSession(session)}</p>
         </div>
-        <div className="hero-card">
-          <p className="hero-card__label">Current status</p>
+        <div className={heroCardClass}>
+          <p className={eyebrowClass}>Current status</p>
           <StatusPill tone={statusTone(session.status)}>{session.status.replaceAll('_', ' ')}</StatusPill>
-          <span>{session.llm_provider ?? bootstrap.llm_provider}</span>
+          <span className={mutedCopyClass}>{session.llm_provider ?? bootstrap.llm_provider}</span>
         </div>
       </section>
 
       {busyMessage ? (
-        <div className="status-banner status-active">
-          <span className="spinner" aria-hidden="true"></span>
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+          <span className={spinnerClass} aria-hidden="true"></span>
           <strong>{busyMessage}</strong>
         </div>
       ) : null}
-      {errorMessage ? <div className="status-banner status-error"><strong>{errorMessage}</strong></div> : null}
-      {session.error?.message ? <div className="status-banner status-error"><strong>{session.error.message}</strong></div> : null}
+      {errorMessage ? (
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
+          <strong>{errorMessage}</strong>
+        </div>
+      ) : null}
+      {session.error?.message ? (
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
+          <strong>{session.error.message}</strong>
+        </div>
+      ) : null}
 
-      <section className="panel panel-soft">
-        <ol className="step-tracker">
+      <section className={panelSoftClass}>
+        <ol className={stepTrackerClass}>
           {(Object.keys(WIZARD_STEP_META) as WizardStep[]).map((wizardStep, index) => {
             const unlocked = wizardStepUnlocked(session, wizardStep)
             const active = currentStep === wizardStep
             return (
-              <li key={wizardStep} className={`step-chip ${active ? 'is-active' : unlocked ? 'is-complete' : 'is-upcoming'}`}>
-                <span>{index + 1}</span>
+              <li
+                key={wizardStep}
+                className={joinClasses(
+                  'grid gap-[0.55rem] rounded-[18px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.6)] p-[0.9rem] [grid-template-columns:2.2rem_minmax(0,1fr)]',
+                  active && 'border-[rgba(161,69,26,0.3)]',
+                  !active && unlocked && 'bg-[rgba(235,247,241,0.8)]',
+                  !active && !unlocked && 'opacity-70',
+                )}
+              >
+                <span className="inline-flex h-[2.2rem] w-[2.2rem] items-center justify-center rounded-full bg-[rgba(161,69,26,0.12)] font-bold">
+                  {index + 1}
+                </span>
                 <div>
                   {unlocked ? (
-                    <Link to={`/wizard/${session.id}/${wizardStep}`}>{WIZARD_STEP_META[wizardStep].label}</Link>
+                    <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/wizard/${session.id}/${wizardStep}`}>
+                      {WIZARD_STEP_META[wizardStep].label}
+                    </Link>
                   ) : (
                     <strong>{WIZARD_STEP_META[wizardStep].label}</strong>
                   )}
-                  <p>{WIZARD_STEP_META[wizardStep].summary}</p>
+                  <p className={mutedCopyClass}>{WIZARD_STEP_META[wizardStep].summary}</p>
                 </div>
               </li>
             )
@@ -842,41 +984,41 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
         </ol>
       </section>
 
-      <div className="dashboard-grid dashboard-grid--wizard">
-        <aside className="panel panel-soft panel-sidebar">
-          <div className="section-heading compact-heading">
+      <div className={dashboardGridClass}>
+        <aside className={joinClasses(panelSoftClass, 'top-[6.2rem] self-start lg:static lg:top-auto')}>
+          <div className={headingGroupClass}>
             <h2>Session</h2>
           </div>
-          <dl className="detail-list">
-            <dt>Project</dt>
+          <dl className={detailListClass}>
+            <dt className={mutedCopyClass}>Project</dt>
             <dd>{session.project_name ?? session.spec?.project_name ?? 'Not set'}</dd>
-            <dt>Provider</dt>
+            <dt className={mutedCopyClass}>Provider</dt>
             <dd>{session.llm_provider ?? bootstrap.llm_provider}</dd>
-            <dt>Updated</dt>
+            <dt className={mutedCopyClass}>Updated</dt>
             <dd>{session.updated_at}</dd>
           </dl>
-          <div className="sidebar-actions">
-            <Link className="button button-secondary" to="/wizard">
+          <div className={buttonRowClass}>
+            <Link className={buttonSecondaryClass} to="/wizard">
               New Session
             </Link>
             {session.latest_job_id ? (
-              <Link className="button button-secondary" to={`/jobs/${session.latest_job_id}`}>
+              <Link className={buttonSecondaryClass} to={`/jobs/${session.latest_job_id}`}>
                 Open Job
               </Link>
             ) : null}
           </div>
         </aside>
 
-        <div className="stack-column">
+        <div className={stackColumnClass}>
           {currentStep === 'describe' ? (
             <>
-              <section className="panel panel-accent panel-form">
-                <div className="section-heading">
+              <section className={panelAccentClass}>
+                <div className={headingGroupClass}>
                   <h2>Describe Circuit</h2>
-                  <p>Keep refining the prompt until the spec is ready for review.</p>
+                  <p className={mutedCopyClass}>Keep refining the prompt until the spec is ready for review.</p>
                 </div>
-                <form className="form-stack" onSubmit={(event) => void handleSendMessage(event)}>
-                  <div className="field-grid two-up">
+                <form className="grid gap-5" onSubmit={(event) => void handleSendMessage(event)}>
+                  <div className={inputGridTwoUpClass}>
                     <label>
                       <span>Project Name</span>
                       <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
@@ -890,23 +1032,35 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                     <span>Circuit Request</span>
                     <textarea rows={8} required value={message} onChange={(event) => setMessage(event.target.value)} />
                   </label>
-                  <div className="button-row">
-                    <button type="submit" className="button button-primary" disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}>
+                  <div className={buttonRowClass}>
+                    <button
+                      type="submit"
+                      className={buttonPrimaryClass}
+                      disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+                    >
                       {session.messages.length > 1 ? 'Send Revision Note' : 'Start Wizard'}
                     </button>
                   </div>
                 </form>
               </section>
 
-              <section className="panel panel-soft">
-                <div className="section-heading compact-heading">
+              <section className={panelSoftClass}>
+                <div className={headingGroupClass}>
                   <h2>Conversation</h2>
                 </div>
-                <div className="transcript-list">
+                <div className={transcriptListClass}>
                   {session.messages.map((entry, index) => (
-                    <article key={`${entry.role}-${index}`} className={`transcript-entry transcript-entry--${entry.role}`}>
+                    <article
+                      key={`${entry.role}-${index}`}
+                      className={joinClasses(
+                        transcriptEntryClass,
+                        entry.role === 'assistant'
+                          ? 'bg-[rgba(255,245,228,0.8)]'
+                          : 'bg-[rgba(236,245,243,0.78)]',
+                      )}
+                    >
                       <strong>{entry.role === 'user' ? 'You' : 'Wizard'}</strong>
-                      <p>{entry.content}</p>
+                      <p className={mutedCopyClass}>{entry.content}</p>
                     </article>
                   ))}
                 </div>
@@ -916,12 +1070,12 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
           {currentStep === 'spec' && session.spec ? (
             <>
-              <section className="panel panel-accent">
-                <div className="section-heading">
+              <section className={panelAccentClass}>
+                <div className={headingGroupClass}>
                   <h2>Spec Review</h2>
-                  <p>Review the drafted circuit spec before allowing Circuit IR generation.</p>
+                  <p className={mutedCopyClass}>Review the drafted circuit spec before allowing Circuit IR generation.</p>
                 </div>
-                <div className="spec-grid">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <h3>Purpose</h3>
                     <p>{session.spec.purpose}</p>
@@ -954,27 +1108,36 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                     <h3>Unsupported Reasons</h3>
                     <LabelList items={session.unsupported_reasons} />
                   </div>
-                  <div className="spec-grid__full">
+                  <div className="md:col-span-2">
                     <h3>Blocks</h3>
                     <BlockList blocks={session.spec.blocks} />
                   </div>
                 </div>
               </section>
 
-              <section className="panel panel-soft panel-form">
-                <div className="section-heading compact-heading">
+              <section className={panelSoftClass}>
+                <div className={headingGroupClass}>
                   <h2>Revise or Approve</h2>
                 </div>
-                <form className="form-stack" onSubmit={(event) => void handleSendMessage(event)}>
+                <form className="grid gap-5" onSubmit={(event) => void handleSendMessage(event)}>
                   <label>
                     <span>Revision Note</span>
                     <textarea rows={6} value={message} onChange={(event) => setMessage(event.target.value)} />
                   </label>
-                  <div className="button-row wrap-row">
-                    <button type="submit" className="button button-secondary" disabled={!message.trim() || Boolean(busyMessage)}>
+                  <div className={buttonRowClass}>
+                    <button
+                      type="submit"
+                      className={buttonSecondaryClass}
+                      disabled={!message.trim() || Boolean(busyMessage)}
+                    >
                       Send Revision Note
                     </button>
-                    <button type="button" className="button button-primary" disabled={!canApproveSpec || Boolean(busyMessage)} onClick={() => void handleApproveSpec()}>
+                    <button
+                      type="button"
+                      className={buttonPrimaryClass}
+                      disabled={!canApproveSpec || Boolean(busyMessage)}
+                      onClick={() => void handleApproveSpec()}
+                    >
                       Approve Spec
                     </button>
                   </div>
@@ -985,57 +1148,73 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
           {currentStep === 'ir' ? (
             <>
-              <section className="panel panel-accent">
-                <div className="section-heading">
+              <section className={panelAccentClass}>
+                <div className={headingGroupClass}>
                   <h2>Circuit IR</h2>
-                  <p>Generate the IR from the approved spec and inspect validation before creating a project.</p>
+                  <p className={mutedCopyClass}>
+                    Generate the IR from the approved spec and inspect validation before creating a project.
+                  </p>
                 </div>
                 {session.ir_validation ? (
-                  <dl className="detail-list detail-list--grid">
-                    <dt>Valid</dt>
+                  <dl className={detailListGridClass}>
+                    <dt className={mutedCopyClass}>Valid</dt>
                     <dd>{session.ir_validation.valid ? 'Yes' : 'No'}</dd>
-                    <dt>Auto-fixed</dt>
+                    <dt className={mutedCopyClass}>Auto-fixed</dt>
                     <dd>{session.ir_validation.auto_fixed ? 'Yes' : 'No'}</dd>
-                    <dt>Components</dt>
+                    <dt className={mutedCopyClass}>Components</dt>
                     <dd>{session.ir_validation.component_count}</dd>
-                    <dt>Nets</dt>
+                    <dt className={mutedCopyClass}>Nets</dt>
                     <dd>{session.ir_validation.net_count}</dd>
-                    <dt>Symbols Dirs Used</dt>
+                    <dt className={mutedCopyClass}>Symbols Dirs Used</dt>
                     <dd>{session.ir_validation.symbols_dirs_used.join(', ') || 'None'}</dd>
                   </dl>
                 ) : (
-                  <p className="empty-copy">No Circuit IR draft yet.</p>
+                  <p className={emptyCopyClass}>No Circuit IR draft yet.</p>
                 )}
                 {session.ir_validation?.error_message ? (
-                  <div className="status-banner status-warning">
+                  <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
                     <strong>{session.ir_validation.error_message}</strong>
                   </div>
                 ) : null}
-                <div className="button-row">
-                  <button type="button" className="button button-primary" disabled={!canGenerateIr || Boolean(busyMessage)} onClick={() => void handleGenerateIr()}>
+                <div className={buttonRowClass}>
+                  <button
+                    type="button"
+                    className={buttonPrimaryClass}
+                    disabled={!canGenerateIr || Boolean(busyMessage)}
+                    onClick={() => void handleGenerateIr()}
+                  >
                     {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}
                   </button>
                 </div>
               </section>
-              {session.ir_validation?.warnings.length ? <JsonPanel title="Validation Warnings" payload={session.ir_validation.warnings} /> : null}
+              {session.ir_validation?.warnings.length ? (
+                <JsonPanel title="Validation Warnings" payload={session.ir_validation.warnings} />
+              ) : null}
               {session.ir_json ? <JsonPanel title="Raw Circuit IR JSON" payload={session.ir_json} /> : null}
             </>
           ) : null}
 
           {currentStep === 'generate' ? (
             <>
-              <section className="panel panel-accent">
-                <div className="section-heading">
+              <section className={panelAccentClass}>
+                <div className={headingGroupClass}>
                   <h2>Generate Project</h2>
-                  <p>Use the validated Circuit IR as the handoff into the deterministic generation pipeline.</p>
+                  <p className={mutedCopyClass}>
+                    Use the validated Circuit IR as the handoff into the deterministic generation pipeline.
+                  </p>
                 </div>
-                <div className="button-row">
-                  <button type="button" className="button button-primary" disabled={!canGenerateProject || Boolean(busyMessage)} onClick={() => void handleGenerateProject()}>
+                <div className={buttonRowClass}>
+                  <button
+                    type="button"
+                    className={buttonPrimaryClass}
+                    disabled={!canGenerateProject || Boolean(busyMessage)}
+                    onClick={() => void handleGenerateProject()}
+                  >
                     {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
                   </button>
                 </div>
               </section>
-              {visibleLatestJob ? <JobSummaryPanel job={visibleLatestJob} /> : <p className="empty-copy">No generation job linked yet.</p>}
+              {visibleLatestJob ? <JobSummaryPanel job={visibleLatestJob} /> : <p className={emptyCopyClass}>No generation job linked yet.</p>}
             </>
           ) : null}
         </div>
@@ -1081,7 +1260,7 @@ function JobPage() {
 
   if (!effectiveJobId) {
     return (
-      <div className="status-banner status-error full-width-banner">
+      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
         <strong>Job id is required.</strong>
       </div>
     )
@@ -1089,8 +1268,8 @@ function JobPage() {
 
   if (loading) {
     return (
-      <div className="status-banner status-active full-width-banner">
-        <span className="spinner" aria-hidden="true"></span>
+      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
+        <span className={spinnerClass} aria-hidden="true"></span>
         <strong>Loading job detail...</strong>
       </div>
     )
@@ -1098,7 +1277,7 @@ function JobPage() {
 
   if (!job) {
     return (
-      <div className="status-banner status-error full-width-banner">
+      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
         <strong>{errorMessage ?? 'Job not found.'}</strong>
       </div>
     )
@@ -1109,55 +1288,55 @@ function JobPage() {
   const diagnostics = result.generated_schematic_diagnostics ?? { message: 'No diagnostic summary recorded.' }
 
   return (
-    <div className="page-stack">
-      <section className="hero-panel hero-panel--job">
+    <div className={pageStackClass}>
+      <section className={heroPanelClass}>
         <div>
-          <p className="eyebrow">Job {job.id}</p>
+          <p className={eyebrowClass}>Job {job.id}</p>
           <h1>{job.project_name}</h1>
-          <p className="hero-copy">Inspect the full generation result, artifacts, diagnostics, and raw payloads.</p>
+          <p className={mutedCopyClass}>Inspect the full generation result, artifacts, diagnostics, and raw payloads.</p>
         </div>
-        <div className="hero-card">
-          <p className="hero-card__label">Status</p>
+        <div className={heroCardClass}>
+          <p className={eyebrowClass}>Status</p>
           <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
-          <span>{job.updated_at}</span>
+          <span className={mutedCopyClass}>{job.updated_at}</span>
         </div>
       </section>
 
-      <div className="dashboard-grid dashboard-grid--results">
-        <section className="panel panel-soft">
-          <div className="section-heading compact-heading">
+      <div className={dashboardGridClass}>
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
             <h2>Artifacts</h2>
           </div>
           {job.artifacts.length ? (
-            <div className="button-row wrap-row">
+            <div className={buttonRowClass}>
               {job.artifacts.map((artifact) => (
-                <a key={artifact} className="button button-secondary" href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
+                <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
                   {artifact}
                 </a>
               ))}
             </div>
           ) : (
-            <p className="empty-copy">No artifacts available.</p>
+            <p className={emptyCopyClass}>No artifacts available.</p>
           )}
         </section>
-        <section className="panel panel-soft">
-          <div className="section-heading compact-heading">
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
             <h2>Summary</h2>
           </div>
-          <dl className="detail-list detail-list--grid">
-            <dt>Created</dt>
+          <dl className={detailListGridClass}>
+            <dt className={mutedCopyClass}>Created</dt>
             <dd>{job.created_at}</dd>
-            <dt>Updated</dt>
+            <dt className={mutedCopyClass}>Updated</dt>
             <dd>{job.updated_at}</dd>
-            <dt>Components</dt>
+            <dt className={mutedCopyClass}>Components</dt>
             <dd>{String(result.component_count ?? '—')}</dd>
-            <dt>Nets</dt>
+            <dt className={mutedCopyClass}>Nets</dt>
             <dd>{String(result.net_count ?? '—')}</dd>
           </dl>
         </section>
       </div>
 
-      <div className="dashboard-grid dashboard-grid--results">
+      <div className={dashboardGridClass}>
         <JsonPanel title="Warnings" payload={warnings} />
         <JsonPanel title="Diagnostics / Debug" payload={diagnostics} />
       </div>
@@ -1194,12 +1373,18 @@ function AppShell() {
   if (!bootstrap) {
     return (
       <Layout bootstrap={null}>
-        <div className={`status-banner ${errorMessage ? 'status-error' : 'status-active'} full-width-banner`}>
+        <div
+          className={joinClasses(
+            bannerBaseClass,
+            statusBannerToneClass(errorMessage ? 'error' : 'active'),
+            'mt-4',
+          )}
+        >
           {errorMessage ? (
             <strong>{errorMessage}</strong>
           ) : (
             <>
-              <span className="spinner" aria-hidden="true"></span>
+              <span className={spinnerClass} aria-hidden="true"></span>
               <strong>Loading UI bootstrap...</strong>
             </>
           )}
