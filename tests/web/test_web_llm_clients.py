@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 from pathlib import Path
 
 import httpx
@@ -7,7 +9,9 @@ import pytest
 
 from kicad_pcb.errors import ToolError
 from kicad_pcb_web.services.llm import LlmMessage, LlmRequest, build_llm_client
-from kicad_pcb_web.settings import LlmSettings, WebSettings
+from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json
+from kicad_pcb_web.settings import LlmSettings, WebSettings, load_settings
+from kicad_pcb_web.wizard_models import SpecConversationOutput, WizardMessage, WizardSessionDetail
 
 
 def _make_settings(*, provider: str, model: str | None, base_url: str | None) -> WebSettings:
@@ -64,6 +68,7 @@ def test_openai_client_normalizes_completion_and_json_mode() -> None:
         LlmRequest(
             messages=[LlmMessage(role="user", content="Summarize this")],
             response_format="json",
+            max_tokens=512,
         )
     )
 
@@ -74,6 +79,8 @@ def test_openai_client_normalizes_completion_and_json_mode() -> None:
     assert captured["url"] == "https://api.openai.com/v1/chat/completions"
     assert captured["authorization"] == "Bearer test-key"
     assert '"response_format":{"type":"json_object"}' in str(captured["payload"])
+    assert '"max_completion_tokens":512' in str(captured["payload"])
+    assert '"max_tokens":512' not in str(captured["payload"])
 
 
 def test_ollama_client_normalizes_chat_response() -> None:
@@ -252,3 +259,60 @@ def test_non_retryable_provider_error_fails_immediately() -> None:
         client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
 
     assert attempts["count"] == 1
+
+
+@pytest.mark.integration
+def test_live_llama_server_handles_real_wizard_spec_prompt() -> None:
+    if os.environ.get("RUN_LIVE_PROVIDER_TESTS") != "1":
+        pytest.skip("Set RUN_LIVE_PROVIDER_TESTS=1 to run live provider probes.")
+
+    settings = load_settings()
+    if settings.llm.provider not in {"llama_server", "openai"}:
+        pytest.skip(
+            "Live provider probe requires provider=openai or provider=llama_server in web settings."
+        )
+
+    client = build_llm_client(settings)
+    if client is None:
+        pytest.skip("Live provider probe requires an enabled LLM client.")
+
+    session = WizardSessionDetail(
+        id="live_llama_spec_probe",
+        status="drafting_spec",
+        created_at="2026-05-23T00:00:00Z",
+        updated_at="2026-05-23T00:00:00Z",
+        project_name="DebugWizard",
+        symbols_dir=None,
+        llm_provider=settings.llm.provider,
+        prompt_version=settings.llm.system_prompt_version,
+        messages=[
+            WizardMessage(
+                role="user",
+                content=(
+                    "Create a simple RC low-pass filter with one input, one output, "
+                    "and 5V supply."
+                ),
+            )
+        ],
+    )
+    messages = _build_spec_messages(settings, session)
+    started_at = time.perf_counter()
+
+    try:
+        result = _call_llm_for_json(
+            llm_client=client,
+            messages=messages,
+            response_model=SpecConversationOutput,
+            max_repairs=settings.llm.spec_max_repair_rounds,
+        )
+    finally:
+        close = getattr(client, "close", None)
+        if callable(close):
+            close()
+
+    elapsed_s = time.perf_counter() - started_at
+
+    assert result.assistant_message.strip()
+    assert result.next_state in {"awaiting_user_clarification", "spec_ready_for_review"}
+    assert result.spec is not None
+    assert elapsed_s > 0

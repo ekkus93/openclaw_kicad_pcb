@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
 import random
 import time
 from abc import ABC, abstractmethod
@@ -16,6 +19,8 @@ LlmMessageRole = Literal["system", "user", "assistant"]
 LlmResponseFormat = Literal["text", "json"]
 
 _RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
+
+LOGGER = logging.getLogger("uvicorn.error")
 
 
 @dataclass(frozen=True)
@@ -107,6 +112,29 @@ class BaseHttpLlmClient(ABC):
             return request.max_tokens
         return self.default_max_tokens
 
+    def _payload_metrics(self, payload: dict[str, Any]) -> tuple[int, str]:
+        canonical_payload = json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        payload_bytes = len(canonical_payload)
+
+        message_payload = payload.get("messages")
+        if isinstance(message_payload, list):
+            canonical_prompt = json.dumps(
+                message_payload,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        else:
+            canonical_prompt = canonical_payload
+
+        prompt_fingerprint = hashlib.sha256(canonical_prompt).hexdigest()[:16]
+        return payload_bytes, prompt_fingerprint
+
     def complete(self, request: LlmRequest) -> LlmCompletion:
         endpoint, payload = self._build_payload(request)
         response_payload = self._post_json(endpoint=endpoint, payload=payload)
@@ -120,9 +148,36 @@ class BaseHttpLlmClient(ABC):
     def _post_json(self, *, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         last_error: Exception | None = None
         for attempt in range(3):
+            started_at = time.perf_counter()
+            payload_bytes, prompt_fingerprint = self._payload_metrics(payload)
+            LOGGER.info(
+                "llm request started",
+                extra={
+                    "provider": self.provider_name,
+                    "endpoint": endpoint,
+                    "base_url": self.base_url,
+                    "attempt": attempt + 1,
+                    "timeout_s": self.timeout_s,
+                    "payload_bytes": payload_bytes,
+                    "prompt_fingerprint": prompt_fingerprint,
+                },
+            )
             try:
                 response = self._client.post(endpoint, json=payload)
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 if response.status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
+                    LOGGER.warning(
+                        "llm request received retryable status",
+                        extra={
+                            "provider": self.provider_name,
+                            "endpoint": endpoint,
+                            "attempt": attempt + 1,
+                            "status_code": response.status_code,
+                            "elapsed_ms": elapsed_ms,
+                            "payload_bytes": payload_bytes,
+                            "prompt_fingerprint": prompt_fingerprint,
+                        },
+                    )
                     time.sleep(0.05 + random.random() * 0.05)
                     continue
                 response.raise_for_status()
@@ -132,8 +187,21 @@ class BaseHttpLlmClient(ABC):
                         f"{self.provider_name} returned a non-object JSON payload.",
                         details={"provider": self.provider_name},
                     )
+                LOGGER.info(
+                    "llm request succeeded",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt + 1,
+                        "status_code": response.status_code,
+                        "elapsed_ms": elapsed_ms,
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                    },
+                )
                 return parsed
             except httpx.HTTPStatusError as exc:
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 last_error = ToolError(
                     f"{self.provider_name} request failed with HTTP {exc.response.status_code}.",
                     details={
@@ -142,20 +210,57 @@ class BaseHttpLlmClient(ABC):
                         "endpoint": endpoint,
                     },
                 )
+                LOGGER.warning(
+                    "llm request failed with http status",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt + 1,
+                        "status_code": exc.response.status_code,
+                        "elapsed_ms": elapsed_ms,
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                    },
+                )
                 if exc.response.status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
                     time.sleep(0.05 + random.random() * 0.05)
                     continue
                 raise last_error from exc
             except httpx.TransportError as exc:
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 last_error = ToolError(
                     f"{self.provider_name} request failed before a response was received.",
                     details={"provider": self.provider_name, "endpoint": endpoint},
+                )
+                LOGGER.warning(
+                    "llm request failed before response",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt + 1,
+                        "elapsed_ms": elapsed_ms,
+                        "error_type": type(exc).__name__,
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                    },
                 )
                 if attempt < 2:
                     time.sleep(0.05 + random.random() * 0.05)
                     continue
                 raise last_error from exc
             except ValueError as exc:
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+                LOGGER.warning(
+                    "llm request returned invalid json",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt + 1,
+                        "elapsed_ms": elapsed_ms,
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                    },
+                )
                 raise ToolError(
                     f"{self.provider_name} returned invalid JSON.",
                     details={"provider": self.provider_name, "endpoint": endpoint},

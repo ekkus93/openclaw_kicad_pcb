@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent, ReactNode } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -11,14 +11,12 @@ import {
   useParams,
 } from 'react-router-dom'
 
-import heroImage from './assets/hero.png'
 import { ApiError, api } from './api'
 import type {
   CircuitBlockSpec,
   CircuitPortSpec,
   CircuitRailSpec,
   JobDetail,
-  JobSummary,
   UiBootstrapResponse,
   WizardGenerateProjectResponse,
   WizardSessionDetail,
@@ -56,7 +54,6 @@ const headingGroupClass = 'mb-4 grid gap-1.5'
 const eyebrowClass = 'm-0 text-[0.83rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]'
 const mutedCopyClass = 'text-[var(--muted)]'
 const buttonRowClass = 'flex flex-wrap gap-3'
-const inputGridTwoUpClass = 'grid gap-4 md:grid-cols-2'
 const buttonBaseClass =
   'rounded-full border border-transparent px-[1.2rem] py-[0.8rem] font-semibold no-underline transition-[transform,opacity,box-shadow,background-color] duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.55] disabled:transform-none'
 const buttonPrimaryClass =
@@ -68,7 +65,6 @@ const jsonBlockClass =
   'overflow-auto rounded-[18px] bg-[rgba(40,31,23,0.95)] p-4 font-[var(--font-mono)] text-[0.85rem] leading-[1.55] whitespace-pre-wrap break-words text-[#f7ead6]'
 const emptyCopyClass = 'text-[var(--muted)]'
 const recordListClass = 'm-0 grid list-none gap-3 p-0'
-const recordListItemClass = 'flex items-center justify-between gap-3 lg:flex-col lg:items-start'
 const compactListItemClass = 'flex items-baseline justify-between gap-3 lg:flex-col lg:items-start'
 const tagListClass = 'm-0 grid list-none gap-3 p-0 [grid-template-columns:repeat(auto-fit,minmax(160px,max-content))]'
 const tagItemClass = 'rounded-full border border-[rgba(109,47,20,0.12)] bg-[rgba(255,236,208,0.82)] px-[0.8rem] py-[0.45rem]'
@@ -83,10 +79,6 @@ const heroLeadClass = 'max-w-[60ch] text-[1.02rem] leading-7 text-[var(--muted)]
 const heroStatGridClass = 'mt-6 grid gap-3 sm:grid-cols-3'
 const heroStatCardClass = 'rounded-[22px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.58)] px-4 py-3 backdrop-blur-sm'
 const sideKickerClass = 'text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]'
-const imageCardClass = 'relative isolate overflow-hidden rounded-[28px] border border-[rgba(88,63,39,0.12)] bg-[linear-gradient(160deg,rgba(24,75,69,0.92),rgba(64,31,16,0.86))] p-4 text-white shadow-[0_22px_50px_rgba(33,24,15,0.24)]'
-const imageFrameClass = 'relative overflow-hidden rounded-[20px] border border-white/20 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_50%)] p-3'
-const imageClass = 'h-[220px] w-full rounded-[16px] object-cover object-center shadow-[0_18px_40px_rgba(0,0,0,0.25)]'
-const sectionCardGridClass = 'grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]'
 const stepCardClass = 'grid gap-3 rounded-[22px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.7)] p-4 shadow-[0_10px_24px_rgba(71,43,19,0.05)]'
 const stepBadgeClass = 'inline-flex items-center rounded-full px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.12em]'
 const wizardFormClass = 'grid gap-4 sm:gap-5'
@@ -102,6 +94,9 @@ const transcriptMetaClass = 'flex items-center justify-between gap-3 text-[0.76r
 const transcriptBodyClass = 'whitespace-pre-wrap break-words text-[0.98rem] leading-7 text-[var(--text)]'
 const composerCardClass = 'grid gap-3 rounded-[22px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.58)] p-3.5 shadow-[0_8px_20px_rgba(71,43,19,0.04)] sm:p-4'
 const composerMetaRowClass = 'flex items-center justify-between gap-3 text-[0.82rem] text-[var(--muted)] sm:text-[0.86rem]'
+const workflowStepListClass = 'm-0 grid list-none gap-2 p-0 sm:grid-cols-2'
+const workflowStepItemClass = 'rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.68)] px-4 py-3 text-sm font-medium text-[var(--text)]'
+const compactStatusRowClass = 'flex flex-wrap items-center gap-2'
 
 function TranscriptEntryCard({
   content,
@@ -312,38 +307,6 @@ function MetricCard({ label, value, tone = 'warm' }: { label: string; value: str
     <div className={joinClasses(heroStatCardClass, toneClass)}>
       <div className="text-[0.73rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{label}</div>
       <div className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</div>
-    </div>
-  )
-}
-
-function HeroImageCard({ title, subtitle, provider }: { title: string; subtitle: string; provider: string }) {
-  return (
-    <div className={imageCardClass}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
-      <div className="relative z-[1] grid gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-white/70">Live flow</div>
-            <div className="mt-1 text-lg font-semibold">{title}</div>
-          </div>
-          <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white/80">
-            {provider}
-          </div>
-        </div>
-        <div className={imageFrameClass}>
-          <img alt="Circuit design hero artwork" className={imageClass} src={heroImage} />
-        </div>
-        <p className="max-w-[30ch] text-sm leading-6 text-white/78">{subtitle}</p>
-      </div>
-    </div>
-  )
-}
-
-function SectionSplit({ main, side }: { main: ReactNode; side: ReactNode }) {
-  return (
-    <div className={sectionCardGridClass}>
-      <div>{main}</div>
-      <div className={stackColumnClass}>{side}</div>
     </div>
   )
 }
@@ -576,24 +539,10 @@ function Layout({
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(245,239,226,0.82)] backdrop-blur-[18px]">
         <div className="mx-auto grid max-w-[1320px] grid-cols-[auto_1fr_auto] items-center gap-4 px-6 py-4 lg:px-4">
-          <Link className="text-xl font-bold no-underline [font-family:var(--font-heading)] tracking-[0.01em]" to="/">
+          <Link className="text-xl font-bold no-underline [font-family:var(--font-heading)] tracking-[0.01em]" to="/wizard">
             KiCad PCB Web App
           </Link>
           <nav className="flex justify-center gap-3">
-            <NavLink
-              className={({ isActive }) =>
-                joinClasses(
-                  'rounded-full px-4 py-2 text-sm font-medium no-underline transition-all duration-150',
-                  isActive
-                    ? '-translate-y-px bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]'
-                    : 'text-[var(--muted)] hover:-translate-y-px hover:bg-[rgba(161,69,26,0.12)] hover:text-[var(--brand-deep)]',
-                )
-              }
-              to="/"
-              end
-            >
-              Overview
-            </NavLink>
             <NavLink
               className={({ isActive }) =>
                 joinClasses(
@@ -620,248 +569,8 @@ function Layout({
 }
 
 function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
-  const navigate = useNavigate()
-  const [doctorText, setDoctorText] = useState('Loading backend health checks...')
-  const [jobs, setJobs] = useState<JobSummary[]>([])
-  const [jobsError, setJobsError] = useState<string | null>(null)
-  const [projectName, setProjectName] = useState('WebDemo')
-  const [symbolsDir, setSymbolsDir] = useState('')
-  const [netlistText, setNetlistText] = useState(() => formatJson(bootstrap.example_netlist_json))
-  const [resultText, setResultText] = useState('No requests submitted yet.')
-  const [symbolQuery, setSymbolQuery] = useState('')
-  const [symbolResults, setSymbolResults] = useState('No symbol search run yet.')
-  const [busyLabel, setBusyLabel] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    void Promise.all([api.getDoctor(), api.getJobs()])
-      .then(([doctorResponse, jobsResponse]) => {
-        if (cancelled) {
-          return
-        }
-        setDoctorText(
-          doctorResponse.checks
-            .map((check) => `${check.name}: ${check.detail} (${check.ok ? 'ok' : 'missing'})`)
-            .join('\n'),
-        )
-        setJobs(jobsResponse)
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return
-        }
-        const message = getErrorMessage(error)
-        setDoctorText(message)
-        setJobsError(message)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  function parseNetlist(): Record<string, unknown> {
-    return JSON.parse(netlistText) as Record<string, unknown>
-  }
-
-  async function handleValidate(): Promise<void> {
-    setBusyLabel('Validating Circuit IR...')
-    try {
-      const response = await api.validateNetlist({
-        netlist_json: parseNetlist(),
-        symbols_dir: symbolsDir || null,
-      })
-      setResultText(formatJson(response))
-    } catch (error) {
-      setResultText(formatJson({ error: getErrorMessage(error) }))
-    } finally {
-      setBusyLabel(null)
-    }
-  }
-
-  async function handleGenerate(): Promise<void> {
-    setBusyLabel('Generating project from Circuit IR...')
-    try {
-      const response = await api.createJobFromNetlist({
-        project_name: projectName,
-        netlist_json: parseNetlist(),
-        symbols_dir: symbolsDir || null,
-        validation: 'internal',
-        auto_fix: true,
-      })
-      setResultText(formatJson(response))
-      setJobs((current) => [response, ...current.filter((job) => job.id !== response.id)])
-      startTransition(() => {
-        navigate(`/jobs/${response.id}`)
-      })
-    } catch (error) {
-      setResultText(formatJson({ error: getErrorMessage(error) }))
-    } finally {
-      setBusyLabel(null)
-    }
-  }
-
-  async function handleSearchSymbols(): Promise<void> {
-    if (!symbolQuery.trim()) {
-      setSymbolResults('Enter a symbol query first.')
-      return
-    }
-    setBusyLabel('Searching symbols...')
-    try {
-      const response = await api.searchSymbols(symbolQuery.trim())
-      setSymbolResults(formatJson(response))
-    } catch (error) {
-      setSymbolResults(formatJson({ error: getErrorMessage(error) }))
-    } finally {
-      setBusyLabel(null)
-    }
-  }
-
-  function handleLoadFile(event: ChangeEvent<HTMLInputElement>): void {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-    void file.text().then((content) => {
-      setNetlistText(content)
-    })
-  }
-
-  return (
-    <div className={pageStackClass}>
-      <section className={heroPanelClass}>
-        <div>
-          <p className={eyebrowClass}>React + TypeScript frontend</p>
-          <h1>One frontend now owns the whole web UI.</h1>
-          <p className={heroLeadClass}>
-            The browser stays responsive while it talks to the FastAPI backend. Use the
-            wizard for guided flows or work directly with Circuit IR and job artifacts here.
-          </p>
-          <div className={heroStatGridClass}>
-            <MetricCard label="Surface" tone="warm" value="SPA + FastAPI" />
-            <MetricCard label="Wizard" tone="cool" value={bootstrap.llm_enabled ? 'Ready' : 'Disabled'} />
-            <MetricCard label="Workflow" tone="neutral" value="Validate, review, generate" />
-          </div>
-        </div>
-        <HeroImageCard
-          provider={bootstrap.llm_provider}
-          subtitle="The browser now keeps control while backend jobs, wizard drafting, and project generation run in the background."
-          title={bootstrap.llm_enabled ? 'Wizard ready to start' : 'Wizard disabled in config'}
-        />
-      </section>
-
-      {busyLabel ? (
-        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
-          <span className={spinnerClass} aria-hidden="true"></span>
-          <strong>{busyLabel}</strong>
-        </div>
-      ) : null}
-
-      <SectionSplit
-        main={
-          <section className={panelAccentClass}>
-            <div className={headingGroupClass}>
-              <div className={sideKickerClass}>Direct tools</div>
-              <h2>Direct Circuit IR</h2>
-              <p className={mutedCopyClass}>Paste, validate, and generate without leaving the SPA.</p>
-            </div>
-            <div className={inputGridTwoUpClass}>
-              <label>
-                <span>Project Name</span>
-                <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
-              </label>
-              <label>
-                <span>Symbols Directory</span>
-                <input
-                  value={symbolsDir}
-                  onChange={(event) => setSymbolsDir(event.target.value)}
-                  placeholder="/path/to/symbols"
-                />
-              </label>
-            </div>
-            <label>
-              <span>Load JSON File</span>
-              <input type="file" accept=".json,application/json" onChange={handleLoadFile} />
-            </label>
-            <label>
-              <span>Circuit IR JSON</span>
-              <textarea rows={18} value={netlistText} onChange={(event) => setNetlistText(event.target.value)} />
-            </label>
-            <div className={buttonRowClass}>
-              <button type="button" className={buttonSecondaryClass} onClick={() => void handleValidate()}>
-                Validate
-              </button>
-              <button type="button" className={buttonPrimaryClass} onClick={() => void handleGenerate()}>
-                Generate
-              </button>
-            </div>
-          </section>
-        }
-        side={
-          <>
-            <section className={panelSoftClass}>
-              <div className={headingGroupClass}>
-                <div className={sideKickerClass}>System health</div>
-                <h2>Doctor</h2>
-                <p className={mutedCopyClass}>Current backend health report.</p>
-              </div>
-              <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{doctorText}</pre>
-            </section>
-            <section className={panelSoftClass}>
-              <div className={headingGroupClass}>
-                <div className={sideKickerClass}>Lookup</div>
-                <h2>Symbol Search</h2>
-                <p className={mutedCopyClass}>Query the installed symbol libraries without leaving the app.</p>
-              </div>
-              <div className={buttonRowClass}>
-                <input
-                  className="flex-1"
-                  value={symbolQuery}
-                  onChange={(event) => setSymbolQuery(event.target.value)}
-                  placeholder="resistor"
-                />
-                <button type="button" className={buttonSecondaryClass} onClick={() => void handleSearchSymbols()}>
-                  Search
-                </button>
-              </div>
-              <pre className={joinClasses(jsonBlockClass, 'min-h-28')}>{symbolResults}</pre>
-            </section>
-          </>
-        }
-      />
-
-      <div className={dashboardGridClass}>
-        <section className={panelSoftClass}>
-          <div className={headingGroupClass}>
-            <h2>Validation / Generation Results</h2>
-            <p className={mutedCopyClass}>Raw API payloads are still available when you need detail.</p>
-          </div>
-          <pre className={jsonBlockClass}>{resultText}</pre>
-        </section>
-        <section className={panelSoftClass}>
-          <div className={headingGroupClass}>
-            <h2>Recent Jobs</h2>
-            <p className={mutedCopyClass}>Jump straight into job detail pages and artifact downloads.</p>
-          </div>
-          {jobsError ? <p className={emptyCopyClass}>{jobsError}</p> : null}
-          {jobs.length ? (
-            <ul className={recordListClass}>
-              {jobs.map((job) => (
-                <li key={job.id} className={recordListItemClass}>
-                  <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/jobs/${job.id}`}>
-                    {job.project_name}
-                  </Link>
-                  <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
-                  <span className={mutedCopyClass}>{job.updated_at}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={emptyCopyClass}>No jobs yet.</p>
-          )}
-        </section>
-      </div>
-    </div>
-  )
+  void bootstrap
+  return <Navigate to="/wizard" replace />
 }
 
 function JobSummaryPanel({ job }: { job: JobDetail }) {
@@ -1103,25 +812,24 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   if (!sessionId) {
     return (
       <div className={pageStackClass}>
-        <section className={heroPanelClass}>
-          <div>
-            <p className={eyebrowClass}>Guided circuit workflow</p>
-            <h1>Wizard flow, now on React + TypeScript.</h1>
-            <p className={heroLeadClass}>
-              The wizard runs through the same backend API, but the client now keeps the page alive
-              while requests are in flight instead of blocking a full-page form submit.
-            </p>
-            <div className={heroStatGridClass}>
-              <MetricCard label="Mode" tone="cool" value="Conversation first" />
-              <MetricCard label="Review gates" tone="warm" value="Spec, IR, generation" />
-              <MetricCard label="Backend" tone="neutral" value="Server-authoritative" />
-            </div>
+        <section className={panelAccentClass}>
+          <div className={headingGroupClass}>
+            <p className={eyebrowClass}>Wizard</p>
+            <h1>Start a circuit session.</h1>
+            <p className={heroLeadClass}>Describe the circuit. Review the spec. Validate the IR. Generate the project.</p>
           </div>
-          <HeroImageCard
-            provider={bootstrap.llm_provider}
-            subtitle="Start with intent and constraints, then move through explicit review checkpoints before deterministic project generation."
-            title={bootstrap.llm_enabled ? 'Provider online' : 'Provider disabled'}
-          />
+          <ol className={workflowStepListClass}>
+            <li className={workflowStepItemClass}>1. Describe the circuit.</li>
+            <li className={workflowStepItemClass}>2. Approve the drafted spec.</li>
+            <li className={workflowStepItemClass}>3. Validate the Circuit IR.</li>
+            <li className={workflowStepItemClass}>4. Generate the KiCad project.</li>
+          </ol>
+          <div className={compactStatusRowClass}>
+            <StatusPill tone={bootstrap.llm_enabled ? 'success' : 'neutral'}>
+              {bootstrap.llm_enabled ? 'provider ready' : 'provider disabled'}
+            </StatusPill>
+            <span className={compactSupportCopyClass}>{bootstrap.llm_provider}</span>
+          </div>
         </section>
 
         {errorMessage ? (
@@ -1212,29 +920,23 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   return (
     <div className={pageStackClass}>
       <section className={heroPanelClass}>
-        <div>
+        <div className="grid gap-3">
           <p className={eyebrowClass}>Session {session.id}</p>
           <h1>{WIZARD_STEP_META[currentStep].label}</h1>
-          <p className={heroLeadClass}>{bannerForSession(session)}</p>
-          <div className={heroStatGridClass}>
-            <MetricCard label="Provider" tone="cool" value={session.llm_provider ?? bootstrap.llm_provider} />
-            <MetricCard label="Stage" tone="warm" value={WIZARD_STEP_META[currentStep].label} />
-            <MetricCard label="Session status" tone="neutral" value={session.status.replaceAll('_', ' ')} />
-          </div>
+          <p className={heroLeadClass}>{checkpoint.title}</p>
+          <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
         </div>
         <div className={heroCardClass}>
-          <p className={eyebrowClass}>Current status</p>
-          <StatusPill tone={statusTone(session.status)}>{session.status.replaceAll('_', ' ')}</StatusPill>
-          <span className={mutedCopyClass}>{session.llm_provider ?? bootstrap.llm_provider}</span>
-          <p className="text-sm leading-6 text-[var(--muted)]">
-            {currentStep === 'describe'
-              ? 'Refine the brief until the spec is reviewable.'
-              : currentStep === 'spec'
-                ? 'Approve only when the spec matches the intended circuit behavior.'
-                : currentStep === 'ir'
-                  ? 'Use validation to confirm the IR before handing off generation.'
-                  : 'Generate a deterministic KiCad project from the approved IR.'}
-          </p>
+          <div className={compactStatusRowClass}>
+            <StatusPill tone={statusTone(session.status)}>{session.status.replaceAll('_', ' ')}</StatusPill>
+            <span className={compactSupportCopyClass}>{session.llm_provider ?? bootstrap.llm_provider}</span>
+          </div>
+          <p className={compactSupportCopyClass}>{bannerForSession(session)}</p>
+          {session.latest_job_id ? (
+            <Link className={buttonSecondaryClass} to={`/jobs/${session.latest_job_id}`}>
+              Open latest job
+            </Link>
+          ) : null}
         </div>
       </section>
 
@@ -1343,7 +1045,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                       className={wizardPrimaryButtonClass}
                       disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
                     >
-                      {session.messages.length > 1 ? 'Send Revision Note' : 'Start Wizard'}
+                      Send Update
                     </button>
                   </div>
                 </form>
@@ -1435,7 +1137,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                       className={wizardSecondaryButtonClass}
                       disabled={!message.trim() || Boolean(busyMessage)}
                     >
-                      Send Revision Note
+                      Send Changes
                     </button>
                     <button
                       type="button"

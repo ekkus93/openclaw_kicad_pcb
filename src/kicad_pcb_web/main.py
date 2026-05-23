@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +18,21 @@ from .errors import (
     handle_user_error,
 )
 from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_ui, api_wizard, ui
+
+
+def _configure_app_logging() -> None:
+    """Route app logs through uvicorn's error logger for local debugging."""
+
+    app_logger = logging.getLogger("kicad_pcb_web")
+    uvicorn_logger = logging.getLogger("uvicorn.error")
+    if not uvicorn_logger.handlers:
+        return
+    app_logger.handlers = uvicorn_logger.handlers
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+
+_configure_app_logging()
 
 app = FastAPI(title="KiCad PCB Web App")
 

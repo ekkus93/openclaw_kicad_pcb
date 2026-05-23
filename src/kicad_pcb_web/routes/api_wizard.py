@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..deps import get_llm_client, get_settings
@@ -24,6 +26,7 @@ from ..wizard_models import (
 )
 
 router = APIRouter()
+LOGGER = logging.getLogger("uvicorn.error")
 
 
 def _read_session_or_404(settings: WebSettings, session_id: str) -> WizardSessionDetail:
@@ -39,6 +42,15 @@ def create_session(
     settings: WebSettings = Depends(get_settings),
     llm_client: LlmClient | None = Depends(get_llm_client),
 ) -> WizardSessionDetail:
+    LOGGER.info(
+        "wizard create request received",
+        extra={
+            "provider": settings.llm.provider,
+            "has_project_name": request.project_name is not None,
+            "has_symbols_dir": request.symbols_dir is not None,
+            "message_length": len(request.message),
+        },
+    )
     return create_wizard_session(settings=settings, request=request, llm_client=llm_client)
 
 

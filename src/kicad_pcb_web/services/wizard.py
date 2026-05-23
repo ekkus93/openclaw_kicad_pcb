@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,7 +33,7 @@ from ..wizard_models import (
 from .llm import LlmClient, LlmMessage, LlmRequest
 from .netlists import generate_project_from_netlist_job, prepare_netlist_dict
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("uvicorn.error")
 
 _SAFE_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _MODEL_T = TypeVar("_MODEL_T", bound=BaseModel)
@@ -240,13 +241,41 @@ def _call_llm_for_json(
     current_messages = list(messages)
     for attempt in range(max_repairs + 1):
         request = LlmRequest(messages=current_messages, response_format="json")
+        prompt_chars = sum(len(message.content) for message in request.messages)
+        started_at = time.perf_counter()
+        LOGGER.info(
+            "wizard structured json attempt started",
+            extra={
+                "response_model": response_model.__name__,
+                "attempt": attempt + 1,
+                "max_attempts": max_repairs + 1,
+                "prompt_message_count": len(request.messages),
+                "prompt_chars": prompt_chars,
+            },
+        )
         completion = llm_client.complete(request)
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+        response_chars = len(completion.content)
         serialized_messages = [
             {"role": message.role, "content": message.content}
             for message in request.messages
         ]
         try:
             parsed = json.loads(completion.content)
+            LOGGER.info(
+                "wizard structured json attempt completed",
+                extra={
+                    "response_model": response_model.__name__,
+                    "attempt": attempt + 1,
+                    "prompt_message_count": len(request.messages),
+                    "prompt_chars": prompt_chars,
+                    "response_chars": response_chars,
+                    "elapsed_ms": elapsed_ms,
+                    "provider": completion.provider,
+                    "finish_reason": completion.finish_reason,
+                    "request_id": completion.request_id,
+                },
+            )
             if debug_artifact_writer is not None:
                 debug_artifact_writer(
                     {
@@ -265,6 +294,21 @@ def _call_llm_for_json(
                 )
             return response_model.model_validate(parsed)
         except (json.JSONDecodeError, ValidationError) as exc:
+            LOGGER.warning(
+                "wizard structured json attempt failed",
+                extra={
+                    "response_model": response_model.__name__,
+                    "attempt": attempt + 1,
+                    "prompt_message_count": len(request.messages),
+                    "prompt_chars": prompt_chars,
+                    "response_chars": response_chars,
+                    "elapsed_ms": elapsed_ms,
+                    "provider": completion.provider,
+                    "finish_reason": completion.finish_reason,
+                    "request_id": completion.request_id,
+                    "error_type": type(exc).__name__,
+                },
+            )
             if debug_artifact_writer is not None:
                 debug_artifact_writer(
                     {
@@ -325,6 +369,16 @@ def create_wizard_session(
         prompt_version=settings.llm.system_prompt_version,
         messages=[WizardMessage(role="user", content=request.message)],
     )
+    started_at = time.perf_counter()
+    LOGGER.info(
+        "wizard spec draft started",
+        extra={
+            "session_id": session.id,
+            "provider": settings.llm.provider,
+            "prompt_version": settings.llm.system_prompt_version,
+            "message_count": len(session.messages),
+        },
+    )
     try:
         output = _call_llm_for_json(
             llm_client=client,
@@ -356,10 +410,20 @@ def create_wizard_session(
                 "status": session.status,
                 "provider": session.llm_provider,
                 "prompt_version": session.prompt_version,
+                "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
             },
         )
         return _persist_session(settings, session)
     except Exception as exc:
+        LOGGER.warning(
+            "wizard spec draft failed",
+            extra={
+                "session_id": session.id,
+                "provider": settings.llm.provider,
+                "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                "error_type": type(exc).__name__,
+            },
+        )
         failed = _set_error(session, exc)
         return _persist_session(settings, failed)
 
@@ -386,6 +450,15 @@ def post_wizard_message(
         }
     )
     session = _append_message(session, role="user", content=request.message)
+    started_at = time.perf_counter()
+    LOGGER.info(
+        "wizard spec revision started",
+        extra={
+            "session_id": session.id,
+            "provider": settings.llm.provider,
+            "message_count": len(session.messages),
+        },
+    )
     try:
         output = _call_llm_for_json(
             llm_client=client,
@@ -411,10 +484,23 @@ def post_wizard_message(
         )
         LOGGER.info(
             "wizard session updated",
-            extra={"session_id": session.id, "status": session.status},
+            extra={
+                "session_id": session.id,
+                "status": session.status,
+                "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            },
         )
         return _persist_session(settings, session)
     except Exception as exc:
+        LOGGER.warning(
+            "wizard spec revision failed",
+            extra={
+                "session_id": session.id,
+                "provider": settings.llm.provider,
+                "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                "error_type": type(exc).__name__,
+            },
+        )
         failed = _set_error(session, exc)
         return _persist_session(settings, failed)
 

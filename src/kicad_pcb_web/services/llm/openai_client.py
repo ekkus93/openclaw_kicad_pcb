@@ -22,7 +22,7 @@ class OpenAiLlmClient(BaseHttpLlmClient):
         }
         max_tokens = self._effective_max_tokens(request)
         if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
+            payload["max_completion_tokens"] = max_tokens
         if request.response_format == "json":
             payload["response_format"] = {"type": "json_object"}
         return "/chat/completions", payload

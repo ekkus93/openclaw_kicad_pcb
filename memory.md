@@ -18,15 +18,37 @@
 - `kicad_pcb` is organized around Circuit IR ingestion/validation, Graphviz-driven schematic layout, orthogonal routing, AST-based schematic/PCB document mutation, command handlers, linting, symbol lookup, and typed result/error/config adapters.
 - `kicad_pcb_web` is organized as a thin dependency-injected shell with FastAPI routes, Pydantic API schemas, file-backed job/artifact services, and local filesystem settings; it delegates validation and project generation to `kicad_pcb.commands` rather than reimplementing engine logic.
 
+## 2026-05-23T19:34:27Z - GPT-5.4 - Final repo-wide lint and test validation is green again
+
+- `uv run pytest -q` completed successfully across the full suite.
+- `uv run ruff check .` initially found one `I001` import-order issue in `tests/web/test_web_llm_clients.py`; after a one-line import reorder, the repo-wide lint gate passed cleanly.
+
 ## 2026-05-19T23:10:14Z - GPT-5.4 - Closed FIX_WIRES TODO status drift under the uv-managed workflow and restored a green repo gate
 
 - `code_review/FIX_WIRES_TODO.md` now reflects the real current state: the stale unchecked subtasks in items 2 and 3 are marked done, Phase 6 is marked done, and its command/validation examples now use the repo's actual `uv` + `legacy/openclaw-skill/scripts/kicad_pcb.py` workflow instead of the old `kicad-pcb/` tree.
 - Verified the FIX_WIRES closeout with a fresh KiCad-mode preview generated from `code_review/ne5532_headphone_amp_netlist.json`, exported `OpenClaw_Managed.svg`, converted it to PNG, and visually confirmed the intended `J1 -> C5/R1 -> RV1 -> U1` input-side story still holds while preserving the improved output neighborhood.
+
+## 2026-05-23T19:15:13Z - GPT-5.4 - Switched the local llama-server model again during live wizard debugging
+
+- Updated the ignored local config `kicad_pcb_web.toml` from `llama3.3_8B` to `ministral3_8b` for the next round of wizard/provider testing.
+- The focused web LLM test file still passed after the config change: `uv run pytest -q tests/web/test_web_llm_clients.py` -> `........s`.
 - The repo had a real green-gate blocker unrelated to FIX_WIRES logic: 53 test files had stale Ruff `I001` import-order violations after the environment was synced with `uv`, so `uv run ruff check . --fix` was applied to normalize import order across the test suite.
+
+## 2026-05-23T19:30:28Z - GPT-5.4 - Fixed the OpenAI live wizard probe and kept llama-server compatibility intact
+
+- The live provider probe in `tests/web/test_web_llm_clients.py` now runs against the configured provider when `RUN_LIVE_PROVIDER_TESTS=1` is set, so the same real wizard-spec prompt can be exercised with OpenAI as well as llama-server.
+- OpenAI was failing with HTTP 400 because `gpt-5.4-mini` rejects `max_tokens`; `src/kicad_pcb_web/services/llm/openai_client.py` now sends `max_completion_tokens` instead, while `src/kicad_pcb_web/services/llm/llama_server_client.py` overrides the payload builder to keep `max_tokens` for llama-server.
+- Validation is now green on both the focused file and the live OpenAI probe: `uv run pytest -q tests/web/test_web_llm_clients.py` -> `........s`, and `RUN_LIVE_PROVIDER_TESTS=1 KICAD_PCB_WEB_LLM_TIMEOUT_S=20 uv run pytest -q tests/web/test_web_llm_clients.py -k live_llama_server_handles_real_wizard_spec_prompt` -> `.`.
 - Two additional test drifts were repaired to restore a full green suite: `tests/integration/test_phase0_smoke.py` now points at `legacy/openclaw-skill/scripts/kicad_pcb.py` after the layout move, and `tests/unit/test_netlist_commands.py::test_search_symbols_kicad9_renamed_symbols` now queries `C_Polarized` via `"polarized"` to match the actual KiCad 9 Device library metadata.
 - Final validation on this tree is green with `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, full `uv run pytest -q`, plus the focused FIX_WIRES routing slice and narrow Ruff/mypy checks on `src/kicad_pcb/router.py`.
 
 ## 2026-05-19T23:14:31Z - GPT-5.4 - Refreshed README examples to match the uv workflow and current archived CLI surface
+
+## 2026-05-23T18:52:05Z - GPT-5.4 - Added the originally requested low-level LLM payload metrics logging
+
+- `src/kicad_pcb_web/services/llm/base.py` now computes and logs `payload_bytes` plus a stable `prompt_fingerprint` immediately before each outbound `httpx` POST, and threads those fields through the related success/failure/retry log events.
+- The fingerprint hashes the normalized `messages` payload when present and otherwise falls back to the full canonical request payload, so repeated hangs can be correlated without logging raw prompt contents.
+- Focused validation stayed green with `uv run pytest -q tests/web/test_web_llm_clients.py`.
 
 - `README.md` now uses `uv` consistently for archived CLI and development examples instead of `pip install -e` plus bare tool invocations.
 - The archived `apply-pattern` quick-start example was corrected to the current parser shape: open the project first, then call `apply-pattern --pattern resistor-divider ...` with `--r1` / `--r2` rather than the stale positional project argument and old flag names.
@@ -37,6 +59,12 @@
 - `src/kicad_pcb_web/settings.py` now reads an optional TOML config file from `./kicad_pcb_web.toml` by default or `KICAD_PCB_WEB_CONFIG_FILE` when set, with environment variables still taking precedence.
 - The web settings model now includes `llm` configuration for `disabled`, `openai`, `ollama`, and `llama_server` provider modes, but this is config plumbing only; no provider calls or wizard UI are wired yet.
 - Relative `data_dir` paths inside the TOML config are resolved relative to the config file location, and coverage was added in `tests/web/test_web_settings.py` plus a narrow web regression slice.
+
+## 2026-05-23T18:50:08Z - GPT-5.4 - Added a live llama-server probe test and verified it reproduces the timeout directly
+
+- `tests/web/test_web_llm_clients.py` now includes an opt-in `@pytest.mark.integration` probe that builds the real wizard spec prompt with `_build_spec_messages(...)` and sends it through `_call_llm_for_json(...)` using the configured live `llama_server` client.
+- The default focused test file remains green because the new probe is skipped unless `RUN_LIVE_LLAMA_SERVER_TESTS=1` is set.
+- Running `RUN_LIVE_LLAMA_SERVER_TESTS=1 KICAD_PCB_WEB_LLM_TIMEOUT_S=20 uv run pytest -q tests/web/test_web_llm_clients.py -k live_llama_server_handles_real_wizard_spec_prompt` fails with `ToolError: llama_server request failed before a response was received`, confirming the stall reproduces outside FastAPI and isolates to the direct provider call for the real wizard spec prompt.
 
 ## 2026-05-23T12:44:42Z - GPT-5.4 - Completed the local LLM wizard workflow, observability tail, and coverage closeout
 
@@ -198,6 +226,12 @@
 - Added 555-specific advisory coverage in `kicad-pcb/src/kicad_pcb/commands/_validate.py` for mandatory 555 pin roles, timing-node structure, timing/CTRL capacitor targeting, steering-network shape, gate-drive rules, low-side load topology, and frequency-range sanity; focused Ruff/mypy/pytest slices stayed green as the rule set expanded.
 - Added local symbol fixtures for `Timer:NE555`, `Transistor_FET:Q_NMOS_GSD`, `Device:D`, and `Connector_Generic:Conn_01x02`, plus a checked-in canonical 555 PWM readability fixture under `tests/fixtures/readability/timer555_pwm_dimmer/`.
 - The canonical 555 fixture now has regression coverage for: zero 555-specific advisories on the intended design, structural generation/population, semantic placement of the timer/timing parts/output block, steering-diode direction, timing-capacitor misplacement to the supply rail, and gate-pull-down misplacement onto the timing node.
+
+## 2026-05-23T18:46:40Z - GPT-5.4 - Reproduced the current wizard session timeout on a clean server run
+
+- A fresh `uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000` replay still times out for `POST /api/wizard/sessions` after 20 seconds with `curl: (28) Operation timed out after 20000 milliseconds with 0 bytes received`.
+- On that clean run, the backend logs stop at `wizard create request received`, `wizard spec draft started`, `wizard structured json attempt started`, and `llm request started`; no matching `llm request succeeded` or structured-attempt completion log appears before the client timeout.
+- An earlier observed run in the same debugging session did complete two LLM requests and log `wizard session created`, so the failure is intermittent and currently isolates to the outbound provider call path rather than route entry or initial wizard orchestration.
 
 ## 2026-05-23T17:28:44Z - GPT-5.4 - Completed the full React + TypeScript frontend migration for the web UI
 
