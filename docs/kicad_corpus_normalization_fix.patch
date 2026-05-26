@@ -1,0 +1,349 @@
+--- kicad_orig/openclaw_kicad_pcb-webapp/src/kicad_pcb/corpus/ingestion.py	2026-05-26 22:46:10.000000000 +0000
++++ kicad_inspect/openclaw_kicad_pcb-webapp/src/kicad_pcb/corpus/ingestion.py	2026-05-26 22:54:48.915741848 +0000
+@@ -24,6 +24,7 @@
+     merge_preserved_metadata,
+     write_fixture_metadata,
+ )
++from .normalization import normalize_for_kicad_export, serialize_normalized_schematic
+ from .reports import write_json_report, write_markdown_report
+ 
+ MINIMUM_REPO_KICAD_VERSION = KiCadVersion(9, 0, 0)
+@@ -146,13 +147,27 @@
+         )
+         existing_metadata = _load_existing_metadata(fixture_dir / "metadata.json")
+ 
++        normalized = normalize_for_kicad_export(doc, fixture_id=fixture_id)
++        normalized_source = fixture_dir / "source_normalized.kicad_sch"
++        normalized_source.write_text(
++            serialize_normalized_schematic(normalized),
++            encoding="utf-8",
++        )
++
+         kicad_state = _ingest_optional_kicad_artifacts(
+-            doc=doc,
+-            source_copy=source_copy,
++            source_for_export=normalized_source,
+             fixture_dir=fixture_dir,
+             require_kicad=require_kicad,
+             adapter=adapter,
+         )
++        if normalized.changes:
++            reasons = (
++                list(kicad_state["status_reasons"])
++                if isinstance(kicad_state["status_reasons"], list)
++                else []
++            )
++            reasons.extend(f"normalized:{change}" for change in normalized.changes)
++            kicad_state = {**kicad_state, "status_reasons": reasons}
+         metadata = metadata.model_copy(
+             update={
+                 "status": kicad_state["status"],
+@@ -284,13 +299,11 @@
+ 
+ def _ingest_optional_kicad_artifacts(
+     *,
+-    doc: SchematicDoc,
+-    source_copy: Path,
++    source_for_export: Path,
+     fixture_dir: Path,
+     require_kicad: bool,
+     adapter: KicadCliAdapter,
+ ) -> dict[str, object]:
+-    del doc
+     netlist_path = fixture_dir / "source_netlist.kicadxml"
+     ir_path = fixture_dir / "circuit_ir.json"
+ 
+@@ -332,14 +345,14 @@
+             "has_circuit_ir": False,
+         }
+ 
+-    export_result, xml_content = adapter.export_netlist(source_copy, netlist_path)
++    export_result, xml_content = adapter.export_netlist(source_for_export, netlist_path)
+     if not export_result.ok or not xml_content:
+         if require_kicad:
+             raise ToolError(
+                 "kicad-cli netlist export failed during model-corpus ingest",
+                 code=ErrorCode.TOOL_ERROR,
+                 details={
+-                    "source": str(source_copy),
++                    "source": str(source_for_export),
+                     "stderr": export_result.stderr,
+                     "stdout": export_result.stdout,
+                 },
+--- kicad_orig/openclaw_kicad_pcb-webapp/src/kicad_pcb/corpus/normalization.py	1970-01-01 00:00:00.000000000 +0000
++++ kicad_inspect/openclaw_kicad_pcb-webapp/src/kicad_pcb/corpus/normalization.py	2026-05-26 22:54:07.901904922 +0000
+@@ -0,0 +1,196 @@
++"""KiCad-loader normalization for raw model-corpus schematics.
++
++Raw Internet schematics used for the model corpus can be valid S-expressions
++but still fail KiCad's own schematic loader.  This module keeps the raw source
++unchanged while producing a deterministic, loader-facing copy suitable for
++``kicad-cli sch export netlist``.
++"""
++
++from __future__ import annotations
++
++import uuid
++from dataclasses import dataclass
++
++from kicad_pcb.sch_doc import SchematicDoc
++from kicad_pcb.sexpr.builder import L, atom, string
++from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
++from kicad_pcb.sexpr.serializer import serialize
++
++
++@dataclass(frozen=True)
++class NormalizedSchematic:
++    """A normalized schematic document plus the applied change identifiers."""
++
++    doc: SchematicDoc
++    root_uuid: str
++    changes: tuple[str, ...]
++
++
++def normalize_for_kicad_export(doc: SchematicDoc, *, fixture_id: str) -> NormalizedSchematic:
++    """Return a KiCad-loader-friendly copy of a raw corpus schematic.
++
++    The normalization is intentionally conservative and source-preserving:
++    callers should still copy the exact raw input as ``source.kicad_sch``.
++    This function is only for the auxiliary ``source_normalized.kicad_sch``
++    file used when asking KiCad to export an XML netlist.
++    """
++
++    original_root_uuid = _root_uuid(doc)
++    root_uuid = _valid_or_deterministic_uuid(original_root_uuid, fixture_id=fixture_id)
++    changes: list[str] = []
++    if root_uuid != original_root_uuid:
++        changes.append("replaced_invalid_root_uuid")
++
++    saw_top_level_comment = False
++    saw_sheet_instances = False
++    normalized_items: list[Node] = []
++
++    for item in doc.root.items:
++        if not isinstance(item, ListNode):
++            normalized_items.append(item)
++            continue
++
++        if item.key == "comment":
++            # KiCad schematic root sections do not define arbitrary top-level
++            # metadata comments.  CircuitSnips adds them before (paper ...),
++            # so keep them in metadata but remove them from the loader-facing
++            # file.
++            saw_top_level_comment = True
++            continue
++
++        if item.key == "uuid":
++            normalized_items.append(L(atom("uuid"), string(root_uuid)))
++            continue
++
++        if item.key == "sheet_instances":
++            saw_sheet_instances = True
++            # Re-create below so a standalone extracted snippet has exactly
++            # one root-sheet instance regardless of the source fragment.
++            continue
++
++        if item.key == "symbol" and _is_placed_symbol(item):
++            normalized_items.append(
++                _normalize_symbol_instances(
++                    item,
++                    root_uuid=root_uuid,
++                    fixture_id=fixture_id,
++                )
++            )
++            continue
++
++        normalized_items.append(item)
++
++    if saw_top_level_comment:
++        changes.append("removed_top_level_comments")
++
++    if saw_sheet_instances:
++        changes.append("normalized_root_sheet_instances")
++    else:
++        changes.append("added_root_sheet_instances")
++
++    normalized_items = _insert_root_sheet_instances(normalized_items)
++    normalized_root = ListNode(tuple(normalized_items), doc.root.pos)
++    normalized_doc = SchematicDoc(normalized_root)
++    return NormalizedSchematic(doc=normalized_doc, root_uuid=root_uuid, changes=tuple(changes))
++
++
++def serialize_normalized_schematic(normalized: NormalizedSchematic) -> str:
++    """Serialize a normalized schematic with a trailing newline."""
++
++    return serialize(normalized.doc.root) + "\n"
++
++
++def _root_uuid(doc: SchematicDoc) -> str:
++    for item in doc.root.items:
++        if (
++            isinstance(item, ListNode)
++            and item.key == "uuid"
++            and len(item.items) >= 2
++            and isinstance(item.items[1], StringNode)
++        ):
++            return item.items[1].value
++    return ""
++
++
++def _valid_or_deterministic_uuid(value: str, *, fixture_id: str) -> str:
++    try:
++        return str(uuid.UUID(value))
++    except (ValueError, AttributeError, TypeError):
++        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"openclaw-kicad-model-corpus:{fixture_id}"))
++
++
++def _is_placed_symbol(node: ListNode) -> bool:
++    return any(isinstance(child, ListNode) and child.key == "lib_id" for child in node.items)
++
++
++def _normalize_symbol_instances(
++    symbol_node: ListNode,
++    *,
++    root_uuid: str,
++    fixture_id: str,
++) -> ListNode:
++    ref = _symbol_property(symbol_node, "Reference") or "?"
++    unit = _symbol_unit(symbol_node)
++    new_items = [
++        child
++        for child in symbol_node.items
++        if not (isinstance(child, ListNode) and child.key == "instances")
++    ]
++    new_items.append(
++        L(
++            atom("instances"),
++            L(
++                atom("project"),
++                string(fixture_id),
++                L(
++                    atom("path"),
++                    string(f"/{root_uuid}"),
++                    L(atom("reference"), string(ref)),
++                    L(atom("unit"), atom(unit)),
++                ),
++            ),
++        )
++    )
++    return ListNode(tuple(new_items), symbol_node.pos)
++
++
++def _symbol_property(symbol_node: ListNode, name: str) -> str | None:
++    for child in symbol_node.items:
++        if not isinstance(child, ListNode) or child.key != "property" or len(child.items) < 3:
++            continue
++        name_node = child.items[1]
++        value_node = child.items[2]
++        if (
++            isinstance(name_node, StringNode)
++            and isinstance(value_node, StringNode)
++            and name_node.value == name
++        ):
++            return value_node.value
++    return None
++
++
++def _symbol_unit(symbol_node: ListNode) -> str:
++    for child in symbol_node.items:
++        if child_is_unit(child):
++            return child.items[1].value
++    return "1"
++
++
++def child_is_unit(node: Node) -> bool:
++    return (
++        isinstance(node, ListNode)
++        and node.key == "unit"
++        and len(node.items) >= 2
++        and isinstance(node.items[1], AtomNode)
++    )
++
++
++def _insert_root_sheet_instances(items: list[Node]) -> list[Node]:
++    sheet_instances = L(
++        atom("sheet_instances"),
++        L(atom("path"), string("/"), L(atom("page"), string("1"))),
++    )
++    for idx, item in enumerate(items):
++        if isinstance(item, ListNode) and item.key == "embedded_fonts":
++            return items[:idx] + [sheet_instances] + items[idx:]
++    return [*items, sheet_instances]
+--- kicad_orig/openclaw_kicad_pcb-webapp/tests/unit/test_model_corpus_normalization.py	1970-01-01 00:00:00.000000000 +0000
++++ kicad_inspect/openclaw_kicad_pcb-webapp/tests/unit/test_model_corpus_normalization.py	2026-05-26 22:54:07.903264056 +0000
+@@ -0,0 +1,75 @@
++from __future__ import annotations
++
++from pathlib import Path
++from uuid import UUID
++
++from kicad_pcb.corpus.normalization import (
++    normalize_for_kicad_export,
++    serialize_normalized_schematic,
++)
++from kicad_pcb.sch_doc import SchematicDoc
++from kicad_pcb.sexpr.nodes import ListNode, StringNode
++
++MODEL_FIXTURE = (
++    Path(__file__).resolve().parents[2]
++    / "model_kicad_files"
++    / "mcp2551-can-transciever.kicad_sch"
++)
++
++
++def test_normalize_for_kicad_export_removes_circuitsnips_root_comments() -> None:
++    doc = SchematicDoc.load(MODEL_FIXTURE)
++
++    normalized = normalize_for_kicad_export(doc, fixture_id="mcp2551-can-transciever")
++
++    root_keys = [item.key for item in normalized.doc.root.items if isinstance(item, ListNode)]
++    assert "comment" not in root_keys
++    assert "removed_top_level_comments" in normalized.changes
++
++
++def test_normalize_for_kicad_export_replaces_invalid_root_uuid() -> None:
++    doc = SchematicDoc.load(MODEL_FIXTURE)
++
++    normalized = normalize_for_kicad_export(doc, fixture_id="mcp2551-can-transciever")
++
++    UUID(normalized.root_uuid)
++    assert normalized.root_uuid != "circuit-1779827547560"
++    assert "replaced_invalid_root_uuid" in normalized.changes
++
++
++def test_normalize_for_kicad_export_rewrites_standalone_symbol_instance_paths() -> None:
++    doc = SchematicDoc.load(MODEL_FIXTURE)
++
++    normalized = normalize_for_kicad_export(doc, fixture_id="mcp2551-can-transciever")
++
++    symbol_paths: set[str] = set()
++    sheet_paths: set[str] = set()
++    for item in normalized.doc.root.items:
++        if not isinstance(item, ListNode):
++            continue
++        if item.key == "symbol":
++            _collect_path_values(item, symbol_paths)
++        elif item.key == "sheet_instances":
++            _collect_path_values(item, sheet_paths)
++
++    assert symbol_paths == {f"/{normalized.root_uuid}"}
++    assert sheet_paths == {"/"}
++
++
++def test_normalized_schematic_is_still_parseable_by_internal_parser(tmp_path: Path) -> None:
++    doc = SchematicDoc.load(MODEL_FIXTURE)
++    normalized = normalize_for_kicad_export(doc, fixture_id="mcp2551-can-transciever")
++    output = tmp_path / "source_normalized.kicad_sch"
++    output.write_text(serialize_normalized_schematic(normalized), encoding="utf-8")
++
++    reparsed = SchematicDoc.load(output)
++
++    assert reparsed.root.key == "kicad_sch"
++
++
++def _collect_path_values(node: ListNode, output: set[str]) -> None:
++    if node.key == "path" and len(node.items) >= 2 and isinstance(node.items[1], StringNode):
++        output.add(node.items[1].value)
++    for child in node.items:
++        if isinstance(child, ListNode):
++            _collect_path_values(child, output)
