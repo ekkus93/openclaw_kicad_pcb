@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/mcp2551-can-transciever",
+  "fixture_id": "mcp2551-can-transciever",
+  "generator": "CircuitSnips",
+  "global_label_count": 4,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 0,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 3,
+  "requires_custom_symbols": false,
+  "source_file_name": "mcp2551-can-transciever.kicad_sch",
+  "source_path": "model_kicad_files/mcp2551-can-transciever.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 8,
+  "title": "MCP2551 CAN Transciever",
+  "wire_count": 25
+}

@@ -36,6 +36,7 @@ from .results import (
     InfoResult,
     InfoSchResult,
     LintFileResult,
+    ModelCorpusEvaluateResult,
     ModelCorpusIngestResult,
     ModelCorpusListResult,
     NewFromNetlistResult,
@@ -176,6 +177,21 @@ def _fmt_model_corpus_list(r: ModelCorpusListResult) -> list[str]:
             f"labels={fixture.label_count} circuit_ir={'yes' if fixture.has_circuit_ir else 'no'}"
         )
     return lines
+
+
+@_register(ModelCorpusEvaluateResult)
+def _fmt_model_corpus_evaluate(r: ModelCorpusEvaluateResult) -> list[str]:
+    return [
+        "✅ Model corpus evaluation complete",
+        f"   Corpus dir: {r.corpus_dir}",
+        f"   Output dir: {r.out_dir}",
+        f"   Fixture count: {r.fixture_count}",
+        f"   Evaluated: {r.evaluated_count}",
+        f"   Skipped: {r.skipped_count}",
+        f"   Failed/partial: {r.failed_count}",
+        f"   Summary JSON: {r.summary_json_path}",
+        f"   Summary MD: {r.summary_md_path}",
+    ]
 
 
 @_register(InfoSchResult)

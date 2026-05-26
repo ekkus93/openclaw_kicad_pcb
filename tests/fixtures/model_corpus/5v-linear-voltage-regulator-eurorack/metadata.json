@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CC0-1.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/5v-linear-voltage-regulator-eurorack",
+  "fixture_id": "5v-linear-voltage-regulator-eurorack",
+  "generator": "eeschema",
+  "global_label_count": 88,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20250114",
+  "label_count": 0,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 50,
+  "requires_custom_symbols": false,
+  "source_file_name": "5v-linear-voltage-regulator-eurorack.kicad_sch",
+  "source_path": "model_kicad_files/5v-linear-voltage-regulator-eurorack.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 147,
+  "title": "QuantARP by github.com/Fihdi",
+  "wire_count": 194
+}

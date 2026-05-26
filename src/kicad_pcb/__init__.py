@@ -7,6 +7,8 @@ backward compatibility after the Phase 2.1 module split.
 
 from __future__ import annotations
 
+import importlib
+
 # Injectable adapters (Phase 2.3)
 from .adapters import (
     FakeFs,
@@ -21,9 +23,6 @@ from .adapters import (
 
 # Circuit IR + semantic validation
 from .circuit_ir import CircuitIR, ComponentIR, NetIR, OptionsIR, PinRefIR
-
-# CLI entry-point
-from .cli import main
 
 # Command implementations
 from .commands.doctor import cmd_doctor
@@ -251,6 +250,12 @@ from .symbol_index import (
     SymbolsResolution,
     resolve_symbol_dirs,
 )
+
+
+def main() -> None:
+    """Proxy to :mod:`kicad_pcb.cli` without importing it at package import time."""
+
+    importlib.import_module("kicad_pcb.cli").main()
 
 __all__ = [
     # errors

@@ -25,7 +25,11 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
-from .commands.model_corpus import cmd_model_corpus_ingest, cmd_model_corpus_list
+from .commands.model_corpus import (
+    cmd_model_corpus_evaluate,
+    cmd_model_corpus_ingest,
+    cmd_model_corpus_list,
+)
 from .commands.netlist import (
     cmd_apply_netlist,
     cmd_fix_netlist,
@@ -398,6 +402,46 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help="Directory containing corpus fixture metadata",
     )
     p_model_corpus_list.set_defaults(func=cmd_model_corpus_list)
+
+    p_model_corpus_evaluate = model_corpus_subparsers.add_parser(
+        "evaluate",
+        help="Generate and score corpus fixtures that have circuit_ir.json",
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--corpus-dir",
+        default="tests/fixtures/model_corpus",
+        help="Directory containing corpus fixtures",
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--out-dir",
+        default="code_review/generated/model_eval",
+        help="Directory for generated evaluation artifacts",
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--fixture",
+        help="Optional single fixture id to evaluate",
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--require-kicad",
+        action="store_true",
+        help=(
+            "Fail if repo-compatible kicad-cli is unavailable "
+            "instead of producing partial evaluation"
+        ),
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--heuristic-profile",
+        choices=sorted(SCHEMATIC_HEURISTIC_PROFILES),
+        default=None,
+        help="Optional generation heuristic profile to reuse during evaluation",
+    )
+    p_model_corpus_evaluate.add_argument(
+        "--label-mode",
+        choices=sorted(LABEL_MODE_POLICIES),
+        default=None,
+        help="Optional label mode to reuse during evaluation",
+    )
+    p_model_corpus_evaluate.set_defaults(func=cmd_model_corpus_evaluate)
 
     # compile-netlist (alias for new-from-netlist)
     p_compile = subparsers.add_parser(
@@ -774,3 +818,7 @@ def main() -> None:  # noqa: PLR0912 PLR0915
             if hint:
                 print(f"   💡 {hint}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

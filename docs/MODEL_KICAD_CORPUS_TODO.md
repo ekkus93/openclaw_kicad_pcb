@@ -356,56 +356,56 @@ File: `src/kicad_pcb/results.py`
 ## Phase 8 — Add evaluation package skeleton
 
 ### 8.1 Create evaluation modules
-- [ ] Add `src/kicad_pcb/evaluation/__init__.py`.
-- [ ] Add `src/kicad_pcb/evaluation/electrical.py`.
-- [ ] Add `src/kicad_pcb/evaluation/scoring.py`.
-- [ ] Add `src/kicad_pcb/evaluation/similarity.py`.
-- [ ] Add `src/kicad_pcb/evaluation/reports.py`.
+- [x] Add `src/kicad_pcb/evaluation/__init__.py`.
+- [x] Add `src/kicad_pcb/evaluation/electrical.py`.
+- [x] Add `src/kicad_pcb/evaluation/scoring.py`.
+- [x] Add `src/kicad_pcb/evaluation/similarity.py`.
+- [x] Add `src/kicad_pcb/evaluation/reports.py`.
 
 ### 8.2 Implement electrical equivalence report
 File: `src/kicad_pcb/evaluation/electrical.py`
 
-- [ ] Define `ElectricalEquivalenceReport`.
-- [ ] Implement `compare_circuit_ir_equivalence(source, generated)`.
-- [ ] Compare component refs.
-- [ ] Compare component values where present.
-- [ ] Compare component symbols where present.
-- [ ] Compare pin-to-net assignments.
-- [ ] Return structured mismatch lists.
-- [ ] Do not throw for normal mismatch; return failed report.
+- [x] Define `ElectricalEquivalenceReport`.
+- [x] Implement `compare_circuit_ir_equivalence(source, generated)`.
+- [x] Compare component refs.
+- [x] Compare component values where present.
+- [x] Compare component symbols where present.
+- [x] Compare pin-to-net assignments.
+- [x] Return structured mismatch lists.
+- [x] Do not throw for normal mismatch; return failed report.
 
 ### 8.3 Implement intrinsic quality scoring
 File: `src/kicad_pcb/evaluation/scoring.py`
 
-- [ ] Define `IntrinsicQualityReport`.
-- [ ] Score parse validity.
-- [ ] Score symbol spread.
-- [ ] Score wire stub ratio.
-- [ ] Score power-symbol usage.
-- [ ] Score layout lints.
-- [ ] Keep weights named constants.
-- [ ] Include actionable reasons for low sub-scores.
+- [x] Define `IntrinsicQualityReport`.
+- [x] Score parse validity.
+- [x] Score symbol spread.
+- [x] Score wire stub ratio.
+- [x] Score power-symbol usage.
+- [x] Score layout lints.
+- [x] Keep weights named constants.
+- [x] Include actionable reasons for low sub-scores.
 
 ### 8.4 Implement source similarity scoring
 File: `src/kicad_pcb/evaluation/similarity.py`
 
-- [ ] Define `LayoutSimilarityReport`.
-- [ ] Compare source/generated role counts.
-- [ ] Compare relative position relationships.
-- [ ] Compare label/global-label/power-symbol strategy.
-- [ ] Compare geometry spread.
-- [ ] Do not compare exact coordinates.
-- [ ] Include actionable reasons for low sub-scores.
+- [x] Define `LayoutSimilarityReport`.
+- [x] Compare source/generated role counts.
+- [x] Compare relative position relationships.
+- [x] Compare label/global-label/power-symbol strategy.
+- [x] Compare geometry spread.
+- [x] Do not compare exact coordinates.
+- [x] Include actionable reasons for low sub-scores.
 
 ### 8.5 Add unit tests
-- [ ] Add `tests/unit/test_model_evaluation_electrical.py`.
-- [ ] Add `tests/unit/test_model_evaluation_scoring.py`.
-- [ ] Add `tests/unit/test_model_evaluation_similarity.py`.
-- [ ] Use small synthetic `CircuitIR` and synthetic `LayoutFeatures` objects.
-- [ ] Test electrical pass.
-- [ ] Test electrical fail.
-- [ ] Test total score cannot pass when electrical equivalence fails.
-- [ ] Test exact-coordinate differences do not automatically fail similarity.
+- [x] Add `tests/unit/test_model_evaluation_electrical.py`.
+- [x] Add `tests/unit/test_model_evaluation_scoring.py`.
+- [x] Add `tests/unit/test_model_evaluation_similarity.py`.
+- [x] Use small synthetic `CircuitIR` and synthetic `LayoutFeatures` objects.
+- [x] Test electrical pass.
+- [x] Test electrical fail.
+- [x] Test total score cannot pass when electrical equivalence fails.
+- [x] Test exact-coordinate differences do not automatically fail similarity.
 
 ---
 
@@ -414,54 +414,54 @@ File: `src/kicad_pcb/evaluation/similarity.py`
 ### 9.1 Add evaluate CLI parser
 File: `src/kicad_pcb/cli.py`
 
-- [ ] Add `model-corpus evaluate`.
+- [x] Add `model-corpus evaluate`.
 
 Required arguments:
 
-- [ ] `--corpus-dir`, default `tests/fixtures/model_corpus`
-- [ ] `--out-dir`, default `code_review/generated/model_eval`
-- [ ] `--fixture`, optional fixture ID
-- [ ] `--require-kicad`, default false
-- [ ] `--heuristic-profile`, optional, same allowed values as generation command if reused
-- [ ] `--label-mode`, optional, same allowed values as generation command if reused
+- [x] `--corpus-dir`, default `tests/fixtures/model_corpus`
+- [x] `--out-dir`, default `code_review/generated/model_eval`
+- [x] `--fixture`, optional fixture ID
+- [x] `--require-kicad`, default false
+- [x] `--heuristic-profile`, optional, same allowed values as generation command if reused
+- [x] `--label-mode`, optional, same allowed values as generation command if reused
 
 ### 9.2 Implement command behavior
 File: `src/kicad_pcb/commands/model_corpus.py`
 
-- [ ] Implement `cmd_model_corpus_evaluate(args)`.
-- [ ] Load all fixtures or one selected fixture.
-- [ ] Skip fixtures without `circuit_ir.json` in all-fixtures mode.
-- [ ] Fail clearly if selected `--fixture` lacks `circuit_ir.json`.
-- [ ] Generate a project from `circuit_ir.json` using existing generation path.
-- [ ] Extract generated layout features.
-- [ ] Write `generated_layout_features.json`.
-- [ ] If KiCad CLI is available, export generated XML netlist and convert to `CircuitIR`.
-- [ ] Compare electrical equivalence.
-- [ ] If KiCad CLI unavailable and `--require-kicad` is false, set electrical status `not_run`.
-- [ ] Score intrinsic quality.
-- [ ] Score source similarity.
-- [ ] Write `evaluation_report.json`.
-- [ ] Write `actionable_failures.md`.
-- [ ] Write aggregate `summary.json` and `summary.md`.
+- [x] Implement `cmd_model_corpus_evaluate(args)`.
+- [x] Load all fixtures or one selected fixture.
+- [x] Skip fixtures without `circuit_ir.json` in all-fixtures mode.
+- [x] Fail clearly if selected `--fixture` lacks `circuit_ir.json`.
+- [x] Generate a project from `circuit_ir.json` using existing generation path.
+- [x] Extract generated layout features.
+- [x] Write `generated_layout_features.json`.
+- [x] If KiCad CLI is available, export generated XML netlist and convert to `CircuitIR`.
+- [x] Compare electrical equivalence.
+- [x] If KiCad CLI unavailable and `--require-kicad` is false, set electrical status `not_run`.
+- [x] Score intrinsic quality.
+- [x] Score source similarity.
+- [x] Write `evaluation_report.json`.
+- [x] Write `actionable_failures.md`.
+- [x] Write aggregate `summary.json` and `summary.md`.
 
 ### 9.3 Avoid current-project/session side effects
-- [ ] Ensure evaluation writes into `--out-dir`, not the active user project/session.
-- [ ] If existing generation helpers require a `ProjectRef`, construct an isolated temporary/evaluation project under the fixture output directory.
-- [ ] Do not change the user’s current project config.
+- [x] Ensure evaluation writes into `--out-dir`, not the active user project/session.
+- [x] If existing generation helpers require a `ProjectRef`, construct an isolated temporary/evaluation project under the fixture output directory.
+- [x] Do not change the user’s current project config.
 
 ### 9.4 Add result model if needed
 File: `src/kicad_pcb/results.py`
 
-- [ ] Add `ModelCorpusEvaluateResult` dataclass.
-- [ ] Include corpus dir, output dir, fixture count, evaluated count, skipped count, failed count, summary path.
-- [ ] Ensure JSON output works.
+- [x] Add `ModelCorpusEvaluateResult` dataclass.
+- [x] Include corpus dir, output dir, fixture count, evaluated count, skipped count, failed count, summary path.
+- [x] Ensure JSON output works.
 
 ### 9.5 Add tests
-- [ ] Add `tests/unit/test_model_corpus_evaluate_command.py`.
-- [ ] Test skipping fixture without `circuit_ir.json`.
-- [ ] Test selected fixture without `circuit_ir.json` returns clear error.
-- [ ] Test report generation using a small synthetic fixture.
-- [ ] Test no active project/session mutation.
+- [x] Add `tests/unit/test_model_corpus_evaluate_command.py`.
+- [x] Test skipping fixture without `circuit_ir.json`.
+- [x] Test selected fixture without `circuit_ir.json` returns clear error.
+- [x] Test report generation using a small synthetic fixture.
+- [x] Test no active project/session mutation.
 
 ---
 
@@ -470,28 +470,28 @@ File: `src/kicad_pcb/results.py`
 ### 10.1 Implement Markdown report writer
 File: `src/kicad_pcb/evaluation/reports.py`
 
-- [ ] Write `actionable_failures.md` per fixture.
-- [ ] Include fixture ID and source filename.
-- [ ] Include total score and sub-scores.
-- [ ] Include electrical status.
-- [ ] Include top failures ordered by severity.
-- [ ] Include likely files to edit.
-- [ ] Include explicit no-special-casing instruction.
+- [x] Write `actionable_failures.md` per fixture.
+- [x] Include fixture ID and source filename.
+- [x] Include total score and sub-scores.
+- [x] Include electrical status.
+- [x] Include top failures ordered by severity.
+- [x] Include likely files to edit.
+- [x] Include explicit no-special-casing instruction.
 
 ### 10.2 Suggested file mapping
 Use this mapping when creating actionable failures:
 
-- [ ] Role/classification issue → `src/kicad_pcb/block_detection.py`
-- [ ] Placement/order issue → `src/kicad_pcb/graphviz_layout/dot_builder.py`, `src/kicad_pcb/graphviz_layout/snap.py`
-- [ ] Routing/wire/label issue → `src/kicad_pcb/router.py`
-- [ ] Symbol resolution issue → `src/kicad_pcb/symbol_index.py`, `src/kicad_pcb/lib_symbol.py`, `src/kicad_pcb/corpus/embedded_symbols.py`
-- [ ] Metric/evaluator false positive → `src/kicad_pcb/schematic_metrics.py`, `src/kicad_pcb/corpus/layout_features.py`, `src/kicad_pcb/evaluation/`
+- [x] Role/classification issue → `src/kicad_pcb/block_detection.py`
+- [x] Placement/order issue → `src/kicad_pcb/graphviz_layout/dot_builder.py`, `src/kicad_pcb/graphviz_layout/snap.py`
+- [x] Routing/wire/label issue → `src/kicad_pcb/router.py`
+- [x] Symbol resolution issue → `src/kicad_pcb/symbol_index.py`, `src/kicad_pcb/lib_symbol.py`, `src/kicad_pcb/corpus/embedded_symbols.py`
+- [x] Metric/evaluator false positive → `src/kicad_pcb/schematic_metrics.py`, `src/kicad_pcb/corpus/layout_features.py`, `src/kicad_pcb/evaluation/`
 
 ### 10.3 Add tests
-- [ ] Add `tests/unit/test_model_evaluation_reports.py`.
-- [ ] Test Markdown report includes no-special-casing instruction.
-- [ ] Test JSON report is deterministic.
-- [ ] Test severity ordering.
+- [x] Add `tests/unit/test_model_evaluation_reports.py`.
+- [x] Test Markdown report includes no-special-casing instruction.
+- [x] Test JSON report is deterministic.
+- [x] Test severity ordering.
 
 ---
 
@@ -499,8 +499,10 @@ Use this mapping when creating actionable failures:
 
 Do this only after ingestion and evaluation exist.
 
+Current blocker: on this machine, `kicad-cli 7.0.11` cannot export XML netlists for the repo's symbol-bearing source schematics, so the real `model_kicad_files/` fixtures remain `pending_netlist_export` until `kicad-cli >= 8.0.0` is available.
+
 ### 11.1 Start with MCP2551 fixture
-- [ ] Ingest `mcp2551-can-transciever.kicad_sch`.
+- [x] Ingest `mcp2551-can-transciever.kicad_sch`.
 - [ ] Ensure `circuit_ir.json` exists when KiCad CLI is available.
 - [ ] Run evaluation.
 - [ ] Read `actionable_failures.md`.
@@ -531,24 +533,24 @@ Likely generic rules:
 ## Phase 12 — Documentation
 
 ### 12.1 Add corpus README
-- [ ] Add `model_kicad_files/README.md`.
-- [ ] Explain that files here are raw source examples.
-- [ ] Explain license/source metadata expectations.
-- [ ] Explain how to ingest files.
-- [ ] Explain not to hand-edit generated fixture artifacts except metadata notes if needed.
+- [x] Add `model_kicad_files/README.md`.
+- [x] Explain that files here are raw source examples.
+- [x] Explain license/source metadata expectations.
+- [x] Explain how to ingest files.
+- [x] Explain not to hand-edit generated fixture artifacts except metadata notes if needed.
 
 ### 12.2 Add model corpus docs
-- [ ] Add `docs/MODEL_KICAD_CORPUS.md`.
-- [ ] Document the workflow:
-  - [ ] add `.kicad_sch`
-  - [ ] run ingest
-  - [ ] run evaluate
-  - [ ] read reports
-  - [ ] improve generator rules
-  - [ ] re-run tests
-- [ ] Explain why this is not ML training.
-- [ ] Explain electrical equivalence vs schematic quality similarity.
-- [ ] Explain partial fixtures when KiCad CLI is unavailable.
+- [x] Add `docs/MODEL_KICAD_CORPUS.md`.
+- [x] Document the workflow:
+  - [x] add `.kicad_sch`
+  - [x] run ingest
+  - [x] run evaluate
+  - [x] read reports
+  - [x] improve generator rules
+  - [x] re-run tests
+- [x] Explain why this is not ML training.
+- [x] Explain electrical equivalence vs schematic quality similarity.
+- [x] Explain partial fixtures when KiCad CLI is unavailable.
 
 ---
 
@@ -568,16 +570,16 @@ uv run pytest -m requires_kicad
 
 Then manually verify:
 
-- [ ] `uv run python -m kicad_pcb.cli model-corpus ingest --source-dir model_kicad_files --out-dir tests/fixtures/model_corpus --refresh` works.
-- [ ] `tests/fixtures/model_corpus/` contains one directory per parseable source schematic.
-- [ ] Every fixture has `metadata.json`.
-- [ ] Every parseable fixture has `source_layout_features.json`.
+- [x] `uv run python -m kicad_pcb.cli model-corpus ingest --source-dir model_kicad_files --out-dir tests/fixtures/model_corpus --refresh` works.
+- [x] `tests/fixtures/model_corpus/` contains one directory per parseable source schematic.
+- [x] Every fixture has `metadata.json`.
+- [x] Every parseable fixture has `source_layout_features.json`.
 - [ ] Fixtures with successful KiCad XML export have `circuit_ir.json`.
-- [ ] `uv run python -m kicad_pcb.cli model-corpus list --corpus-dir tests/fixtures/model_corpus` works.
+- [x] `uv run python -m kicad_pcb.cli model-corpus list --corpus-dir tests/fixtures/model_corpus` works.
 - [ ] `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval` works for fixtures with `circuit_ir.json`.
-- [ ] Evaluation writes aggregate `summary.md`.
+- [x] Evaluation writes aggregate `summary.md`.
 - [ ] Per-fixture reports include actionable failures.
-- [ ] Existing readability/golden tests still pass.
+- [x] Existing readability/golden tests still pass.
 
 ---
 

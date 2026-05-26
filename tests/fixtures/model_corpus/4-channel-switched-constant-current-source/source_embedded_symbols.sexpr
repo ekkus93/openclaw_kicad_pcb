@@ -1,0 +1,795 @@
+(lib_symbols
+  (symbol
+    "Device:C"
+    (pin_numbers (hide yes))
+    (pin_names (offset 0.254))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "C38"
+      (at -3.556 2.286 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "0.22u"
+      (at -3.556 -3.048 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 0.9652 -3.81 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Description"
+      "Unpolarized capacitor"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "cap capacitor"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_fp_filters"
+      "C_*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "C_0_1"
+      (polyline
+        (pts (xy -2.032 0.762) (xy 2.032 0.762))
+        (stroke (width 0.508) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy -2.032 -0.762) (xy 2.032 -0.762))
+        (stroke (width 0.508) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "C_1_1"
+      (pin
+        passive
+        line
+        (at 0 3.81 270)
+        (length 2.794)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -3.81 90)
+        (length 2.794)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "Device:R"
+    (pin_numbers (hide yes))
+    (pin_names (offset 0))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property "Reference" "R" (at 2.032 0 90) (effects (font (size 1.27 1.27))))
+    (property "Value" "R" (at 0 0 90) (effects (font (size 1.27 1.27))))
+    (property
+      "Footprint"
+      ""
+      (at -1.778 0 90)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Description"
+      "Resistor"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "R res resistor"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_fp_filters"
+      "R_*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "R_0_1"
+      (rectangle
+        (start -1.016 -2.54)
+        (end 1.016 2.54)
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "R_1_1"
+      (pin
+        passive
+        line
+        (at 0 3.81 270)
+        (length 1.27)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -3.81 90)
+        (length 1.27)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "NCV317MBSTT3G_1"
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "PS3"
+      (at 10.414 7.366 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "NCV317MBSTT3G"
+      (at 11.684 4.572 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      "SOT230P700X175-4N"
+      (at 29.21 -94.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "https://www.onsemi.com/pub/Collateral/LM317M-D.PDF"
+      (at 29.21 -194.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Description"
+      "Output Adjustable between 1.2 V and 37 V; Output Current in Excess of 500 mA; Internal Thermal Overload Protection; Internal Short Circuit Current Limiting Constant with Temperature; Output Transistor Safe-Area Compensation; Floating Operation for High Voltage Applications; Eliminates Stocking many Fixed Voltages Standard Application; Pb-Free Packages are Available"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Height"
+      "1.75"
+      (at 29.21 -394.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Manufacturer_Name"
+      "onsemi"
+      (at 29.21 -494.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Manufacturer_Part_Number"
+      "NCV317MBSTT3G"
+      (at 29.21 -594.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Mouser Part Number"
+      "863-NCV317MBSTT3G"
+      (at 29.21 -694.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Mouser Price/Stock"
+      "https://www.mouser.co.uk/ProductDetail/onsemi/NCV317MBSTT3G?qs=3PKVEWFFm2%252BSS0n2wMgniA%3D%3D"
+      (at 29.21 -794.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Arrow Part Number"
+      "NCV317MBSTT3G"
+      (at 29.21 -894.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Arrow Price/Stock"
+      "https://www.arrow.com/en/products/ncv317mbstt3g/on-semiconductor?utm_currency=USD&region=nac"
+      (at 29.21 -994.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (symbol
+      "NCV317MBSTT3G_1_1_1"
+      (rectangle
+        (start 5.08 2.54)
+        (end 17.78 -7.62)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin
+        passive
+        line
+        (at 0 0 0)
+        (length 5.08)
+        (name "VIN" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 8.89 -12.7 90)
+        (length 5.08)
+        (name "ADJ" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 22.86 0 180)
+        (length 5.08)
+        (name "VOUT_1" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 22.86 -2.54 180)
+        (length 5.08)
+        (name "VOUT_2" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "SamacSys_Parts:ULQ2003AQDRQ1"
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "IC"
+      (at 21.59 7.62 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (property
+      "Value"
+      "ULQ2003AQDRQ1"
+      (at 21.59 5.08 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (property
+      "Footprint"
+      "SOIC127P600X175-16N"
+      (at 21.59 -94.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "https://datasheet.datasheetarchive.com/originals/distributors/Datasheets-SFU2/DSASFU100030207.pdf"
+      (at 21.59 -194.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Description"
+      "TEXAS INSTRUMENTS - ULQ2003AQDRQ1 - DARLINGTON TRANS ARRAY, NPN, 50V, SOIC16"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Height"
+      "1.75"
+      (at 21.59 -394.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Manufacturer_Name"
+      "Texas Instruments"
+      (at 21.59 -494.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Manufacturer_Part_Number"
+      "ULQ2003AQDRQ1"
+      (at 21.59 -594.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Mouser Part Number"
+      "595-ULQ2003AQDRQ1"
+      (at 21.59 -694.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Mouser Price/Stock"
+      "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/ULQ2003AQDRQ1?qs=7kv20MEVUlgYWe3ELNx81w%3D%3D"
+      (at 21.59 -794.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Arrow Part Number"
+      "ULQ2003AQDRQ1"
+      (at 21.59 -894.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (property
+      "Arrow Price/Stock"
+      "https://www.arrow.com/en/products/ulq2003aqdrq1/texas-instruments?region=nac"
+      (at 21.59 -994.92 0)
+      (effects (font (size 1.27 1.27)) (justify left top) (hide yes))
+    )
+    (symbol
+      "ULQ2003AQDRQ1_1_1"
+      (rectangle
+        (start 5.08 2.54)
+        (end 20.32 -20.32)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin
+        passive
+        line
+        (at 0 0 0)
+        (length 5.08)
+        (name "1B" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -2.54 0)
+        (length 5.08)
+        (name "2B" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -5.08 0)
+        (length 5.08)
+        (name "3B" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -7.62 0)
+        (length 5.08)
+        (name "4B" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -10.16 0)
+        (length 5.08)
+        (name "5B" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -12.7 0)
+        (length 5.08)
+        (name "6B" (effects (font (size 1.27 1.27))))
+        (number "6" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -15.24 0)
+        (length 5.08)
+        (name "7B" (effects (font (size 1.27 1.27))))
+        (number "7" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 0 -17.78 0)
+        (length 5.08)
+        (name "E" (effects (font (size 1.27 1.27))))
+        (number "8" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 0 180)
+        (length 5.08)
+        (name "1C" (effects (font (size 1.27 1.27))))
+        (number "16" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -2.54 180)
+        (length 5.08)
+        (name "2C" (effects (font (size 1.27 1.27))))
+        (number "15" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -5.08 180)
+        (length 5.08)
+        (name "3C" (effects (font (size 1.27 1.27))))
+        (number "14" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -7.62 180)
+        (length 5.08)
+        (name "4C" (effects (font (size 1.27 1.27))))
+        (number "13" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -10.16 180)
+        (length 5.08)
+        (name "5C" (effects (font (size 1.27 1.27))))
+        (number "12" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -12.7 180)
+        (length 5.08)
+        (name "6C" (effects (font (size 1.27 1.27))))
+        (number "11" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -15.24 180)
+        (length 5.08)
+        (name "7C" (effects (font (size 1.27 1.27))))
+        (number "10" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 25.4 -17.78 180)
+        (length 5.08)
+        (name "COM" (effects (font (size 1.27 1.27))))
+        (number "9" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "Transistor_FET:BSS84"
+    (pin_names (hide yes))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "Q"
+      (at 5.08 1.905 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property
+      "Value"
+      "BSS84"
+      (at 5.08 0 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property
+      "Footprint"
+      "Package_TO_SOT_SMD:SOT-23"
+      (at 5.08 -1.905 0)
+      (effects (font (size 1.27 1.27) (italic yes)) (justify left) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf"
+      (at 5.08 -3.81 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Description"
+      "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "P-Channel MOSFET"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_fp_filters"
+      "SOT?23*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "BSS84_0_1"
+      (polyline
+        (pts (xy 0.254 1.905) (xy 0.254 -1.905))
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0.254 0) (xy -2.54 0))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0.762 2.286) (xy 0.762 1.27))
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.762 1.778)
+          (xy 3.302 1.778)
+          (xy 3.302 -1.778)
+          (xy 0.762 -1.778)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0.762 0.508) (xy 0.762 -0.508))
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0.762 -1.27) (xy 0.762 -2.286))
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+      (circle
+        (center 1.651 0)
+        (radius 2.794)
+        (stroke (width 0.254) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 2.286 0) (xy 1.27 0.381) (xy 1.27 -0.381) (xy 2.286 0))
+        (stroke (width 0) (type default))
+        (fill (type outline))
+      )
+      (polyline
+        (pts (xy 2.54 2.54) (xy 2.54 1.778))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (circle
+        (center 2.54 1.778)
+        (radius 0.254)
+        (stroke (width 0) (type default))
+        (fill (type outline))
+      )
+      (circle
+        (center 2.54 -1.778)
+        (radius 0.254)
+        (stroke (width 0) (type default))
+        (fill (type outline))
+      )
+      (polyline
+        (pts (xy 2.54 -2.54) (xy 2.54 0) (xy 0.762 0))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 2.794 -0.508)
+          (xy 2.921 -0.381)
+          (xy 3.683 -0.381)
+          (xy 3.81 -0.254)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 3.302 -0.381)
+          (xy 2.921 0.254)
+          (xy 3.683 0.254)
+          (xy 3.302 -0.381)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "BSS84_1_1"
+      (pin
+        input
+        line
+        (at -5.08 0 0)
+        (length 2.54)
+        (name "G" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 2.54 5.08 270)
+        (length 2.54)
+        (name "D" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 2.54 -5.08 90)
+        (length 2.54)
+        (name "S" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "power:+12V"
+    (power)
+    (pin_numbers (hide yes))
+    (pin_names (offset 0) (hide yes))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "#PWR"
+      (at 0 -3.81 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property "Value" "+12V" (at 0 3.556 0) (effects (font (size 1.27 1.27))))
+    (property
+      "Footprint"
+      ""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Datasheet"
+      ""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Description"
+      "Power symbol creates a global label with name \"+12V\""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "global power"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "+12V_0_1"
+      (polyline
+        (pts (xy -0.762 1.27) (xy 0 2.54))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0 2.54) (xy 0.762 1.27))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 0 0) (xy 0 2.54))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "+12V_1_1"
+      (pin
+        power_in
+        line
+        (at 0 0 90)
+        (length 0)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol
+    "power:GND"
+    (power)
+    (pin_numbers (hide yes))
+    (pin_names (offset 0) (hide yes))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "#PWR"
+      (at 0 -6.35 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property "Value" "GND" (at 0 -3.81 0) (effects (font (size 1.27 1.27))))
+    (property
+      "Footprint"
+      ""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Datasheet"
+      ""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Description"
+      "Power symbol creates a global label with name \"GND\" , ground"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "global power"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "GND_0_1"
+      (polyline
+        (pts
+          (xy 0 0)
+          (xy 0 -1.27)
+          (xy 1.27 -1.27)
+          (xy 0 -2.54)
+          (xy -1.27 -1.27)
+          (xy 0 -1.27)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "GND_1_1"
+      (pin
+        power_in
+        line
+        (at 0 0 270)
+        (length 0)
+        (name "~" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (embedded_fonts no)
+  )
+)

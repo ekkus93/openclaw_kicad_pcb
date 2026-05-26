@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/4-channel-switched-constant-current-source",
+  "fixture_id": "4-channel-switched-constant-current-source",
+  "generator": "CircuitSnips",
+  "global_label_count": 16,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 0,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 10,
+  "requires_custom_symbols": true,
+  "source_file_name": "4-channel-switched-constant-current-source.kicad_sch",
+  "source_path": "model_kicad_files/4-channel-switched-constant-current-source.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 35,
+  "title": "4 Channel Switched Constant Current Source",
+  "wire_count": 84
+}

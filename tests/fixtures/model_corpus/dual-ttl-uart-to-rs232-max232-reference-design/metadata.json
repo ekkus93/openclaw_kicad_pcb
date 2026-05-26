@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/dual-ttl-uart-to-rs232-max232-reference-design",
+  "fixture_id": "dual-ttl-uart-to-rs232-max232-reference-design",
+  "generator": "CircuitSnips",
+  "global_label_count": 8,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 0,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 5,
+  "requires_custom_symbols": false,
+  "source_file_name": "dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch",
+  "source_path": "model_kicad_files/dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 11,
+  "title": "Dual TTL UART to RS232. MAX232 Reference Design",
+  "wire_count": 24
+}

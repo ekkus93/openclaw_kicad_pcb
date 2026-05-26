@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from kicad_pcb.adapters import KicadCliAdapter
+from kicad_pcb.compat import KiCadVersion
 from kicad_pcb.errors import ErrorCode, ParseError, ToolError, UserError
 from kicad_pcb.runner import find_kicad_cli
 from kicad_pcb.sch_doc import SchematicDoc
@@ -24,6 +25,8 @@ from .metadata import (
     write_fixture_metadata,
 )
 from .reports import write_json_report, write_markdown_report
+
+MINIMUM_REPO_KICAD_VERSION = KiCadVersion(8, 0, 0)
 
 
 @dataclass(frozen=True)
@@ -312,6 +315,20 @@ def _ingest_optional_kicad_artifacts(
         return {
             "status": "pending_netlist_export",
             "status_reasons": ["kicad-cli unavailable"],
+            "has_circuit_ir": False,
+        }
+
+    version = adapter.detected_version
+    if version is None or version < MINIMUM_REPO_KICAD_VERSION:
+        if require_kicad:
+            raise ToolError(
+                "kicad-cli >= 8.0.0 is required for repo schematic netlist export",
+                code=ErrorCode.KICAD_CLI_MISSING,
+                details={"detected_version": str(version) if version is not None else None},
+            )
+        return {
+            "status": "pending_netlist_export",
+            "status_reasons": ["kicad-cli too old for repo schematic format"],
             "has_circuit_ir": False,
         }
 

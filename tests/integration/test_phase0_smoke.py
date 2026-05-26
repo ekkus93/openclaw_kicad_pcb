@@ -25,7 +25,7 @@ import pytest
 
 from kicad_pcb.commands.netlist import MANAGED_SHEET_FILE
 from kicad_pcb.sch_doc import SchematicDoc
-from tests.conftest import kicad_cli_supports_repo_schematics
+from tests.conftest import requires_kicad
 
 pytestmark = pytest.mark.integration
 
@@ -44,12 +44,6 @@ def _run_script(args: list[str], env_home: str) -> subprocess.CompletedProcess[s
         env=env,
         check=False,
     )
-
-
-requires_kicad = pytest.mark.skipif(
-    not kicad_cli_supports_repo_schematics(),
-    reason="kicad-cli >= 8.0.0 is required for repo schematic integration tests",
-)
 
 
 @requires_kicad

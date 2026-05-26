@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/tpic8101dwrg4-tpic8101dwrg4",
+  "fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
+  "generator": "CircuitSnips",
+  "global_label_count": 11,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 0,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 8,
+  "requires_custom_symbols": true,
+  "source_file_name": "tpic8101dwrg4-tpic8101dwrg4.kicad_sch",
+  "source_path": "model_kicad_files/tpic8101dwrg4-tpic8101dwrg4.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 29,
+  "title": "TPIC8101 Engine Knock Sensor Interface",
+  "wire_count": 93
+}

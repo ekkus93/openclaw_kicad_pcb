@@ -110,6 +110,20 @@ class ModelCorpusListResult:
 
 
 @dataclass(frozen=True)
+class ModelCorpusEvaluateResult:
+    """Result of the ``model-corpus evaluate`` command."""
+
+    corpus_dir: Path
+    out_dir: Path
+    fixture_count: int
+    evaluated_count: int
+    skipped_count: int
+    failed_count: int
+    summary_json_path: Path
+    summary_md_path: Path
+
+
+@dataclass(frozen=True)
 class InfoSchResult:
     """Result of the ``info-sch`` command."""
 

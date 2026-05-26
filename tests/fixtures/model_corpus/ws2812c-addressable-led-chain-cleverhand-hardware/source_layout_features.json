@@ -1,0 +1,5380 @@
+{
+  "counts": {
+    "global_labels": 0,
+    "junctions": 27,
+    "labels": 42,
+    "no_connects": 12,
+    "non_power_symbols": 51,
+    "power_symbols": 38,
+    "symbols": 89,
+    "wires": 110
+  },
+  "geometry": {
+    "average_symbol_spacing_mm": 4.882,
+    "distinct_x_columns": 43,
+    "max_x": 231.14,
+    "max_y": 135.89,
+    "min_x": 60.96,
+    "min_y": 43.18,
+    "wire_stub_ratio": 0.545
+  },
+  "intrinsic_lints": [
+    {
+      "code": "LAY003",
+      "message": "Symbols at (93.98,83.82) and (93.98,80.01) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,104.14) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,114.3) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,109.22) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (176.53,43.18) and (176.53,52.07) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (176.53,43.18) and (168.91,46.99) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (182.88,121.92) and (193.04,120.65) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (109.22,125.73) and (109.22,129.54) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (109.22,125.73) and (115.57,134.62) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,69.85) and (154.94,60.96) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,69.85) and (158.75,60.96) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,69.85) and (157.48,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (154.94,60.96) and (158.75,60.96) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (154.94,60.96) and (157.48,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (109.22,129.54) and (115.57,134.62) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (97.79,50.8) and (91.44,54.61) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (97.79,50.8) and (91.44,44.45) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (97.79,50.8) and (95.25,54.61) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (97.79,50.8) and (91.44,49.53) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,57.15) and (116.84,57.15) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,57.15) and (116.84,53.34) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,129.54) and (147.32,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,129.54) and (147.32,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,129.54) and (147.32,134.62) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,129.54) and (147.32,132.08) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,129.54) and (147.32,124.46) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (207.01,100.33) and (207.01,96.52) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (207.01,100.33) and (207.01,92.71) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (207.01,96.52) and (207.01,92.71) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,54.61) and (91.44,44.45) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,54.61) and (95.25,54.61) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,54.61) and (91.44,49.53) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (176.53,52.07) and (168.91,46.99) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,44.45) and (95.25,54.61) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,44.45) and (91.44,49.53) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (217.17,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (222.25,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (222.25,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (231.14,66.04) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (231.14,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,66.04) and (227.33,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (119.38,72.39) and (119.38,80.01) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (119.38,72.39) and (115.57,76.2) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (95.25,54.61) and (91.44,49.53) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,54.61) and (66.04,49.53) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,54.61) and (66.04,63.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,54.61) and (60.96,50.8) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (217.17,58.42) and (222.25,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,116.84) and (147.32,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,116.84) and (147.32,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,116.84) and (147.32,124.46) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,106.68) and (107.95,99.06) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,106.68) and (107.95,104.14) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,106.68) and (113.03,97.79) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,106.68) and (107.95,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,106.68) and (113.03,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (146.05,71.12) and (146.05,74.93) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (146.05,71.12) and (140.97,71.12) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (146.05,71.12) and (140.97,74.93) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,99.06) and (107.95,104.14) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,99.06) and (113.03,97.79) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,99.06) and (107.95,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,99.06) and (113.03,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (163.83,115.57) and (163.83,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (93.98,72.39) and (93.98,80.01) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,104.14) and (113.03,97.79) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,104.14) and (107.95,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,104.14) and (113.03,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (68.58,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (63.5,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (63.5,114.3) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (63.5,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,124.46) and (63.5,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (193.04,120.65) and (200.66,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (209.55,121.92) and (219.71,120.65) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (209.55,121.92) and (200.66,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (68.58,127.0) and (63.5,119.38) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (68.58,127.0) and (63.5,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (68.58,127.0) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (68.58,127.0) and (63.5,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (227.33,116.84) and (219.71,120.65) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,119.38) and (63.5,114.3) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,119.38) and (63.5,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,119.38) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,119.38) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,119.38) and (63.5,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,44.45) and (116.84,44.45) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,44.45) and (116.84,53.34) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,104.14) and (63.5,114.3) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,104.14) and (63.5,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,104.14) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,58.42) and (231.14,66.04) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,58.42) and (227.33,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,114.3) and (63.5,116.84) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,114.3) and (63.5,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,114.3) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,114.3) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,119.38) and (147.32,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,119.38) and (147.32,124.46) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (119.38,80.01) and (119.38,83.82) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (119.38,80.01) and (115.57,76.2) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (113.03,97.79) and (107.95,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (113.03,97.79) and (113.03,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (152.4,50.8) and (160.02,46.99) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (152.4,50.8) and (156.21,43.18) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (152.4,50.8) and (156.21,50.8) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,49.53) and (60.96,50.8) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (168.91,46.99) and (160.02,46.99) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,116.84) and (63.5,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,116.84) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,116.84) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,116.84) and (63.5,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,68.58) and (66.04,63.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,68.58) and (60.96,67.31) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,127.0) and (147.32,134.62) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,127.0) and (147.32,132.08) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,127.0) and (147.32,124.46) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (160.02,46.99) and (156.21,43.18) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (160.02,46.99) and (156.21,50.8) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (158.75,60.96) and (157.48,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,106.68) and (63.5,111.76) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,111.76) and (63.5,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (115.57,134.62) and (120.65,134.62) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (63.5,121.92) and (63.5,127.0) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (66.04,63.5) and (60.96,67.31) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,134.62) and (147.32,132.08) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (107.95,101.6) and (113.03,106.68) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,69.85) and (231.14,66.04) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (222.25,69.85) and (231.14,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (231.14,66.04) and (231.14,69.85) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (231.14,66.04) and (227.33,58.42) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (147.32,132.08) and (147.32,124.46) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,57.15) and (116.84,53.34) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (119.38,83.82) and (115.57,76.2) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (146.05,74.93) and (140.97,71.12) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (146.05,74.93) and (140.97,74.93) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (140.97,71.12) and (140.97,74.93) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (116.84,44.45) and (116.84,53.34) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (210.82,135.89) and (203.2,135.89) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (156.21,43.18) and (156.21,50.8) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY005",
+      "message": "Wire graph has 64 disconnected islands (threshold 2); schematic may have isolated regions",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    }
+  ],
+  "net_label_strategy": {
+    "global_label_count": 0,
+    "local_label_count": 42,
+    "power_symbol_count": 43
+  },
+  "relative_positions": [
+    {
+      "a": "C12",
+      "b": "U2",
+      "relation": "near"
+    },
+    {
+      "a": "C2",
+      "b": "U1",
+      "relation": "near"
+    },
+    {
+      "a": "C7",
+      "b": "J1",
+      "relation": "below"
+    },
+    {
+      "a": "C8",
+      "b": "J10",
+      "relation": "below"
+    },
+    {
+      "a": "C8",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "C8",
+      "b": "J4",
+      "relation": "near"
+    },
+    {
+      "a": "C8",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "C9",
+      "b": "J10",
+      "relation": "below"
+    },
+    {
+      "a": "C9",
+      "b": "J23",
+      "relation": "below"
+    },
+    {
+      "a": "C9",
+      "b": "J26",
+      "relation": "below"
+    },
+    {
+      "a": "C9",
+      "b": "J4",
+      "relation": "below"
+    },
+    {
+      "a": "C9",
+      "b": "U3",
+      "relation": "near"
+    },
+    {
+      "a": "J1",
+      "b": "C7",
+      "relation": "above"
+    },
+    {
+      "a": "J1",
+      "b": "J10",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J2",
+      "relation": "near"
+    },
+    {
+      "a": "J1",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J23",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J4",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "J5",
+      "relation": "near"
+    },
+    {
+      "a": "J1",
+      "b": "J6",
+      "relation": "below"
+    },
+    {
+      "a": "J1",
+      "b": "J7",
+      "relation": "below"
+    },
+    {
+      "a": "J1",
+      "b": "J8",
+      "relation": "below"
+    },
+    {
+      "a": "J1",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "J1",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J1",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J10",
+      "b": "C8",
+      "relation": "above"
+    },
+    {
+      "a": "J10",
+      "b": "C9",
+      "relation": "above"
+    },
+    {
+      "a": "J10",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J10",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J10",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J10",
+      "b": "J23",
+      "relation": "near"
+    },
+    {
+      "a": "J10",
+      "b": "J26",
+      "relation": "near"
+    },
+    {
+      "a": "J10",
+      "b": "J4",
+      "relation": "near"
+    },
+    {
+      "a": "J10",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J10",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J10",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J10",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J11",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J12",
+      "relation": "near"
+    },
+    {
+      "a": "J11",
+      "b": "J13",
+      "relation": "near"
+    },
+    {
+      "a": "J11",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J11",
+      "b": "J15",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J16",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J11",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J11",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J11",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "R6",
+      "relation": "above"
+    },
+    {
+      "a": "J11",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J11",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J11",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J11",
+      "relation": "near"
+    },
+    {
+      "a": "J12",
+      "b": "J13",
+      "relation": "near"
+    },
+    {
+      "a": "J12",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J12",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J12",
+      "b": "J16",
+      "relation": "below"
+    },
+    {
+      "a": "J12",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "J12",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J12",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J12",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J12",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J12",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J12",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "R6",
+      "relation": "above"
+    },
+    {
+      "a": "J12",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J12",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J12",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J11",
+      "relation": "near"
+    },
+    {
+      "a": "J13",
+      "b": "J12",
+      "relation": "near"
+    },
+    {
+      "a": "J13",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J13",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J13",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J13",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "J13",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J13",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J13",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J13",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J13",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J13",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "R6",
+      "relation": "above"
+    },
+    {
+      "a": "J13",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J13",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J13",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J11",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J12",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J13",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J14",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J14",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J14",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J14",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J14",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J14",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J14",
+      "b": "R6",
+      "relation": "above"
+    },
+    {
+      "a": "J14",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J14",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J15",
+      "b": "J12",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J13",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J18",
+      "relation": "near"
+    },
+    {
+      "a": "J15",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J15",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J15",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J15",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J15",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J15",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J15",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J16",
+      "b": "J12",
+      "relation": "above"
+    },
+    {
+      "a": "J16",
+      "b": "J13",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J18",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J21",
+      "relation": "near"
+    },
+    {
+      "a": "J16",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J16",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J16",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J16",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J16",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J16",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "J12",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "J13",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "J14",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J18",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J21",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J22",
+      "relation": "near"
+    },
+    {
+      "a": "J17",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J17",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J17",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J12",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J13",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J14",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J15",
+      "relation": "near"
+    },
+    {
+      "a": "J18",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J18",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J18",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J21",
+      "relation": "near"
+    },
+    {
+      "a": "J18",
+      "b": "J22",
+      "relation": "near"
+    },
+    {
+      "a": "J18",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J18",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J18",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J2",
+      "b": "J1",
+      "relation": "near"
+    },
+    {
+      "a": "J2",
+      "b": "J10",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J23",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J4",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "J5",
+      "relation": "near"
+    },
+    {
+      "a": "J2",
+      "b": "J6",
+      "relation": "near"
+    },
+    {
+      "a": "J2",
+      "b": "J7",
+      "relation": "below"
+    },
+    {
+      "a": "J2",
+      "b": "J8",
+      "relation": "below"
+    },
+    {
+      "a": "J2",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "J2",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J2",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J2",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J12",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J13",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J14",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J15",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J16",
+      "relation": "near"
+    },
+    {
+      "a": "J21",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J21",
+      "b": "J18",
+      "relation": "near"
+    },
+    {
+      "a": "J21",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J22",
+      "relation": "near"
+    },
+    {
+      "a": "J21",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J21",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J21",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "C8",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J10",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J11",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J12",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J13",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J14",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J15",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J16",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J17",
+      "relation": "near"
+    },
+    {
+      "a": "J22",
+      "b": "J18",
+      "relation": "near"
+    },
+    {
+      "a": "J22",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J21",
+      "relation": "near"
+    },
+    {
+      "a": "J22",
+      "b": "J23",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J25",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "J26",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J4",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "R1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J22",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J22",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "C9",
+      "relation": "above"
+    },
+    {
+      "a": "J23",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "J10",
+      "relation": "near"
+    },
+    {
+      "a": "J23",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J23",
+      "b": "J26",
+      "relation": "near"
+    },
+    {
+      "a": "J23",
+      "b": "J4",
+      "relation": "near"
+    },
+    {
+      "a": "J23",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J23",
+      "b": "R1",
+      "relation": "below"
+    },
+    {
+      "a": "J23",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J23",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J24",
+      "b": "J11",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J12",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J13",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J14",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J15",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J16",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "J25",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "R3",
+      "relation": "near"
+    },
+    {
+      "a": "J24",
+      "b": "R6",
+      "relation": "below"
+    },
+    {
+      "a": "J24",
+      "b": "U1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J24",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J24",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "J11",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J12",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J13",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J14",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J15",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J16",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "J25",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "J25",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "R3",
+      "relation": "above"
+    },
+    {
+      "a": "J25",
+      "b": "R6",
+      "relation": "near"
+    },
+    {
+      "a": "J25",
+      "b": "U1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J25",
+      "b": "U3",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "C9",
+      "relation": "above"
+    },
+    {
+      "a": "J26",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "J10",
+      "relation": "near"
+    },
+    {
+      "a": "J26",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J26",
+      "b": "J23",
+      "relation": "near"
+    },
+    {
+      "a": "J26",
+      "b": "J4",
+      "relation": "near"
+    },
+    {
+      "a": "J26",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "J26",
+      "b": "R1",
+      "relation": "below"
+    },
+    {
+      "a": "J26",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J26",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J4",
+      "b": "C8",
+      "relation": "near"
+    },
+    {
+      "a": "J4",
+      "b": "C9",
+      "relation": "above"
+    },
+    {
+      "a": "J4",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J4",
+      "b": "J10",
+      "relation": "near"
+    },
+    {
+      "a": "J4",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "J4",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J4",
+      "b": "J23",
+      "relation": "near"
+    },
+    {
+      "a": "J4",
+      "b": "J26",
+      "relation": "near"
+    },
+    {
+      "a": "J4",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "J4",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J4",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J5",
+      "b": "J1",
+      "relation": "near"
+    },
+    {
+      "a": "J5",
+      "b": "J10",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J2",
+      "relation": "near"
+    },
+    {
+      "a": "J5",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J23",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J4",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "J6",
+      "relation": "near"
+    },
+    {
+      "a": "J5",
+      "b": "J7",
+      "relation": "near"
+    },
+    {
+      "a": "J5",
+      "b": "J8",
+      "relation": "near"
+    },
+    {
+      "a": "J5",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "J5",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J5",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J5",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J5",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J6",
+      "b": "J1",
+      "relation": "above"
+    },
+    {
+      "a": "J6",
+      "b": "J10",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J2",
+      "relation": "near"
+    },
+    {
+      "a": "J6",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J23",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "J5",
+      "relation": "near"
+    },
+    {
+      "a": "J6",
+      "b": "J7",
+      "relation": "near"
+    },
+    {
+      "a": "J6",
+      "b": "J8",
+      "relation": "near"
+    },
+    {
+      "a": "J6",
+      "b": "J9",
+      "relation": "near"
+    },
+    {
+      "a": "J6",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J6",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J6",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J6",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J6",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J7",
+      "b": "J1",
+      "relation": "above"
+    },
+    {
+      "a": "J7",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J2",
+      "relation": "above"
+    },
+    {
+      "a": "J7",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J23",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "J5",
+      "relation": "near"
+    },
+    {
+      "a": "J7",
+      "b": "J6",
+      "relation": "near"
+    },
+    {
+      "a": "J7",
+      "b": "J8",
+      "relation": "near"
+    },
+    {
+      "a": "J7",
+      "b": "J9",
+      "relation": "near"
+    },
+    {
+      "a": "J7",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J7",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J7",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J7",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J7",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J8",
+      "b": "J1",
+      "relation": "above"
+    },
+    {
+      "a": "J8",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J2",
+      "relation": "above"
+    },
+    {
+      "a": "J8",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J26",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "J5",
+      "relation": "near"
+    },
+    {
+      "a": "J8",
+      "b": "J6",
+      "relation": "near"
+    },
+    {
+      "a": "J8",
+      "b": "J7",
+      "relation": "near"
+    },
+    {
+      "a": "J8",
+      "b": "J9",
+      "relation": "near"
+    },
+    {
+      "a": "J8",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J8",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J8",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J8",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J8",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "J1",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J2",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "J5",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "J6",
+      "relation": "near"
+    },
+    {
+      "a": "J9",
+      "b": "J7",
+      "relation": "near"
+    },
+    {
+      "a": "J9",
+      "b": "J8",
+      "relation": "near"
+    },
+    {
+      "a": "J9",
+      "b": "LED1",
+      "relation": "left_of"
+    },
+    {
+      "a": "J9",
+      "b": "R1",
+      "relation": "right_of"
+    },
+    {
+      "a": "J9",
+      "b": "U1",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "J9",
+      "b": "U3",
+      "relation": "above"
+    },
+    {
+      "a": "L1",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J2",
+      "relation": "right_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J5",
+      "relation": "right_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J6",
+      "relation": "right_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J7",
+      "relation": "right_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J8",
+      "relation": "right_of"
+    },
+    {
+      "a": "LED1",
+      "b": "J9",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J1",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J2",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "R1",
+      "b": "J23",
+      "relation": "above"
+    },
+    {
+      "a": "R1",
+      "b": "J26",
+      "relation": "above"
+    },
+    {
+      "a": "R1",
+      "b": "J5",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J6",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J7",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J8",
+      "relation": "left_of"
+    },
+    {
+      "a": "R1",
+      "b": "J9",
+      "relation": "left_of"
+    },
+    {
+      "a": "R2",
+      "b": "U1",
+      "relation": "right_of"
+    },
+    {
+      "a": "R3",
+      "b": "J24",
+      "relation": "near"
+    },
+    {
+      "a": "R3",
+      "b": "J25",
+      "relation": "below"
+    },
+    {
+      "a": "R6",
+      "b": "J11",
+      "relation": "below"
+    },
+    {
+      "a": "R6",
+      "b": "J12",
+      "relation": "below"
+    },
+    {
+      "a": "R6",
+      "b": "J13",
+      "relation": "below"
+    },
+    {
+      "a": "R6",
+      "b": "J14",
+      "relation": "below"
+    },
+    {
+      "a": "R6",
+      "b": "J24",
+      "relation": "above"
+    },
+    {
+      "a": "R6",
+      "b": "J25",
+      "relation": "near"
+    },
+    {
+      "a": "U1",
+      "b": "C2",
+      "relation": "near"
+    },
+    {
+      "a": "U1",
+      "b": "J10",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J11",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J12",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J13",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J14",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J15",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J16",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J17",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J18",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J21",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J22",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J23",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J24",
+      "relation": "right_of"
+    },
+    {
+      "a": "U1",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "U1",
+      "b": "J26",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J4",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J6",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J7",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J8",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "R2",
+      "relation": "left_of"
+    },
+    {
+      "a": "U1",
+      "b": "U2",
+      "relation": "left_of"
+    },
+    {
+      "a": "U2",
+      "b": "C12",
+      "relation": "near"
+    },
+    {
+      "a": "U2",
+      "b": "J1",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J14",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J15",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J16",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J17",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J18",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J2",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J21",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J22",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J24",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "J5",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J6",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J7",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J8",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "L1",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "U1",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "U3",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "C8",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "C9",
+      "relation": "near"
+    },
+    {
+      "a": "U3",
+      "b": "J10",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J11",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "J12",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "J13",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "J23",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J24",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "J25",
+      "relation": "right_of"
+    },
+    {
+      "a": "U3",
+      "b": "J26",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J4",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J5",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J6",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J7",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J8",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "J9",
+      "relation": "below"
+    },
+    {
+      "a": "U3",
+      "b": "U2",
+      "relation": "left_of"
+    }
+  ],
+  "role_counts": {
+    "connector": 23,
+    "major_ic": 3,
+    "passive": 20,
+    "power_symbol": 39,
+    "support": 5
+  },
+  "schema_version": "1.0",
+  "source": {
+    "file": "source.kicad_sch",
+    "fixture_id": "ws2812c-addressable-led-chain-cleverhand-hardware"
+  },
+  "symbols": {
+    "#FLG01": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#FLG01",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:PWR_FLAG",
+      "unit": "1",
+      "value": "PWR_FLAG",
+      "x": 116.84,
+      "y": 44.45
+    },
+    "#FLG02": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#FLG02",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:PWR_FLAG",
+      "unit": "1",
+      "value": "PWR_FLAG",
+      "x": 116.84,
+      "y": 57.15
+    },
+    "#PWR01": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR01",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 200.66,
+      "y": 116.84
+    },
+    "#PWR010": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR010",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 205.74,
+      "y": 49.53
+    },
+    "#PWR011": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR011",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 152.4,
+      "y": 50.8
+    },
+    "#PWR012": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR012",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 140.97,
+      "y": 53.34
+    },
+    "#PWR013": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR013",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 91.44,
+      "y": 54.61
+    },
+    "#PWR014": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR014",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 95.25,
+      "y": 54.61
+    },
+    "#PWR015": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR015",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 109.22,
+      "y": 125.73
+    },
+    "#PWR016": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR016",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 120.65,
+      "y": 134.62
+    },
+    "#PWR017": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR017",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 210.82,
+      "y": 135.89
+    },
+    "#PWR018": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR018",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 116.84,
+      "y": 57.15
+    },
+    "#PWR019": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR019",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 217.17,
+      "y": 58.42
+    },
+    "#PWR02": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR02",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 182.88,
+      "y": 121.92
+    },
+    "#PWR020": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR020",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 227.33,
+      "y": 58.42
+    },
+    "#PWR021": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR021",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 66.04,
+      "y": 68.58
+    },
+    "#PWR022": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR022",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 68.58,
+      "y": 127.0
+    },
+    "#PWR023": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR023",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 162.56,
+      "y": 69.85
+    },
+    "#PWR024": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR024",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 222.25,
+      "y": 69.85
+    },
+    "#PWR025": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR025",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 231.14,
+      "y": 69.85
+    },
+    "#PWR026": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR026",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+BATT",
+      "unit": "1",
+      "value": "+BATT",
+      "x": 93.98,
+      "y": 72.39
+    },
+    "#PWR027": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR027",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 119.38,
+      "y": 72.39
+    },
+    "#PWR028": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR028",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 140.97,
+      "y": 74.93
+    },
+    "#PWR029": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR029",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 146.05,
+      "y": 74.93
+    },
+    "#PWR03": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR03",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+BATT",
+      "unit": "1",
+      "value": "+BATT",
+      "x": 91.44,
+      "y": 44.45
+    },
+    "#PWR030": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR030",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 93.98,
+      "y": 83.82
+    },
+    "#PWR031": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR031",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 119.38,
+      "y": 83.82
+    },
+    "#PWR033": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR033",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 207.01,
+      "y": 92.71
+    },
+    "#PWR035": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR035",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 113.03,
+      "y": 106.68
+    },
+    "#PWR036": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR036",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 187.96,
+      "y": 97.79
+    },
+    "#PWR037": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR037",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 113.03,
+      "y": 97.79
+    },
+    "#PWR038": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR038",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 207.01,
+      "y": 100.33
+    },
+    "#PWR039": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR039",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 83.82,
+      "y": 104.14
+    },
+    "#PWR04": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR04",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 116.84,
+      "y": 44.45
+    },
+    "#PWR05": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR05",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+BATT",
+      "unit": "1",
+      "value": "+BATT",
+      "x": 66.04,
+      "y": 49.53
+    },
+    "#PWR06": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR06",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3.3V",
+      "unit": "1",
+      "value": "+3.3V",
+      "x": 227.33,
+      "y": 116.84
+    },
+    "#PWR07": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR07",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 209.55,
+      "y": 121.92
+    },
+    "#PWR09": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR09",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 163.83,
+      "y": 119.38
+    },
+    "AE1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AE1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:Antenna_Chip",
+      "unit": "1",
+      "value": "Antenna_Chip",
+      "x": 176.53,
+      "y": 43.18
+    },
+    "C1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C1",
+      "role_guess": "passive",
+      "rotation": 270.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "3.3pF",
+      "x": 156.21,
+      "y": 43.18
+    },
+    "C10": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C10",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "0.1uF",
+      "x": 207.01,
+      "y": 96.52
+    },
+    "C12": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C12",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "3.3pF",
+      "x": 168.91,
+      "y": 46.99
+    },
+    "C2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "1uF",
+      "x": 91.44,
+      "y": 49.53
+    },
+    "C3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C3",
+      "role_guess": "passive",
+      "rotation": 270.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "3.3pF",
+      "x": 156.21,
+      "y": 50.8
+    },
+    "C4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C4",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "22pF",
+      "x": 222.25,
+      "y": 66.04
+    },
+    "C5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C5",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "22pF",
+      "x": 231.14,
+      "y": 66.04
+    },
+    "C6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C6",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "10uF",
+      "x": 140.97,
+      "y": 71.12
+    },
+    "C7": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C7",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "0.1uF",
+      "x": 146.05,
+      "y": 71.12
+    },
+    "C8": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C8",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "1uF",
+      "x": 93.98,
+      "y": 80.01
+    },
+    "C9": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C9",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "1uF",
+      "x": 119.38,
+      "y": 80.01
+    },
+    "I1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "I1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "00_custom:smd_insert",
+      "unit": "1",
+      "value": "smd_insert",
+      "x": 203.2,
+      "y": 135.89
+    },
+    "J1": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J1",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 116.84
+    },
+    "J10": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J10",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 107.95,
+      "y": 101.6
+    },
+    "J11": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J11",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 104.14
+    },
+    "J12": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J12",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 106.68
+    },
+    "J13": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J13",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 109.22
+    },
+    "J14": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J14",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 111.76
+    },
+    "J15": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J15",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 114.3
+    },
+    "J16": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J16",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 116.84
+    },
+    "J17": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J17",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 119.38
+    },
+    "J18": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J18",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 121.92
+    },
+    "J2": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J2",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 119.38
+    },
+    "J21": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J21",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 124.46
+    },
+    "J22": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J22",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 63.5,
+      "y": 127.0
+    },
+    "J23": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J23",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 107.95,
+      "y": 104.14
+    },
+    "J24": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J24",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 60.96,
+      "y": 50.8
+    },
+    "J25": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J25",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 60.96,
+      "y": 67.31
+    },
+    "J26": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J26",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 107.95,
+      "y": 106.68
+    },
+    "J4": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J4",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 107.95,
+      "y": 99.06
+    },
+    "J5": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J5",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 124.46
+    },
+    "J6": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J6",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 127.0
+    },
+    "J7": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J7",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 129.54
+    },
+    "J8": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J8",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 132.08
+    },
+    "J9": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "J9",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:Conn_01x01_Pin",
+      "unit": "1",
+      "value": "Conn_01x01_Pin",
+      "x": 147.32,
+      "y": 134.62
+    },
+    "L1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "L1",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:L",
+      "unit": "1",
+      "value": "2.2nH",
+      "x": 160.02,
+      "y": 46.99
+    },
+    "LED1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "LED1",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "00_lcsc:WS2812C-2020-V1",
+      "unit": "1",
+      "value": "WS2812C-2020-V1",
+      "x": 193.04,
+      "y": 120.65
+    },
+    "LED2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "LED2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "00_lcsc:WS2812C-2020-V1",
+      "unit": "1",
+      "value": "WS2812C",
+      "x": 219.71,
+      "y": 120.65
+    },
+    "R1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R1",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "10K",
+      "x": 109.22,
+      "y": 129.54
+    },
+    "R2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "47.5k",
+      "x": 116.84,
+      "y": 53.34
+    },
+    "R3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R3",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1M",
+      "x": 66.04,
+      "y": 54.61
+    },
+    "R4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R4",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "10k",
+      "x": 154.94,
+      "y": 60.96
+    },
+    "R5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R5",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "10k",
+      "x": 158.75,
+      "y": 60.96
+    },
+    "R6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R6",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "250K",
+      "x": 66.04,
+      "y": 63.5
+    },
+    "SW1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "SW1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "00_lcsc:TS-1088R-02026",
+      "unit": "1",
+      "value": "TS-1088R-02026",
+      "x": 115.57,
+      "y": 134.62
+    },
+    "SW2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "SW2",
+      "role_guess": "support",
+      "rotation": 180.0,
+      "symbol_id": "00_custom:switch",
+      "unit": "1",
+      "value": "~",
+      "x": 157.48,
+      "y": 69.85
+    },
+    "U1": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U1",
+      "role_guess": "major_ic",
+      "rotation": 0.0,
+      "symbol_id": "00_custom:MCP73831/2",
+      "unit": "1",
+      "value": "MCP73831/2",
+      "x": 97.79,
+      "y": 50.8
+    },
+    "U2": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U2",
+      "role_guess": "major_ic",
+      "rotation": 0.0,
+      "symbol_id": "00_custom:ESP32-C3FH4",
+      "unit": "1",
+      "value": "ESP32-C3FH4",
+      "x": 176.53,
+      "y": 52.07
+    },
+    "U3": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U3",
+      "role_guess": "major_ic",
+      "rotation": 180.0,
+      "symbol_id": "00_custom:MIC5504",
+      "unit": "1",
+      "value": "MIC5504",
+      "x": 115.57,
+      "y": 76.2
+    },
+    "Y1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "Y1",
+      "role_guess": "support",
+      "rotation": 270.0,
+      "symbol_id": "Device:Crystal_GND24",
+      "unit": "1",
+      "value": "XTAL_40MHz",
+      "x": 222.25,
+      "y": 58.42
+    }
+  }
+}

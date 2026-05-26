@@ -1,5 +1,14 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-26T21:56:24Z - GPT-5.4 - Landed the model-corpus evaluation slice, docs, and real-corpus fixture generation
+
+- Added the `src/kicad_pcb/evaluation/` package with electrical equivalence comparison, intrinsic quality scoring, source-similarity scoring, actionable report generation, and a reusable `evaluate_model_corpus(...)` workflow.
+- Added `model-corpus evaluate` CLI support, `ModelCorpusEvaluateResult`, report formatting, synthetic evaluation tests, and a KiCad-backed integration test that skips cleanly on unsupported KiCad versions.
+- Fixed `python -m kicad_pcb.cli ...` so it actually executes `main()` and no longer emits the import-time runtime warning caused by `kicad_pcb.__init__` eagerly importing `cli`.
+- Fixed the `requires_kicad` test selection path so `uv run pytest -m requires_kicad` now selects the intended integration suite instead of returning "no tests collected".
+- Generated and committed the real `tests/fixtures/model_corpus/` corpus snapshot from the nine current `model_kicad_files/*.kicad_sch` sources; on this machine all nine fixtures are valid partial fixtures with `pending_netlist_export` because `kicad-cli 7.0.11` is too old for repo schematic XML export.
+- Added `model_kicad_files/README.md` and `docs/MODEL_KICAD_CORPUS.md` to document the deterministic ingest/evaluate/improve loop and the current KiCad-version caveat.
+
 ## 2026-05-26T21:38:16Z - GPT-5.4 - Landed the model-corpus ingestion foundation and KiCad-version gating
 
 - Implemented the first `MODEL_KICAD_CORPUS_TODO` slice: new `src/kicad_pcb/corpus/` modules for metadata/slugging, layout-feature extraction, embedded-symbol extraction, KiCad XML parsing to canonical `CircuitIR`, deterministic report writers, and ingestion/list helpers; added `model-corpus ingest` / `model-corpus list` CLI plumbing plus result formatting.

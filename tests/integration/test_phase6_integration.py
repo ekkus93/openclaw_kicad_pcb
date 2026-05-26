@@ -33,7 +33,7 @@ from kicad_pcb.lint import lint_schematic_layout
 from kicad_pcb.results import NewFromNetlistResult
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse as _parse_sexpr
-from tests.conftest import kicad_cli_supports_repo_schematics
+from tests.conftest import requires_kicad
 
 pytestmark = pytest.mark.integration
 
@@ -44,15 +44,10 @@ pytestmark = pytest.mark.integration
 _FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
 
 _dot_available = _gv_mod.find_dot_binary() is not None
-_kicad_available = kicad_cli_supports_repo_schematics()
 
 requires_graphviz = pytest.mark.skipif(
     not _dot_available,
     reason="graphviz dot not found on PATH or GRAPHVIZ_DOT",
-)
-requires_kicad = pytest.mark.skipif(
-    not _kicad_available,
-    reason="kicad-cli >= 8.0.0 is required for repo schematic integration tests",
 )
 
 # ---------------------------------------------------------------------------

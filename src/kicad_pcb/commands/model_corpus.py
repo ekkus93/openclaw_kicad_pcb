@@ -1,11 +1,13 @@
-"""CLI command handlers for model-corpus ingestion and listing."""
+"""CLI command handlers for model-corpus ingestion and evaluation."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from kicad_pcb.corpus.ingestion import ingest_model_corpus, list_model_corpus
+from kicad_pcb.evaluation.reports import EvaluationOptions, evaluate_model_corpus
 from kicad_pcb.results import (
+    ModelCorpusEvaluateResult,
     ModelCorpusFixtureResult,
     ModelCorpusIngestResult,
     ModelCorpusListResult,
@@ -64,4 +66,29 @@ def cmd_model_corpus_list(args) -> ModelCorpusListResult:
     return ModelCorpusListResult(
         corpus_dir=Path(args.corpus_dir),
         fixtures=fixtures,
+    )
+
+
+def cmd_model_corpus_evaluate(args) -> ModelCorpusEvaluateResult:
+    """Evaluate ingested corpus fixtures into generated-project reports."""
+
+    summary = evaluate_model_corpus(
+        corpus_dir=Path(args.corpus_dir),
+        out_dir=Path(args.out_dir),
+        fixture_id=getattr(args, "fixture", None),
+        options=EvaluationOptions(
+            require_kicad=bool(getattr(args, "require_kicad", False)),
+            heuristic_profile=getattr(args, "heuristic_profile", None),
+            label_mode=getattr(args, "label_mode", None),
+        ),
+    )
+    return ModelCorpusEvaluateResult(
+        corpus_dir=Path(args.corpus_dir),
+        out_dir=Path(args.out_dir),
+        fixture_count=len(summary.fixtures),
+        evaluated_count=summary.evaluated_count,
+        skipped_count=summary.skipped_count,
+        failed_count=summary.failed_count,
+        summary_json_path=summary.summary_json_path,
+        summary_md_path=summary.summary_md_path,
     )

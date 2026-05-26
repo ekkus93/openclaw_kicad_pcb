@@ -1,0 +1,27 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CC-BY-SA-4.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/li-ion-battery-charger-circuit-gems-electronics",
+  "fixture_id": "li-ion-battery-charger-circuit-gems-electronics",
+  "generator": "eeschema",
+  "global_label_count": 17,
+  "has_circuit_ir": false,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 2,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 21,
+  "requires_custom_symbols": true,
+  "source_file_name": "li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
+  "source_path": "model_kicad_files/li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
+  "source_url": null,
+  "status": "pending_netlist_export",
+  "status_reasons": [
+    "kicad-cli too old for repo schematic format"
+  ],
+  "symbol_count": 89,
+  "title": "EMERALD",
+  "wire_count": 332
+}
