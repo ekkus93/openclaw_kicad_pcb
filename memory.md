@@ -1,5 +1,10 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-26T20:57:22Z - GPT-5.4 - Added the second corpus-spec clarification handoff for ChatGPT review
+
+- Reviewed `docs/MODEL_KICAD_CORPUS_SPEC.md` and `docs/MODEL_KICAD_CORPUS_TODO.md` without making code changes and captured the unresolved implementation questions in `docs/responses2.md`.
+- The open questions focus on deterministic fixture-id collision handling, metadata provenance defaults, rejected-fixture representation, V0 embedded-symbol artifact format, which generated corpus/evaluation outputs should be committed, and whether evaluation should preserve the current `OpenClaw_Managed.kicad_sch` naming.
+
 ## 2026-05-23T16:59:40Z - GPT-5.4 - Prepared the current wizard UX/status batch for landing on webapp
 
 - The current pending batch on `webapp` includes the route-based wizard UI follow-up work plus docs cleanup: the stale repo-root web planning/spec files were moved under `docs/`, the routed wizard templates now expose per-action busy/status copy, and the root UI/nav continue to funnel users into `/wizard` as the only entry route.
