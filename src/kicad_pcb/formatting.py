@@ -36,6 +36,8 @@ from .results import (
     InfoResult,
     InfoSchResult,
     LintFileResult,
+    ModelCorpusIngestResult,
+    ModelCorpusListResult,
     NewFromNetlistResult,
     NewProjectResult,
     NewSessionResult,
@@ -137,6 +139,43 @@ def _fmt_info(r: InfoResult) -> list[str]:
 @_register(OpenResult)
 def _fmt_open(r: OpenResult) -> list[str]:
     return [f"✅ Opened project: {r.name}", f"   Path: {r.path}"]
+
+
+@_register(ModelCorpusIngestResult)
+def _fmt_model_corpus_ingest(r: ModelCorpusIngestResult) -> list[str]:
+    lines = [
+        "✅ Model corpus ingestion complete",
+        f"   Source dir: {r.source_dir}",
+        f"   Output dir: {r.out_dir}",
+        f"   Fixtures: {r.fixture_count}",
+        f"   Accepted: {r.accepted_count}",
+        f"   Partial: {r.partial_count}",
+        f"   Rejected: {r.rejected_count}",
+        f"   Report: {r.report_path}",
+        f"   Summary: {r.summary_path}",
+    ]
+    for fixture in r.fixtures:
+        lines.append(
+            "   • "
+            f"{fixture.fixture_id} [{fixture.status}] "
+            f"symbols={fixture.symbol_count} wires={fixture.wire_count} "
+            f"labels={fixture.label_count} circuit_ir={'yes' if fixture.has_circuit_ir else 'no'}"
+        )
+    return lines
+
+
+@_register(ModelCorpusListResult)
+def _fmt_model_corpus_list(r: ModelCorpusListResult) -> list[str]:
+    lines = [f"📚 Model corpus fixtures: {r.corpus_dir}", f"   Count: {len(r.fixtures)}"]
+    for fixture in r.fixtures:
+        lines.append(
+            "   • "
+            f"{fixture.fixture_id} [{fixture.status}] "
+            f"{fixture.source_file_name} "
+            f"symbols={fixture.symbol_count} wires={fixture.wire_count} "
+            f"labels={fixture.label_count} circuit_ir={'yes' if fixture.has_circuit_ir else 'no'}"
+        )
+    return lines
 
 
 @_register(InfoSchResult)

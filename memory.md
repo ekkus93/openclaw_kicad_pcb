@@ -1,5 +1,19 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-26T21:38:16Z - GPT-5.4 - Landed the model-corpus ingestion foundation and KiCad-version gating
+
+- Implemented the first `MODEL_KICAD_CORPUS_TODO` slice: new `src/kicad_pcb/corpus/` modules for metadata/slugging, layout-feature extraction, embedded-symbol extraction, KiCad XML parsing to canonical `CircuitIR`, deterministic report writers, and ingestion/list helpers; added `model-corpus ingest` / `model-corpus list` CLI plumbing plus result formatting.
+- Added regression coverage in `tests/unit/` for metadata slugging, real-source power-symbol counting, layout features, embedded-symbol artifacts, KiCad XML import, and corpus ingestion behavior, plus `tests/integration/test_model_corpus_kicad_export.py` for the KiCad-backed ingest path.
+- The corrected `count_power_symbols()` now counts real and generated power symbols, so the readability baseline fixture `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_metrics.json` was updated from `power_symbols: 0` to the real value `5`.
+- Current environment note: the repo's symbol-bearing schematic fixtures are not loadable by `kicad-cli 7.0.11`; integration tests that exercise repo schematic/netlist export now require `kicad-cli >= 8.0.0` and skip cleanly on older KiCad versions.
+
+## 2026-05-26T21:01:19Z - GPT-5.4 - Captured the resolved model-corpus design decisions from replies2
+
+- `docs/replies2.md` settles the model-corpus slug policy: normalize filename stems to lowercase ASCII with non-alphanumeric runs replaced by `-`, use the base slug only when unique, and for any collision group assign every member `base_slug--<hash8>` where `hash8` is the first 8 hex chars of `sha256(normalized_relative_source_path)`.
+- Automatic ingestion metadata should default to `license="unknown"`, `source_url=null`, and `notes=[]`, may include non-authoritative detected hints, and should preserve hand-edited metadata on refresh unless an explicit overwrite flag is added later.
+- Rejected source schematics should not get fixture directories in V0; they belong only in `ingestion_report.json` and `summary.md`, while accepted/partial fixtures are committed under `tests/fixtures/model_corpus/`.
+- V0 embedded-symbol extraction should write deterministic `source_embedded_symbols.sexpr`, not require a valid `.kicad_sym`, and evaluation output under `code_review/generated/model_eval/` should stay uncommitted while exposing a canonical `generated.kicad_sch` path alongside the real managed-sheet output.
+
 ## 2026-05-26T20:57:22Z - GPT-5.4 - Added the second corpus-spec clarification handoff for ChatGPT review
 
 - Reviewed `docs/MODEL_KICAD_CORPUS_SPEC.md` and `docs/MODEL_KICAD_CORPUS_TODO.md` without making code changes and captured the unresolved implementation questions in `docs/responses2.md`.

@@ -137,6 +137,7 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
     unit = ""
     x = 0.0
     y = 0.0
+    rotation = 0.0
 
     for child in symbol_node.items:
         if not isinstance(child, ListNode):
@@ -156,6 +157,8 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
         elif child.key == "at" and len(child.items) >= 3:
             x = _parse_float_atom(child.items[1])
             y = _parse_float_atom(child.items[2])
+            if len(child.items) >= 4:
+                rotation = _parse_float_atom(child.items[3])
         elif child.key == "property" and len(child.items) >= 3:
             name_node = child.items[1]
             value_node = child.items[2]
@@ -172,6 +175,7 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
         "uuid": sym_uuid,
         "x": x,
         "y": y,
+        "rotation": rotation,
         "unit": unit,
     }
 

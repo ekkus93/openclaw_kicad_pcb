@@ -2,7 +2,7 @@
   "avg_spacing": 9.623934104840641,
   "gnd_labels": 0,
   "local_density_max": 10.0,
-  "power_symbols": 0,
+  "power_symbols": 5,
   "region_density": {
     "bottom_left": 0.3333333333333333,
     "bottom_right": 0.5416666666666666,

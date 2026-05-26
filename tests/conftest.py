@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from kicad_pcb.compat import KiCadVersion, parse_version
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -29,9 +31,33 @@ def kicad_cli_available() -> bool:
     return shutil.which("kicad-cli") is not None
 
 
+def kicad_cli_version() -> KiCadVersion | None:
+    kicad_cli = shutil.which("kicad-cli")
+    if not kicad_cli:
+        return None
+    proc = subprocess.run(
+        [kicad_cli, "--version"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    text = proc.stdout.strip() or proc.stderr.strip()
+    if not text:
+        return None
+    try:
+        return parse_version(text)
+    except ValueError:
+        return None
+
+
+def kicad_cli_supports_repo_schematics() -> bool:
+    version = kicad_cli_version()
+    return version is not None and version >= KiCadVersion(8, 0, 0)
+
+
 requires_kicad = pytest.mark.skipif(
-    not kicad_cli_available(),
-    reason="kicad-cli not found on PATH",
+    not kicad_cli_supports_repo_schematics(),
+    reason="kicad-cli >= 8.0.0 is required for repo schematic integration tests",
 )
 
 

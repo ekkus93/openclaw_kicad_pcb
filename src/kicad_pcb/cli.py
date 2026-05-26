@@ -25,6 +25,7 @@ from .commands.lint import (
     cmd_validate_pcb,
     cmd_validate_sch,
 )
+from .commands.model_corpus import cmd_model_corpus_ingest, cmd_model_corpus_list
 from .commands.netlist import (
     cmd_apply_netlist,
     cmd_fix_netlist,
@@ -353,6 +354,50 @@ def _build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     p_debug_sym.add_argument("--symbols-dir", help="Optional symbol libraries directory")
     p_debug_sym.set_defaults(func=cmd_debug_symbol)
+
+    # model-corpus
+    p_model_corpus = subparsers.add_parser(
+        "model-corpus",
+        help="Ingest and inspect deterministic model corpus fixtures",
+    )
+    model_corpus_subparsers = p_model_corpus.add_subparsers(dest="model_corpus_command")
+
+    p_model_corpus_ingest = model_corpus_subparsers.add_parser(
+        "ingest",
+        help="Ingest raw KiCad schematics into corpus fixtures",
+    )
+    p_model_corpus_ingest.add_argument(
+        "--source-dir",
+        default="model_kicad_files",
+        help="Directory of raw .kicad_sch source files",
+    )
+    p_model_corpus_ingest.add_argument(
+        "--out-dir",
+        default="tests/fixtures/model_corpus",
+        help="Directory for normalized corpus fixtures",
+    )
+    p_model_corpus_ingest.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Overwrite generated fixture artifacts in existing fixture dirs",
+    )
+    p_model_corpus_ingest.add_argument(
+        "--require-kicad",
+        action="store_true",
+        help="Fail if kicad-cli is unavailable instead of creating partial fixtures",
+    )
+    p_model_corpus_ingest.set_defaults(func=cmd_model_corpus_ingest)
+
+    p_model_corpus_list = model_corpus_subparsers.add_parser(
+        "list",
+        help="List ingested corpus fixtures",
+    )
+    p_model_corpus_list.add_argument(
+        "--corpus-dir",
+        default="tests/fixtures/model_corpus",
+        help="Directory containing corpus fixture metadata",
+    )
+    p_model_corpus_list.set_defaults(func=cmd_model_corpus_list)
 
     # compile-netlist (alias for new-from-netlist)
     p_compile = subparsers.add_parser(

@@ -74,6 +74,42 @@ class OpenResult:
 
 
 @dataclass(frozen=True)
+class ModelCorpusFixtureResult:
+    """One fixture summary row for model-corpus CLI output."""
+
+    fixture_id: str
+    status: str
+    source_file_name: str
+    symbol_count: int
+    wire_count: int
+    label_count: int
+    has_circuit_ir: bool
+
+
+@dataclass(frozen=True)
+class ModelCorpusIngestResult:
+    """Result of the ``model-corpus ingest`` command."""
+
+    source_dir: Path
+    out_dir: Path
+    accepted_count: int
+    partial_count: int
+    rejected_count: int
+    fixture_count: int
+    report_path: Path
+    summary_path: Path
+    fixtures: tuple[ModelCorpusFixtureResult, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ModelCorpusListResult:
+    """Result of the ``model-corpus list`` command."""
+
+    corpus_dir: Path
+    fixtures: tuple[ModelCorpusFixtureResult, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
 class InfoSchResult:
     """Result of the ``info-sch`` command."""
 

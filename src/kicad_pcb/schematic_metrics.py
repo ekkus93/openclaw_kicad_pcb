@@ -335,20 +335,54 @@ def count_power_symbols(
     int
         Count of power symbol instances in the schematic.
     """
+    del power_pin_name
     count = 0
     for node in walk(doc.root):
-        if isinstance(node, ListNode) and node.key == "symbol":
-            # Look for (power yes) child node
-            for child in node.items:
+        if not (isinstance(node, ListNode) and node.key == "symbol"):
+            continue
+
+        ref = ""
+        symbol_id = ""
+        in_bom = None
+        on_board = None
+        has_power_marker = False
+        for child in node.items:
+            if not isinstance(child, ListNode):
+                continue
+            if (
+                child.key == "lib_id"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+            ):
+                symbol_id = child.items[1].value
+            elif child.key == "property" and len(child.items) >= 3:
+                name_node = child.items[1]
+                value_node = child.items[2]
                 if (
-                    isinstance(child, ListNode)
-                    and child.key == "power"
-                    and len(child.items) >= 2  # noqa: PLR2004
-                    and isinstance(child.items[1], StringNode)
-                    and child.items[1].value == "yes"
+                    isinstance(name_node, StringNode)
+                    and isinstance(value_node, StringNode)
+                    and name_node.value == "Reference"
                 ):
-                    count += 1
-                    break
+                    ref = value_node.value
+            elif child.key == "in_bom" and len(child.items) >= 2:
+                in_bom = getattr(child.items[1], "value", None)
+            elif child.key == "on_board" and len(child.items) >= 2:
+                on_board = getattr(child.items[1], "value", None)
+            elif (
+                child.key == "power"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+                and child.items[1].value == "yes"
+            ):
+                has_power_marker = True
+
+        if (
+            ref.startswith("#PWR")
+            or symbol_id.lower().startswith("power:")
+            or (in_bom == "no" and on_board == "no")
+            or has_power_marker
+        ):
+            count += 1
     return count
 
 

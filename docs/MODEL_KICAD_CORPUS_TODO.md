@@ -11,84 +11,85 @@ Do not special-case individual fixture filenames or individual source schematic 
 ## Phase 0 — Safety rules and repo orientation
 
 ### 0.1 Read the relevant existing code first
-- [ ] Read `src/kicad_pcb/circuit_ir.py`.
-- [ ] Read `src/kicad_pcb/commands/netlist.py`.
-- [ ] Read `src/kicad_pcb/commands/_sch_apply.py`.
-- [ ] Read `src/kicad_pcb/adapters.py`, especially `KicadCliAdapter.export_netlist()`.
-- [ ] Read `src/kicad_pcb/sch_doc/__init__.py`.
-- [ ] Read `src/kicad_pcb/schematic_metrics.py`.
-- [ ] Read `src/kicad_pcb/symbol_index.py`.
-- [ ] Read existing tests under `tests/unit/test_schematic_metrics.py`, `tests/unit/test_readability_baseline.py`, and `tests/fixtures/readability/`.
+- [x] Read `src/kicad_pcb/circuit_ir.py`.
+- [x] Read `src/kicad_pcb/commands/netlist.py`.
+- [x] Read `src/kicad_pcb/commands/_sch_apply.py`.
+- [x] Read `src/kicad_pcb/adapters.py`, especially `KicadCliAdapter.export_netlist()`.
+- [x] Read `src/kicad_pcb/sch_doc/__init__.py`.
+- [x] Read `src/kicad_pcb/schematic_metrics.py`.
+- [x] Read `src/kicad_pcb/symbol_index.py`.
+- [x] Read existing tests under `tests/unit/test_schematic_metrics.py`, `tests/unit/test_readability_baseline.py`, and `tests/fixtures/readability/`.
 
 ### 0.2 Preserve existing behavior
-- [ ] Do not change the current `new-from-netlist` or `apply-netlist` user-visible behavior except where required to expose reusable helpers.
-- [ ] Do not move existing generator code into the corpus package.
-- [ ] Do not make default unit tests require `kicad-cli`.
-- [ ] Do not add new dependencies without explicit approval.
-- [ ] Do not mutate raw files under `model_kicad_files/`.
+- [x] Do not change the current `new-from-netlist` or `apply-netlist` user-visible behavior except where required to expose reusable helpers.
+- [x] Do not move existing generator code into the corpus package.
+- [x] Do not make default unit tests require `kicad-cli`.
+- [x] Do not add new dependencies without explicit approval.
+- [x] Do not mutate raw files under `model_kicad_files/`.
 
 ### 0.3 Use uv for validation
-- [ ] Use `uv run pytest` for the default test suite.
-- [ ] Use `uv run pytest -m requires_kicad` only for tests that require KiCad CLI.
-- [ ] Use `uv run ruff check .` if lint validation is part of the repo workflow.
+- [x] Use `uv run pytest` for the default test suite.
+- [x] Use `uv run pytest -m requires_kicad` only for tests that require KiCad CLI.
+- [x] Use `uv run ruff check .` if lint validation is part of the repo workflow.
 
 ---
 
 ## Phase 1 — Add corpus package skeleton
 
 ### 1.1 Create new package directory
-- [ ] Add `src/kicad_pcb/corpus/__init__.py`.
-- [ ] Add `src/kicad_pcb/corpus/metadata.py`.
-- [ ] Add `src/kicad_pcb/corpus/ingestion.py`.
-- [ ] Add `src/kicad_pcb/corpus/layout_features.py`.
-- [ ] Add `src/kicad_pcb/corpus/kicadxml.py`.
-- [ ] Add `src/kicad_pcb/corpus/embedded_symbols.py`.
-- [ ] Add `src/kicad_pcb/corpus/reports.py`.
+- [x] Add `src/kicad_pcb/corpus/__init__.py`.
+- [x] Add `src/kicad_pcb/corpus/metadata.py`.
+- [x] Add `src/kicad_pcb/corpus/ingestion.py`.
+- [x] Add `src/kicad_pcb/corpus/layout_features.py`.
+- [x] Add `src/kicad_pcb/corpus/kicadxml.py`.
+- [x] Add `src/kicad_pcb/corpus/embedded_symbols.py`.
+- [x] Add `src/kicad_pcb/corpus/reports.py`.
 
 ### 1.2 Define fixture status model
 In `src/kicad_pcb/corpus/metadata.py`:
 
 - [ ] Define allowed statuses:
-  - [ ] `ready`
-  - [ ] `layout_only`
-  - [ ] `pending_netlist_export`
-  - [ ] `rejected`
-- [ ] Define a typed/Pydantic `CorpusFixtureMetadata` model with fields:
-  - [ ] `fixture_id`
-  - [ ] `source_file_name`
-  - [ ] `source_path`
-  - [ ] `status`
-  - [ ] `status_reasons`
-  - [ ] `created_by`
-  - [ ] `kicad_schematic_version`
-  - [ ] `generator`
-  - [ ] `title`
-  - [ ] `license`
-  - [ ] `source_url`
-  - [ ] `symbol_count`
-  - [ ] `wire_count`
-  - [ ] `label_count`
-  - [ ] `global_label_count`
-  - [ ] `power_symbol_count`
-  - [ ] `has_embedded_symbols`
-  - [ ] `has_circuit_ir`
-  - [ ] `requires_custom_symbols`
-  - [ ] `notes`
-- [ ] Implement stable JSON writer using sorted keys and indentation.
+- [x] Define allowed statuses:
+  - [x] `ready`
+  - [x] `layout_only`
+  - [x] `pending_netlist_export`
+  - [x] `rejected`
+- [x] Define a typed/Pydantic `CorpusFixtureMetadata` model with fields:
+  - [x] `fixture_id`
+  - [x] `source_file_name`
+  - [x] `source_path`
+  - [x] `status`
+  - [x] `status_reasons`
+  - [x] `created_by`
+  - [x] `kicad_schematic_version`
+  - [x] `generator`
+  - [x] `title`
+  - [x] `license`
+  - [x] `source_url`
+  - [x] `symbol_count`
+  - [x] `wire_count`
+  - [x] `label_count`
+  - [x] `global_label_count`
+  - [x] `power_symbol_count`
+  - [x] `has_embedded_symbols`
+  - [x] `has_circuit_ir`
+  - [x] `requires_custom_symbols`
+  - [x] `notes`
+- [x] Implement stable JSON writer using sorted keys and indentation.
 
 ### 1.3 Add fixture slug helper
-- [ ] Implement `make_fixture_id(path: Path) -> str`.
-- [ ] Convert filename stems to lower snake case.
-- [ ] Replace hyphens, spaces, repeated separators, and non-alphanumeric groups with `_`.
-- [ ] Strip leading/trailing `_`.
-- [ ] Add deterministic collision handling if two files produce the same slug.
+- [x] Implement `make_fixture_id(path: Path) -> str`.
+- [x] Convert filename stems to lowercase ASCII slug form.
+- [x] Replace non-alphanumeric runs with `-`.
+- [x] Trim leading/trailing `-`.
+- [x] Add deterministic collision handling using `base-slug--<hash8>` for full collision groups.
 
 ### 1.4 Add unit tests for metadata/slugging
-- [ ] Add `tests/unit/test_model_corpus_metadata.py`.
-- [ ] Test simple hyphenated names.
-- [ ] Test repeated separators.
-- [ ] Test collision handling.
-- [ ] Test metadata JSON round trip.
+- [x] Add `tests/unit/test_model_corpus_metadata.py`.
+- [x] Test simple hyphenated names.
+- [x] Test repeated separators.
+- [x] Test collision handling.
+- [x] Test metadata JSON round trip.
 
 ---
 
@@ -97,20 +98,20 @@ In `src/kicad_pcb/corpus/metadata.py`:
 ### 2.1 Update `count_power_symbols()`
 File: `src/kicad_pcb/schematic_metrics.py`
 
-- [ ] Replace the current direct `(power yes)`-only implementation.
-- [ ] Count a placed symbol as a power symbol when any of these are true:
-  - [ ] reference starts with `#PWR`
-  - [ ] symbol id starts with `power:`
-  - [ ] direct children include both `(in_bom no)` and `(on_board no)`
-  - [ ] the placed symbol has a direct `(power yes)` marker
-- [ ] Preserve the existing public function signature.
-- [ ] Keep behavior deterministic.
+- [x] Replace the current direct `(power yes)`-only implementation.
+- [x] Count a placed symbol as a power symbol when any of these are true:
+  - [x] reference starts with `#PWR`
+  - [x] symbol id starts with `power:`
+  - [x] direct children include both `(in_bom no)` and `(on_board no)`
+  - [x] the placed symbol has a direct `(power yes)` marker
+- [x] Preserve the existing public function signature.
+- [x] Keep behavior deterministic.
 
 ### 2.2 Add tests using current `model_kicad_files`
-- [ ] Add `tests/unit/test_power_symbol_metrics_real_source.py`.
-- [ ] Use at least `model_kicad_files/mcp2551-can-transciever.kicad_sch`.
-- [ ] Assert `count_power_symbols(doc) > 0` for real source schematic files that contain `power:` symbols.
-- [ ] Assert existing generated power-symbol tests still pass.
+- [x] Add `tests/unit/test_power_symbol_metrics_real_source.py`.
+- [x] Use at least `model_kicad_files/mcp2551-can-transciever.kicad_sch`.
+- [x] Assert `count_power_symbols(doc) > 0` for real source schematic files that contain `power:` symbols.
+- [x] Assert existing generated power-symbol tests still pass.
 
 ---
 
@@ -119,76 +120,76 @@ File: `src/kicad_pcb/schematic_metrics.py`
 ### 3.1 Define layout feature models
 File: `src/kicad_pcb/corpus/layout_features.py`
 
-- [ ] Define `SymbolLayoutFeature` with:
-  - [ ] `ref`
-  - [ ] `symbol_id`
-  - [ ] `value`
-  - [ ] `x`
-  - [ ] `y`
-  - [ ] `rotation`
-  - [ ] `unit`
-  - [ ] `role_guess`
-  - [ ] `is_power_symbol`
-  - [ ] `is_connector`
-  - [ ] `is_passive`
-  - [ ] `is_major_ic`
-- [ ] Define `RelativePositionFeature` with:
-  - [ ] `a`
-  - [ ] `b`
-  - [ ] `relation`
-- [ ] Define `LayoutFeatures` with:
-  - [ ] `schema_version`
-  - [ ] `source`
-  - [ ] `counts`
-  - [ ] `symbols`
-  - [ ] `role_counts`
-  - [ ] `net_label_strategy`
-  - [ ] `geometry`
-  - [ ] `relative_positions`
-  - [ ] `intrinsic_lints`
+- [x] Define `SymbolLayoutFeature` with:
+  - [x] `ref`
+  - [x] `symbol_id`
+  - [x] `value`
+  - [x] `x`
+  - [x] `y`
+  - [x] `rotation`
+  - [x] `unit`
+  - [x] `role_guess`
+  - [x] `is_power_symbol`
+  - [x] `is_connector`
+  - [x] `is_passive`
+  - [x] `is_major_ic`
+- [x] Define `RelativePositionFeature` with:
+  - [x] `a`
+  - [x] `b`
+  - [x] `relation`
+- [x] Define `LayoutFeatures` with:
+  - [x] `schema_version`
+  - [x] `source`
+  - [x] `counts`
+  - [x] `symbols`
+  - [x] `role_counts`
+  - [x] `net_label_strategy`
+  - [x] `geometry`
+  - [x] `relative_positions`
+  - [x] `intrinsic_lints`
 
 ### 3.2 Implement symbol role guessing
-- [ ] Implement `guess_symbol_role(ref: str, symbol_id: str, value: str) -> str`.
-- [ ] Detect power symbols robustly.
-- [ ] Detect connectors.
-- [ ] Detect major ICs.
-- [ ] Detect passives.
-- [ ] Detect rough interface/display/memory-card/LED-chain roles when obvious from symbol id or value.
-- [ ] Do not use fixture filenames for role detection.
+- [x] Implement `guess_symbol_role(ref: str, symbol_id: str, value: str) -> str`.
+- [x] Detect power symbols robustly.
+- [x] Detect connectors.
+- [x] Detect major ICs.
+- [x] Detect passives.
+- [x] Detect rough interface/display/memory-card/LED-chain roles when obvious from symbol id or value.
+- [x] Do not use fixture filenames for role detection.
 
 ### 3.3 Implement geometry and metrics extraction
-- [ ] Use `SchematicDoc.list_symbols()` for placed symbols.
-- [ ] Count direct root nodes through `SchematicDoc.count_nodes(...)`.
-- [ ] Use existing metrics where appropriate:
-  - [ ] `count_distinct_x_columns`
-  - [ ] `average_symbol_spacing`
-  - [ ] `wire_stub_ratio`
-  - [ ] updated `count_power_symbols`
-- [ ] Record bounding extents from symbol positions.
-- [ ] Ignore power symbols when computing major relative positions.
+- [x] Use `SchematicDoc.list_symbols()` for placed symbols.
+- [x] Count direct root nodes through `SchematicDoc.count_nodes(...)`.
+- [x] Use existing metrics where appropriate:
+  - [x] `count_distinct_x_columns`
+  - [x] `average_symbol_spacing`
+  - [x] `wire_stub_ratio`
+  - [x] updated `count_power_symbols`
+- [x] Record bounding extents from symbol positions.
+- [x] Ignore power symbols when computing major relative positions.
 
 ### 3.4 Implement relative position extraction
-- [ ] Add high-confidence `left_of`, `right_of`, `above`, `below`, and `near` relationships.
-- [ ] Only compare non-power symbols by default.
-- [ ] Avoid O(N^2) explosion on large schematics by limiting to important symbols and nearest neighbors.
-- [ ] For V0, include:
-  - [ ] relationships among major ICs and connectors
-  - [ ] nearest passives to each major IC
-  - [ ] nearest passives to each connector
+- [x] Add high-confidence `left_of`, `right_of`, `above`, `below`, and `near` relationships.
+- [x] Only compare non-power symbols by default.
+- [x] Avoid O(N^2) explosion on large schematics by limiting to important symbols and nearest neighbors.
+- [x] For V0, include:
+  - [x] relationships among major ICs and connectors
+  - [x] nearest passives to each major IC
+  - [x] nearest passives to each connector
 
 ### 3.5 Write layout feature JSON deterministically
-- [ ] Implement `write_layout_features(features, path)`.
-- [ ] Sort symbol keys by reference.
-- [ ] Sort relative positions by `(a, b, relation)`.
-- [ ] Use indentation and sorted keys.
+- [x] Implement `write_layout_features(features, path)`.
+- [x] Sort symbol keys by reference.
+- [x] Sort relative positions by `(a, b, relation)`.
+- [x] Use indentation and sorted keys.
 
 ### 3.6 Add unit tests
-- [ ] Add `tests/unit/test_layout_features.py`.
-- [ ] Test extraction from a small synthetic schematic.
-- [ ] Test extraction from `model_kicad_files/mcp2551-can-transciever.kicad_sch`.
-- [ ] Test power-symbol detection.
-- [ ] Test connector/IC/passive role guessing.
-- [ ] Test deterministic JSON output.
+- [x] Add `tests/unit/test_layout_features.py`.
+- [x] Test extraction from a small synthetic schematic.
+- [x] Test extraction from `model_kicad_files/mcp2551-can-transciever.kicad_sch`.
+- [x] Test power-symbol detection.
+- [x] Test connector/IC/passive role guessing.
+- [x] Test deterministic JSON output.
 
 ---
 
@@ -197,22 +198,22 @@ File: `src/kicad_pcb/corpus/layout_features.py`
 ### 4.1 Extract embedded lib symbols
 File: `src/kicad_pcb/corpus/embedded_symbols.py`
 
-- [ ] Implement `extract_embedded_symbol_defs(doc: SchematicDoc) -> dict[str, ListNode]`.
-- [ ] Find the root `(lib_symbols ...)` section.
-- [ ] Extract child `(symbol "...")` definitions.
-- [ ] Key returned entries by full symbol id when possible.
-- [ ] Do not mutate the source document.
+- [x] Implement `extract_embedded_symbol_defs(doc: SchematicDoc) -> dict[str, ListNode]`.
+- [x] Find the root `(lib_symbols ...)` section.
+- [x] Extract child `(symbol "...")` definitions.
+- [x] Key returned entries by full symbol id when possible.
+- [x] Do not mutate the source document.
 
 ### 4.2 Write fixture-local embedded symbol artifact
-- [ ] Implement `write_embedded_symbol_library(symbols, output_file)`.
-- [ ] If writing a fully valid `.kicad_sym` library is too large for V0, write a deterministic `source_embedded_symbols.sexpr` artifact instead and document the limitation.
-- [ ] Prefer a KiCad-compatible `.kicad_sym` if feasible.
+- [x] Implement `write_embedded_symbol_library(symbols, output_file)`.
+- [x] If writing a fully valid `.kicad_sym` library is too large for V0, write a deterministic `source_embedded_symbols.sexpr` artifact instead and document the limitation.
+- [x] Prefer a KiCad-compatible `.kicad_sym` if feasible.
 
 ### 4.3 Add tests
-- [ ] Add `tests/unit/test_embedded_symbols.py`.
-- [ ] Test extraction on at least one real `model_kicad_files` source with embedded symbols.
-- [ ] Test empty/no-symbol case.
-- [ ] Test deterministic artifact writing.
+- [x] Add `tests/unit/test_embedded_symbols.py`.
+- [x] Test extraction on at least one real `model_kicad_files` source with embedded symbols.
+- [x] Test empty/no-symbol case.
+- [x] Test deterministic artifact writing.
 
 ---
 
@@ -221,48 +222,48 @@ File: `src/kicad_pcb/corpus/embedded_symbols.py`
 ### 5.1 Add parsed XML dataclasses/models
 File: `src/kicad_pcb/corpus/kicadxml.py`
 
-- [ ] Define `KicadXmlComponent`.
-- [ ] Define `KicadXmlNetPin`.
-- [ ] Define `KicadXmlNet`.
-- [ ] Define `KicadXmlNetlist`.
+- [x] Define `KicadXmlComponent`.
+- [x] Define `KicadXmlNetPin`.
+- [x] Define `KicadXmlNet`.
+- [x] Define `KicadXmlNetlist`.
 
 ### 5.2 Parse KiCad XML netlist
-- [ ] Implement `parse_kicadxml_netlist(path: Path) -> KicadXmlNetlist`.
-- [ ] Use stdlib `xml.etree.ElementTree`.
-- [ ] Parse components from `<components><comp ref="...">`.
-- [ ] Parse values from `<value>`.
-- [ ] Parse footprints from `<footprint>` when present.
-- [ ] Parse library/source symbol IDs from `<libsource>` when present.
-- [ ] Parse nets from `<nets><net name="...">`.
-- [ ] Parse node refs/pins from `<node ref="..." pin="...">`.
-- [ ] Fail clearly on malformed XML.
+- [x] Implement `parse_kicadxml_netlist(path: Path) -> KicadXmlNetlist`.
+- [x] Use stdlib `xml.etree.ElementTree`.
+- [x] Parse components from `<components><comp ref="...">`.
+- [x] Parse values from `<value>`.
+- [x] Parse footprints from `<footprint>` when present.
+- [x] Parse library/source symbol IDs from `<libsource>` when present.
+- [x] Parse nets from `<nets><net name="...">`.
+- [x] Parse node refs/pins from `<node ref="..." pin="...">`.
+- [x] Fail clearly on malformed XML.
 
 ### 5.3 Convert KiCad XML to CircuitIR
-- [ ] Implement `kicadxml_to_circuit_ir(netlist: KicadXmlNetlist) -> CircuitIR`.
-- [ ] Preserve component refs.
-- [ ] Preserve values.
-- [ ] Preserve footprints where available.
-- [ ] Preserve symbol IDs when available.
-- [ ] Build `NetIR` entries from net nodes.
-- [ ] Skip nets with fewer than one pin only if KiCad XML contains them; record a warning.
-- [ ] Normalize ground aliases through existing `CircuitIR` validation behavior.
+- [x] Implement `kicadxml_to_circuit_ir(netlist: KicadXmlNetlist) -> CircuitIR`.
+- [x] Preserve component refs.
+- [x] Preserve values.
+- [x] Preserve footprints where available.
+- [x] Preserve symbol IDs when available.
+- [x] Build `NetIR` entries from net nodes.
+- [x] Skip nets with fewer than one pin only if KiCad XML contains them; record a warning.
+- [x] Normalize ground aliases through existing `CircuitIR` validation behavior.
 
 ### 5.4 Canonicalize CircuitIR
-- [ ] Implement `canonicalize_circuit_ir(ir: CircuitIR) -> CircuitIR`.
-- [ ] Sort components by ref.
-- [ ] Sort nets by name.
-- [ ] Sort pins in each net by `(ref, pin, unit or "")`.
-- [ ] Ensure output JSON is deterministic.
+- [x] Implement `canonicalize_circuit_ir(ir: CircuitIR) -> CircuitIR`.
+- [x] Sort components by ref.
+- [x] Sort nets by name.
+- [x] Sort pins in each net by `(ref, pin, unit or "")`.
+- [x] Ensure output JSON is deterministic.
 
 ### 5.5 Add XML fixtures and tests
-- [ ] Add small hand-written KiCad XML fixture under `tests/fixtures/model_corpus_xml/`.
-- [ ] Add `tests/unit/test_kicadxml_to_ir.py`.
-- [ ] Test parsing components.
-- [ ] Test parsing nets.
-- [ ] Test component symbol ID preservation.
-- [ ] Test CircuitIR conversion.
-- [ ] Test canonical sorting.
-- [ ] Test malformed XML error reporting.
+- [x] Add small hand-written KiCad XML fixture under `tests/fixtures/model_corpus_xml/`.
+- [x] Add `tests/unit/test_kicadxml_to_ir.py`.
+- [x] Test parsing components.
+- [x] Test parsing nets.
+- [x] Test component symbol ID preservation.
+- [x] Test CircuitIR conversion.
+- [x] Test canonical sorting.
+- [x] Test malformed XML error reporting.
 
 ---
 
@@ -271,84 +272,84 @@ File: `src/kicad_pcb/corpus/kicadxml.py`
 ### 6.1 Add command module
 File: `src/kicad_pcb/commands/model_corpus.py`
 
-- [ ] Implement `cmd_model_corpus_ingest(args)`.
-- [ ] Implement `cmd_model_corpus_list(args)`.
-- [ ] Keep command code thin; delegate domain logic to `corpus/ingestion.py`.
+- [x] Implement `cmd_model_corpus_ingest(args)`.
+- [x] Implement `cmd_model_corpus_list(args)`.
+- [x] Keep command code thin; delegate domain logic to `corpus/ingestion.py`.
 
 ### 6.2 Add parser entries
 File: `src/kicad_pcb/cli.py`
 
-- [ ] Add `model-corpus` subparser.
-- [ ] Add `ingest` subcommand.
-- [ ] Add `list` subcommand.
-- [ ] Add `evaluate` subcommand placeholder only after Phase 8 implements it.
-- [ ] Support `--json` through existing formatting system if possible.
+- [x] Add `model-corpus` subparser.
+- [x] Add `ingest` subcommand.
+- [x] Add `list` subcommand.
+- [x] Add `evaluate` subcommand placeholder only after Phase 8 implements it.
+- [x] Support `--json` through existing formatting system if possible.
 
 Required `ingest` arguments:
 
-- [ ] `--source-dir`, default `model_kicad_files`
-- [ ] `--out-dir`, default `tests/fixtures/model_corpus`
-- [ ] `--refresh`, default false
-- [ ] `--require-kicad`, default false
+- [x] `--source-dir`, default `model_kicad_files`
+- [x] `--out-dir`, default `tests/fixtures/model_corpus`
+- [x] `--refresh`, default false
+- [x] `--require-kicad`, default false
 
 Required `list` arguments:
 
-- [ ] `--corpus-dir`, default `tests/fixtures/model_corpus`
+- [x] `--corpus-dir`, default `tests/fixtures/model_corpus`
 
 ### 6.3 Implement ingestion logic
 File: `src/kicad_pcb/corpus/ingestion.py`
 
-- [ ] Scan source dir recursively for `.kicad_sch` files.
-- [ ] Parse each file with `SchematicDoc.load(...)`.
-- [ ] Create fixture directory.
-- [ ] Copy raw source to `source.kicad_sch`.
-- [ ] Extract and write `source_layout_features.json`.
-- [ ] Extract embedded symbols and write fixture artifact when present.
-- [ ] Try KiCad XML export when `kicad-cli` is available.
-- [ ] If XML export succeeds, parse XML and write `circuit_ir.json`.
-- [ ] If KiCad CLI is missing and `--require-kicad` is false, write a partial fixture and warning.
-- [ ] If KiCad CLI is missing and `--require-kicad` is true, fail clearly.
-- [ ] Write `metadata.json`.
-- [ ] Write aggregate `ingestion_report.json`.
-- [ ] Write aggregate `summary.md`.
+- [x] Scan source dir recursively for `.kicad_sch` files.
+- [x] Parse each file with `SchematicDoc.load(...)`.
+- [x] Create fixture directory.
+- [x] Copy raw source to `source.kicad_sch`.
+- [x] Extract and write `source_layout_features.json`.
+- [x] Extract embedded symbols and write fixture artifact when present.
+- [x] Try KiCad XML export when `kicad-cli` is available.
+- [x] If XML export succeeds, parse XML and write `circuit_ir.json`.
+- [x] If KiCad CLI is missing and `--require-kicad` is false, write a partial fixture and warning.
+- [x] If KiCad CLI is missing and `--require-kicad` is true, fail clearly.
+- [x] Write `metadata.json`.
+- [x] Write aggregate `ingestion_report.json`.
+- [x] Write aggregate `summary.md`.
 
 ### 6.4 Add result model if needed
 File: `src/kicad_pcb/results.py`
 
-- [ ] Add `ModelCorpusIngestResult` dataclass.
-- [ ] Add `ModelCorpusListResult` dataclass.
-- [ ] Ensure normal CLI formatting works.
-- [ ] Ensure JSON formatting works.
+- [x] Add `ModelCorpusIngestResult` dataclass.
+- [x] Add `ModelCorpusListResult` dataclass.
+- [x] Ensure normal CLI formatting works.
+- [x] Ensure JSON formatting works.
 
 ### 6.5 Add tests
-- [ ] Add `tests/unit/test_model_corpus_ingestion.py`.
-- [ ] Test ingest of one real model file without KiCad CLI.
-- [ ] Test status is partial when no XML netlist exists.
-- [ ] Test `--refresh` behavior.
-- [ ] Test no raw source mutation.
-- [ ] Test list command reads fixture metadata.
+- [x] Add `tests/unit/test_model_corpus_ingestion.py`.
+- [x] Test ingest of one real model file without KiCad CLI.
+- [x] Test status is partial when no XML netlist exists.
+- [x] Test `--refresh` behavior.
+- [x] Test no raw source mutation.
+- [x] Test list command reads fixture metadata.
 
 ---
 
 ## Phase 7 — Add KiCad CLI integration for source netlist export
 
 ### 7.1 Reuse existing adapter
-- [ ] Use `KicadCliAdapter.export_netlist(sch_file, output_file)`.
-- [ ] Do not shell out directly in corpus code.
-- [ ] Convert adapter failures into explicit fixture status/warnings.
+- [x] Use `KicadCliAdapter.export_netlist(sch_file, output_file)`.
+- [x] Do not shell out directly in corpus code.
+- [x] Convert adapter failures into explicit fixture status/warnings.
 
 ### 7.2 Handle unavailable KiCad CLI
-- [ ] Detect command failure clearly.
-- [ ] If `--require-kicad` is false, mark fixture `pending_netlist_export`.
-- [ ] If `--require-kicad` is true, raise a user-facing error.
+- [x] Detect command failure clearly.
+- [x] If `--require-kicad` is false, mark fixture `pending_netlist_export`.
+- [x] If `--require-kicad` is true, raise a user-facing error.
 
 ### 7.3 Add requires-kicad integration tests
-- [ ] Add `tests/integration/test_model_corpus_kicad_export.py`.
-- [ ] Mark with `@pytest.mark.requires_kicad`.
-- [ ] Skip cleanly if `kicad-cli` is not installed.
-- [ ] Export netlist from at least one small source schematic.
-- [ ] Assert `source_netlist.kicadxml` is written.
-- [ ] Assert `circuit_ir.json` is written.
+- [x] Add `tests/integration/test_model_corpus_kicad_export.py`.
+- [x] Mark with `@pytest.mark.requires_kicad`.
+- [x] Skip cleanly if `kicad-cli` is not installed or is too old for the repo's schematic format.
+- [x] Export netlist from at least one small source schematic.
+- [x] Assert `source_netlist.kicadxml` is written.
+- [x] Assert `circuit_ir.json` is written.
 
 ---
 
