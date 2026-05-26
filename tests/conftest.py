@@ -52,7 +52,7 @@ def kicad_cli_version() -> KiCadVersion | None:
 
 def kicad_cli_supports_repo_schematics() -> bool:
     version = kicad_cli_version()
-    return version is not None and version >= KiCadVersion(8, 0, 0)
+    return version is not None and version >= KiCadVersion(9, 0, 0)
 
 
 def requires_kicad(test_func):
@@ -61,7 +61,7 @@ def requires_kicad(test_func):
     marked = pytest.mark.requires_kicad(test_func)
     return pytest.mark.skipif(
         not kicad_cli_supports_repo_schematics(),
-        reason="kicad-cli >= 8.0.0 is required for repo schematic integration tests",
+        reason="kicad-cli >= 9.0.0 is required for repo schematic integration tests",
     )(marked)
 
 

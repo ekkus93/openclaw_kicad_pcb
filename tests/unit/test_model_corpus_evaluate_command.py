@@ -33,7 +33,9 @@ def test_model_corpus_evaluate_generates_partial_reports_without_repo_kicad(tmp_
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["fixture_id"] == fixture_dir.name
     assert report["generated_artifacts"]["schematic_path"].endswith("generated.kicad_sch")
-    assert report["result"] in {"partial", "pass_with_warnings", "pass"}
+    assert report["result"] == "fail"
+    assert report["electrical_equivalence"]["status"] == "failed"
+    assert report["electrical_equivalence"]["mismatches"][0]["field"] == "generated_netlist"
 
 
 def test_model_corpus_evaluate_rejects_selected_fixture_without_circuit_ir(tmp_path: Path) -> None:

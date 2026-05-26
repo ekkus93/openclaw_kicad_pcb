@@ -26,7 +26,7 @@ from .metadata import (
 )
 from .reports import write_json_report, write_markdown_report
 
-MINIMUM_REPO_KICAD_VERSION = KiCadVersion(8, 0, 0)
+MINIMUM_REPO_KICAD_VERSION = KiCadVersion(9, 0, 0)
 
 
 @dataclass(frozen=True)
@@ -322,7 +322,7 @@ def _ingest_optional_kicad_artifacts(
     if version is None or version < MINIMUM_REPO_KICAD_VERSION:
         if require_kicad:
             raise ToolError(
-                "kicad-cli >= 8.0.0 is required for repo schematic netlist export",
+                "kicad-cli >= 9.0.0 is required for repo schematic netlist export",
                 code=ErrorCode.KICAD_CLI_MISSING,
                 details={"detected_version": str(version) if version is not None else None},
             )

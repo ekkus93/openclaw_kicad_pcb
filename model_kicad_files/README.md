@@ -22,4 +22,4 @@ uv run python -m kicad_pcb.cli model-corpus ingest \
   --refresh
 ```
 
-On this machine, `kicad-cli 7.0.11` is too old for the repo's symbol-bearing schematics, so ingest currently produces partial fixtures with `pending_netlist_export` until `kicad-cli >= 8.0.0` is available.
+The corpus workflow now targets **KiCad 9**. On the current machine `kicad-cli 9.0.9` is available, but the imported source schematics still fall back to partial `layout_only` fixtures because `kicad-cli sch export netlist` cannot load these raw source files yet.

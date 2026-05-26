@@ -17,9 +17,9 @@
   "source_file_name": "li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
   "source_path": "model_kicad_files/li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
   "source_url": null,
-  "status": "pending_netlist_export",
+  "status": "layout_only",
   "status_reasons": [
-    "kicad-cli too old for repo schematic format"
+    "source_netlist_export_failed"
   ],
   "symbol_count": 89,
   "title": "EMERALD",

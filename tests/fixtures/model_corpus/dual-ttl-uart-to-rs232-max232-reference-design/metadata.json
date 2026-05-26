@@ -17,9 +17,9 @@
   "source_file_name": "dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch",
   "source_path": "model_kicad_files/dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch",
   "source_url": null,
-  "status": "pending_netlist_export",
+  "status": "layout_only",
   "status_reasons": [
-    "kicad-cli too old for repo schematic format"
+    "source_netlist_export_failed"
   ],
   "symbol_count": 11,
   "title": "Dual TTL UART to RS232. MAX232 Reference Design",

@@ -6,6 +6,8 @@ import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.commands._project import create_project_files
 from kicad_pcb.commands._sch_apply import _apply_netlist_to_project, _ApplyNetlistRequest
@@ -22,11 +24,15 @@ from kicad_pcb.errors import ErrorCode, ToolError, UserError
 from kicad_pcb.runner import find_kicad_cli
 from kicad_pcb.sch_doc import SchematicDoc
 
-from .electrical import ElectricalEquivalenceReport, compare_circuit_ir_equivalence
+from .electrical import (
+    ElectricalEquivalenceReport,
+    ElectricalMismatch,
+    compare_circuit_ir_equivalence,
+)
 from .scoring import IntrinsicQualityReport, score_intrinsic_quality
 from .similarity import LayoutSimilarityReport, compare_layout_similarity
 
-MINIMUM_REPO_KICAD_VERSION = KiCadVersion(8, 0, 0)
+MINIMUM_REPO_KICAD_VERSION = KiCadVersion(9, 0, 0)
 
 
 @dataclass(frozen=True)
@@ -274,7 +280,7 @@ def _run_electrical_equivalence(
     if version is None or version < MINIMUM_REPO_KICAD_VERSION:
         if require_kicad:
             raise ToolError(
-                "kicad-cli >= 8.0.0 is required for repo schematic electrical evaluation",
+                "kicad-cli >= 9.0.0 is required for repo schematic electrical evaluation",
                 code=ErrorCode.KICAD_CLI_MISSING,
                 details={"detected_version": str(version) if version is not None else None},
             )
@@ -293,10 +299,21 @@ def _run_electrical_equivalence(
 
     source_ir = parse_kicadxml_netlist(fixture_dir / "source_netlist.kicadxml")
     generated_ir = parse_kicadxml_netlist(netlist_path)
-    return compare_circuit_ir_equivalence(
-        kicadxml_to_circuit_ir(source_ir),
-        kicadxml_to_circuit_ir(generated_ir),
-    )
+    try:
+        source_circuit = kicadxml_to_circuit_ir(source_ir)
+        generated_circuit = kicadxml_to_circuit_ir(generated_ir)
+    except ValidationError as exc:
+        return ElectricalEquivalenceReport(
+            status="failed",
+            mismatches=(
+                ElectricalMismatch(
+                    field="generated_netlist",
+                    expected="a generated KiCad XML netlist with at least one net",
+                    actual=str(exc),
+                ),
+            ),
+        )
+    return compare_circuit_ir_equivalence(source_circuit, generated_circuit)
 
 
 def _build_actionable_failures(

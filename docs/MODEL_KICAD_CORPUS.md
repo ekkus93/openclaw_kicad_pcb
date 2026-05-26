@@ -44,7 +44,7 @@ Each fixture directory may contain:
 - `source_netlist.kicadxml` when KiCad XML export succeeds
 - `circuit_ir.json` when XML export/import succeeds
 
-If repo-compatible KiCad CLI is unavailable, ingestion still writes partial fixtures and marks them `pending_netlist_export` or `layout_only`.
+If repo-compatible KiCad CLI is unavailable, ingestion still writes partial fixtures and marks them `pending_netlist_export` or `layout_only`. If KiCad is available but cannot load a raw source schematic for export, ingestion also falls back to `layout_only`.
 
 ## What evaluate measures
 
@@ -56,8 +56,8 @@ Electrical equivalence is the hard gate. Layout quality and source similarity ex
 
 ## Current environment caveat
 
-The repository's symbol-bearing schematic fixtures need `kicad-cli >= 8.0.0` for XML netlist export. On the current `kicad-cli 7.0.11` machine:
+The corpus/export workflow now targets `kicad-cli >= 9.0.0`. On the current `kicad-cli 9.0.9` machine:
 
-- ingest works and creates committed partial fixtures
+- ingest runs, but the current imported source schematics still land as `layout_only` because KiCad 9 cannot load them for XML netlist export yet
 - evaluate runs, but skips real fixtures that do not yet have `circuit_ir.json`
-- the default `uv run pytest` suite stays green because KiCad-required integration tests skip cleanly on unsupported versions
+- the default `uv run pytest` suite stays green, and the KiCad-marked suite now expects KiCad 9 specifically

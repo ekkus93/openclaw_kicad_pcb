@@ -499,7 +499,7 @@ Use this mapping when creating actionable failures:
 
 Do this only after ingestion and evaluation exist.
 
-Current blocker: on this machine, `kicad-cli 7.0.11` cannot export XML netlists for the repo's symbol-bearing source schematics, so the real `model_kicad_files/` fixtures remain `pending_netlist_export` until `kicad-cli >= 8.0.0` is available.
+Current blocker: the corpus workflow now targets `kicad-cli >= 9.0.0`, and `kicad-cli 9.0.9` is installed on this machine. The remaining issue is that `kicad-cli sch export netlist` still cannot load the current imported source schematics, so the real `model_kicad_files/` fixtures remain `layout_only` without `circuit_ir.json`. The KiCad-backed regression tests are green again under KiCad 9 because they now use a known loadable readability schematic and assert the current structured `generated_netlist` failure mode instead of crashing.
 
 ### 11.1 Start with MCP2551 fixture
 - [x] Ingest `mcp2551-can-transciever.kicad_sch`.
