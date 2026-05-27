@@ -22,4 +22,4 @@ uv run python -m kicad_pcb.cli model-corpus ingest \
   --refresh
 ```
 
-The corpus workflow now targets **KiCad 9**. On the current machine `kicad-cli 9.0.9` is available, but the imported source schematics still fall back to partial `layout_only` fixtures because `kicad-cli sch export netlist` cannot load these raw source files yet.
+The corpus workflow now targets **KiCad 9**. On the current machine `kicad-cli 9.0.9` is available, and ingest now preserves each raw source file while also writing a normalized `source_normalized.kicad_sch` copy for KiCad netlist export. The current next blocker is no longer ingest; it is full-corpus evaluation/generation, which now fails on at least one fixture because symbol resolution cannot find `SamacSys_Parts:ULQ2003AQDRQ1`.

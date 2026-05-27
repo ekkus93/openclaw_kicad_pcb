@@ -12,7 +12,12 @@ from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.commands._project import create_project_files
 from kicad_pcb.commands._sch_apply import _apply_netlist_to_project, _ApplyNetlistRequest
 from kicad_pcb.compat import KiCadVersion
-from kicad_pcb.corpus.kicadxml import kicadxml_to_circuit_ir, parse_kicadxml_netlist
+from kicad_pcb.corpus.embedded_symbols import materialize_embedded_symbol_libraries
+from kicad_pcb.corpus.kicadxml import (
+    kicadxml_to_circuit_ir,
+    parse_kicadxml_netlist,
+    schematic_symbols_by_ref,
+)
 from kicad_pcb.corpus.layout_features import (
     LayoutFeatures,
     extract_layout_features,
@@ -199,11 +204,12 @@ def _evaluate_one_fixture(context: FixtureEvaluationContext) -> EvaluationReport
     out_dir.mkdir(parents=True, exist_ok=True)
     shutil.rmtree(out_dir / "generated_project", ignore_errors=True)
     project = create_project_files(name="generated_project", out_dir=out_dir, description="")
+    custom_symbols_dir = _prepare_fixture_symbol_dir(fixture_dir=fixture_dir, out_dir=out_dir)
     apply_result = _apply_netlist_to_project(
         project,
         _ApplyNetlistRequest(
             netlist_path=fixture_dir / "circuit_ir.json",
-            symbols_dir=None,
+            symbols_dir=custom_symbols_dir,
             mode_name="internal",
             force=True,
             dry_run=False,
@@ -228,7 +234,7 @@ def _evaluate_one_fixture(context: FixtureEvaluationContext) -> EvaluationReport
     electrical_report = _run_electrical_equivalence(
         fixture_dir=fixture_dir,
         out_dir=out_dir,
-        project_root_schematic=project.path / f"{project.name}.kicad_sch",
+        generated_schematic=canonical_generated,
         adapter=context.adapter,
         require_kicad=context.options.require_kicad,
     )
@@ -268,11 +274,21 @@ def _evaluate_one_fixture(context: FixtureEvaluationContext) -> EvaluationReport
     return report
 
 
+def _prepare_fixture_symbol_dir(*, fixture_dir: Path, out_dir: Path) -> Path | None:
+    symbols_artifact = fixture_dir / "source_embedded_symbols.sexpr"
+    generated_symbols_dir = out_dir / "fixture_symbols"
+    shutil.rmtree(generated_symbols_dir, ignore_errors=True)
+    return materialize_embedded_symbol_libraries(
+        symbols_artifact,
+        output_dir=generated_symbols_dir,
+    )
+
+
 def _run_electrical_equivalence(
     *,
     fixture_dir: Path,
     out_dir: Path,
-    project_root_schematic: Path,
+    generated_schematic: Path,
     adapter: KicadCliAdapter,
     require_kicad: bool,
 ) -> ElectricalEquivalenceReport:
@@ -287,7 +303,7 @@ def _run_electrical_equivalence(
         return ElectricalEquivalenceReport(status="not_run", mismatches=())
 
     netlist_path = out_dir / "generated_netlist.kicadxml"
-    export_result, xml_content = adapter.export_netlist(project_root_schematic, netlist_path)
+    export_result, xml_content = adapter.export_netlist(generated_schematic, netlist_path)
     if not export_result.ok or not xml_content:
         if require_kicad:
             raise ToolError(
@@ -299,9 +315,18 @@ def _run_electrical_equivalence(
 
     source_ir = parse_kicadxml_netlist(fixture_dir / "source_netlist.kicadxml")
     generated_ir = parse_kicadxml_netlist(netlist_path)
+    source_schematic_path = fixture_dir / "source_normalized.kicad_sch"
+    if not source_schematic_path.exists():
+        source_schematic_path = fixture_dir / "source.kicad_sch"
     try:
-        source_circuit = kicadxml_to_circuit_ir(source_ir)
-        generated_circuit = kicadxml_to_circuit_ir(generated_ir)
+        source_circuit = kicadxml_to_circuit_ir(
+            source_ir,
+            fallback_symbols_by_ref=_schematic_symbol_fallback(source_schematic_path),
+        )
+        generated_circuit = kicadxml_to_circuit_ir(
+            generated_ir,
+            fallback_symbols_by_ref=_schematic_symbol_fallback(generated_schematic),
+        )
     except ValidationError as exc:
         return ElectricalEquivalenceReport(
             status="failed",
@@ -314,6 +339,12 @@ def _run_electrical_equivalence(
             ),
         )
     return compare_circuit_ir_equivalence(source_circuit, generated_circuit)
+
+
+def _schematic_symbol_fallback(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    return schematic_symbols_by_ref(SchematicDoc.load(path))
 
 
 def _build_actionable_failures(

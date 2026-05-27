@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.errors import ErrorCode, ParseError, UserError
+from kicad_pcb.sch_doc import SchematicDoc
 
 
 @dataclass(frozen=True)
@@ -72,13 +74,21 @@ def parse_kicadxml_netlist(path: Path) -> KicadXmlNetlist:
     return KicadXmlNetlist(design_source=design_source, components=components, nets=nets)
 
 
-def kicadxml_to_circuit_ir(netlist: KicadXmlNetlist) -> CircuitIR:
+def kicadxml_to_circuit_ir(
+    netlist: KicadXmlNetlist,
+    *,
+    fallback_symbols_by_ref: Mapping[str, str] | None = None,
+) -> CircuitIR:
     """Convert parsed KiCad XML netlist into canonical CircuitIR."""
 
     components = [
         ComponentIR(
             ref=component.ref,
-            symbol=component.symbol or "Unknown:Unknown",
+            symbol=(
+                component.symbol
+                or (fallback_symbols_by_ref or {}).get(component.ref)
+                or "Unknown:Unknown"
+            ),
             value=component.value,
             footprint=component.footprint,
             fields=component.fields or None,
@@ -105,6 +115,16 @@ def kicadxml_to_circuit_ir(netlist: KicadXmlNetlist) -> CircuitIR:
             nets=nets,
         )
     )
+
+
+def schematic_symbols_by_ref(doc: SchematicDoc) -> dict[str, str]:
+    """Return a deterministic ``{ref: symbol_id}`` map from a schematic doc."""
+
+    return {
+        str(symbol["ref"]): str(symbol["symbol_id"])
+        for symbol in doc.list_symbols()
+        if symbol.get("ref") and symbol.get("symbol_id")
+    }
 
 
 def canonicalize_circuit_ir(ir: CircuitIR) -> CircuitIR:

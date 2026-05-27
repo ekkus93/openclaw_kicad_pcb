@@ -1,0 +1,2824 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch</source>
+    <date>2026-05-26T16:23:10-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>EMERALD</title>
+        <company>GEMS - Graceful Equalising of Mechatronics Students</company>
+        <rev>v0.2</rev>
+        <date>2024-02-23</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value="Contact: gasper.skulj@fs.uni-lj.si"/>
+        <comment number="3" value="2022-1-SI01-KA220-HED-000087727"/>
+        <comment number="4" value="Erasmus+ project KA2: Cooperation partnerships in higher education"/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C1">
+      <value>10uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a290c97b-5f9b-401e-8bd3-cedc860cec07</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7a365bee-9668-48c3-9f5f-dc3eb622602f</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>10uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>50e5dbb3-2de2-4536-a646-8bccdb1b797a</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>10uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d79f1b44-ab58-4c7a-8b40-918543b999c0</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0963f5f9-b9d4-453d-a3f3-1d8d9c1c1472</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>da6d27a4-7140-4aa2-8c1b-4a0e60709ad8</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4c7a81aa-8974-498b-8ff4-0fca9182cdf4</tstamps>
+    </comp>
+    <comp ref="C8">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>66ac1621-ee2c-406e-a201-9a79df6b662d</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>27b1303d-016a-4982-862b-afa423a610bd</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>10uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b51b8b6a-2d5e-494e-9d88-6e1551e7fed3</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4467bc19-b7a9-4d15-a549-f1e789dec6e8</tstamps>
+    </comp>
+    <comp ref="C12">
+      <value>0.1uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1%</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1%"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ffd6e78b-b384-4200-aa0f-ddabcff9ab7a</tstamps>
+    </comp>
+    <comp ref="C13">
+      <value>10uF</value>
+      <footprint>GEMS_Library:C_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Voltage">16V</field>
+        <field name="Tolerance">X7R</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Capacitor" description="Unpolarized capacitor"/>
+      <property name="Voltage" value="16V"/>
+      <property name="Tolerance" value="X7R"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3c56321d-61bf-4af4-9183-54a3992438aa</tstamps>
+    </comp>
+    <comp ref="CAN1">
+      <value>CAN_connector</value>
+      <footprint>GEMS_Library:IDC8_Micro-MaTch</footprint>
+      <datasheet>~</datasheet>
+      <description>8pin CAN &amp; Power connector, double row, 02x04</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">571-2150798</field>
+        <field name="Suplier1M no.">571-215083-8</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Suplier2M no.">~</field>
+        <field name="Footprint">GEMS_Library:IDC8_Micro-MaTch</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">8pin CAN &amp; Power connector, double row, 02x04</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="CAN_connector" description="8pin CAN &amp; Power connector, double row, 02x04"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="571-2150798"/>
+      <property name="Suplier1M no." value="571-215083-8"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Suplier2M no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>70b9f3dd-4bbb-4f91-af59-3f71cdea1bf5</tstamps>
+    </comp>
+    <comp ref="CAN2">
+      <value>CAN_connector</value>
+      <footprint>GEMS_Library:IDC8_Micro-MaTch</footprint>
+      <datasheet>~</datasheet>
+      <description>8pin CAN &amp; Power connector, double row, 02x04</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">571-2150798</field>
+        <field name="Suplier1M no.">571-215083-8</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Suplier2M no.">~</field>
+        <field name="Footprint">GEMS_Library:IDC8_Micro-MaTch</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">8pin CAN &amp; Power connector, double row, 02x04</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="CAN_connector" description="8pin CAN &amp; Power connector, double row, 02x04"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="571-2150798"/>
+      <property name="Suplier1M no." value="571-215083-8"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Suplier2M no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bfa1f5ef-c783-4a12-846a-8da89a3e23de</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>XBS306</value>
+      <footprint>GEMS_Library:DO-214_(SMA)</footprint>
+      <datasheet>https://www.farnell.com/datasheets/3118332.pdf</datasheet>
+      <description>Rectifier diode</description>
+      <fields>
+        <field name="Voltage">60V</field>
+        <field name="Current">3A</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">865-XBS306S19R-G</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:DO-214_(SMA)</field>
+        <field name="Datasheet">https://www.farnell.com/datasheets/3118332.pdf</field>
+        <field name="Description">Rectifier diode</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="XBS306" description="Rectifier diode"/>
+      <property name="Voltage" value="60V"/>
+      <property name="Current" value="3A"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="865-XBS306S19R-G"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="Rectifier diode"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1ae162e9-93ee-44da-8144-83c2822d234b</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>Green</value>
+      <footprint>GEMS_Library:LED_D3.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:LED_D3.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="LED" description="Light emitting diode"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>70df5bc7-0977-430c-a103-65f407d55295</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>Red</value>
+      <footprint>GEMS_Library:LED_D3.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:LED_D3.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="LED" description="Light emitting diode"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bf1acd3d-82ec-4dd2-9d9c-e7b6ac5647c5</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>Green</value>
+      <footprint>GEMS_Library:LED_D3.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:LED_D3.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="LED" description="Light emitting diode"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9b3eecb7-e075-40c3-916c-065159e89dfc</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>Yellow</value>
+      <footprint>GEMS_Library:LED_D3.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:LED_D3.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="LED" description="Light emitting diode"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7703d631-1351-4fd9-883f-67001e0a41eb</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>USB_C_USB2.0</value>
+      <footprint>GEMS_Library:USB-C_MOLEX-216990-0001</footprint>
+      <datasheet>https://www.molex.com/en-us/products/part-detail/2169900001?display=pdf</datasheet>
+      <description>USB 2.0-only Type-C Receptacle connector</description>
+      <fields>
+        <field name="USB-C_spec">https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">538-216990-0001</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">900-2169900001TR-ND</field>
+        <field name="Footprint">GEMS_Library:USB-C_MOLEX-216990-0001</field>
+        <field name="Datasheet">https://www.molex.com/en-us/products/part-detail/2169900001?display=pdf</field>
+        <field name="Description">USB 2.0-only Type-C Receptacle connector</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="USB_C_USB2.0" description="USB 2.0-only Type-C Receptacle connector"/>
+      <property name="USB-C_spec" value="https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="538-216990-0001"/>
+      <property name="Suplier2" value="DigiKey"/>
+      <property name="Suplier2 no." value="900-2169900001TR-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb universal serial bus type-C USB2.0"/>
+      <property name="ki_fp_filters" value="USB*C*Receptacle*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>32fa8a48-08a8-47f1-a8ef-6edca0c8b2ec</tstamps>
+    </comp>
+    <comp ref="J2">
+      <value>18650_battery_holder</value>
+      <footprint>GEMS_Library:18650_battery_holder</footprint>
+      <datasheet>https://www.keyelco.com/product-pdf.cfm?p=826</datasheet>
+      <description>18650 battery holder</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">534-54</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:18650_battery_holder</field>
+        <field name="Datasheet">https://www.keyelco.com/product-pdf.cfm?p=826</field>
+        <field name="Description">18650 battery holder</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="18650_battery_holder" description="18650 battery holder"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="534-54"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="18650 battery holder"/>
+      <property name="ki_fp_filters" value="USB*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2e51a335-9e17-49fa-9633-ac8ab2ab47f7</tstamps>
+    </comp>
+    <comp ref="Q1">
+      <value>DMG2305UX-13</value>
+      <footprint>GEMS_Library:SOT-23</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf</datasheet>
+      <description>P-MOSFET transistor, gate/source/drain</description>
+      <fields>
+        <field name="Voltage">20V</field>
+        <field name="Current">4.2A</field>
+        <field name="Case">SOT-23</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">621-DMG2305UX-13</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf</field>
+        <field name="Description">P-MOSFET transistor, gate/source/drain</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="DMG2305UX-13" description="P-MOSFET transistor, gate/source/drain"/>
+      <property name="Voltage" value="20V"/>
+      <property name="Current" value="4.2A"/>
+      <property name="Case" value="SOT-23"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="621-DMG2305UX-13"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="transistor PMOS P-MOS P-MOSFET"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>15c1f8dd-b4ec-4951-9b08-b137834f0799</tstamps>
+    </comp>
+    <comp ref="Q2">
+      <value>DMP3036SSD-13</value>
+      <footprint>GEMS_Library:SOIC-8</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/DMP3036SSD.pdf</datasheet>
+      <description>P-MOSFET transistor, dual, power</description>
+      <fields>
+        <field name="V/C">30V/15A</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">621-DMP3036SSD-13</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/DMP3036SSD.pdf</field>
+        <field name="Description">P-MOSFET transistor, dual, power</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="DMP3036SSD-13" description="P-MOSFET transistor, dual, power"/>
+      <property name="V/C" value="30V/15A"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="621-DMP3036SSD-13"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="transistor PMOS P-MOS P-MOSFET"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e331b1df-c5af-4455-b23d-d194cac1955c 1b128958-0106-4364-8815-75aea86eaa45</tstamps>
+    </comp>
+    <comp ref="Q3">
+      <value>BC846</value>
+      <footprint>GEMS_Library:SOT-23</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/ds11108.pdf</datasheet>
+      <description>BC846 NPN Bipolar junction transistor</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">771-BC846B235</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/ds11108.pdf</field>
+        <field name="Description">BC846 NPN Bipolar junction transistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="BC846" description="BC846 NPN Bipolar junction transistor"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="771-BC846B235"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="BC846 NPN Transistor"/>
+      <property name="ki_fp_filters" value="TO?92*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f913dba9-7166-46cc-98d9-7c77f59afad4</tstamps>
+    </comp>
+    <comp ref="Q4">
+      <value>BC846</value>
+      <footprint>GEMS_Library:SOT-23</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/ds11108.pdf</datasheet>
+      <description>BC846 NPN Bipolar junction transistor</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">771-BC846B235</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/ds11108.pdf</field>
+        <field name="Description">BC846 NPN Bipolar junction transistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="BC846" description="BC846 NPN Bipolar junction transistor"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="771-BC846B235"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="BC846 NPN Transistor"/>
+      <property name="ki_fp_filters" value="TO?92*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>345ef3a1-2b17-4c20-9938-17484d139940</tstamps>
+    </comp>
+    <comp ref="Q5">
+      <value>DMN2310U</value>
+      <footprint>GEMS_Library:SOT-23</footprint>
+      <datasheet>~</datasheet>
+      <description>Single N-MOSFET transistor, gate/source/drain</description>
+      <fields>
+        <field name="Voltage">20V</field>
+        <field name="Current">1.6A</field>
+        <field name="Case">SOT-23</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single N-MOSFET transistor, gate/source/drain</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="DMN2310U" description="Single N-MOSFET transistor, gate/source/drain"/>
+      <property name="Voltage" value="20V"/>
+      <property name="Current" value="1.6A"/>
+      <property name="Case" value="SOT-23"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="transistor NMOS N-MOS N-MOSFET"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>558c5f5a-8fd8-4a4f-8a51-1ac5f3ef848b</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3bca89fa-0595-49c7-ba66-4be586743e93</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>23cd0b0e-58c2-4684-928e-8bbaf990a1d9</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5b422580-6a4d-4061-862a-e3d4f8218563</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6cd627bb-afe1-4574-9b61-cd390210b76f</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>240</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>90dae710-de2d-44ba-bb6b-9e41bf7207b6</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5da1a5a1-4810-40d4-b42d-8e96ef3db53a</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>5.1k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8f228bfd-4192-49f1-b9a3-a4c76324e747</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>5.1k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ad05882a-e926-4a60-a3bc-7ca5769f2ba3</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>1M</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b81a7e6f-7e6b-46fe-ad08-b899ee1e53b8</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>100K</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>11bd27d7-e836-404b-9471-b371a948cb7c</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>597ad8eb-4f46-4ab9-ab33-98d87eb769f2</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>100K</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a1290a22-f3fa-4d1c-be08-ddf9a52faa6d</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>1.5K</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ec06b8af-da64-423b-b52d-278bf61d3a1c</tstamps>
+    </comp>
+    <comp ref="R14">
+      <value>1.5K</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>408d47aa-bbf2-4dc4-afaf-e1d92099fe5a</tstamps>
+    </comp>
+    <comp ref="R15">
+      <value>5m</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5ec3a5c3-f5bd-4e62-be05-5815a6af0214</tstamps>
+    </comp>
+    <comp ref="R16">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>241b0ec4-e297-4f60-8b0c-18ab2ebafed1</tstamps>
+    </comp>
+    <comp ref="R17">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5f1972f9-9e3c-470c-abc5-8eace1a9369e</tstamps>
+    </comp>
+    <comp ref="R18">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>40ceeee9-400b-4cea-8025-3357a04ee075</tstamps>
+    </comp>
+    <comp ref="R19">
+      <value>10K</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b7dbf773-af5d-4e04-8264-30c25645593b</tstamps>
+    </comp>
+    <comp ref="R20">
+      <value>240</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7de2eb73-2b05-434c-b7e8-004a8831a347</tstamps>
+    </comp>
+    <comp ref="R21">
+      <value>1.5k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6306e912-cf7b-4bf6-8dd3-078a30492db6</tstamps>
+    </comp>
+    <comp ref="R22">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a3bda0b3-dbc1-4a85-9bb7-c86c7b917706</tstamps>
+    </comp>
+    <comp ref="R23">
+      <value>240</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d4fb3961-8a32-450f-8b69-38ac314ea59d</tstamps>
+    </comp>
+    <comp ref="R24">
+      <value>240</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>633a93d5-da1d-43c6-970d-6ab64ebd4c27</tstamps>
+    </comp>
+    <comp ref="R25">
+      <value>13k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d3439f38-8448-4860-931d-7b38c9667837</tstamps>
+    </comp>
+    <comp ref="R26">
+      <value>2k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2213fbf4-b8ec-44e7-a60d-7c0743b5221b</tstamps>
+    </comp>
+    <comp ref="R27">
+      <value>1.5k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3fc0a898-ffd2-4b1b-8951-5281a7b08644</tstamps>
+    </comp>
+    <comp ref="R28">
+      <value>100k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d9482fe4-4c56-436f-8c32-b99d9250e43b</tstamps>
+    </comp>
+    <comp ref="R29">
+      <value>30k</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7cdef8ea-0f61-49c5-a412-f578cafbf056</tstamps>
+    </comp>
+    <comp ref="R30">
+      <value>120</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>49b47654-53b7-47c4-b4d1-ef9509fe4614</tstamps>
+    </comp>
+    <comp ref="R31">
+      <value>120</value>
+      <footprint>GEMS_Library:R_1206_(3216)</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Tolerance">1%</field>
+        <field name="Case">1206</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="Resistor" description="Resistor"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Case" value="1206"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>53857660-6a8b-41d5-8805-983210987702</tstamps>
+    </comp>
+    <comp ref="SW1">
+      <value>BTN</value>
+      <footprint>GEMS_Library:SW_PUSH_6mm_SMD</footprint>
+      <datasheet>https://www.ckswitches.com/media/1471/pts645.pdf</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SW_PUSH_6mm_SMD</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1471/pts645.pdf</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="SW_Push_NO" description="Push button switch, generic, two pins"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>051daa13-1581-4d89-8d7c-04dd0aa6c6f3</tstamps>
+    </comp>
+    <comp ref="SW2">
+      <value>RST</value>
+      <footprint>GEMS_Library:SW_PUSH_6mm_SMD</footprint>
+      <datasheet>https://www.ckswitches.com/media/1471/pts645.pdf</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SW_PUSH_6mm_SMD</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1471/pts645.pdf</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="SW_Push_NO" description="Push button switch, generic, two pins"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a121f9ac-dd23-4087-82f3-97988a978a12</tstamps>
+    </comp>
+    <comp ref="SW3">
+      <value>EN</value>
+      <footprint>GEMS_Library:SW_PUSH_6mm_SMD</footprint>
+      <datasheet>https://www.ckswitches.com/media/1471/pts645.pdf</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SW_PUSH_6mm_SMD</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1471/pts645.pdf</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="SW_Push_NO" description="Push button switch, generic, two pins"/>
+      <property name="Suplier1" value="~"/>
+      <property name="Suplier1 no." value="~"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>19c9ab77-24c5-4187-8be4-f9460e3edf8a</tstamps>
+    </comp>
+    <comp ref="SW4">
+      <value>SW_SPDT</value>
+      <footprint>GEMS_Library:SW_SPDT</footprint>
+      <datasheet>https://www.ckswitches.com/media/1428/os.pdf</datasheet>
+      <description>Switch, single pole double throw</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">611-OS102011MA1QN1C</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SW_SPDT</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1428/os.pdf</field>
+        <field name="Description">Switch, single pole double throw</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="SW_SPDT" description="Switch, single pole double throw"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="611-OS102011MA1QN1C"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch single-pole double-throw spdt ON-ON"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9cd1ad7b-32d2-4a14-89bc-abee9fbbc978</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>R1170H331B</value>
+      <footprint>GEMS_Library:SOT-89-5</footprint>
+      <datasheet>https://eu.mouser.com/datasheet/2/294/r1170_ea-3219814.pdf</datasheet>
+      <description>Voltage Regulator, LDO, Enable controll</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">848-R1170H331BT1FE</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">2129-R1170H331B-T1-FETR-ND</field>
+        <field name="Footprint">GEMS_Library:SOT-89-5</field>
+        <field name="Datasheet">https://eu.mouser.com/datasheet/2/294/r1170_ea-3219814.pdf</field>
+        <field name="Description">Voltage Regulator, LDO, Enable controll</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="R1170H331B" description="Voltage Regulator, LDO, Enable controll"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="848-R1170H331BT1FE"/>
+      <property name="Suplier2" value="DigiKey"/>
+      <property name="Suplier2 no." value="2129-R1170H331B-T1-FETR-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="Voltage Regulator LDO Enable"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>71600135-f180-4a5e-ab97-097aca1630a4</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>ESP32-C3</value>
+      <footprint>GEMS_Library:ESP32-C3-WROOM-02</footprint>
+      <datasheet>https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32c3/get-started/index.html</datasheet>
+      <description>ESP32 SMT RF module</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">356-ESP32C3WROOM02N4</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">1965-ESP32-C3-WROOM-02-N4TR-ND</field>
+        <field name="Footprint">GEMS_Library:ESP32-C3-WROOM-02</field>
+        <field name="Datasheet">https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32c3/get-started/index.html</field>
+        <field name="Description">ESP32 SMT RF module</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="ESP32-C3" description="ESP32 SMT RF module"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="356-ESP32C3WROOM02N4"/>
+      <property name="Suplier2" value="DigiKey"/>
+      <property name="Suplier2 no." value="1965-ESP32-C3-WROOM-02-N4TR-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="ESP32 SMT RF module RISC-V"/>
+      <property name="ki_fp_filters" value="Digi*XBee*SMT*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8cd4d3e1-34f3-496f-bd00-f537e56be727</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>USBLC6-2SC6</value>
+      <footprint>GEMS_Library:SOT-23-6</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</datasheet>
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">511-USBLC6-2SC6</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">497-5235-2-ND</field>
+        <field name="Footprint">GEMS_Library:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="USBLC6-2SC6" description="Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="511-USBLC6-2SC6"/>
+      <property name="Suplier2" value="DigiKey"/>
+      <property name="Suplier2 no." value="497-5235-2-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb ethernet video"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bdb5d8ed-e626-409d-b756-27ffb9acf397</tstamps>
+    </comp>
+    <comp ref="U4">
+      <value>MCP6002</value>
+      <footprint>GEMS_Library:SOIC-8</footprint>
+      <datasheet>http://ww1.microchip.com/downloads/jp/DeviceDoc/jp011705.pdf</datasheet>
+      <description>dual OP-AMP: RtR, LP</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">579-MCP6002-I/SN</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">http://ww1.microchip.com/downloads/jp/DeviceDoc/jp011705.pdf</field>
+        <field name="Description">dual OP-AMP: RtR, LP</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="MCP6002" description="dual OP-AMP: RtR, LP"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="579-MCP6002-I/SN"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="OP-AMP RtR LP"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fd2bffaa-e739-481c-b30b-36dc15920a69 b58eb848-4aac-4d4a-a4fe-4eacfb320210 5068adf6-6d99-4de9-a13f-a25c4578337c</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>MCP73831T</value>
+      <footprint>GEMS_Library:SOT-23-5</footprint>
+      <datasheet>https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf</datasheet>
+      <description>Single-cell Li-ion Charger, SOT-23-5</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">579-MCP73831T-2ACIOT</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOT-23-5</field>
+        <field name="Datasheet">https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf</field>
+        <field name="Description">Single-cell Li-ion Charger, SOT-23-5</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="MCP73831T" description="Single-cell Li-ion Charger, SOT-23-5"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="579-MCP73831T-2ACIOT"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="Li-ion Li-poly"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>070ef20f-bd4c-4a30-98ab-4fecbe0e28dd</tstamps>
+    </comp>
+    <comp ref="U6">
+      <value>TCAN332DR</value>
+      <footprint>GEMS_Library:SOIC-8</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tcan337.pdf?ts=1708935013033&amp;ref_url=https%253A%252F%252Fwww.mouser.com%252F</datasheet>
+      <description>CAN bus transciever</description>
+      <fields>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">595-TCAN332DR</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tcan337.pdf?ts=1708935013033&amp;ref_url=https%253A%252F%252Fwww.mouser.com%252F</field>
+        <field name="Description">CAN bus transciever</field>
+      </fields>
+      <libsource lib="GEMS_Library" part="TCAN332DR" description="CAN bus transciever"/>
+      <property name="Suplier1" value="Mouser"/>
+      <property name="Suplier1 no." value="595-TCAN332DR"/>
+      <property name="Suplier2" value="~"/>
+      <property name="Suplier2 no." value="~"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/li-ion-battery-charger-circuit-gems-electronics/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="CAN bus transciever"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>46e3b018-a57a-4453-b087-9d2e5dcbc74e</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="GEMS_Library" part="18650_battery_holder">
+      <description>18650 battery holder</description>
+      <docs>https://www.keyelco.com/product-pdf.cfm?p=826</docs>
+      <footprints>
+        <fp>USB*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">18650_battery_holder</field>
+        <field name="Footprint">GEMS_Library:18650_battery_holder</field>
+        <field name="Datasheet">https://www.keyelco.com/product-pdf.cfm?p=826</field>
+        <field name="Description">18650 battery holder</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">534-54</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="+" name="+batt" type="passive"/>
+        <pin num="-" name="-batt" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="BC846">
+      <description>BC846 NPN Bipolar junction transistor</description>
+      <docs>https://www.diodes.com/assets/Datasheets/ds11108.pdf</docs>
+      <footprints>
+        <fp>TO?92*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">BC846</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/ds11108.pdf</field>
+        <field name="Description">BC846 NPN Bipolar junction transistor</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">771-BC846B235</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="B" type="input"/>
+        <pin num="2" name="E" type="passive"/>
+        <pin num="3" name="C" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="CAN_connector">
+      <description>8pin CAN &amp; Power connector, double row, 02x04</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">CAN</field>
+        <field name="Value">CAN_connector</field>
+        <field name="Footprint">GEMS_Library:IDC8_Micro-MaTch</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">8pin CAN &amp; Power connector, double row, 02x04</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">571-2150798</field>
+        <field name="Suplier1M no.">571-215083-8</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+        <field name="Suplier2M no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+V" type="passive"/>
+        <pin num="2" name="+V" type="passive"/>
+        <pin num="3" name="CAN_H" type="passive"/>
+        <pin num="4" name="+V" type="passive"/>
+        <pin num="5" name="CAN_L" type="passive"/>
+        <pin num="6" name="-V" type="passive"/>
+        <pin num="7" name="-V" type="passive"/>
+        <pin num="8" name="-V" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="Capacitor">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">Capacitor</field>
+        <field name="Footprint">GEMS_Library:C_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+        <field name="Voltage">"Voltage"</field>
+        <field name="Tolerance">"Tolerance"</field>
+        <field name="Case">"Case"</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="DMG2305UX-13">
+      <description>P-MOSFET transistor, gate/source/drain</description>
+      <docs>https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">DMG2305UX-13</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf</field>
+        <field name="Description">P-MOSFET transistor, gate/source/drain</field>
+        <field name="Voltage">20V</field>
+        <field name="Current">4.2A</field>
+        <field name="Case">SOT-23</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">621-DMG2305UX-13</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="DMN2310U">
+      <description>Single N-MOSFET transistor, gate/source/drain</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">DMN2310U</field>
+        <field name="Footprint">GEMS_Library:SOT-23</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single N-MOSFET transistor, gate/source/drain</field>
+        <field name="Voltage">20V</field>
+        <field name="Current">1.6A</field>
+        <field name="Case">SOT-23</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="DMP3036SSD-13">
+      <description>P-MOSFET transistor, dual, power</description>
+      <docs>https://www.diodes.com/assets/Datasheets/DMP3036SSD.pdf</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">DMP3036SSD-13</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/DMP3036SSD.pdf</field>
+        <field name="Description">P-MOSFET transistor, dual, power</field>
+        <field name="V/C">30V/15A</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">621-DMP3036SSD-13</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="S1" type="passive"/>
+        <pin num="2" name="G1" type="input"/>
+        <pin num="3" name="S2" type="passive"/>
+        <pin num="4" name="G2" type="input"/>
+        <pin num="5" name="D2" type="passive"/>
+        <pin num="6" name="D2" type="passive"/>
+        <pin num="7" name="D1" type="passive"/>
+        <pin num="8" name="D1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="ESP32-C3">
+      <description>ESP32 SMT RF module</description>
+      <docs>https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32c3/get-started/index.html</docs>
+      <footprints>
+        <fp>Digi*XBee*SMT*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ESP32-C3</field>
+        <field name="Footprint">GEMS_Library:ESP32-C3-WROOM-02</field>
+        <field name="Datasheet">https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32c3/get-started/index.html</field>
+        <field name="Description">ESP32 SMT RF module</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">356-ESP32C3WROOM02N4</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">1965-ESP32-C3-WROOM-02-N4TR-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="3V3" type="power_in"/>
+        <pin num="2" name="EN" type="input"/>
+        <pin num="3" name="IO4/ADC1_4/FSPIHD/MTMS" type="bidirectional"/>
+        <pin num="4" name="IO5/ADC2_0/FSPIWP/MTDI" type="bidirectional"/>
+        <pin num="5" name="IO6/FSPICLK/MTCK" type="bidirectional"/>
+        <pin num="6" name="IO7/FSPID/MTDO" type="bidirectional"/>
+        <pin num="7" name="IO8" type="bidirectional"/>
+        <pin num="8" name="IO9" type="bidirectional"/>
+        <pin num="9" name="GND" type="power_in"/>
+        <pin num="10" name="IO10/FSPICS0" type="bidirectional"/>
+        <pin num="11" name="IO20/U0RXD" type="bidirectional"/>
+        <pin num="12" name="IO21/U0TXD" type="bidirectional"/>
+        <pin num="13" name="IO18/USB_D-" type="bidirectional"/>
+        <pin num="14" name="IO19/USB_D+" type="bidirectional"/>
+        <pin num="15" name="IO3/ADC1_3" type="bidirectional"/>
+        <pin num="16" name="IO2/ADC1_2/FSPIQ" type="bidirectional"/>
+        <pin num="17" name="IO1/ADC1_1/XTAL32k_N" type="bidirectional"/>
+        <pin num="18" name="IO0/ADC1_0/XTAL32k_P" type="bidirectional"/>
+        <pin num="19" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Footprint">GEMS_Library:LED_D3.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="A" name="A" type="passive"/>
+        <pin num="K" name="K" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="MCP6002">
+      <description>dual OP-AMP: RtR, LP</description>
+      <docs>http://ww1.microchip.com/downloads/jp/DeviceDoc/jp011705.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MCP6002</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">http://ww1.microchip.com/downloads/jp/DeviceDoc/jp011705.pdf</field>
+        <field name="Description">dual OP-AMP: RtR, LP</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">579-MCP6002-I/SN</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="output"/>
+        <pin num="2" name="-" type="input"/>
+        <pin num="3" name="+" type="input"/>
+        <pin num="4" name="V-" type="power_in"/>
+        <pin num="5" name="+" type="input"/>
+        <pin num="6" name="-" type="input"/>
+        <pin num="7" name="" type="output"/>
+        <pin num="8" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="MCP73831T">
+      <description>Single-cell Li-ion Charger, SOT-23-5</description>
+      <docs>https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MCP73831T</field>
+        <field name="Footprint">GEMS_Library:SOT-23-5</field>
+        <field name="Datasheet">https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf</field>
+        <field name="Description">Single-cell Li-ion Charger, SOT-23-5</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">579-MCP73831T-2ACIOT</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="stat" type="output"/>
+        <pin num="2" name="Vss" type="power_in"/>
+        <pin num="3" name="Vbat" type="power_out"/>
+        <pin num="4" name="Vdd" type="power_in"/>
+        <pin num="5" name="prog" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="R1170H331B">
+      <description>Voltage Regulator, LDO, Enable controll</description>
+      <docs>https://eu.mouser.com/datasheet/2/294/r1170_ea-3219814.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">R1170H331B</field>
+        <field name="Footprint">GEMS_Library:SOT-89-5</field>
+        <field name="Datasheet">https://eu.mouser.com/datasheet/2/294/r1170_ea-3219814.pdf</field>
+        <field name="Description">Voltage Regulator, LDO, Enable controll</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">848-R1170H331BT1FE</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">2129-R1170H331B-T1-FETR-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="CE" type="input"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="NC" type="no_connect"/>
+        <pin num="4" name="VI" type="power_in"/>
+        <pin num="5" name="VO" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="Resistor">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">Resistor</field>
+        <field name="Footprint">GEMS_Library:R_1206_(3216)</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+        <field name="Tolerance">"Tolerance"</field>
+        <field name="Case">"Footprint"</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="SW_Push_NO">
+      <description>Push button switch, generic, two pins</description>
+      <docs>https://www.ckswitches.com/media/1471/pts645.pdf</docs>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">SW_Push_NO</field>
+        <field name="Footprint">GEMS_Library:SW_PUSH_6mm_SMD</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1471/pts645.pdf</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+        <field name="Suplier1">~</field>
+        <field name="Suplier1 no.">~</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="COM" name="COM" type="passive"/>
+        <pin num="NO" name="NO" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="SW_SPDT">
+      <description>Switch, single pole double throw</description>
+      <docs>https://www.ckswitches.com/media/1428/os.pdf</docs>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">SW_SPDT</field>
+        <field name="Footprint">GEMS_Library:SW_SPDT</field>
+        <field name="Datasheet">https://www.ckswitches.com/media/1428/os.pdf</field>
+        <field name="Description">Switch, single pole double throw</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">611-OS102011MA1QN1C</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="COM" name="COM" type="passive"/>
+        <pin num="LC" name="LC" type="passive"/>
+        <pin num="RC" name="RC" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="TCAN332DR">
+      <description>CAN bus transciever</description>
+      <docs>https://www.ti.com/lit/ds/symlink/tcan337.pdf?ts=1708935013033&amp;ref_url=https%253A%252F%252Fwww.mouser.com%252F</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">TCAN332DR</field>
+        <field name="Footprint">GEMS_Library:SOIC-8</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tcan337.pdf?ts=1708935013033&amp;ref_url=https%253A%252F%252Fwww.mouser.com%252F</field>
+        <field name="Description">CAN bus transciever</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">595-TCAN332DR</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="TXD" type="input"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="Vcc" type="power_in"/>
+        <pin num="4" name="RXD" type="output"/>
+        <pin num="5" name="NC" type="bidirectional"/>
+        <pin num="6" name="CANL" type="bidirectional"/>
+        <pin num="7" name="CANH" type="bidirectional"/>
+        <pin num="8" name="NC" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="USBLC6-2SC6">
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <docs>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">USBLC6-2SC6</field>
+        <field name="Footprint">GEMS_Library:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">511-USBLC6-2SC6</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">497-5235-2-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="I/O1" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="I/O2" type="passive"/>
+        <pin num="4" name="I/O2" type="passive"/>
+        <pin num="5" name="VBUS" type="passive"/>
+        <pin num="6" name="I/O1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="USB_C_USB2.0">
+      <description>USB 2.0-only Type-C Receptacle connector</description>
+      <docs>https://www.molex.com/en-us/products/part-detail/2169900001?display=pdf</docs>
+      <footprints>
+        <fp>USB*C*Receptacle*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">USB_C_USB2.0</field>
+        <field name="Footprint">GEMS_Library:USB-C_MOLEX-216990-0001</field>
+        <field name="Datasheet">https://www.molex.com/en-us/products/part-detail/2169900001?display=pdf</field>
+        <field name="Description">USB 2.0-only Type-C Receptacle connector</field>
+        <field name="USB-C_spec">https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">538-216990-0001</field>
+        <field name="Suplier2">DigiKey</field>
+        <field name="Suplier2 no.">900-2169900001TR-ND</field>
+      </fields>
+      <pins>
+        <pin num="A1" name="GND" type="power_out"/>
+        <pin num="A4" name="VBUS" type="power_out"/>
+        <pin num="A5" name="CC1" type="bidirectional"/>
+        <pin num="A6" name="D+" type="bidirectional"/>
+        <pin num="A7" name="D-" type="bidirectional"/>
+        <pin num="A8" name="SBU1" type="bidirectional"/>
+        <pin num="A9" name="VBUS" type="power_out"/>
+        <pin num="A12" name="GND" type="power_out"/>
+        <pin num="B1" name="GND" type="power_out"/>
+        <pin num="B4" name="VBUS" type="power_out"/>
+        <pin num="B5" name="CC2" type="bidirectional"/>
+        <pin num="B6" name="D+" type="bidirectional"/>
+        <pin num="B7" name="D-" type="bidirectional"/>
+        <pin num="B8" name="SBU2" type="bidirectional"/>
+        <pin num="B9" name="VBUS" type="power_out"/>
+        <pin num="B12" name="GND" type="power_out"/>
+        <pin num="MP" name="CASE" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="GEMS_Library" part="XBS306">
+      <description>Rectifier diode</description>
+      <docs>https://www.farnell.com/datasheets/3118332.pdf</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">XBS306</field>
+        <field name="Footprint">GEMS_Library:DO-214_(SMA)</field>
+        <field name="Datasheet">https://www.farnell.com/datasheets/3118332.pdf</field>
+        <field name="Description">Rectifier diode</field>
+        <field name="Voltage">60V</field>
+        <field name="Current">3A</field>
+        <field name="Suplier1">Mouser</field>
+        <field name="Suplier1 no.">865-XBS306S19R-G</field>
+        <field name="Suplier2">~</field>
+        <field name="Suplier2 no.">~</field>
+      </fields>
+      <pins>
+        <pin num="A" name="A" type="passive"/>
+        <pin num="K" name="K" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+3V3" class="Default">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="VO" pintype="power_out"/>
+      <node ref="U2" pin="1" pinfunction="3V3" pintype="power_in"/>
+      <node ref="U4" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U6" pin="3" pinfunction="Vcc" pintype="power_in"/>
+    </net>
+    <net code="2" name="+BATT" class="Default">
+      <node ref="CAN1" pin="1" pinfunction="+V" pintype="passive"/>
+      <node ref="CAN1" pin="2" pinfunction="+V" pintype="passive"/>
+      <node ref="CAN1" pin="4" pinfunction="+V" pintype="passive"/>
+      <node ref="CAN2" pin="1" pinfunction="+V" pintype="passive"/>
+      <node ref="CAN2" pin="2" pinfunction="+V" pintype="passive"/>
+      <node ref="CAN2" pin="4" pinfunction="+V" pintype="passive"/>
+      <node ref="Q1" pin="3" pinfunction="D" pintype="passive"/>
+      <node ref="Q2" pin="5" pinfunction="D2" pintype="passive"/>
+      <node ref="Q2" pin="6" pinfunction="D2" pintype="passive"/>
+      <node ref="R17" pin="1" pintype="passive"/>
+      <node ref="R20" pin="1" pintype="passive"/>
+    </net>
+    <net code="3" name="/CAN+" class="Default">
+      <node ref="CAN1" pin="3" pinfunction="CAN_H" pintype="passive"/>
+      <node ref="R30" pin="1" pintype="passive"/>
+      <node ref="U6" pin="7" pinfunction="CANH" pintype="bidirectional"/>
+    </net>
+    <net code="4" name="/CAN-" class="Default">
+      <node ref="CAN1" pin="5" pinfunction="CAN_L" pintype="passive"/>
+      <node ref="R30" pin="2" pintype="passive"/>
+      <node ref="U6" pin="6" pinfunction="CANL" pintype="bidirectional"/>
+    </net>
+    <net code="5" name="CAN_RX" class="Default">
+      <node ref="U2" pin="3" pinfunction="IO4/ADC1_4/FSPIHD/MTMS" pintype="bidirectional"/>
+      <node ref="U6" pin="4" pinfunction="RXD" pintype="output"/>
+    </net>
+    <net code="6" name="CAN_TX" class="Default">
+      <node ref="U2" pin="4" pinfunction="IO5/ADC2_0/FSPIWP/MTDI" pintype="bidirectional"/>
+      <node ref="U6" pin="1" pinfunction="TXD" pintype="input"/>
+    </net>
+    <net code="7" name="GND" class="Default">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="C13" pin="2" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="CAN1" pin="6" pinfunction="-V" pintype="passive"/>
+      <node ref="CAN1" pin="7" pinfunction="-V" pintype="passive"/>
+      <node ref="CAN1" pin="8" pinfunction="-V" pintype="passive"/>
+      <node ref="CAN2" pin="6" pinfunction="-V" pintype="passive"/>
+      <node ref="CAN2" pin="7" pinfunction="-V" pintype="passive"/>
+      <node ref="CAN2" pin="8" pinfunction="-V" pintype="passive"/>
+      <node ref="D2" pin="K" pinfunction="K" pintype="passive"/>
+      <node ref="D4" pin="K" pinfunction="K" pintype="passive"/>
+      <node ref="J1" pin="A1" pinfunction="GND" pintype="power_out"/>
+      <node ref="J1" pin="A12" pinfunction="GND" pintype="power_out"/>
+      <node ref="J1" pin="B1" pinfunction="GND" pintype="power_out"/>
+      <node ref="J1" pin="B12" pinfunction="GND" pintype="power_out"/>
+      <node ref="J2" pin="-" pinfunction="-batt" pintype="passive"/>
+      <node ref="Q3" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q4" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q5" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="R22" pin="2" pintype="passive"/>
+      <node ref="R24" pin="1" pintype="passive"/>
+      <node ref="R25" pin="2" pintype="passive"/>
+      <node ref="R29" pin="2" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+      <node ref="R8" pin="2" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="NO" pinfunction="NO" pintype="passive"/>
+      <node ref="SW2" pin="COM" pinfunction="COM" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="19" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="9" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U4" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U5" pin="2" pinfunction="Vss" pintype="power_in"/>
+      <node ref="U6" pin="2" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="8" name="I_BATT" class="Default">
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="U2" pin="17" pinfunction="IO1/ADC1_1/XTAL32k_N" pintype="bidirectional"/>
+      <node ref="U4" pin="1" pintype="output"/>
+    </net>
+    <net code="9" name="Net-(CAN2-CAN_H)" class="Default">
+      <node ref="CAN2" pin="3" pinfunction="CAN_H" pintype="passive"/>
+      <node ref="R31" pin="1" pintype="passive"/>
+    </net>
+    <net code="10" name="Net-(CAN2-CAN_L)" class="Default">
+      <node ref="CAN2" pin="5" pinfunction="CAN_L" pintype="passive"/>
+      <node ref="R31" pin="2" pintype="passive"/>
+    </net>
+    <net code="11" name="Net-(D2-PadA)" class="Default">
+      <node ref="D2" pin="A" pinfunction="A" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+    </net>
+    <net code="12" name="Net-(D3-PadA)" class="Default">
+      <node ref="D3" pin="A" pinfunction="A" pintype="passive"/>
+      <node ref="R24" pin="2" pintype="passive"/>
+    </net>
+    <net code="13" name="Net-(D4-PadA)" class="Default">
+      <node ref="D4" pin="A" pinfunction="A" pintype="passive"/>
+      <node ref="R20" pin="2" pintype="passive"/>
+    </net>
+    <net code="14" name="Net-(D5-PadA)" class="Default">
+      <node ref="D5" pin="A" pinfunction="A" pintype="passive"/>
+      <node ref="R23" pin="2" pintype="passive"/>
+    </net>
+    <net code="15" name="Net-(J1-CASE)" class="Default">
+      <node ref="J1" pin="MP" pinfunction="CASE" pintype="passive"/>
+      <node ref="R9" pin="1" pintype="passive"/>
+    </net>
+    <net code="16" name="Net-(J1-CC1)" class="Default">
+      <node ref="J1" pin="A5" pinfunction="CC1" pintype="bidirectional"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+    </net>
+    <net code="17" name="Net-(J1-CC2)" class="Default">
+      <node ref="J1" pin="B5" pinfunction="CC2" pintype="bidirectional"/>
+      <node ref="R8" pin="1" pintype="passive"/>
+    </net>
+    <net code="18" name="Net-(J1-D+-PadA6)" class="Default">
+      <node ref="J1" pin="A6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="J1" pin="B6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="U3" pin="1" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="19" name="Net-(J1-D--PadA7)" class="Default">
+      <node ref="J1" pin="A7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="J1" pin="B7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="U3" pin="3" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="20" name="Net-(J2-+batt)" class="Default">
+      <node ref="D3" pin="K" pinfunction="K" pintype="passive"/>
+      <node ref="J2" pin="+" pinfunction="+batt" pintype="passive"/>
+      <node ref="Q2" pin="7" pinfunction="D1" pintype="passive"/>
+      <node ref="Q2" pin="8" pinfunction="D1" pintype="passive"/>
+      <node ref="R28" pin="1" pintype="passive"/>
+    </net>
+    <net code="21" name="Net-(Q1-S)" class="Default">
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="D1" pin="K" pinfunction="K" pintype="passive"/>
+      <node ref="Q1" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="CE" pintype="input"/>
+      <node ref="U1" pin="4" pinfunction="VI" pintype="power_in"/>
+    </net>
+    <net code="22" name="Net-(Q2A-G1)" class="Default">
+      <node ref="Q2" pin="2" pinfunction="G1" pintype="input"/>
+      <node ref="R22" pin="1" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(Q2A-S1)" class="Default">
+      <node ref="C13" pin="1" pintype="passive"/>
+      <node ref="Q2" pin="1" pinfunction="S1" pintype="passive"/>
+      <node ref="R14" pin="2" pintype="passive"/>
+      <node ref="R15" pin="1" pintype="passive"/>
+      <node ref="U5" pin="3" pinfunction="Vbat" pintype="power_out"/>
+    </net>
+    <net code="24" name="Net-(Q2B-G2)" class="Default">
+      <node ref="Q2" pin="4" pinfunction="G2" pintype="input"/>
+      <node ref="R16" pin="2" pintype="passive"/>
+      <node ref="SW4" pin="COM" pinfunction="COM" pintype="passive"/>
+    </net>
+    <net code="25" name="Net-(Q2B-S2)" class="Default">
+      <node ref="Q2" pin="3" pinfunction="S2" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="R15" pin="2" pintype="passive"/>
+      <node ref="R16" pin="1" pintype="passive"/>
+      <node ref="R19" pin="1" pintype="passive"/>
+      <node ref="SW3" pin="NO" pinfunction="NO" pintype="passive"/>
+      <node ref="SW4" pin="RC" pinfunction="RC" pintype="passive"/>
+    </net>
+    <net code="26" name="Net-(Q3-B)" class="Default">
+      <node ref="Q3" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+      <node ref="R27" pin="1" pintype="passive"/>
+    </net>
+    <net code="27" name="Net-(Q3-C)" class="Default">
+      <node ref="Q3" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="Q4" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R17" pin="2" pintype="passive"/>
+      <node ref="R18" pin="2" pintype="passive"/>
+      <node ref="R29" pin="1" pintype="passive"/>
+    </net>
+    <net code="28" name="Net-(Q4-C)" class="Default">
+      <node ref="Q4" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="SW4" pin="LC" pinfunction="LC" pintype="passive"/>
+    </net>
+    <net code="29" name="Net-(Q5-D)" class="Default">
+      <node ref="Q5" pin="3" pinfunction="D" pintype="passive"/>
+      <node ref="R26" pin="1" pintype="passive"/>
+    </net>
+    <net code="30" name="Net-(Q5-G)" class="Default">
+      <node ref="Q5" pin="1" pinfunction="G" pintype="input"/>
+      <node ref="R28" pin="2" pintype="passive"/>
+    </net>
+    <net code="31" name="Net-(R18-Pad1)" class="Default">
+      <node ref="R18" pin="1" pintype="passive"/>
+      <node ref="SW3" pin="COM" pinfunction="COM" pintype="passive"/>
+    </net>
+    <net code="32" name="Net-(U2-EN)" class="Default">
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="SW2" pin="NO" pinfunction="NO" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="EN" pintype="input"/>
+    </net>
+    <net code="33" name="Net-(U2-IO2/ADC1_2/FSPIQ)" class="Default">
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="U2" pin="16" pinfunction="IO2/ADC1_2/FSPIQ" pintype="bidirectional"/>
+    </net>
+    <net code="34" name="Net-(U2-IO8)" class="Default">
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="U2" pin="7" pinfunction="IO8" pintype="bidirectional"/>
+    </net>
+    <net code="35" name="Net-(U2-IO9)" class="Default">
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="COM" pinfunction="COM" pintype="passive"/>
+      <node ref="U2" pin="8" pinfunction="IO9" pintype="bidirectional"/>
+    </net>
+    <net code="36" name="Net-(U4A-+)" class="Default">
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="R14" pin="1" pintype="passive"/>
+      <node ref="U4" pin="3" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="37" name="Net-(U4A--)" class="Default">
+      <node ref="R10" pin="2" pintype="passive"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="38" name="Net-(U4B-+)" class="Default">
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="U4" pin="5" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="39" name="Net-(U5-prog)" class="Default">
+      <node ref="R26" pin="2" pintype="passive"/>
+      <node ref="U5" pin="5" pinfunction="prog" pintype="passive"/>
+    </net>
+    <net code="40" name="Net-(U5-stat)" class="Default">
+      <node ref="D5" pin="K" pinfunction="K" pintype="passive"/>
+      <node ref="U5" pin="1" pinfunction="stat" pintype="output"/>
+    </net>
+    <net code="41" name="SHDN_I" class="Default">
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="U4" pin="7" pintype="output"/>
+    </net>
+    <net code="42" name="SHDN_uC" class="Default">
+      <node ref="R27" pin="2" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="IO7/FSPID/MTDO" pintype="bidirectional"/>
+    </net>
+    <net code="43" name="USB_D+" class="Default">
+      <node ref="U2" pin="14" pinfunction="IO19/USB_D+" pintype="bidirectional"/>
+      <node ref="U3" pin="6" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="44" name="USB_D-" class="Default">
+      <node ref="U2" pin="13" pinfunction="IO18/USB_D-" pintype="bidirectional"/>
+      <node ref="U3" pin="4" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="45" name="VBUS" class="Default">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="D1" pin="A" pinfunction="A" pintype="passive"/>
+      <node ref="J1" pin="A4" pinfunction="VBUS" pintype="power_out"/>
+      <node ref="J1" pin="A9" pinfunction="VBUS" pintype="power_out"/>
+      <node ref="J1" pin="B4" pinfunction="VBUS" pintype="power_out"/>
+      <node ref="J1" pin="B9" pinfunction="VBUS" pintype="power_out"/>
+      <node ref="Q1" pin="1" pinfunction="G" pintype="input"/>
+      <node ref="R23" pin="1" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="VBUS" pintype="passive"/>
+      <node ref="U5" pin="4" pinfunction="Vdd" pintype="power_in"/>
+    </net>
+    <net code="46" name="V_BATT" class="Default">
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="R19" pin="2" pintype="passive"/>
+      <node ref="R25" pin="1" pintype="passive"/>
+      <node ref="U2" pin="18" pinfunction="IO0/ADC1_0/XTAL32k_P" pintype="bidirectional"/>
+      <node ref="U4" pin="6" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="47" name="unconnected-(J1-SBU1-PadA8)" class="Default">
+      <node ref="J1" pin="A8" pinfunction="SBU1" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="48" name="unconnected-(J1-SBU2-PadB8)" class="Default">
+      <node ref="J1" pin="B8" pinfunction="SBU2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="49" name="unconnected-(U1-NC-Pad3)" class="Default">
+      <node ref="U1" pin="3" pinfunction="NC" pintype="no_connect"/>
+    </net>
+    <net code="50" name="unconnected-(U2-IO3/ADC1_3-Pad15)" class="Default">
+      <node ref="U2" pin="15" pinfunction="IO3/ADC1_3" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="51" name="unconnected-(U2-IO6/FSPICLK/MTCK-Pad5)" class="Default">
+      <node ref="U2" pin="5" pinfunction="IO6/FSPICLK/MTCK" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="52" name="unconnected-(U2-IO10/FSPICS0-Pad10)" class="Default">
+      <node ref="U2" pin="10" pinfunction="IO10/FSPICS0" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="53" name="unconnected-(U2-IO20/U0RXD-Pad11)" class="Default">
+      <node ref="U2" pin="11" pinfunction="IO20/U0RXD" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="54" name="unconnected-(U2-IO21/U0TXD-Pad12)" class="Default">
+      <node ref="U2" pin="12" pinfunction="IO21/U0TXD" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="55" name="unconnected-(U6-NC-Pad5)" class="Default">
+      <node ref="U6" pin="5" pinfunction="NC" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="56" name="unconnected-(U6-NC-Pad8)" class="Default">
+      <node ref="U6" pin="8" pinfunction="NC" pintype="input+no_connect"/>
+    </net>
+  </nets>
+</export>

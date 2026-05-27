@@ -1107,6 +1107,33 @@ class TestGraphvizLayoutSeed:
             f"Expected '-Gstart=42' in cmd; got {captured_cmd[0]}"
         )
 
+
+class TestGraphvizTimeoutScaling:
+    def test_small_ir_keeps_base_timeout(self) -> None:
+        timeout = _gv_mod._graphviz_timeout_for_ir(_simple_ir(), base_timeout=10.0)
+
+        assert timeout == 10.0
+
+    def test_large_ir_scales_timeout_above_base(self) -> None:
+        refs = [f"R{i}" for i in range(1, 101)]
+        nets = [
+            {
+                "name": f"N{i}",
+                "pins": [
+                    {"ref": refs[i - 1], "pin": "1"},
+                    {"ref": refs[i], "pin": "1"},
+                ],
+            }
+            for i in range(1, len(refs))
+        ]
+
+        timeout = _gv_mod._graphviz_timeout_for_ir(
+            _minimal_ir(refs=refs, nets=nets),
+            base_timeout=10.0,
+        )
+
+        assert timeout > 10.0
+
     def test_make_layout_engine_forwards_seed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """make_layout_engine passes seed= to GraphvizLayoutEngine."""
         monkeypatch.setenv("GRAPHVIZ_DOT", "/usr/bin/dot")
@@ -2119,8 +2146,7 @@ class TestDecouplingCapCoLocation:
         assert decoupling_map, "pre-condition: decoupling_map should not be empty"
 
         src = _gv_mod.build_dot_source(ir, decoupling_map=decoupling_map)
-        # Expect: "  C1 -> U1 [style=invis, weight=10];"
-        assert "C1 -> U1 [style=invis" in src, (
+        assert "C1 -> U1 [style=invis, weight=10, constraint=false];" in src, (
             f"invisible edge C1->U1 missing from DOT source.\nFull source:\n{src}"
         )
 
@@ -4821,6 +4847,33 @@ class TestApplyPostLayoutSnaps:
         assert "__blk_core__ -> C7 [style=invis, weight=12];" in dot_source
         assert "__blk_input__ -> __blk_core__ [style=invis, weight=30];" in dot_source
         assert "__blk_core__ -> __blk_output__ [style=invis, weight=30];" in dot_source
+
+    def test_build_dot_source_feedback_dummy_nodes_have_empty_point_labels(self) -> None:
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ],
+            nets=[
+                NetIR(
+                    name="FB",
+                    pins=[PinRefIR(ref="U1", pin="1"), PinRefIR(ref="R1", pin="1")],
+                )
+            ],
+        )
+
+        dot_source = _gv_mod.build_dot_source(
+            ir,
+            tiers={"U1": 1, "R1": 0},
+            feedback_refs={"R1"},
+        )
+
+        assert (
+            '__fbdummy_R1__ [label="", shape=point, style=invis, width=0, height=0];'
+            in dot_source
+        )
+        assert "R1 -> __fbdummy_R1__ [style=invis, weight=10];" in dot_source
 
     def test_build_dot_source_emits_stage_sequence_edges_within_block_layout(self) -> None:
         ir = CircuitIR(

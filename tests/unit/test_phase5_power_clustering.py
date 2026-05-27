@@ -206,4 +206,7 @@ def test_power_net_cluster_offsets_shared_symbol_toward_open_side() -> None:
     power_symbol = routing.power_symbols[0]
     assert power_symbol.angle == 270
     assert power_symbol == PowerSymbolPlacement(net_name="VMINUS15", x=118.11, y=60.96, angle=270)
-    assert WireSegment(118.11, 67.31, 118.11, 60.96) in routing.wires
+    assert (
+        WireSegment(118.11, 67.31, 118.11, 60.96) in routing.wires
+        or WireSegment(118.11, 60.96, 118.11, 67.31) in routing.wires
+    )

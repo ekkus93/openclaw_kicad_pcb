@@ -19,6 +19,7 @@ from kicad_pcb.router import (
     SharedLanePlan,
     WireSegment,
     _chain_route,
+    _l_route_with_protected_points,
     _plan_local_ladder_routes,
     _point_in_or_on_box,
     _prefer_chain_route,
@@ -134,6 +135,35 @@ def test_simplify_preserves_protected_points() -> None:
     assert (5.0, 10.0) in {(merged.x1, merged.y1), (merged.x2, merged.y2)}, (
         "Protected pin endpoint must remain as wire start/end"
     )
+
+
+def test_simplify_preserves_label_attachment_boundaries() -> None:
+    """Protected label attachment points keep adjacent vertical runs electrically separate."""
+
+    wires = [
+        WireSegment(0.0, 0.0, 0.0, 10.0),
+        WireSegment(0.0, 10.0, 0.0, 20.0),
+        WireSegment(0.0, 20.0, 0.0, 30.0),
+    ]
+
+    result = _simplify_wires(wires, protected_points={(0.0, 10.0), (0.0, 20.0)})
+
+    assert len(result) == 3
+
+
+def test_l_route_prefers_vertical_first_when_horizontal_elbow_crosses_other_stub_points() -> None:
+    route = _l_route_with_protected_points(
+        10.0,
+        10.0,
+        30.0,
+        30.0,
+        protected_points={(30.0, 15.0), (30.0, 20.0), (30.0, 25.0)},
+    )
+
+    assert route == [
+        WireSegment(10.0, 10.0, 10.0, 30.0),
+        WireSegment(10.0, 30.0, 30.0, 30.0),
+    ]
 
 
 def test_simplify_iterates_until_no_more_merges() -> None:

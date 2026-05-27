@@ -654,17 +654,27 @@ def _transform_pin_at(
     ``pin_at`` maps ``pin_num -> (px, py, pa)`` in library space.
     Returns ``{pin_num: (schematic_x, schematic_y, schematic_angle)}``.
 
-    When *rotation* is 0 this reduces to a pure translation (no trig):
-      ``schematic_{x,y} = origin_{x,y} + p_{x,y}``.
+    KiCad symbol-library coordinates use a positive-up Y axis, while schematic
+    placement coordinates use a positive-down Y axis. KiCad pin angles point
+    from the connection point back toward the symbol body, but routing needs
+    the opposite, outward-facing direction. Symbol rotations are stored in
+    counter-clockwise degrees, so the outward-facing pin direction rotates the
+    opposite way when converted to schematic space.
 
-    For non-zero *rotation* θ (degrees), the standard 2-D rotation is applied:
+    When *rotation* is 0 this reduces to:
+      ``schematic_x = origin_x + px``
+      ``schematic_y = origin_y - py``
+
+    For non-zero *rotation* θ (degrees), the library-space point is rotated
+    counter-clockwise and then projected into schematic coordinates:
       ``schematic_x = origin_x + cos(θ)·px − sin(θ)·py``
-      ``schematic_y = origin_y + sin(θ)·px + cos(θ)·py``
-      ``schematic_angle = (pa + θ) % 360``
+      ``schematic_y = origin_y − (sin(θ)·px + cos(θ)·py)``
+      ``schematic_angle = (pa + 180 − θ) % 360``
     """
     if rotation == 0:
         return {
-            pin_num: (origin_x + px, origin_y + py, pa) for pin_num, (px, py, pa) in pin_at.items()
+            pin_num: (origin_x + px, origin_y - py, (pa + 180) % 360)
+            for pin_num, (px, py, pa) in pin_at.items()
         }
     theta = math.radians(rotation)
     cos_t = math.cos(theta)
@@ -672,8 +682,8 @@ def _transform_pin_at(
     return {
         pin_num: (
             origin_x + cos_t * px - sin_t * py,
-            origin_y + sin_t * px + cos_t * py,
-            (pa + rotation) % 360,
+            origin_y - (sin_t * px + cos_t * py),
+            (pa + 180 - rotation) % 360,
         )
         for pin_num, (px, py, pa) in pin_at.items()
     }

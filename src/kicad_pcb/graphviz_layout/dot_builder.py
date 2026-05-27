@@ -510,7 +510,7 @@ def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> Non
     for ref in sorted_fb:
         safe = _safe_id(ref)
         dummy = f"__fbdummy_{safe}__"
-        lines.append(f"    {dummy} [style=invis, width=0, height=0];")
+        lines.append(f'    {dummy} [label="", shape=point, style=invis, width=0, height=0];')
         lines.append(f"    {safe} -> {dummy} [style=invis, weight=10];")
     lines.append("  }")
 
@@ -541,14 +541,14 @@ def _emit_decoupling_constraints(
 
     Emitted for each ``{cap_ref: ic_ref}`` pair:
 
-    * An invisible directed edge ``cap → ic [style=invis, weight=10]`` so that
+    * An invisible directed edge ``cap → ic [style=invis, weight=10, constraint=false]`` so that
       Graphviz pulls the cap toward the IC without affecting the visible graph.
     * A ``{rank=same; ic; cap}`` subgraph to place both in the same column.
     """
     for cap_ref, ic_ref in sorted(decoupling_map.items()):
         cap_id = _safe_id(cap_ref)
         ic_id = _safe_id(ic_ref)
-        lines.append(f"  {cap_id} -> {ic_id} [style=invis, weight=10];")
+        lines.append(f"  {cap_id} -> {ic_id} [style=invis, weight=10, constraint=false];")
     for cap_ref, ic_ref in sorted(decoupling_map.items()):
         lines.append("  {")
         lines.append("    rank=same;")

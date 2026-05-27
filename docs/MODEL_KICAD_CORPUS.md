@@ -38,13 +38,14 @@ This workflow is a deterministic regression harness for the schematic generator.
 Each fixture directory may contain:
 
 - `source.kicad_sch`
+- `source_normalized.kicad_sch` as the KiCad-loader-facing normalization copy
 - `metadata.json`
 - `source_layout_features.json`
 - `source_embedded_symbols.sexpr`
 - `source_netlist.kicadxml` when KiCad XML export succeeds
 - `circuit_ir.json` when XML export/import succeeds
 
-If repo-compatible KiCad CLI is unavailable, ingestion still writes partial fixtures and marks them `pending_netlist_export` or `layout_only`. If KiCad is available but cannot load a raw source schematic for export, ingestion also falls back to `layout_only`.
+If repo-compatible KiCad CLI is unavailable, ingestion still writes partial fixtures and marks them `pending_netlist_export` or `layout_only`. When KiCad is available, ingest now preserves the raw source schematic and writes a deterministic `source_normalized.kicad_sch` copy for `kicad-cli sch export netlist`.
 
 ## What evaluate measures
 
@@ -58,6 +59,6 @@ Electrical equivalence is the hard gate. Layout quality and source similarity ex
 
 The corpus/export workflow now targets `kicad-cli >= 9.0.0`. On the current `kicad-cli 9.0.9` machine:
 
-- ingest runs, but the current imported source schematics still land as `layout_only` because KiCad 9 cannot load them for XML netlist export yet
-- evaluate runs, but skips real fixtures that do not yet have `circuit_ir.json`
+- ingest now succeeds for the current imported source schematics by exporting from `source_normalized.kicad_sch`, and the committed corpus fixtures now include `source_netlist.kicadxml` plus `circuit_ir.json`
+- evaluate is no longer blocked on missing source electrical artifacts, but the current full-corpus run now fails later in generation on at least one fixture because symbol resolution cannot find `SamacSys_Parts:ULQ2003AQDRQ1`
 - the default `uv run pytest` suite stays green, and the KiCad-marked suite now expects KiCad 9 specifically

@@ -34,3 +34,13 @@ def test_compare_circuit_ir_equivalence_detects_component_and_net_mismatches() -
         "component_symbol:R1",
         "net_names",
     }
+
+
+def test_compare_circuit_ir_equivalence_flattens_safe_sheet_scoped_net_names() -> None:
+    report = compare_circuit_ir_equivalence(
+        _make_ir(net_name="CAN0_RX"),
+        _make_ir(net_name="/OpenClaw_Managed/CAN0_RX"),
+    )
+
+    assert report.status == "passed"
+    assert report.mismatches == ()

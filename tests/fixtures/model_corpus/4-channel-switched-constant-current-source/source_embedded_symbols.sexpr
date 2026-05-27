@@ -152,7 +152,7 @@
     (embedded_fonts no)
   )
   (symbol
-    "NCV317MBSTT3G_1"
+    "SamacSys_Parts:NCV317MBSTT3G"
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)

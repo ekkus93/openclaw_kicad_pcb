@@ -5,7 +5,7 @@
   "fixture_id": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar",
   "generator": "eeschema",
   "global_label_count": 0,
-  "has_circuit_ir": false,
+  "has_circuit_ir": true,
   "has_embedded_symbols": true,
   "kicad_schematic_version": "20231120",
   "label_count": 100,
@@ -17,9 +17,10 @@
   "source_file_name": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar.kicad_sch",
   "source_path": "model_kicad_files/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar.kicad_sch",
   "source_url": null,
-  "status": "layout_only",
+  "status": "ready",
   "status_reasons": [
-    "source_netlist_export_failed"
+    "normalized:removed_top_level_comments",
+    "normalized:normalized_root_sheet_instances"
   ],
   "symbol_count": 86,
   "title": "ESP32 Gamepad",

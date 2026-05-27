@@ -48,36 +48,34 @@ class TestTransformPinAt:
     """_transform_pin_at(pin_at, origin_x, origin_y, rotation) -> transformed map."""
 
     def test_identity_rotation(self) -> None:
-        """rotation=0: result is a pure translation by (origin_x, origin_y)."""
+        """rotation=0: X translates directly, Y flips, and the pin faces outward."""
         pin_at: dict[str, tuple[float, float, float]] = {
             "1": (10.0, 20.0, 90.0),
             "2": (-5.0, 3.0, 180.0),
         }
         result = _transform_pin_at(pin_at, 100.0, 200.0, rotation=0)
         assert result == {
-            "1": (approx(110.0), approx(220.0), approx(90.0)),
-            "2": (approx(95.0), approx(203.0), approx(180.0)),
+            "1": (approx(110.0), approx(180.0), approx(270.0)),
+            "2": (approx(95.0), approx(197.0), approx(0.0)),
         }
 
     def test_rotation_90(self) -> None:
-        """90° rotation: (px, py) → (−py, px); angle incremented by 90."""
-        # cos(90°) = 0, sin(90°) = 1  ⟹  rx = −py, ry = px
+        """90° CCW rotation: library-space point rotates, then Y flips into schematic space."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 45.0)}
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=90)
         rx, ry, ra = result["1"]
         assert rx == approx(-4.0, abs=1e-9)
-        assert ry == approx(3.0, abs=1e-9)
-        assert ra == pytest.approx((45 + 90) % 360)
+        assert ry == approx(-3.0, abs=1e-9)
+        assert ra == pytest.approx((45 + 180 - 90) % 360)
 
     def test_rotation_180(self) -> None:
-        """180° rotation: (px, py) → (−px, −py); angle incremented by 180."""
-        # cos(180°) = −1, sin(180°) = 0  ⟹  rx = −px, ry = −py
+        """180° rotation flips X and preserves the library Y sign after schematic projection."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 30.0)}
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=180)
         rx, ry, ra = result["1"]
         assert rx == approx(-3.0, abs=1e-9)
-        assert ry == approx(-4.0, abs=1e-9)
-        assert ra == pytest.approx((30 + 180) % 360)
+        assert ry == approx(4.0, abs=1e-9)
+        assert ra == pytest.approx((30 + 180 - 180) % 360)
 
     def test_angle_wraps_below_360(self) -> None:
         """Resulting angle is always in [0, 360)."""
@@ -85,16 +83,15 @@ class TestTransformPinAt:
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=180)
         angle = result["1"][2]
         assert 0.0 <= angle < 360.0
-        assert angle == pytest.approx((270 + 180) % 360)  # 90°
+        assert angle == pytest.approx((270 + 180 - 180) % 360)  # 270°
 
     def test_origin_applied_correctly(self) -> None:
-        """Non-zero origin is added *after* the rotation transform."""
-        # rotation=90: rx = -py, ry = px; then add origin (10, 20)
+        """Non-zero origin is added after rotation and library->schematic Y projection."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 0.0)}
         result = _transform_pin_at(pin_at, 10.0, 20.0, rotation=90)
         rx, ry, _ = result["1"]
         assert rx == approx(10.0 + (-4.0), abs=1e-9)
-        assert ry == approx(20.0 + 3.0, abs=1e-9)
+        assert ry == approx(20.0 + (-3.0), abs=1e-9)
 
     def test_empty_pin_map(self) -> None:
         """An empty pin map returns an empty dict without error."""
@@ -271,6 +268,26 @@ class TestAdvisoryWarnings:
             ],
         )
         assert advisory_warnings(ir) == []
+
+    def test_tca9555_is_not_misclassified_as_timer555(self) -> None:
+        ir = self._make_valid_ir(
+            components=[
+                ComponentIR(
+                    ref="U2",
+                    symbol="Interface_Expansion:TCA9555DBT",
+                    value="TCA9555DBT",
+                )
+            ],
+            nets=[
+                NetIR(
+                    name="I2C",
+                    pins=[PinRefIR(ref="U2", pin="1"), PinRefIR(ref="U2", pin="2")],
+                )
+            ],
+        )
+
+        codes = {warning["code"] for warning in advisory_warnings(ir)}
+        assert not {code for code in codes if code.startswith("TIMER555_")}
 
     def test_component_not_in_any_net(self) -> None:
         """A component absent from all nets triggers COMPONENT_NOT_IN_ANY_NET."""

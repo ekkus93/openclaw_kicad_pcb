@@ -5,7 +5,7 @@
   "fixture_id": "microsd-card-in-spi-mode-with-hotswap-support",
   "generator": "CircuitSnips",
   "global_label_count": 0,
-  "has_circuit_ir": false,
+  "has_circuit_ir": true,
   "has_embedded_symbols": true,
   "kicad_schematic_version": "20231120",
   "label_count": 14,
@@ -17,9 +17,11 @@
   "source_file_name": "microsd-card-in-spi-mode-with-hotswap-support.kicad_sch",
   "source_path": "model_kicad_files/microsd-card-in-spi-mode-with-hotswap-support.kicad_sch",
   "source_url": null,
-  "status": "layout_only",
+  "status": "ready",
   "status_reasons": [
-    "source_netlist_export_failed"
+    "normalized:replaced_invalid_root_uuid",
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
   ],
   "symbol_count": 33,
   "title": "MicroSD card in SPI Mode with Hotswap Support",

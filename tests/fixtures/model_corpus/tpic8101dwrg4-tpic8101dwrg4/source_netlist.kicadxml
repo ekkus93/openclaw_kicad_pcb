@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch</source>
+    <date>2026-05-26T16:23:12-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>TPIC8101 Engine Knock Sensor Interface</title>
+        <company>CircuitSnips</company>
+        <rev>1</rev>
+        <date>2026-05-26</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C82">
+      <value>0.1u</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>46b68c70-c41e-404d-8d09-dfd92d94dcdd</tstamps>
+    </comp>
+    <comp ref="C83">
+      <value>47u</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>194d2444-b046-4da2-831c-e30fc0c983c7</tstamps>
+    </comp>
+    <comp ref="C84">
+      <value>3.3n</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>999d19b2-4347-40b9-8e3e-4b290ae28d50</tstamps>
+    </comp>
+    <comp ref="C85">
+      <value>3.3n</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0ee0bc58-39ed-44ec-b7df-b41ced8a9dbd</tstamps>
+    </comp>
+    <comp ref="C86">
+      <value>100n</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>54938a9a-b249-4648-b268-38674ecb9b95</tstamps>
+    </comp>
+    <comp ref="C87">
+      <value>100n</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c06d8a7e-3e7b-4cf8-a87d-9041cd768095</tstamps>
+    </comp>
+    <comp ref="C88">
+      <value>15p</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>44be7465-e23b-4c24-9078-f2bd88751693</tstamps>
+    </comp>
+    <comp ref="C89">
+      <value>100n</value>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>395cb467-285e-4d39-9ef0-2b2839c32c2b</tstamps>
+    </comp>
+    <comp ref="IC19">
+      <value>TPIC8101DWRG4</value>
+      <footprint>SOIC127P1030X265-20N</footprint>
+      <datasheet>http://www.ti.com/lit/ds/symlink/tpic8101.pdf</datasheet>
+      <description>IC KNOCK SENSOR INTERFACE 20SOIC</description>
+      <fields>
+        <field name="Height">2.65</field>
+        <field name="Manufacturer_Name">Texas Instruments</field>
+        <field name="Manufacturer_Part_Number">TPIC8101DWRG4</field>
+        <field name="Mouser Part Number">595-TPIC8101DWRG4</field>
+        <field name="Mouser Price/Stock">https://www.mouser.co.uk/ProductDetail/Texas-Instruments/TPIC8101DWRG4?qs=QyYHynRG50qtgosw5w8w6A%3D%3D</field>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Footprint">SOIC127P1030X265-20N</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/tpic8101.pdf</field>
+        <field name="Description">IC KNOCK SENSOR INTERFACE 20SOIC</field>
+      </fields>
+      <libsource lib="SamacSys_Parts" part="TPIC8101DWRG4" description="IC KNOCK SENSOR INTERFACE 20SOIC"/>
+      <property name="Height" value="2.65"/>
+      <property name="Manufacturer_Name" value="Texas Instruments"/>
+      <property name="Manufacturer_Part_Number" value="TPIC8101DWRG4"/>
+      <property name="Mouser Part Number" value="595-TPIC8101DWRG4"/>
+      <property name="Mouser Price/Stock" value="https://www.mouser.co.uk/ProductDetail/Texas-Instruments/TPIC8101DWRG4?qs=QyYHynRG50qtgosw5w8w6A%3D%3D"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0aae704a-d50a-4f58-85c2-247e8f82b78f</tstamps>
+    </comp>
+    <comp ref="R83">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>538c239a-9ef8-49fc-b091-15162ea85e0a</tstamps>
+    </comp>
+    <comp ref="R84">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>690cf668-fc7a-44e5-bda1-ccbd54f94dda</tstamps>
+    </comp>
+    <comp ref="R85">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1b97852b-50d6-444b-9fef-8760d71dc9ff</tstamps>
+    </comp>
+    <comp ref="R86">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>dedea9ef-67f1-49b3-a34f-3825a8db9f59</tstamps>
+    </comp>
+    <comp ref="R87">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2414eef5-c23e-432f-83ab-2aae25485740</tstamps>
+    </comp>
+    <comp ref="R88">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>23b643fe-5273-410a-89b9-aaa8741d0e55</tstamps>
+    </comp>
+    <comp ref="R89">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bcde76cf-3765-4577-a7ba-6605ada8ffe9</tstamps>
+    </comp>
+    <comp ref="R90">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>77dac80d-fd40-4d69-b5f3-478304e5e63f</tstamps>
+    </comp>
+    <comp ref="R91">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>dd615f08-4c72-4b0a-9f62-0e491b727edb</tstamps>
+    </comp>
+    <comp ref="R92">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cdf4de47-ddb7-40b4-a16e-55000a65b84f</tstamps>
+    </comp>
+    <comp ref="R93">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1120246f-5a1c-41ec-ac2e-89d68cd18835</tstamps>
+    </comp>
+    <comp ref="Y1">
+      <value>S35010-4.000-A-X1-R</value>
+      <footprint>S350104000AX1R</footprint>
+      <datasheet>https://aker-usa.com/spec/S35010-4.000-A-X1-R.pdf</datasheet>
+      <description>Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200</description>
+      <fields>
+        <field name="Height">1.2</field>
+        <field name="Manufacturer_Name">Aker Technology</field>
+        <field name="Manufacturer_Part_Number">S35010-4.000-A-X1-R</field>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Footprint">S350104000AX1R</field>
+        <field name="Datasheet">https://aker-usa.com/spec/S35010-4.000-A-X1-R.pdf</field>
+        <field name="Description">Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200</field>
+      </fields>
+      <libsource lib="SamacSys_Parts" part="S35010-4.000-A-X1-R" description="Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200"/>
+      <property name="Height" value="1.2"/>
+      <property name="Manufacturer_Name" value="Aker Technology"/>
+      <property name="Manufacturer_Part_Number" value="S35010-4.000-A-X1-R"/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/tpic8101dwrg4-tpic8101dwrg4/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>28f33e15-3f8b-4d89-bda3-4287a2605277</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="SamacSys_Parts" part="S35010-4.000-A-X1-R">
+      <description>Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200</description>
+      <docs>https://aker-usa.com/spec/S35010-4.000-A-X1-R.pdf</docs>
+      <fields>
+        <field name="Reference">Y1</field>
+        <field name="Value">S35010-4.000-A-X1-R</field>
+        <field name="Footprint">S350104000AX1R</field>
+        <field name="Datasheet">https://aker-usa.com/spec/S35010-4.000-A-X1-R.pdf</field>
+        <field name="Description">Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200</field>
+        <field name="Height">1.2</field>
+        <field name="Manufacturer_Name">Aker Technology</field>
+        <field name="Manufacturer_Part_Number">S35010-4.000-A-X1-R</field>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+      </fields>
+      <pins>
+        <pin num="1" name="EN-H/Float" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="OUTPUT" type="passive"/>
+        <pin num="4" name="VDD" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="SamacSys_Parts" part="TPIC8101DWRG4">
+      <description>IC KNOCK SENSOR INTERFACE 20SOIC</description>
+      <docs>http://www.ti.com/lit/ds/symlink/tpic8101.pdf</docs>
+      <fields>
+        <field name="Reference">IC19</field>
+        <field name="Value">TPIC8101DWRG4</field>
+        <field name="Footprint">SOIC127P1030X265-20N</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/tpic8101.pdf</field>
+        <field name="Description">IC KNOCK SENSOR INTERFACE 20SOIC</field>
+        <field name="Height">2.65</field>
+        <field name="Manufacturer_Name">Texas Instruments</field>
+        <field name="Manufacturer_Part_Number">TPIC8101DWRG4</field>
+        <field name="Mouser Part Number">595-TPIC8101DWRG4</field>
+        <field name="Mouser Price/Stock">https://www.mouser.co.uk/ProductDetail/Texas-Instruments/TPIC8101DWRG4?qs=QyYHynRG50qtgosw5w8w6A%3D%3D</field>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VDD" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="VREF" type="passive"/>
+        <pin num="4" name="OUT" type="passive"/>
+        <pin num="5" name="NC_1" type="passive"/>
+        <pin num="6" name="NC_2" type="passive"/>
+        <pin num="7" name="INT/HOLD" type="passive"/>
+        <pin num="8" name="~{CS}" type="passive"/>
+        <pin num="9" name="XIN" type="passive"/>
+        <pin num="10" name="XOUT" type="passive"/>
+        <pin num="11" name="SDO" type="passive"/>
+        <pin num="12" name="SDI" type="passive"/>
+        <pin num="13" name="SCLK" type="passive"/>
+        <pin num="14" name="~{TEST}" type="passive"/>
+        <pin num="15" name="CH2P" type="passive"/>
+        <pin num="16" name="CH2N" type="passive"/>
+        <pin num="17" name="CH2FB" type="passive"/>
+        <pin num="18" name="CH1FB" type="passive"/>
+        <pin num="19" name="CH1N" type="passive"/>
+        <pin num="20" name="CH1P" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+5VD" class="Default">
+      <node ref="C82" pin="1" pintype="passive"/>
+      <node ref="C83" pin="1" pintype="passive"/>
+      <node ref="C87" pin="1" pintype="passive"/>
+      <node ref="IC19" pin="1" pinfunction="VDD" pintype="passive"/>
+      <node ref="Y1" pin="4" pinfunction="VDD" pintype="passive"/>
+    </net>
+    <net code="2" name="5V-KNOCK" class="Default">
+      <node ref="C89" pin="1" pintype="passive"/>
+      <node ref="IC19" pin="4" pinfunction="OUT" pintype="passive"/>
+      <node ref="R92" pin="2" pintype="passive"/>
+    </net>
+    <net code="3" name="KNOCK-CH1N" class="Default">
+      <node ref="C84" pin="1" pintype="passive"/>
+    </net>
+    <net code="4" name="KNOCK-CH1P" class="Default">
+      <node ref="C82" pin="2" pintype="passive"/>
+      <node ref="C83" pin="2" pintype="passive"/>
+      <node ref="C86" pin="1" pintype="passive"/>
+      <node ref="C87" pin="2" pintype="passive"/>
+      <node ref="C88" pin="2" pintype="passive"/>
+      <node ref="C89" pin="2" pintype="passive"/>
+      <node ref="IC19" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="R87" pin="1" pintype="passive"/>
+      <node ref="R88" pin="1" pintype="passive"/>
+      <node ref="R89" pin="1" pintype="passive"/>
+      <node ref="R90" pin="1" pintype="passive"/>
+      <node ref="R91" pin="1" pintype="passive"/>
+      <node ref="R92" pin="1" pintype="passive"/>
+      <node ref="R93" pin="1" pintype="passive"/>
+      <node ref="Y1" pin="2" pinfunction="GND" pintype="passive"/>
+    </net>
+    <net code="5" name="KNOCK-CH2N" class="Default">
+      <node ref="C85" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="KNOCK-INTN-HOLD" class="Default">
+      <node ref="IC19" pin="7" pinfunction="INT/HOLD" pintype="passive"/>
+      <node ref="R93" pin="2" pintype="passive"/>
+    </net>
+    <net code="7" name="KNOCK-TESTN" class="Default">
+      <node ref="IC19" pin="14" pinfunction="~{TEST}" pintype="passive"/>
+      <node ref="R87" pin="2" pintype="passive"/>
+    </net>
+    <net code="8" name="Net-(C84-Pad2)" class="Default">
+      <node ref="C84" pin="2" pintype="passive"/>
+      <node ref="R84" pin="1" pintype="passive"/>
+    </net>
+    <net code="9" name="Net-(C85-Pad2)" class="Default">
+      <node ref="C85" pin="2" pintype="passive"/>
+      <node ref="R85" pin="1" pintype="passive"/>
+    </net>
+    <net code="10" name="Net-(IC19-CH1FB)" class="Default">
+      <node ref="IC19" pin="18" pinfunction="CH1FB" pintype="passive"/>
+      <node ref="R83" pin="2" pintype="passive"/>
+    </net>
+    <net code="11" name="Net-(IC19-CH1N)" class="Default">
+      <node ref="IC19" pin="19" pinfunction="CH1N" pintype="passive"/>
+      <node ref="R83" pin="1" pintype="passive"/>
+      <node ref="R84" pin="2" pintype="passive"/>
+    </net>
+    <net code="12" name="Net-(IC19-CH1P)" class="Default">
+      <node ref="C86" pin="2" pintype="passive"/>
+      <node ref="IC19" pin="15" pinfunction="CH2P" pintype="passive"/>
+      <node ref="IC19" pin="20" pinfunction="CH1P" pintype="passive"/>
+      <node ref="IC19" pin="3" pinfunction="VREF" pintype="passive"/>
+    </net>
+    <net code="13" name="Net-(IC19-CH2FB)" class="Default">
+      <node ref="IC19" pin="17" pinfunction="CH2FB" pintype="passive"/>
+      <node ref="R86" pin="2" pintype="passive"/>
+    </net>
+    <net code="14" name="Net-(IC19-CH2N)" class="Default">
+      <node ref="IC19" pin="16" pinfunction="CH2N" pintype="passive"/>
+      <node ref="R85" pin="2" pintype="passive"/>
+      <node ref="R86" pin="1" pintype="passive"/>
+    </net>
+    <net code="15" name="Net-(IC19-XIN)" class="Default">
+      <node ref="C88" pin="1" pintype="passive"/>
+      <node ref="IC19" pin="9" pinfunction="XIN" pintype="passive"/>
+      <node ref="Y1" pin="3" pinfunction="OUTPUT" pintype="passive"/>
+    </net>
+    <net code="16" name="SPI-KNOCK-CS" class="Default">
+      <node ref="IC19" pin="8" pinfunction="~{CS}" pintype="passive"/>
+      <node ref="R88" pin="2" pintype="passive"/>
+    </net>
+    <net code="17" name="SPI-MISO" class="Default">
+      <node ref="IC19" pin="11" pinfunction="SDO" pintype="passive"/>
+      <node ref="R89" pin="2" pintype="passive"/>
+    </net>
+    <net code="18" name="SPI-MOSI" class="Default">
+      <node ref="IC19" pin="12" pinfunction="SDI" pintype="passive"/>
+      <node ref="R90" pin="2" pintype="passive"/>
+    </net>
+    <net code="19" name="SPI-SCLK" class="Default">
+      <node ref="IC19" pin="13" pinfunction="SCLK" pintype="passive"/>
+      <node ref="R91" pin="2" pintype="passive"/>
+    </net>
+    <net code="20" name="unconnected-(IC19-NC_1-Pad5)" class="Default">
+      <node ref="IC19" pin="5" pinfunction="NC_1" pintype="passive"/>
+    </net>
+    <net code="21" name="unconnected-(IC19-NC_2-Pad6)" class="Default">
+      <node ref="IC19" pin="6" pinfunction="NC_2" pintype="passive"/>
+    </net>
+    <net code="22" name="unconnected-(IC19-XOUT-Pad10)" class="Default">
+      <node ref="IC19" pin="10" pinfunction="XOUT" pintype="passive"/>
+    </net>
+    <net code="23" name="unconnected-(Y1-EN-H/Float-Pad1)" class="Default">
+      <node ref="Y1" pin="1" pinfunction="EN-H/Float" pintype="passive"/>
+    </net>
+  </nets>
+</export>

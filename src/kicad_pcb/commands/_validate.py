@@ -349,7 +349,11 @@ def _looks_opamp_symbol(symbol: str | None) -> bool:
 def _looks_timer_555(component_ref: str, symbol: str | None, value: str | None = None) -> bool:
     symbol_tail = _symbol_tail(symbol)
     value_text = (value or "").lower()
-    return "555" in symbol_tail or "555" in value_text or component_ref.upper().startswith("U555")
+    has_555_token = re.search(r"(?<!\d)555(?!\d)", symbol_tail) or re.search(
+        r"(?<!\d)555(?!\d)",
+        value_text,
+    )
+    return bool(has_555_token) or component_ref.upper().startswith("U555")
 
 
 def _looks_nmos(component_ref: str, symbol: str | None) -> bool:

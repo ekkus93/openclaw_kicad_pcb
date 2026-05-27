@@ -108,6 +108,8 @@ _log = logging.getLogger(__name__)
 
 # Maximum number of subprocess attempts (retry on transient failures).
 _MAX_ATTEMPTS = 2
+_MAX_GRAPHVIZ_TIMEOUT_S = 60.0
+_GRAPHVIZ_TIMEOUT_PER_ELEMENT_S = 0.12
 
 _LAYOUT_DEBUG_ARTIFACTS: tuple[str, ...] = (
     "tiers",
@@ -620,6 +622,7 @@ class GraphvizLayoutEngine:
         self._tiers = tiers
         self._layout_heuristic_policy = layout_heuristic_policy
         self._strict = strict
+        self._run_timeout_override: float | None = None
 
     # ----------------------------------------------------------------
     # LayoutEngine Protocol
@@ -738,11 +741,14 @@ class GraphvizLayoutEngine:
                 return cached
 
         try:
+            self._run_timeout_override = _graphviz_timeout_for_ir(ir, base_timeout=self._timeout)
             positions = self._run_dot(dot_source)
         except Exception as exc:  # noqa: BLE001
             raise RuntimeError(
                 f"Graphviz 'dot' failed: {exc}.  Command: {self._dot} -Tplain -Gstart={self._seed}"
             ) from exc
+        finally:
+            self._run_timeout_override = None
 
         if not positions:
             raise RuntimeError(
@@ -873,6 +879,7 @@ class GraphvizLayoutEngine:
         _log.debug("DOT source:\n%s", dot_source)
 
         cmd: list[str] = [self._dot, "-Tplain", f"-Gstart={self._seed}"]
+        timeout = self._run_timeout_override or self._timeout
         for attempt in range(_MAX_ATTEMPTS):
             try:
                 result = subprocess.run(  # noqa: S603
@@ -880,7 +887,7 @@ class GraphvizLayoutEngine:
                     input=dot_source,
                     capture_output=True,
                     text=True,
-                    timeout=self._timeout,
+                    timeout=timeout,
                     check=False,
                 )
             except (FileNotFoundError, PermissionError) as exc:
@@ -889,7 +896,7 @@ class GraphvizLayoutEngine:
                 if attempt < _MAX_ATTEMPTS - 1:
                     _log.debug("dot timed out (attempt %d), retrying", attempt + 1)
                     continue
-                raise RuntimeError(f"dot timed out after {self._timeout}s") from exc
+                raise RuntimeError(f"dot timed out after {timeout}s") from exc
 
             gv_positions = _parse_plain_positions(result.stdout)
             if result.returncode != 0:
@@ -923,6 +930,14 @@ class GraphvizLayoutEngine:
 
     def __repr__(self) -> str:
         return f"GraphvizLayoutEngine(dot_path={self._dot!r})"
+
+
+def _graphviz_timeout_for_ir(ir: CircuitIR, *, base_timeout: float) -> float:
+    """Return a Graphviz timeout budget scaled to graph size."""
+
+    graph_elements = len(ir.components) + len(ir.nets)
+    scaled_timeout = float(graph_elements) * _GRAPHVIZ_TIMEOUT_PER_ELEMENT_S
+    return max(base_timeout, min(_MAX_GRAPHVIZ_TIMEOUT_S, scaled_timeout))
 
 
 # ---------------------------------------------------------------------------

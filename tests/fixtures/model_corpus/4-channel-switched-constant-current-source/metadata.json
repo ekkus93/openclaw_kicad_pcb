@@ -5,7 +5,7 @@
   "fixture_id": "4-channel-switched-constant-current-source",
   "generator": "CircuitSnips",
   "global_label_count": 16,
-  "has_circuit_ir": false,
+  "has_circuit_ir": true,
   "has_embedded_symbols": true,
   "kicad_schematic_version": "20231120",
   "label_count": 0,
@@ -17,9 +17,11 @@
   "source_file_name": "4-channel-switched-constant-current-source.kicad_sch",
   "source_path": "model_kicad_files/4-channel-switched-constant-current-source.kicad_sch",
   "source_url": null,
-  "status": "layout_only",
+  "status": "ready",
   "status_reasons": [
-    "source_netlist_export_failed"
+    "normalized:replaced_invalid_root_uuid",
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
   ],
   "symbol_count": 35,
   "title": "4 Channel Switched Constant Current Source",

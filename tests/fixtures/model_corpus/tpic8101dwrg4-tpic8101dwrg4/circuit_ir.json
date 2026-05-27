@@ -1,0 +1,678 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C82",
+      "symbol": "Device:C",
+      "value": "0.1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C83",
+      "symbol": "Device:C",
+      "value": "47u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C84",
+      "symbol": "Device:C",
+      "value": "3.3n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C85",
+      "symbol": "Device:C",
+      "value": "3.3n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C86",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C87",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C88",
+      "symbol": "Device:C",
+      "value": "15p"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C89",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "",
+        "Arrow Price/Stock": "",
+        "Datasheet": "http://www.ti.com/lit/ds/symlink/tpic8101.pdf",
+        "Description": "IC KNOCK SENSOR INTERFACE 20SOIC",
+        "Footprint": "SOIC127P1030X265-20N",
+        "Height": "2.65",
+        "Manufacturer_Name": "Texas Instruments",
+        "Manufacturer_Part_Number": "TPIC8101DWRG4",
+        "Mouser Part Number": "595-TPIC8101DWRG4",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/TPIC8101DWRG4?qs=QyYHynRG50qtgosw5w8w6A%3D%3D"
+      },
+      "footprint": "SOIC127P1030X265-20N",
+      "ref": "IC19",
+      "symbol": "SamacSys_Parts:TPIC8101DWRG4",
+      "value": "TPIC8101DWRG4"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R83",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R84",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R85",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R86",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R87",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R88",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R89",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R90",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R91",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R92",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R93",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "",
+        "Arrow Price/Stock": "",
+        "Datasheet": "https://aker-usa.com/spec/S35010-4.000-A-X1-R.pdf",
+        "Description": "Oscillator, HCMOS, 3.2mm x 2.5mm, 4MHz, 5V, +/-100ppm ,-40-125AEC-Q200",
+        "Footprint": "S350104000AX1R",
+        "Height": "1.2",
+        "Manufacturer_Name": "Aker Technology",
+        "Manufacturer_Part_Number": "S35010-4.000-A-X1-R",
+        "Mouser Part Number": "",
+        "Mouser Price/Stock": ""
+      },
+      "footprint": "S350104000AX1R",
+      "ref": "Y1",
+      "symbol": "SamacSys_Parts:S35010-4.000-A-X1-R",
+      "value": "S35010-4.000-A-X1-R"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+5VD",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C82",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C83",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C87",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "5V-KNOCK",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C89",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R92",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "KNOCK-CH1N",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C84",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "KNOCK-CH1P",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C82",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C83",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C86",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C87",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C88",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C89",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R87",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R88",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R89",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R90",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R91",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R92",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R93",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "KNOCK-CH2N",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C85",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "KNOCK-INTN-HOLD",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R93",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "KNOCK-TESTN",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R87",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C84-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C84",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R84",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C85-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C85",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R85",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-CH1FB)",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R83",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-CH1N)",
+      "pins": [
+        {
+          "pin": "19",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R83",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R84",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-CH1P)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C86",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "IC19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-CH2FB)",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R86",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-CH2N)",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R85",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R86",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC19-XIN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C88",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SPI-KNOCK-CS",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R88",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SPI-MISO",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R89",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SPI-MOSI",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R90",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SPI-SCLK",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "IC19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R91",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC19-NC_1-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "IC19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC19-NC_2-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "IC19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC19-XOUT-Pad10)",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "IC19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(Y1-EN-H/Float-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

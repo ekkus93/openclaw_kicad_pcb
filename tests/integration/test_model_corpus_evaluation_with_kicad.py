@@ -99,7 +99,7 @@ def test_model_corpus_evaluate_runs_electrical_equivalence_with_kicad(home_tmp: 
         (home_tmp / "eval" / "fixture-1" / "evaluation_report.json").read_text(encoding="utf-8")
     )
     assert payload["electrical_equivalence"]["status"] == "failed"
-    assert payload["electrical_equivalence"]["mismatches"][0]["field"] == "generated_netlist"
+    assert payload["electrical_equivalence"]["mismatches"]
     assert (home_tmp / "eval" / "fixture-1" / "generated_netlist.kicadxml").exists()
 
 

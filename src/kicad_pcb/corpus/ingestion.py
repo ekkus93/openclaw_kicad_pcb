@@ -15,7 +15,12 @@ from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.symbol_index import resolve_symbol_dirs
 
 from .embedded_symbols import extract_embedded_symbol_defs, write_embedded_symbol_library
-from .kicadxml import canonicalize_circuit_ir, kicadxml_to_circuit_ir, parse_kicadxml_netlist
+from .kicadxml import (
+    canonicalize_circuit_ir,
+    kicadxml_to_circuit_ir,
+    parse_kicadxml_netlist,
+    schematic_symbols_by_ref,
+)
 from .layout_features import extract_layout_features, write_layout_features
 from .metadata import (
     CorpusFixtureMetadata,
@@ -24,6 +29,7 @@ from .metadata import (
     merge_preserved_metadata,
     write_fixture_metadata,
 )
+from .normalization import normalize_for_kicad_export, serialize_normalized_schematic
 from .reports import write_json_report, write_markdown_report
 
 MINIMUM_REPO_KICAD_VERSION = KiCadVersion(9, 0, 0)
@@ -146,9 +152,9 @@ def ingest_model_corpus(
         )
         existing_metadata = _load_existing_metadata(fixture_dir / "metadata.json")
 
-        kicad_state = _ingest_optional_kicad_artifacts(
+        kicad_state = _ingest_normalized_kicad_artifacts(
             doc=doc,
-            source_copy=source_copy,
+            fixture_id=fixture_id,
             fixture_dir=fixture_dir,
             require_kicad=require_kicad,
             adapter=adapter,
@@ -282,15 +288,57 @@ def _build_metadata(
     )
 
 
-def _ingest_optional_kicad_artifacts(
+def _ingest_normalized_kicad_artifacts(
     *,
     doc: SchematicDoc,
-    source_copy: Path,
+    fixture_id: str,
     fixture_dir: Path,
     require_kicad: bool,
     adapter: KicadCliAdapter,
 ) -> dict[str, object]:
-    del doc
+    normalized = normalize_for_kicad_export(doc, fixture_id=fixture_id)
+    normalized_source = fixture_dir / "source_normalized.kicad_sch"
+    normalized_source.write_text(
+        serialize_normalized_schematic(normalized),
+        encoding="utf-8",
+    )
+    kicad_state = _ingest_optional_kicad_artifacts(
+        source_for_export=normalized_source,
+        fallback_symbols_by_ref=schematic_symbols_by_ref(normalized.doc),
+        fixture_dir=fixture_dir,
+        require_kicad=require_kicad,
+        adapter=adapter,
+    )
+    return _append_normalization_status_reasons(
+        kicad_state,
+        normalized_changes=normalized.changes,
+    )
+
+
+def _append_normalization_status_reasons(
+    kicad_state: dict[str, object],
+    *,
+    normalized_changes: tuple[str, ...],
+) -> dict[str, object]:
+    if not normalized_changes:
+        return kicad_state
+    reasons = (
+        list(kicad_state["status_reasons"])
+        if isinstance(kicad_state["status_reasons"], list)
+        else []
+    )
+    reasons.extend(f"normalized:{change}" for change in normalized_changes)
+    return {**kicad_state, "status_reasons": reasons}
+
+
+def _ingest_optional_kicad_artifacts(
+    *,
+    source_for_export: Path,
+    fallback_symbols_by_ref: dict[str, str],
+    fixture_dir: Path,
+    require_kicad: bool,
+    adapter: KicadCliAdapter,
+) -> dict[str, object]:
     netlist_path = fixture_dir / "source_netlist.kicadxml"
     ir_path = fixture_dir / "circuit_ir.json"
 
@@ -332,14 +380,14 @@ def _ingest_optional_kicad_artifacts(
             "has_circuit_ir": False,
         }
 
-    export_result, xml_content = adapter.export_netlist(source_copy, netlist_path)
+    export_result, xml_content = adapter.export_netlist(source_for_export, netlist_path)
     if not export_result.ok or not xml_content:
         if require_kicad:
             raise ToolError(
                 "kicad-cli netlist export failed during model-corpus ingest",
                 code=ErrorCode.TOOL_ERROR,
                 details={
-                    "source": str(source_copy),
+                    "source": str(source_for_export),
                     "stderr": export_result.stderr,
                     "stdout": export_result.stdout,
                 },
@@ -351,7 +399,12 @@ def _ingest_optional_kicad_artifacts(
         }
 
     netlist = parse_kicadxml_netlist(netlist_path)
-    circuit_ir = canonicalize_circuit_ir(kicadxml_to_circuit_ir(netlist))
+    circuit_ir = canonicalize_circuit_ir(
+        kicadxml_to_circuit_ir(
+            netlist,
+            fallback_symbols_by_ref=fallback_symbols_by_ref,
+        )
+    )
     write_json_report(ir_path, circuit_ir.model_dump(mode="json"))
     return {"status": "ready", "status_reasons": [], "has_circuit_ir": True}
 

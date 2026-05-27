@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch</source>
+    <date>2026-05-26T16:23:11-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>MicroSD card in SPI Mode with Hotswap Support</title>
+        <company>CircuitSnips</company>
+        <rev>1</rev>
+        <date>2026-05-26</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C36">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B105KBHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B105KBHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>01db570c-10c6-4f11-8edf-a2bc9418664b</tstamps>
+    </comp>
+    <comp ref="C37">
+      <value>10u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B106KLHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B106KLHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e921d2f6-b06d-46e7-b884-bc04debeed89</tstamps>
+    </comp>
+    <comp ref="C38">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>95c79dcf-c855-42d0-9a0a-e2c81839a079</tstamps>
+    </comp>
+    <comp ref="C40">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B105KBHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B105KBHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f26fa47f-2c65-4dfa-820a-c62ac4dd7214</tstamps>
+    </comp>
+    <comp ref="C42">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B105KBHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B105KBHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a1918485-afd5-47a3-bfba-bf6e6390b297</tstamps>
+    </comp>
+    <comp ref="C43">
+      <value>10u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B106KLHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B106KLHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8a7da5f3-3d7c-4ca2-8355-7c39f825bf01</tstamps>
+    </comp>
+    <comp ref="J8">
+      <value>DM3AT</value>
+      <footprint>Connector_Card:microSD_HC_Hirose_DM3AT-SF-PEJM5</footprint>
+      <datasheet>https://www.hirose.com/product/en/download_file/key_name/DM3/category/Catalog/doc_file_id/49662/?file_category_id=4&amp;item_id=195&amp;is_series=1</datasheet>
+      <description>Micro SD Card Socket with card detection pins</description>
+      <fields>
+        <field name="SKU">HR1964CT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Connector_Card:microSD_HC_Hirose_DM3AT-SF-PEJM5</field>
+        <field name="Datasheet">https://www.hirose.com/product/en/download_file/key_name/DM3/category/Catalog/doc_file_id/49662/?file_category_id=4&amp;item_id=195&amp;is_series=1</field>
+        <field name="Description">Micro SD Card Socket with card detection pins</field>
+      </fields>
+      <libsource lib="Connector" part="Micro_SD_Card_Det_Hirose_DM3AT" description="Micro SD Card Socket with card detection pins"/>
+      <property name="SKU" value="HR1964CT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector SD microsd"/>
+      <property name="ki_fp_filters" value="microSD*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5c9811b0-adf6-4577-83b1-10067e5cecfe</tstamps>
+    </comp>
+    <comp ref="R26">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>19388848-e1d3-4bd2-9a61-cfbd6e48ab08</tstamps>
+    </comp>
+    <comp ref="R58">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3663fc16-3c05-470b-b0ca-7f84e4d3f358</tstamps>
+    </comp>
+    <comp ref="R59">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>27271685-406c-4b67-93e0-1be322c8c326</tstamps>
+    </comp>
+    <comp ref="R60">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c15fb929-9866-48e8-9dbe-42c84915bb0c</tstamps>
+    </comp>
+    <comp ref="R61">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cdaec5c5-591b-4e6e-9151-81b5b4af187f</tstamps>
+    </comp>
+    <comp ref="R62">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1001V</field>
+        <field name="SKU">P1.00KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1001V"/>
+      <property name="SKU" value="P1.00KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>eb2d54dd-af87-4599-ad79-ad3476bf2fcc</tstamps>
+    </comp>
+    <comp ref="R63">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8e439f62-af2c-487e-9f02-9a8c5e120d45</tstamps>
+    </comp>
+    <comp ref="R64">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a2e5e0b9-b935-4f5d-abae-6eba48da6560</tstamps>
+    </comp>
+    <comp ref="U14">
+      <value>74AHC1G04</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <datasheet>http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf</datasheet>
+      <description>Single NOT Gate, Low-Voltage CMOS</description>
+      <fields>
+        <field name="LibRef">SN74AHC1G04DBVR</field>
+        <field name="SKU">296-1089-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf</field>
+        <field name="Description">Single NOT Gate, Low-Voltage CMOS</field>
+      </fields>
+      <libsource lib="74xGxx" part="74AHC1G04" description="Single NOT Gate, Low-Voltage CMOS"/>
+      <property name="LibRef" value="SN74AHC1G04DBVR"/>
+      <property name="SKU" value="296-1089-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="Single Gate NOT LVC CMOS"/>
+      <property name="ki_fp_filters" value="SOT* SG-*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e890bb24-dd3a-4b3f-931a-dde65f4b21bf</tstamps>
+    </comp>
+    <comp ref="U21">
+      <value>SN74AXC4T774</value>
+      <footprint>Package_SO:TSSOP-16_4.4x5mm_P0.65mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/sn74axc4t774.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1747866034462</datasheet>
+      <description>4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="Supplier Part Number">296-SN74AXC4T774PWRCT-ND</field>
+        <field name="SKU">296-SN74AXC4T774PWRCT-ND</field>
+        <field name="Footprint">Package_SO:TSSOP-16_4.4x5mm_P0.65mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/sn74axc4t774.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1747866034462</field>
+        <field name="Description">4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16</field>
+      </fields>
+      <libsource lib="project libraries" part="SN74AXC4T774" description="4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="Supplier Part Number" value="296-SN74AXC4T774PWRCT-ND"/>
+      <property name="SKU" value="296-SN74AXC4T774PWRCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9386783b-a0e6-4aa0-92c4-6027d3a9d184</tstamps>
+    </comp>
+    <comp ref="U22">
+      <value>AP22913W6-7</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/AP22913.pdf</datasheet>
+      <description>Load Switch w/ Discharge Resistor</description>
+      <fields>
+        <field name="SKU">AP22913W6-7DICT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/AP22913.pdf</field>
+        <field name="Description">Load Switch w/ Discharge Resistor</field>
+      </fields>
+      <libsource lib="project libraries" part="AP22913W6-7" description="Load Switch w/ Discharge Resistor"/>
+      <property name="SKU" value="AP22913W6-7DICT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/microsd-card-in-spi-mode-with-hotswap-support/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>52e5bbf6-1b1d-4d40-bcca-33a996eebe8f</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="74xGxx" part="74AHC1G04">
+      <description>Single NOT Gate, Low-Voltage CMOS</description>
+      <docs>http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf</docs>
+      <footprints>
+        <fp>SOT*</fp>
+        <fp>SG-*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">74AHC1G04</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf</field>
+        <field name="Description">Single NOT Gate, Low-Voltage CMOS</field>
+      </fields>
+      <pins>
+        <pin num="2" name="" type="input"/>
+        <pin num="3" name="GND" type="power_in"/>
+        <pin num="4" name="" type="output"/>
+        <pin num="5" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Micro_SD_Card_Det_Hirose_DM3AT">
+      <description>Micro SD Card Socket with card detection pins</description>
+      <docs>https://www.hirose.com/product/en/download_file/key_name/DM3/category/Catalog/doc_file_id/49662/?file_category_id=4&amp;item_id=195&amp;is_series=1</docs>
+      <footprints>
+        <fp>microSD*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Micro_SD_Card_Det_Hirose_DM3AT</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">https://www.hirose.com/product/en/download_file/key_name/DM3/category/Catalog/doc_file_id/49662/?file_category_id=4&amp;item_id=195&amp;is_series=1</field>
+        <field name="Description">Micro SD Card Socket with card detection pins</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DAT2" type="bidirectional"/>
+        <pin num="2" name="DAT3/CD" type="bidirectional"/>
+        <pin num="3" name="CMD" type="input"/>
+        <pin num="4" name="VDD" type="power_in"/>
+        <pin num="5" name="CLK" type="input"/>
+        <pin num="6" name="VSS" type="power_in"/>
+        <pin num="7" name="DAT0" type="bidirectional"/>
+        <pin num="8" name="DAT1" type="bidirectional"/>
+        <pin num="9" name="DET_B" type="passive"/>
+        <pin num="10" name="DET_A" type="passive"/>
+        <pin num="11" name="SHIELD" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Small">
+      <description>Unpolarized capacitor, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R_US">
+      <description>Resistor, US symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_US</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="project libraries" part="AP22913W6-7">
+      <description>Load Switch w/ Discharge Resistor</description>
+      <docs>https://www.diodes.com/assets/Datasheets/AP22913.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">AP22913W6-7</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/AP22913.pdf</field>
+        <field name="Description">Load Switch w/ Discharge Resistor</field>
+        <field name="SKU">AP22913W6-7DICT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+      </fields>
+      <pins>
+        <pin num="1" name="OUT" type="power_out"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="ON" type="input"/>
+        <pin num="4" name="VIN" type="power_in"/>
+        <pin num="5" name="GND" type="power_in"/>
+        <pin num="6" name="VIN" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="project libraries" part="SN74AXC4T774">
+      <description>4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16</description>
+      <docs>https://www.ti.com/lit/ds/symlink/sn74axc4t774.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1747866034462</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74AXC4T774</field>
+        <field name="Footprint">Package_SO:TSSOP-16_4.4x5mm_P0.65mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/sn74axc4t774.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1747866034462</field>
+        <field name="Description">4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="Supplier Part Number">296-SN74AXC4T774PWRCT-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DIR1" type="input"/>
+        <pin num="2" name="DIR2" type="input"/>
+        <pin num="3" name="A1" type="bidirectional"/>
+        <pin num="4" name="A2" type="bidirectional"/>
+        <pin num="5" name="A3" type="bidirectional"/>
+        <pin num="6" name="A4" type="bidirectional"/>
+        <pin num="7" name="DIR3" type="input"/>
+        <pin num="8" name="DIR4" type="input"/>
+        <pin num="9" name="~OE" type="input"/>
+        <pin num="10" name="GND" type="power_in"/>
+        <pin num="11" name="B4" type="bidirectional"/>
+        <pin num="12" name="B3" type="bidirectional"/>
+        <pin num="13" name="B2" type="bidirectional"/>
+        <pin num="14" name="B1" type="bidirectional"/>
+        <pin num="15" name="VCCB" type="power_in"/>
+        <pin num="16" name="VCCA" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+3.3V" class="Default">
+      <node ref="C36" pin="2" pintype="passive"/>
+      <node ref="C40" pin="2" pintype="passive"/>
+      <node ref="R62" pin="1" pintype="passive"/>
+      <node ref="U14" pin="5" pinfunction="VCC" pintype="power_in"/>
+      <node ref="U21" pin="1" pinfunction="DIR1" pintype="input"/>
+      <node ref="U21" pin="16" pinfunction="VCCA" pintype="power_in"/>
+      <node ref="U21" pin="2" pinfunction="DIR2" pintype="input"/>
+      <node ref="U21" pin="7" pinfunction="DIR3" pintype="input"/>
+      <node ref="U22" pin="4" pinfunction="VIN" pintype="power_in"/>
+      <node ref="U22" pin="6" pinfunction="VIN" pintype="power_in"/>
+    </net>
+    <net code="2" name="/+3.3V@SD" class="Default">
+      <node ref="C37" pin="2" pintype="passive"/>
+      <node ref="C38" pin="2" pintype="passive"/>
+      <node ref="C42" pin="1" pintype="passive"/>
+      <node ref="J8" pin="4" pinfunction="VDD" pintype="power_in"/>
+      <node ref="R58" pin="1" pintype="passive"/>
+      <node ref="R59" pin="1" pintype="passive"/>
+      <node ref="R60" pin="1" pintype="passive"/>
+      <node ref="R61" pin="1" pintype="passive"/>
+      <node ref="R64" pin="1" pintype="passive"/>
+      <node ref="U21" pin="15" pinfunction="VCCB" pintype="power_in"/>
+      <node ref="U22" pin="1" pinfunction="OUT" pintype="power_out"/>
+    </net>
+    <net code="3" name="/CLK@SD" class="Default">
+      <node ref="J8" pin="5" pinfunction="CLK" pintype="input"/>
+      <node ref="R26" pin="1" pintype="passive"/>
+      <node ref="U21" pin="12" pinfunction="B3" pintype="bidirectional"/>
+    </net>
+    <net code="4" name="/CMD_MOSI@SD" class="Default">
+      <node ref="J8" pin="3" pinfunction="CMD" pintype="input"/>
+      <node ref="R58" pin="2" pintype="passive"/>
+      <node ref="U21" pin="13" pinfunction="B2" pintype="bidirectional"/>
+    </net>
+    <net code="5" name="/DAT0_MISO@SD" class="Default">
+      <node ref="J8" pin="7" pinfunction="DAT0" pintype="bidirectional"/>
+      <node ref="R60" pin="2" pintype="passive"/>
+      <node ref="U21" pin="11" pinfunction="B4" pintype="bidirectional"/>
+    </net>
+    <net code="6" name="/DET_A" class="Default">
+      <node ref="J8" pin="10" pinfunction="DET_A" pintype="passive"/>
+      <node ref="R62" pin="2" pintype="passive"/>
+    </net>
+    <net code="7" name="/DET_B" class="Default">
+      <node ref="C43" pin="2" pintype="passive"/>
+      <node ref="J8" pin="9" pinfunction="DET_B" pintype="passive"/>
+      <node ref="R63" pin="1" pintype="passive"/>
+      <node ref="U22" pin="3" pinfunction="ON" pintype="input"/>
+    </net>
+    <net code="8" name="/SD_CARD_ENABLE" class="Default">
+      <node ref="U14" pin="2" pintype="input"/>
+    </net>
+    <net code="9" name="/SD_CS@SD" class="Default">
+      <node ref="J8" pin="2" pinfunction="DAT3/CD" pintype="bidirectional"/>
+      <node ref="R64" pin="2" pintype="passive"/>
+      <node ref="U21" pin="14" pinfunction="B1" pintype="bidirectional"/>
+    </net>
+    <net code="10" name="/SPI.MISO" class="Default">
+      <node ref="U21" pin="6" pinfunction="A4" pintype="bidirectional"/>
+    </net>
+    <net code="11" name="/SPI.MOSI" class="Default">
+      <node ref="U21" pin="4" pinfunction="A2" pintype="bidirectional"/>
+    </net>
+    <net code="12" name="/SPI.SCLK" class="Default">
+      <node ref="U21" pin="5" pinfunction="A3" pintype="bidirectional"/>
+    </net>
+    <net code="13" name="/SPI.SD_CS" class="Default">
+      <node ref="U21" pin="3" pinfunction="A1" pintype="bidirectional"/>
+    </net>
+    <net code="15" name="/~SD_CARD_ENABLE" class="Default">
+      <node ref="U14" pin="4" pintype="output"/>
+      <node ref="U21" pin="9" pinfunction="~OE" pintype="input"/>
+    </net>
+    <net code="16" name="GND" class="Default">
+      <node ref="C36" pin="1" pintype="passive"/>
+      <node ref="C37" pin="1" pintype="passive"/>
+      <node ref="C38" pin="1" pintype="passive"/>
+      <node ref="C40" pin="1" pintype="passive"/>
+      <node ref="C42" pin="2" pintype="passive"/>
+      <node ref="C43" pin="1" pintype="passive"/>
+      <node ref="J8" pin="11" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="J8" pin="6" pinfunction="VSS" pintype="power_in"/>
+      <node ref="R26" pin="2" pintype="passive"/>
+      <node ref="R63" pin="2" pintype="passive"/>
+      <node ref="U14" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="U21" pin="10" pinfunction="GND" pintype="power_in"/>
+      <node ref="U21" pin="8" pinfunction="DIR4" pintype="input"/>
+      <node ref="U22" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="U22" pin="5" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="17" name="Net-(J8-DAT1)" class="Default">
+      <node ref="J8" pin="8" pinfunction="DAT1" pintype="bidirectional"/>
+      <node ref="R59" pin="2" pintype="passive"/>
+    </net>
+    <net code="18" name="Net-(J8-DAT2)" class="Default">
+      <node ref="J8" pin="1" pinfunction="DAT2" pintype="bidirectional"/>
+      <node ref="R61" pin="2" pintype="passive"/>
+    </net>
+  </nets>
+</export>

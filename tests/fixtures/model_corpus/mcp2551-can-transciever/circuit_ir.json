@@ -1,0 +1,183 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C60",
+      "symbol": "Device:C",
+      "value": "30pf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C61",
+      "symbol": "Device:C",
+      "value": "0.1uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "R1",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "R2",
+      "symbol": "Device:R",
+      "value": "60R"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://ww1.microchip.com/downloads/en/devicedoc/21667d.pdf",
+        "Description": "High-Speed CAN Transceiver, 1Mbps, 5V supply, SOIC-8",
+        "Footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      },
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+      "ref": "U1",
+      "symbol": "Interface_CAN_LIN:MCP2551-I-SN",
+      "value": "MCP2551-I-SN"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C61",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN0_HI",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN0_LO",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN0_RX",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN0_TX",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C60",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C61",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1-Rs)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1-Vref)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C60",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

@@ -1,5 +1,24 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-27T01:11:30Z - GPT-5.4 - Restored the full repo gate after the corpus-routing regressions
+
+- The latest repo-wide green gate is confirmed again: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass after fixing the post-corpus-unblock routing regressions.
+- The key generator correction was in `_transform_pin_at(...)`: transformed pin angles now point outward from the symbol instead of back toward the body, while still applying the KiCad library-Y flip plus counter-clockwise symbol rotation semantics. That change restored correct local follower/output routing and brought the broader netlist/routing tests back into alignment.
+- The remaining corpus work is no longer blocked by repo-wide regressions. The next active tuning task is the MCP2551 fixture, followed by MAX232 and MicroSD once MCP2551 has a generic fix.
+
+## 2026-05-26T23:42:25Z - GPT-5.4 - Unblocked corpus evaluation infrastructure and exposed the first real tuning failures
+
+- Full `model-corpus evaluate` now completes across all 9 committed fixtures: evaluation materializes fixture-local embedded symbol libraries, scales Graphviz `dot` timeout with graph size, avoids Graphviz assertion failures from decoupling/feedback constraints, and writes per-fixture actionable reports under `code_review/generated/model_eval/`.
+- The MCP2551 tuning loop exposed three generic correctness fixes in the generator/evaluator stack: electrical comparison now safely flattens sheet-scoped KiCad XML net names when that rename is collision-free, generated electrical export now runs against the canonical `generated.kicad_sch` instead of the project root sheet, and `_transform_pin_at(...)` now converts library pin coordinates using KiCad's positive-up library Y axis plus counter-clockwise symbol rotation semantics.
+- The current remaining work is generator tuning rather than harness breakage. MCP2551 still fails electrical equivalence because several unlabeled direct-route nets are not yet exporting as expected, while the broader corpus still needs generic placement/routing similarity improvements for fixtures like MAX232 and MicroSD.
+
+## 2026-05-26T23:07:46Z - GPT-5.4 - Applied the corpus normalization patch and unblocked KiCad 9 ingest
+
+- Applied the external normalization patch for model-corpus ingestion by adding `src/kicad_pcb/corpus/normalization.py`, wiring `src/kicad_pcb/corpus/ingestion.py` to preserve raw `source.kicad_sch` while writing `source_normalized.kicad_sch`, and adding focused unit coverage in `tests/unit/test_model_corpus_normalization.py`.
+- The repo gate is green after the integration fixes required by the patch: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass, and `uv run python -m kicad_pcb.cli model-corpus ingest --source-dir model_kicad_files --out-dir tests/fixtures/model_corpus --refresh --require-kicad` now succeeds with 9 accepted fixtures and 0 partials.
+- The old KiCad 9 ingest blocker is resolved: the committed corpus fixtures now include `source_normalized.kicad_sch`, `source_netlist.kicadxml`, and `circuit_ir.json`, with normalization reasons recorded in fixture metadata.
+- The next blocker moved downstream into evaluation/generation rather than source ingest: `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval` now fails on at least one fixture because symbol resolution cannot find `SamacSys_Parts:ULQ2003AQDRQ1`.
+
 ## 2026-05-26T22:45:37Z - GPT-5.4 - Documented the current raw-corpus KiCad blocker for ChatGPT handoff
 
 - **Current blocker summary**: the remaining corpus issue is not KiCad availability or CLI syntax. `kicad-cli 9.0.9` is installed, the corpus workflow now targets `kicad-cli >= 9.0.0`, and the same CLI export path works on known-good schematics. The blocker is that the imported raw source schematics under `model_kicad_files/*.kicad_sch` still fail at the KiCad load step, so `kicad-cli sch export netlist --format kicadxml ...` returns `Failed to load schematic`.

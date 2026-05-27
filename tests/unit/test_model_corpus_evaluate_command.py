@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -116,6 +117,53 @@ def test_model_corpus_evaluate_does_not_write_current_project_state(
     )
 
     assert not current_project_file.exists()
+
+
+def test_model_corpus_evaluate_uses_fixture_embedded_symbol_libraries(tmp_path: Path) -> None:
+    fixture_dir = _write_fixture(tmp_path)
+    source_fixture_dir = (
+        Path(__file__).resolve().parents[1]
+        / "fixtures"
+        / "model_corpus"
+        / "4-channel-switched-constant-current-source"
+    )
+    shutil.copyfile(
+        source_fixture_dir / "source_embedded_symbols.sexpr",
+        fixture_dir / "source_embedded_symbols.sexpr",
+    )
+    fixture_circuit_ir = json.loads(
+        (source_fixture_dir / "circuit_ir.json").read_text(encoding="utf-8")
+    )
+    fixture_circuit_ir["components"] = [
+        component
+        for component in fixture_circuit_ir["components"]
+        if component["symbol"] == "SamacSys_Parts:ULQ2003AQDRQ1"
+    ]
+    component_ref = fixture_circuit_ir["components"][0]["ref"]
+    fixture_circuit_ir["nets"] = [
+        {"name": "OUT1", "pins": [{"ref": component_ref, "pin": "13"}]},
+        {"name": "OUT2", "pins": [{"ref": component_ref, "pin": "14"}]},
+    ]
+    (fixture_dir / "circuit_ir.json").write_text(
+        json.dumps(fixture_circuit_ir, indent=2),
+        encoding="utf-8",
+    )
+
+    result = cmd_model_corpus_evaluate(
+        SimpleNamespace(
+            corpus_dir=fixture_dir.parent,
+            out_dir=tmp_path / "eval",
+            fixture=None,
+            require_kicad=False,
+            heuristic_profile=None,
+            label_mode=None,
+        )
+    )
+
+    assert result.evaluated_count == 1
+    assert (
+        tmp_path / "eval" / fixture_dir.name / "fixture_symbols" / "SamacSys_Parts.kicad_sym"
+    ).exists()
 
 
 def _write_fixture(tmp_path: Path) -> Path:

@@ -499,17 +499,17 @@ Use this mapping when creating actionable failures:
 
 Do this only after ingestion and evaluation exist.
 
-Current blocker: the corpus workflow now targets `kicad-cli >= 9.0.0`, and `kicad-cli 9.0.9` is installed on this machine. The remaining issue is that `kicad-cli sch export netlist` still cannot load the current imported source schematics, so the real `model_kicad_files/` fixtures remain `layout_only` without `circuit_ir.json`. The KiCad-backed regression tests are green again under KiCad 9 because they now use a known loadable readability schematic and assert the current structured `generated_netlist` failure mode instead of crashing.
+Current status: the corpus harness now ingests all current `model_kicad_files/` sources under `kicad-cli 9.0.9`, materializes fixture-local embedded symbols for evaluation, and runs full-corpus `model-corpus evaluate` end-to-end. The repo-wide validation gate is green again after the latest routing/pin-direction fixes, so the active work is now real generator/evaluator tuning rather than harness breakage: MCP2551 still fails electrical/layout similarity, and the remaining fixtures still need generic tuning passes.
 
 ### 11.1 Start with MCP2551 fixture
 - [x] Ingest `mcp2551-can-transciever.kicad_sch`.
-- [ ] Ensure `circuit_ir.json` exists when KiCad CLI is available.
-- [ ] Run evaluation.
-- [ ] Read `actionable_failures.md`.
-- [ ] Identify one generic generator improvement.
-- [ ] Modify generator code without fixture-specific checks.
-- [ ] Add regression test.
-- [ ] Re-run evaluation.
+- [x] Ensure `circuit_ir.json` exists when KiCad CLI is available.
+- [x] Run evaluation.
+- [x] Read `actionable_failures.md`.
+- [x] Identify one generic generator improvement.
+- [x] Modify generator code without fixture-specific checks.
+- [x] Add regression test.
+- [x] Re-run evaluation.
 
 Likely generic rules:
 
@@ -574,11 +574,11 @@ Then manually verify:
 - [x] `tests/fixtures/model_corpus/` contains one directory per parseable source schematic.
 - [x] Every fixture has `metadata.json`.
 - [x] Every parseable fixture has `source_layout_features.json`.
-- [ ] Fixtures with successful KiCad XML export have `circuit_ir.json`.
+- [x] Fixtures with successful KiCad XML export have `circuit_ir.json`.
 - [x] `uv run python -m kicad_pcb.cli model-corpus list --corpus-dir tests/fixtures/model_corpus` works.
-- [ ] `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval` works for fixtures with `circuit_ir.json`.
+- [x] `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval` works for fixtures with `circuit_ir.json`. Remaining work is fixture tuning; the harness itself now completes and writes reports.
 - [x] Evaluation writes aggregate `summary.md`.
-- [ ] Per-fixture reports include actionable failures.
+- [x] Per-fixture reports include actionable failures.
 - [x] Existing readability/golden tests still pass.
 
 ---

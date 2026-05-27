@@ -1,0 +1,284 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C63",
+      "symbol": "Device:C",
+      "value": "10uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C64",
+      "symbol": "Device:C",
+      "value": "10uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C65",
+      "symbol": "Device:C",
+      "value": "10uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C71",
+      "symbol": "Device:C",
+      "value": "10uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C72",
+      "symbol": "Device:C",
+      "value": "10uf"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.ti.com/lit/ds/symlink/max232.pdf",
+        "Description": "Dual RS232 driver/receiver, 5V supply, 120kb/s, 0C-70C",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "U2",
+      "symbol": "Interface_UART:MAX232",
+      "value": "MAX232"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C64",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C71",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C64",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C72",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-C1+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C63",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-C1-)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C63",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-C2+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C65",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-C2-)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C65",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-VS+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C71",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-VS-)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C72",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "RS232_0_RX",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "RS232_0_TX",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "RS232_1_RX",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "RS232_1_TX",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TTL_0_RX",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TTL_0_TX",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TTL_1_RX",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TTL_1_TX",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

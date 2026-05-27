@@ -1,0 +1,3111 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "https://content.arduino.cc/assets/NANOEveryV3.0_sch.pdf",
+        "Description": "Arduino Nano Every",
+        "Footprint": "Module:Arduino_Nano"
+      },
+      "footprint": "Module:Arduino_Nano",
+      "ref": "A1",
+      "symbol": "MCU_Module:Arduino_Nano_Every",
+      "value": "Arduino_Nano_Every"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_THT:C_Disc_D7.0mm_W2.5mm_P5.00mm"
+      },
+      "footprint": "Capacitor_THT:C_Disc_D7.0mm_W2.5mm_P5.00mm",
+      "ref": "C1",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_THT:C_Disc_D7.0mm_W2.5mm_P5.00mm"
+      },
+      "footprint": "Capacitor_THT:C_Disc_D7.0mm_W2.5mm_P5.00mm",
+      "ref": "C2",
+      "symbol": "Device:C",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D1",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D10",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D11",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D12",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D13",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D14",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D15",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D16",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D17",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D18",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D19",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D2",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D20",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D21",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D22",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D23",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D24",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_1206_3216Metric",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_1206_3216Metric",
+      "ref": "D26",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_1206_3216Metric",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_1206_3216Metric",
+      "ref": "D27",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_1206_3216Metric",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_1206_3216Metric",
+      "ref": "D28",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D29",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D3",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D30",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D31",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_THT:LED_D3.0mm",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "LED_THT:LED_D3.0mm",
+      "ref": "D32",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D4",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D5",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D6",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D7",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D8",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Diode",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+        "Sim.Device": "D",
+        "Sim.Pins": "1=K 2=A"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D9",
+      "symbol": "Device:D",
+      "value": "D"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x02, script generated",
+        "Footprint": "Library:3mm5 Mono Aux"
+      },
+      "footprint": "Library:3mm5 Mono Aux",
+      "ref": "J1",
+      "symbol": "Connector:Conn_01x02_Pin",
+      "value": "Conn_01x02_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x02, script generated",
+        "Footprint": "Library:3mm5 Mono Aux"
+      },
+      "footprint": "Library:3mm5 Mono Aux",
+      "ref": "J10",
+      "symbol": "Connector:Conn_01x02_Pin",
+      "value": "Conn_01x02_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x02, script generated",
+        "Footprint": "Library:3mm5 Mono Aux"
+      },
+      "footprint": "Library:3mm5 Mono Aux",
+      "ref": "J2",
+      "symbol": "Connector:Conn_01x02_Pin",
+      "value": "Conn_01x02_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x02, script generated",
+        "Footprint": "Library:3mm5 Mono Aux"
+      },
+      "footprint": "Library:3mm5 Mono Aux",
+      "ref": "J3",
+      "symbol": "Connector:Conn_01x02_Pin",
+      "value": "Conn_01x02_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, double row, 02x05, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Connector_IDC:IDC-Header_2x05_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_IDC:IDC-Header_2x05_P2.54mm_Vertical",
+      "ref": "J5",
+      "symbol": "Connector_Generic:Conn_02x05_Odd_Even",
+      "value": "Conn_02x05_Odd_Even"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Connector_IDC:IDC-Header_2x04_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_IDC:IDC-Header_2x04_P2.54mm_Vertical",
+      "ref": "J6",
+      "symbol": "Connector_Generic:Conn_02x04_Counter_Clockwise",
+      "value": "Conn_02x04_Counter_Clockwise"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x11, script generated",
+        "Footprint": "Connector_PinSocket_2.54mm:PinSocket_1x11_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_PinSocket_2.54mm:PinSocket_1x11_P2.54mm_Vertical",
+      "ref": "J7",
+      "symbol": "Connector:Conn_01x11_Pin",
+      "value": "Conn_01x11_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x11, script generated",
+        "Footprint": "Connector_PinSocket_2.54mm:PinSocket_1x11_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_PinSocket_2.54mm:PinSocket_1x11_P2.54mm_Vertical",
+      "ref": "J8",
+      "symbol": "Connector:Conn_01x11_Pin",
+      "value": "Conn_01x11_Pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Connector_IDC:IDC-Header_2x04_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_IDC:IDC-Header_2x04_P2.54mm_Vertical",
+      "ref": "J9",
+      "symbol": "Connector_Generic:Conn_02x04_Counter_Clockwise",
+      "value": "Conn_02x04_Counter_Clockwise"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/BC550-D.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_THT:TO-92_Inline_Wide"
+      },
+      "footprint": "Package_TO_SOT_THT:TO-92_Inline_Wide",
+      "ref": "Q9",
+      "symbol": "Transistor_BJT:BC547",
+      "value": "BC547"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R1",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R10",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R11",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R12",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R13",
+      "symbol": "Device:R",
+      "value": "47k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R14",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R15",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R16",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R17",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R18",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R19",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R2",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R20",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R21",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R22",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R23",
+      "symbol": "Device:R",
+      "value": "47k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R24",
+      "symbol": "Device:R",
+      "value": "47k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R25",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R26",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R27",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R28",
+      "symbol": "Device:R",
+      "value": "47k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R29",
+      "symbol": "Device:R",
+      "value": "47k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R3",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R30",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R31",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R32",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R33",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R34",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R35",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      },
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+      "ref": "R36",
+      "symbol": "Device:R",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R4",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R5",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R6",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R7",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R8",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R9",
+      "symbol": "Device:R",
+      "value": "R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Potentiometer",
+        "Footprint": "Potentiometer_THT:Potentiometer_Bourns_PTV09A-1_Single_Vertical"
+      },
+      "footprint": "Potentiometer_THT:Potentiometer_Bourns_PTV09A-1_Single_Vertical",
+      "ref": "RV1",
+      "symbol": "Device:R_Potentiometer",
+      "value": "R_Potentiometer"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW1",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW10",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW11",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW12",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW13",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW2",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW3",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW4",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW5",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW6",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW7",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW8",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Library:PushButton"
+      },
+      "footprint": "Library:PushButton",
+      "ref": "SW9",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.ti.com/lit/ds/symlink/tl071.pdf",
+        "Description": "Quad Low-Noise JFET-Input Operational Amplifiers, DIP-14/SOIC-14",
+        "Footprint": "Package_DIP:DIP-14_W7.62mm"
+      },
+      "footprint": "Package_DIP:DIP-14_W7.62mm",
+      "ref": "U1",
+      "symbol": "Amplifier_Operational:TL074",
+      "value": "TL074"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.ti.com/lit/ds/symlink/tca9555.pdf",
+        "Description": "16-bit I/O expander, I2C and SMBus interface, interrupts, w/ pull-ups, SSOP-24",
+        "Footprint": "Package_SO:SSOP-24_5.3x8.2mm_P0.65mm"
+      },
+      "footprint": "Package_SO:SSOP-24_5.3x8.2mm_P0.65mm",
+      "ref": "U2",
+      "symbol": "Interface_Expansion:TCA9555DBT",
+      "value": "TCA9555DBT"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.st.com/content/ccc/resource/technical/document/datasheet/41/4f/b3/b0/12/d4/47/88/CD00000444.pdf/files/CD00000444.pdf/jcr:content/translations/en.CD00000444.pdf",
+        "Description": "Positive 1.5A 35V Linear Regulator, Fixed Output 5V, TO-220/TO-263/TO-252",
+        "Footprint": "Package_TO_SOT_SMD:TO-252-3_TabPin2"
+      },
+      "footprint": "Package_TO_SOT_SMD:TO-252-3_TabPin2",
+      "ref": "U3",
+      "symbol": "Regulator_Linear:L7805",
+      "value": "L7805"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+12V",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "27",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D27",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R31",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R35",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "RV1",
+          "unit": null
+        },
+        {
+          "pin": "24",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "-12V",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ARP",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R31",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW13",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ARPDWN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R33",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ARPUD",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R32",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ARPUP",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R34",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "AUD",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "AUDOUT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R30",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "COL1",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "COL2",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "COL3",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "COL4",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CV",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R25",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CVIN",
+      "pins": [
+        {
+          "pin": "20",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D26",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D27",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CVOUT",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R23",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R26",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "29",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D16",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D17",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D18",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D20",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D22",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D23",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D24",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D26",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D28",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D29",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D30",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D31",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R24",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R27",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R29",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R36",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "RV1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW13",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "21",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "INT",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "J8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED10",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED11",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED12",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED2",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED3",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED4",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED5",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED6",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED7",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED8",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LED9",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D1-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D10-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW10",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D11-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D12-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D12",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D13-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D14-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D14",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D15-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D15",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D16-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D16",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D17-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D18-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D19-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D20-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D20",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D21-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D22-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D22",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R10",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D23-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D23",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D24-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D24",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D28-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D28",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R13",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D29-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D29",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R32",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D30-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D30",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R33",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D31-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D31",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R34",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D32-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D32",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R14",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D4-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D5-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D6-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D7-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D8-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D9-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J10-Pin_1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R15",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J2-Pin_1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R26",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R17-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "RV1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R18-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R20",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R21-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R22",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R28-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R28",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R30",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1A--)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R20",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1C-+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R25",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1C--)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R23",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R24",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1D-+)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R27",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1D--)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R28",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R29",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-~{INT})",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R35",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ROW1",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D12",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R36",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ROW2",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D6",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "ROW3",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R16",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SCL",
+      "pins": [
+        {
+          "pin": "24",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "22",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SDA",
+      "pins": [
+        {
+          "pin": "23",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "23",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TRG",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "A1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D32",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Q9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "TRGIN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R13",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "VGND",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-3V3-Pad17)",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-A0-Pad19)",
+      "pins": [
+        {
+          "pin": "19",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-A2-Pad21)",
+      "pins": [
+        {
+          "pin": "21",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-A3-Pad22)",
+      "pins": [
+        {
+          "pin": "22",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-A6-Pad25)",
+      "pins": [
+        {
+          "pin": "25",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-A7-Pad26)",
+      "pins": [
+        {
+          "pin": "26",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-AREF-Pad18)",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-MISO-Pad15)",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-RX1-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-SCK-Pad16)",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-TX1-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-VIN-Pad30)",
+      "pins": [
+        {
+          "pin": "30",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-~{RESET}-Pad28)",
+      "pins": [
+        {
+          "pin": "28",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(A1-~{RESET}-Pad3)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "A1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-Pin_2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J10-Pin_2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J10",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J2-Pin_2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J3-Pin_2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J7-Pin_3-Pad3)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J7-Pin_4-Pad4)",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J8-Pin_3-Pad3)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J8-Pin_4-Pad4)",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J8",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

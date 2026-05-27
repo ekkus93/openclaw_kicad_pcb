@@ -1046,17 +1046,87 @@ def _is_connector_passive_edge(ref_a: str, ref_b: str) -> bool:
 def _l_route(ex1: float, ey1: float, ex2: float, ey2: float) -> list[WireSegment]:
     """Return up to two orthogonal segments that connect (ex1,ey1) to (ex2,ey2).
 
-    Uses horizontal-first L-routing: go horizontally to (ex2, ey1), then
-    vertically to (ex2, ey2).  Degenerate segments (zero length) are omitted.
+    Prefer the simpler horizontal-first elbow, but switch to the vertical-first
+    variant when the default path would run through other protected stub-end
+    points from nearby nets.
     """
+    return _l_route_with_protected_points(ex1, ey1, ex2, ey2, protected_points=None)
+
+
+def _l_route_with_protected_points(
+    ex1: float,
+    ey1: float,
+    ex2: float,
+    ey2: float,
+    *,
+    protected_points: set[tuple[float, float]] | None,
+) -> list[WireSegment]:
+    horizontal_first = _horizontal_first_l_route(ex1, ey1, ex2, ey2)
+    if not protected_points:
+        return horizontal_first
+
+    vertical_first = _vertical_first_l_route(ex1, ey1, ex2, ey2)
+    current_endpoints = {(round(ex1, 2), round(ey1, 2)), (round(ex2, 2), round(ey2, 2))}
+    horizontal_score = _route_protected_point_score(
+        horizontal_first,
+        protected_points=protected_points,
+        excluded_points=current_endpoints,
+    )
+    vertical_score = _route_protected_point_score(
+        vertical_first,
+        protected_points=protected_points,
+        excluded_points=current_endpoints,
+    )
+    if vertical_score < horizontal_score:
+        return vertical_first
+    return horizontal_first
+
+
+def _horizontal_first_l_route(ex1: float, ey1: float, ex2: float, ey2: float) -> list[WireSegment]:
     segs: list[WireSegment] = []
     if not math.isclose(ex1, ex2, abs_tol=0.01):
-        # Horizontal leg
         segs.append(WireSegment(ex1, ey1, ex2, ey1))
     if not math.isclose(ey1, ey2, abs_tol=0.01):
-        # Vertical leg (starts at corner (ex2, ey1))
         segs.append(WireSegment(ex2, ey1, ex2, ey2))
     return segs
+
+
+def _vertical_first_l_route(ex1: float, ey1: float, ex2: float, ey2: float) -> list[WireSegment]:
+    segs: list[WireSegment] = []
+    if not math.isclose(ey1, ey2, abs_tol=0.01):
+        segs.append(WireSegment(ex1, ey1, ex1, ey2))
+    if not math.isclose(ex1, ex2, abs_tol=0.01):
+        segs.append(WireSegment(ex1, ey2, ex2, ey2))
+    return segs
+
+
+def _route_protected_point_score(
+    route: list[WireSegment],
+    *,
+    protected_points: set[tuple[float, float]],
+    excluded_points: set[tuple[float, float]],
+) -> int:
+    return sum(
+        1
+        for point in protected_points
+        if point not in excluded_points
+        and any(_point_on_segment(point, segment) for segment in route)
+    )
+
+
+def _point_on_segment(point: tuple[float, float], segment: WireSegment) -> bool:
+    x, y = point
+    if math.isclose(segment.y1, segment.y2, abs_tol=0.01):
+        return (
+            math.isclose(y, segment.y1, abs_tol=0.01)
+            and min(segment.x1, segment.x2) <= x <= max(segment.x1, segment.x2)
+        )
+    if math.isclose(segment.x1, segment.x2, abs_tol=0.01):
+        return (
+            math.isclose(x, segment.x1, abs_tol=0.01)
+            and min(segment.y1, segment.y2) <= y <= max(segment.y1, segment.y2)
+        )
+    return False
 
 
 def _snap_grid(v: float, grid: float = 1.27) -> float:
@@ -2742,6 +2812,11 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     routing = NetRouting()
     fallback_y = -1500.0
     resolved_anchors = _resolve_pin_anchors(pin_endpoints, pin_anchors)
+    protected_stub_points = {
+        (round(stub_x, 2), round(stub_y, 2))
+        for anchor in resolved_anchors.values()
+        for stub_x, stub_y in [_stub_end(anchor.x, anchor.y, anchor.angle)]
+    }
     ladder_routes = _plan_local_ladder_routes(
         ir,
         resolved_anchors,
@@ -2998,7 +3073,15 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
             if can_direct:
                 routing.wires.append(WireSegment(wx0, wy0, ex0, ey0))
                 routing.wires.append(WireSegment(wx1, wy1, ex1, ey1))
-                routing.wires.extend(_l_route(ex0, ey0, ex1, ey1))
+                routing.wires.extend(
+                    _l_route_with_protected_points(
+                        ex0,
+                        ey0,
+                        ex1,
+                        ey1,
+                        protected_points=protected_stub_points,
+                    )
+                )
                 routing.bind_markers.append(BindMarker(p0.ref, p0.pin, net.name))
                 routing.bind_markers.append(BindMarker(p1.ref, p1.pin, net.name))
                 routed_directly = True
@@ -3261,10 +3344,14 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
     # ----------------------------------------------------------------
     # Wire simplification pass (Phase 6.1)
     # ----------------------------------------------------------------
-    # Protect pin endpoints from being merged away; they are required
-    # connection points for electrical continuity.  Round to 2 decimal
-    # places (0.01 mm precision) to avoid floating-point comparison issues.
+    # Protect pin endpoints and visible/off-canvas label attachment points from
+    # being merged away; they are required electrical boundaries.  Round to
+    # 2 decimal places (0.01 mm precision) to avoid floating-point comparison
+    # issues.
     protected = {(round(x, 2), round(y, 2)) for x, y, _angle in pin_endpoints.values()}
+    protected.update((round(label.x, 2), round(label.y, 2)) for label in routing.labels)
+    protected.update((round(label.x, 2), round(label.y, 2)) for label in routing.global_labels)
+    protected.update((round(symbol.x, 2), round(symbol.y, 2)) for symbol in routing.power_symbols)
     routing.wires = _simplify_wires(routing.wires, protected_points=protected)
 
     oriented_wires: list[WireSegment] = []

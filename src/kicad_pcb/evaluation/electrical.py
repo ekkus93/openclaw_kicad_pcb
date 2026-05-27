@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.circuit_ir import CircuitIR, NetIR
 from kicad_pcb.corpus.kicadxml import canonicalize_circuit_ir
 
 
@@ -27,8 +27,8 @@ def compare_circuit_ir_equivalence(
 ) -> ElectricalEquivalenceReport:
     """Return a hard pass/fail electrical equivalence report."""
 
-    source_ir = canonicalize_circuit_ir(source)
-    generated_ir = canonicalize_circuit_ir(generated)
+    source_ir = canonicalize_circuit_ir(_normalize_sheet_scoped_net_names(source))
+    generated_ir = canonicalize_circuit_ir(_normalize_sheet_scoped_net_names(generated))
     mismatches: list[ElectricalMismatch] = []
 
     source_components = {
@@ -94,3 +94,41 @@ def compare_circuit_ir_equivalence(
 
     status = "passed" if not mismatches else "failed"
     return ElectricalEquivalenceReport(status=status, mismatches=tuple(mismatches))
+
+
+def _normalize_sheet_scoped_net_names(ir: CircuitIR) -> CircuitIR:
+    """Flatten safe KiCad sheet-path net prefixes like ``/Sheet/NET`` -> ``NET``."""
+
+    candidate_names = {net.name: _sheet_scoped_tail(net.name) for net in ir.nets}
+    candidate_pins: dict[str, set[tuple[tuple[str, str, str], ...]]] = {}
+    for net in ir.nets:
+        pin_key = tuple((pin.ref, pin.pin, pin.unit or "") for pin in net.pins)
+        candidate_pins.setdefault(candidate_names[net.name], set()).add(pin_key)
+
+    normalized_nets: list[NetIR] = []
+    seen_names: dict[str, tuple[tuple[str, str, str], ...]] = {}
+    for net in ir.nets:
+        pin_key = tuple((pin.ref, pin.pin, pin.unit or "") for pin in net.pins)
+        candidate_name = candidate_names[net.name]
+        normalized_name = net.name
+        if candidate_name != net.name and len(candidate_pins[candidate_name]) == 1:
+            normalized_name = candidate_name
+        existing_pin_key = seen_names.get(normalized_name)
+        if existing_pin_key == pin_key:
+            continue
+        normalized_nets.append(NetIR(name=normalized_name, pins=net.pins))
+        seen_names[normalized_name] = pin_key
+
+    return CircuitIR(
+        version=ir.version,
+        components=ir.components,
+        nets=normalized_nets,
+        options=ir.options,
+    )
+
+
+def _sheet_scoped_tail(net_name: str) -> str:
+    if not net_name.startswith("/"):
+        return net_name
+    tail = net_name.rsplit("/", 1)[-1].strip()
+    return tail or net_name

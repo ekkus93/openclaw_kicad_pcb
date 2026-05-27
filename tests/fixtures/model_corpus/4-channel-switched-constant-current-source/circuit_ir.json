@@ -1,0 +1,858 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C56",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C57",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C58",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": ""
+      },
+      "footprint": null,
+      "ref": "C59",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "ULQ2003AQDRQ1",
+        "Arrow Price/Stock": "https://www.arrow.com/en/products/ulq2003aqdrq1/texas-instruments?region=nac",
+        "Datasheet": "https://datasheet.datasheetarchive.com/originals/distributors/Datasheets-SFU2/DSASFU100030207.pdf",
+        "Description": "TEXAS INSTRUMENTS - ULQ2003AQDRQ1 - DARLINGTON TRANS ARRAY, NPN, 50V, SOIC16",
+        "Footprint": "SOIC127P600X175-16N",
+        "Height": "1.75",
+        "Manufacturer_Name": "Texas Instruments",
+        "Manufacturer_Part_Number": "ULQ2003AQDRQ1",
+        "Mouser Part Number": "595-ULQ2003AQDRQ1",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/ULQ2003AQDRQ1?qs=7kv20MEVUlgYWe3ELNx81w%3D%3D"
+      },
+      "footprint": "SOIC127P600X175-16N",
+      "ref": "IC12",
+      "symbol": "SamacSys_Parts:ULQ2003AQDRQ1",
+      "value": "ULQ2003AQDRQ1"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "NCV317MBSTT3G",
+        "Arrow Price/Stock": "https://www.arrow.com/en/products/ncv317mbstt3g/on-semiconductor?utm_currency=USD&region=nac",
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/LM317M-D.PDF",
+        "Description": "Output Adjustable between 1.2 V and 37 V; Output Current in Excess of 500 mA; Internal Thermal Overload Protection; Internal Short Circuit Current Limiting Constant with Temperature; Output Transistor Safe-Area Compensation; Floating Operation for High Voltage Applications; Eliminates Stocking many Fixed Voltages Standard Application; Pb-Free Packages are Available",
+        "Footprint": "SOT230P700X175-4N",
+        "Height": "1.75",
+        "Manufacturer_Name": "onsemi",
+        "Manufacturer_Part_Number": "NCV317MBSTT3G",
+        "Mouser Part Number": "863-NCV317MBSTT3G",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/onsemi/NCV317MBSTT3G?qs=3PKVEWFFm2%252BSS0n2wMgniA%3D%3D"
+      },
+      "footprint": "SOT230P700X175-4N",
+      "ref": "PS3",
+      "symbol": "SamacSys_Parts:NCV317MBSTT3G",
+      "value": "NCV317MBSTT3G"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "NCV317MBSTT3G",
+        "Arrow Price/Stock": "https://www.arrow.com/en/products/ncv317mbstt3g/on-semiconductor?utm_currency=USD&region=nac",
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/LM317M-D.PDF",
+        "Description": "Output Adjustable between 1.2 V and 37 V; Output Current in Excess of 500 mA; Internal Thermal Overload Protection; Internal Short Circuit Current Limiting Constant with Temperature; Output Transistor Safe-Area Compensation; Floating Operation for High Voltage Applications; Eliminates Stocking many Fixed Voltages Standard Application; Pb-Free Packages are Available",
+        "Footprint": "SOT230P700X175-4N",
+        "Height": "1.75",
+        "Manufacturer_Name": "onsemi",
+        "Manufacturer_Part_Number": "NCV317MBSTT3G",
+        "Mouser Part Number": "863-NCV317MBSTT3G",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/onsemi/NCV317MBSTT3G?qs=3PKVEWFFm2%252BSS0n2wMgniA%3D%3D"
+      },
+      "footprint": "SOT230P700X175-4N",
+      "ref": "PS4",
+      "symbol": "SamacSys_Parts:NCV317MBSTT3G",
+      "value": "NCV317MBSTT3G"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "NCV317MBSTT3G",
+        "Arrow Price/Stock": "https://www.arrow.com/en/products/ncv317mbstt3g/on-semiconductor?utm_currency=USD&region=nac",
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/LM317M-D.PDF",
+        "Description": "Output Adjustable between 1.2 V and 37 V; Output Current in Excess of 500 mA; Internal Thermal Overload Protection; Internal Short Circuit Current Limiting Constant with Temperature; Output Transistor Safe-Area Compensation; Floating Operation for High Voltage Applications; Eliminates Stocking many Fixed Voltages Standard Application; Pb-Free Packages are Available",
+        "Footprint": "SOT230P700X175-4N",
+        "Height": "1.75",
+        "Manufacturer_Name": "onsemi",
+        "Manufacturer_Part_Number": "NCV317MBSTT3G",
+        "Mouser Part Number": "863-NCV317MBSTT3G",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/onsemi/NCV317MBSTT3G?qs=3PKVEWFFm2%252BSS0n2wMgniA%3D%3D"
+      },
+      "footprint": "SOT230P700X175-4N",
+      "ref": "PS5",
+      "symbol": "SamacSys_Parts:NCV317MBSTT3G",
+      "value": "NCV317MBSTT3G"
+    },
+    {
+      "fields": {
+        "Arrow Part Number": "NCV317MBSTT3G",
+        "Arrow Price/Stock": "https://www.arrow.com/en/products/ncv317mbstt3g/on-semiconductor?utm_currency=USD&region=nac",
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/LM317M-D.PDF",
+        "Description": "Output Adjustable between 1.2 V and 37 V; Output Current in Excess of 500 mA; Internal Thermal Overload Protection; Internal Short Circuit Current Limiting Constant with Temperature; Output Transistor Safe-Area Compensation; Floating Operation for High Voltage Applications; Eliminates Stocking many Fixed Voltages Standard Application; Pb-Free Packages are Available",
+        "Footprint": "SOT230P700X175-4N",
+        "Height": "1.75",
+        "Manufacturer_Name": "onsemi",
+        "Manufacturer_Part_Number": "NCV317MBSTT3G",
+        "Mouser Part Number": "863-NCV317MBSTT3G",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/onsemi/NCV317MBSTT3G?qs=3PKVEWFFm2%252BSS0n2wMgniA%3D%3D"
+      },
+      "footprint": "SOT230P700X175-4N",
+      "ref": "PS6",
+      "symbol": "SamacSys_Parts:NCV317MBSTT3G",
+      "value": "NCV317MBSTT3G"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf",
+        "Description": "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q4",
+      "symbol": "Transistor_FET:BSS84",
+      "value": "BSS84Q-13-F"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf",
+        "Description": "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q5",
+      "symbol": "Transistor_FET:BSS84",
+      "value": "BSS84Q-13-F"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf",
+        "Description": "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q6",
+      "symbol": "Transistor_FET:BSS84",
+      "value": "BSS84Q-13-F"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf",
+        "Description": "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q7",
+      "symbol": "Transistor_FET:BSS84",
+      "value": "BSS84Q-13-F"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R51",
+      "symbol": "Device:R",
+      "value": "820"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R52",
+      "symbol": "Device:R",
+      "value": "8K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R53",
+      "symbol": "Device:R",
+      "value": "1K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R54",
+      "symbol": "Device:R",
+      "value": "820"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R55",
+      "symbol": "Device:R",
+      "value": "8K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R56",
+      "symbol": "Device:R",
+      "value": "1K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R57",
+      "symbol": "Device:R",
+      "value": "820"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R58",
+      "symbol": "Device:R",
+      "value": "820"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R59",
+      "symbol": "Device:R",
+      "value": "8K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R60",
+      "symbol": "Device:R",
+      "value": "8K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R61",
+      "symbol": "Device:R",
+      "value": "1K2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R62",
+      "symbol": "Device:R",
+      "value": "1K2"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+12V",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "IC12",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q5",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q6",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R52",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R55",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R59",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R60",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CONST_CURR2",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "PS5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R61",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CONST_CURR_0",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "PS3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R53",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CONST_CURR_1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "PS4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R56",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CONST_CURR_3",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "PS6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R62",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GATE_ISOURCE0",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "IC12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R51",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GATE_ISOURCE1",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "IC12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R54",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GATE_ISOURCE2",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "IC12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R57",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GATE_ISOURCE3",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "IC12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R58",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C56",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C57",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C58",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C59",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MCU_ISOURCE0",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MCU_ISOURCE1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MCU_ISOURCE2",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MCU_ISOURCE3",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS3-VIN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C56",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "PS3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS3-VOUT_1)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "PS3",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "PS3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R53",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS4-VIN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C57",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "PS4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS4-VOUT_1)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "PS4",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "PS4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R56",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS5-VIN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C58",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "PS5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS5-VOUT_1)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "PS5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "PS5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R61",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS6-VIN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C59",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "PS6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(PS6-VOUT_1)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "PS6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "PS6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R62",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q4-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R51",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R52",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q5-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R54",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R55",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q6-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R57",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R59",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q7-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R58",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R60",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-5B-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-5C-Pad12)",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-6B-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-6C-Pad11)",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-7B-Pad7)",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC12-7C-Pad10)",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "IC12",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

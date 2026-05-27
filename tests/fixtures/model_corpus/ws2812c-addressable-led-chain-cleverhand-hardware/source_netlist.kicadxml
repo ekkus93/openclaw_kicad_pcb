@@ -1,0 +1,1425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch</source>
+    <date>2026-05-26T16:23:13-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Communication Mono</title>
+        <company>Aightech</company>
+        <rev>1.0</rev>
+        <date>2024-09-02</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="AE1">
+      <value>Antenna_Chip</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Ceramic chip antenna with pin for PCB trace</description>
+      <fields>
+        <field name="LCSC">C6807751</field>
+        <field name="BW">&gt;=100MHz</field>
+        <field name="Peak Gain">2.5dBi @(XZ-total)</field>
+        <field name="Average Gain">-1.5dBi @(XZ-total)</field>
+        <field name="VSWR">&lt;2 in BW</field>
+        <field name="Impedance">50 Ohm</field>
+        <field name="Power capacity">3W</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ceramic chip antenna with pin for PCB trace</field>
+      </fields>
+      <libsource lib="Device" part="Antenna_Chip" description="Ceramic chip antenna with pin for PCB trace"/>
+      <property name="LCSC" value="C6807751"/>
+      <property name="BW" value="&gt;=100MHz"/>
+      <property name="Peak Gain" value="2.5dBi @(XZ-total)"/>
+      <property name="Average Gain" value="-1.5dBi @(XZ-total)"/>
+      <property name="VSWR" value="&lt;2 in BW"/>
+      <property name="Impedance" value="50 Ohm"/>
+      <property name="Power capacity" value="3W"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="antenna"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0de2fb90-6bfe-494f-978e-bfe9a47b48e0</tstamps>
+    </comp>
+    <comp ref="C1">
+      <value>3.3pF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fa42ca2d-4a92-43ea-8ba0-37250694f0d0</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>94d27bd2-d94c-4cba-838a-4b7424d224ca</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>3.3pF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ff94d33b-8889-457d-86eb-02128b4b3066</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>22pF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="LCSC">C12530</field>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C12530"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>347ef555-ee08-41fb-9aa3-c4fb7bf2d156</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>22pF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="LCSC">C1532</field>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C1532"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c4eb5e37-c2a6-491f-8ca7-47e3bee31258</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e64fb8d6-0b30-480f-a6a2-7ae23638c3fc</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>454dec87-9a86-43eb-9582-8dbe78eb0821</tstamps>
+    </comp>
+    <comp ref="C8">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8bb8a1fa-2ae2-44d6-a452-25ee7aa5ea4d</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7b2e1b62-c44f-4c6f-bb51-d330929fb229</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>27acd229-dcf1-4881-9be6-cb8a3a83217d</tstamps>
+    </comp>
+    <comp ref="C12">
+      <value>3.3pF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8d72522c-2f95-4ce5-993e-e167a6800960</tstamps>
+    </comp>
+    <comp ref="I1">
+      <value>smd_insert</value>
+      <footprint>00_Custom:insert_1.2mm</footprint>
+      <fields>
+        <field name="Footprint">00_Custom:insert_1.2mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_custom" part="smd_insert" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f28c3e82-854e-4263-817b-d98931bc8d06</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3a49b937-e7b4-4d52-a9cf-0e31806cdb35</tstamps>
+    </comp>
+    <comp ref="J2">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7a8afe7b-fdce-43d3-a01a-d1cc9d759b4d</tstamps>
+    </comp>
+    <comp ref="J4">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4648bba0-ca15-4fb2-b017-8955b83a669c</tstamps>
+    </comp>
+    <comp ref="J5">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cac323e4-3546-4d37-a71d-e586a9707614</tstamps>
+    </comp>
+    <comp ref="J6">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a72a620a-d92b-4c28-beb0-09d630ebc0de</tstamps>
+    </comp>
+    <comp ref="J7">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>21b29dc5-12b2-4de5-b530-a1f1d6faceef</tstamps>
+    </comp>
+    <comp ref="J8">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c6bc2d4f-6646-46a9-9ed2-49185474e054</tstamps>
+    </comp>
+    <comp ref="J9">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bb671ab2-0ac6-4b28-ab59-6054c7ffdae4</tstamps>
+    </comp>
+    <comp ref="J10">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bb77b856-5c40-484f-b2c4-601b5669c90f</tstamps>
+    </comp>
+    <comp ref="J11">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>71aaec02-6487-4140-a51d-582537cbfeaf</tstamps>
+    </comp>
+    <comp ref="J12">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>acc2db3e-b49c-429b-86a0-22dc721ad1b1</tstamps>
+    </comp>
+    <comp ref="J13">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>049cc146-7f74-4eee-a48a-e39198aa6aba</tstamps>
+    </comp>
+    <comp ref="J14">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ad4f0270-2d05-4bee-8fbf-ee24cf9e7a6d</tstamps>
+    </comp>
+    <comp ref="J15">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7a8797de-fff4-4eeb-936d-624aac3e85f3</tstamps>
+    </comp>
+    <comp ref="J16">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9d153ced-a199-4fc3-83ca-8a38ef9d7821</tstamps>
+    </comp>
+    <comp ref="J17">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>69b56b5c-2cea-4a63-9544-8ec6f48e85f6</tstamps>
+    </comp>
+    <comp ref="J18">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b6996139-0a00-44bd-ace0-b39183fe979c</tstamps>
+    </comp>
+    <comp ref="J21">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5097c300-0ae5-44d5-aca8-2d417de8f50d</tstamps>
+    </comp>
+    <comp ref="J22">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c275d9bc-ed00-4fdb-887c-d33da3741c14</tstamps>
+    </comp>
+    <comp ref="J23">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4e390d6c-31eb-48da-9abd-3bddfde7a4bd</tstamps>
+    </comp>
+    <comp ref="J24">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>Generic connector, single row, 01x01, script generated</description>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x01, script generated</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>eaf3f9ce-0933-4612-b0d5-b821ace424e4</tstamps>
+    </comp>
+    <comp ref="J25">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>Generic connector, single row, 01x01, script generated</description>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x01, script generated</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e59a478e-663c-4c80-bfba-b499edec8993</tstamps>
+    </comp>
+    <comp ref="J26">
+      <value>Conn_01x01_Pin</value>
+      <footprint>Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_1.27mm:PinHeader_1x01_P1.27mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x01_Pin" description="Generic connector, single row, 01x01, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>409ecc7d-89c7-4a11-bcce-921e7a2e204d</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>2.2nH</value>
+      <footprint>Inductor_SMD:L_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Inductor</description>
+      <fields>
+        <field name="Footprint">Inductor_SMD:L_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a99bfd28-1197-4732-adba-5a345ca04828</tstamps>
+    </comp>
+    <comp ref="LED1">
+      <value>WS2812C-2020-V1</value>
+      <footprint>00_lcsc:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020</footprint>
+      <fields>
+        <field name="LCSC Part">C2976072</field>
+        <field name="Footprint">00_lcsc:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_lcsc" part="WS2812C-2020-V1" description=""/>
+      <property name="LCSC Part" value="C2976072"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>55cc0c77-a715-4afb-88a0-83a53209d4ea</tstamps>
+    </comp>
+    <comp ref="LED2">
+      <value>WS2812C</value>
+      <footprint>00_lcsc:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020</footprint>
+      <fields>
+        <field name="LCSC Part">C2976072</field>
+        <field name="Footprint">00_lcsc:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_lcsc" part="WS2812C-2020-V1" description=""/>
+      <property name="LCSC Part" value="C2976072"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d68d0c2b-c88a-4cfa-aaf5-0a914f852fe4</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="LCSC">C25744</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25744"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1862ed2a-da46-4546-9363-29189363b493</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>47.5k</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="LCSC">C25762</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25762"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ed8b196d-5cd3-45e6-a0fa-ee01899e3877</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>1M</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="LCSC">C25762</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25762"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>36f47cf1-35ef-491a-9c88-f0418ce6048c</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="LCSC">C25762</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25762"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>16dc4a6b-4557-4cb1-8449-53fea5215a89</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="LCSC">C25762</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25762"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a9acef11-ac7c-440c-8e7c-9b04624acfc6</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>250K</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="LCSC">C25762</field>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C25762"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b8422d08-7d3a-4594-8267-982b215cd11a</tstamps>
+    </comp>
+    <comp ref="SW1">
+      <value>TS-1088R-02026</value>
+      <footprint>00_lcsc:SW-SMD_L3.9-W3.0-P4.45</footprint>
+      <datasheet>https://lcsc.com/product-detail/New-Arrivals_XUNPU-TS-1088R-02026_C455280.html</datasheet>
+      <fields>
+        <field name="LCSC Part">C455280</field>
+        <field name="Footprint">00_lcsc:SW-SMD_L3.9-W3.0-P4.45</field>
+        <field name="Datasheet">https://lcsc.com/product-detail/New-Arrivals_XUNPU-TS-1088R-02026_C455280.html</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_lcsc" part="TS-1088R-02026" description=""/>
+      <property name="LCSC Part" value="C455280"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>adbcd075-8cb2-4ad0-af61-a1339535768d</tstamps>
+    </comp>
+    <comp ref="SW2">
+      <value>~</value>
+      <footprint>00_lcsc:SW-SMD_L3.9-W3.0-P4.45</footprint>
+      <fields>
+        <field name="LCSC">C720477</field>
+        <field name="Footprint">00_lcsc:SW-SMD_L3.9-W3.0-P4.45</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_custom" part="switch" description=""/>
+      <property name="LCSC" value="C720477"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b6752e22-6907-470d-abd6-666ea180adb9</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>MCP73831/2</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <fields>
+        <field name="LCSC">C14879</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_custom" part="MCP73831/2" description=""/>
+      <property name="LCSC" value="C14879"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2167ed70-4e5e-479f-9fd4-5e95cb363bd5</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>ESP32-C3FH4</value>
+      <footprint>00_custom-footprints:ESP32-C3FH4</footprint>
+      <fields>
+        <field name="PARTREV">V1.0</field>
+        <field name="MAXIMUM_PACKAGE_HEIGHT">0.9mm</field>
+        <field name="MANUFACTURER">Espressif</field>
+        <field name="STANDARD">IPC 7351B</field>
+        <field name="LCSC">C2858491</field>
+        <field name="Footprint">00_custom-footprints:ESP32-C3FH4</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_custom" part="ESP32-C3FH4" description=""/>
+      <property name="PARTREV" value="V1.0"/>
+      <property name="MAXIMUM_PACKAGE_HEIGHT" value="0.9mm"/>
+      <property name="MANUFACTURER" value="Espressif"/>
+      <property name="STANDARD" value="IPC 7351B"/>
+      <property name="LCSC" value="C2858491"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>30d89a75-55b3-41b4-9396-f4993bf2dd20</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>MIC5504</value>
+      <footprint>Package_DFN_QFN:UDFN-4-1EP_1x1mm_P0.65mm_EP0.48x0.48mm</footprint>
+      <fields>
+        <field name="LCSC">C3021135</field>
+        <field name="Footprint">Package_DFN_QFN:UDFN-4-1EP_1x1mm_P0.65mm_EP0.48x0.48mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="00_custom" part="MIC5504" description=""/>
+      <property name="LCSC" value="C3021135"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e500daa2-3baf-42b5-a97b-c962f057471c</tstamps>
+    </comp>
+    <comp ref="Y1">
+      <value>XTAL_40MHz</value>
+      <footprint>Crystal:Crystal_SMD_2016-4Pin_2.0x1.6mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Four pin crystal, GND on pins 2 and 4</description>
+      <fields>
+        <field name="LCSC">C2929402</field>
+        <field name="Footprint">Crystal:Crystal_SMD_2016-4Pin_2.0x1.6mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Four pin crystal, GND on pins 2 and 4</field>
+      </fields>
+      <libsource lib="Device" part="Crystal_GND24" description="Four pin crystal, GND on pins 2 and 4"/>
+      <property name="LCSC" value="C2929402"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/ws2812c-addressable-led-chain-cleverhand-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="quartz ceramic resonator oscillator"/>
+      <property name="ki_fp_filters" value="Crystal*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>77ad195f-034a-4ea0-a000-c820c9c1f9e5</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="00_custom" part="ESP32-C3FH4">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ESP32-C3FH4</field>
+        <field name="Footprint">00_custom-footprints:ESP32-C3FH4</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="PARTREV">V1.0</field>
+        <field name="MAXIMUM_PACKAGE_HEIGHT">0.9mm</field>
+        <field name="MANUFACTURER">Espressif</field>
+        <field name="STANDARD">IPC 7351B</field>
+        <field name="LCSC">C2858491</field>
+      </fields>
+      <pins>
+        <pin num="1" name="LNA_IN" type="bidirectional"/>
+        <pin num="2" name="VDD3P3" type="power_in"/>
+        <pin num="3" name="VDD3P3" type="power_in"/>
+        <pin num="4" name="XTAL_32K_P" type="bidirectional"/>
+        <pin num="5" name="XTAL_32K_N" type="bidirectional"/>
+        <pin num="6" name="GPIO2" type="bidirectional"/>
+        <pin num="7" name="CHIP_EN" type="input"/>
+        <pin num="8" name="GPIO3" type="bidirectional"/>
+        <pin num="9" name="MTMS" type="bidirectional"/>
+        <pin num="10" name="MTDI" type="bidirectional"/>
+        <pin num="11" name="VDD3P3_RTC" type="power_in"/>
+        <pin num="12" name="MTCK" type="bidirectional"/>
+        <pin num="13" name="MTDO" type="bidirectional"/>
+        <pin num="14" name="GPIO8" type="bidirectional"/>
+        <pin num="15" name="GPIO9" type="bidirectional"/>
+        <pin num="16" name="GPIO10" type="bidirectional"/>
+        <pin num="17" name="VDD3P3_CPU" type="power_in"/>
+        <pin num="18" name="VDD_SPI" type="power_in"/>
+        <pin num="19" name="SPIHD" type="bidirectional"/>
+        <pin num="20" name="SPIWP" type="bidirectional"/>
+        <pin num="21" name="SPICS0" type="bidirectional"/>
+        <pin num="22" name="SPICLK" type="bidirectional"/>
+        <pin num="23" name="SPID" type="bidirectional"/>
+        <pin num="24" name="SPIQ" type="bidirectional"/>
+        <pin num="25" name="GPIO18" type="bidirectional"/>
+        <pin num="26" name="GPIO19" type="bidirectional"/>
+        <pin num="27" name="U0RXD" type="bidirectional"/>
+        <pin num="28" name="U0TXD" type="bidirectional"/>
+        <pin num="29" name="XTAL_N" type="output"/>
+        <pin num="30" name="XTAL_P" type="input"/>
+        <pin num="31" name="VDDA" type="power_in"/>
+        <pin num="32" name="VDDA" type="power_in"/>
+        <pin num="33" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_custom" part="MCP73831/2">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MCP73831/2</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="LCSC">C14879</field>
+      </fields>
+      <pins>
+        <pin num="1" name="STAT" type="output"/>
+        <pin num="2" name="V_{SS}" type="power_in"/>
+        <pin num="3" name="V_{BAT}" type="power_out"/>
+        <pin num="4" name="V_{DD}" type="power_in"/>
+        <pin num="5" name="PROG" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_custom" part="MIC5504">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MIC5504</field>
+        <field name="Footprint">Package_DFN_QFN:UDFN-4-1EP_1x1mm_P0.65mm_EP0.48x0.48mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="LCSC">C3021135</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VOUT" type="power_out"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="EN" type="input"/>
+        <pin num="4" name="VIN" type="power_in"/>
+        <pin num="5" name="EP" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_custom" part="smd_insert">
+      <fields>
+        <field name="Reference">I</field>
+        <field name="Value">smd_insert</field>
+        <field name="Footprint">00_Custom:insert_1.2mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="conn" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_custom" part="switch">
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value"/>
+        <field name="Footprint">00_custom-footprints:SW-SMD_L3.9-W3.0-P4.45</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="LCSC">C720477</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="input"/>
+        <pin num="2" name="2" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_lcsc" part="TS-1088R-02026">
+      <docs>https://lcsc.com/product-detail/New-Arrivals_XUNPU-TS-1088R-02026_C455280.html</docs>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">TS-1088R-02026</field>
+        <field name="Footprint">00_lcsc:SW-SMD_L3.9-W3.0-P4.45</field>
+        <field name="Datasheet">https://lcsc.com/product-detail/New-Arrivals_XUNPU-TS-1088R-02026_C455280.html</field>
+        <field name="Description"/>
+        <field name="LCSC Part">C455280</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="unspecified"/>
+        <pin num="2" name="2" type="unspecified"/>
+      </pins>
+    </libpart>
+    <libpart lib="00_lcsc" part="WS2812C-2020-V1">
+      <fields>
+        <field name="Reference">LED</field>
+        <field name="Value">WS2812C-2020-V1</field>
+        <field name="Footprint">00_lcsc:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="LCSC Part">C2976072</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DO" type="unspecified"/>
+        <pin num="2" name="GND" type="unspecified"/>
+        <pin num="3" name="DI" type="unspecified"/>
+        <pin num="4" name="VDD" type="unspecified"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x01_Pin">
+      <description>Generic connector, single row, 01x01, script generated</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x01_Pin</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x01, script generated</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Antenna_Chip">
+      <description>Ceramic chip antenna with pin for PCB trace</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">AE2</field>
+        <field name="Value">Antenna_Chip</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ceramic chip antenna with pin for PCB trace</field>
+        <field name="LCSC">C6807751</field>
+        <field name="BW">&gt;=100MHz</field>
+        <field name="Peak Gain">2.5dBi @(XZ-total)</field>
+        <field name="Average Gain">-1.5dBi @(XZ-total)</field>
+        <field name="VSWR">&lt;2 in BW</field>
+        <field name="Impedance">50 Ohm</field>
+        <field name="Power capacity">3W</field>
+      </fields>
+      <pins>
+        <pin num="1" name="FEED" type="input"/>
+        <pin num="2" name="PCB_Trace" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Crystal_GND24">
+      <description>Four pin crystal, GND on pins 2 and 4</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Crystal*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">Y</field>
+        <field name="Value">Crystal_GND24</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Four pin crystal, GND on pins 2 and 4</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+        <pin num="4" name="4" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L">
+      <description>Inductor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+3.3V" class="Default">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="J1" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J11" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="LED1" pin="4" pinfunction="VDD" pintype="unspecified"/>
+      <node ref="LED2" pin="4" pinfunction="VDD" pintype="unspecified"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+      <node ref="U2" pin="11" pinfunction="VDD3P3_RTC" pintype="power_in"/>
+      <node ref="U2" pin="17" pinfunction="VDD3P3_CPU" pintype="power_in"/>
+      <node ref="U2" pin="2" pinfunction="VDD3P3" pintype="power_in"/>
+      <node ref="U2" pin="3" pinfunction="VDD3P3" pintype="power_in"/>
+      <node ref="U2" pin="31" pinfunction="VDDA" pintype="power_in"/>
+      <node ref="U2" pin="32" pinfunction="VDDA" pintype="power_in"/>
+      <node ref="U3" pin="1" pinfunction="VOUT" pintype="power_out"/>
+    </net>
+    <net code="2" name="+5V" class="Default">
+      <node ref="J4" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="V_{DD}" pintype="power_in"/>
+    </net>
+    <net code="3" name="+BATT" class="Default">
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="J24" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="V_{BAT}" pintype="power_out"/>
+      <node ref="U3" pin="3" pinfunction="EN" pintype="input"/>
+      <node ref="U3" pin="4" pinfunction="VIN" pintype="power_in"/>
+    </net>
+    <net code="4" name="/ADC_BATT" class="Default">
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U2" pin="10" pinfunction="MTDI" pintype="bidirectional"/>
+    </net>
+    <net code="5" name="/BAT_PRG" class="Default">
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="PROG" pintype="input"/>
+    </net>
+    <net code="6" name="/CSB" class="Default">
+      <node ref="J8" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="13" pinfunction="MTDO" pintype="bidirectional"/>
+    </net>
+    <net code="7" name="/ESP_EN" class="Default">
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="GPIO2" pintype="bidirectional"/>
+      <node ref="U2" pin="7" pinfunction="CHIP_EN" pintype="input"/>
+    </net>
+    <net code="8" name="/GPIO" class="Default">
+      <node ref="J21" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="1" pinfunction="1" pintype="unspecified"/>
+      <node ref="U2" pin="4" pinfunction="XTAL_32K_P" pintype="bidirectional"/>
+    </net>
+    <net code="9" name="/GPIO8" class="Default">
+      <node ref="J14" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J7" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="14" pinfunction="GPIO8" pintype="bidirectional"/>
+    </net>
+    <net code="10" name="/GPIO9" class="Default">
+      <node ref="J12" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J5" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="15" pinfunction="GPIO9" pintype="bidirectional"/>
+    </net>
+    <net code="11" name="/LED_IN" class="Default">
+      <node ref="LED2" pin="3" pinfunction="DI" pintype="unspecified"/>
+      <node ref="U2" pin="12" pinfunction="MTCK" pintype="bidirectional"/>
+    </net>
+    <net code="12" name="/PICO" class="Default">
+      <node ref="J13" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J6" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="16" pinfunction="GPIO10" pintype="bidirectional"/>
+    </net>
+    <net code="13" name="/PWM" class="Default">
+      <node ref="J18" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="5" pinfunction="XTAL_32K_N" pintype="bidirectional"/>
+    </net>
+    <net code="14" name="/SPICS" class="Default">
+      <node ref="J15" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="8" pinfunction="GPIO3" pintype="bidirectional"/>
+    </net>
+    <net code="15" name="/STATUS_CHARGER" class="Default">
+      <node ref="U1" pin="1" pinfunction="STAT" pintype="output+no_connect"/>
+    </net>
+    <net code="16" name="/U0RX" class="Default">
+      <node ref="J16" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="27" pinfunction="U0RXD" pintype="bidirectional"/>
+    </net>
+    <net code="17" name="/U0TX" class="Default">
+      <node ref="J17" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="28" pinfunction="U0TXD" pintype="bidirectional"/>
+    </net>
+    <net code="18" name="/USB_D+" class="Default">
+      <node ref="J10" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="26" pinfunction="GPIO19" pintype="bidirectional"/>
+    </net>
+    <net code="19" name="/USB_D-" class="Default">
+      <node ref="J23" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U2" pin="25" pinfunction="GPIO18" pintype="bidirectional"/>
+    </net>
+    <net code="20" name="/XTAL_N" class="Default">
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="U2" pin="29" pinfunction="XTAL_N" pintype="output"/>
+      <node ref="Y1" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="21" name="/XTAL_P" class="Default">
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="U2" pin="30" pinfunction="XTAL_P" pintype="input"/>
+      <node ref="Y1" pin="3" pinfunction="3" pintype="passive"/>
+    </net>
+    <net code="22" name="/antena" class="Default">
+      <node ref="AE1" pin="1" pinfunction="FEED" pintype="input"/>
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="L1" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="23" name="/extRef" class="Default">
+      <node ref="J9" pin="1" pinfunction="Pin_1" pintype="passive+no_connect"/>
+    </net>
+    <net code="24" name="/lna_in" class="Default">
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="U2" pin="1" pinfunction="LNA_IN" pintype="bidirectional"/>
+    </net>
+    <net code="25" name="GND" class="Default">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="I1" pin="1" pinfunction="conn" pintype="power_in"/>
+      <node ref="J2" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J22" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J25" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J26" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="LED1" pin="2" pinfunction="GND" pintype="unspecified"/>
+      <node ref="LED2" pin="2" pinfunction="GND" pintype="unspecified"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="2" pinfunction="2" pintype="unspecified"/>
+      <node ref="SW2" pin="1" pinfunction="1" pintype="input"/>
+      <node ref="U1" pin="2" pinfunction="V_{SS}" pintype="power_in"/>
+      <node ref="U2" pin="33" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="Y1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="Y1" pin="4" pinfunction="4" pintype="passive"/>
+    </net>
+    <net code="26" name="Net-(LED1-DI)" class="Default">
+      <node ref="LED1" pin="3" pinfunction="DI" pintype="unspecified"/>
+      <node ref="LED2" pin="1" pinfunction="DO" pintype="unspecified"/>
+    </net>
+    <net code="27" name="Net-(U2-MTMS)" class="Default">
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="SW2" pin="2" pinfunction="2" pintype="input"/>
+      <node ref="U2" pin="9" pinfunction="MTMS" pintype="bidirectional"/>
+    </net>
+    <net code="28" name="unconnected-(AE1-PCB_Trace-Pad2)" class="Default">
+      <node ref="AE1" pin="2" pinfunction="PCB_Trace" pintype="passive+no_connect"/>
+    </net>
+    <net code="29" name="unconnected-(LED1-DO-Pad1)" class="Default">
+      <node ref="LED1" pin="1" pinfunction="DO" pintype="unspecified+no_connect"/>
+    </net>
+    <net code="30" name="unconnected-(U2-SPICLK-Pad22)" class="Default">
+      <node ref="U2" pin="22" pinfunction="SPICLK" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="31" name="unconnected-(U2-SPICS0-Pad21)" class="Default">
+      <node ref="U2" pin="21" pinfunction="SPICS0" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="32" name="unconnected-(U2-SPID-Pad23)" class="Default">
+      <node ref="U2" pin="23" pinfunction="SPID" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="33" name="unconnected-(U2-SPIHD-Pad19)" class="Default">
+      <node ref="U2" pin="19" pinfunction="SPIHD" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="34" name="unconnected-(U2-SPIQ-Pad24)" class="Default">
+      <node ref="U2" pin="24" pinfunction="SPIQ" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="35" name="unconnected-(U2-SPIWP-Pad20)" class="Default">
+      <node ref="U2" pin="20" pinfunction="SPIWP" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="36" name="unconnected-(U2-VDD_SPI-Pad18)" class="Default">
+      <node ref="U2" pin="18" pinfunction="VDD_SPI" pintype="power_in+no_connect"/>
+    </net>
+    <net code="37" name="unconnected-(U3-EP-Pad5)" class="Default">
+      <node ref="U3" pin="5" pinfunction="EP" pintype="passive+no_connect"/>
+    </net>
+  </nets>
+</export>

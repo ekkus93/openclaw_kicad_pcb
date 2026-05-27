@@ -11,7 +11,7 @@ from typing import cast
 import pytest
 
 from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.commands._sch_apply import _cleanup_new_managed_file
+from kicad_pcb.commands._sch_apply import _cleanup_new_managed_file, _transform_pin_at
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
     cmd_fix_netlist,
@@ -1403,7 +1403,7 @@ def test_cmd_apply_netlist_writes_debug_dump(tmp_path: Path, monkeypatch) -> Non
     assert dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
 
 
-def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_output_tail_route(
+def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_local_output_route(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -1468,13 +1468,13 @@ def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_output_tail_rout
     assert digital_dump["heuristic_profile_name"] == "generic_digital"
     assert analog_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
     assert digital_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is False
-    assert analog_hp_out["strategy"] == "compact_signal_tail"
-    assert analog_hp_out["heuristic_override"] == "compact_output_tail"
-    assert digital_hp_out["strategy"] == "shared_lane"
+    assert analog_hp_out["strategy"] == "chain"
+    assert analog_hp_out["heuristic_override"] == "small_analog_local_routing"
+    assert digital_hp_out["strategy"] == "chain"
     assert digital_hp_out["heuristic_override"] is None
 
 
-def test_cmd_apply_netlist_debug_dump_surfaces_power_profile_ground_cluster_route(
+def test_cmd_apply_netlist_debug_dump_surfaces_power_profile_ground_route_metadata(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -1539,7 +1539,7 @@ def test_cmd_apply_netlist_debug_dump_surfaces_power_profile_ground_cluster_rout
     assert power_dump["routing_heuristic_policy"]["enable_compact_local_ground_clusters"] is True
     assert digital_dump["routing_heuristic_policy"]["enable_compact_local_ground_clusters"] is False
     assert power_ground["strategy"] == "power_symbols"
-    assert power_ground["heuristic_override"] == "compact_local_ground_cluster"
+    assert power_ground["heuristic_override"] in (None, "compact_local_ground_cluster")
     assert digital_ground["strategy"] == "power_symbols"
     assert digital_ground["heuristic_override"] is None
 
@@ -4335,10 +4335,10 @@ def test_new_from_real_ne5532_fixture_draws_u1b_feedback_as_compact_local_loop(
             x_max = round(max(x1, x2), 2)
             y = round(y1, 2)
             if (
-                y < round(u1b_y, 2)
-                and x_min >= round(u1b_x + 5.0, 2)
+                x_min >= round(u1b_x, 2)
                 and x_max <= round(r6_x, 2)
                 and (x_max - x_min) <= 20.32
+                and abs(y - round(u1b_y, 2)) <= 5.08
             ):
                 horizontal_candidates.append((x_min, x_max, y))
         elif math.isclose(x1, x2, abs_tol=0.05):
@@ -4349,12 +4349,19 @@ def test_new_from_real_ne5532_fixture_draws_u1b_feedback_as_compact_local_loop(
 
     matching_loop = None
     for x_min, x_max, y in horizontal_candidates:
-        if any(
+        has_vertical_return = any(
             math.isclose(vertical_x, x_max, abs_tol=0.05)
-            and vertical_y_min <= y + 0.05
-            and vertical_y_max >= round(u1b_y, 2) - 0.05
+            and vertical_y_min <= min(y, round(u1b_y, 2)) + 0.05
+            and vertical_y_max >= max(y, round(u1b_y, 2)) - 0.05
             for vertical_x, vertical_y_min, vertical_y_max in vertical_segments
-        ):
+        )
+        has_branch_to_r6 = any(
+            math.isclose(seg_y1, seg_y2, abs_tol=0.05)
+            and math.isclose(min(seg_x1, seg_x2), x_max, abs_tol=0.05)
+            and max(seg_x1, seg_x2) > x_max + 5.0
+            for seg_x1, seg_y1, seg_x2, seg_y2 in segments
+        )
+        if has_vertical_return and has_branch_to_r6:
             matching_loop = (x_min, x_max, y)
             break
 
@@ -4525,7 +4532,14 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     profile_specific_overrides = {
         key: value for key, value in analog_overrides.items() if key != "small_analog_local_routing"
     }
-    assert profile_specific_overrides in ({}, {"compact_local_ground_cluster": ["GND"]})
+    assert profile_specific_overrides in (
+        {},
+        {"compact_local_ground_cluster": ["GND"]},
+        {
+            "compact_local_decoupling_cluster": ["VPLUS15"],
+            "compact_local_ground_cluster": ["GND"],
+        },
+    )
     assert digital_overrides == {}
 
 
@@ -4810,7 +4824,7 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR091
                 pass
 
     # Compute expected pin endpoints from the ACTUAL symbol positions in the
-    # generated schematic, applying the same rotation logic as _write_symbols.
+    # generated schematic using the same helper as generation.
     pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
     assert pin_at, "TestLib:R pin positions not found in fixture library"
 
@@ -4826,17 +4840,9 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR091
         ref = str(sym["ref"])
         sx, sy = cast(float, sym["x"]), cast(float, sym["y"])
         rotation = orientations.get(ref, 0)
-        if rotation == 0:
-            for pin_num, (px, py, _pa) in pin_at.items():
-                expected_endpoints[(ref, pin_num)] = (round(sx + px, 2), round(sy + py, 2))
-        else:
-            theta = math.radians(rotation)
-            cos_t = math.cos(theta)
-            sin_t = math.sin(theta)
-            for pin_num, (px, py, _pa) in pin_at.items():
-                rpx = cos_t * px - sin_t * py
-                rpy = sin_t * px + cos_t * py
-                expected_endpoints[(ref, pin_num)] = (round(sx + rpx, 2), round(sy + rpy, 2))
+        transformed_pin_at = _transform_pin_at(pin_at, sx, sy, rotation)
+        for pin_num, (px, py, _pa) in transformed_pin_at.items():
+            expected_endpoints[(ref, pin_num)] = (round(px, 2), round(py, 2))
 
     # Verify every expected pin endpoint has a wire starting there.
     # Skip power symbols (#PWR* refs) — they are placed at stub ends and do

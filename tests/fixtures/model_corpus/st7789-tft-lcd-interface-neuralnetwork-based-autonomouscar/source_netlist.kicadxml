@@ -1,0 +1,1932 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch</source>
+    <date>2026-05-26T16:23:12-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>ESP32 Gamepad</title>
+        <company/>
+        <rev>v01</rev>
+        <date>2025-01-08</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value="Author: Pacman Ng"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="BT1">
+      <value>Battery_Cell</value>
+      <footprint>Battery:BatteryHolder_Keystone_1042_1x18650</footprint>
+      <datasheet>~</datasheet>
+      <description>Single-cell battery</description>
+      <fields>
+        <field name="Footprint">Battery:BatteryHolder_Keystone_1042_1x18650</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single-cell battery</field>
+      </fields>
+      <libsource lib="Device" part="Battery_Cell" description="Single-cell battery"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="battery cell"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e3a45260-86ad-4595-be7f-2a8d62344f7b</tstamps>
+    </comp>
+    <comp ref="C1">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b9d6794e-809c-4e48-936c-92ae5ff0998a</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>476b06f7-4a28-4910-82d6-ca9dd2bfb4fd</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>58c2d47e-34a2-46b5-98aa-01e47cc1d7ef</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>68ef12fc-f751-472d-b12e-f7a80d5867f6</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>22uF</value>
+      <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>48314a9a-6ed9-463e-9a2f-4edb6ef67cd9</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>22uF</value>
+      <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ee85700a-a4a1-4d5f-887e-6b37e4482b69</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>22uF</value>
+      <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>528a4a10-c264-4357-8834-333915ad025f</tstamps>
+    </comp>
+    <comp ref="C8">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>515e9a0d-c053-407a-859e-6f017ae5f46c</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1ad611e7-0064-4221-8e8f-32901cb49141</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0f40be4c-30d7-4607-acd7-348d171b709a</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4eb011ac-f1ea-4d03-987d-3cb7446fba37</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9128ad51-185d-4f54-a34f-425c6934ffff</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5a310ba9-71e0-485e-bffe-eb82cadb2791</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7613d24f-c607-41e6-b4e8-ee2d6ac5b131</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>98c53aaf-51d2-4d30-bfad-b3768d194efb</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a2b1d093-e15c-4f4e-b997-3c91ec57e955</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>2.54mm</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <description>Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Horizontal</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_02x10_Counter_Clockwise" description="Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_2x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4346edee-b1b7-466f-b82e-3e64c787524c</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>2R2</value>
+      <footprint>Inductor_SMD:L_10.4x10.4_H4.8</footprint>
+      <datasheet>~</datasheet>
+      <description>Inductor</description>
+      <fields>
+        <field name="Footprint">Inductor_SMD:L_10.4x10.4_H4.8</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>37879019-a5a9-4378-a238-3ac09df26fe6</tstamps>
+    </comp>
+    <comp ref="P1">
+      <value>USB_C_Plug_USB2.0</value>
+      <footprint>USB_Type_C:USB_Type_C_6P</footprint>
+      <datasheet>https://www.usb.org/sites/default/files/documents/usb_type-c.zip</datasheet>
+      <description>USB 2.0-only Type-C Plug connector</description>
+      <fields>
+        <field name="Footprint">USB_Type_C:USB_Type_C_6P</field>
+        <field name="Datasheet">https://www.usb.org/sites/default/files/documents/usb_type-c.zip</field>
+        <field name="Description">USB 2.0-only Type-C Plug connector</field>
+      </fields>
+      <libsource lib="Connector" part="USB_C_Plug_USB2.0" description="USB 2.0-only Type-C Plug connector"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb universal serial bus type-C USB2.0"/>
+      <property name="ki_fp_filters" value="USB*C*Plug*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8de69937-ee14-49fd-b7d2-8fd1c29280fc</tstamps>
+    </comp>
+    <comp ref="Q2">
+      <value>SI2300</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23_Handsoldering</footprint>
+      <datasheet>https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs</datasheet>
+      <description>N-MOSFET transistor, drain/source/gate</description>
+      <fields>
+        <field name="Sim.Device">NMOS</field>
+        <field name="Sim.Type">VDMOS</field>
+        <field name="Sim.Pins">1=D 2=G 3=S</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23_Handsoldering</field>
+        <field name="Datasheet">https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs</field>
+        <field name="Description">N-MOSFET transistor, drain/source/gate</field>
+      </fields>
+      <libsource lib="Simulation_SPICE" part="NMOS" description="N-MOSFET transistor, drain/source/gate"/>
+      <property name="Sim.Device" value="NMOS"/>
+      <property name="Sim.Type" value="VDMOS"/>
+      <property name="Sim.Pins" value="1=D 2=G 3=S"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="transistor NMOS N-MOS N-MOSFET simulation"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e13f36a0-4d06-45f5-b855-718f044ecb4e</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8e12d729-7a38-49fa-a346-d425f626ca78</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>2R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5e36ca79-6d6c-4e9c-b2db-a20584307925</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f7b9a36a-9c96-4102-bfba-7c57a43bfc80</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3e0891ff-3bb2-480b-acab-8be834c9e085</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>280e848c-3015-4175-bc0f-66756672dd9e</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e90c6b7c-26a8-4468-abaa-c59e1b0af86b</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f25cbf78-828e-4e22-b5a3-1c02af28f5ab</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>59884031-bacc-4b20-add1-f63aa4c5c336</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4d9c8004-d363-4421-8791-20a37061e0ba</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>2R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>82d76040-eb02-4a10-a96a-a533f4df5582</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>af2efda6-f0e1-4287-8cca-8e7acc5c32b4</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d80a70d2-c3ee-4646-8da7-a42e3f43ed81</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>61d8e6ef-4e61-44e2-ae1b-7e1cd0460314</tstamps>
+    </comp>
+    <comp ref="R14">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6ee77ecd-17d5-4580-9e2a-eccfa4b17922</tstamps>
+    </comp>
+    <comp ref="R15">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c2e6cc52-4c4c-41bf-9ae7-b35594a2c142</tstamps>
+    </comp>
+    <comp ref="R16">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>49a1b4f1-73bc-4537-8ae5-cfa7ce8a610a</tstamps>
+    </comp>
+    <comp ref="R17">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>725194b8-5e92-4e11-9477-d91ef7630b86</tstamps>
+    </comp>
+    <comp ref="R18">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>92fd0fa6-f74d-4a6f-a8dd-e374631dceff</tstamps>
+    </comp>
+    <comp ref="R19">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>36875a58-c57f-41e3-90d9-3a1381ec31a3</tstamps>
+    </comp>
+    <comp ref="SW1">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_THT:SW_PUSH-12mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_PUSH-12mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7ae39ac6-f63f-48fe-a973-1d4f1a8e3116</tstamps>
+    </comp>
+    <comp ref="SW2">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d88c8710-5a9f-47b9-99ae-ee81247da838</tstamps>
+    </comp>
+    <comp ref="SW3">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0b2bfab6-3d1b-488b-9be3-2dda62990b9b</tstamps>
+    </comp>
+    <comp ref="SW4">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8f6b8339-9aec-4058-bf8b-9e683738cae3</tstamps>
+    </comp>
+    <comp ref="SW5">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d3370194-4734-48ec-8bec-d4712be8fb1c</tstamps>
+    </comp>
+    <comp ref="SW6">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>65c74ad8-6ba3-4b00-ac19-ec847592e950</tstamps>
+    </comp>
+    <comp ref="SW7">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_THT:SW_PUSH_6mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_PUSH_6mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e61a09af-4062-4ab7-ab68-fe6c907baff7</tstamps>
+    </comp>
+    <comp ref="SW8">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4c205dff-90c0-4138-9cfa-7dabc36a4726</tstamps>
+    </comp>
+    <comp ref="SW9">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_THT:SW_PUSH-12mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_PUSH-12mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1614e166-a449-41a6-9c63-442172022472</tstamps>
+    </comp>
+    <comp ref="SW10">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7cafa2c8-5f3a-4bcd-abc1-86366787f06e</tstamps>
+    </comp>
+    <comp ref="SW11">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>52954bbb-1a7b-473e-8358-ec17534542fd</tstamps>
+    </comp>
+    <comp ref="SW12">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6cd8a36c-8482-42cb-9ae4-027414fe32af</tstamps>
+    </comp>
+    <comp ref="SW13">
+      <value>SW_Push</value>
+      <footprint>Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</footprint>
+      <datasheet>~</datasheet>
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Footprint">Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <libsource lib="Switch" part="SW_Push" description="Push button switch, generic, two pins"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch normally-open pushbutton push-button"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ca8a7a66-c489-4afe-b843-4d7ae77d9f4b</tstamps>
+    </comp>
+    <comp ref="SW14">
+      <value>DIP</value>
+      <footprint>Button_Switch_THT:SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Single Pole Single Throw (SPST) switch</description>
+      <fields>
+        <field name="Footprint">Button_Switch_THT:SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single Pole Single Throw (SPST) switch</field>
+      </fields>
+      <libsource lib="Switch" part="SW_SPST" description="Single Pole Single Throw (SPST) switch"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="switch lever"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>352c1244-0229-411a-90a5-2a3cbe633cd5</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>COM-09032</value>
+      <footprint>Joystick:PS4_joystick</footprint>
+      <fields>
+        <field name="MF">SparkFun Electronics</field>
+        <field name="MAXIMUM_PACKAGE_HEIGHT">30.1mm</field>
+        <field name="Package">Package</field>
+        <field name="Price">None</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda</field>
+        <field name="STANDARD">Manufacturer Recommendations</field>
+        <field name="PARTREV">N/A</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap</field>
+        <field name="MP">COM-09032</field>
+        <field name="Description_1">
+                        
+                            Joystick, 2 - Axis Analog (Resistive) Output
+                        
+</field>
+        <field name="Availability">In Stock</field>
+        <field name="MANUFACTURER">SparkFun Electronics</field>
+        <field name="Footprint">Joystick:PS4_joystick</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Joystick" part="COM-09032" description=""/>
+      <property name="MF" value="SparkFun Electronics"/>
+      <property name="MAXIMUM_PACKAGE_HEIGHT" value="30.1mm"/>
+      <property name="Package" value="Package"/>
+      <property name="Price" value="None"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda"/>
+      <property name="STANDARD" value="Manufacturer Recommendations"/>
+      <property name="PARTREV" value="N/A"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap"/>
+      <property name="MP" value="COM-09032"/>
+      <property name="Description_1" value="&#xA;                        &#xA;                            Joystick, 2 - Axis Analog (Resistive) Output&#xA;                        &#xA;"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="MANUFACTURER" value="SparkFun Electronics"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ed61a56f-d105-47c2-bd4e-6d711bbfb388</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>IP5306</value>
+      <footprint>Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm_ThermalVias</footprint>
+      <fields>
+        <field name="MF">Injoinic</field>
+        <field name="Description_1">
+                        
+                            Fully-Integrated Power Bank System-On-Chip with 2.1A charger, 2.4A discharger
+                        
+</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=snap</field>
+        <field name="MP">IP5306</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=eda</field>
+        <field name="Footprint">Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm_ThermalVias</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="IP5306" part="IP5306" description=""/>
+      <property name="MF" value="Injoinic"/>
+      <property name="Description_1" value="&#xA;                        &#xA;                            Fully-Integrated Power Bank System-On-Chip with 2.1A charger, 2.4A discharger&#xA;                        &#xA;"/>
+      <property name="Package" value="None"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=snap"/>
+      <property name="MP" value="IP5306"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ddbbb015-8d42-4a89-94c3-c977853d27dc</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>~</value>
+      <footprint>IMU:MPU6050</footprint>
+      <fields>
+        <field name="Footprint">IMU:MPU6050</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="IMU" part="MPU6050" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>96df44ce-23fb-4377-8238-62a38ee00c65</tstamps>
+    </comp>
+    <comp ref="U4">
+      <value>~</value>
+      <footprint>ESP32_S3_DevkitC1:ESP32_S3_DevkitC1</footprint>
+      <fields>
+        <field name="Footprint">ESP32_S3_DevkitC1:ESP32_S3_DevkitC1</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="ESP32-S3-DevkitC1" part="ESP32-S3-DevkitC1" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7835aa0d-c898-4837-873b-0ccad011c448</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>LC709203FQH-02TWG</value>
+      <footprint>Package_DFN_QFN:WDFN-8-1EP_4x3mm_P0.65mm_EP2.4x1.8mm_ThermalVias</footprint>
+      <datasheet>https://www.onsemi.com/download/data-sheet/pdf/lc709203f-d.pdf</datasheet>
+      <description>Single LiPo battery fuel gauge, I2C, type 02, WDFN-8</description>
+      <fields>
+        <field name="Footprint">Package_DFN_QFN:WDFN-8-1EP_4x3mm_P0.65mm_EP2.4x1.8mm_ThermalVias</field>
+        <field name="Datasheet">https://www.onsemi.com/download/data-sheet/pdf/lc709203f-d.pdf</field>
+        <field name="Description">Single LiPo battery fuel gauge, I2C, type 02, WDFN-8</field>
+      </fields>
+      <libsource lib="Battery_Management" part="LC709203FQH-02TWG" description="Single LiPo battery fuel gauge, I2C, type 02, WDFN-8"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="Battery gauge I2C"/>
+      <property name="ki_fp_filters" value="WDFN*1EP*4x3mm*P0.65mm*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f3696bf7-38a3-4c4b-b326-1d091f5ad6e1</tstamps>
+    </comp>
+    <comp ref="U6">
+      <value>~</value>
+      <footprint>LCD_TFT_ST7789:LCD_TFT_1.3_inches_ST7789</footprint>
+      <fields>
+        <field name="Footprint">LCD_TFT_ST7789:LCD_TFT_1.3_inches_ST7789</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="LCD" part="LCD_ST7789_TFT_1.3_inches" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b8e67f88-503c-4626-a5ec-f8a724046605</tstamps>
+    </comp>
+    <comp ref="U7">
+      <value>COM-09032</value>
+      <footprint>Joystick:PS4_joystick</footprint>
+      <fields>
+        <field name="MF">SparkFun Electronics</field>
+        <field name="MAXIMUM_PACKAGE_HEIGHT">30.1mm</field>
+        <field name="Package">Package</field>
+        <field name="Price">None</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda</field>
+        <field name="STANDARD">Manufacturer Recommendations</field>
+        <field name="PARTREV">N/A</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap</field>
+        <field name="MP">COM-09032</field>
+        <field name="Description_1">
+                        
+                            Joystick, 2 - Axis Analog (Resistive) Output
+                        
+</field>
+        <field name="Availability">In Stock</field>
+        <field name="MANUFACTURER">SparkFun Electronics</field>
+        <field name="Footprint">Joystick:PS4_joystick</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Joystick" part="COM-09032" description=""/>
+      <property name="MF" value="SparkFun Electronics"/>
+      <property name="MAXIMUM_PACKAGE_HEIGHT" value="30.1mm"/>
+      <property name="Package" value="Package"/>
+      <property name="Price" value="None"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda"/>
+      <property name="STANDARD" value="Manufacturer Recommendations"/>
+      <property name="PARTREV" value="N/A"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap"/>
+      <property name="MP" value="COM-09032"/>
+      <property name="Description_1" value="&#xA;                        &#xA;                            Joystick, 2 - Axis Analog (Resistive) Output&#xA;                        &#xA;"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="MANUFACTURER" value="SparkFun Electronics"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>97898afa-e5c3-4d87-9ac8-859fe4220e71</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Battery_Management" part="LC709203FQH-02TWG">
+      <description>Single LiPo battery fuel gauge, I2C, type 02, WDFN-8</description>
+      <docs>https://www.onsemi.com/download/data-sheet/pdf/lc709203f-d.pdf</docs>
+      <footprints>
+        <fp>WDFN*1EP*4x3mm*P0.65mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LC709203FQH-02TWG</field>
+        <field name="Footprint">Package_DFN_QFN:WDFN-8-1EP_4x3mm_P0.65mm_EP2.4x1.8mm</field>
+        <field name="Datasheet">https://www.onsemi.com/download/data-sheet/pdf/lc709203f-d.pdf</field>
+        <field name="Description">Single LiPo battery fuel gauge, I2C, type 02, WDFN-8</field>
+      </fields>
+      <pins>
+        <pin num="1" name="TEST" type="input"/>
+        <pin num="2" name="V_{SS}" type="power_in"/>
+        <pin num="3" name="V_{DD}" type="power_in"/>
+        <pin num="4" name="~{ALARMB}" type="open_collector"/>
+        <pin num="5" name="T_{SW}" type="output"/>
+        <pin num="6" name="T_{SENSE}" type="input"/>
+        <pin num="7" name="SDA" type="bidirectional"/>
+        <pin num="8" name="SCL" type="input"/>
+        <pin num="9" name="EP" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="USB_C_Plug_USB2.0">
+      <description>USB 2.0-only Type-C Plug connector</description>
+      <docs>https://www.usb.org/sites/default/files/documents/usb_type-c.zip</docs>
+      <footprints>
+        <fp>USB*C*Plug*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">P1</field>
+        <field name="Value">USB_C_Plug_USB2.0</field>
+        <field name="Footprint">Connector_USB:USB_C_Receptacle_GCT_USB4125-xx-x_6P_TopMnt_Horizontal</field>
+        <field name="Datasheet">https://www.usb.org/sites/default/files/documents/usb_type-c.zip</field>
+        <field name="Description">USB 2.0-only Type-C Plug connector</field>
+      </fields>
+      <pins>
+        <pin num="A1" name="GND" type="passive"/>
+        <pin num="A4" name="VBUS" type="passive"/>
+        <pin num="A5" name="CC" type="bidirectional"/>
+        <pin num="A6" name="D+" type="bidirectional"/>
+        <pin num="A7" name="D-" type="bidirectional"/>
+        <pin num="A9" name="VBUS" type="passive"/>
+        <pin num="A12" name="GND" type="passive"/>
+        <pin num="B1" name="GND" type="passive"/>
+        <pin num="B4" name="VBUS" type="passive"/>
+        <pin num="B5" name="VCONN" type="bidirectional"/>
+        <pin num="B9" name="VBUS" type="passive"/>
+        <pin num="B12" name="GND" type="passive"/>
+        <pin num="S1" name="SHIELD" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector_Generic" part="Conn_02x10_Counter_Clockwise">
+      <description>Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_2x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_02x10_Counter_Clockwise</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+        <pin num="13" name="Pin_13" type="passive"/>
+        <pin num="14" name="Pin_14" type="passive"/>
+        <pin num="15" name="Pin_15" type="passive"/>
+        <pin num="16" name="Pin_16" type="passive"/>
+        <pin num="17" name="Pin_17" type="passive"/>
+        <pin num="18" name="Pin_18" type="passive"/>
+        <pin num="19" name="Pin_19" type="passive"/>
+        <pin num="20" name="Pin_20" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Battery_Cell">
+      <description>Single-cell battery</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">BT</field>
+        <field name="Value">Battery_Cell</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single-cell battery</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+" type="passive"/>
+        <pin num="2" name="-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L">
+      <description>Inductor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-S3-DevkitC1" part="ESP32-S3-DevkitC1">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value"/>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="3V3" type="input"/>
+        <pin num="2" name="3V3" type="input"/>
+        <pin num="3" name="RST" type="input"/>
+        <pin num="4" name="IO4" type="input"/>
+        <pin num="5" name="IO5" type="input"/>
+        <pin num="6" name="IO6" type="input"/>
+        <pin num="7" name="IO7" type="input"/>
+        <pin num="8" name="IO15" type="input"/>
+        <pin num="9" name="IO16" type="input"/>
+        <pin num="10" name="IO18" type="input"/>
+        <pin num="11" name="IO17" type="input"/>
+        <pin num="12" name="IO8" type="input"/>
+        <pin num="13" name="IO3" type="input"/>
+        <pin num="14" name="IO46" type="input"/>
+        <pin num="15" name="IO9" type="input"/>
+        <pin num="16" name="IO10" type="input"/>
+        <pin num="17" name="IO11" type="input"/>
+        <pin num="18" name="IO12" type="input"/>
+        <pin num="19" name="IO13" type="input"/>
+        <pin num="20" name="IO14" type="input"/>
+        <pin num="21" name="5V" type="input"/>
+        <pin num="22" name="GND" type="input"/>
+        <pin num="23" name="GND" type="input"/>
+        <pin num="24" name="GND" type="input"/>
+        <pin num="25" name="IO19" type="input"/>
+        <pin num="26" name="IO20" type="input"/>
+        <pin num="27" name="IO21" type="input"/>
+        <pin num="28" name="IO47" type="input"/>
+        <pin num="29" name="IO48" type="input"/>
+        <pin num="30" name="IO45" type="input"/>
+        <pin num="31" name="IO0" type="input"/>
+        <pin num="32" name="IO35" type="input"/>
+        <pin num="33" name="IO36" type="input"/>
+        <pin num="34" name="IO37" type="input"/>
+        <pin num="35" name="IO38" type="input"/>
+        <pin num="36" name="IO39" type="input"/>
+        <pin num="37" name="IO40" type="input"/>
+        <pin num="38" name="IO41" type="input"/>
+        <pin num="39" name="IO42" type="input"/>
+        <pin num="40" name="IO2" type="input"/>
+        <pin num="41" name="IO1" type="input"/>
+        <pin num="42" name="RXD" type="input"/>
+        <pin num="43" name="TXD" type="input"/>
+        <pin num="44" name="GND" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="IMU" part="MPU6050">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value"/>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="input"/>
+        <pin num="2" name="GND" type="input"/>
+        <pin num="3" name="SCL" type="input"/>
+        <pin num="4" name="SDA" type="input"/>
+        <pin num="5" name="XDA" type="input"/>
+        <pin num="6" name="SCL" type="input"/>
+        <pin num="7" name="AD0" type="input"/>
+        <pin num="8" name="INT" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="IP5306" part="IP5306">
+      <fields>
+        <field name="Reference">U1</field>
+        <field name="Value">IP5306</field>
+        <field name="Footprint">IP5306_Power_Bank:IP5306_IC</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="MF">Injoinic</field>
+        <field name="Description_1">
+                        
+                            Fully-Integrated Power Bank System-On-Chip with 2.1A charger, 2.4A discharger
+                        
+</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=snap</field>
+        <field name="MP">IP5306</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=eda</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="power_in"/>
+        <pin num="2" name="LED1" type="output"/>
+        <pin num="3" name="LED2" type="output"/>
+        <pin num="4" name="LED3" type="output"/>
+        <pin num="5" name="KEY" type="input"/>
+        <pin num="6" name="BAT" type="input"/>
+        <pin num="7" name="SW" type="output"/>
+        <pin num="8" name="VOUT" type="output"/>
+        <pin num="9" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Joystick" part="COM-09032">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">COM-09032</field>
+        <field name="Footprint">Joystick:Joystick</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="MF">SparkFun Electronics</field>
+        <field name="MAXIMUM_PACKAGE_HEIGHT">30.1mm</field>
+        <field name="Package">Package</field>
+        <field name="Price">None</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda</field>
+        <field name="STANDARD">Manufacturer Recommendations</field>
+        <field name="PARTREV">N/A</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap</field>
+        <field name="MP">COM-09032</field>
+        <field name="Description_1">
+                        
+                            Joystick, 2 - Axis Analog (Resistive) Output
+                        
+</field>
+        <field name="Availability">In Stock</field>
+        <field name="MANUFACTURER">SparkFun Electronics</field>
+      </fields>
+      <pins>
+        <pin num="B1A" name="SEL+" type="passive"/>
+        <pin num="B2A" name="SEL-" type="passive"/>
+        <pin num="H1" name="H+" type="passive"/>
+        <pin num="H2" name="H" type="passive"/>
+        <pin num="H3" name="H-" type="passive"/>
+        <pin num="S1" name="SHIELD" type="passive"/>
+        <pin num="S2" name="SHIELD" type="passive"/>
+        <pin num="S3" name="SHIELD" type="passive"/>
+        <pin num="S4" name="SHIELD" type="passive"/>
+        <pin num="V1" name="V+" type="passive"/>
+        <pin num="V2" name="V" type="passive"/>
+        <pin num="V3" name="V-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="LCD" part="LCD_ST7789_TFT_1.3_inches">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value"/>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="input"/>
+        <pin num="2" name="VCC" type="input"/>
+        <pin num="3" name="SCL" type="input"/>
+        <pin num="4" name="SDA" type="input"/>
+        <pin num="5" name="RES" type="input"/>
+        <pin num="6" name="DC" type="input"/>
+        <pin num="7" name="BLK" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="Simulation_SPICE" part="NMOS">
+      <description>N-MOSFET transistor, drain/source/gate</description>
+      <docs>https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">NMOS</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs</field>
+        <field name="Description">N-MOSFET transistor, drain/source/gate</field>
+        <field name="Sim.Device">NMOS</field>
+        <field name="Sim.Type">VDMOS</field>
+        <field name="Sim.Pins">1=D 2=G 3=S</field>
+      </fields>
+      <pins>
+        <pin num="1" name="D" type="passive"/>
+        <pin num="2" name="G" type="input"/>
+        <pin num="3" name="S" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Switch" part="SW_Push">
+      <description>Push button switch, generic, two pins</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">SW_Push</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Push button switch, generic, two pins</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Switch" part="SW_SPST">
+      <description>Single Pole Single Throw (SPST) switch</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">SW_SPST</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single Pole Single Throw (SPST) switch</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="B" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="/3V3" class="Default">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="J1" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J1" pin="20" pinfunction="Pin_20" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="R14" pin="2" pintype="passive"/>
+      <node ref="R15" pin="2" pintype="passive"/>
+      <node ref="R16" pin="2" pintype="passive"/>
+      <node ref="R17" pin="2" pintype="passive"/>
+      <node ref="R18" pin="2" pintype="passive"/>
+      <node ref="R19" pin="2" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="R8" pin="1" pintype="passive"/>
+      <node ref="U1" pin="H1" pinfunction="H+" pintype="passive"/>
+      <node ref="U1" pin="V1" pinfunction="V+" pintype="passive"/>
+      <node ref="U3" pin="1" pinfunction="VCC" pintype="input"/>
+      <node ref="U4" pin="1" pinfunction="3V3" pintype="input"/>
+      <node ref="U4" pin="2" pinfunction="3V3" pintype="input"/>
+      <node ref="U6" pin="2" pinfunction="VCC" pintype="input"/>
+      <node ref="U7" pin="H1" pinfunction="H+" pintype="passive"/>
+      <node ref="U7" pin="V1" pinfunction="V+" pintype="passive"/>
+    </net>
+    <net code="2" name="/5V" class="Default">
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U2" pin="8" pinfunction="VOUT" pintype="output"/>
+      <node ref="U4" pin="21" pinfunction="5V" pintype="input"/>
+    </net>
+    <net code="3" name="/CLK" class="Default">
+      <node ref="J1" pin="14" pinfunction="Pin_14" pintype="passive"/>
+      <node ref="U4" pin="33" pinfunction="IO36" pintype="input"/>
+      <node ref="U6" pin="3" pinfunction="SCL" pintype="input"/>
+    </net>
+    <net code="4" name="/IO1" class="Default">
+      <node ref="J1" pin="6" pinfunction="Pin_6" pintype="passive"/>
+      <node ref="U4" pin="41" pinfunction="IO1" pintype="input"/>
+    </net>
+    <net code="5" name="/IO2" class="Default">
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="SW8" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="U4" pin="40" pinfunction="IO2" pintype="input"/>
+    </net>
+    <net code="6" name="/IO3" class="Default">
+      <node ref="R7" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="U4" pin="13" pinfunction="IO3" pintype="input"/>
+    </net>
+    <net code="7" name="/IO4" class="Default">
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="U1" pin="B1A" pinfunction="SEL+" pintype="passive"/>
+      <node ref="U4" pin="4" pinfunction="IO4" pintype="input"/>
+    </net>
+    <net code="8" name="/IO5" class="Default">
+      <node ref="U1" pin="H2" pinfunction="H" pintype="passive"/>
+      <node ref="U4" pin="5" pinfunction="IO5" pintype="input"/>
+    </net>
+    <net code="9" name="/IO6" class="Default">
+      <node ref="U1" pin="V2" pinfunction="V" pintype="passive"/>
+      <node ref="U4" pin="6" pinfunction="IO6" pintype="input"/>
+    </net>
+    <net code="10" name="/IO7" class="Default">
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="SW2" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="7" pinfunction="IO7" pintype="input"/>
+    </net>
+    <net code="11" name="/IO8" class="Default">
+      <node ref="R8" pin="2" pintype="passive"/>
+      <node ref="SW6" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="U4" pin="12" pinfunction="IO8" pintype="input"/>
+    </net>
+    <net code="12" name="/IO9" class="Default">
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="SW4" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="15" pinfunction="IO9" pintype="input"/>
+    </net>
+    <net code="13" name="/IO10" class="Default">
+      <node ref="J1" pin="15" pinfunction="Pin_15" pintype="passive"/>
+      <node ref="U4" pin="16" pinfunction="IO10" pintype="input"/>
+    </net>
+    <net code="14" name="/IO11" class="Default">
+      <node ref="J1" pin="18" pinfunction="Pin_18" pintype="passive"/>
+      <node ref="U4" pin="17" pinfunction="IO11" pintype="input"/>
+    </net>
+    <net code="15" name="/IO12" class="Default">
+      <node ref="J1" pin="16" pinfunction="Pin_16" pintype="passive"/>
+      <node ref="U4" pin="18" pinfunction="IO12" pintype="input"/>
+    </net>
+    <net code="16" name="/IO13" class="Default">
+      <node ref="J1" pin="17" pinfunction="Pin_17" pintype="passive"/>
+      <node ref="U4" pin="19" pinfunction="IO13" pintype="input"/>
+    </net>
+    <net code="17" name="/IO14" class="Default">
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="SW5" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="20" pinfunction="IO14" pintype="input"/>
+    </net>
+    <net code="18" name="/IO15" class="Default">
+      <node ref="J1" pin="12" pinfunction="Pin_12" pintype="passive"/>
+      <node ref="U4" pin="8" pinfunction="IO15" pintype="input"/>
+    </net>
+    <net code="19" name="/IO16" class="Default">
+      <node ref="J1" pin="11" pinfunction="Pin_11" pintype="passive"/>
+      <node ref="U4" pin="9" pinfunction="IO16" pintype="input"/>
+    </net>
+    <net code="20" name="/IO19" class="Default">
+      <node ref="U4" pin="25" pinfunction="IO19" pintype="input"/>
+      <node ref="U7" pin="V2" pinfunction="V" pintype="passive"/>
+    </net>
+    <net code="21" name="/IO20" class="Default">
+      <node ref="U4" pin="26" pinfunction="IO20" pintype="input"/>
+      <node ref="U7" pin="H2" pinfunction="H" pintype="passive"/>
+    </net>
+    <net code="22" name="/IO21" class="Default">
+      <node ref="R17" pin="1" pintype="passive"/>
+      <node ref="U4" pin="27" pinfunction="IO21" pintype="input"/>
+      <node ref="U7" pin="B1A" pinfunction="SEL+" pintype="passive"/>
+    </net>
+    <net code="23" name="/IO37" class="Default">
+      <node ref="J1" pin="5" pinfunction="Pin_5" pintype="passive"/>
+      <node ref="U4" pin="34" pinfunction="IO37" pintype="input"/>
+    </net>
+    <net code="24" name="/IO38" class="Default">
+      <node ref="U4" pin="35" pinfunction="IO38" pintype="input"/>
+      <node ref="U6" pin="5" pinfunction="RES" pintype="input"/>
+    </net>
+    <net code="25" name="/IO39" class="Default">
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="SW9" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="U4" pin="36" pinfunction="IO39" pintype="input"/>
+    </net>
+    <net code="26" name="/IO40" class="Default">
+      <node ref="U4" pin="37" pinfunction="IO40" pintype="input"/>
+      <node ref="U6" pin="6" pinfunction="DC" pintype="input"/>
+    </net>
+    <net code="27" name="/IO41" class="Default">
+      <node ref="U4" pin="38" pinfunction="IO41" pintype="input"/>
+      <node ref="U6" pin="7" pinfunction="BLK" pintype="input"/>
+    </net>
+    <net code="28" name="/IO42" class="Default">
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="SW10" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="39" pinfunction="IO42" pintype="input"/>
+    </net>
+    <net code="29" name="/IO45" class="Default">
+      <node ref="R14" pin="1" pintype="passive"/>
+      <node ref="SW11" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="30" pinfunction="IO45" pintype="input"/>
+    </net>
+    <net code="30" name="/IO46" class="Default">
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="SW3" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="14" pinfunction="IO46" pintype="input"/>
+    </net>
+    <net code="31" name="/IO47" class="Default">
+      <node ref="R16" pin="1" pintype="passive"/>
+      <node ref="SW13" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="28" pinfunction="IO47" pintype="input"/>
+    </net>
+    <net code="32" name="/IO48" class="Default">
+      <node ref="R15" pin="1" pintype="passive"/>
+      <node ref="SW12" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U4" pin="29" pinfunction="IO48" pintype="input"/>
+    </net>
+    <net code="33" name="/MOSI" class="Default">
+      <node ref="J1" pin="13" pinfunction="Pin_13" pintype="passive"/>
+      <node ref="U4" pin="32" pinfunction="IO35" pintype="input"/>
+      <node ref="U6" pin="4" pinfunction="SDA" pintype="input"/>
+    </net>
+    <net code="34" name="/RXD" class="Default">
+      <node ref="J1" pin="7" pinfunction="Pin_7" pintype="passive"/>
+      <node ref="U4" pin="42" pinfunction="RXD" pintype="input"/>
+    </net>
+    <net code="35" name="/SCL" class="Default">
+      <node ref="J1" pin="3" pinfunction="Pin_3" pintype="passive"/>
+      <node ref="R19" pin="1" pintype="passive"/>
+      <node ref="U3" pin="3" pinfunction="SCL" pintype="input"/>
+      <node ref="U4" pin="10" pinfunction="IO18" pintype="input"/>
+      <node ref="U5" pin="8" pinfunction="SCL" pintype="input"/>
+    </net>
+    <net code="36" name="/SDA" class="Default">
+      <node ref="J1" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="R18" pin="1" pintype="passive"/>
+      <node ref="U3" pin="4" pinfunction="SDA" pintype="input"/>
+      <node ref="U4" pin="11" pinfunction="IO17" pintype="input"/>
+      <node ref="U5" pin="7" pinfunction="SDA" pintype="bidirectional"/>
+    </net>
+    <net code="37" name="/TXD" class="Default">
+      <node ref="J1" pin="8" pinfunction="Pin_8" pintype="passive"/>
+      <node ref="U4" pin="43" pinfunction="TXD" pintype="input"/>
+    </net>
+    <net code="38" name="/VBAT" class="Default">
+      <node ref="BT1" pin="1" pinfunction="+" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="BAT" pintype="input"/>
+      <node ref="U5" pin="3" pinfunction="V_{DD}" pintype="power_in"/>
+    </net>
+    <net code="39" name="/VBUS" class="Default">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="P1" pin="A4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="P1" pin="A9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="P1" pin="B4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="P1" pin="B9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="Q2" pin="2" pinfunction="G" pintype="input"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="U2" pin="1" pinfunction="VCC" pintype="power_in"/>
+    </net>
+    <net code="40" name="GND" class="Default">
+      <node ref="BT1" pin="2" pinfunction="-" pintype="passive"/>
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="J1" pin="10" pinfunction="Pin_10" pintype="passive"/>
+      <node ref="J1" pin="19" pinfunction="Pin_19" pintype="passive"/>
+      <node ref="J1" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J1" pin="9" pinfunction="Pin_9" pintype="passive"/>
+      <node ref="P1" pin="A1" pinfunction="GND" pintype="passive"/>
+      <node ref="P1" pin="A12" pinfunction="GND" pintype="passive"/>
+      <node ref="P1" pin="B1" pinfunction="GND" pintype="passive"/>
+      <node ref="P1" pin="B12" pinfunction="GND" pintype="passive"/>
+      <node ref="P1" pin="S1" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="Q2" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="SW1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="SW10" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW11" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW12" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW13" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW2" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW3" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW4" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW5" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="SW6" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="SW8" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="SW9" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U1" pin="B2A" pinfunction="SEL-" pintype="passive"/>
+      <node ref="U1" pin="H3" pinfunction="H-" pintype="passive"/>
+      <node ref="U1" pin="S1" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U1" pin="S2" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U1" pin="S3" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U1" pin="S4" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U1" pin="V3" pinfunction="V-" pintype="passive"/>
+      <node ref="U2" pin="9" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="2" pinfunction="GND" pintype="input"/>
+      <node ref="U4" pin="22" pinfunction="GND" pintype="input"/>
+      <node ref="U4" pin="23" pinfunction="GND" pintype="input"/>
+      <node ref="U4" pin="24" pinfunction="GND" pintype="input"/>
+      <node ref="U4" pin="44" pinfunction="GND" pintype="input"/>
+      <node ref="U5" pin="1" pinfunction="TEST" pintype="input"/>
+      <node ref="U5" pin="2" pinfunction="V_{SS}" pintype="power_in"/>
+      <node ref="U6" pin="1" pinfunction="GND" pintype="input"/>
+      <node ref="U7" pin="B2A" pinfunction="SEL-" pintype="passive"/>
+      <node ref="U7" pin="H3" pinfunction="H-" pintype="passive"/>
+      <node ref="U7" pin="S1" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U7" pin="S2" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U7" pin="S3" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U7" pin="S4" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="U7" pin="V3" pinfunction="V-" pintype="passive"/>
+    </net>
+    <net code="41" name="Net-(C2-Pad1)" class="Default">
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+    </net>
+    <net code="42" name="Net-(C4-Pad1)" class="Default">
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="R10" pin="2" pintype="passive"/>
+    </net>
+    <net code="43" name="Net-(D1-A)" class="Default">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="LED1" pintype="output"/>
+    </net>
+    <net code="44" name="Net-(D1-K)" class="Default">
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D3" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D4" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U2" pin="4" pinfunction="LED3" pintype="output"/>
+    </net>
+    <net code="45" name="Net-(D3-A)" class="Default">
+      <node ref="D3" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D4" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U2" pin="3" pinfunction="LED2" pintype="output"/>
+    </net>
+    <net code="46" name="Net-(Q2-D)" class="Default">
+      <node ref="Q2" pin="1" pinfunction="D" pintype="passive"/>
+      <node ref="SW14" pin="1" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="47" name="Net-(R9-Pad1)" class="Default">
+      <node ref="R9" pin="1" pintype="passive"/>
+      <node ref="SW7" pin="2" pinfunction="2" pintype="passive"/>
+    </net>
+    <net code="48" name="Net-(SW14-B)" class="Default">
+      <node ref="SW14" pin="2" pinfunction="B" pintype="passive"/>
+      <node ref="U4" pin="3" pinfunction="RST" pintype="input"/>
+    </net>
+    <net code="49" name="Net-(U2-KEY)" class="Default">
+      <node ref="SW7" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U2" pin="5" pinfunction="KEY" pintype="input"/>
+    </net>
+    <net code="50" name="Net-(U2-SW)" class="Default">
+      <node ref="L1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U2" pin="7" pinfunction="SW" pintype="output"/>
+    </net>
+    <net code="51" name="unconnected-(P1-CC-PadA5)" class="Default">
+      <node ref="P1" pin="A5" pinfunction="CC" pintype="bidirectional"/>
+    </net>
+    <net code="52" name="unconnected-(P1-D+-PadA6)" class="Default">
+      <node ref="P1" pin="A6" pinfunction="D+" pintype="bidirectional"/>
+    </net>
+    <net code="53" name="unconnected-(P1-D--PadA7)" class="Default">
+      <node ref="P1" pin="A7" pinfunction="D-" pintype="bidirectional"/>
+    </net>
+    <net code="54" name="unconnected-(P1-VCONN-PadB5)" class="Default">
+      <node ref="P1" pin="B5" pinfunction="VCONN" pintype="bidirectional"/>
+    </net>
+    <net code="55" name="unconnected-(U3-AD0-Pad7)" class="Default">
+      <node ref="U3" pin="7" pinfunction="AD0" pintype="input"/>
+    </net>
+    <net code="56" name="unconnected-(U3-INT-Pad8)" class="Default">
+      <node ref="U3" pin="8" pinfunction="INT" pintype="input"/>
+    </net>
+    <net code="57" name="unconnected-(U3-SCL-Pad6)" class="Default">
+      <node ref="U3" pin="6" pinfunction="SCL" pintype="input"/>
+    </net>
+    <net code="58" name="unconnected-(U3-XDA-Pad5)" class="Default">
+      <node ref="U3" pin="5" pinfunction="XDA" pintype="input"/>
+    </net>
+    <net code="59" name="unconnected-(U4-IO0-Pad31)" class="Default">
+      <node ref="U4" pin="31" pinfunction="IO0" pintype="input"/>
+    </net>
+    <net code="60" name="unconnected-(U5-EP-Pad9)" class="Default">
+      <node ref="U5" pin="9" pinfunction="EP" pintype="passive"/>
+    </net>
+    <net code="61" name="unconnected-(U5-T_{SENSE}-Pad6)" class="Default">
+      <node ref="U5" pin="6" pinfunction="T_{SENSE}" pintype="input"/>
+    </net>
+    <net code="62" name="unconnected-(U5-T_{SW}-Pad5)" class="Default">
+      <node ref="U5" pin="5" pinfunction="T_{SW}" pintype="output"/>
+    </net>
+    <net code="63" name="unconnected-(U5-~{ALARMB}-Pad4)" class="Default">
+      <node ref="U5" pin="4" pinfunction="~{ALARMB}" pintype="open_collector"/>
+    </net>
+  </nets>
+</export>

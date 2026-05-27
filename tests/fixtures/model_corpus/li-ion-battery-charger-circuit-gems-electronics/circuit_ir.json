@@ -1,0 +1,2488 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C1",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C10",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C11",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1%",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C12",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C13",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C2",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C3",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C4",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C5",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C6",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C7",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C8",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "GEMS_Library:C_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "X7R",
+        "Voltage": "16V"
+      },
+      "footprint": "GEMS_Library:C_1206_(3216)",
+      "ref": "C9",
+      "symbol": "GEMS_Library:Capacitor",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "8pin CAN & Power connector, double row, 02x04",
+        "Footprint": "GEMS_Library:IDC8_Micro-MaTch",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "571-2150798",
+        "Suplier1M no.": "571-215083-8",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Suplier2M no.": "~"
+      },
+      "footprint": "GEMS_Library:IDC8_Micro-MaTch",
+      "ref": "CAN1",
+      "symbol": "GEMS_Library:CAN_connector",
+      "value": "CAN_connector"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "8pin CAN & Power connector, double row, 02x04",
+        "Footprint": "GEMS_Library:IDC8_Micro-MaTch",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "571-2150798",
+        "Suplier1M no.": "571-215083-8",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Suplier2M no.": "~"
+      },
+      "footprint": "GEMS_Library:IDC8_Micro-MaTch",
+      "ref": "CAN2",
+      "symbol": "GEMS_Library:CAN_connector",
+      "value": "CAN_connector"
+    },
+    {
+      "fields": {
+        "Current": "3A",
+        "Datasheet": "https://www.farnell.com/datasheets/3118332.pdf",
+        "Description": "Rectifier diode",
+        "Footprint": "GEMS_Library:DO-214_(SMA)",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "865-XBS306S19R-G",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Voltage": "60V"
+      },
+      "footprint": "GEMS_Library:DO-214_(SMA)",
+      "ref": "D1",
+      "symbol": "GEMS_Library:XBS306",
+      "value": "XBS306"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "GEMS_Library:LED_D3.0mm",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:LED_D3.0mm",
+      "ref": "D2",
+      "symbol": "GEMS_Library:LED",
+      "value": "Green"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "GEMS_Library:LED_D3.0mm",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:LED_D3.0mm",
+      "ref": "D3",
+      "symbol": "GEMS_Library:LED",
+      "value": "Red"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "GEMS_Library:LED_D3.0mm",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:LED_D3.0mm",
+      "ref": "D4",
+      "symbol": "GEMS_Library:LED",
+      "value": "Green"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "GEMS_Library:LED_D3.0mm",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:LED_D3.0mm",
+      "ref": "D5",
+      "symbol": "GEMS_Library:LED",
+      "value": "Yellow"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.molex.com/en-us/products/part-detail/2169900001?display=pdf",
+        "Description": "USB 2.0-only Type-C Receptacle connector",
+        "Footprint": "GEMS_Library:USB-C_MOLEX-216990-0001",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "538-216990-0001",
+        "Suplier2": "DigiKey",
+        "Suplier2 no.": "900-2169900001TR-ND",
+        "USB-C_spec": "https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf"
+      },
+      "footprint": "GEMS_Library:USB-C_MOLEX-216990-0001",
+      "ref": "J1",
+      "symbol": "GEMS_Library:USB_C_USB2.0",
+      "value": "USB_C_USB2.0"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.keyelco.com/product-pdf.cfm?p=826",
+        "Description": "18650 battery holder",
+        "Footprint": "GEMS_Library:18650_battery_holder",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "534-54",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:18650_battery_holder",
+      "ref": "J2",
+      "symbol": "GEMS_Library:18650_battery_holder",
+      "value": "18650_battery_holder"
+    },
+    {
+      "fields": {
+        "Case": "SOT-23",
+        "Current": "4.2A",
+        "Datasheet": "https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf",
+        "Description": "P-MOSFET transistor, gate/source/drain",
+        "Footprint": "GEMS_Library:SOT-23",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "621-DMG2305UX-13",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Voltage": "20V"
+      },
+      "footprint": "GEMS_Library:SOT-23",
+      "ref": "Q1",
+      "symbol": "GEMS_Library:DMG2305UX-13",
+      "value": "DMG2305UX-13"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.diodes.com/assets/Datasheets/DMP3036SSD.pdf",
+        "Description": "P-MOSFET transistor, dual, power",
+        "Footprint": "GEMS_Library:SOIC-8",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "621-DMP3036SSD-13",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "V/C": "30V/15A"
+      },
+      "footprint": "GEMS_Library:SOIC-8",
+      "ref": "Q2",
+      "symbol": "GEMS_Library:DMP3036SSD-13",
+      "value": "DMP3036SSD-13"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.diodes.com/assets/Datasheets/ds11108.pdf",
+        "Description": "BC846 NPN Bipolar junction transistor",
+        "Footprint": "GEMS_Library:SOT-23",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "771-BC846B235",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SOT-23",
+      "ref": "Q3",
+      "symbol": "GEMS_Library:BC846",
+      "value": "BC846"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.diodes.com/assets/Datasheets/ds11108.pdf",
+        "Description": "BC846 NPN Bipolar junction transistor",
+        "Footprint": "GEMS_Library:SOT-23",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "771-BC846B235",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SOT-23",
+      "ref": "Q4",
+      "symbol": "GEMS_Library:BC846",
+      "value": "BC846"
+    },
+    {
+      "fields": {
+        "Case": "SOT-23",
+        "Current": "1.6A",
+        "Datasheet": "~",
+        "Description": "Single N-MOSFET transistor, gate/source/drain",
+        "Footprint": "GEMS_Library:SOT-23",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Voltage": "20V"
+      },
+      "footprint": "GEMS_Library:SOT-23",
+      "ref": "Q5",
+      "symbol": "GEMS_Library:DMN2310U",
+      "value": "DMN2310U"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R1",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R10",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100K"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R11",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R12",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100K"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R13",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "1.5K"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R14",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "1.5K"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R15",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "5m"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R16",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R17",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R18",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R19",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R2",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R20",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "240"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R21",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "1.5k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R22",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R23",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "240"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R24",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "240"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R25",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "13k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R26",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "2k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R27",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "1.5k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R28",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R29",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "30k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R3",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R30",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "120"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R31",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "120"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R4",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R5",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "240"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R6",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R7",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "5.1k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R8",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "5.1k"
+    },
+    {
+      "fields": {
+        "Case": "1206",
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "GEMS_Library:R_1206_(3216)",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~",
+        "Tolerance": "1%"
+      },
+      "footprint": "GEMS_Library:R_1206_(3216)",
+      "ref": "R9",
+      "symbol": "GEMS_Library:Resistor",
+      "value": "1M"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ckswitches.com/media/1471/pts645.pdf",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+      "ref": "SW1",
+      "symbol": "GEMS_Library:SW_Push_NO",
+      "value": "BTN"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ckswitches.com/media/1471/pts645.pdf",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+      "ref": "SW2",
+      "symbol": "GEMS_Library:SW_Push_NO",
+      "value": "RST"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ckswitches.com/media/1471/pts645.pdf",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+        "Suplier1": "~",
+        "Suplier1 no.": "~",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SW_PUSH_6mm_SMD",
+      "ref": "SW3",
+      "symbol": "GEMS_Library:SW_Push_NO",
+      "value": "EN"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ckswitches.com/media/1428/os.pdf",
+        "Description": "Switch, single pole double throw",
+        "Footprint": "GEMS_Library:SW_SPDT",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "611-OS102011MA1QN1C",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SW_SPDT",
+      "ref": "SW4",
+      "symbol": "GEMS_Library:SW_SPDT",
+      "value": "SW_SPDT"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://eu.mouser.com/datasheet/2/294/r1170_ea-3219814.pdf",
+        "Description": "Voltage Regulator, LDO, Enable controll",
+        "Footprint": "GEMS_Library:SOT-89-5",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "848-R1170H331BT1FE",
+        "Suplier2": "DigiKey",
+        "Suplier2 no.": "2129-R1170H331B-T1-FETR-ND"
+      },
+      "footprint": "GEMS_Library:SOT-89-5",
+      "ref": "U1",
+      "symbol": "GEMS_Library:R1170H331B",
+      "value": "R1170H331B"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32c3/get-started/index.html",
+        "Description": "ESP32 SMT RF module",
+        "Footprint": "GEMS_Library:ESP32-C3-WROOM-02",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "356-ESP32C3WROOM02N4",
+        "Suplier2": "DigiKey",
+        "Suplier2 no.": "1965-ESP32-C3-WROOM-02-N4TR-ND"
+      },
+      "footprint": "GEMS_Library:ESP32-C3-WROOM-02",
+      "ref": "U2",
+      "symbol": "GEMS_Library:ESP32-C3",
+      "value": "ESP32-C3"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.st.com/resource/en/datasheet/usblc6-2.pdf",
+        "Description": "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6",
+        "Footprint": "GEMS_Library:SOT-23-6",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "511-USBLC6-2SC6",
+        "Suplier2": "DigiKey",
+        "Suplier2 no.": "497-5235-2-ND"
+      },
+      "footprint": "GEMS_Library:SOT-23-6",
+      "ref": "U3",
+      "symbol": "GEMS_Library:USBLC6-2SC6",
+      "value": "USBLC6-2SC6"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://ww1.microchip.com/downloads/jp/DeviceDoc/jp011705.pdf",
+        "Description": "dual OP-AMP: RtR, LP",
+        "Footprint": "GEMS_Library:SOIC-8",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "579-MCP6002-I/SN",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SOIC-8",
+      "ref": "U4",
+      "symbol": "GEMS_Library:MCP6002",
+      "value": "MCP6002"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf",
+        "Description": "Single-cell Li-ion Charger, SOT-23-5",
+        "Footprint": "GEMS_Library:SOT-23-5",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "579-MCP73831T-2ACIOT",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SOT-23-5",
+      "ref": "U5",
+      "symbol": "GEMS_Library:MCP73831T",
+      "value": "MCP73831T"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ti.com/lit/ds/symlink/tcan337.pdf?ts=1708935013033&ref_url=https%253A%252F%252Fwww.mouser.com%252F",
+        "Description": "CAN bus transciever",
+        "Footprint": "GEMS_Library:SOIC-8",
+        "Suplier1": "Mouser",
+        "Suplier1 no.": "595-TCAN332DR",
+        "Suplier2": "~",
+        "Suplier2 no.": "~"
+      },
+      "footprint": "GEMS_Library:SOIC-8",
+      "ref": "U6",
+      "symbol": "GEMS_Library:TCAN332DR",
+      "value": "TCAN332DR"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+3V3",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C12",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+BATT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R20",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CAN+",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R30",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CAN-",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R30",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN_RX",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CAN_TX",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "CAN1",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "K",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "K",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "A1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A12",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B12",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "-",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R22",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R24",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R25",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R29",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "NO",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "COM",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "I_BATT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(CAN2-CAN_H)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R31",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(CAN2-CAN_L)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "CAN2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R31",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-PadA)",
+      "pins": [
+        {
+          "pin": "A",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-PadA)",
+      "pins": [
+        {
+          "pin": "A",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R24",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D4-PadA)",
+      "pins": [
+        {
+          "pin": "A",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R20",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D5-PadA)",
+      "pins": [
+        {
+          "pin": "A",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R23",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-CASE)",
+      "pins": [
+        {
+          "pin": "MP",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-CC1)",
+      "pins": [
+        {
+          "pin": "A5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-CC2)",
+      "pins": [
+        {
+          "pin": "B5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-D+-PadA6)",
+      "pins": [
+        {
+          "pin": "A6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-D--PadA7)",
+      "pins": [
+        {
+          "pin": "A7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J2-+batt)",
+      "pins": [
+        {
+          "pin": "K",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "+",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R28",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q1-S)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "K",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2A-G1)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2A-S1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2B-G2)",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "COM",
+          "ref": "SW4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2B-S2)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "NO",
+          "ref": "SW3",
+          "unit": null
+        },
+        {
+          "pin": "RC",
+          "ref": "SW4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q3-B)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R27",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q3-C)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "Q3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Q4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R29",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q4-C)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "Q4",
+          "unit": null
+        },
+        {
+          "pin": "LC",
+          "ref": "SW4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q5-D)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "Q5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R26",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q5-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R28",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R18-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "COM",
+          "ref": "SW3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-EN)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "NO",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-IO2/ADC1_2/FSPIQ)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-IO8)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-IO9)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "COM",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U4A-+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U4A--)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U4B-+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U5-prog)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R26",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U5-stat)",
+      "pins": [
+        {
+          "pin": "K",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SHDN_I",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SHDN_uC",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R27",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "USB_D+",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "USB_D-",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "VBUS",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "A",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "A4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R23",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "V_BATT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R25",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SBU1-PadA8)",
+      "pins": [
+        {
+          "pin": "A8",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SBU2-PadB8)",
+      "pins": [
+        {
+          "pin": "B8",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U1-NC-Pad3)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "U1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-IO10/FSPICS0-Pad10)",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-IO20/U0RXD-Pad11)",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-IO21/U0TXD-Pad12)",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-IO3/ADC1_3-Pad15)",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-IO6/FSPICLK/MTCK-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U6-NC-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U6-NC-Pad8)",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

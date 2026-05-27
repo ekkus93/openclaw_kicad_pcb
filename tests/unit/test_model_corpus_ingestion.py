@@ -119,5 +119,6 @@ def test_list_command_reads_fixture_metadata(tmp_path: Path) -> None:
 
     ingest_result = cmd_model_corpus_ingest(ingest_args)
     list_result = cmd_model_corpus_list(list_args)
-    assert ingest_result.partial_count == 1
+    assert ingest_result.fixture_count == 1
+    assert ingest_result.accepted_count + ingest_result.partial_count == 1
     assert list_result.fixtures[0].fixture_id == "mcp2551-can-transciever"

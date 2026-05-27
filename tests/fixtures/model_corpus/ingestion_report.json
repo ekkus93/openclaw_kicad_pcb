@@ -1,70 +1,70 @@
 {
-  "accepted_count": 0,
+  "accepted_count": 9,
   "entries": [
     {
       "fixture_id": "4-channel-switched-constant-current-source",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "4-channel-switched-constant-current-source.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "5v-linear-voltage-regulator-eurorack",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "5v-linear-voltage-regulator-eurorack.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "dual-ttl-uart-to-rs232-max232-reference-design",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "li-ion-battery-charger-circuit-gems-electronics",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "mcp2551-can-transciever",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "mcp2551-can-transciever.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "microsd-card-in-spi-mode-with-hotswap-support",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "microsd-card-in-spi-mode-with-hotswap-support.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "tpic8101dwrg4-tpic8101dwrg4.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     },
     {
       "fixture_id": "ws2812c-addressable-led-chain-cleverhand-hardware",
       "message": "Fixture ingested successfully.",
-      "reason": "layout_only",
+      "reason": "ready",
       "source_path": "ws2812c-addressable-led-chain-cleverhand-hardware.kicad_sch",
-      "status": "partial"
+      "status": "accepted"
     }
   ],
-  "partial_count": 9,
+  "partial_count": 0,
   "rejected_count": 0
 }

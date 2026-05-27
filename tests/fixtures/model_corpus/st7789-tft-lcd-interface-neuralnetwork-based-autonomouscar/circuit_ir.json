@@ -1,0 +1,2224 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Single-cell battery",
+        "Footprint": "Battery:BatteryHolder_Keystone_1042_1x18650"
+      },
+      "footprint": "Battery:BatteryHolder_Keystone_1042_1x18650",
+      "ref": "BT1",
+      "symbol": "Device:Battery_Cell",
+      "value": "Battery_Cell"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C1",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C10",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C11",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C2",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C3",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C4",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder"
+      },
+      "footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder",
+      "ref": "C5",
+      "symbol": "Device:C",
+      "value": "22uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder"
+      },
+      "footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder",
+      "ref": "C6",
+      "symbol": "Device:C",
+      "value": "22uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder"
+      },
+      "footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-15_AVX-H_Pad1.50x2.35mm_HandSolder",
+      "ref": "C7",
+      "symbol": "Device:C",
+      "value": "22uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C8",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C9",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_SMD:LED_0805_2012Metric"
+      },
+      "footprint": "LED_SMD:LED_0805_2012Metric",
+      "ref": "D1",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_SMD:LED_0805_2012Metric"
+      },
+      "footprint": "LED_SMD:LED_0805_2012Metric",
+      "ref": "D2",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_SMD:LED_0805_2012Metric"
+      },
+      "footprint": "LED_SMD:LED_0805_2012Metric",
+      "ref": "D3",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_SMD:LED_0805_2012Metric"
+      },
+      "footprint": "LED_SMD:LED_0805_2012Metric",
+      "ref": "D4",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Light emitting diode",
+        "Footprint": "LED_SMD:LED_0805_2012Metric"
+      },
+      "footprint": "LED_SMD:LED_0805_2012Metric",
+      "ref": "D5",
+      "symbol": "Device:LED",
+      "value": "LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, double row, 02x10, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Horizontal"
+      },
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Horizontal",
+      "ref": "J1",
+      "symbol": "Connector_Generic:Conn_02x10_Counter_Clockwise",
+      "value": "2.54mm"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Inductor",
+        "Footprint": "Inductor_SMD:L_10.4x10.4_H4.8"
+      },
+      "footprint": "Inductor_SMD:L_10.4x10.4_H4.8",
+      "ref": "L1",
+      "symbol": "Device:L",
+      "value": "2R2"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.usb.org/sites/default/files/documents/usb_type-c.zip",
+        "Description": "USB 2.0-only Type-C Plug connector",
+        "Footprint": "USB_Type_C:USB_Type_C_6P"
+      },
+      "footprint": "USB_Type_C:USB_Type_C_6P",
+      "ref": "P1",
+      "symbol": "Connector:USB_C_Plug_USB2.0",
+      "value": "USB_C_Plug_USB2.0"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs",
+        "Description": "N-MOSFET transistor, drain/source/gate",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23_Handsoldering",
+        "Sim.Device": "NMOS",
+        "Sim.Pins": "1=D 2=G 3=S",
+        "Sim.Type": "VDMOS"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23_Handsoldering",
+      "ref": "Q2",
+      "symbol": "Simulation_SPICE:NMOS",
+      "value": "SI2300"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R1",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R10",
+      "symbol": "Device:R",
+      "value": "2R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R11",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R12",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R13",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R14",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R15",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R16",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R17",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R18",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R19",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R2",
+      "symbol": "Device:R",
+      "value": "2R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R3",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R4",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R5",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R6",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R7",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R8",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R9",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Button_Switch_THT:SW_PUSH-12mm"
+      },
+      "footprint": "Button_Switch_THT:SW_PUSH-12mm",
+      "ref": "SW1",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW10",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW11",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW12",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW13",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Single Pole Single Throw (SPST) switch",
+        "Footprint": "Button_Switch_THT:SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm"
+      },
+      "footprint": "Button_Switch_THT:SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm",
+      "ref": "SW14",
+      "symbol": "Switch:SW_SPST",
+      "value": "DIP"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW2",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW3",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW4",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid"
+      },
+      "footprint": "Keyboard_Switches:SW_MX_LowProfile_Kailh_Choc_V1V2_THT_Hybrid",
+      "ref": "SW5",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS"
+      },
+      "footprint": "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS",
+      "ref": "SW6",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Button_Switch_THT:SW_PUSH_6mm"
+      },
+      "footprint": "Button_Switch_THT:SW_PUSH_6mm",
+      "ref": "SW7",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS"
+      },
+      "footprint": "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx31-2LFS",
+      "ref": "SW8",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Push button switch, generic, two pins",
+        "Footprint": "Button_Switch_THT:SW_PUSH-12mm"
+      },
+      "footprint": "Button_Switch_THT:SW_PUSH-12mm",
+      "ref": "SW9",
+      "symbol": "Switch:SW_Push",
+      "value": "SW_Push"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "",
+        "Description_1": "Joystick, 2 - Axis Analog (Resistive) Output",
+        "Footprint": "Joystick:PS4_joystick",
+        "MANUFACTURER": "SparkFun Electronics",
+        "MAXIMUM_PACKAGE_HEIGHT": "30.1mm",
+        "MF": "SparkFun Electronics",
+        "MP": "COM-09032",
+        "PARTREV": "N/A",
+        "Package": "Package",
+        "Price": "None",
+        "STANDARD": "Manufacturer Recommendations",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap"
+      },
+      "footprint": "Joystick:PS4_joystick",
+      "ref": "U1",
+      "symbol": "Joystick:COM-09032",
+      "value": "COM-09032"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "",
+        "Description_1": "Fully-Integrated Power Bank System-On-Chip with 2.1A charger, 2.4A discharger",
+        "Footprint": "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm_ThermalVias",
+        "MF": "Injoinic",
+        "MP": "IP5306",
+        "Package": "None",
+        "Price": "None",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/IP5306/Injoinic/view-part/?ref=snap"
+      },
+      "footprint": "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm_ThermalVias",
+      "ref": "U2",
+      "symbol": "IP5306:IP5306",
+      "value": "IP5306"
+    },
+    {
+      "fields": {
+        "Datasheet": "",
+        "Description": "",
+        "Footprint": "IMU:MPU6050"
+      },
+      "footprint": "IMU:MPU6050",
+      "ref": "U3",
+      "symbol": "IMU:MPU6050",
+      "value": "~"
+    },
+    {
+      "fields": {
+        "Datasheet": "",
+        "Description": "",
+        "Footprint": "ESP32_S3_DevkitC1:ESP32_S3_DevkitC1"
+      },
+      "footprint": "ESP32_S3_DevkitC1:ESP32_S3_DevkitC1",
+      "ref": "U4",
+      "symbol": "ESP32-S3-DevkitC1:ESP32-S3-DevkitC1",
+      "value": "~"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.onsemi.com/download/data-sheet/pdf/lc709203f-d.pdf",
+        "Description": "Single LiPo battery fuel gauge, I2C, type 02, WDFN-8",
+        "Footprint": "Package_DFN_QFN:WDFN-8-1EP_4x3mm_P0.65mm_EP2.4x1.8mm_ThermalVias"
+      },
+      "footprint": "Package_DFN_QFN:WDFN-8-1EP_4x3mm_P0.65mm_EP2.4x1.8mm_ThermalVias",
+      "ref": "U5",
+      "symbol": "Battery_Management:LC709203FQH-02TWG",
+      "value": "LC709203FQH-02TWG"
+    },
+    {
+      "fields": {
+        "Datasheet": "",
+        "Description": "",
+        "Footprint": "LCD_TFT_ST7789:LCD_TFT_1.3_inches_ST7789"
+      },
+      "footprint": "LCD_TFT_ST7789:LCD_TFT_1.3_inches_ST7789",
+      "ref": "U6",
+      "symbol": "LCD:LCD_ST7789_TFT_1.3_inches",
+      "value": "~"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "",
+        "Description_1": "Joystick, 2 - Axis Analog (Resistive) Output",
+        "Footprint": "Joystick:PS4_joystick",
+        "MANUFACTURER": "SparkFun Electronics",
+        "MAXIMUM_PACKAGE_HEIGHT": "30.1mm",
+        "MF": "SparkFun Electronics",
+        "MP": "COM-09032",
+        "PARTREV": "N/A",
+        "Package": "Package",
+        "Price": "None",
+        "STANDARD": "Manufacturer Recommendations",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/COM-09032/SparkFun/view-part/?ref=snap"
+      },
+      "footprint": "Joystick:PS4_joystick",
+      "ref": "U7",
+      "symbol": "Joystick:COM-09032",
+      "value": "COM-09032"
+    }
+  ],
+  "nets": [
+    {
+      "name": "/3V3",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "H1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "V1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U6",
+          "unit": null
+        },
+        {
+          "pin": "H1",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "V1",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/5V",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "21",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CLK",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "33",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO1",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "41",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO10",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO11",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO12",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO13",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO14",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW5",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO15",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO16",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO19",
+      "pins": [
+        {
+          "pin": "25",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "V2",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO2",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW8",
+          "unit": null
+        },
+        {
+          "pin": "40",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO20",
+      "pins": [
+        {
+          "pin": "26",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "H2",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO21",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "27",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "B1A",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO3",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO37",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "34",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO38",
+      "pins": [
+        {
+          "pin": "35",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO39",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW9",
+          "unit": null
+        },
+        {
+          "pin": "36",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO4",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "B1A",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO40",
+      "pins": [
+        {
+          "pin": "37",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO41",
+      "pins": [
+        {
+          "pin": "38",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO42",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW10",
+          "unit": null
+        },
+        {
+          "pin": "39",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO45",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW11",
+          "unit": null
+        },
+        {
+          "pin": "30",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO46",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW3",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO47",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW13",
+          "unit": null
+        },
+        {
+          "pin": "28",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO48",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW12",
+          "unit": null
+        },
+        {
+          "pin": "29",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO5",
+      "pins": [
+        {
+          "pin": "H2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO6",
+      "pins": [
+        {
+          "pin": "V2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO7",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO8",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW6",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/IO9",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW4",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/MOSI",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "32",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RXD",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "42",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SCL",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SDA",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/TXD",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "43",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VBAT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "BT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VBUS",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "A4",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "A9",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "B4",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "B9",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "BT1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A1",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "A12",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "B1",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "B12",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "S1",
+          "ref": "P1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW9",
+          "unit": null
+        },
+        {
+          "pin": "B2A",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "H3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "S1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "S2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "S3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "S4",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "V3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "22",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "23",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "24",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "44",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U6",
+          "unit": null
+        },
+        {
+          "pin": "B2A",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "H3",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "S1",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "S2",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "S3",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "S4",
+          "ref": "U7",
+          "unit": null
+        },
+        {
+          "pin": "V3",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C2-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C4-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R10",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D1-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D1-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2-D)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW14",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(R9-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(SW14-B)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "SW14",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-KEY)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "SW7",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-SW)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(P1-CC-PadA5)",
+      "pins": [
+        {
+          "pin": "A5",
+          "ref": "P1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(P1-D+-PadA6)",
+      "pins": [
+        {
+          "pin": "A6",
+          "ref": "P1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(P1-D--PadA7)",
+      "pins": [
+        {
+          "pin": "A7",
+          "ref": "P1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(P1-VCONN-PadB5)",
+      "pins": [
+        {
+          "pin": "B5",
+          "ref": "P1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-AD0-Pad7)",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-INT-Pad8)",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-SCL-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-XDA-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U4-IO0-Pad31)",
+      "pins": [
+        {
+          "pin": "31",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U5-EP-Pad9)",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U5-T_{SENSE}-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U5-T_{SW}-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U5-~{ALARMB}-Pad4)",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}
