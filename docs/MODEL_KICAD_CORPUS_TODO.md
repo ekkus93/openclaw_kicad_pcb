@@ -499,7 +499,7 @@ Use this mapping when creating actionable failures:
 
 Do this only after ingestion and evaluation exist.
 
-Current status: the corpus harness now ingests all current `model_kicad_files/` sources under `kicad-cli 9.0.9`, materializes fixture-local embedded symbols for evaluation, and runs full-corpus `model-corpus evaluate` end-to-end. The repo-wide validation gate is green again after the latest routing/pin-direction fixes, so the active work is now real generator/evaluator tuning rather than harness breakage: MCP2551 still fails electrical/layout similarity, and the remaining fixtures still need generic tuning passes.
+Current status: the corpus harness now ingests all current `model_kicad_files/` sources under `kicad-cli 9.0.9`, materializes fixture-local embedded symbols for evaluation, and runs full-corpus `model-corpus evaluate` end-to-end. The repo-wide validation gate is green again after the latest routing/pin-direction fixes, MCP2551 passes electrical equivalence after fixing compact decoupling rail clearance plus the repo-local `power:GND` symbol definition, and MAX232 now passes after switching aligned two-pin fallback GND clusters from a shared lane to direct per-pin GND symbol attachments. The active work is now the remaining generic tuning pass for the MicroSD fixture.
 
 ### 11.1 Start with MCP2551 fixture
 - [x] Ingest `mcp2551-can-transciever.kicad_sch`.
@@ -519,9 +519,9 @@ Likely generic rules:
 - [ ] Keep termination/protection/support passives near the side they serve.
 
 ### 11.2 Then use MAX232 fixture
-- [ ] Ingest/evaluate `dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch`.
-- [ ] Add generic interface/charge-pump capacitor locality rules if failures show that need.
-- [ ] Do not hard-code MAX232-specific filenames.
+- [x] Ingest/evaluate `dual-ttl-uart-to-rs232-max232-reference-design.kicad_sch`.
+- [x] Add generic interface/charge-pump capacitor locality rules if failures show that need.
+- [x] Do not hard-code MAX232-specific filenames.
 
 ### 11.3 Then use MicroSD fixture
 - [ ] Ingest/evaluate `microsd-card-in-spi-mode-with-hotswap-support.kicad_sch`.

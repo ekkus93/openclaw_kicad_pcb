@@ -22,7 +22,7 @@ from kicad_pcb.commands.netlist import (
 )
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.graphviz_layout.snap import ORIGIN_X
-from kicad_pcb.layout import GRID_COL_MM, compute_orientations
+from kicad_pcb.layout import GRID_COL_MM
 from kicad_pcb.lint.helpers import _collect_wire_segments
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc, read_lib_symbol_pin_at
@@ -1468,9 +1468,9 @@ def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_local_output_rou
     assert digital_dump["heuristic_profile_name"] == "generic_digital"
     assert analog_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is True
     assert digital_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is False
-    assert analog_hp_out["strategy"] == "chain"
-    assert analog_hp_out["heuristic_override"] == "small_analog_local_routing"
-    assert digital_hp_out["strategy"] == "chain"
+    assert analog_hp_out["strategy"] == "compact_signal_tail"
+    assert analog_hp_out["heuristic_override"] == "compact_output_tail"
+    assert digital_hp_out["strategy"] == "shared_lane"
     assert digital_hp_out["heuristic_override"] is None
 
 
@@ -4805,59 +4805,52 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR091
 
     managed_doc = SchematicDoc.load(result.managed_schematic_path)
 
-    # Collect all wire start points from the AST.
-    wire_starts: set[tuple[float, float]] = set()
+    # Collect all wire endpoints from the AST. Segment orientation is not
+    # semantically meaningful after simplification, so either endpoint is valid.
+    wire_endpoints: set[tuple[float, float]] = set()
     for node in walk(managed_doc.root):
         if not (isinstance(node, ListNode) and node.key == "wire"):
             continue
         pts = find_first(node, "pts")
         if pts is None:
             continue
-        # items: [atom("pts"), ListNode("xy", x1, y1), ListNode("xy", x2, y2)]
-        xy1 = pts.items[1]
-        if isinstance(xy1, ListNode) and xy1.key == "xy" and len(xy1.items) >= 3:
-            try:
-                x = round(float(xy1.items[1].value), 2)  # type: ignore[union-attr]
-                y = round(float(xy1.items[2].value), 2)  # type: ignore[union-attr]
-                wire_starts.add((x, y))
-            except (ValueError, AttributeError):
-                pass
+        for xy in pts.items[1:3]:
+            if isinstance(xy, ListNode) and xy.key == "xy" and len(xy.items) >= 3:
+                try:
+                    x = round(float(xy.items[1].value), 2)  # type: ignore[union-attr]
+                    y = round(float(xy.items[2].value), 2)  # type: ignore[union-attr]
+                    wire_endpoints.add((x, y))
+                except (ValueError, AttributeError):
+                    pass
 
     # Compute expected pin endpoints from the ACTUAL symbol positions in the
     # generated schematic using the same helper as generation.
     pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
     assert pin_at, "TestLib:R pin positions not found in fixture library"
 
-    ir = CircuitIR.load(ir_path)
-    layout: dict[str, tuple[float, float]] = {
-        str(sym["ref"]): (cast(float, sym["x"]), cast(float, sym["y"]))
-        for sym in managed_doc.list_symbols()
-    }
-    orientations = compute_orientations(ir, layout)
-
     expected_endpoints: dict[tuple[str, str], tuple[float, float]] = {}
     for sym in managed_doc.list_symbols():
         ref = str(sym["ref"])
         sx, sy = cast(float, sym["x"]), cast(float, sym["y"])
-        rotation = orientations.get(ref, 0)
+        rotation = int(cast(float, sym.get("rotation", 0.0)))
         transformed_pin_at = _transform_pin_at(pin_at, sx, sy, rotation)
         for pin_num, (px, py, _pa) in transformed_pin_at.items():
             expected_endpoints[(ref, pin_num)] = (round(px, 2), round(py, 2))
 
-    # Verify every expected pin endpoint has a wire starting there.
+    # Verify every expected pin endpoint is touched by a wire segment.
     # Skip power symbols (#PWR* refs) — they are placed at stub ends and do
     # not need outgoing wires of their own.
     missing: list[str] = []
     for (ref, pin), (ex, ey) in sorted(expected_endpoints.items()):
         if ref.startswith("#"):
             continue  # power symbol — no outgoing wire expected
-        if (ex, ey) not in wire_starts:
-            missing.append(f"{ref} pin {pin}: expected wire start at ({ex}, {ey})")
+        if (ex, ey) not in wire_endpoints:
+            missing.append(f"{ref} pin {pin}: expected wire endpoint at ({ex}, {ey})")
 
     assert not missing, (
-        "Wire(s) do not start at pin endpoints — wiring is disconnected:\n"
+        "Wire(s) do not touch pin endpoints — wiring is disconnected:\n"
         + "\n".join(f"  {m}" for m in missing)
-        + f"\nActual wire starts: {sorted(wire_starts)}"
+        + f"\nActual wire endpoints: {sorted(wire_endpoints)}"
     )
 
 

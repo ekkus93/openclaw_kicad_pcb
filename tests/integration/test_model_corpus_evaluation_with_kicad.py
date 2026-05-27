@@ -102,7 +102,6 @@ def test_model_corpus_evaluate_runs_electrical_equivalence_with_kicad(home_tmp: 
     assert payload["electrical_equivalence"]["mismatches"]
     assert (home_tmp / "eval" / "fixture-1" / "generated_netlist.kicadxml").exists()
 
-
 def _create_roundtrippable_source_xml(home_tmp: Path) -> Path:
     adapter = KicadCliAdapter(kicad_cli=find_kicad_cli())
     xml_path = home_tmp / "fixture-source.kicadxml"

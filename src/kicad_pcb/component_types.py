@@ -142,6 +142,15 @@ _GROUND_LIKE_PREFIXES: tuple[str, ...] = (
 )
 
 
+def _normalize_power_like_name(name: str) -> str:
+    """Return an uppercase power/ground candidate stripped of sheet qualifiers."""
+
+    normalized = name.strip().upper().lstrip("/")
+    if "@" in normalized:
+        normalized = normalized.split("@", 1)[0]
+    return normalized
+
+
 def normalize_gnd_net_name(name: str) -> str:
     """Return ``"GND"`` when *name* is a known ground alias; otherwise unchanged.
 
@@ -168,7 +177,7 @@ def normalize_gnd_net_name(name: str) -> str:
         >>> normalize_gnd_net_name("  gnd  ")
         'GND'
     """
-    if name.strip().upper() in GND_ALIASES:
+    if _normalize_power_like_name(name) in GND_ALIASES:
         return "GND"
     return name
 
@@ -181,7 +190,7 @@ def is_ground_like_name(name: str) -> bool:
     should follow ground-specific layout heuristics even when the full name is
     not normalized to the canonical ``"GND"`` net string.
     """
-    upper_name = name.strip().upper()
+    upper_name = _normalize_power_like_name(name)
     return (
         normalize_gnd_net_name(upper_name) == "GND"
         or any(upper_name.startswith(prefix) for prefix in _GROUND_LIKE_PREFIXES)
@@ -231,7 +240,7 @@ def is_power_net(name: str) -> bool:
         >>> is_power_net("SIGNAL_NET")
         False
     """
-    normalized = name.strip().upper()
+    normalized = _normalize_power_like_name(name)
     if POWER_NET_PATTERN.match(normalized):
         return True
 
@@ -255,12 +264,18 @@ def power_rail_polarity(name: str) -> str | None:
     negative supply aliases, and ``None`` for ground/reference nets or names
     that do not match the shared rail vocabulary.
     """
-    normalized = name.strip().upper()
+    normalized = _normalize_power_like_name(name)
     if normalize_gnd_net_name(normalized) == "GND":
         return None
-    if normalized.startswith(NEGATIVE_POWER_NET_PREFIXES):
+    is_negative = normalized.startswith(NEGATIVE_POWER_NET_PREFIXES) or normalized.startswith("-")
+    if is_negative:
         return "negative"
-    if normalized.startswith(POSITIVE_POWER_NET_PREFIXES):
+    is_positive = (
+        normalized.startswith(POSITIVE_POWER_NET_PREFIXES)
+        or normalized.startswith("+")
+        or re.fullmatch(r"(?:\d+V\d*|\d*V\d+)", normalized) is not None
+    )
+    if is_positive:
         return "positive"
     return None
 

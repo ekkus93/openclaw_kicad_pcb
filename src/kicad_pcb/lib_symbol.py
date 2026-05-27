@@ -33,6 +33,7 @@ __all__ = [
     "read_lib_symbol_def_chain",
     "read_lib_symbol_def_flat",
     "read_lib_symbol_pin_at",
+    "read_lib_symbol_pin_electrical_types",
     "read_lib_symbol_pins",
     "read_lib_symbol_power_unit",
     "read_lib_symbol_unit_pins",
@@ -216,6 +217,33 @@ def _collect_pin_electrical_types(sym_node: ListNode) -> list[str]:
     return result
 
 
+def _collect_pin_electrical_types_by_number(sym_node: ListNode) -> dict[str, str]:
+    """Return ``{pin_number: electrical_type}`` for all pins in *sym_node*."""
+    result: dict[str, str] = {}
+    for node in walk(sym_node):
+        if not (isinstance(node, ListNode) and node.key == "pin"):
+            continue
+        electrical_type: str | None = None
+        if len(node.items) >= 2 and isinstance(node.items[1], AtomNode):
+            electrical_type = node.items[1].value
+        if electrical_type is None:
+            continue
+        pin_num: str | None = None
+        for child in node.items:
+            if (
+                isinstance(child, ListNode)
+                and child.key == "number"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+            ):
+                pin_num = child.items[1].value
+                break
+        if pin_num is None or pin_num in result:
+            continue
+        result[pin_num] = electrical_type
+    return result
+
+
 def _strip_id_nodes(node: ListNode) -> ListNode:
     """Return a copy of *node* with every ``(id N)`` descendant removed."""
     new_children: list[Node] = []
@@ -252,37 +280,38 @@ def _resolve_sym_chain(
       termination.  Callers that require the full chain should reject
       ``complete=False`` results.
     """
-    lib_file: Path | None = None
+    fallback_result: tuple[ListNode, list[str], bool] | None = None
     for candidate_dir in _iter_symbol_dirs(symbols_dir):
         candidate_file = candidate_dir / f"{lib_name}.kicad_sym"
-        if candidate_file.exists():
-            lib_file = candidate_file
-            break
-    if lib_file is None:
-        return None
-    try:
-        lib_root = _parse_lib_file(lib_file)
-    except ParseError as exc:
-        raise ParseError(f"Failed to parse symbol library '{lib_file}': {exc}") from exc
-    except OSError as exc:
-        raise UserError(
-            f"Failed to read symbol library '{lib_file}': {exc}",
-            code=ErrorCode.IO_ERROR,
-            details={"path": str(lib_file)},
-        ) from exc
-    chain: list[str] = []
-    visited: set[str] = set()
-    current: str | None = sym_name
-    complete = True
-    while current is not None and current not in visited:
-        node = _find_lib_symbol(lib_root, current)
-        if node is None:
-            complete = False
-            break
-        visited.add(current)
-        chain.append(current)
-        current = _get_extends_name(node)
-    return lib_root, chain, complete
+        if not candidate_file.exists():
+            continue
+        try:
+            lib_root = _parse_lib_file(candidate_file)
+        except ParseError as exc:
+            raise ParseError(f"Failed to parse symbol library '{candidate_file}': {exc}") from exc
+        except OSError as exc:
+            raise UserError(
+                f"Failed to read symbol library '{candidate_file}': {exc}",
+                code=ErrorCode.IO_ERROR,
+                details={"path": str(candidate_file)},
+            ) from exc
+        chain: list[str] = []
+        visited: set[str] = set()
+        current: str | None = sym_name
+        complete = True
+        while current is not None and current not in visited:
+            node = _find_lib_symbol(lib_root, current)
+            if node is None:
+                complete = False
+                break
+            visited.add(current)
+            chain.append(current)
+            current = _get_extends_name(node)
+        if chain and complete:
+            return lib_root, chain, complete
+        if fallback_result is None:
+            fallback_result = (lib_root, chain, complete)
+    return fallback_result
 
 
 # ---------------------------------------------------------------------------
@@ -545,6 +574,19 @@ def read_lib_symbol_pin_at(
             if pin_num not in result:
                 result[pin_num] = coords
     return result
+
+
+def read_lib_symbol_pin_electrical_types(
+    lib_name: str,
+    sym_name: str,
+    *,
+    symbols_dir: Path | None = None,
+) -> dict[str, str]:
+    """Return ``{pin_number: electrical_type}`` for *lib_name:sym_name*."""
+    sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=symbols_dir)
+    if sym_def is None:
+        return {}
+    return _collect_pin_electrical_types_by_number(sym_def)
 
 
 def read_lib_symbol_unit_pins(

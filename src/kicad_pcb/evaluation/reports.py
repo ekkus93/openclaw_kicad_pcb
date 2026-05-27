@@ -85,7 +85,7 @@ class CorpusEvaluationSummary:
 class EvaluationOptions:
     require_kicad: bool = False
     heuristic_profile: str | None = None
-    label_mode: str | None = None
+    label_mode: str | None = "debug"
 
 
 @dataclass(frozen=True)

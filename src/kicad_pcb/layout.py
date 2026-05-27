@@ -27,9 +27,10 @@ from .block_detection import (
 from .component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from .component_types import IC_PREFIXES as _IC_PREFIXES_CT
 from .component_types import POWER_NET_PREFIXES as _POWER_NET_PREFIXES_CT
-from .component_types import component_type, power_rail_polarity
+from .component_types import component_type, is_power_net, power_rail_polarity
 from .component_types import is_ground_like_name as _is_ground_like_name
 from .errors import ErrorCode, UserError
+from .lib_symbol import read_lib_symbol_pin_electrical_types
 from .tier import assign_tiers as _assign_tiers
 from .tier import classify_connector_roles as _classify_connector_roles
 from .tier import identify_main_signal_path
@@ -104,7 +105,9 @@ def _is_power_net_layout(name: str) -> bool:
     orientation heuristics.
     """
     upper = name.upper()
-    return any(upper == pfx or upper.startswith(pfx) for pfx in _POWER_NET_PREFIXES)
+    return is_power_net(upper) or any(
+        upper == prefix or upper.startswith(prefix) for prefix in _POWER_NET_PREFIXES
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +198,51 @@ def _preferred_decoupling_anchor_layout(
     return max(unique_candidates, key=_sort_key)
 
 
+def _non_power_net_uses_only_power_output_pins(
+    ir: CircuitIR,
+    cap_ref: str,
+    net_name: str,
+) -> bool:
+    """Return True for charge-pump local nets driven only by IC ``power_out`` pins."""
+    upper_name = net_name.strip().upper()
+    match = re.match(r"^NET-\([^)]*-(.+)\)$", upper_name)
+    if match is None or match.group(1) not in {"VS+", "VS-", "V+", "V-"}:
+        return False
+
+    component_by_ref = {comp.ref: comp for comp in ir.components}
+    net = next((candidate for candidate in ir.nets if candidate.name == net_name), None)
+    if net is None:
+        return False
+
+    candidate_pins = [
+        pin
+        for pin in net.pins
+        if pin.ref != cap_ref
+        and component_type(pin.ref) == "ic"
+    ]
+    if not candidate_pins:
+        return False
+
+    pin_types_by_symbol: dict[str, dict[str, str]] = {}
+    resolved_types: list[str] = []
+    for pin in candidate_pins:
+        comp = component_by_ref.get(pin.ref)
+        if comp is None or ":" not in comp.symbol:
+            return False
+        symbol_key = comp.symbol
+        if symbol_key not in pin_types_by_symbol:
+            lib_name, sym_name = symbol_key.split(":", 1)
+            pin_types_by_symbol[symbol_key] = read_lib_symbol_pin_electrical_types(
+                lib_name,
+                sym_name,
+            )
+        pin_type = pin_types_by_symbol[symbol_key].get(pin.pin)
+        if pin_type is None:
+            return False
+        resolved_types.append(pin_type)
+    return bool(resolved_types) and all(pin_type == "power_out" for pin_type in resolved_types)
+
+
 def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0912, PLR0915
     """Return ``{cap_ref: ic_ref}`` for bypass/decoupling capacitors.
 
@@ -256,6 +304,8 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
         power_nets = [n for n in nets_for_cap if _is_power_net_layout(n)]
         if len(signal_nets) == 1 and power_nets:
             signal_net = signal_nets[0]
+            if _non_power_net_uses_only_power_output_pins(ir, comp.ref, signal_net):
+                continue
             candidate_refs = [
                 neighbor_ref
                 for neighbor_ref in net_to_refs.get(signal_net, [])
@@ -280,6 +330,20 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
         if anchor_ref is not None:
             result[comp.ref] = anchor_ref
     return result
+
+
+def _preferred_shunt_passive_rotation(ir: CircuitIR, ref: str) -> int:
+    """Return the preferred 90°/270° mirror for a shunt passive."""
+
+    for net in ir.nets:
+        if _is_power_net_layout(net.name) or not any(pin.ref == ref for pin in net.pins):
+            continue
+        match = re.match(r"^Net-\([^)]*-(.+)\)$", net.name.strip(), re.IGNORECASE)
+        if match is None:
+            continue
+        if match.group(1).upper() in {"VS-", "V-"}:
+            return 270
+    return 90
 
 
 def compute_signal_distance_scores(
@@ -1239,6 +1303,7 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
         ir,
         placed_pin_numbers=placed_pin_numbers,
     )
+    decoupling_caps = _find_decoupling_caps_layout(ir)
 
     # Build adjacency through signal nets only (for the position heuristic).
     adjacency: dict[str, list[str]] = defaultdict(list)
@@ -1282,9 +1347,17 @@ def compute_orientations(  # noqa: PLR0912, PLR0913, PLR0915
             continue
 
         if any(upper.startswith(pfx) for pfx in _PASSIVE_PREFIXES):
+            if (
+                upper.startswith("C")
+                and ref in decoupling_caps
+                and component_type(decoupling_caps[ref]) == "ic"
+            ):
+                result[ref] = 0
+                continue
+
             # Shunt-topology: passive straddles a power rail and a signal path.
             if ref in power_pin_refs and ref in signal_pin_refs:
-                result[ref] = 90
+                result[ref] = _preferred_shunt_passive_rotation(ir, ref)
                 continue
 
             # Block-role-aware orientation (Phase 4.3): support signal flow direction.

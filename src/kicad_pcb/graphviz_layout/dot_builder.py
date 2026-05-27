@@ -73,6 +73,7 @@ from ..component_types import CONNECTOR_PREFIXES as _CONNECTOR_PREFIXES_CT
 from ..component_types import component_type, power_rail_polarity
 from ..component_types import is_ground_like_name as _is_ground_like_name
 from ..component_types import is_power_net as _is_power_net
+from ..lib_symbol import read_lib_symbol_pin_electrical_types
 from ..tier import assign_tiers as _assign_tiers
 
 # ---------------------------------------------------------------------------
@@ -120,6 +121,51 @@ def _preferred_decoupling_anchor(
         )
 
     return max(unique_candidates, key=_sort_key)
+
+
+def _non_power_net_uses_only_power_output_pins(
+    ir: CircuitIR,
+    cap_ref: str,
+    net_name: str,
+) -> bool:
+    """Return True for charge-pump local nets driven only by IC ``power_out`` pins."""
+    upper_name = net_name.strip().upper()
+    match = re.match(r"^NET-\([^)]*-(.+)\)$", upper_name)
+    if match is None or match.group(1) not in {"VS+", "VS-", "V+", "V-"}:
+        return False
+
+    component_by_ref = {comp.ref: comp for comp in ir.components}
+    net = next((candidate for candidate in ir.nets if candidate.name == net_name), None)
+    if net is None:
+        return False
+
+    candidate_pins = [
+        pin
+        for pin in net.pins
+        if pin.ref != cap_ref
+        and component_type(pin.ref) == "ic"
+    ]
+    if not candidate_pins:
+        return False
+
+    pin_types_by_symbol: dict[str, dict[str, str]] = {}
+    resolved_types: list[str] = []
+    for pin in candidate_pins:
+        comp = component_by_ref.get(pin.ref)
+        if comp is None or ":" not in comp.symbol:
+            return False
+        symbol_key = comp.symbol
+        if symbol_key not in pin_types_by_symbol:
+            lib_name, sym_name = symbol_key.split(":", 1)
+            pin_types_by_symbol[symbol_key] = read_lib_symbol_pin_electrical_types(
+                lib_name,
+                sym_name,
+            )
+        pin_type = pin_types_by_symbol[symbol_key].get(pin.pin)
+        if pin_type is None:
+            return False
+        resolved_types.append(pin_type)
+    return bool(resolved_types) and all(pin_type == "power_out" for pin_type in resolved_types)
 
 
 def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
@@ -197,6 +243,8 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
         if len(signal_nets_for_cap) == 1 and power_nets_for_cap:
             # Exactly one signal net — find the IC on that shared net.
             signal_net = signal_nets_for_cap[0]
+            if _non_power_net_uses_only_power_output_pins(ir, comp.ref, signal_net):
+                continue
             candidate_refs = [
                 neighbor_ref
                 for neighbor_ref in net_to_refs.get(signal_net, [])

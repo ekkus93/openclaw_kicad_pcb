@@ -169,7 +169,7 @@ def make_symbol_node(  # noqa: PLR0913
         L(atom("lib_id"), string(lib_sym)),
         L(atom("at"), fnum(x, 2), fnum(y, 2), atom(str(rotation))),
         L(atom("unit"), atom(str(unit))),
-        L(atom("exclude_from_sim"), atom("yes")),
+        L(atom("exclude_from_sim"), atom("no")),
         L(atom("in_bom"), atom("yes")),
         L(atom("on_board"), atom("yes")),
         L(atom("uuid"), string(sym_uuid)),

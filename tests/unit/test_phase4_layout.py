@@ -49,6 +49,7 @@ from kicad_pcb.graphviz_layout.snap import (
     _apply_property_text_spacing,
     _center_ics_in_columns,
     _clamp_to_page,
+    _deoverlap_positions,
     _OpAmpLocalityContext,
     _remediate_crossings,
     _snap_opamp_halo,
@@ -239,6 +240,10 @@ class TestIsPowerNetName:
     def test_case_insensitive(self) -> None:
         assert _is_power_net_name("gnd")
         assert _is_power_net_name("Vcc")
+
+    @pytest.mark.parametrize("name", ["/+3.3V@SD", "/GND@CARD", "+5V@IO", "gnd@local"])
+    def test_scoped_power_nets_detected(self, name: str) -> None:
+        assert _is_power_net_name(name)
 
 
 # ---------------------------------------------------------------------------
@@ -1986,6 +1991,59 @@ class TestFindDecouplingCaps:
             f"Expected power-only bypass cap C1 to anchor to active IC U1, got: {result}"
         )
 
+    def test_charge_pump_power_output_caps_stay_out_of_decoupling_map(self) -> None:
+        """Caps on IC power-output nets (e.g. MAX232 VS+/VS-) are not bypass decouplers."""
+        components = [
+            ComponentIR(ref="J1", symbol="Connector_Generic:Conn_01x01", value="TTL_TX"),
+            ComponentIR(ref="J2", symbol="Connector_Generic:Conn_01x01", value="RS232_TX"),
+            ComponentIR(ref="U2", symbol="Interface_UART:MAX232", value="MAX232"),
+            ComponentIR(ref="C64", symbol="Device:C", value="1u"),
+            ComponentIR(ref="C71", symbol="Device:C", value="1u"),
+            ComponentIR(ref="C72", symbol="Device:C", value="1u"),
+        ]
+        nets = [
+            NetIR(
+                name="TTL_0_TX",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="U2", pin="11")],
+            ),
+            NetIR(
+                name="RS232_0_TX",
+                pins=[PinRefIR(ref="U2", pin="14"), PinRefIR(ref="J2", pin="1")],
+            ),
+            NetIR(
+                name="+5V",
+                pins=[
+                    PinRefIR(ref="C64", pin="1"),
+                    PinRefIR(ref="C71", pin="2"),
+                    PinRefIR(ref="U2", pin="16"),
+                ],
+            ),
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C64", pin="2"),
+                    PinRefIR(ref="C72", pin="1"),
+                    PinRefIR(ref="U2", pin="15"),
+                ],
+            ),
+            NetIR(
+                name="Net-(U2-VS+)",
+                pins=[PinRefIR(ref="C71", pin="1"), PinRefIR(ref="U2", pin="2")],
+            ),
+            NetIR(
+                name="Net-(U2-VS-)",
+                pins=[PinRefIR(ref="C72", pin="2"), PinRefIR(ref="U2", pin="6")],
+            ),
+        ]
+
+        ir = CircuitIR(version="1", components=components, nets=nets)
+
+        assert _gv_mod.find_decoupling_caps(ir) == {"C64": "U2"}
+
+        from kicad_pcb.layout import _find_decoupling_caps_layout  # noqa: PLC0415
+
+        assert _find_decoupling_caps_layout(ir) == {"C64": "U2"}
+
     def test_shared_negative_rail_refinement_prefers_device_above_decoupler(self) -> None:
         """Shared negative rails should refine to the active device above the capacitor."""
         components = [
@@ -2291,6 +2349,33 @@ class TestDecouplingCapCoLocation:
         assert negative_xs == expected_xs, (
             f"Negative overflow bank should mirror the same compact x lanes: {result}"
         )
+
+    def test_post_snap_adds_extra_clearance_for_second_same_lane_decoupler(self) -> None:
+        """Second same-column decouplers need extra y clearance to avoid pin-stub overlap."""
+        positions = {
+            "U1": (100.0, 100.0, None),
+            "C1": (40.0, 40.0, None),
+            "C2": (45.0, 45.0, None),
+        }
+
+        result = _gv_mod.post_snap_decoupling_caps(
+            positions,
+            {
+                "C1": "U1",
+                "C2": "U1",
+            },
+            rail_polarities={
+                "C1": "positive",
+                "C2": "positive",
+            },
+        )
+
+        assert result["C1"][0] == pytest.approx(100.0)
+        assert result["C1"][1] == pytest.approx(100.0 - _gv_mod.GRID_ROW_MM)
+        assert result["C1"][2] is None
+        assert result["C2"][0] == pytest.approx(100.0)
+        assert result["C2"][1] == pytest.approx(100.0 - (4 * _gv_mod.GRID_ROW_MM))
+        assert result["C2"][2] is None
 
     def test_post_snap_centers_split_unit_decoupling_bank_on_family_x(self) -> None:
         """Split-unit decouplers should align to the visible device family, not one sibling lane."""
@@ -6605,6 +6690,64 @@ class TestApplyPostLayoutSnaps:
             disabled["U1"][1] - _gv_mod.GRID_ROW_MM,
             abs_tol=0.01,
         )
+
+    def test_apply_post_layout_snaps_deoverlaps_collisions_from_late_passes(self) -> None:
+        """The coordinator should resolve collisions reintroduced after the late passes."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+            ],
+            nets=[
+                NetIR(
+                    name="SIG",
+                    pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="R2", pin="1")],
+                ),
+            ],
+        )
+        positions: dict[str, tuple[float, float, float | None]] = {
+            "R1": (50.80, 76.20, None),
+            "R2": (63.50, 88.90, None),
+        }
+
+        def _late_collision(
+            snapshot: dict[str, tuple[float, float, float | None]],
+            *_args: object,
+            **_kwargs: object,
+        ) -> dict[str, tuple[float, float, float | None]]:
+            result = dict(snapshot)
+            result["R1"] = (50.80, 76.20, None)
+            result["R2"] = (50.80, 76.20, None)
+            return result
+
+        with patch.object(_gv_mod, "_snap_input_connector_signal_attachment", _late_collision):
+            result = _gv_mod.apply_post_layout_snaps(
+                positions,
+                ir,
+                feedback_refs=set(),
+                annotations={},
+                channels={ref: "mono" for ref in positions},
+                decoupling_map={},
+            )
+
+        assert result["R1"] != result["R2"]
+        assert math.isclose(result["R1"][0], result["R2"][0], abs_tol=0.01)
+        assert result["R2"][1] - result["R1"][1] >= 11.42
+
+    def test_deoverlap_positions_separates_exact_overlap_even_for_skip_pair(self) -> None:
+        """Skip pairs should not preserve a literal same-cell collision."""
+        result = _deoverlap_positions(
+            {
+                "U1": (91.44, 129.54, None),
+                "U2": (91.44, 129.54, None),
+            },
+            skip_pairs=frozenset({("U1", "U2")}),
+        )
+
+        assert result["U1"] != result["U2"]
+        assert math.isclose(result["U1"][0], result["U2"][0], abs_tol=0.01)
+        assert result["U2"][1] - result["U1"][1] >= 11.42
 
     def test_named_layout_profiles_diverge_on_decoupling_fixture(self) -> None:
         """Named profiles should produce different post-layout positions on the same fixture."""

@@ -79,7 +79,7 @@ def cmd_model_corpus_evaluate(args) -> ModelCorpusEvaluateResult:
         options=EvaluationOptions(
             require_kicad=bool(getattr(args, "require_kicad", False)),
             heuristic_profile=getattr(args, "heuristic_profile", None),
-            label_mode=getattr(args, "label_mode", None),
+            label_mode=getattr(args, "label_mode", None) or "debug",
         ),
     )
     return ModelCorpusEvaluateResult(

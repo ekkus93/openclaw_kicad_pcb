@@ -48,7 +48,7 @@ class TestTransformPinAt:
     """_transform_pin_at(pin_at, origin_x, origin_y, rotation) -> transformed map."""
 
     def test_identity_rotation(self) -> None:
-        """rotation=0: X translates directly, Y flips, and the pin faces outward."""
+        """rotation=0 keeps X translation, flips Y, and reflects pin direction."""
         pin_at: dict[str, tuple[float, float, float]] = {
             "1": (10.0, 20.0, 90.0),
             "2": (-5.0, 3.0, 180.0),
@@ -56,7 +56,7 @@ class TestTransformPinAt:
         result = _transform_pin_at(pin_at, 100.0, 200.0, rotation=0)
         assert result == {
             "1": (approx(110.0), approx(180.0), approx(270.0)),
-            "2": (approx(95.0), approx(197.0), approx(0.0)),
+            "2": (approx(95.0), approx(197.0), approx(180.0)),
         }
 
     def test_rotation_90(self) -> None:
@@ -66,7 +66,7 @@ class TestTransformPinAt:
         rx, ry, ra = result["1"]
         assert rx == approx(-4.0, abs=1e-9)
         assert ry == approx(-3.0, abs=1e-9)
-        assert ra == pytest.approx((45 + 180 - 90) % 360)
+        assert ra == pytest.approx((90 - 45) % 360)
 
     def test_rotation_180(self) -> None:
         """180° rotation flips X and preserves the library Y sign after schematic projection."""
@@ -75,7 +75,7 @@ class TestTransformPinAt:
         rx, ry, ra = result["1"]
         assert rx == approx(-3.0, abs=1e-9)
         assert ry == approx(4.0, abs=1e-9)
-        assert ra == pytest.approx((30 + 180 - 180) % 360)
+        assert ra == pytest.approx((180 - 30) % 360)
 
     def test_angle_wraps_below_360(self) -> None:
         """Resulting angle is always in [0, 360)."""
@@ -83,7 +83,7 @@ class TestTransformPinAt:
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=180)
         angle = result["1"][2]
         assert 0.0 <= angle < 360.0
-        assert angle == pytest.approx((270 + 180 - 180) % 360)  # 270°
+        assert angle == pytest.approx((180 - 270) % 360)  # 270°
 
     def test_origin_applied_correctly(self) -> None:
         """Non-zero origin is added after rotation and library->schematic Y projection."""

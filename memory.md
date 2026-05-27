@@ -1,5 +1,55 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-27T16:51:45Z - GPT-5.4 - MicroSD now preserves the named control nets; the remaining blocker is the U21 power/GND cluster
+
+- The retained MicroSD router improvements now include: per-pin endpoint global labels for slash-prefixed connector/global-label breakout paths, direct-route protected-point scoring that includes foreign raw pin endpoints, and a third direct-route detour radius for crowded two-pin nets. Focused regressions for those retained behaviors are green again.
+- On `microsd-card-in-spi-mode-with-hotswap-support`, those retained changes materially improved export identity: `CMD_MOSI@SD`, `DET_B`, `~SD_CARD_ENABLE`, `Net-(J8-DAT1)`, and `Net-(J8-DAT2)` now export with the correct pin memberships instead of being dropped or merged into the left-side bundle.
+- The remaining electrical-equivalence blocker is now concentrated in the U21 power/GND area. KiCad export still places `U21` pins `7/8/10` onto `/SPI.MISO`, leaves `C37` pin 2, `C42` pin 1, `R58` pin 1, and `R60` pin 1 effectively unconnected, and keeps `+3.3V`, `+3.3V@SD`, and `GND` memberships wrong.
+- One new experiment was tried and explicitly rejected in this state: making the compact power-cluster acceptance checks respect protected foreign pin endpoints made `+3.3V` even worse (it collapsed to only `R62` pin 1), so that change was reverted. The next useful fix surface is the still-active compact/clustered GND and power topology around U21, not the already-improved named control nets.
+
+## 2026-05-27T16:12:54Z - GPT-5.4 - Retained the first bundle-aware MicroSD routing fixes, but export identity is still blocked
+
+- The branch now retains three new generic router changes on top of the earlier scoped-power/scoped-label work: `_best_direct_route_with_protected_points(...)` now considers a second detour radius for crowded 2-pin routes, 4+ pin bus-style nets can fall back from a colliding mean spine to a lower-collision existing shared lane when `_route_candidate_key(...)` proves it is better, and `_label_attachment_plan(...)` now avoids future protected stub endpoints instead of only already-occupied wire/label points.
+- Those retained changes are covered by new focused regressions in `tests/unit/test_phase6_wire_simplification.py`, and the focused MicroSD routing/corpus slice is green again.
+- On the actual `microsd-card-in-spi-mode-with-hotswap-support` fixture, the retained fixes materially changed the left bundle: `/DET_B` now survives as a named exported net and the old `y=119.38` DET_B spine is no longer the dominant route. But electrical equivalence still fails because exported identity is still wrong for `DET_A`, `Net-(J8-DAT2)`, `~SD_CARD_ENABLE`, and the shifted `+3.3V@SD` / `DET_B` pin memberships.
+- The next useful MicroSD target is no longer the original DET_B trunk geometry. The stronger current clue is that the generated geometry is better but KiCad export still merges or drops some connector-side named nets, so the next debugging surface is the remaining label/export semantics around those improved routes rather than more broad direct-route scoring experiments.
+
+## 2026-05-27T10:36:17Z - GPT-5.4 - Refined the MicroSD routing blocker from a single bad detour into a shared left-bundle lane problem
+
+- The branch is still at the prior retained best state: scoped power-name normalization and slash-net global-label handling remain, the focused MicroSD routing/corpus slice is green, and `model-corpus evaluate --fixture microsd-card-in-spi-mode-with-hotswap-support` is still electrically failing.
+- Re-running the incremental routing trace showed the left-side collapse is not just `/DET_A` or `/DET_B` in isolation. `/DET_A` still draws the first bad direct segment at `y=143.51`, `/DET_B` then adds the large mean-Y spine at `y=119.38`, and later `Net-(J8-DAT1)` also reuses the same `x=2.54` left escape lane.
+- The important new conclusion is that the dense MicroSD failure is now best understood as a **shared left-bundle lane** problem: several independent nets are being routed through the common connector-side `x=2.54` escape corridor, so local tweaks to direct-route scoring or slash-label breakout alone do not fix electrical equivalence. The next useful fix surface is bundle-aware routing/ordering for these connector-side nets rather than another small candidate-scoring change.
+
+## 2026-05-27T10:26:01Z - GPT-5.4 - Narrowed the remaining MicroSD blocker to a direct-route collision choice before the DET_B spine
+
+- The retained generic fixes in this segment are still the scoped power-name normalization and scoped-net global-label handling in routed/debug paths; focused regressions remain green with those changes, but `model-corpus evaluate --fixture microsd-card-in-spi-mode-with-hotswap-support` is still electrically failing.
+- I proved the first left-bundle electrical merge now appears **before** `/DET_B`: after routing `/DET_A`, the generated schematic already contains a multi-label connected component combining `/DAT0_MISO@SD` and `/DET_A`. Later `/DET_B` adds a large spine that worsens the collapse, but it is not the first root cause anymore.
+- Recomputing `/DET_A` in isolation showed a safe detour exists, but `_best_direct_route_with_protected_points(...)` chooses the shorter colliding route once the full `dynamic_protected_points` set is included. That makes the next likely fix area the direct-route candidate scoring logic rather than another label-type or block-classification tweak.
+
+## 2026-05-27T07:43:47Z - GPT-5.4 - Finished the interrupted MicroSD label-breakout refactor, but the fixture is still electrically blocked
+
+- `src/kicad_pcb/router.py` now fully uses `_label_attachment_plan(...)` instead of the older `_label_attachment_point(...)`, and the focused regression suite around protected chain routing, connector-label breakouts, and label-anchor fallback is green again.
+- The retained planner behavior now scores multiple candidate breakout anchors, prefers a dedicated short breakout route over falling straight back to the pin endpoint, and keeps later label placements aware of already-emitted wires and label anchors within the same routing pass.
+- Despite that refactor completing cleanly, `model-corpus evaluate --fixture microsd-card-in-spi-mode-with-hotswap-support` still fails electrical equivalence. The current best diagnosis remains a small set of KiCad export collisions centered on slash-prefixed global-label anchors in the dense left-side MicroSD bundle, especially interactions involving `+3.3V@SD`.
+
+## 2026-05-27T07:20:11Z - GPT-5.4 - MicroSD tuning is still blocked by KiCad export collapsing the dense left-side bundle
+
+- The retained generic MicroSD changes so far are: protected-point-aware 3-pin chain routing, occupied-wire protection for later routed nets, and connector-label breakout for wide slash-prefixed connector-attachment nets. Focused routing/corpus tests are green with those changes, but the fixture still fails electrical equivalence.
+- The current export symptom is that KiCad still collapses most of the dense left-side MicroSD bundle into a few nets. In the best retained state, exported net names are still only `+3.3V@SD`, `DET_A`, `GND`, `SD_CS@SD`, and `SPI.MISO`, with exported `+3.3V@SD` incorrectly absorbing many signal and ground pins while exported `GND` shrinks to only `C40` pin 1.
+- One additional experiment was explicitly rejected and reverted: forcing dense GND areas to per-pin GND symbols made the collapse worse instead of better. The next useful debugging target is the exact remaining overlap/connectivity pattern in the left-side bundle, not the MAX232 fixes or the repo-wide test gate.
+
+## 2026-05-27T06:52:19Z - GPT-5.4 - MAX232 now passes after a narrower fallback GND routing change
+
+- `dual-ttl-uart-to-rs232-max232-reference-design` now passes electrical equivalence again. The retained generic fixes are the earlier charge-pump decoupling/orientation changes plus a router fallback rule that turns aligned two-pin fallback `GND` clusters into direct per-pin `power:GND` symbol attachments instead of a shared lane that KiCad 9 can partially drop.
+- A minimal one-pin sanity check proved `MAX232` `U2` pin 15 exports correctly on `GND` by itself, so the remaining failure was in KiCad's handling of the shared fallback route shape rather than in `_transform_pin_at(...)` or the symbol pin geometry.
+- Focused validation is green with this retained state, and fixture-local `model-corpus evaluate --fixture dual-ttl-uart-to-rs232-max232-reference-design` now reports electrical equivalence `passed`. The next active Phase 11 tuning target is `microsd-card-in-spi-mode-with-hotswap-support`.
+
+## 2026-05-27T01:48:48Z - GPT-5.4 - Fixed symbol-library fallback and narrowed the remaining MCP2551 export blocker
+
+- `read_lib_symbol_def_flat(..., symbols_dir=None)` now falls through from incomplete repo-local libraries to later symbol directories instead of stopping at the first matching library file. That fixed `power:+5V` lookup, which the repo-local `src/kicad_pcb/resources/symbols/power.kicad_sym` does not provide but the system KiCad library does.
+- The compact local power-cluster caller now restores the ordinary pin-to-stub wire segments before appending helper-generated cluster routes, so compact GND / local-decoupling clusters no longer rely on helper output alone for pin continuity.
+- The remaining MCP2551 failure is now specifically in KiCad netlist export semantics, not the corpus harness: the generated schematic draws `CAN0_RX` / `CAN0_TX` on the intended U1 left-side wires, but `kicad-cli sch export netlist` still resolves them as U1 pins 5 and 8 and drops the other expected named nets entirely. The next debugging target is the exact written schematic geometry/label strategy that KiCad recognizes for those nets, not power-symbol lookup or the general evaluation pipeline.
+
 ## 2026-05-27T01:11:30Z - GPT-5.4 - Restored the full repo gate after the corpus-routing regressions
 
 - The latest repo-wide green gate is confirmed again: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass after fixing the post-corpus-unblock routing regressions.

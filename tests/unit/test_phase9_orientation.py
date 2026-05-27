@@ -157,6 +157,28 @@ class TestShuntPassiveOrientations:
         result = compute_orientations(ir, positions)
         assert result["R1"] == 90, "Pull-up resistor (power + signal pins) should be 90° (vertical)"
 
+    def test_negative_charge_pump_capacitor_prefers_270(self) -> None:
+        """Negative charge-pump reservoir caps mirror away from their ground stub."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="C1", symbol="Device:C", value="10u"),
+                ComponentIR(ref="U1", symbol="Interface_UART:MAX232", value="MAX232"),
+            ],
+            nets=[
+                NetIR(name="GND", pins=[PinRefIR(ref="C1", pin="1"), PinRefIR(ref="U1", pin="15")]),
+                NetIR(
+                    name="Net-(U1-VS-)",
+                    pins=[PinRefIR(ref="C1", pin="2"), PinRefIR(ref="U1", pin="6")],
+                ),
+            ],
+        )
+        positions = {"C1": (10.0, 10.0), "U1": (20.0, 10.0)}
+
+        result = compute_orientations(ir, positions)
+
+        assert result["C1"] == 270
+
     def test_decoupling_capacitor_vertical(self) -> None:
         """Decoupling cap (pin1 on VCC, pin2 on GND) → 90°.
 
@@ -187,6 +209,49 @@ class TestShuntPassiveOrientations:
         assert result["C1"] == 0, (
             "Decoupling-only capacitor defaults to 0° (no signal pins present)"
         )
+
+    def test_numeric_positive_rail_decoupling_defaults_to_zero(self) -> None:
+        """A +5V/GND decoupler should still be treated as a power-only passive."""
+        ir = CircuitIR(
+            version="1",
+            components=[ComponentIR(ref="C1", symbol="Device:C", value="100n")],
+            nets=[
+                NetIR(name="+5V", pins=[PinRefIR(ref="C1", pin="1")]),
+                NetIR(name="GND", pins=[PinRefIR(ref="C1", pin="2")]),
+            ],
+        )
+        positions = {"C1": (10.0, 10.0)}
+
+        result = compute_orientations(ir, positions)
+
+        assert result["C1"] == 0
+
+    def test_signal_to_power_decoupling_cap_defaults_to_zero(self) -> None:
+        """A capacitor classified as decoupling should stay horizontal above its IC."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(
+                    ref="U1",
+                    symbol="Interface_CAN_LIN:MCP2551-I-SN",
+                    value="MCP2551-I-SN",
+                ),
+                ComponentIR(ref="C1", symbol="Device:C", value="30p"),
+            ],
+            nets=[
+                NetIR(name="GND", pins=[PinRefIR(ref="C1", pin="2"), PinRefIR(ref="U1", pin="2")]),
+                NetIR(
+                    name="Net-(U1-Vref)",
+                    pins=[PinRefIR(ref="C1", pin="1"), PinRefIR(ref="U1", pin="5")],
+                ),
+                NetIR(name="CAN0_TX", pins=[PinRefIR(ref="U1", pin="1")]),
+            ],
+        )
+        positions = {"U1": (20.0, 20.0), "C1": (20.0, 12.0)}
+
+        result = compute_orientations(ir, positions)
+
+        assert result["C1"] == 0
 
     def test_placed_pin_subset_ignores_nonlocal_power_pin_membership(self) -> None:
         """Placed-unit orientation ignores stray net pins outside the placed pin subset."""

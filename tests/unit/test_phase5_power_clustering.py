@@ -5,7 +5,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
-from kicad_pcb.router import PowerSymbolPlacement, WireSegment, _cluster_power_pins, route_nets
+from kicad_pcb.component_types import power_rail_polarity
+from kicad_pcb.router import (
+    PowerSymbolPlacement,
+    WireSegment,
+    _cluster_power_pins,
+    _compact_local_decoupling_power_cluster_route,
+    route_nets,
+)
 
 
 def test_cluster_power_pins_single_cluster() -> None:
@@ -18,6 +25,14 @@ def test_cluster_power_pins_single_cluster() -> None:
     clusters = _cluster_power_pins(pins, radius=40.0)
     assert len(clusters) == 1, f"Expected 1 cluster; got {len(clusters)}"
     assert len(clusters[0]) == 3, f"Expected 3 pins in cluster; got {len(clusters[0])}"  # noqa: PLR2004
+
+
+def test_power_rail_polarity_recognizes_scoped_positive_rail() -> None:
+    assert power_rail_polarity("/+3.3V@SD") == "positive"
+
+
+def test_power_rail_polarity_treats_scoped_ground_as_neutral() -> None:
+    assert power_rail_polarity("/GND@CARD") is None
 
 
 def test_cluster_power_pins_multiple_clusters() -> None:
@@ -178,6 +193,99 @@ def test_compact_ground_cluster_keeps_bind_markers() -> None:
         ("R1", "2", "GND"),
         ("R2", "2", "GND"),
     }
+
+
+def test_compact_ground_cluster_keeps_pin_stub_segments() -> None:
+    """Compact local GND clusters must still start wires at each actual pin endpoint."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="R2", symbol="Device:R", value="10k"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="U1", pin="4"),
+                    PinRefIR(ref="R1", pin="2"),
+                    PinRefIR(ref="R2", pin="2"),
+                ],
+            )
+        ],
+    )
+    endpoints: dict[tuple[str, str], tuple[float, float, float]] = {
+        ("U1", "4"): (100.0, 100.0, 270.0),
+        ("R1", "2"): (110.0, 100.0, 270.0),
+        ("R2", "2"): (120.0, 100.0, 270.0),
+    }
+    positions: Mapping[str, tuple[float, float, float | None]] = {
+        "U1": (100.0, 94.92, 0.0),
+        "R1": (110.0, 94.92, 0.0),
+        "R2": (120.0, 94.92, 0.0),
+    }
+
+    routing = route_nets(ir=ir, pin_endpoints=endpoints, positions=positions)
+
+    assert WireSegment(100.0, 100.0, 100.0, 105.08) in routing.wires
+    assert WireSegment(110.0, 100.0, 110.0, 105.08) in routing.wires
+    assert WireSegment(120.0, 100.0, 120.0, 105.08) in routing.wires
+
+
+def test_compact_positive_decoupling_cluster_prefers_upper_rail_lane() -> None:
+    """Small +5V IC/cap clusters should keep the compact rail above the IC pin."""
+    assert power_rail_polarity("+5V") == "positive"
+
+    cluster = [
+        (PinRefIR(ref="U1", pin="3"), (162.56, 111.76, 90.0)),
+        (PinRefIR(ref="C61", pin="1"), (158.75, 137.16, 180.0)),
+    ]
+    positions: Mapping[str, tuple[float, float, float | None]] = {
+        "U1": (162.56, 121.92, 0.0),
+        "C61": (162.56, 137.16, 90.0),
+    }
+
+    result = _compact_local_decoupling_power_cluster_route(
+        "+5V",
+        cluster,
+        positions=positions,
+    )
+
+    assert result is not None
+    segs, _junctions, (symbol_x, symbol_y) = result
+    assert symbol_y == 106.68
+    assert symbol_x == 173.99
+    assert WireSegment(162.56, 106.68, 163.83, 106.68) in segs
+    assert WireSegment(163.83, 106.68, 173.99, 106.68) in segs
+    assert WireSegment(163.83, 137.16, 163.83, 106.68) in segs
+
+
+def test_compact_positive_decoupling_cluster_avoids_same_x_stub_overlap() -> None:
+    cluster = [
+        (PinRefIR(ref="U1", pin="3"), (162.56, 111.76, 90.0)),
+        (PinRefIR(ref="C61", pin="1"), (162.56, 87.63, 90.0)),
+    ]
+    positions: Mapping[str, tuple[float, float, float | None]] = {
+        "U1": (162.56, 121.92, 0.0),
+        "C61": (162.56, 91.44, 0.0),
+    }
+
+    result = _compact_local_decoupling_power_cluster_route(
+        "+5V",
+        cluster,
+        positions=positions,
+    )
+
+    assert result is not None
+    segs, _junctions, (symbol_x, symbol_y) = result
+    assert symbol_y == 82.55
+    assert symbol_x == 172.72
+    assert WireSegment(152.4, 82.55, 162.56, 82.55) in segs
+    assert WireSegment(162.56, 106.68, 152.4, 106.68) in segs
+    assert WireSegment(152.4, 106.68, 152.4, 82.55) in segs
+    assert WireSegment(162.56, 82.55, 172.72, 82.55) in segs
+    assert WireSegment(162.56, 106.68, 162.56, 82.55) not in segs
 
 
 def test_power_net_cluster_offsets_shared_symbol_toward_open_side() -> None:

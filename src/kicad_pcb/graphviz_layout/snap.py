@@ -1880,11 +1880,17 @@ def _post_snap_decoupling_caps(
         )
         for idx, cap_ref in enumerate(positive_caps):
             cap_x = _decoupling_bank_x(bank_anchor_x, idx)
-            cap_y = round(ic_y - (idx + 1) * GRID_ROW_MM, 2)
+            row_offset = idx + 1
+            if idx > 0 and math.isclose(cap_x, bank_anchor_x, abs_tol=0.01):
+                row_offset += 2
+            cap_y = round(ic_y - row_offset * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
         for idx, cap_ref in enumerate(negative_caps):
             cap_x = _decoupling_bank_x(bank_anchor_x, idx)
-            cap_y = round(ic_y + (idx + 1) * GRID_ROW_MM, 2)
+            row_offset = idx + 1
+            if idx > 0 and math.isclose(cap_x, bank_anchor_x, abs_tol=0.01):
+                row_offset += 2
+            cap_y = round(ic_y + row_offset * GRID_ROW_MM, 2)
             result[cap_ref] = (cap_x, cap_y, None)
     return result
 
@@ -2474,8 +2480,8 @@ def _deoverlap_positions(
             cx, cy, cr = result[curr_ref]
             if cy - py < min_sep:
                 pair = (min(prev_ref, curr_ref), max(prev_ref, curr_ref))
-                if pair in skip_pairs:
-                    continue  # intentional co-location (e.g. decoupling cap)
+                if pair in skip_pairs and not math.isclose(cy, py, abs_tol=0.01):
+                    continue  # intentional near-co-location (e.g. decoupling cap)
                 new_y = round(py + min_sep, 4)
                 result[curr_ref] = (cx, new_y, cr)
     return result
@@ -4956,5 +4962,10 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         block_layout=block_layout,
     )
     result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
+    result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
+    # The remaining late locality passes can still reintroduce same-cell
+    # collisions after the earlier "final" deoverlap. Run one true last guard
+    # before returning the snapped coordinates.
+    result = _deoverlap_positions(result, skip_pairs=frozenset(late_skip_pairs))
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result
