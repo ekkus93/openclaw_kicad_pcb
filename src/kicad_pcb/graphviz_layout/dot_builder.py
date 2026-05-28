@@ -33,7 +33,7 @@ DOT emission strategy
 6. Emit the ``cluster_power`` subgraph.
 7. Optionally emit invisible co-location edges for decoupling caps
    (:func:`_emit_decoupling_constraints`).
-8. Optionally emit the ``cluster_feedback`` subgraph for feedback components
+8. Optionally emit feedback dummy-node constraints for feedback components
    (:func:`_emit_feedback_constraints`).
 
 Relationship to ``tier.assign_tiers`` vs ``_assign_bfs_tiers``
@@ -588,23 +588,23 @@ def _partition_power_cluster_refs(
 
 
 def _emit_feedback_constraints(lines: list[str], feedback_refs: set[str]) -> None:
-    """Append ``cluster_feedback`` DOT subgraph for *feedback_refs*.
+    """Append feedback dummy-node constraints for *feedback_refs*.
 
     Each feedback component gets an invisible dummy node and an
     ``[style=invis, weight=10]`` edge to that dummy, biasing Graphviz to
     place the feedback component above (earlier rank than) the amplifier.
-    The subgraph itself has no visible border (``style=invis``).
+
+    These lines are emitted directly into the main graph instead of a
+    ``cluster_*`` subgraph. Graphviz 12 can abort in ``flat_reorder`` when a
+    feedback cluster interacts with block-zone anchor constraints, while the
+    equivalent flat dummy-node edges remain stable.
     """
     sorted_fb = sorted(feedback_refs)
-    lines.append("  subgraph cluster_feedback {")
-    lines.append('    label="";')
-    lines.append("    style=invis;")
     for ref in sorted_fb:
         safe = _safe_id(ref)
         dummy = f"__fbdummy_{safe}__"
-        lines.append(f'    {dummy} [label="", shape=point, style=invis, width=0, height=0];')
-        lines.append(f"    {safe} -> {dummy} [style=invis, weight=10];")
-    lines.append("  }")
+        lines.append(f'  {dummy} [label="", shape=point, style=invis, width=0, height=0];')
+        lines.append(f"  {safe} -> {dummy} [style=invis, weight=10];")
 
 
 def _emit_halo_constraints(

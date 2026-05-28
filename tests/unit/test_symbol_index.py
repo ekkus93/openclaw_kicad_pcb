@@ -66,6 +66,27 @@ def test_symbol_index_missing_symbol_raises_coded_error(fixture_symbols_dir: Pat
     assert "searched_dirs" in exc_info.value.details
 
 
+def test_symbol_index_accepts_declared_pin_free_symbol(tmp_path: Path) -> None:
+    (tmp_path / "Mechanical.kicad_sym").write_text(
+        """\
+(kicad_symbol_lib (version 20230121) (generator test)
+  (symbol "MountingHole"
+    (property "Reference" "H" (at 0 5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "MountingHole" (at 0 -5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+)
+""",
+        encoding="utf-8",
+    )
+    index = SymbolIndex(symbols_dir=tmp_path)
+
+    assert index.get_pins("Mechanical:MountingHole") == set()
+
+
 def test_resolve_symbol_dirs_prefers_explicit(fixture_symbols_dir: Path) -> None:
     resolved = resolve_symbol_dirs(symbols_dir=fixture_symbols_dir)
 
@@ -98,6 +119,7 @@ def test_symbol_index_raises_io_error_when_declaration_probe_read_fails(
     index = SymbolIndex(symbols_dir=tmp_path)
 
     monkeypatch.setattr(si_mod, "read_lib_symbol_pins", lambda *args, **kwargs: [])
+    monkeypatch.setattr(si_mod, "read_lib_symbol_def_chain", lambda *args, **kwargs: [])
 
     original_read_text = Path.read_text
 

@@ -1320,10 +1320,16 @@ def _label_attachment_plan(
     start = (round(pin_x, 2), round(pin_y, 2))
     angle = int(round(pin_angle)) % 360
     blocked_points = set(occupied_points)
+    start_was_occupied = start in occupied_points
+    stub_was_occupied = stub in occupied_points
     if protected_points:
         blocked_points.update(protected_points)
-    blocked_points.discard(start)
-    if not shared_protected_points or stub not in shared_protected_points:
+    if not start_was_occupied:
+        blocked_points.discard(start)
+    if (
+        (not shared_protected_points or stub not in shared_protected_points)
+        and not stub_was_occupied
+    ):
         blocked_points.discard(stub)
 
     candidates = [
@@ -1359,8 +1365,8 @@ def _label_attachment_plan(
         occupied_penalty = 1 if candidate in blocked_points else 0
         pin_penalty = 1 if candidate == start else 0
         key = (
-            route_score + occupied_penalty,
             occupied_penalty,
+            route_score,
             pin_penalty,
             _wire_path_length(route),
             len(route),

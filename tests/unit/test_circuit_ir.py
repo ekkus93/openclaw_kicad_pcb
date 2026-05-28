@@ -180,6 +180,44 @@ def test_validate_ir_symbols_accepts_valid_explicit_unit() -> None:
     validate_ir_symbols(ir, symbol_index)
 
 
+def test_validate_ir_symbols_accepts_unconnected_pin_free_symbol(tmp_path: Path) -> None:
+    (tmp_path / "Mechanical.kicad_sym").write_text(
+        """\
+(kicad_symbol_lib (version 20230121) (generator test)
+  (symbol "MountingHole"
+    (property "Reference" "H" (at 0 5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "MountingHole" (at 0 -5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+)
+""",
+        encoding="utf-8",
+    )
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    symbol_index = SymbolIndex(symbols_dir=tmp_path, fallback_dirs=[fixtures_dir])
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [
+                {"ref": "H1", "symbol": "Mechanical:MountingHole"},
+                {"ref": "R1", "symbol": "TestLib:R"},
+                {"ref": "R2", "symbol": "TestLib:R"},
+            ],
+            "nets": [
+                {
+                    "name": "N1",
+                    "pins": [{"ref": "R1", "pin": "1"}, {"ref": "R2", "pin": "1"}],
+                }
+            ],
+        }
+    )
+
+    validate_ir_symbols(ir, symbol_index)
+
+
 def test_validate_ir_symbols_rejects_unknown_explicit_unit() -> None:
     fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
     symbol_index = SymbolIndex(symbols_dir=fixtures_dir)

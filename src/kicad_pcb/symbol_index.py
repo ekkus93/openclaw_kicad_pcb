@@ -9,6 +9,7 @@ from pathlib import Path
 from .config import SYMBOLS_CANDIDATES
 from .errors import ErrorCode, UserError
 from .sch_doc import (
+    read_lib_symbol_def_chain,
     read_lib_symbol_pins,
     read_lib_symbol_power_unit,
     read_lib_symbol_unit_pin_at,
@@ -95,9 +96,12 @@ class SymbolIndex:
         Raises ``UserError(SYMBOL_NOT_FOUND)`` if the symbol is not present in
         any searched library file.
 
+        Returns an empty set for genuine pin-free symbols that resolve
+        successfully (for example mechanical mounting holes).
+
         Raises ``UserError(SYMBOL_HAS_NO_PINS)`` if the symbol is declared in a
-        library file but resolves to 0 pins (e.g. a broken ``extends`` chain
-        where the base symbol does not exist).
+        library file but resolves to 0 pins because its ``extends`` chain is
+        broken.
         """
         if symbol_id in self._pins_cache:
             return self._pins_cache[symbol_id]
@@ -110,11 +114,14 @@ class SymbolIndex:
                 self._pins_cache[symbol_id] = pin_set
                 return pin_set
 
-        # Distinguish "declared in file but 0 pins" (broken extends chain, or
-        # genuinely pin-free symbol) from "name not in any library file at all".
-        # A regex text scan avoids a second full s-expression parse.
+        # Distinguish a genuine pin-free symbol from a broken extends chain.
+        # A complete definition chain with no pins is valid; a declared symbol
+        # with an incomplete chain should still raise SYMBOL_HAS_NO_PINS.
         _sym_header = re.compile(r'\(symbol\s+"' + re.escape(sym_name) + r'"')
         for directory in self._dirs:
+            if read_lib_symbol_def_chain(lib_name, sym_name, symbols_dir=directory):
+                self._pins_cache[symbol_id] = set()
+                return self._pins_cache[symbol_id]
             lib_file = directory / f"{lib_name}.kicad_sym"
             if lib_file.exists():
                 try:
@@ -123,7 +130,7 @@ class SymbolIndex:
                         raise UserError(
                             f"Symbol '{symbol_id}' is declared in library "
                             f"'{lib_name}' but resolves to 0 pins "
-                            f"(possible broken extends chain or pin-free symbol)",
+                            f"(possible broken extends chain)",
                             code=ErrorCode.SYMBOL_HAS_NO_PINS,
                             details={
                                 "symbol": symbol_id,

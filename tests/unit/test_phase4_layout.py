@@ -4971,6 +4971,7 @@ class TestApplyPostLayoutSnaps:
             '__fbdummy_R1__ [label="", shape=point, style=invis, width=0, height=0];'
             in dot_source
         )
+        assert "subgraph cluster_feedback" not in dot_source
         assert "R1 -> __fbdummy_R1__ [style=invis, weight=10];" in dot_source
 
     def test_build_dot_source_emits_stage_sequence_edges_within_block_layout(self) -> None:

@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-28T02:21:59Z - GPT-5.4 - Cleared the batch-2 runtime bucket and checkpointed the first retained generator-quality follow-up
+
+- Batch-2 no longer has any `evaluation_runtime` partial fixtures. `rp2040-microcontroller-core-circuit-mitayi-pico-d1` now evaluates normally after `SymbolIndex.get_pins()` was taught to return an empty set for genuine pin-free symbols with a complete definition chain, while still raising `SYMBOL_HAS_NO_PINS` for broken `extends` chains.
+- `solar-charger-mppt-circuit-sts1-pcb-sidepanel` also now evaluates normally after `graphviz_layout/dot_builder.py` stopped wrapping feedback dummy nodes in a `cluster_feedback` subgraph. The equivalent flat dummy-node edges avoid Graphviz 12's `flat_reorder` assertion when block-zone anchors are active.
+- Phase 5.1 in `docs/MODEL_KICAD_CORPUS2_TODO.md` is now effectively complete: focused tests for the retained harness fixes are green, a full ingest refresh still reports 18 accepted / 0 partial / 0 rejected fixtures, and all 9 batch-2 fixtures now produce ordinary evaluation reports.
+- A first retained label-attachment refinement is also in place in `router.py`: already-occupied label coordinates now outrank route length in `_label_attachment_plan()`, which reduced some duplicate-label collisions and shaved current mismatch counts on at least `rp2040` and `4-port-usb`, but it did not yet eliminate the remaining shared-anchor failures across the batch-2 generator-quality fixtures.
+
 ## 2026-05-28T02:00:43Z - GPT-5.4 - Completed corpus batch-2 Phase 4 triage and validated the docs checkpoint
 
 - `docs/MODEL_KICAD_CORPUS2_TODO.md` now assigns all 9 new batch-2 fixtures to concrete generic failure buckets instead of fixture-specific placeholders, and all per-fixture `Triage complete` boxes are checked.

@@ -178,16 +178,16 @@ Phase 2 notes:
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
 - [ ] `solar-charger-mppt-circuit-sts1-pcb-sidepanel`
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
 - [ ] `stm32g030-minimal-system-circuit-electrical`
   - [x] Ingested
   - [x] Evaluated
@@ -248,8 +248,8 @@ Phase 3 notes:
 
 Phase 4 notes:
 - Runtime/harness bucket:
-  - `rp2040-microcontroller-core-circuit-mitayi-pico-d1` -> evaluation/apply pipeline cannot currently handle the pin-free `Mechanical:MountingHole` extends chain cleanly.
-  - `solar-charger-mppt-circuit-sts1-pcb-sidepanel` -> Graphviz `dot` aborts with the deterministic `flat_reorder` assertion during layout.
+  - `rp2040-microcontroller-core-circuit-mitayi-pico-d1` -> baseline runtime issue was the evaluation/apply pipeline rejecting the genuine pin-free `Mechanical:MountingHole` symbol; fixed in Phase 5 by allowing resolved pin-free symbols to return an empty pin set.
+  - `solar-charger-mppt-circuit-sts1-pcb-sidepanel` -> baseline runtime issue was Graphviz `dot` aborting with the deterministic `flat_reorder` assertion; fixed in Phase 5 by emitting feedback dummy-node constraints directly in the main DOT graph instead of a `cluster_feedback` subgraph.
 - Generator-quality buckets:
   - `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware` -> power/ground topology + layout spread / relative-position drift + netlist export identity mismatch.
   - `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` -> connector bundle routing + multi-pin shared-lane routing + visible global-label strategy + layout spread drift.
@@ -264,9 +264,19 @@ Phase 4 notes:
 ## Phase 5 — Implement generic fixes for batch-2 failures
 
 ### 5.1 Fix ingestion/harness issues first
-- [ ] Prioritize generic pipeline bugs that block multiple new fixtures from even being evaluated.
-- [ ] Add or update focused tests for every retained harness fix.
-- [ ] Re-run ingestion and evaluation after each retained harness fix.
+- [x] Prioritize generic pipeline bugs that block multiple new fixtures from even being evaluated.
+- [x] Add or update focused tests for every retained harness fix.
+- [x] Re-run ingestion and evaluation after each retained harness fix.
+
+Phase 5 notes:
+- Retained harness fix: genuine pin-free symbols with a complete library definition chain now resolve as empty pin sets instead of raising `SYMBOL_HAS_NO_PINS`; broken `extends` chains still raise.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_symbol_index.py tests/unit/test_circuit_ir.py`.
+- `rp2040-microcontroller-core-circuit-mitayi-pico-d1` has been re-evaluated and now lands as a normal generator-quality **fail** (`electrical_equivalence`, `geometry_spread`, `relative_positions`, `label_strategy`, `overlap`, `role_counts`) instead of an `evaluation_runtime` partial.
+- Retained Graphviz fix: feedback dummy-node constraints are now emitted directly in the main DOT graph instead of a `cluster_feedback` subgraph, which avoids the `flat_reorder` crash when block-zone anchor constraints are also active.
+- Focused validation for that Graphviz fix is green: `uv run pytest tests/unit/test_phase4_layout.py -k feedback_dummy_nodes_have_empty_point_labels`.
+- `solar-charger-mppt-circuit-sts1-pcb-sidepanel` has been re-evaluated and now lands as a normal generator-quality **fail** (`electrical_equivalence`, `geometry_spread`, `relative_positions`, `label_strategy`, `overlap`, `role_counts`) instead of an `evaluation_runtime` partial.
+- Current runtime-partial batch-2 count is now 0 fixtures; all 9 batch-2 schematics now produce ordinary evaluation reports.
+- A full ingest refresh after the retained harness fixes still reports 18 accepted / 0 partial / 0 rejected fixtures.
 
 ### 5.2 Fix recurring layout/routing/generator issues second
 - [ ] Prioritize generic generator fixes that improve more than one new fixture.

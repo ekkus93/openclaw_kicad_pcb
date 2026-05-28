@@ -334,6 +334,18 @@ def test_label_attachment_plan_avoids_future_pin_endpoints() -> None:
     assert route[-1].x2 == anchor_x and route[-1].y2 == anchor_y
 
 
+def test_label_attachment_plan_avoids_occupied_pin_start_from_prior_label() -> None:
+    route, anchor_x, anchor_y = _label_attachment_plan(
+        pin_point=(38.10, 124.46),
+        pin_angle=270.0,
+        occupied_points={(38.10, 124.46)},
+    )
+
+    assert (anchor_x, anchor_y) != (38.10, 124.46)
+    assert route
+    assert route[-1].x2 == anchor_x and route[-1].y2 == anchor_y
+
+
 def test_simplify_iterates_until_no_more_merges() -> None:
     """Multiple consecutive colinear segments are fully merged."""
     # Three horizontal segments forming a chain
