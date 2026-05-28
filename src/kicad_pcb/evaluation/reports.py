@@ -139,15 +139,21 @@ def evaluate_model_corpus(
             skipped_count += 1
             continue
 
-        report = _evaluate_one_fixture(
-            FixtureEvaluationContext(
-                fixture_dir=fixture_dir,
-                metadata=metadata,
-                out_dir=out_dir / current_fixture_id,
-                adapter=adapter,
-                options=options,
-            )
+        context = FixtureEvaluationContext(
+            fixture_dir=fixture_dir,
+            metadata=metadata,
+            out_dir=out_dir / current_fixture_id,
+            adapter=adapter,
+            options=options,
         )
+        try:
+            report = _evaluate_one_fixture(context)
+        except Exception as exc:
+            report = _runtime_failure_report(
+                context,
+                exc,
+            )
+        
         if report.result in {"fail", "partial"}:
             failed_count += 1
         summaries.append(
@@ -269,6 +275,89 @@ def _evaluate_one_fixture(context: FixtureEvaluationContext) -> EvaluationReport
             "layout_features": str(out_dir / "generated_layout_features.json"),
         },
         actionable_failures=tuple(actionable_failures),
+    )
+    write_evaluation_artifacts(out_dir=out_dir, report=report)
+    return report
+
+
+def _runtime_failure_report(
+    context: FixtureEvaluationContext,
+    exc: Exception,
+) -> EvaluationReport:
+    out_dir = context.out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    runtime_message = str(exc).strip() or exc.__class__.__name__
+    generated_artifacts = {"project_dir": str(out_dir / "generated_project")}
+    schematic_path = out_dir / "generated.kicad_sch"
+    layout_features_path = out_dir / "generated_layout_features.json"
+    if schematic_path.exists():
+        generated_artifacts["schematic_path"] = str(schematic_path)
+    if layout_features_path.exists():
+        generated_artifacts["layout_features"] = str(layout_features_path)
+
+    electrical_report = ElectricalEquivalenceReport(
+        status="not_run",
+        mismatches=(
+            ElectricalMismatch(
+                field="evaluation_runtime",
+                expected="evaluation completed without generator/runtime exceptions",
+                actual=runtime_message,
+            ),
+        ),
+    )
+    intrinsic_report = IntrinsicQualityReport(
+        score=0.0,
+        sub_scores={
+            "validity": 0.0,
+            "overlap": 0.0,
+            "page_bounds": 0.0,
+            "routing_simplicity": 0.0,
+            "label_strategy": 0.0,
+            "spread": 0.0,
+            "power_symbols": 0.0,
+        },
+        reasons=("validity: evaluation runtime failed before intrinsic scoring could run.",),
+    )
+    similarity_report = LayoutSimilarityReport(
+        score=0.0,
+        sub_scores={
+            "role_counts": 0.0,
+            "relative_positions": 0.0,
+            "label_strategy": 0.0,
+            "geometry_spread": 0.0,
+            "wire_stub_ratio": 0.0,
+        },
+        reasons=(
+            "relative_positions: evaluation runtime failed before source comparison could run.",
+        ),
+    )
+    actionable_failures = (
+        ActionableFailure(
+            rule="evaluation_runtime",
+            severity="high",
+            message=f"evaluation runtime failed before report generation: {runtime_message}",
+            suggested_files=(
+                "src/kicad_pcb/evaluation/reports.py",
+                "src/kicad_pcb/commands/_sch_apply.py",
+                "src/kicad_pcb/graphviz_layout/__init__.py",
+            ),
+        ),
+    )
+    report = EvaluationReport(
+        schema_version="1.0",
+        fixture_id=context.metadata.fixture_id,
+        source_file_name=context.metadata.source_file_name,
+        result=_result_status(
+            electrical=electrical_report,
+            actionable_failures=list(actionable_failures),
+        ),
+        total_score=0.0,
+        electrical_equivalence=electrical_report,
+        intrinsic_quality=intrinsic_report,
+        source_similarity=similarity_report,
+        generated_artifacts=generated_artifacts,
+        actionable_failures=actionable_failures,
     )
     write_evaluation_artifacts(out_dir=out_dir, report=report)
     return report

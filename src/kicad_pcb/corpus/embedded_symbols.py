@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from kicad_pcb.sch_doc import SchematicDoc
@@ -76,8 +77,8 @@ def materialize_embedded_symbol_libraries(
         if not isinstance(symbol_id_node, StringNode) or ":" not in symbol_id_node.value:
             continue
         lib_name, sym_name = symbol_id_node.value.split(":", 1)
-        grouped_symbols.setdefault(lib_name, []).append(
-            _rewrite_embedded_symbol_for_library(item, sym_name=sym_name)
+        grouped_symbols.setdefault(lib_name, []).extend(
+            _materialize_symbol_variants(item, sym_name=sym_name)
         )
 
     if not grouped_symbols:
@@ -121,6 +122,64 @@ def _rewrite_embedded_symbol_for_library(symbol_node: ListNode, *, sym_name: str
             continue
         rewritten_items.append(child)
     return ListNode(tuple(rewritten_items), symbol_node.pos)
+
+
+_SUBSYMBOL_BASE_RE = re.compile(r"^(?P<base>.+)_\d+_\d+$")
+
+
+def _materialize_symbol_variants(symbol_node: ListNode, *, sym_name: str) -> list[ListNode]:
+    inferred_local_name = _infer_local_symbol_name(symbol_node)
+    if inferred_local_name is None or inferred_local_name == sym_name:
+        return [_rewrite_embedded_symbol_for_library(symbol_node, sym_name=sym_name)]
+
+    base_symbol = _rewrite_embedded_symbol_for_library(symbol_node, sym_name=inferred_local_name)
+    alias_symbol = _build_alias_symbol(
+        base_symbol,
+        alias_name=sym_name,
+        base_name=inferred_local_name,
+    )
+    return [base_symbol, alias_symbol]
+
+
+def _infer_local_symbol_name(symbol_node: ListNode) -> str | None:
+    candidate_bases: set[str] = set()
+    for child in symbol_node.items[2:]:
+        if (
+            not isinstance(child, ListNode)
+            or child.key != "symbol"
+            or len(child.items) < 2
+            or not isinstance(child.items[1], StringNode)
+        ):
+            continue
+        match = _SUBSYMBOL_BASE_RE.match(child.items[1].value)
+        if match is not None:
+            candidate_bases.add(match.group("base"))
+    if len(candidate_bases) == 1:
+        return next(iter(candidate_bases))
+    return None
+
+
+def _build_alias_symbol(base_symbol: ListNode, *, alias_name: str, base_name: str) -> ListNode:
+    alias_items: list[Node] = [base_symbol.items[0], StringNode(alias_name, base_symbol.pos)]
+    extends_node = L(atom("extends"), StringNode(base_name, base_symbol.pos))
+    inserted_extends = False
+
+    for child in base_symbol.items[2:]:
+        if isinstance(child, ListNode) and child.key == "symbol":
+            continue
+        if (
+            not inserted_extends
+            and isinstance(child, ListNode)
+            and child.key == "property"
+        ):
+            alias_items.append(extends_node)
+            inserted_extends = True
+        alias_items.append(child)
+
+    if not inserted_extends:
+        alias_items.append(extends_node)
+
+    return ListNode(tuple(alias_items), base_symbol.pos)
 
 
 def _qualified_symbol_ids(doc: SchematicDoc) -> dict[str, str]:

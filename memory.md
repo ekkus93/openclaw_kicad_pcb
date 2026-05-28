@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-28T01:55:44Z - GPT-5.4 - Completed corpus batch-2 Phase 3 evaluation and revalidated the repo gate
+
+- `src/kicad_pcb/corpus/embedded_symbols.py` now preserves alias-backed embedded symbol base names when child subsymbol names imply a hidden local root, then emits a base-plus-alias materialization shape so KiCad 9 can load fixtures like the `SamacSys_Parts:NCV317MBSTT3G` current-source schematic during corpus evaluation.
+- `src/kicad_pcb/evaluation/reports.py` now converts per-fixture runtime exceptions into structured partial `evaluation_runtime` reports instead of aborting `model-corpus evaluate`, so the full 18-fixture sweep completes and writes actionable failures for the two remaining runtime-partial batch-2 fixtures.
+- Batch-2 corpus Phase 3 is now complete in `docs/MODEL_KICAD_CORPUS2_TODO.md`: all 9 new fixtures are marked ingested and evaluated, with the current split recorded as 7 electrical-plus-layout failures and 2 structured runtime partials (`rp2040-microcontroller-core-circuit-mitayi-pico-d1`, `solar-charger-mppt-circuit-sts1-pcb-sidepanel`).
+- The full repo gate was rerun successfully on this post-Phase-3 state: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all passed (`2470 passed, 1 skipped`).
+
 ## 2026-05-28T01:32:02Z - GPT-5.4 - Restored the repo gate and completed corpus batch-2 Phase 2 ingest
 
 - The repo gate is green again after the late-snap/layout cleanup: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass, including the formerly red NE5532/layout regression cluster.

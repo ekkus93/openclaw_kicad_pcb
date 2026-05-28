@@ -124,84 +124,92 @@ Phase 2 notes:
 ## Phase 3 — Run baseline evaluation on the expanded corpus
 
 ### 3.1 Evaluate all ready fixtures after ingest refresh
-- [ ] Run:
-  - [ ] `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval --require-kicad`
-- [ ] Confirm the command completes and writes refreshed summary artifacts.
-- [ ] Confirm every ready new fixture receives an evaluation report directory.
+- [x] Run:
+  - [x] `uv run python -m kicad_pcb.cli model-corpus evaluate --corpus-dir tests/fixtures/model_corpus --out-dir code_review/generated/model_eval --require-kicad`
+- [x] Confirm the command completes and writes refreshed summary artifacts.
+- [x] Confirm every ready new fixture receives an evaluation report directory.
 
 ### 3.2 Capture batch-2 evaluation status
-- [ ] Record the new `code_review/generated/model_eval/summary.json`.
-- [ ] Record which of the new fixtures:
-  - [ ] pass electrical equivalence,
-  - [ ] fail electrical equivalence,
-  - [ ] fail layout/readability metrics,
-  - [ ] fail due to symbol/library/pin issues,
-  - [ ] fail due to evaluation harness issues.
+- [x] Record the new `code_review/generated/model_eval/summary.json`.
+- [x] Record which of the new fixtures:
+  - [x] pass electrical equivalence,
+  - [x] fail electrical equivalence,
+  - [x] fail layout/readability metrics,
+  - [x] fail due to symbol/library/pin issues,
+  - [x] fail due to evaluation harness issues.
 
 ### 3.3 Create a per-fixture triage checklist
 - [ ] `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `buck-converter-xl4015-incubadora`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `rp2040-microcontroller-core-circuit-mitayi-pico-d1`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `solar-charger-mppt-circuit-sts1-pcb-sidepanel`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `stm32g030-minimal-system-circuit-electrical`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `w5500-spi-interface-decoupling-termination-openknx-reg1`
-  - [ ] Ingested
-  - [ ] Evaluated
+  - [x] Ingested
+  - [x] Evaluated
   - [ ] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
+
+Phase 3 notes:
+- `code_review/generated/model_eval/summary.json` now reports `evaluated_count=18`, `failed_count=18`, `skipped_count=0`.
+- Every new batch-2 fixture now has an evaluation report directory under `code_review/generated/model_eval/<fixture_id>/`.
+- Current batch-2 split:
+  - 7 fixtures fail electrical equivalence and also show recurring layout/readability drift (`12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`, `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`, `buck-converter-xl4015-incubadora`, `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`, `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`, `stm32g030-minimal-system-circuit-electrical`, `w5500-spi-interface-decoupling-termination-openknx-reg1`).
+  - 2 fixtures currently land as evaluation-runtime partials with `electrical_equivalence.status="not_run"` (`rp2040-microcontroller-core-circuit-mitayi-pico-d1`, `solar-charger-mppt-circuit-sts1-pcb-sidepanel`).
+  - No new batch-2 fixture is currently in the symbol/library/pin-lookup failure bucket after the alias-preserving embedded-symbol materialization fix.
 
 ---
 

@@ -166,6 +166,43 @@ def test_model_corpus_evaluate_uses_fixture_embedded_symbol_libraries(tmp_path: 
     ).exists()
 
 
+def test_model_corpus_evaluate_converts_runtime_failures_into_partial_reports(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture_dir = _write_fixture(tmp_path)
+
+    def _raise_runtime_error(*args, **kwargs):
+        raise RuntimeError("dot timed out after 24.24s")
+
+    monkeypatch.setattr(
+        "kicad_pcb.evaluation.reports._apply_netlist_to_project",
+        _raise_runtime_error,
+    )
+
+    result = cmd_model_corpus_evaluate(
+        SimpleNamespace(
+            corpus_dir=fixture_dir.parent,
+            out_dir=tmp_path / "eval",
+            fixture=None,
+            require_kicad=False,
+            heuristic_profile=None,
+            label_mode=None,
+        )
+    )
+
+    assert result.evaluated_count == 1
+    assert result.failed_count == 1
+
+    report_path = tmp_path / "eval" / fixture_dir.name / "evaluation_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["result"] == "partial"
+    assert report["electrical_equivalence"]["status"] == "not_run"
+    assert report["electrical_equivalence"]["mismatches"][0]["field"] == "evaluation_runtime"
+    assert report["actionable_failures"][0]["rule"] == "evaluation_runtime"
+    assert "dot timed out after 24.24s" in report["actionable_failures"][0]["message"]
+
+
 def _write_fixture(tmp_path: Path) -> Path:
     fixture_dir = tmp_path / "corpus" / "fixture-1"
     fixture_dir.mkdir(parents=True)
