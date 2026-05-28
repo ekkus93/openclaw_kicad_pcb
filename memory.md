@@ -1,5 +1,12 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-28T02:00:43Z - GPT-5.4 - Completed corpus batch-2 Phase 4 triage and validated the docs checkpoint
+
+- `docs/MODEL_KICAD_CORPUS2_TODO.md` now assigns all 9 new batch-2 fixtures to concrete generic failure buckets instead of fixture-specific placeholders, and all per-fixture `Triage complete` boxes are checked.
+- The two retained runtime/harness buckets are now explicit: `rp2040-microcontroller-core-circuit-mitayi-pico-d1` fails on a pin-free `Mechanical:MountingHole` extends chain during evaluation/apply, while `solar-charger-mppt-circuit-sts1-pcb-sidepanel` fails deterministically in Graphviz `dot` with the `flat_reorder` assertion.
+- The seven generator-quality batch-2 failures cluster around reusable categories rather than one-off quirks: netlist export identity mismatches and relative-position drift hit all 7, geometry spread hits 6, label/global-label strategy hits all 7, and the dominant domain buckets are power/ground topology, connector/shared-lane routing, and compact local decoupling placement.
+- The repo gate was rerun successfully on this Phase 4 docs/status checkpoint too: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all passed (`2470 passed, 1 skipped`).
+
 ## 2026-05-28T01:55:44Z - GPT-5.4 - Completed corpus batch-2 Phase 3 evaluation and revalidated the repo gate
 
 - `src/kicad_pcb/corpus/embedded_symbols.py` now preserves alias-backed embedded symbol base names when child subsymbol names imply a hidden local root, then emits a base-plus-alias materialization shape so KiCad 9 can load fixtures like the `SamacSys_Parts:NCV317MBSTT3G` current-source schematic during corpus evaluation.

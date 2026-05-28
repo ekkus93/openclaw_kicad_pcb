@@ -142,63 +142,63 @@ Phase 2 notes:
 - [ ] `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `buck-converter-xl4015-incubadora`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `rp2040-microcontroller-core-circuit-mitayi-pico-d1`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `solar-charger-mppt-circuit-sts1-pcb-sidepanel`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `stm32g030-minimal-system-circuit-electrical`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
 - [ ] `w5500-spi-interface-decoupling-termination-openknx-reg1`
   - [x] Ingested
   - [x] Evaluated
-  - [ ] Triage complete
+  - [x] Triage complete
   - [ ] Generic fix landed
   - [ ] Re-evaluated
   - [ ] Passes or has documented remaining blocker
@@ -216,35 +216,48 @@ Phase 3 notes:
 ## Phase 4 — Group failures by generic root cause
 
 ### 4.1 Triage ingestion and symbol issues
-- [ ] Identify any new fixtures blocked by:
-  - [ ] malformed source schematic structure,
-  - [ ] unsupported KiCad version quirks,
-  - [ ] embedded/custom symbol extraction gaps,
-  - [ ] symbol library lookup failures,
-  - [ ] CircuitIR validation/autofix failures.
+- [x] Identify any new fixtures blocked by:
+  - [x] malformed source schematic structure — none isolated in the current batch-2 ready set.
+  - [x] unsupported KiCad version quirks — none isolated after the KiCad 9 ingest/evaluate reruns.
+  - [x] embedded/custom symbol extraction gaps — resolved in Phase 3 by the alias-preserving embedded-symbol materialization fix.
+  - [x] symbol library lookup failures — none remain in the current batch-2 reports.
+  - [x] CircuitIR validation/autofix failures — none in the current batch-2 ready set.
 
 ### 4.2 Triage evaluation/runtime issues
-- [ ] Identify any new fixtures blocked by:
-  - [ ] `kicad-cli` export failures,
-  - [ ] Graphviz/dot layout failures,
-  - [ ] schematic emission crashes,
-  - [ ] report generation failures,
-  - [ ] nondeterministic artifact generation.
+- [x] Identify any new fixtures blocked by:
+  - [x] `kicad-cli` export failures — none remain after the Phase 3 embedded-symbol fix unblocked `4-channel-switched-constant-current-source`.
+  - [x] Graphviz/dot layout failures — `solar-charger-mppt-circuit-sts1-pcb-sidepanel` now isolates a deterministic `dot` `flat_reorder` assertion failure.
+  - [x] schematic emission crashes — `rp2040-microcontroller-core-circuit-mitayi-pico-d1` now isolates a pin-free `Mechanical:MountingHole` symbol resolution failure in the evaluation/apply pipeline.
+  - [x] report generation failures — handled generically by `evaluation_runtime` partial reports; no separate writer-only crash bucket remains.
+  - [x] nondeterministic artifact generation — not observed in the repeated Phase 3 reruns.
 
 ### 4.3 Triage generator-quality issues
-- [ ] Group recurring new-fixture failures into reusable buckets:
-  - [ ] power and ground topology
-  - [ ] connector bundle routing
-  - [ ] compact local decoupling placement
-  - [ ] multi-pin bus/shared-lane routing
-  - [ ] visible label/global-label strategy
-  - [ ] multi-unit symbol orientation
-  - [ ] layout spread / relative position drift
-  - [ ] netlist export identity mismatches
+- [x] Group recurring new-fixture failures into reusable buckets:
+  - [x] power and ground topology — dominant in `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`, `buck-converter-xl4015-incubadora`, `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`, `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`, and `w5500-spi-interface-decoupling-termination-openknx-reg1`.
+  - [x] connector bundle routing — dominant in `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` and also present in `w5500-spi-interface-decoupling-termination-openknx-reg1`.
+  - [x] compact local decoupling placement — recurring in `buck-converter-xl4015-incubadora`, `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`, and `w5500-spi-interface-decoupling-termination-openknx-reg1`.
+  - [x] multi-pin bus/shared-lane routing — dominant in `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` and `stm32g030-minimal-system-circuit-electrical`.
+  - [x] visible label/global-label strategy — present across all 7 electrical-fail fixtures; excess global-label exposure is explicit on `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` and `stm32g030-minimal-system-circuit-electrical`.
+  - [x] multi-unit symbol orientation — not yet a dominant batch-2 failure bucket.
+  - [x] layout spread / relative position drift — present across all 7 generator-quality failures, with `geometry_spread` also failing on 6 of the 7.
+  - [x] netlist export identity mismatches — present across all 7 generator-quality failures via `electrical_equivalence`.
 
 ### 4.4 Triage acceptance criteria
-- [ ] Every failing new fixture is assigned a generic failure category.
-- [ ] No failure is tracked only as “fixture-specific weirdness” without a concrete technical description.
+- [x] Every failing new fixture is assigned a generic failure category.
+- [x] No failure is tracked only as “fixture-specific weirdness” without a concrete technical description.
+
+Phase 4 notes:
+- Runtime/harness bucket:
+  - `rp2040-microcontroller-core-circuit-mitayi-pico-d1` -> evaluation/apply pipeline cannot currently handle the pin-free `Mechanical:MountingHole` extends chain cleanly.
+  - `solar-charger-mppt-circuit-sts1-pcb-sidepanel` -> Graphviz `dot` aborts with the deterministic `flat_reorder` assertion during layout.
+- Generator-quality buckets:
+  - `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware` -> power/ground topology + layout spread / relative-position drift + netlist export identity mismatch.
+  - `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` -> connector bundle routing + multi-pin shared-lane routing + visible global-label strategy + layout spread drift.
+  - `buck-converter-xl4015-incubadora` -> power/ground topology + compact local decoupling placement + layout spread drift.
+  - `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter` -> power/ground topology + compact local decoupling placement + layout spread drift + stubby routing.
+  - `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware` -> power/ground topology + relative-position/layout spread drift.
+  - `stm32g030-minimal-system-circuit-electrical` -> multi-pin shared-lane routing + visible global-label strategy + role-count / relative-position drift.
+  - `w5500-spi-interface-decoupling-termination-openknx-reg1` -> connector/decoupling routing + power/ground topology + layout spread drift.
 
 ---
 
