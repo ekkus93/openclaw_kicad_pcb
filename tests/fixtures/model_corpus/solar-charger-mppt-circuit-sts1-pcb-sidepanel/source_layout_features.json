@@ -1,0 +1,655 @@
+{
+  "counts": {
+    "global_labels": 0,
+    "junctions": 18,
+    "labels": 2,
+    "no_connects": 0,
+    "non_power_symbols": 19,
+    "power_symbols": 10,
+    "symbols": 29,
+    "wires": 72
+  },
+  "geometry": {
+    "average_symbol_spacing_mm": 6.794,
+    "distinct_x_columns": 16,
+    "max_x": 184.15,
+    "max_y": 101.6,
+    "min_x": 48.514,
+    "min_y": 61.976,
+    "wire_stub_ratio": 0.694
+  },
+  "intrinsic_lints": [
+    {
+      "code": "LAY002",
+      "message": "50/72 wire segments (69%) are stub-length (≤5.08 mm); schematic may be using label-stub style instead of connected wires",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (177.8,80.01) and (184.15,86.36) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (177.8,80.01) and (170.18,83.82) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (177.8,80.01) and (168.91,72.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (156.21,97.79) and (156.21,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (78.232,67.564) and (68.326,61.976) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,99.06) and (102.87,95.25) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,99.06) and (107.95,99.06) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (184.15,97.79) and (184.15,101.6) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (83.82,93.98) and (92.075,88.9) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (83.82,93.98) and (83.82,88.9) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (83.82,93.98) and (92.075,93.98) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,87.63) and (111.76,83.82) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,87.63) and (102.87,95.25) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,87.63) and (107.95,83.82) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (48.514,93.98) and (48.514,90.17) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (111.76,83.82) and (107.95,83.82) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (170.18,83.82) and (170.18,91.44) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (170.18,83.82) and (161.29,87.63) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,72.39) and (162.56,67.31) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,72.39) and (168.91,67.31) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,72.39) and (168.91,72.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (92.075,88.9) and (83.82,88.9) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (92.075,88.9) and (92.075,93.98) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,67.31) and (168.91,67.31) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (162.56,67.31) and (168.91,72.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (170.18,91.44) and (161.29,87.63) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (102.87,95.25) and (107.95,99.06) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (168.91,67.31) and (168.91,72.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (83.82,88.9) and (92.075,93.98) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY005",
+      "message": "Wire graph has 19 disconnected islands (threshold 2); schematic may have isolated regions",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    }
+  ],
+  "net_label_strategy": {
+    "global_label_count": 0,
+    "local_label_count": 2,
+    "power_symbol_count": 11
+  },
+  "relative_positions": [
+    {
+      "a": "C61",
+      "b": "U11",
+      "relation": "above"
+    },
+    {
+      "a": "R11",
+      "b": "U11",
+      "relation": "above"
+    },
+    {
+      "a": "U11",
+      "b": "C61",
+      "relation": "below"
+    },
+    {
+      "a": "U11",
+      "b": "R11",
+      "relation": "below"
+    }
+  ],
+  "role_counts": {
+    "major_ic": 1,
+    "passive": 14,
+    "power_symbol": 10,
+    "support": 4
+  },
+  "schema_version": "1.0",
+  "source": {
+    "file": "source.kicad_sch",
+    "fixture_id": "solar-charger-mppt-circuit-sts1-pcb-sidepanel"
+  },
+  "symbols": {
+    "#PWR010": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR010",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 102.87,
+      "y": 99.06
+    },
+    "#PWR0103": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0103",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 156.21,
+      "y": 101.6
+    },
+    "#PWR0104": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0104",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 184.15,
+      "y": 101.6
+    },
+    "#PWR0105": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0105",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 107.95,
+      "y": 99.06
+    },
+    "#PWR0106": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0106",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 92.075,
+      "y": 93.98
+    },
+    "#PWR0108": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0108",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 48.514,
+      "y": 93.98
+    },
+    "#PWR0112": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR0112",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 78.232,
+      "y": 67.564
+    },
+    "#PWR014": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR014",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 162.56,
+      "y": 72.39
+    },
+    "#PWR016": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR016",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 168.91,
+      "y": 72.39
+    },
+    "#PWR05": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR05",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 83.82,
+      "y": 93.98
+    },
+    "C11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C11",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "22u",
+      "x": 92.075,
+      "y": 88.9
+    },
+    "C21": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C21",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "1n",
+      "x": 102.87,
+      "y": 95.25
+    },
+    "C31": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C31",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "1n",
+      "x": 156.21,
+      "y": 97.79
+    },
+    "C41": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C41",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "22u",
+      "x": 162.56,
+      "y": 67.31
+    },
+    "C51": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C51",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "1u",
+      "x": 161.29,
+      "y": 87.63
+    },
+    "C61": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C61",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C_Small",
+      "unit": "1",
+      "value": "1u",
+      "x": 83.82,
+      "y": 88.9
+    },
+    "D11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "D11",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Diode:PMEG2020EH",
+      "unit": "1",
+      "value": "PMEG2020EH",
+      "x": 132.08,
+      "y": 68.58
+    },
+    "D21": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "D21",
+      "role_guess": "support",
+      "rotation": 270.0,
+      "symbol_id": "Device:D_Schottky",
+      "unit": "1",
+      "value": "SMM4F5.0",
+      "x": 168.91,
+      "y": 67.31
+    },
+    "L1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "L1",
+      "role_guess": "passive",
+      "rotation": 90.0,
+      "symbol_id": "Device:L_Small",
+      "unit": "1",
+      "value": "10u",
+      "x": 107.95,
+      "y": 83.82
+    },
+    "MPPT1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPPT1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "SamacSys:SPV1040TTR",
+      "unit": "1",
+      "value": "SPV1040TTR",
+      "x": 111.76,
+      "y": 83.82
+    },
+    "R11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R11",
+      "role_guess": "passive",
+      "rotation": 90.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "10m",
+      "x": 68.326,
+      "y": 83.82
+    },
+    "R21": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R21",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "1k",
+      "x": 102.87,
+      "y": 87.63
+    },
+    "R31": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R31",
+      "role_guess": "passive",
+      "rotation": 270.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "1k",
+      "x": 170.18,
+      "y": 83.82
+    },
+    "R41": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R41",
+      "role_guess": "passive",
+      "rotation": 270.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "1k",
+      "x": 170.18,
+      "y": 91.44
+    },
+    "R51": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R51",
+      "role_guess": "passive",
+      "rotation": 270.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "220m",
+      "x": 177.8,
+      "y": 80.01
+    },
+    "R61": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R61",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "3k",
+      "x": 184.15,
+      "y": 86.36
+    },
+    "R71": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R71",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R_Small",
+      "unit": "1",
+      "value": "1k",
+      "x": 184.15,
+      "y": 97.79
+    },
+    "SC1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "SC1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:Solar_Cell",
+      "unit": "1",
+      "value": "Solar_Cell",
+      "x": 48.514,
+      "y": 90.17
+    },
+    "U11": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U11",
+      "role_guess": "major_ic",
+      "rotation": 90.0,
+      "symbol_id": "Amplifier_Current:INA180A4",
+      "unit": "1",
+      "value": "INA180A4",
+      "x": 68.326,
+      "y": 61.976
+    }
+  }
+}

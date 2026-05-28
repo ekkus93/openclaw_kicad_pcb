@@ -1,0 +1,29 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+  "fixture_id": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+  "generator": "CircuitSnips",
+  "global_label_count": 0,
+  "has_circuit_ir": true,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 3,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 4,
+  "requires_custom_symbols": true,
+  "source_file_name": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter.kicad_sch",
+  "source_path": "model_kicad_files/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter.kicad_sch",
+  "source_url": null,
+  "status": "ready",
+  "status_reasons": [
+    "normalized:replaced_invalid_root_uuid",
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
+  ],
+  "symbol_count": 19,
+  "title": "LMR51450SDRRR  ‑  6V-36V to 5.00V @ 4A Buck Converter",
+  "wire_count": 54
+}

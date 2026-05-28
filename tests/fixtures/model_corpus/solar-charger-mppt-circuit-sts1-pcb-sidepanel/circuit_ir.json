@@ -1,0 +1,512 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C11",
+      "symbol": "Device:C_Small",
+      "value": "22u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "C21",
+      "symbol": "Device:C_Small",
+      "value": "1n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "C31",
+      "symbol": "Device:C_Small",
+      "value": "1n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C41",
+      "symbol": "Device:C_Small",
+      "value": "22u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "C51",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "TMK212B7105KGHTR",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C61",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PMEG2020EH_EJ.pdf",
+        "Description": "",
+        "Footprint": "Diode_SMD:D_SOD-123F"
+      },
+      "footprint": "Diode_SMD:D_SOD-123F",
+      "ref": "D11",
+      "symbol": "Diode:PMEG2020EH",
+      "value": "PMEG2020EH"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "STS_semiconductor:DIO_SMM4F5.0A-TR"
+      },
+      "footprint": "STS_semiconductor:DIO_SMM4F5.0A-TR",
+      "ref": "D21",
+      "symbol": "Device:D_Schottky",
+      "value": "SMM4F5.0"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "STS_Inductor_SMD:IND_XAL6060-103MEC"
+      },
+      "footprint": "STS_Inductor_SMD:IND_XAL6060-103MEC",
+      "ref": "L1",
+      "symbol": "Device:L_Small",
+      "value": "10u"
+    },
+    {
+      "fields": {
+        "Datasheet": "",
+        "Description": "Switching Voltage Regulators Hi Eff Solar Charger MPPT 0.3V to 5.5V",
+        "Footprint": "Package_SO:TSSOP-8_4.4x3mm_P0.65mm",
+        "Height": "1.2",
+        "Manufacturer_Name": "STMicroelectronics",
+        "Manufacturer_Part_Number": "SPV1040TTR",
+        "Mouser Part Number": "511-SPV1040TTR",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/STMicroelectronics/SPV1040TTR?qs=AHLdMMsI%252Bhr%2Fj5DYN1qCwQ%3D%3D"
+      },
+      "footprint": "Package_SO:TSSOP-8_4.4x3mm_P0.65mm",
+      "ref": "MPPT1",
+      "symbol": "SamacSys:SPV1040TTR",
+      "value": "SPV1040TTR"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R11",
+      "symbol": "Device:R_Small",
+      "value": "10m"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R21",
+      "symbol": "Device:R_Small",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R31",
+      "symbol": "Device:R_Small",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R41",
+      "symbol": "Device:R_Small",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R51",
+      "symbol": "Device:R_Small",
+      "value": "220m"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R61",
+      "symbol": "Device:R_Small",
+      "value": "3k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "R71",
+      "symbol": "Device:R_Small",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "STS_solder:3G30A_40x80_Z+"
+      },
+      "footprint": "STS_solder:3G30A_40x80_Z+",
+      "ref": "SC1",
+      "symbol": "Device:Solar_Cell",
+      "value": "Solar_Cell"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.ti.com/lit/ds/symlink/ina180.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-5"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "ref": "U11",
+      "symbol": "Amplifier_Current:INA180A4",
+      "value": "INA180A4"
+    }
+  ],
+  "nets": [
+    {
+      "name": "/CUR1_OUT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C61",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/MPPT1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R41",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R51",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R61",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/MPPT1_OUT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C41",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D21",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R31",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R51",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SC1_I+",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "U11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SC1_V+",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SC1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C31",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C41",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C61",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R71",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SC1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D11-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "MPPT1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPPT1-ICTRL_MINUS)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C51",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R41",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPPT1-ICTRL_PLUS)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C51",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R31",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPPT1-MPP-SET)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPPT1-VCTRL)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C31",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "MPPT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R61",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R71",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

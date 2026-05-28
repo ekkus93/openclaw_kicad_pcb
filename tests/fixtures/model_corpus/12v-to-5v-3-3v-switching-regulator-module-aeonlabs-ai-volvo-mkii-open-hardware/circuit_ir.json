@@ -1,0 +1,1340 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326",
+        "Description": "",
+        "Footprint": "AeonLabs_Power:AUR9718 ST1S09 SON95P300X300X100-7N"
+      },
+      "footprint": "AeonLabs_Power:AUR9718 ST1S09 SON95P300X300X100-7N",
+      "ref": "AUR1",
+      "symbol": "Power_Management:ST01S09_AUR9718x_DFN_3x3mm_6_pin",
+      "value": "AUR9718x_DFN_3x3mm_6_pin"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "ref": "AUR_C1",
+      "symbol": "Device:C",
+      "value": "22uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "ref": "AUR_C2",
+      "symbol": "Device:C",
+      "value": "4.7uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",
+      "ref": "AUR_R1",
+      "symbol": "Device:R",
+      "value": "75k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",
+      "ref": "AUR_R2",
+      "symbol": "Device:R",
+      "value": "24k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Inductor_SMD:L_1210_3225Metric"
+      },
+      "footprint": "Inductor_SMD:L_1210_3225Metric",
+      "ref": "AUR_l1",
+      "symbol": "Device:L",
+      "value": "3.3uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "36-2999-ND",
+        "Footprint": "AeonLabs_Power:pcb battery 3 pin",
+        "Manufacturer_Name": "Keystone",
+        "Manufacturer_Part_Number": "2999",
+        "URL": "https://www.digikey.com.au/product-detail/en/keystone-electronics/2999/36-2999-ND/2137863"
+      },
+      "footprint": "AeonLabs_Power:pcb battery 3 pin",
+      "ref": "BT1",
+      "symbol": "Device:Battery_Cell",
+      "value": "Battery_Cell"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "311-1140-1-ND",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "Manufacturer_Name": "Yageo",
+        "Manufacturer_Part_Number": "CC0805KRX7R9BB104",
+        "URL": "https://www.digikey.com.au/product-detail/en/yageo/CC0805KRX7R9BB104/311-1140-1-ND/303050"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C1",
+      "symbol": "Device:C",
+      "value": "0.1uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C2",
+      "symbol": "Device:CP",
+      "value": "100pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C3",
+      "symbol": "Device:CP",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C32",
+      "symbol": "Device:CP",
+      "value": "4.7uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "478-1692-1-ND",
+        "Footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B",
+        "Manufacturer_Name": "AVX",
+        "Manufacturer_Part_Number": "TAJB476K006RNJ",
+        "URL": "https://www.digikey.com/product-detail/en/avx-corporation/TAJB476K006RNJ/478-1692-1-ND/564724",
+        "Voltage": "10V"
+      },
+      "footprint": "Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B",
+      "ref": "C4",
+      "symbol": "Device:CP",
+      "value": "47uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C42",
+      "symbol": "Device:CP",
+      "value": "100pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C5",
+      "symbol": "Device:CP",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "PCE3925CT-ND",
+        "Footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+        "Manufacturer_Name": "Panasonic",
+        "Manufacturer_Part_Number": "EEE-1HA330XP",
+        "URL": "https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301",
+        "Voltage": "50V"
+      },
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x7.7",
+      "ref": "C6",
+      "symbol": "Device:CP",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "B360A-FDICT-ND",
+        "Footprint": "Diode_SMD:D_SMA_Handsoldering",
+        "Manufacturer_Name": "Diodes Inc",
+        "Manufacturer_Part_Number": "B360A-13-F",
+        "URL": "https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980"
+      },
+      "footprint": "Diode_SMD:D_SMA_Handsoldering",
+      "ref": "D1",
+      "symbol": "Device:D_Schottky",
+      "value": "SS36"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "B360A-FDICT-ND",
+        "Footprint": "Diode_SMD:D_SMA_Handsoldering",
+        "Manufacturer_Name": "Diodes Inc",
+        "Manufacturer_Part_Number": "B360A-13-F",
+        "URL": "https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980"
+      },
+      "footprint": "Diode_SMD:D_SMA_Handsoldering",
+      "ref": "D11",
+      "symbol": "Device:D_Schottky",
+      "value": "SS36"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "DFLS2100-7DICT-ND",
+        "Footprint": "Diode_SMD:D_PowerDI-123",
+        "Manufacturer_Name": "Diodes Inc.",
+        "Manufacturer_Part_Number": "DFLS2100-7",
+        "URL": "https://www.digikey.com/product-detail/en/diodes-incorporated/DFLS2100-7/DFLS2100-7DICT-ND/3451552"
+      },
+      "footprint": "Diode_SMD:D_PowerDI-123",
+      "ref": "D13",
+      "symbol": "Device:D_Schottky",
+      "value": "D_Schottky"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "ER4",
+      "symbol": "Device:R",
+      "value": "1R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "ER5",
+      "symbol": "Device:R",
+      "value": "1R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "ER6",
+      "symbol": "Device:R",
+      "value": "1R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AeonLabs_Power:Common Mode Inductor SQ1010 8x5mm"
+      },
+      "footprint": "AeonLabs_Power:Common Mode Inductor SQ1010 8x5mm",
+      "ref": "HLL1",
+      "symbol": "Power_Management:Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm",
+      "value": "SQ1010_8x5mm"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Inductor_SMD:L_1210_3225Metric"
+      },
+      "footprint": "Inductor_SMD:L_1210_3225Metric",
+      "ref": "HLL2",
+      "symbol": "Device:L",
+      "value": "6.8uH"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "26V, 12-bit, i2c output current/voltage/power monitor",
+        "Footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+        "MF": "Texas Instruments",
+        "MP": "INA219AIDCNR",
+        "Package": "SOT-23-8 Texas Instruments",
+        "Price": "None",
+        "Purchase-URL": "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&manufacturer=Texas Instruments&part_name=INA219AIDCNR&search_term=None",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"
+      },
+      "footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+      "ref": "INA1",
+      "symbol": "AeonLabs_Sensors:INA219AIDCNR",
+      "value": "INA219AIDCNR"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "INA1_C1",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "INA1_C4",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "INA1_C5",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "26V, 12-bit, i2c output current/voltage/power monitor",
+        "Footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+        "MF": "Texas Instruments",
+        "MP": "INA219AIDCNR",
+        "Package": "SOT-23-8 Texas Instruments",
+        "Price": "None",
+        "Purchase-URL": "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&manufacturer=Texas Instruments&part_name=INA219AIDCNR&search_term=None",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"
+      },
+      "footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+      "ref": "INA4",
+      "symbol": "AeonLabs_Sensors:INA219AIDCNR",
+      "value": "INA219AIDCNR"
+    },
+    {
+      "fields": {
+        "Availability": "In Stock",
+        "Check_prices": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "26V, 12-bit, i2c output current/voltage/power monitor",
+        "Footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+        "MF": "Texas Instruments",
+        "MP": "INA219AIDCNR",
+        "Package": "SOT-23-8 Texas Instruments",
+        "Price": "None",
+        "Purchase-URL": "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&manufacturer=Texas Instruments&part_name=INA219AIDCNR&search_term=None",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"
+      },
+      "footprint": "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N",
+      "ref": "INA5",
+      "symbol": "AeonLabs_Sensors:INA219AIDCNR",
+      "value": "INA219AIDCNR"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "MPC1",
+      "symbol": "Device:C",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "MPC2",
+      "symbol": "Device:C",
+      "value": "100Nf"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "MPC3",
+      "symbol": "Device:C",
+      "value": "220PF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "MPC4",
+      "symbol": "Device:C",
+      "value": "22UF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Diode_SMD:D_1206_3216Metric"
+      },
+      "footprint": "Diode_SMD:D_1206_3216Metric",
+      "ref": "MPD1",
+      "symbol": "Device:D_Schottky",
+      "value": "SS12"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Inductor_SMD:L_1210_3225Metric"
+      },
+      "footprint": "Inductor_SMD:L_1210_3225Metric",
+      "ref": "MPL1",
+      "symbol": "Device:L",
+      "value": "10uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR1",
+      "symbol": "Device:R",
+      "value": "24.9K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR2",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR3",
+      "symbol": "Device:R",
+      "value": "200K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR4",
+      "symbol": "Device:R",
+      "value": "68.1K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR5",
+      "symbol": "Device:R",
+      "value": "40.2K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "MPR6",
+      "symbol": "Device:R",
+      "value": "124K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Digikey Part Number": "311-1.00KCRCT-ND",
+        "Footprint": "Resistor_SMD:R_0805_2012Metric",
+        "Manufacturer_Name": "Yageo",
+        "Manufacturer_Part_Number": "RC0805FR-071KL",
+        "URL": "https://www.digikey.com/product-detail/en/yageo/RC0805FR-071KL/311-1.00KCRCT-ND/730391"
+      },
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "ref": "R69",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "TestPoint:TestPoint_Pad_D1.0mm"
+      },
+      "footprint": "TestPoint:TestPoint_Pad_D1.0mm",
+      "ref": "TP1",
+      "symbol": "Connector:TestPoint",
+      "value": "VIN"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "TestPoint:TestPoint_Pad_D1.0mm"
+      },
+      "footprint": "TestPoint:TestPoint_Pad_D1.0mm",
+      "ref": "TP2",
+      "symbol": "Connector:TestPoint",
+      "value": "VOut"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "TestPoint:TestPoint_Pad_D1.0mm"
+      },
+      "footprint": "TestPoint:TestPoint_Pad_D1.0mm",
+      "ref": "TP3",
+      "symbol": "Connector:TestPoint",
+      "value": "GND"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "TestPoint:TestPoint_Pad_D1.0mm"
+      },
+      "footprint": "TestPoint:TestPoint_Pad_D1.0mm",
+      "ref": "TP4",
+      "symbol": "Connector:TestPoint",
+      "value": "12V"
+    },
+    {
+      "fields": {
+        "AVAILABILITY": "Unavailable",
+        "DESCRIPTION": "",
+        "Datasheet": "",
+        "Description": "",
+        "Footprint": "AeonLabs_Power:MP1584EN SOIC127P600X170-9N",
+        "MF": "Monolithic Power Systems",
+        "MP": "MP1584EN",
+        "PACKAGE": "None",
+        "PRICE": "None",
+        "STANDARD": "IPC-7351B"
+      },
+      "footprint": "AeonLabs_Power:MP1584EN SOIC127P600X170-9N",
+      "ref": "U2",
+      "symbol": "Power_Management:MP1584EN",
+      "value": "MP1584EN"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+12V",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C32",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C42",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "ER4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "HLL2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPC1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPR1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPR2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "TP4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+3V3",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "ER6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA1_C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA1_C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA1_C5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "INA5",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "INA5",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "INA5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "AUR_C2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "ER5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "TP1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "12V-BAT",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "12V_PROBE_IN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "ER4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "HLL1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "3V3_PROBE_IN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "AUR_C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "AUR_R1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "AUR_l1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "ER6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "TP2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "5V_PROBE_IN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "ER5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPC4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPL1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "AUR_C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "AUR_C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "AUR_R2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "BT1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C32",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C42",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "HLL1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA1_C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA1_C4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "INA1_C5",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "INA5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPC1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPC4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPD1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "MPR5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "TP3",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND-BAT",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "HLL1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GPIO8_I2C_SDA",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "INA5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GPIO9_I2C_SCL",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "INA1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "INA4",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "INA5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MCU_VBAT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "BT1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R69",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(AUR1-FB)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "AUR_R1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "AUR_R2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(AUR1-SW)",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "AUR1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "AUR_l1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D1-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "HLL1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D13-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R69",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPC3-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "MPC3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPR4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(MPD1-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "MPC2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPD1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPL1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-BST)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "MPC2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-COMP)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "MPC3",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-FB)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "MPR5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "MPR6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-FREQ)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "MPR3",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(HLL2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "HLL2",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

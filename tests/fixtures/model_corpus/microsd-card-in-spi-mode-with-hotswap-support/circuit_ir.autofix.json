@@ -1,0 +1,663 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B105KBHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C36",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B106KLHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C37",
+      "symbol": "Device:C_Small",
+      "value": "10u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C38",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B105KBHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C40",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B105KBHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C42",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B106KLHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C43",
+      "symbol": "Device:C_Small",
+      "value": "10u"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.hirose.com/product/en/download_file/key_name/DM3/category/Catalog/doc_file_id/49662/?file_category_id=4&item_id=195&is_series=1",
+        "Description": "Micro SD Card Socket with card detection pins",
+        "Footprint": "Connector_Card:microSD_HC_Hirose_DM3AT-SF-PEJM5",
+        "LibRef": "",
+        "SKU": "HR1964CT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Connector_Card:microSD_HC_Hirose_DM3AT-SF-PEJM5",
+      "ref": "J8",
+      "symbol": "Connector:Micro_SD_Card_Det_Hirose_DM3AT",
+      "value": "DM3AT"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R26",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R58",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R59",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R60",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R61",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1001V",
+        "SKU": "P1.00KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R62",
+      "symbol": "Device:R_US",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R63",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R64",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf",
+        "Description": "Single NOT Gate, Low-Voltage CMOS",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-5",
+        "LibRef": "SN74AHC1G04DBVR",
+        "SKU": "296-1089-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "ref": "U14",
+      "symbol": "74xGxx:74AHC1G04",
+      "value": "74AHC1G04"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ti.com/lit/ds/symlink/sn74axc4t774.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1747866034462",
+        "Description": "4 Channel Bidirectional Level Shifter with Selectable Direction, TSSOP-16",
+        "Footprint": "Package_SO:TSSOP-16_4.4x5mm_P0.65mm",
+        "SKU": "296-SN74AXC4T774PWRCT-ND",
+        "Supplier": "Digi-Key",
+        "Supplier Part Number": "296-SN74AXC4T774PWRCT-ND"
+      },
+      "footprint": "Package_SO:TSSOP-16_4.4x5mm_P0.65mm",
+      "ref": "U21",
+      "symbol": "project libraries:SN74AXC4T774",
+      "value": "SN74AXC4T774"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.diodes.com/assets/Datasheets/AP22913.pdf",
+        "Description": "Load Switch w/ Discharge Resistor",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-6",
+        "SKU": "AP22913W6-7DICT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "ref": "U22",
+      "symbol": "project libraries:AP22913W6-7",
+      "value": "AP22913W6-7"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+3.3V",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C36",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C40",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R62",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U22",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/+3.3V@SD",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C37",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C38",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C42",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R58",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R59",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R60",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R61",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R64",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CLK@SD",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R26",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CMD_MOSI@SD",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R58",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DAT0_MISO@SD",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R60",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DET_A",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R62",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DET_B",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C43",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R63",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SD_CARD_ENABLE",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "U14",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SD_CS@SD",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R64",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SPI.MISO",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SPI.MOSI",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SPI.SCLK",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SPI.SD_CS",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~SD_CARD_ENABLE",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U14",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C36",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C37",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C38",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C40",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C42",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C43",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R26",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R63",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U14",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U22",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U22",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J8-DAT1)",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R59",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J8-DAT2)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R61",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "version": "1"
+}

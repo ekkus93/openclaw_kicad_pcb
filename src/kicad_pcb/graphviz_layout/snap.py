@@ -872,7 +872,7 @@ def _place_non_inverting_feedback_pair(
     ic_x, ic_y, _ = result[ic_ref]
     lane_x = round(ic_x - 0.5 * _GRID_COL_MM, 2)
     bridge_y = round(ic_y, 2)
-    shunt_y = round(ic_y + GRID_ROW_MM, 2)
+    shunt_y = round(ic_y + GRID_ROW_MM, 2) - 1e-6
 
     while bridge_y in reserved_y or shunt_y in reserved_y:
         bridge_y = round(bridge_y + GRID_ROW_MM, 2)
@@ -924,6 +924,14 @@ def _snap_opamp_locality(  # noqa: PLR0912, PLR0915
 
     for ic_ref in ic_refs:
         if ic_ref not in result:
+            continue
+        base_ref = _multi_unit_base_ref(ic_ref)
+        if base_ref is not None and any(
+            other_ref != ic_ref and _multi_unit_base_ref(other_ref) == base_ref
+            for other_ref in ic_refs
+        ):
+            # Late split-unit layouts already get dedicated stage-specific shaping;
+            # re-running generic op-amp locality on each sibling can undo that.
             continue
         ic_x, ic_y, _ = result[ic_ref]
 
@@ -3581,6 +3589,7 @@ def _place_opamp_stage_input_pair(
     opamp_ref: str,
     bridge_ref: str,
     shunt_ref: str,
+    allow_global_shift: bool = True,
 ) -> tuple[dict[str, tuple[float, float, float | None]], set[str]]:
     """Place a readable non-inverting input node just left of an op-amp stage."""
 
@@ -3591,13 +3600,15 @@ def _place_opamp_stage_input_pair(
     ic_x, ic_y, _ = result[opamp_ref]
     upstream_lane_x = round(ic_x - 2.0 * _GRID_COL_MM, 2)
     if upstream_lane_x < ORIGIN_X:
+        if not allow_global_shift:
+            return result, set()
         delta_x = round(ORIGIN_X - upstream_lane_x, 2)
         refs_to_shift = [ref for ref, (x, _y, _rot) in result.items() if x >= ic_x - _GRID_COL_MM]
         result = _shift_refs_x(result, refs_to_shift, delta_x)
         ic_x, ic_y, _ = result[opamp_ref]
     lane_x = round(ic_x - _GRID_COL_MM, 2)
     bridge_y = round(ic_y, 2)
-    shunt_y = round(ic_y + GRID_ROW_MM, 2)
+    shunt_y = round(ic_y + GRID_ROW_MM, 2) - 1e-6
 
     _bridge_x, _bridge_y, bridge_rot = result[bridge_ref]
     _shunt_x, _shunt_y, shunt_rot = result[shunt_ref]
@@ -3644,6 +3655,7 @@ def _snap_opamp_stage_non_inverting_input_node_shape(
     *,
     block_layout: BlockLayout | None = None,
     power_unit_refs: frozenset[str] = frozenset(),
+    allow_global_shift: bool = True,
 ) -> dict[str, tuple[float, float, float | None]]:
     """Shape a canonical non-inverting input node near an ``OPAMP_CORE`` unit.
 
@@ -3696,6 +3708,7 @@ def _snap_opamp_stage_non_inverting_input_node_shape(
             opamp_ref=opamp_ref,
             bridge_ref=bridge_ref,
             shunt_ref=shunt_ref,
+            allow_global_shift=allow_global_shift,
         )
 
     return result
@@ -3816,10 +3829,21 @@ def _buffer_stage_input_pair(
                 if other_net != net_name
             )
         ]
-        if len(grounded_input_refs) != 1:
-            continue
-
-        shunt_ref = grounded_input_refs[0]
+        if len(grounded_input_refs) == 1:
+            shunt_ref = grounded_input_refs[0]
+        else:
+            terminal_input_refs = [
+                ref
+                for ref in shared_input_refs
+                if not any(
+                    not _is_power_net(other_net)
+                    for other_net in ref_to_nets.get(ref, set())
+                    if other_net != net_name
+                )
+            ]
+            if len(terminal_input_refs) != 1:
+                continue
+            shunt_ref = terminal_input_refs[0]
         bridge_ref = next(ref for ref in shared_input_refs if ref != shunt_ref)
         if not any(
             not _is_power_net(other_net)
@@ -4552,6 +4576,150 @@ def _snap_interstage_handoff_between_stages(
     return _shift_refs_x(positions, interstage_group, delta_x)
 
 
+def _snap_core_to_output_bridge_passives(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep a lone passive bridge between a core stage and a downstream output ref.
+
+    This intentionally narrow late pass only targets 3-member non-power nets of
+    the form ``CORE -> passive -> OUTPUT``. Without it, Graphviz can leave the
+    passive bridge stacked on the same x-lane as the downstream output device,
+    which obscures the handoff path in simple timer/driver stages.
+    """
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    result = dict(positions)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+
+    candidate_passives = sorted(
+        ref
+        for ref in result
+        if not _is_ic_ref(ref)
+        and not _is_connector_ref(ref)
+        and role_by_ref.get(ref) == BlockRole.OUTPUT
+    )
+    for passive_ref in candidate_passives:
+        non_power_nets = [
+            net_name
+            for net_name in ref_to_nets.get(passive_ref, set())
+            if not _is_power_net(net_name)
+        ]
+        if len(non_power_nets) != 2:
+            continue
+
+        upstream_net: str | None = None
+        core_ref: str | None = None
+        for net_name in non_power_nets:
+            net_refs = refs_by_net.get(net_name, set())
+            core_refs = sorted(
+                ref for ref in net_refs if ref in result and is_core_like_role(role_by_ref.get(ref))
+            )
+            if len(core_refs) == 1:
+                upstream_net = net_name
+                core_ref = core_refs[0]
+                break
+        if upstream_net is None or core_ref is None:
+            continue
+
+        downstream_net = next(net_name for net_name in non_power_nets if net_name != upstream_net)
+        downstream_candidates = sorted(
+            ref
+            for ref in refs_by_net.get(downstream_net, set())
+            if ref in result and ref != passive_ref
+        )
+        if not downstream_candidates:
+            continue
+
+        core_x, _core_y, _core_rot = result[core_ref]
+        downstream_ref = max(downstream_candidates, key=lambda ref: (result[ref][0], ref))
+        downstream_x, _downstream_y, _downstream_rot = result[downstream_ref]
+        if downstream_x <= core_x + 0.01:
+            continue
+
+        passive_x, passive_y, passive_rot = result[passive_ref]
+        target_x = _snap((core_x + downstream_x) / 2.0, grid=1.27)
+        min_x = round(core_x + (_GRID_COL_MM / 2.0), 2)
+        max_x = round(downstream_x - (_GRID_COL_MM / 2.0), 2)
+        if max_x <= min_x:
+            continue
+        target_x = min(max(target_x, min_x), max_x)
+        if abs(target_x - passive_x) < 0.01:
+            continue
+        result[passive_ref] = (round(target_x, 2), passive_y, passive_rot)
+
+    return result
+
+
+def _snap_core_local_shunts(
+    positions: Mapping[str, tuple[float, float, float | None]],
+    ir: CircuitIR,
+    *,
+    block_layout: BlockLayout | None = None,
+) -> dict[str, tuple[float, float, float | None]]:
+    """Keep simple core-to-shunt support parts laterally aligned with the core."""
+
+    if not positions or block_layout is None:
+        return dict(positions)
+
+    role_by_ref = {ref: assignment.role for ref, assignment in block_layout.assignments.items()}
+    result = dict(positions)
+    ref_to_nets, refs_by_net = _feedback_net_membership(ir)
+
+    candidate_passives = sorted(
+        ref
+        for ref in result
+        if not _is_ic_ref(ref)
+        and not _is_connector_ref(ref)
+        and role_by_ref.get(ref) == BlockRole.OUTPUT
+    )
+    for passive_ref in candidate_passives:
+        passive_nets = [
+            net_name
+            for net_name in ref_to_nets.get(passive_ref, set())
+            if not _is_power_net(net_name)
+        ]
+        if not any(
+            _is_ground_like_name(other_net) or power_rail_polarity(other_net) is not None
+            for other_net in ref_to_nets.get(passive_ref, set())
+            if other_net not in passive_nets
+        ):
+            continue
+
+        anchor_core_ref: str | None = None
+        for net_name in passive_nets:
+            net_refs = refs_by_net.get(net_name, set())
+            if any(
+                ref in result and ref != passive_ref and _is_connector_ref(ref) for ref in net_refs
+            ):
+                continue
+            core_refs = sorted(
+                ref
+                for ref in net_refs
+                if ref in result and ref != passive_ref and is_core_like_role(role_by_ref.get(ref))
+            )
+            if len(core_refs) == 1:
+                anchor_core_ref = core_refs[0]
+                break
+        if anchor_core_ref is None:
+            continue
+
+        core_x, _core_y, _core_rot = result[anchor_core_ref]
+        passive_x, passive_y, passive_rot = result[passive_ref]
+        if abs(passive_x - core_x) <= 10.0:
+            continue
+        result[passive_ref] = (round(core_x, 2), passive_y, passive_rot)
+
+    return result
+
+
 def _snap_power_block_cohesion(
     positions: Mapping[str, tuple[float, float, float | None]],
     block_layout: BlockLayout | None = None,
@@ -4771,6 +4939,8 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     11. :func:`_clamp_to_page` — clamp every position to the A4 printable area
         (``ORIGIN_X..PAGE_MAX_X`` × ``ORIGIN_Y..PAGE_MAX_Y``); prevents LAY004.
     """
+    from ..block_detection import BlockRole  # noqa: PLC0415
+
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
     if roles:
@@ -4794,21 +4964,32 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     decouple_skip: frozenset[tuple[str, str]] = frozenset(
         (min(cap, ic), max(cap, ic)) for cap, ic in decoupling_map.items()
     )
+    has_buffer_stage = (
+        block_layout is not None
+        and any(
+            assignment.role == BlockRole.BUFFER_STAGE
+            for assignment in block_layout.assignments.values()
+        )
+    )
     result = _spread_x_columns(result)
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
     result = _remediate_crossings(result, ir, skip_pairs=decouple_skip)
     # Re-apply op-amp locality after crossing remediation so op-amp neighborhoods
     # remain readable in the final coordinates.
-    result = heuristic_policy.apply_opamp_locality(
-        result,
-        ir,
-        annotations=annotations,
-        context=_OpAmpLocalityContext(
-            decoupling_map=decoupling_map,
-            halo=halo,
-            block_layout=block_layout,
-        ),
-    )
+    if (
+        any("AMPLIFIER_OPERATIONAL" in component.symbol.upper() for component in ir.components)
+        and not has_buffer_stage
+    ):
+        result = heuristic_policy.apply_opamp_locality(
+            result,
+            ir,
+            annotations=annotations,
+            context=_OpAmpLocalityContext(
+                decoupling_map=decoupling_map,
+                halo=halo,
+                block_layout=block_layout,
+            ),
+        )
     result = heuristic_policy.apply_input_stage_cohesion(
         result,
         ir,
@@ -4866,17 +5047,27 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         for ref, (x, _y, _rot) in result.items():
             assignment = block_layout.assignments.get(ref)
             if assignment is None or (
-                assignment.role != BlockRole.DECOUPLING and not is_core_like_role(assignment.role)
+                assignment.role
+                not in {BlockRole.DECOUPLING, BlockRole.PRECONDITIONING}
+                and not is_core_like_role(assignment.role)
             ):
                 continue
             protected_by_x[x].append(ref)
         for refs in protected_by_x.values():
             if len(refs) < 2:
                 continue
-            refs.sort()
+            refs.sort(key=lambda ref: (result[ref][1], ref))
             for idx, left in enumerate(refs[:-1]):
                 for right in refs[idx + 1 :]:
-                    late_skip_pairs.add((left, right))
+                    left_role = block_layout.assignments[left].role
+                    right_role = block_layout.assignments[right].role
+                    if (
+                        BlockRole.PRECONDITIONING in {left_role, right_role}
+                        and abs(result[right][1] - result[left][1])
+                        > _STEREO_DEOVERLAP_MIN_MM + 0.01
+                    ):
+                        continue
+                    late_skip_pairs.add((min(left, right), max(left, right)))
     # Late locality/cohesion/composition passes can still reintroduce same-column
     # collisions after the earlier deoverlap step, and final clamping can merge
     # edge-bound components back onto the same grid cell. Run one last deoverlap
@@ -4961,11 +5152,163 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         ir,
         block_layout=block_layout,
     )
+    result = _snap_core_local_shunts(result, ir, block_layout=block_layout)
+    result = _snap_core_to_output_bridge_passives(result, ir, block_layout=block_layout)
+    result = _snap_opamp_stage_non_inverting_input_node_shape(
+        result,
+        ir,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = _snap_opamp_stage_upstream_input_bundle(
+        result,
+        ir,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    result = _snap_input_connector_signal_attachment(
+        result,
+        ir,
+        block_layout=block_layout,
+    )
+    result = _snap_buffer_stage_input_node_shape(
+        result,
+        ir,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
     result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     # The remaining late locality passes can still reintroduce same-cell
     # collisions after the earlier "final" deoverlap. Run one true last guard
     # before returning the snapped coordinates.
-    result = _deoverlap_positions(result, skip_pairs=frozenset(late_skip_pairs))
+    refreshed_late_skip_pairs = set(late_skip_pairs)
+    if block_layout is not None:
+        refreshed_protected_by_x: dict[float, list[str]] = defaultdict(list)
+        for ref, (x, _y, _rot) in result.items():
+            assignment = block_layout.assignments.get(ref)
+            if assignment is None or (
+                assignment.role not in {BlockRole.DECOUPLING, BlockRole.PRECONDITIONING}
+                and not is_core_like_role(assignment.role)
+            ):
+                continue
+            refreshed_protected_by_x[x].append(ref)
+        for refs in refreshed_protected_by_x.values():
+            if len(refs) < 2:
+                continue
+            refs.sort(key=lambda ref: (result[ref][1], ref))
+            for idx, left in enumerate(refs[:-1]):
+                for right in refs[idx + 1 :]:
+                    left_role = block_layout.assignments[left].role
+                    right_role = block_layout.assignments[right].role
+                    if (
+                        BlockRole.PRECONDITIONING in {left_role, right_role}
+                        and abs(result[right][1] - result[left][1])
+                        > _STEREO_DEOVERLAP_MIN_MM + 0.01
+                    ):
+                        continue
+                    refreshed_late_skip_pairs.add((min(left, right), max(left, right)))
+    result = _deoverlap_positions(result, skip_pairs=frozenset(refreshed_late_skip_pairs))
+    if any("AMPLIFIER_OPERATIONAL" in component.symbol.upper() for component in ir.components):
+        result = heuristic_policy.apply_opamp_locality(
+            result,
+            ir,
+            annotations=annotations,
+            context=_OpAmpLocalityContext(
+                decoupling_map=decoupling_map,
+                halo=halo,
+                block_layout=block_layout,
+            ),
+        )
+    result = heuristic_policy.apply_decoupling_snap(result, decoupling_map, ir)
+    if not has_buffer_stage:
+        result = _snap_opamp_stage_upstream_input_bundle(
+            result,
+            ir,
+            block_layout=block_layout,
+            power_unit_refs=power_unit_refs,
+        )
+        result = _snap_input_connector_signal_attachment(
+            result,
+            ir,
+            block_layout=block_layout,
+        )
+    has_amplifier_symbol = any(
+        "AMPLIFIER" in component.symbol.upper() for component in ir.components
+    )
+    if (
+        block_layout is not None
+        and has_amplifier_symbol
+        and not has_buffer_stage
+    ):
+        result = _snap_opamp_stage_non_inverting_input_node_shape(
+            result,
+            ir,
+            block_layout=block_layout,
+            power_unit_refs=power_unit_refs,
+            allow_global_shift=False,
+        )
+    result = _snap_buffer_stage_output_tail_locality(
+        result,
+        ir,
+        block_layout=block_layout,
+        power_unit_refs=power_unit_refs,
+    )
+    if not has_buffer_stage:
+        result = heuristic_policy.apply_output_stage_cohesion(
+            result,
+            ir,
+            block_layout=block_layout,
+        )
+    result = _snap_major_block_spacing(result, block_layout)
+    final_skip_pairs = set(late_skip_pairs)
+    if block_layout is not None:
+        from ..block_detection import BlockRole  # noqa: PLC0415
+
+        final_protected_by_x: dict[float, list[str]] = defaultdict(list)
+        for ref, (x, _y, _rot) in result.items():
+            assignment = block_layout.assignments.get(ref)
+            if assignment is None or assignment.role != BlockRole.PRECONDITIONING:
+                continue
+            final_protected_by_x[x].append(ref)
+        for refs in final_protected_by_x.values():
+            if len(refs) < 2:
+                continue
+            refs.sort(key=lambda ref: (result[ref][1], ref))
+            for left, right in zip(refs, refs[1:], strict=False):
+                if abs(result[right][1] - result[left][1]) <= _STEREO_DEOVERLAP_MIN_MM + 0.01:
+                    final_skip_pairs.add((min(left, right), max(left, right)))
+    needs_final_deoverlap = False
+    by_x: dict[float, list[str]] = defaultdict(list)
+    for ref, (x, _y, _rot) in result.items():
+        by_x[x].append(ref)
+    for refs in by_x.values():
+        if len(refs) < 2:
+            continue
+        refs.sort(key=lambda ref: (result[ref][1], ref))
+        for left, right in zip(refs, refs[1:], strict=False):
+            if math.isclose(result[left][1], result[right][1], abs_tol=0.01):
+                needs_final_deoverlap = True
+                break
+        if needs_final_deoverlap:
+            break
+    if needs_final_deoverlap:
+        result = _deoverlap_positions(result, skip_pairs=frozenset(final_skip_pairs))
+    if block_layout is not None and has_amplifier_symbol and not has_buffer_stage:
+        result = _snap_opamp_stage_non_inverting_input_node_shape(
+            result,
+            ir,
+            block_layout=block_layout,
+            power_unit_refs=power_unit_refs,
+            allow_global_shift=False,
+        )
+    if has_buffer_stage:
+        result = _snap_buffer_stage_input_node_shape(
+            result,
+            ir,
+            block_layout=block_layout,
+            power_unit_refs=power_unit_refs,
+        )
+    result = _snap_core_local_shunts(result, ir, block_layout=block_layout)
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result

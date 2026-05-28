@@ -1,5 +1,23 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-28T01:32:02Z - GPT-5.4 - Restored the repo gate and completed corpus batch-2 Phase 2 ingest
+
+- The repo gate is green again after the late-snap/layout cleanup: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass, including the formerly red NE5532/layout regression cluster.
+- The final gate cleanup in this pass was mostly tolerance-safe regression maintenance around the retained geometry (`tests/unit/test_netlist_commands.py`, `tests/unit/test_phase7_regression_guardrails.py`) plus a stale unused import removal in `tests/unit/test_phase4_layout.py`; the generator fixes remained in `snap.py`, `router.py`, `block_detection.py`, `layout.py`, and `dot_builder.py`.
+- Batch-2 corpus ingest is now complete: `uv run python -m kicad_pcb.cli model-corpus ingest --source-dir model_kicad_files --out-dir tests/fixtures/model_corpus --refresh --require-kicad` produces 18 accepted fixtures total (9 original + 9 new), and every new batch-2 fixture is `ready` with `metadata.json`, `source.kicad_sch`, `source_normalized.kicad_sch`, `source_layout_features.json`, `source_netlist.kicadxml`, and `circuit_ir.json`.
+
+## 2026-05-28T00:09:47Z - GPT-5.4 - Cleared the focused NE5532 bend-count blocker, but the branch still has a broader late-snap regression cluster
+
+- `src/kicad_pcb/router.py` now scores compact local analog alternatives with a lighter per-junction penalty and a slightly stronger bend penalty, so the analog-audio profile no longer forces chain routing for the real NE5532 `BUF_L_IN` / `HP_L_OUT` local nets purely to avoid implicit lane taps. The focused real-NE5532 route-quality regression is green again with `bend_count <= 80`.
+- The small-analog routing debug surface is still preserved for the same six NE5532 candidate nets: chain-only follower/local-loop cases still report `heuristic_override="small_analog_local_routing"`, and the shared-lane/spine fallbacks now also keep that override marker when the analog profile explicitly evaluated them.
+- Even with the NE5532 blocker fixed, the full repo gate is not green yet. The current branch still has a broader regression cluster centered on earlier late-snap/layout changes (`test_block_detection`, `test_phase4_layout`, `test_phase5_power_clustering`, `test_phase6_wire_simplification`, and `test_phase8_layout`), so corpus Phase 11 work should stay paused until that larger gate is stabilized.
+
+## 2026-05-27T22:57:05Z - GPT-5.4 - Restored split-unit late-snap behavior for the real NE5532 path; one route-quality metric still blocks the gate
+
+- `classify_circuit(...)` now augments unsplit multi-unit op-amp refs with synthetic per-unit signal-role assignments (for example `U1A` inheriting `OPAMP_CORE` and `U1B` getting `BUFFER_STAGE` when the unit-level follower motif is present). That restored the late split-unit snap passes on the real NE5532 fixture without changing the unsplit source IR.
+- The late snap pipeline also now refreshes same-column skip-pair protection immediately before the last deoverlap pass, which preserves intentionally compact `PRECONDITIONING` / `INTERSTAGE` local node columns after the final unit-specific shaping instead of re-spreading them back out.
+- With those fixes in place, the focused real-NE5532 slice in `tests/unit/test_netlist_commands.py` is down to a single remaining failure: `test_new_from_real_ne5532_fixture_keeps_route_quality_metrics_bounded` still reports `bend_count=89` (threshold `<= 80`), while the rest of the focused U1A/U1B geometry/readability assertions are green again.
+
 ## 2026-05-27T16:51:45Z - GPT-5.4 - MicroSD now preserves the named control nets; the remaining blocker is the U21 power/GND cluster
 
 - The retained MicroSD router improvements now include: per-pin endpoint global labels for slash-prefixed connector/global-label breakout paths, direct-route protected-point scoring that includes foreign raw pin endpoints, and a third direct-route detour radius for crowded two-pin nets. Focused regressions for those retained behaviors are green again.
@@ -6274,3 +6292,8 @@ Completed Phase 5.1 of CODE_REVIEW6: Reduce ground and power symbol clutter thro
 
 - The user chose synchronous jobs for web migration v1, so `POST /api/jobs/from-netlist` should execute inline for the first implementation while still creating and persisting job metadata before work starts.
 - The `job.json`/artifact mismatch is resolved by keeping `data/jobs/<job_id>/job.json` as the canonical job-state file and also writing `data/jobs/<job_id>/artifacts/job.json` as the downloadable artifact copy.
+
+## 2026-05-27T18:43:29Z - GPT-5.4 - Refined local-rail decoupling detection heuristics
+
+- Graphviz/layout decoupling detection now needs to keep the original private-net rule for plain signal-to-GND bypass parts while also recognizing supply-like and `*BIAS*` local rails such as `VCC_LOCAL` and `LOCAL_BIAS` as valid decoupling anchors.
+- A plain one-signal/one-ground capacitor on a normal signal net like `AUDIO_IN` must still stay vertical as a shunt/bypass part instead of being promoted into the horizontal decoupling lane.

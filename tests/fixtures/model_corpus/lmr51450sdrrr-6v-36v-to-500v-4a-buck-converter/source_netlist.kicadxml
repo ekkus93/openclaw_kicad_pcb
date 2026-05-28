@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch</source>
+    <date>2026-05-27T18:27:46-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>LMR51450SDRRR  ‑  6V-36V to 5.00V @ 4A Buck Converter</title>
+        <company>CircuitSnips</company>
+        <rev>1</rev>
+        <date>2026-05-27</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C8">
+      <value>4u7 100V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Mouser"> GRM21BR61H475ME51L </field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Mouser" value=" GRM21BR61H475ME51L "/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9c6150bf-c8f2-40d6-b1db-d0d9da8bb052</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>100n 100V</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>48df081c-3fbb-445d-9783-3bc5f05d2825</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>47u 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e94259ae-4dc8-45f8-8b4f-da3327445701</tstamps>
+    </comp>
+    <comp ref="C17">
+      <value>47u 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>572da6b3-5695-4b75-b082-c98b8885da6e</tstamps>
+    </comp>
+    <comp ref="C18">
+      <value>47u 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7935bfba-0bab-4631-b344-917c6d2027ac</tstamps>
+    </comp>
+    <comp ref="Cboot1">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor</description>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8ab6a1bf-84c6-49b7-acae-05400099d166</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>SD36-01FTG</value>
+      <footprint>PCM_Diode_SMD_AKL:D_SOD-323_TVS</footprint>
+      <datasheet>~</datasheet>
+      <description>Bidirectional transient-voltage-suppression diode</description>
+      <fields>
+        <field name="Footprint">PCM_Diode_SMD_AKL:D_SOD-323_TVS</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Bidirectional transient-voltage-suppression diode</field>
+      </fields>
+      <libsource lib="Device" part="D_TVS" description="Bidirectional transient-voltage-suppression diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode TVS thyrector"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d80ffe30-8549-46a8-a1cb-544ef1527038</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>VSSB420S</value>
+      <footprint>Diode_SMD:D_SMB</footprint>
+      <datasheet>~</datasheet>
+      <description>Schottky diode, Generic Symbol, Alternate KiCAD Library</description>
+      <fields>
+        <field name="Mouser"> 78-VSSB420S-M352T</field>
+        <field name="Footprint">Diode_SMD:D_SMB</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Schottky diode, Generic Symbol, Alternate KiCAD Library</field>
+      </fields>
+      <libsource lib="PCM_Diode_Schottky_AKL" part="D_Schottky_Generic" description="Schottky diode, Generic Symbol, Alternate KiCAD Library"/>
+      <property name="Mouser" value=" 78-VSSB420S-M352T"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky generic"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>521cd973-0b4e-4328-a601-e4e10342a361</tstamps>
+    </comp>
+    <comp ref="F1">
+      <value>PTSLR08058V400</value>
+      <footprint>Fuse:Fuse_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resettable fuse, polymeric positive temperature coefficient</description>
+      <fields>
+        <field name="Footprint">Fuse:Fuse_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resettable fuse, polymeric positive temperature coefficient</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9865c708-7fcc-432b-ad3c-3a60eff322d5</tstamps>
+    </comp>
+    <comp ref="IC1">
+      <value>LMR51450FSQDRRRQ1</value>
+      <footprint>Library:SON50P300X300X80-13N-D</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/lmr51450-q1.pdf?ts=1754385833072&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FLMR51450-Q1%252Fpart-details%252FLMR51450FSQDRRRQ1%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Dapp-null-nul</datasheet>
+      <description>Switching Voltage Regulators Automotive 36V 6A Synchronous buck con</description>
+      <fields>
+        <field name="Height">0.8</field>
+        <field name="Mouser Part Number">595-LMR51450FSQDRRQ1</field>
+        <field name="Mouser Price/Stock">https://www.mouser.co.uk/ProductDetail/Texas-Instruments/LMR51450FSQDRRRQ1?qs=iLKYxzqNS76%252BZaNCQflYjw%3D%3D</field>
+        <field name="Manufacturer_Name">Texas Instruments</field>
+        <field name="Manufacturer_Part_Number">LMR51450FSQDRRRQ1</field>
+        <field name="Footprint">Library:SON50P300X300X80-13N-D</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/lmr51450-q1.pdf?ts=1754385833072&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FLMR51450-Q1%252Fpart-details%252FLMR51450FSQDRRRQ1%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Dapp-null-nul</field>
+        <field name="Description">Switching Voltage Regulators Automotive 36V 6A Synchronous buck con</field>
+      </fields>
+      <libsource lib="Library" part="LMR51450FSQDRRRQ1" description="Switching Voltage Regulators Automotive 36V 6A Synchronous buck con"/>
+      <property name="Height" value="0.8"/>
+      <property name="Mouser Part Number" value="595-LMR51450FSQDRRQ1"/>
+      <property name="Mouser Price/Stock" value="https://www.mouser.co.uk/ProductDetail/Texas-Instruments/LMR51450FSQDRRRQ1?qs=iLKYxzqNS76%252BZaNCQflYjw%3D%3D"/>
+      <property name="Manufacturer_Name" value="Texas Instruments"/>
+      <property name="Manufacturer_Part_Number" value="LMR51450FSQDRRRQ1"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>53254e2d-da24-447c-9c55-b4c5cf9fcbb3</tstamps>
+    </comp>
+    <comp ref="J7">
+      <value>PWR IN</value>
+      <footprint>Library:1778764</footprint>
+      <datasheet>~</datasheet>
+      <description>Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <fields>
+        <field name="Footprint">Library:1778764</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e0187bc3-6214-49e2-9a05-3596e528962e</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>3u3</value>
+      <footprint>Library:XAL5030332MEC</footprint>
+      <datasheet>~</datasheet>
+      <description>Inductor</description>
+      <fields>
+        <field name="Mouser"> XAL5030-332MEC </field>
+        <field name="Footprint">Library:XAL5030332MEC</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Mouser" value=" XAL5030-332MEC "/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4d1dc290-aa92-4bee-9a1c-c21153b10bd3</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>13k3</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>647163f2-eef8-416f-a30d-801772bb2768</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>32197ccf-2018-4ca2-95a0-1e8c06fbe60d</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>19k1</value>
+      <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ceab53e3-11f6-4a71-93e6-9c43464016ee</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Connector_Generic" part="Conn_01x02">
+      <description>Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x02</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_TVS">
+      <description>Bidirectional transient-voltage-suppression diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_TVS</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Bidirectional transient-voltage-suppression diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A1" type="passive"/>
+        <pin num="2" name="A2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L">
+      <description>Inductor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Polyfuse">
+      <description>Resettable fuse, polymeric positive temperature coefficient</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>*polyfuse*</fp>
+        <fp>*PTC*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">F</field>
+        <field name="Value">Polyfuse</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resettable fuse, polymeric positive temperature coefficient</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Library" part="LMR51450FSQDRRRQ1">
+      <description>Switching Voltage Regulators Automotive 36V 6A Synchronous buck con</description>
+      <docs>https://www.ti.com/lit/ds/symlink/lmr51450-q1.pdf?ts=1754385833072&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FLMR51450-Q1%252Fpart-details%252FLMR51450FSQDRRRQ1%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Dapp-null-nul</docs>
+      <fields>
+        <field name="Reference">IC</field>
+        <field name="Value">LMR51450FSQDRRRQ1</field>
+        <field name="Footprint">Library:SON50P300X300X80-13N-D</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/lmr51450-q1.pdf?ts=1754385833072&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FLMR51450-Q1%252Fpart-details%252FLMR51450FSQDRRRQ1%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Dapp-null-nul</field>
+        <field name="Description">Switching Voltage Regulators Automotive 36V 6A Synchronous buck con</field>
+        <field name="Height">0.8</field>
+        <field name="Mouser Part Number">595-LMR51450FSQDRRQ1</field>
+        <field name="Mouser Price/Stock">https://www.mouser.co.uk/ProductDetail/Texas-Instruments/LMR51450FSQDRRRQ1?qs=iLKYxzqNS76%252BZaNCQflYjw%3D%3D</field>
+        <field name="Manufacturer_Name">Texas Instruments</field>
+        <field name="Manufacturer_Part_Number">LMR51450FSQDRRRQ1</field>
+      </fields>
+      <pins>
+        <pin num="1" name="SW" type="passive"/>
+        <pin num="2" name="SW" type="passive"/>
+        <pin num="3" name="SW" type="passive"/>
+        <pin num="4" name="BOOT" type="passive"/>
+        <pin num="5" name="PG" type="passive"/>
+        <pin num="6" name="RT" type="passive"/>
+        <pin num="7" name="FB" type="passive"/>
+        <pin num="8" name="AGND" type="passive"/>
+        <pin num="9" name="EN" type="passive"/>
+        <pin num="10" name="VIN" type="passive"/>
+        <pin num="11" name="VIN" type="passive"/>
+        <pin num="12" name="VIN" type="passive"/>
+        <pin num="13" name="PGND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="PCM_Diode_Schottky_AKL" part="D_Schottky_Generic">
+      <description>Schottky diode, Generic Symbol, Alternate KiCAD Library</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky_Generic</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Schottky diode, Generic Symbol, Alternate KiCAD Library</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+5V" class="Default">
+      <node ref="F1" pin="2" pintype="passive"/>
+    </net>
+    <net code="2" name="/SW" class="Default">
+      <node ref="Cboot1" pin="2" pintype="passive"/>
+      <node ref="IC1" pin="1" pinfunction="SW" pintype="passive"/>
+      <node ref="IC1" pin="2" pinfunction="SW" pintype="passive"/>
+      <node ref="IC1" pin="3" pinfunction="SW" pintype="passive"/>
+      <node ref="L1" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="3" name="/VIN" class="Default">
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="IC1" pin="10" pinfunction="VIN" pintype="passive"/>
+      <node ref="IC1" pin="11" pinfunction="VIN" pintype="passive"/>
+      <node ref="IC1" pin="12" pinfunction="VIN" pintype="passive"/>
+      <node ref="IC1" pin="9" pinfunction="EN" pintype="passive"/>
+    </net>
+    <net code="4" name="/VOUT" class="Default">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C17" pin="1" pintype="passive"/>
+      <node ref="C18" pin="1" pintype="passive"/>
+      <node ref="F1" pin="1" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+    </net>
+    <net code="5" name="GND" class="Default">
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C17" pin="2" pintype="passive"/>
+      <node ref="C18" pin="2" pintype="passive"/>
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="D4" pin="1" pinfunction="A1" pintype="passive"/>
+      <node ref="IC1" pin="13" pinfunction="PGND" pintype="passive"/>
+      <node ref="IC1" pin="8" pinfunction="AGND" pintype="passive"/>
+      <node ref="J7" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="Net-(D4-A2)" class="Default">
+      <node ref="D4" pin="2" pinfunction="A2" pintype="passive"/>
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="J7" pin="2" pinfunction="Pin_2" pintype="passive"/>
+    </net>
+    <net code="7" name="Net-(IC1-BOOT)" class="Default">
+      <node ref="Cboot1" pin="1" pintype="passive"/>
+      <node ref="IC1" pin="4" pinfunction="BOOT" pintype="passive"/>
+    </net>
+    <net code="8" name="Net-(IC1-FB)" class="Default">
+      <node ref="IC1" pin="7" pinfunction="FB" pintype="passive"/>
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+    </net>
+    <net code="9" name="Net-(IC1-RT)" class="Default">
+      <node ref="IC1" pin="6" pinfunction="RT" pintype="passive"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+    </net>
+    <net code="10" name="unconnected-(IC1-PG-Pad5)" class="Default">
+      <node ref="IC1" pin="5" pinfunction="PG" pintype="passive+no_connect"/>
+    </net>
+  </nets>
+</export>

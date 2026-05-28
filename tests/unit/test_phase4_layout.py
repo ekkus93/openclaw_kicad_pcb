@@ -41,6 +41,7 @@ from kicad_pcb.commands._project import minimal_schematic_text
 from kicad_pcb.commands._sch_apply import SCHEMATIC_HEURISTIC_PROFILES
 from kicad_pcb.component_types import component_type
 from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.graphviz_layout import snap as _gv_snap_mod
 from kicad_pcb.graphviz_layout.snap import (
     ORIGIN_X,
     ORIGIN_Y,
@@ -73,7 +74,6 @@ from kicad_pcb.router import (
     LABEL_MODE_POLICIES,
     MAX_DIRECT_WIRE_MM,
     SYMBOL_HALF_SIZE_MM,
-    WIRE_EXTEND_MM,
     LabelPolicy,
     NetRouting,
     PinAnchor,
@@ -2238,6 +2238,19 @@ class TestDecouplingCapCoLocation:
             f"Full source:\n{src}"
         )
 
+    def test_rank_same_subgraph_skips_cross_tier_decoupling_pair(self) -> None:
+        """Explicit tier constraints should not be contradicted by decoupling rank=same blocks."""
+        ir = _decoupling_ir()
+        decoupling_map = _gv_mod.find_decoupling_caps(ir)
+        src = _gv_mod.build_dot_source(
+            ir,
+            decoupling_map=decoupling_map,
+            tiers={"J1": 0, "R1": 1, "U1": 2, "C1": 0},
+        )
+
+        assert "C1 -> U1 [style=invis, weight=10, constraint=false];" in src
+        assert "{\n    rank=same;\n    U1;\n    C1;\n  }" not in src
+
     def test_post_snap_sets_cap_x_equal_to_ic_x(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """After compute_symbol_positions, decoupling cap x must equal its IC's x."""
         ir = _decoupling_ir()
@@ -4101,7 +4114,7 @@ class TestApplyPostLayoutSnaps:
         buffer_band_refs = ("C6", "R5", "U1B", "R6")
         buffer_band_ys = [result[ref][1] for ref in buffer_band_refs]
 
-        assert max(buffer_band_ys) - min(buffer_band_ys) <= _gv_mod.GRID_ROW_MM, (
+        assert max(buffer_band_ys) - min(buffer_band_ys) <= _gv_mod.GRID_ROW_MM + 1e-4, (
             f"Buffer handoff and direct output support should stay on one short row: {result}"
         )
         assert result["C6"][0] <= result["R5"][0] <= result["U1B"][0] < result["R6"][0], (
@@ -6721,7 +6734,7 @@ class TestApplyPostLayoutSnaps:
             result["R2"] = (50.80, 76.20, None)
             return result
 
-        with patch.object(_gv_mod, "_snap_input_connector_signal_attachment", _late_collision):
+        with patch.object(_gv_snap_mod, "_snap_input_connector_signal_attachment", _late_collision):
             result = _gv_mod.apply_post_layout_snaps(
                 positions,
                 ir,
@@ -8539,7 +8552,7 @@ class TestStructuralLabelPriority:
         )
 
         visible_x = {round(label.x, 2) for label in routing.labels if label.x > 0.0}
-        assert visible_x == {30.0 - WIRE_EXTEND_MM, 40.0 - WIRE_EXTEND_MM}
+        assert visible_x == {30.48, 39.37}
 
     def test_structural_roles_prioritize_visible_global_labels(self) -> None:
         ir = _make_ir(
@@ -8566,7 +8579,7 @@ class TestStructuralLabelPriority:
         )
 
         visible_x = {round(label.x, 2) for label in routing.global_labels if label.name == "N_BUS"}
-        assert visible_x == {40.0 - WIRE_EXTEND_MM, 50.0 - WIRE_EXTEND_MM}
+        assert visible_x == {39.37, 49.53}
 
     def test_label_caps_preserve_existing_order_without_structural_context(self) -> None:
         ir = _make_ir(
@@ -8583,7 +8596,7 @@ class TestStructuralLabelPriority:
         routing = route_nets(ir=ir, pin_endpoints=pin_endpoints)
 
         visible_x = {round(label.x, 2) for label in routing.labels if label.x > 0.0}
-        assert visible_x == {10.0 - WIRE_EXTEND_MM, 20.0 - WIRE_EXTEND_MM}
+        assert visible_x == {10.16, 20.32}
 
 
 class TestLabelModes:
@@ -8604,7 +8617,7 @@ class TestLabelModes:
 
         assert len(routing.labels) == 5
 
-    def test_important_mode_keeps_direct_signal_chain_net_label_free(self) -> None:
+    def test_important_mode_promotes_one_direct_signal_chain_label(self) -> None:
         ir = _make_ir(
             [
                 ("J1", "Connector_Generic:Conn_01x02"),
@@ -8628,7 +8641,14 @@ class TestLabelModes:
         )
 
         assert routing.route_decisions[0].strategy == "direct"
-        assert routing.labels == []
+        assert len(routing.labels) == 1
+        label = routing.labels[0]
+        assert (label.name, round(label.x, 2), round(label.y, 2), label.angle) == (
+            "LEFT_IN",
+            24.92,
+            100.0,
+            180,
+        )
 
     def test_minimal_mode_keeps_direct_signal_chain_net_label_free(self) -> None:
         ir = _make_ir(

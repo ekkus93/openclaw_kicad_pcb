@@ -1,0 +1,706 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC1",
+      "symbol": "Device:C",
+      "value": "2.2nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC2",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC3",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC4",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC5",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC6",
+      "symbol": "Device:C",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC7",
+      "symbol": "Device:C",
+      "value": "33nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "CJC8",
+      "symbol": "Device:C",
+      "value": "33nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "CJQ1",
+      "symbol": "Transistor_FET:AO3400A",
+      "value": "AO3400A"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR1",
+      "symbol": "Device:R",
+      "value": "61R9"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR10",
+      "symbol": "Device:R",
+      "value": "100K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR11",
+      "symbol": "Device:R",
+      "value": "4K7"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR2",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR3",
+      "symbol": "Device:R",
+      "value": "300R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR4",
+      "symbol": "Device:R",
+      "value": "31K6"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR5",
+      "symbol": "Device:R",
+      "value": "4K7"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR6",
+      "symbol": "Device:R",
+      "value": "100K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR7",
+      "symbol": "Device:R",
+      "value": "470K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR8",
+      "symbol": "Device:R",
+      "value": "100K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "CJR9",
+      "symbol": "Device:R",
+      "value": "6K8"
+    },
+    {
+      "fields": {
+        "Availability": "Not in stock",
+        "Check_prices": "https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=eda",
+        "Datasheet": "",
+        "Description": "LAMBDA PROBE INTERFACE IC",
+        "Footprint": "AeonLabs_Automotive:CJ125 Wideband sensor",
+        "MF": "Bosch",
+        "MP": "CJ125",
+        "Package": "None",
+        "Price": "None",
+        "SnapEDA_Link": "https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=snap"
+      },
+      "footprint": "AeonLabs_Automotive:CJ125 Wideband sensor",
+      "ref": "U12",
+      "symbol": "AeonLabs_Automotive:CJ125",
+      "value": "CJ125"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+12V",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJC4",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CJ125_CS",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "CJ_RST",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "DIAHD",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJR9",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "DIAHG",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR11",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJC1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJC8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJQ1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJR10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR2",
+          "unit": null
+        },
+        {
+          "pin": "24",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LSU_HEAT-",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "CJQ1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJR9",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LSU_IA",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJR1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJR7",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LSU_IP",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LSU_UN",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJR6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "LSU_VM",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR3",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MISO",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "MOSI",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(CJC2-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "CJR4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(CJQ1-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJQ1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-CF)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR8",
+          "unit": null
+        },
+        {
+          "pin": "22",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-CM)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJC2",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-OSZ)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR2",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-RF)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR8",
+          "unit": null
+        },
+        {
+          "pin": "23",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-RM)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJR4",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-RS)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJR3",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-UP)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJR5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "CJR7",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U12-US)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "CJR5",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "SCLK",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "UA",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC7",
+          "unit": null
+        },
+        {
+          "pin": "21",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "UR",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "CJC8",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U12",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

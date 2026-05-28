@@ -253,6 +253,33 @@ class TestShuntPassiveOrientations:
 
         assert result["C1"] == 0
 
+    def test_signal_to_ground_bypass_with_shared_signal_node_stays_vertical(self) -> None:
+        """A wider signal node should remain a shunt/bypass capacitor, not local decoupling."""
+        ir = CircuitIR(
+            version="1",
+            components=[
+                ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+                ComponentIR(ref="C1", symbol="Device:C", value="100n"),
+                ComponentIR(ref="U1", symbol="Amplifier_Operational:TL071", value="TL071"),
+            ],
+            nets=[
+                NetIR(
+                    name="MID_NET",
+                    pins=[
+                        PinRefIR(ref="R1", pin="2"),
+                        PinRefIR(ref="U1", pin="2"),
+                        PinRefIR(ref="C1", pin="1"),
+                    ],
+                ),
+                NetIR(name="GND", pins=[PinRefIR(ref="C1", pin="2")]),
+            ],
+        )
+        positions = {"R1": (10.0, 20.0), "C1": (20.0, 20.0), "U1": (30.0, 20.0)}
+
+        result = compute_orientations(ir, positions)
+
+        assert result["C1"] == 90
+
     def test_placed_pin_subset_ignores_nonlocal_power_pin_membership(self) -> None:
         """Placed-unit orientation ignores stray net pins outside the placed pin subset."""
         ir = CircuitIR(

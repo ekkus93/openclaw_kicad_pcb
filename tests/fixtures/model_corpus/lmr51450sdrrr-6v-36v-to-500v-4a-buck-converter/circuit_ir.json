@@ -1,0 +1,436 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C10",
+      "symbol": "Device:C",
+      "value": "47u 10V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C17",
+      "symbol": "Device:C",
+      "value": "47u 10V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C18",
+      "symbol": "Device:C",
+      "value": "47u 10V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "Mouser": "GRM21BR61H475ME51L"
+      },
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "ref": "C8",
+      "symbol": "Device:C",
+      "value": "4u7 100V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C9",
+      "symbol": "Device:C",
+      "value": "100n 100V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "Cboot1",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Bidirectional transient-voltage-suppression diode",
+        "Footprint": "PCM_Diode_SMD_AKL:D_SOD-323_TVS"
+      },
+      "footprint": "PCM_Diode_SMD_AKL:D_SOD-323_TVS",
+      "ref": "D4",
+      "symbol": "Device:D_TVS",
+      "value": "SD36-01FTG"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Schottky diode, Generic Symbol, Alternate KiCAD Library",
+        "Footprint": "Diode_SMD:D_SMB",
+        "Mouser": "78-VSSB420S-M352T"
+      },
+      "footprint": "Diode_SMD:D_SMB",
+      "ref": "D5",
+      "symbol": "PCM_Diode_Schottky_AKL:D_Schottky_Generic",
+      "value": "VSSB420S"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resettable fuse, polymeric positive temperature coefficient",
+        "Footprint": "Fuse:Fuse_0805_2012Metric"
+      },
+      "footprint": "Fuse:Fuse_0805_2012Metric",
+      "ref": "F1",
+      "symbol": "Device:Polyfuse",
+      "value": "PTSLR08058V400"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.ti.com/lit/ds/symlink/lmr51450-q1.pdf?ts=1754385833072&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FLMR51450-Q1%252Fpart-details%252FLMR51450FSQDRRRQ1%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Dapp-null-nul",
+        "Description": "Switching Voltage Regulators Automotive 36V 6A Synchronous buck con",
+        "Footprint": "Library:SON50P300X300X80-13N-D",
+        "Height": "0.8",
+        "Manufacturer_Name": "Texas Instruments",
+        "Manufacturer_Part_Number": "LMR51450FSQDRRRQ1",
+        "Mouser Part Number": "595-LMR51450FSQDRRQ1",
+        "Mouser Price/Stock": "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/LMR51450FSQDRRRQ1?qs=iLKYxzqNS76%252BZaNCQflYjw%3D%3D"
+      },
+      "footprint": "Library:SON50P300X300X80-13N-D",
+      "ref": "IC1",
+      "symbol": "Library:LMR51450FSQDRRRQ1",
+      "value": "LMR51450FSQDRRRQ1"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Library:1778764"
+      },
+      "footprint": "Library:1778764",
+      "ref": "J7",
+      "symbol": "Connector_Generic:Conn_01x02",
+      "value": "PWR IN"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Inductor",
+        "Footprint": "Library:XAL5030332MEC",
+        "Mouser": "XAL5030-332MEC"
+      },
+      "footprint": "Library:XAL5030332MEC",
+      "ref": "L1",
+      "symbol": "Device:L",
+      "value": "3u3"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R11",
+      "symbol": "Device:R",
+      "value": "13k3"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R12",
+      "symbol": "Device:R",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R13",
+      "symbol": "Device:R",
+      "value": "19k1"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "F1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SW",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "Cboot1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "L1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VIN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "IC1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VOUT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C17",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "F1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R12",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R13",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D4-A2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC1-BOOT)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Cboot1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "IC1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC1-FB)",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R13",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(IC1-RT)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "IC1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(IC1-PG-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "IC1",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

@@ -1,0 +1,28 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CC-BY-NC-SA-4.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/w5500-spi-interface-decoupling-termination-openknx-reg1",
+  "fixture_id": "w5500-spi-interface-decoupling-termination-openknx-reg1",
+  "generator": "eeschema",
+  "global_label_count": 21,
+  "has_circuit_ir": true,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 6,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 23,
+  "requires_custom_symbols": true,
+  "source_file_name": "w5500-spi-interface-decoupling-termination-openknx-reg1.kicad_sch",
+  "source_path": "model_kicad_files/w5500-spi-interface-decoupling-termination-openknx-reg1.kicad_sch",
+  "source_url": null,
+  "status": "ready",
+  "status_reasons": [
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
+  ],
+  "symbol_count": 64,
+  "title": "REG1-IpController2040",
+  "wire_count": 142
+}

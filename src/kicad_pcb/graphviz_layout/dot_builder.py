@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 
 from ..block_detection import (
     BlockRole,
+    _is_supply_like_net,
     is_core_like_role,
     is_input_like_role,
     is_output_like_role,
@@ -168,6 +169,72 @@ def _non_power_net_uses_only_power_output_pins(
     return bool(resolved_types) and all(pin_type == "power_out" for pin_type in resolved_types)
 
 
+def _is_private_signal_net_name(net_name: str) -> bool:
+    return re.match(r"^Net-\(", net_name.strip(), re.IGNORECASE) is not None
+
+
+def _rail_anchor_candidates(
+    rail_net: str,
+    *,
+    active_ics_by_rail: Mapping[str, list[str]],
+    net_to_refs: Mapping[str, list[str]],
+    signal_ic_refs: set[str],
+) -> list[str]:
+    direct_candidates = active_ics_by_rail.get(rail_net, [])
+    if direct_candidates:
+        return direct_candidates
+
+    sibling_candidates: list[str] = []
+    for neighbor_ref in net_to_refs.get(rail_net, []):
+        if component_type(neighbor_ref) != "ic" or len(neighbor_ref) < 2:
+            continue
+        suffix = neighbor_ref[-1]
+        if not suffix.isalpha():
+            continue
+        parent_ref = neighbor_ref[:-1]
+        sibling_candidates.extend(
+            candidate_ref
+            for candidate_ref in signal_ic_refs
+            if candidate_ref[:-1] == parent_ref and candidate_ref != neighbor_ref
+        )
+    return sorted(set(sibling_candidates))
+
+
+def _signal_power_decoupling_anchor(
+    *,
+    ir: CircuitIR,
+    cap_ref: str,
+    nets_for_cap: list[str],
+    net_to_refs: Mapping[str, list[str]],
+    ref_to_nets: Mapping[str, list[str]],
+) -> str | None:
+    signal_nets_for_cap = [n for n in nets_for_cap if not _is_power_net(n)]
+    power_nets_for_cap = [n for n in nets_for_cap if _is_power_net(n)]
+    if len(signal_nets_for_cap) != 1 or not power_nets_for_cap:
+        return None
+
+    signal_net = signal_nets_for_cap[0]
+    if _non_power_net_uses_only_power_output_pins(ir, cap_ref, signal_net):
+        return None
+
+    candidate_refs = [
+        neighbor_ref
+        for neighbor_ref in net_to_refs.get(signal_net, [])
+        if neighbor_ref != cap_ref
+        and not _is_connector(neighbor_ref)
+        and not _is_capacitor(neighbor_ref)
+    ]
+    unique_candidate_refs = sorted(set(candidate_refs))
+    if not (
+        (len(unique_candidate_refs) == 1 and _is_private_signal_net_name(signal_net))
+        or _is_supply_like_net(signal_net)
+        or "BIAS" in signal_net.upper()
+    ):
+        return None
+
+    return _preferred_decoupling_anchor(candidate_refs, ref_to_nets)
+
+
 def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
     """Return ``{cap_ref: ic_ref}`` for decoupling/bypass capacitors.
 
@@ -213,48 +280,20 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
         and any(not _is_power_net(net_name) for net_name in ref_to_nets.get(comp.ref, []))
     }
 
-    def _rail_anchor_candidates(rail_net: str) -> list[str]:
-        direct_candidates = active_ics_by_rail.get(rail_net, [])
-        if direct_candidates:
-            return direct_candidates
-
-        sibling_candidates: list[str] = []
-        for neighbor_ref in net_to_refs.get(rail_net, []):
-            if component_type(neighbor_ref) != "ic" or len(neighbor_ref) < 2:
-                continue
-            suffix = neighbor_ref[-1]
-            if not suffix.isalpha():
-                continue
-            parent_ref = neighbor_ref[:-1]
-            sibling_candidates.extend(
-                candidate_ref
-                for candidate_ref in signal_ic_refs
-                if candidate_ref[:-1] == parent_ref and candidate_ref != neighbor_ref
-            )
-        return sorted(set(sibling_candidates))
-
     result: dict[str, str] = {}
     for comp in ir.components:
         if not _is_capacitor(comp.ref):
             continue
         nets_for_cap = ref_to_nets.get(comp.ref, [])
         signal_nets_for_cap = [n for n in nets_for_cap if not _is_power_net(n)]
-        power_nets_for_cap = [n for n in nets_for_cap if _is_power_net(n)]
-        if len(signal_nets_for_cap) == 1 and power_nets_for_cap:
-            # Exactly one signal net — find the IC on that shared net.
-            signal_net = signal_nets_for_cap[0]
-            if _non_power_net_uses_only_power_output_pins(ir, comp.ref, signal_net):
-                continue
-            candidate_refs = [
-                neighbor_ref
-                for neighbor_ref in net_to_refs.get(signal_net, [])
-                if neighbor_ref != comp.ref
-                and not _is_connector(neighbor_ref)
-                and not _is_capacitor(neighbor_ref)
-            ]
-            anchor_ref = _preferred_decoupling_anchor(candidate_refs, ref_to_nets)
-            if anchor_ref is not None:
-                result[comp.ref] = anchor_ref
+        if anchor_ref := _signal_power_decoupling_anchor(
+            ir=ir,
+            cap_ref=comp.ref,
+            nets_for_cap=nets_for_cap,
+            net_to_refs=net_to_refs,
+            ref_to_nets=ref_to_nets,
+        ):
+            result[comp.ref] = anchor_ref
 
         if comp.ref in result:
             continue
@@ -264,7 +303,12 @@ def _find_decoupling_caps(ir: CircuitIR) -> dict[str, str]:
         if signal_nets_for_cap or len(ground_nets_for_cap) != 1 or len(rail_nets_for_cap) != 1:
             continue
 
-        candidate_refs = _rail_anchor_candidates(rail_nets_for_cap[0])
+        candidate_refs = _rail_anchor_candidates(
+            rail_nets_for_cap[0],
+            active_ics_by_rail=active_ics_by_rail,
+            net_to_refs=net_to_refs,
+            signal_ic_refs=signal_ic_refs,
+        )
         anchor_ref = _preferred_decoupling_anchor(candidate_refs, ref_to_nets)
         if anchor_ref is not None:
             result[comp.ref] = anchor_ref
@@ -584,6 +628,8 @@ def _emit_halo_constraints(
 def _emit_decoupling_constraints(
     lines: list[str],
     decoupling_map: dict[str, str],
+    *,
+    tiers: dict[str, int] | None = None,
 ) -> None:
     """Append invisible-edge + rank=same lines to *lines* for *decoupling_map*.
 
@@ -598,6 +644,8 @@ def _emit_decoupling_constraints(
         ic_id = _safe_id(ic_ref)
         lines.append(f"  {cap_id} -> {ic_id} [style=invis, weight=10, constraint=false];")
     for cap_ref, ic_ref in sorted(decoupling_map.items()):
+        if tiers is not None and tiers.get(cap_ref) != tiers.get(ic_ref):
+            continue
         lines.append("  {")
         lines.append("    rank=same;")
         lines.append(f"    {_safe_id(ic_ref)};")
@@ -906,7 +954,7 @@ def _build_dot_source(  # noqa: PLR0912, PLR0913, PLR0915
     # Decoupling cap co-location: invisible edges + rank=same pull each
     # bypass cap into the same column as its associated IC.
     if decoupling_map:
-        _emit_decoupling_constraints(lines, decoupling_map)
+        _emit_decoupling_constraints(lines, decoupling_map, tiers=tiers)
 
     # Feedback components: invisible upward edge pushes them above the
     # amplifier tier.  Grouped in a style=invis cluster so they don't

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 from .block_detection import (
     BlockLayout,
     BlockRole,
+    _is_supply_like_net,
     is_input_like_role,
     is_output_like_role,
 )
@@ -250,6 +251,10 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
     but uses :func:`_is_power_net_layout` so the two passes agree on net
     classification.
     """
+
+    def _is_private_signal_net_name(net_name: str) -> bool:
+        return re.match(r"^Net-\(", net_name.strip(), re.IGNORECASE) is not None
+
     ref_to_nets: dict[str, list[str]] = {}
     net_to_refs: dict[str, list[str]] = {}
     for net in ir.nets:
@@ -313,6 +318,16 @@ def _find_decoupling_caps_layout(ir: CircuitIR) -> dict[str, str]:  # noqa: PLR0
                 and not any(neighbor_ref.upper().startswith(p) for p in _CONNECTOR_PREFIXES_CT)
                 and not neighbor_ref.upper().startswith("C")
             ]
+            unique_candidate_refs = sorted(set(candidate_refs))
+            # Treat signal+power capacitors as horizontal decouplers when the
+            # non-power node is either a private cap↔IC connection or a
+            # supply-like local rail/bias node.
+            if not (
+                (len(unique_candidate_refs) == 1 and _is_private_signal_net_name(signal_net))
+                or _is_supply_like_net(signal_net)
+                or "BIAS" in signal_net.upper()
+            ):
+                continue
             anchor_ref = _preferred_decoupling_anchor_layout(candidate_refs, ref_to_nets)
             if anchor_ref is not None:
                 result[comp.ref] = anchor_ref

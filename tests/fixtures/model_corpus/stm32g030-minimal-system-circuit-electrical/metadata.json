@@ -1,0 +1,28 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "MIT",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/stm32g030-minimal-system-circuit-electrical",
+  "fixture_id": "stm32g030-minimal-system-circuit-electrical",
+  "generator": "eeschema",
+  "global_label_count": 1,
+  "has_circuit_ir": true,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 81,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 35,
+  "requires_custom_symbols": true,
+  "source_file_name": "stm32g030-minimal-system-circuit-electrical.kicad_sch",
+  "source_path": "model_kicad_files/stm32g030-minimal-system-circuit-electrical.kicad_sch",
+  "source_url": null,
+  "status": "ready",
+  "status_reasons": [
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
+  ],
+  "symbol_count": 74,
+  "title": "Power Board",
+  "wire_count": 180
+}

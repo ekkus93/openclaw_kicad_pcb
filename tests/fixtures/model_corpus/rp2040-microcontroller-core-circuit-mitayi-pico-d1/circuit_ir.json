@@ -1,0 +1,2049 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C1",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C10",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C11",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C12",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "C13",
+      "symbol": "Device:C",
+      "value": "10u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_Tantalum_SMD:CP_EIA-2012-12_Kemet-R"
+      },
+      "footprint": "Capacitor_Tantalum_SMD:CP_EIA-2012-12_Kemet-R",
+      "ref": "C14",
+      "symbol": "Device:C_Polarized",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0603_1608Metric"
+      },
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "ref": "C15",
+      "symbol": "Device:C",
+      "value": "10u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C16",
+      "symbol": "Device:C",
+      "value": "470pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C17",
+      "symbol": "Device:C",
+      "value": "30pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C18",
+      "symbol": "Device:C",
+      "value": "30pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C19",
+      "symbol": "Device:C",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C2",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C3",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C4",
+      "symbol": "Device:C",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C5",
+      "symbol": "Device:C",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C6",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C7",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C8",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "ref": "C9",
+      "symbol": "Device:C",
+      "value": "100n"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.onsemi.com/pub/Collateral/MBR1020VL-D.PDF",
+        "Description": "",
+        "Footprint": "Diode_SMD:D_SOD-323_HandSoldering"
+      },
+      "footprint": "Diode_SMD:D_SOD-323_HandSoldering",
+      "ref": "D1",
+      "symbol": "Diode:MBR1020VL",
+      "value": "PMEG4005EJ"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "LED_SMD:LED_0603_1608Metric"
+      },
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "ref": "D2",
+      "symbol": "Device:LED",
+      "value": "DBG_LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "LED_SMD:LED_0603_1608Metric"
+      },
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "ref": "D3",
+      "symbol": "Device:LED",
+      "value": "POW_LED"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "MountingHole:MountingHole_2.2mm_M2"
+      },
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "ref": "H1",
+      "symbol": "Mechanical:MountingHole",
+      "value": "MountingHole"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "MountingHole:MountingHole_2.2mm_M2"
+      },
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "ref": "H2",
+      "symbol": "Mechanical:MountingHole",
+      "value": "MountingHole"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "MountingHole:MountingHole_2.2mm_M2"
+      },
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "ref": "H3",
+      "symbol": "Mechanical:MountingHole",
+      "value": "MountingHole"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "MountingHole:MountingHole_2.2mm_M2"
+      },
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "ref": "H4",
+      "symbol": "Mechanical:MountingHole",
+      "value": "MountingHole"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical",
+      "ref": "J1",
+      "symbol": "Connector_Generic:Conn_02x04_Counter_Clockwise",
+      "value": "EXP8"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.usb.org/sites/default/files/documents/usb_type-c.zip",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Connector_USB:Korean-Hroparts-Elec_TYPE-C-31-M-12"
+      },
+      "footprint": "CIRCUITSTATE_Connector_USB:Korean-Hroparts-Elec_TYPE-C-31-M-12",
+      "ref": "J2",
+      "symbol": "Connector:USB_C_Receptacle_USB2.0",
+      "value": "USB_C_Receptacle_USB2.0"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE-Connector-Pin-Headers:PinHeader_1x20_2H_P2.54mm_Vertical"
+      },
+      "footprint": "CIRCUITSTATE-Connector-Pin-Headers:PinHeader_1x20_2H_P2.54mm_Vertical",
+      "ref": "J3",
+      "symbol": "Connector_Generic:Conn_01x20",
+      "value": "Header_1"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE-Connector-Pin-Headers:PinHeader_1x20_2H_P2.54mm_Vertical"
+      },
+      "footprint": "CIRCUITSTATE-Connector-Pin-Headers:PinHeader_1x20_2H_P2.54mm_Vertical",
+      "ref": "J4",
+      "symbol": "Connector_Generic:Conn_01x20",
+      "value": "Header_2"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+      },
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "ref": "J5",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "value": "SWD"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001"
+      },
+      "footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001",
+      "ref": "J6",
+      "symbol": "Connector:USB_B_Micro",
+      "value": "USB_B_Micro"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402"
+      },
+      "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+      "ref": "JP1",
+      "symbol": "Jumper:SolderJumper_2_Open",
+      "value": "AREF_SEL"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402"
+      },
+      "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+      "ref": "JP4",
+      "symbol": "Jumper:SolderJumper_2_Open",
+      "value": "VR1_CE"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402"
+      },
+      "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+      "ref": "JP5",
+      "symbol": "Jumper:SolderJumper_2_Open",
+      "value": "DEB_EN"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_3P_Open_0402"
+      },
+      "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_3P_Open_0402",
+      "ref": "JP6",
+      "symbol": "Jumper:SolderJumper_3_Open",
+      "value": "UBUT_SEL"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R1",
+      "symbol": "Device:R",
+      "value": "DNP"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R10",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R11",
+      "symbol": "Device:R_Small",
+      "value": "5.1K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R2",
+      "symbol": "Device:R",
+      "value": "1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R3",
+      "symbol": "Device:R_Small",
+      "value": "5.1K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R4",
+      "symbol": "Device:R_Small",
+      "value": "5.1K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R5",
+      "symbol": "Device:R",
+      "value": "27R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R6",
+      "symbol": "Device:R",
+      "value": "27R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R7",
+      "symbol": "Device:R",
+      "value": "470R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R8",
+      "symbol": "Device:R",
+      "value": "470R"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "ref": "R9",
+      "symbol": "Device:R",
+      "value": "10K"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Switch_SMD:CK_SW_SPST_UK-B0273-SP25Y"
+      },
+      "footprint": "CIRCUITSTATE_Switch_SMD:CK_SW_SPST_UK-B0273-SP25Y",
+      "ref": "SW1",
+      "symbol": "Switch:SW_Push",
+      "value": "Reset"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE_Switch_SMD:CK_SW_SPST_UK-B0273-SP25Y"
+      },
+      "footprint": "CIRCUITSTATE_Switch_SMD:CK_SW_SPST_UK-B0273-SP25Y",
+      "ref": "SW2",
+      "symbol": "Switch:SW_Push",
+      "value": "UBUT"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://www.winbond.com/resource-files/w25q128jv_dtr%20revc%2003272018%20plus.pdf",
+        "Description": "",
+        "Footprint": "Package_SO:SOIC-8_5.23x5.23mm_P1.27mm"
+      },
+      "footprint": "Package_SO:SOIC-8_5.23x5.23mm_P1.27mm",
+      "ref": "U1",
+      "symbol": "Memory_Flash:W25Q128JVS",
+      "value": "W25Q128JVS"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://ww1.microchip.com/downloads/en/DeviceDoc/MIC5219-500mA-Peak-Output-LDO-Regulator-DS20006021A.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-5"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "ref": "U2",
+      "symbol": "Regulator_Linear:MIC5219-3.3YM5",
+      "value": "MIC5219-3.3YM5"
+    },
+    {
+      "fields": {
+        "Author": "CIRCUITSTATE Electronics",
+        "Datasheet": "https://datasheets.raspberrypi.org/rp2040/rp2040-datasheet.pdf",
+        "Description": "",
+        "Footprint": "CIRCUITSTATE-QFN:RP2040-QFN-56",
+        "License": "CC BY 4.0",
+        "Revision": "1.3"
+      },
+      "footprint": "CIRCUITSTATE-QFN:RP2040-QFN-56",
+      "ref": "U3",
+      "symbol": "CIRCUITSTATE-Microcontrollers:RP2040",
+      "value": "RP2040"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm"
+      },
+      "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+      "ref": "Y1",
+      "symbol": "Device:Crystal_GND24_Small",
+      "value": "YIC-12M20P2/XT324-10/10"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+1V1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "23",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "45",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "50",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+3V3",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C12",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "JP1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "22",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "33",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "42",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "44",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "48",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "49",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/AREF",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "JP1",
+          "unit": null
+        },
+        {
+          "pin": "43",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO0",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO10",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO11",
+      "pins": [
+        {
+          "pin": "12",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO12",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO13",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO14",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO15",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO16",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "27",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO17",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "28",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO18",
+      "pins": [
+        {
+          "pin": "19",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "29",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO19",
+      "pins": [
+        {
+          "pin": "19",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "30",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO2",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "JP6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R11",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO20",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "31",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO21",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "32",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO22",
+      "pins": [
+        {
+          "pin": "16",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "34",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO23",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "35",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO24",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "36",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO25",
+      "pins": [
+        {
+          "pin": "13",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "JP5",
+          "unit": null
+        },
+        {
+          "pin": "37",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO26",
+      "pins": [
+        {
+          "pin": "11",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "38",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO27",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "39",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO28",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "40",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO29",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "41",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO3",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO4",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO5",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO6",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO7",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO8",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GPIO9",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SCLK",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "52",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SD0",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "53",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SD1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "55",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SD2",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "54",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SD3",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "51",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/QSPI_SS",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "56",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RUN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C19",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "26",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SWCLK",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "24",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SWDIO",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "25",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/USB_D+",
+      "pins": [
+        {
+          "pin": "A6",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B6",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/USB_D-",
+      "pins": [
+        {
+          "pin": "A7",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B7",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VSYS",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "JP4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/V_EN",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "JP4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/XIN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C17",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/XOUT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "21",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~{USB_BOOT}",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "JP6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C12",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C14",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C15",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C16",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "A12",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B12",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "S1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "J3",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J5",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "J6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "57",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Y1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C18-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "JP5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J2-CC1)",
+      "pins": [
+        {
+          "pin": "A5",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J2-CC2)",
+      "pins": [
+        {
+          "pin": "B5",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(JP6-C)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "JP6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2-BP)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C16",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U3-USB-DM)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "46",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U3-USB-DP)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "47",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "VBUS",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "A4",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "A9",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B4",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "B9",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J2-SBU1-PadA8)",
+      "pins": [
+        {
+          "pin": "A8",
+          "ref": "J2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J2-SBU2-PadB8)",
+      "pins": [
+        {
+          "pin": "B8",
+          "ref": "J2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J6-ID-Pad4)",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "J6",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

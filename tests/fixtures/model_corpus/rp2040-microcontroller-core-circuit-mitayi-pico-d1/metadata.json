@@ -1,0 +1,29 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "MIT",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+  "fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+  "generator": "",
+  "global_label_count": 0,
+  "has_circuit_ir": true,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20211123",
+  "label_count": 106,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 40,
+  "requires_custom_symbols": true,
+  "source_file_name": "rp2040-microcontroller-core-circuit-mitayi-pico-d1.kicad_sch",
+  "source_path": "model_kicad_files/rp2040-microcontroller-core-circuit-mitayi-pico-d1.kicad_sch",
+  "source_url": null,
+  "status": "ready",
+  "status_reasons": [
+    "normalized:replaced_invalid_root_uuid",
+    "normalized:removed_top_level_comments",
+    "normalized:normalized_root_sheet_instances"
+  ],
+  "symbol_count": 92,
+  "title": "Mitayi Pico - Schematic",
+  "wire_count": 287
+}

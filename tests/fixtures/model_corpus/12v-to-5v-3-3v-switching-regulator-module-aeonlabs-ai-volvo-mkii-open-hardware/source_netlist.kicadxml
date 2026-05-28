@@ -1,0 +1,1402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch</source>
+    <date>2026-05-27T18:27:39-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Power Management</title>
+        <company>www.Aeonlabs.science</company>
+        <rev>12-2023</rev>
+        <date>2023-12-06</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="AUR1">
+      <value>AUR9718x_DFN_3x3mm_6_pin</value>
+      <footprint>AeonLabs_Power:AUR9718 ST1S09 SON95P300X300X100-7N</footprint>
+      <datasheet>https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326</datasheet>
+      <fields>
+        <field name="Footprint">AeonLabs_Power:AUR9718 ST1S09 SON95P300X300X100-7N</field>
+        <field name="Datasheet">https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Power_Management" part="ST01S09_AUR9718x_DFN_3x3mm_6_pin" description="Current Sense High Side Switch, 65V, 30A, D2PAK-5L"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="high side switch"/>
+      <property name="ki_fp_filters" value="TO?263*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f5a5485b-1672-4f6d-a319-a1d49ffb1d7a</tstamps>
+    </comp>
+    <comp ref="AUR_C1">
+      <value>22uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d809d271-8ff2-4c94-9c42-42ebdee30b51</tstamps>
+    </comp>
+    <comp ref="AUR_C2">
+      <value>4.7uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>022bfd53-25ca-46fa-862b-6ea91b73b87e</tstamps>
+    </comp>
+    <comp ref="AUR_l1">
+      <value>3.3uF</value>
+      <footprint>Inductor_SMD:L_1210_3225Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Inductor_SMD:L_1210_3225Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0eee61e8-dc5b-4e69-855c-d469edbdb9ad</tstamps>
+    </comp>
+    <comp ref="AUR_R1">
+      <value>75k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4c3224c5-5d8f-42b5-91e5-e51be98adf5a</tstamps>
+    </comp>
+    <comp ref="AUR_R2">
+      <value>24k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6f598d4e-64f4-4737-a199-2adfe80592e7</tstamps>
+    </comp>
+    <comp ref="BT1">
+      <value>Battery_Cell</value>
+      <footprint>AeonLabs_Power:pcb battery 3 pin</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">36-2999-ND</field>
+        <field name="Manufacturer_Name">Keystone</field>
+        <field name="Manufacturer_Part_Number">2999</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/keystone-electronics/2999/36-2999-ND/2137863</field>
+        <field name="Footprint">AeonLabs_Power:pcb battery 3 pin</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="Battery_Cell" description="Single-cell battery"/>
+      <property name="Digikey Part Number" value="36-2999-ND"/>
+      <property name="Manufacturer_Name" value="Keystone"/>
+      <property name="Manufacturer_Part_Number" value="2999"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/keystone-electronics/2999/36-2999-ND/2137863"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="battery cell"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>09ec0a32-23dc-4b8f-aa6c-642b4d5d55b9</tstamps>
+    </comp>
+    <comp ref="C1">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">311-1140-1-ND</field>
+        <field name="Manufacturer_Name">Yageo</field>
+        <field name="Manufacturer_Part_Number">CC0805KRX7R9BB104</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/yageo/CC0805KRX7R9BB104/311-1140-1-ND/303050</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Digikey Part Number" value="311-1140-1-ND"/>
+      <property name="Manufacturer_Name" value="Yageo"/>
+      <property name="Manufacturer_Part_Number" value="CC0805KRX7R9BB104"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/yageo/CC0805KRX7R9BB104/311-1140-1-ND/303050"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>00000000-0000-0000-0000-00005cbe1c9e</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>100pF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>19811506-11a9-4888-9502-7ae34f611a31</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>979d179d-0841-480c-a248-efc02376320f</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>47uF</value>
+      <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">10V</field>
+        <field name="Digikey Part Number">478-1692-1-ND</field>
+        <field name="Manufacturer_Name">AVX</field>
+        <field name="Manufacturer_Part_Number">TAJB476K006RNJ</field>
+        <field name="URL">https://www.digikey.com/product-detail/en/avx-corporation/TAJB476K006RNJ/478-1692-1-ND/564724</field>
+        <field name="Footprint">Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="10V"/>
+      <property name="Digikey Part Number" value="478-1692-1-ND"/>
+      <property name="Manufacturer_Name" value="AVX"/>
+      <property name="Manufacturer_Part_Number" value="TAJB476K006RNJ"/>
+      <property name="URL" value="https://www.digikey.com/product-detail/en/avx-corporation/TAJB476K006RNJ/478-1692-1-ND/564724"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>00000000-0000-0000-0000-00005cbe11fc</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ba479fd4-fac5-4cfa-9405-d7bc436c4239</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e2970611-43b5-449a-9ab7-c0b8599ff34d</tstamps>
+    </comp>
+    <comp ref="C32">
+      <value>4.7uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0b4d5def-ec86-4f1b-a94c-fb586528e326</tstamps>
+    </comp>
+    <comp ref="C42">
+      <value>100pF</value>
+      <footprint>Capacitor_SMD:CP_Elec_6.3x7.7</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Voltage">50V</field>
+        <field name="Digikey Part Number">PCE3925CT-ND</field>
+        <field name="Manufacturer_Name">Panasonic</field>
+        <field name="Manufacturer_Part_Number">EEE-1HA330XP</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301</field>
+        <field name="Footprint">Capacitor_SMD:CP_Elec_6.3x7.7</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="CP" description=""/>
+      <property name="Voltage" value="50V"/>
+      <property name="Digikey Part Number" value="PCE3925CT-ND"/>
+      <property name="Manufacturer_Name" value="Panasonic"/>
+      <property name="Manufacturer_Part_Number" value="EEE-1HA330XP"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/panasonic-electronic-components/EEE-1HA330XP/PCE3925CT-ND/766301"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6e0419b2-90e0-445f-b9bc-e091c7a98303</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>SS36</value>
+      <footprint>Diode_SMD:D_SMA_Handsoldering</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">B360A-FDICT-ND</field>
+        <field name="Manufacturer_Name">Diodes Inc</field>
+        <field name="Manufacturer_Part_Number">B360A-13-F</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980</field>
+        <field name="Footprint">Diode_SMD:D_SMA_Handsoldering</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="Digikey Part Number" value="B360A-FDICT-ND"/>
+      <property name="Manufacturer_Name" value="Diodes Inc"/>
+      <property name="Manufacturer_Part_Number" value="B360A-13-F"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>22bab5de-5084-4754-a80e-95c17f8c35e7</tstamps>
+    </comp>
+    <comp ref="D11">
+      <value>SS36</value>
+      <footprint>Diode_SMD:D_SMA_Handsoldering</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">B360A-FDICT-ND</field>
+        <field name="Manufacturer_Name">Diodes Inc</field>
+        <field name="Manufacturer_Part_Number">B360A-13-F</field>
+        <field name="URL">https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980</field>
+        <field name="Footprint">Diode_SMD:D_SMA_Handsoldering</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="Digikey Part Number" value="B360A-FDICT-ND"/>
+      <property name="Manufacturer_Name" value="Diodes Inc"/>
+      <property name="Manufacturer_Part_Number" value="B360A-13-F"/>
+      <property name="URL" value="https://www.digikey.com.au/product-detail/en/diodes-incorporated/B360A-13-F/B360A-FDICT-ND/724980"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>00000000-0000-0000-0000-00005cbc3057</tstamps>
+    </comp>
+    <comp ref="D13">
+      <value>D_Schottky</value>
+      <footprint>Diode_SMD:D_PowerDI-123</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">DFLS2100-7DICT-ND</field>
+        <field name="Manufacturer_Name">Diodes Inc.</field>
+        <field name="Manufacturer_Part_Number">DFLS2100-7</field>
+        <field name="URL">https://www.digikey.com/product-detail/en/diodes-incorporated/DFLS2100-7/DFLS2100-7DICT-ND/3451552</field>
+        <field name="Footprint">Diode_SMD:D_PowerDI-123</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="Digikey Part Number" value="DFLS2100-7DICT-ND"/>
+      <property name="Manufacturer_Name" value="Diodes Inc."/>
+      <property name="Manufacturer_Part_Number" value="DFLS2100-7"/>
+      <property name="URL" value="https://www.digikey.com/product-detail/en/diodes-incorporated/DFLS2100-7/DFLS2100-7DICT-ND/3451552"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>594559a4-0c93-49e5-bd83-e354db5e2765</tstamps>
+    </comp>
+    <comp ref="ER4">
+      <value>1R</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8dff076a-4068-41f7-b04f-a02b801c15f9</tstamps>
+    </comp>
+    <comp ref="ER5">
+      <value>1R</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a315aa3a-6345-4a46-a6c8-3a3d8c13b752</tstamps>
+    </comp>
+    <comp ref="ER6">
+      <value>1R</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2708c3cc-cab6-4f21-8694-1644e80534fa</tstamps>
+    </comp>
+    <comp ref="HLL1">
+      <value>SQ1010_8x5mm</value>
+      <footprint>AeonLabs_Power:Common Mode Inductor SQ1010 8x5mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">AeonLabs_Power:Common Mode Inductor SQ1010 8x5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Power_Management" part="Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm" description="Coupled inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic coupled"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b665007d-09c8-4bf6-bb2b-fa64dc685d44</tstamps>
+    </comp>
+    <comp ref="HLL2">
+      <value>6.8uH</value>
+      <footprint>Inductor_SMD:L_1210_3225Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Inductor_SMD:L_1210_3225Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>37a00d07-d323-49a4-a6b1-5fd521d04a24</tstamps>
+    </comp>
+    <comp ref="INA1">
+      <value>INA219AIDCNR</value>
+      <footprint>AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</footprint>
+      <description>
+26V, 12-bit, i2c output current/voltage/power monitor
+</description>
+      <fields>
+        <field name="MF">Texas Instruments</field>
+        <field name="Package">SOT-23-8 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap</field>
+        <field name="MP">INA219AIDCNR</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda</field>
+        <field name="Footprint">AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</field>
+        <field name="Datasheet"/>
+        <field name="Description">
+26V, 12-bit, i2c output current/voltage/power monitor
+</field>
+      </fields>
+      <libsource lib="AeonLabs_Sensors" part="INA219AIDCNR" description="26V, 12-bit, i2c output current/voltage/power monitor"/>
+      <property name="MF" value="Texas Instruments"/>
+      <property name="Package" value="SOT-23-8 Texas Instruments"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"/>
+      <property name="MP" value="INA219AIDCNR"/>
+      <property name="Purchase-URL" value="https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4457aeda-4cba-4c02-bafd-cc79ee5aa892</tstamps>
+    </comp>
+    <comp ref="INA1_C1">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>70c4fd83-79af-42f2-9bd1-ee982e8adf46</tstamps>
+    </comp>
+    <comp ref="INA1_C4">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fe388c80-8b41-4d86-a92b-e0cae0d3a936</tstamps>
+    </comp>
+    <comp ref="INA1_C5">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>932fa958-9c1f-496a-9103-059bcef32476</tstamps>
+    </comp>
+    <comp ref="INA4">
+      <value>INA219AIDCNR</value>
+      <footprint>AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</footprint>
+      <description>
+26V, 12-bit, i2c output current/voltage/power monitor
+</description>
+      <fields>
+        <field name="MF">Texas Instruments</field>
+        <field name="Package">SOT-23-8 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap</field>
+        <field name="MP">INA219AIDCNR</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda</field>
+        <field name="Footprint">AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</field>
+        <field name="Datasheet"/>
+        <field name="Description">
+26V, 12-bit, i2c output current/voltage/power monitor
+</field>
+      </fields>
+      <libsource lib="AeonLabs_Sensors" part="INA219AIDCNR" description="26V, 12-bit, i2c output current/voltage/power monitor"/>
+      <property name="MF" value="Texas Instruments"/>
+      <property name="Package" value="SOT-23-8 Texas Instruments"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"/>
+      <property name="MP" value="INA219AIDCNR"/>
+      <property name="Purchase-URL" value="https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>eecf7adb-6a6e-46c3-a8a8-83d95bf69d84</tstamps>
+    </comp>
+    <comp ref="INA5">
+      <value>INA219AIDCNR</value>
+      <footprint>AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</footprint>
+      <description>
+26V, 12-bit, i2c output current/voltage/power monitor
+</description>
+      <fields>
+        <field name="MF">Texas Instruments</field>
+        <field name="Package">SOT-23-8 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap</field>
+        <field name="MP">INA219AIDCNR</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda</field>
+        <field name="Footprint">AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</field>
+        <field name="Datasheet"/>
+        <field name="Description">
+26V, 12-bit, i2c output current/voltage/power monitor
+</field>
+      </fields>
+      <libsource lib="AeonLabs_Sensors" part="INA219AIDCNR" description="26V, 12-bit, i2c output current/voltage/power monitor"/>
+      <property name="MF" value="Texas Instruments"/>
+      <property name="Package" value="SOT-23-8 Texas Instruments"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"/>
+      <property name="MP" value="INA219AIDCNR"/>
+      <property name="Purchase-URL" value="https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>68c78364-e848-46ec-bdf8-9400713412dc</tstamps>
+    </comp>
+    <comp ref="MPC1">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>92681667-fc34-45ea-8fde-c1ce23d0213e</tstamps>
+    </comp>
+    <comp ref="MPC2">
+      <value>100Nf</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b483f344-fd33-4e14-b60b-da29e4e02d6e</tstamps>
+    </comp>
+    <comp ref="MPC3">
+      <value>220PF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>056fd953-2994-478d-b7a3-8c087cf76b59</tstamps>
+    </comp>
+    <comp ref="MPC4">
+      <value>22UF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a37c517d-c84f-49f5-b25a-e6f993396403</tstamps>
+    </comp>
+    <comp ref="MPD1">
+      <value>SS12</value>
+      <footprint>Diode_SMD:D_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Diode_SMD:D_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>108d93b4-19c5-4449-9d93-04169c03fc46</tstamps>
+    </comp>
+    <comp ref="MPL1">
+      <value>10uF</value>
+      <footprint>Inductor_SMD:L_1210_3225Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Inductor_SMD:L_1210_3225Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8bc40a58-5d9f-433d-9aa4-3d60943af3fb</tstamps>
+    </comp>
+    <comp ref="MPR1">
+      <value>24.9K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7cc8cbda-348d-4860-a67b-826203b213b2</tstamps>
+    </comp>
+    <comp ref="MPR2">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>02ea6b4e-ffba-4142-84a9-b96ed5fbc5e6</tstamps>
+    </comp>
+    <comp ref="MPR3">
+      <value>200K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>847227ae-f71e-4eaa-9e48-a06ad0544f11</tstamps>
+    </comp>
+    <comp ref="MPR4">
+      <value>68.1K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>afd87d76-51e8-4a85-a4fe-6025be56716a</tstamps>
+    </comp>
+    <comp ref="MPR5">
+      <value>40.2K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c2b5b363-de62-44c9-8337-c7c5f8ec94dd</tstamps>
+    </comp>
+    <comp ref="MPR6">
+      <value>124K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>36720f63-8167-4229-ac03-ada805f8b122</tstamps>
+    </comp>
+    <comp ref="R69">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Digikey Part Number">311-1.00KCRCT-ND</field>
+        <field name="Manufacturer_Name">Yageo</field>
+        <field name="Manufacturer_Part_Number">RC0805FR-071KL</field>
+        <field name="URL">https://www.digikey.com/product-detail/en/yageo/RC0805FR-071KL/311-1.00KCRCT-ND/730391</field>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Digikey Part Number" value="311-1.00KCRCT-ND"/>
+      <property name="Manufacturer_Name" value="Yageo"/>
+      <property name="Manufacturer_Part_Number" value="RC0805FR-071KL"/>
+      <property name="URL" value="https://www.digikey.com/product-detail/en/yageo/RC0805FR-071KL/311-1.00KCRCT-ND/730391"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a6e3e764-9306-4eca-affe-eb8bb299fe5b</tstamps>
+    </comp>
+    <comp ref="TP1">
+      <value>VIN</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>feb3e224-1ce0-43ab-b2e1-d6ba075d0dac</tstamps>
+    </comp>
+    <comp ref="TP2">
+      <value>VOut</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8d305d28-8648-4247-948b-be3a12ab5b4a</tstamps>
+    </comp>
+    <comp ref="TP3">
+      <value>GND</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ada7f2ed-2b15-4170-bf8b-54fde6e52ef4</tstamps>
+    </comp>
+    <comp ref="TP4">
+      <value>12V</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>595f7889-0e9f-437e-8b72-0f3b652e6117</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>MP1584EN</value>
+      <footprint>AeonLabs_Power:MP1584EN SOIC127P600X170-9N</footprint>
+      <fields>
+        <field name="DESCRIPTION"/>
+        <field name="MP">MP1584EN</field>
+        <field name="PACKAGE">None</field>
+        <field name="MF">Monolithic Power Systems</field>
+        <field name="AVAILABILITY">Unavailable</field>
+        <field name="STANDARD">IPC-7351B</field>
+        <field name="PRICE">None</field>
+        <field name="Footprint">AeonLabs_Power:MP1584EN SOIC127P600X170-9N</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Power_Management" part="MP1584EN" description=""/>
+      <property name="DESCRIPTION" value=""/>
+      <property name="MP" value="MP1584EN"/>
+      <property name="PACKAGE" value="None"/>
+      <property name="MF" value="Monolithic Power Systems"/>
+      <property name="AVAILABILITY" value="Unavailable"/>
+      <property name="STANDARD" value="IPC-7351B"/>
+      <property name="PRICE" value="None"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5a006ad6-50f8-442e-8e53-a1109adde733</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="AeonLabs_Sensors" part="INA219AIDCNR">
+      <description>26V, 12-bit, i2c output current/voltage/power monitor</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">INA219AIDCNR</field>
+        <field name="Footprint">AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N</field>
+        <field name="Datasheet"/>
+        <field name="Description">26V, 12-bit, i2c output current/voltage/power monitor</field>
+        <field name="MF">Texas Instruments</field>
+        <field name="Package">SOT-23-8 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap</field>
+        <field name="MP">INA219AIDCNR</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&amp;manufacturer=Texas Instruments&amp;part_name=INA219AIDCNR&amp;search_term=None</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda</field>
+      </fields>
+      <pins>
+        <pin num="1" name="IN+" type="input"/>
+        <pin num="2" name="IN-" type="input"/>
+        <pin num="3" name="GND" type="power_in"/>
+        <pin num="4" name="VS" type="power_in"/>
+        <pin num="5" name="SCL" type="input"/>
+        <pin num="6" name="SDA" type="bidirectional"/>
+        <pin num="7" name="A0" type="input"/>
+        <pin num="8" name="A1" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Battery_Cell">
+      <description>Single-cell battery</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">BT</field>
+        <field name="Value">Battery_Cell</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single-cell battery</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+" type="passive"/>
+        <pin num="2" name="-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="CP">
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">Device_CP</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Schottky diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L">
+      <description>Inductor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Power_Management" part="Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm">
+      <description>Coupled inductor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">HLL2</field>
+        <field name="Value">Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm</field>
+        <field name="Footprint">Inductor_THT:Common Mode Inductor SQ1010 8x5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Coupled inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+        <pin num="4" name="4" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Power_Management" part="MP1584EN">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MP1584EN</field>
+        <field name="Footprint">Package_SO:MP1584 SOIC127P600X170-9N</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+        <field name="MP">MP1584EN</field>
+        <field name="PACKAGE">None</field>
+        <field name="MF">Monolithic Power Systems</field>
+        <field name="AVAILABILITY">Unavailable</field>
+        <field name="STANDARD">IPC-7351B</field>
+        <field name="PRICE">None</field>
+      </fields>
+      <pins>
+        <pin num="1" name="SW" type="output"/>
+        <pin num="2" name="EN" type="input"/>
+        <pin num="3" name="COMP" type="output"/>
+        <pin num="4" name="FB" type="input"/>
+        <pin num="5" name="GND" type="power_in"/>
+        <pin num="6" name="FREQ" type="input"/>
+        <pin num="7" name="VIN" type="input"/>
+        <pin num="8" name="BST" type="passive"/>
+        <pin num="9" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Power_Management" part="ST01S09_AUR9718x_DFN_3x3mm_6_pin">
+      <description>Current Sense High Side Switch, 65V, 30A, D2PAK-5L</description>
+      <docs>https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326</docs>
+      <footprints>
+        <fp>TO?263*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">AU1</field>
+        <field name="Value">AUR9718x_DFN_3x3mm_6_pin</field>
+        <field name="Footprint">Package_DFN_QFN:AUR9718 ST1S09 SON95P300X300X100-7N</field>
+        <field name="Datasheet">https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326</field>
+        <field name="Description">Current Sense High Side Switch, 65V, 30A, D2PAK-5L</field>
+      </fields>
+      <pins>
+        <pin num="1" name="FB" type="input"/>
+        <pin num="2" name="GND" type="output"/>
+        <pin num="3" name="SW" type="bidirectional"/>
+        <pin num="4" name="VIN_SW" type="input"/>
+        <pin num="5" name="VIN_A" type="power_out"/>
+        <pin num="6" name="EN" type="power_in"/>
+        <pin num="7" name="GND" type="output"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+3V3" class="Default">
+      <node ref="D13" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="ER6" pin="1" pintype="passive"/>
+      <node ref="INA1" pin="4" pinfunction="VS" pintype="power_in"/>
+      <node ref="INA1" pin="8" pinfunction="A1" pintype="input"/>
+      <node ref="INA1_C1" pin="2" pintype="passive"/>
+      <node ref="INA1_C4" pin="2" pintype="passive"/>
+      <node ref="INA1_C5" pin="2" pintype="passive"/>
+      <node ref="INA4" pin="4" pinfunction="VS" pintype="power_in"/>
+      <node ref="INA4" pin="8" pinfunction="A1" pintype="input"/>
+      <node ref="INA5" pin="2" pinfunction="IN-" pintype="input"/>
+      <node ref="INA5" pin="4" pinfunction="VS" pintype="power_in"/>
+      <node ref="INA5" pin="7" pinfunction="A0" pintype="input"/>
+      <node ref="INA5" pin="8" pinfunction="A1" pintype="input"/>
+    </net>
+    <net code="2" name="+5V" class="Default">
+      <node ref="AUR1" pin="4" pinfunction="VIN_SW" pintype="input"/>
+      <node ref="AUR1" pin="5" pinfunction="VIN_A" pintype="power_out"/>
+      <node ref="AUR1" pin="6" pinfunction="EN" pintype="power_in"/>
+      <node ref="AUR_C2" pin="1" pintype="passive"/>
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="ER5" pin="2" pintype="passive"/>
+      <node ref="INA4" pin="2" pinfunction="IN-" pintype="input"/>
+      <node ref="TP1" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="3" name="+12V" class="Default">
+      <node ref="C32" pin="1" pintype="passive"/>
+      <node ref="C42" pin="1" pintype="passive"/>
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="ER4" pin="2" pintype="passive"/>
+      <node ref="HLL2" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="INA1" pin="2" pinfunction="IN-" pintype="input"/>
+      <node ref="MPC1" pin="1" pintype="passive"/>
+      <node ref="MPR1" pin="1" pintype="passive"/>
+      <node ref="MPR2" pin="1" pintype="passive"/>
+      <node ref="MPR2" pin="2" pintype="passive"/>
+      <node ref="TP4" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="EN" pintype="input"/>
+      <node ref="U2" pin="7" pinfunction="VIN" pintype="input"/>
+    </net>
+    <net code="4" name="3V3_PROBE_IN" class="Default">
+      <node ref="AUR_C1" pin="1" pintype="passive"/>
+      <node ref="AUR_R1" pin="1" pintype="passive"/>
+      <node ref="AUR_l1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="ER6" pin="2" pintype="passive"/>
+      <node ref="INA5" pin="1" pinfunction="IN+" pintype="input"/>
+      <node ref="TP2" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="5" name="5V_PROBE_IN" class="Default">
+      <node ref="ER5" pin="1" pintype="passive"/>
+      <node ref="INA4" pin="1" pinfunction="IN+" pintype="input"/>
+      <node ref="MPC4" pin="1" pintype="passive"/>
+      <node ref="MPL1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="MPR6" pin="2" pintype="passive"/>
+    </net>
+    <net code="6" name="12V-BAT" class="Default">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D11" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="7" name="12V_PROBE_IN" class="Default">
+      <node ref="ER4" pin="1" pintype="passive"/>
+      <node ref="HLL1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="INA1" pin="1" pinfunction="IN+" pintype="input"/>
+    </net>
+    <net code="8" name="GND" class="Default">
+      <node ref="AUR1" pin="2" pinfunction="GND" pintype="output"/>
+      <node ref="AUR1" pin="7" pinfunction="GND" pintype="output"/>
+      <node ref="AUR_C1" pin="2" pintype="passive"/>
+      <node ref="AUR_C2" pin="2" pintype="passive"/>
+      <node ref="AUR_R2" pin="2" pintype="passive"/>
+      <node ref="BT1" pin="2" pinfunction="-" pintype="passive"/>
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C32" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C42" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="HLL1" pin="4" pinfunction="4" pintype="passive"/>
+      <node ref="INA1" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="INA1" pin="7" pinfunction="A0" pintype="input"/>
+      <node ref="INA1_C1" pin="1" pintype="passive"/>
+      <node ref="INA1_C4" pin="1" pintype="passive"/>
+      <node ref="INA1_C5" pin="1" pintype="passive"/>
+      <node ref="INA4" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="INA5" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="MPC1" pin="2" pintype="passive"/>
+      <node ref="MPC4" pin="2" pintype="passive"/>
+      <node ref="MPD1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="MPR1" pin="2" pintype="passive"/>
+      <node ref="MPR3" pin="2" pintype="passive"/>
+      <node ref="MPR4" pin="2" pintype="passive"/>
+      <node ref="MPR5" pin="2" pintype="passive"/>
+      <node ref="TP3" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U2" pin="5" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="9" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="9" name="GND-BAT" class="Default">
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="HLL1" pin="3" pinfunction="3" pintype="passive"/>
+    </net>
+    <net code="10" name="GPIO8_I2C_SDA" class="Default">
+      <node ref="INA1" pin="6" pinfunction="SDA" pintype="bidirectional"/>
+      <node ref="INA4" pin="6" pinfunction="SDA" pintype="bidirectional"/>
+      <node ref="INA4" pin="7" pinfunction="A0" pintype="input"/>
+      <node ref="INA5" pin="6" pinfunction="SDA" pintype="bidirectional"/>
+    </net>
+    <net code="11" name="GPIO9_I2C_SCL" class="Default">
+      <node ref="INA1" pin="5" pinfunction="SCL" pintype="input"/>
+      <node ref="INA4" pin="5" pinfunction="SCL" pintype="input"/>
+      <node ref="INA5" pin="5" pinfunction="SCL" pintype="input"/>
+    </net>
+    <net code="12" name="MCU_VBAT" class="Default">
+      <node ref="BT1" pin="1" pinfunction="+" pintype="passive"/>
+      <node ref="R69" pin="1" pintype="passive"/>
+    </net>
+    <net code="13" name="Net-(AUR1-FB)" class="Default">
+      <node ref="AUR1" pin="1" pinfunction="FB" pintype="input"/>
+      <node ref="AUR_R1" pin="2" pintype="passive"/>
+      <node ref="AUR_R2" pin="1" pintype="passive"/>
+    </net>
+    <net code="14" name="Net-(AUR1-SW)" class="Default">
+      <node ref="AUR1" pin="3" pinfunction="SW" pintype="bidirectional"/>
+      <node ref="AUR_l1" pin="2" pinfunction="2" pintype="passive"/>
+    </net>
+    <net code="15" name="Net-(D1-K)" class="Default">
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D11" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="HLL1" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="16" name="Net-(D13-K)" class="Default">
+      <node ref="D13" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R69" pin="2" pintype="passive"/>
+    </net>
+    <net code="17" name="Net-(MPC3-Pad2)" class="Default">
+      <node ref="MPC3" pin="2" pintype="passive"/>
+      <node ref="MPR4" pin="1" pintype="passive"/>
+    </net>
+    <net code="18" name="Net-(MPD1-K)" class="Default">
+      <node ref="MPC2" pin="1" pintype="passive"/>
+      <node ref="MPD1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="MPL1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U2" pin="1" pinfunction="SW" pintype="output"/>
+    </net>
+    <net code="19" name="Net-(U2-BST)" class="Default">
+      <node ref="MPC2" pin="2" pintype="passive"/>
+      <node ref="U2" pin="8" pinfunction="BST" pintype="passive"/>
+    </net>
+    <net code="20" name="Net-(U2-COMP)" class="Default">
+      <node ref="MPC3" pin="1" pintype="passive"/>
+      <node ref="U2" pin="3" pinfunction="COMP" pintype="output"/>
+    </net>
+    <net code="21" name="Net-(U2-FB)" class="Default">
+      <node ref="MPR5" pin="1" pintype="passive"/>
+      <node ref="MPR6" pin="1" pintype="passive"/>
+      <node ref="U2" pin="4" pinfunction="FB" pintype="input"/>
+    </net>
+    <net code="22" name="Net-(U2-FREQ)" class="Default">
+      <node ref="MPR3" pin="1" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="FREQ" pintype="input"/>
+    </net>
+    <net code="23" name="unconnected-(HLL2-Pad2)" class="Default">
+      <node ref="HLL2" pin="2" pinfunction="2" pintype="passive"/>
+    </net>
+  </nets>
+</export>

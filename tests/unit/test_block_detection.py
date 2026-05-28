@@ -81,9 +81,11 @@ def test_classify_all_components() -> None:
     """Test that all components in the circuit are classified."""
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
+    component_refs = {component.ref for component in ir.components}
 
-    # All components should be assigned to a block
-    assert len(layout.assignments) == len(ir.components)
+    # All concrete components should be assigned to a block. Multi-unit helpers may
+    # also synthesize per-unit refs such as U1A/U1B for downstream layout logic.
+    assert component_refs <= set(layout.assignments)
 
     for component in ir.components:
         assert component.ref in layout.assignments
@@ -442,6 +444,7 @@ def test_components_by_role_method() -> None:
     """Test the components_by_role() helper method."""
     ir = _load_test_circuit()
     layout = classify_circuit(ir)
+    component_refs = {component.ref for component in ir.components}
 
     # Get input components
     input_components = layout.components_by_role(BlockRole.INPUT)
@@ -458,7 +461,7 @@ def test_components_by_role_method() -> None:
         components = layout.components_by_role(role)
         all_components.update(components)
 
-    assert len(all_components) == len(ir.components)
+    assert component_refs <= all_components
 
 
 @pytest.mark.skipif(
@@ -701,6 +704,69 @@ def test_explicit_unit_buffer_stage_classified_when_ref_has_single_signal_unit()
 
     assert layout.get_role("U1") == BlockRole.BUFFER_STAGE
     assert layout.get_role("RISO") == BlockRole.OUTPUT
+
+
+def test_unsplit_dual_opamp_gets_synthetic_signal_unit_roles() -> None:
+    """Unsplit dual op-amps should expose per-unit roles for downstream layout passes."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="JIN", symbol="Connector_Generic:Conn_01x01", value="In"),
+            ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="CINT", symbol="Device:C", value="1u"),
+            ComponentIR(ref="RFB", symbol="Device:R", value="22k"),
+            ComponentIR(ref="RG", symbol="Device:R", value="10k"),
+            ComponentIR(ref="RBIAS", symbol="Device:R", value="100k"),
+            ComponentIR(ref="RISO", symbol="Device:R", value="47"),
+            ComponentIR(ref="JOUT", symbol="Connector_Generic:Conn_01x01", value="Out"),
+        ],
+        nets=[
+            NetIR(
+                name="IN",
+                pins=[PinRefIR(ref="JIN", pin="1"), PinRefIR(ref="U1", pin="3", unit="A")],
+            ),
+            NetIR(
+                name="U1A_INV",
+                pins=[PinRefIR(ref="U1", pin="2", unit="A"), PinRefIR(ref="RG", pin="1")],
+            ),
+            NetIR(
+                name="U1A_OUT",
+                pins=[
+                    PinRefIR(ref="U1", pin="1", unit="A"),
+                    PinRefIR(ref="RFB", pin="1"),
+                    PinRefIR(ref="CINT", pin="1"),
+                ],
+            ),
+            NetIR(
+                name="U1A_FB_RET",
+                pins=[PinRefIR(ref="RFB", pin="2"), PinRefIR(ref="RG", pin="2")],
+            ),
+            NetIR(
+                name="BUF_IN",
+                pins=[
+                    PinRefIR(ref="CINT", pin="2"),
+                    PinRefIR(ref="RBIAS", pin="1"),
+                    PinRefIR(ref="U1", pin="5", unit="B"),
+                ],
+            ),
+            NetIR(
+                name="BUF_OUT",
+                pins=[
+                    PinRefIR(ref="U1", pin="7", unit="B"),
+                    PinRefIR(ref="U1", pin="6", unit="B"),
+                    PinRefIR(ref="RISO", pin="1"),
+                ],
+            ),
+            NetIR(name="OUT", pins=[PinRefIR(ref="RISO", pin="2"), PinRefIR(ref="JOUT", pin="1")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="RBIAS", pin="2")]),
+        ],
+    )
+
+    layout = classify_circuit(ir)
+
+    assert layout.get_role("U1") == BlockRole.OPAMP_CORE
+    assert layout.get_role("U1A") == BlockRole.OPAMP_CORE
+    assert layout.get_role("U1B") == BlockRole.BUFFER_STAGE
 
 
 def test_split_quad_unit_follower_stage_classified_as_buffer_stage() -> None:

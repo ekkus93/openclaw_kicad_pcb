@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch</source>
+    <date>2026-05-27T18:27:47-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="CJC1">
+      <value>2.2nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0d22e123-9b35-40f8-a930-657313794a49</tstamps>
+    </comp>
+    <comp ref="CJC2">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c835838b-a22a-4bf4-bfea-32602647b936</tstamps>
+    </comp>
+    <comp ref="CJC3">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>11c34859-c763-48f1-ba53-04ac36da2ace</tstamps>
+    </comp>
+    <comp ref="CJC4">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d2abf8d1-3b50-4dd5-b6fc-4fe4f7465704</tstamps>
+    </comp>
+    <comp ref="CJC5">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7504b3e7-64f7-4531-b91e-8f00b62f6d86</tstamps>
+    </comp>
+    <comp ref="CJC6">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>22445b93-d19f-4736-b441-29afc3bdea07</tstamps>
+    </comp>
+    <comp ref="CJC7">
+      <value>33nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f3fa2f02-0df0-4816-8b3a-f219a3dc6eff</tstamps>
+    </comp>
+    <comp ref="CJC8">
+      <value>33nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6057eaa1-dbfa-45d0-a1cf-0ef83783b91a</tstamps>
+    </comp>
+    <comp ref="CJQ1">
+      <value>AO3400A</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf</datasheet>
+      <fields>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23</field>
+        <field name="Datasheet">http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Transistor_FET" part="AO3400A" description="30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="N-Channel MOSFET"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d7e32c24-cfb7-4e93-b594-64bceea045de</tstamps>
+    </comp>
+    <comp ref="CJR1">
+      <value>61R9</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ff2f8037-27f2-460b-9f7c-2eb127b24c47</tstamps>
+    </comp>
+    <comp ref="CJR2">
+      <value>10K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f05cebc2-e963-4b2d-ae98-ee24174001be</tstamps>
+    </comp>
+    <comp ref="CJR3">
+      <value>300R</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f0d3cb6b-defb-478b-a84e-3a51dbdd796f</tstamps>
+    </comp>
+    <comp ref="CJR4">
+      <value>31K6</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>23c7778a-f781-41fa-a45b-e1a7cf4eb2bc</tstamps>
+    </comp>
+    <comp ref="CJR5">
+      <value>4K7</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f7e939f6-eae4-40ab-a642-5ffd6d00d9dc</tstamps>
+    </comp>
+    <comp ref="CJR6">
+      <value>100K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>307c965b-225f-4498-9b29-5191caab9675</tstamps>
+    </comp>
+    <comp ref="CJR7">
+      <value>470K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>992bfb70-0840-46a3-8add-6b3601d044be</tstamps>
+    </comp>
+    <comp ref="CJR8">
+      <value>100K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4ce5f881-f614-4c85-a85b-9395c791d5d7</tstamps>
+    </comp>
+    <comp ref="CJR9">
+      <value>6K8</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d173b9c6-b1e0-4e2b-b518-4d55948306a0</tstamps>
+    </comp>
+    <comp ref="CJR10">
+      <value>100K</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a09fe2c2-7b99-4ec1-9071-40bed00d6808</tstamps>
+    </comp>
+    <comp ref="CJR11">
+      <value>4K7</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e8c13f6f-a53c-4bd3-b15c-14684ebdc837</tstamps>
+    </comp>
+    <comp ref="U12">
+      <value>CJ125</value>
+      <footprint>AeonLabs_Automotive:CJ125 Wideband sensor</footprint>
+      <description>
+LAMBDA PROBE INTERFACE IC
+</description>
+      <fields>
+        <field name="MF">Bosch</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=snap</field>
+        <field name="MP">CJ125</field>
+        <field name="Availability">Not in stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=eda</field>
+        <field name="Footprint">AeonLabs_Automotive:CJ125 Wideband sensor</field>
+        <field name="Datasheet"/>
+        <field name="Description">
+LAMBDA PROBE INTERFACE IC
+</field>
+      </fields>
+      <libsource lib="AeonLabs_Automotive" part="CJ125" description="LAMBDA PROBE INTERFACE IC"/>
+      <property name="MF" value="Bosch"/>
+      <property name="Package" value="None"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=snap"/>
+      <property name="MP" value="CJ125"/>
+      <property name="Availability" value="Not in stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5c29f506-7de0-49ec-b8cc-80432852711f</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="AeonLabs_Automotive" part="CJ125">
+      <description>LAMBDA PROBE INTERFACE IC</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">CJ125</field>
+        <field name="Footprint">AeonLabs_Automotive:CJ125 Wideband sensor</field>
+        <field name="Datasheet"/>
+        <field name="Description">LAMBDA PROBE INTERFACE IC</field>
+        <field name="MF">Bosch</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=snap</field>
+        <field name="MP">CJ125</field>
+        <field name="Availability">Not in stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/CJ125/Bosch/view-part/?ref=eda</field>
+      </fields>
+      <pins>
+        <pin num="1" name="UB" type="passive"/>
+        <pin num="2" name="UN" type="passive"/>
+        <pin num="3" name="IP" type="passive"/>
+        <pin num="4" name="IA" type="passive"/>
+        <pin num="5" name="OSZ" type="passive"/>
+        <pin num="6" name="DIAHG" type="input"/>
+        <pin num="7" name="DIAHD" type="input"/>
+        <pin num="8" name="~{RST}" type="input"/>
+        <pin num="9" name="RS" type="passive"/>
+        <pin num="10" name="RM" type="passive"/>
+        <pin num="11" name="CM" type="passive"/>
+        <pin num="12" name="UR" type="passive"/>
+        <pin num="13" name="SCK" type="output"/>
+        <pin num="14" name="MISO" type="output"/>
+        <pin num="15" name="MOSI" type="input"/>
+        <pin num="16" name="~{SS}" type="output"/>
+        <pin num="17" name="VCC" type="passive"/>
+        <pin num="18" name="VM" type="passive"/>
+        <pin num="19" name="US" type="passive"/>
+        <pin num="20" name="UP" type="passive"/>
+        <pin num="21" name="UA" type="passive"/>
+        <pin num="22" name="CF" type="passive"/>
+        <pin num="23" name="RF" type="passive"/>
+        <pin num="24" name="GND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Transistor_FET" part="AO3400A">
+      <description>30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23</description>
+      <docs>http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">AO3400A</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23</field>
+        <field name="Datasheet">http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf</field>
+        <field name="Description">30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="D" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+5V" class="Default">
+      <node ref="CJC3" pin="2" pintype="passive"/>
+      <node ref="CJC4" pin="2" pintype="passive"/>
+      <node ref="U12" pin="17" pinfunction="VCC" pintype="passive"/>
+    </net>
+    <net code="2" name="+12V" class="Default">
+      <node ref="CJC5" pin="2" pintype="passive"/>
+      <node ref="U12" pin="1" pinfunction="UB" pintype="passive"/>
+    </net>
+    <net code="3" name="CJ125_CS" class="Default">
+      <node ref="U12" pin="16" pinfunction="~{SS}" pintype="output"/>
+    </net>
+    <net code="4" name="CJ_RST" class="Default">
+      <node ref="U12" pin="8" pinfunction="~{RST}" pintype="input"/>
+    </net>
+    <net code="5" name="DIAHD" class="Default">
+      <node ref="CJR9" pin="1" pintype="passive"/>
+      <node ref="U12" pin="7" pinfunction="DIAHD" pintype="input"/>
+    </net>
+    <net code="6" name="DIAHG" class="Default">
+      <node ref="CJR11" pin="2" pintype="passive"/>
+      <node ref="U12" pin="6" pinfunction="DIAHG" pintype="input"/>
+    </net>
+    <net code="7" name="GND" class="Default">
+      <node ref="CJC1" pin="1" pintype="passive"/>
+      <node ref="CJC3" pin="1" pintype="passive"/>
+      <node ref="CJC4" pin="1" pintype="passive"/>
+      <node ref="CJC5" pin="1" pintype="passive"/>
+      <node ref="CJC6" pin="1" pintype="passive"/>
+      <node ref="CJC7" pin="1" pintype="passive"/>
+      <node ref="CJC8" pin="1" pintype="passive"/>
+      <node ref="CJQ1" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="CJR10" pin="2" pintype="passive"/>
+      <node ref="CJR2" pin="1" pintype="passive"/>
+      <node ref="U12" pin="24" pinfunction="GND" pintype="passive"/>
+    </net>
+    <net code="8" name="LSU_HEAT-" class="Default">
+      <node ref="CJQ1" pin="3" pinfunction="D" pintype="passive"/>
+      <node ref="CJR9" pin="2" pintype="passive"/>
+    </net>
+    <net code="9" name="LSU_IA" class="Default">
+      <node ref="CJR1" pin="1" pintype="passive"/>
+      <node ref="CJR7" pin="2" pintype="passive"/>
+      <node ref="U12" pin="4" pinfunction="IA" pintype="passive"/>
+    </net>
+    <net code="10" name="LSU_IP" class="Default">
+      <node ref="CJR1" pin="2" pintype="passive"/>
+      <node ref="U12" pin="3" pinfunction="IP" pintype="passive"/>
+    </net>
+    <net code="11" name="LSU_UN" class="Default">
+      <node ref="CJC1" pin="2" pintype="passive"/>
+      <node ref="CJR6" pin="2" pintype="passive"/>
+      <node ref="U12" pin="2" pinfunction="UN" pintype="passive"/>
+    </net>
+    <net code="12" name="LSU_VM" class="Default">
+      <node ref="CJR3" pin="2" pintype="passive"/>
+      <node ref="U12" pin="18" pinfunction="VM" pintype="passive"/>
+    </net>
+    <net code="13" name="MISO" class="Default">
+      <node ref="U12" pin="14" pinfunction="MISO" pintype="output"/>
+    </net>
+    <net code="14" name="MOSI" class="Default">
+      <node ref="U12" pin="15" pinfunction="MOSI" pintype="input"/>
+    </net>
+    <net code="15" name="Net-(CJC2-Pad2)" class="Default">
+      <node ref="CJC2" pin="2" pintype="passive"/>
+      <node ref="CJR4" pin="2" pintype="passive"/>
+    </net>
+    <net code="16" name="Net-(CJQ1-G)" class="Default">
+      <node ref="CJQ1" pin="1" pinfunction="G" pintype="input"/>
+      <node ref="CJR10" pin="1" pintype="passive"/>
+      <node ref="CJR11" pin="1" pintype="passive"/>
+    </net>
+    <net code="17" name="Net-(U12-CF)" class="Default">
+      <node ref="CJC6" pin="2" pintype="passive"/>
+      <node ref="CJR8" pin="1" pintype="passive"/>
+      <node ref="U12" pin="22" pinfunction="CF" pintype="passive"/>
+    </net>
+    <net code="18" name="Net-(U12-CM)" class="Default">
+      <node ref="CJC2" pin="1" pintype="passive"/>
+      <node ref="U12" pin="11" pinfunction="CM" pintype="passive"/>
+    </net>
+    <net code="19" name="Net-(U12-OSZ)" class="Default">
+      <node ref="CJR2" pin="2" pintype="passive"/>
+      <node ref="U12" pin="5" pinfunction="OSZ" pintype="passive"/>
+    </net>
+    <net code="20" name="Net-(U12-RF)" class="Default">
+      <node ref="CJR8" pin="2" pintype="passive"/>
+      <node ref="U12" pin="23" pinfunction="RF" pintype="passive"/>
+    </net>
+    <net code="21" name="Net-(U12-RM)" class="Default">
+      <node ref="CJR4" pin="1" pintype="passive"/>
+      <node ref="U12" pin="10" pinfunction="RM" pintype="passive"/>
+    </net>
+    <net code="22" name="Net-(U12-RS)" class="Default">
+      <node ref="CJR3" pin="1" pintype="passive"/>
+      <node ref="U12" pin="9" pinfunction="RS" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(U12-UP)" class="Default">
+      <node ref="CJR5" pin="2" pintype="passive"/>
+      <node ref="CJR6" pin="1" pintype="passive"/>
+      <node ref="CJR7" pin="1" pintype="passive"/>
+      <node ref="U12" pin="20" pinfunction="UP" pintype="passive"/>
+    </net>
+    <net code="24" name="Net-(U12-US)" class="Default">
+      <node ref="CJR5" pin="1" pintype="passive"/>
+      <node ref="U12" pin="19" pinfunction="US" pintype="passive"/>
+    </net>
+    <net code="25" name="SCLK" class="Default">
+      <node ref="U12" pin="13" pinfunction="SCK" pintype="output"/>
+    </net>
+    <net code="26" name="UA" class="Default">
+      <node ref="CJC7" pin="2" pintype="passive"/>
+      <node ref="U12" pin="21" pinfunction="UA" pintype="passive"/>
+    </net>
+    <net code="27" name="UR" class="Default">
+      <node ref="CJC8" pin="2" pintype="passive"/>
+      <node ref="U12" pin="12" pinfunction="UR" pintype="passive"/>
+    </net>
+  </nets>
+</export>

@@ -1,0 +1,29 @@
+{
+  "created_by": "model-corpus ingest",
+  "detected_license_hint": "CERN-OHL-S-2.0",
+  "detected_source_url_hint": "https://circuitsnips.com/circuit/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports",
+  "fixture_id": "4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports",
+  "generator": "CircuitSnips",
+  "global_label_count": 0,
+  "has_circuit_ir": true,
+  "has_embedded_symbols": true,
+  "kicad_schematic_version": "20231120",
+  "label_count": 45,
+  "license": "unknown",
+  "metadata_review_required": true,
+  "notes": [],
+  "power_symbol_count": 38,
+  "requires_custom_symbols": true,
+  "source_file_name": "4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports.kicad_sch",
+  "source_path": "model_kicad_files/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports.kicad_sch",
+  "source_url": null,
+  "status": "ready",
+  "status_reasons": [
+    "normalized:replaced_invalid_root_uuid",
+    "normalized:removed_top_level_comments",
+    "normalized:added_root_sheet_instances"
+  ],
+  "symbol_count": 93,
+  "title": "4 Port USB 2.0 Hub w/ 2 Internal Ports and 2 External Ports",
+  "wire_count": 258
+}

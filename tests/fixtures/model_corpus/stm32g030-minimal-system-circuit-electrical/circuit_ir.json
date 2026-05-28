@@ -1,0 +1,1587 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-Buzzer:MLT-5020",
+        "LCSC": "C94598",
+        "Value2": "4kHz"
+      },
+      "footprint": "AT-Buzzer:MLT-5020",
+      "ref": "BZ1",
+      "symbol": "Device:Buzzer",
+      "value": "MLT-5020"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C710643"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C1",
+      "symbol": "Device:C_Small",
+      "value": "11pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C86285"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C2",
+      "symbol": "Device:C_Small",
+      "value": "15pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C710643"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C3",
+      "symbol": "Device:C_Small",
+      "value": "11pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C86285"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C4",
+      "symbol": "Device:C_Small",
+      "value": "15pF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C162178"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C5",
+      "symbol": "Device:C",
+      "value": "100n 50V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C23733"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C6",
+      "symbol": "Device:C",
+      "value": "4.7u 10V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C23733"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C7",
+      "symbol": "Device:C",
+      "value": "4.7u 10V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C162178"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C8",
+      "symbol": "Device:C",
+      "value": "100n 50V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Capacitor_SMD:C_0402_1005Metric",
+        "LCSC": "C162178"
+      },
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "ref": "C9",
+      "symbol": "Device:C",
+      "value": "100n 50V"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-LED:LED0603",
+        "LCSC": "C965804",
+        "Value2": "Green"
+      },
+      "footprint": "AT-LED:LED0603",
+      "ref": "D2",
+      "symbol": "Device:LED",
+      "value": "XL-1608UGC-04"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-LED:LED0603",
+        "LCSC": "C965799",
+        "Value2": "Red"
+      },
+      "footprint": "AT-LED:LED0603",
+      "ref": "D3",
+      "symbol": "Device:LED",
+      "value": "XL-1608SURC-06"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-LED:LED0603",
+        "LCSC": "C965800",
+        "Value2": "Orange"
+      },
+      "footprint": "AT-LED:LED0603",
+      "ref": "D4",
+      "symbol": "Device:LED",
+      "value": "XL-1608UOC-06"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-LED:LED0603",
+        "LCSC": "C965808",
+        "Value2": "White"
+      },
+      "footprint": "AT-LED:LED0603",
+      "ref": "D5",
+      "symbol": "Device:LED",
+      "value": "XL-1608UWC-04"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Diode_SMD:D_SOD-128",
+        "LCSC": "C509955"
+      },
+      "footprint": "Diode_SMD:D_SOD-128",
+      "ref": "D6",
+      "symbol": "Device:D_Schottky_Small_Filled",
+      "value": "RBR5LAM60ATR"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESDXL5UF_V_Y.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "LCSC": "C477992"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+      "ref": "D7",
+      "symbol": "Power_Protection:PESD3V3L5UY",
+      "value": "PESD3V3L5UY"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESDXL5UF_V_Y.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "LCSC": "C477992"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+      "ref": "D8",
+      "symbol": "Power_Protection:PESD3V3L5UY",
+      "value": "PESD3V3L5UY"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESDXL5UF_V_Y.pdf",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "LCSC": "C477992"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+      "ref": "D9",
+      "symbol": "Power_Protection:PESD3V3L5UY",
+      "value": "PESD3V3L5UY"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://infocenter.arm.com/help/topic/com.arm.doc.ddi0314h/DDI0314H_coresight_components_trm.pdf",
+        "Description": "",
+        "Footprint": "AT-Connectors:Samtec-2x5pin-1.27mm",
+        "LCSC": "C5155080"
+      },
+      "footprint": "AT-Connectors:Samtec-2x5pin-1.27mm",
+      "ref": "J1",
+      "symbol": "Connector:Conn_ARM_JTAG_SWD_10",
+      "value": "FTSH-105-01-L-DV-K-TR"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)",
+        "Footprint": "Connector_JST:JST_GH_SM03B-GHS-TB_1x03-1MP_P1.25mm_Horizontal",
+        "LCSC": "C514175"
+      },
+      "footprint": "Connector_JST:JST_GH_SM03B-GHS-TB_1x03-1MP_P1.25mm_Horizontal",
+      "ref": "J2",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "value": "SM03B-GHS"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "AT-BoardFeatures:SolderJumper-2_2.0x1.2mm_Open"
+      },
+      "footprint": "AT-BoardFeatures:SolderJumper-2_2.0x1.2mm_Open",
+      "ref": "JP1",
+      "symbol": "Jumper:SolderJumper_2_Open",
+      "value": "Disable Micro"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0603_1608Metric",
+        "LCSC": "C19330"
+      },
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "ref": "L1",
+      "symbol": "Device:L_Ferrite",
+      "value": "650 @100MHz"
+    },
+    {
+      "fields": {
+        "Datasheet": "http://assets.nexperia.com/documents/data-sheet/BSS84.pdf",
+        "Description": "-0.13A Id, -50V Vds, P-Channel MOSFET, SOT-23",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23",
+        "LCSC": "C82079"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q1",
+      "symbol": "Transistor_FET:BSS84",
+      "value": "BSS84"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23",
+        "LCSC": "C669000"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "ref": "Q2",
+      "symbol": "Device:Q_NMOS_GSD",
+      "value": "SI2310-TP"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C60490"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R1",
+      "symbol": "Device:R_Small_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C138034"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R2",
+      "symbol": "Device:R_Small_US",
+      "value": "1.5M"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C138034"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R22",
+      "symbol": "Device:R_Small_US",
+      "value": "1.5M"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C60490"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R3",
+      "symbol": "Device:R_Small_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C60490"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R4",
+      "symbol": "Device:R_Small_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C60490"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R5",
+      "symbol": "Device:R_Small_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C327362"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R6",
+      "symbol": "Device:R_Small_US",
+      "value": "23.7k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C60490"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R7",
+      "symbol": "Device:R_Small_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Resistor_SMD:R_0402_1005Metric",
+        "LCSC": "C25077"
+      },
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "ref": "R8",
+      "symbol": "Device:R_Small_US",
+      "value": "10"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Button_Switch_SMD:SW_SPST_TL3305A",
+        "LCSC": "C2886902"
+      },
+      "footprint": "Button_Switch_SMD:SW_SPST_TL3305A",
+      "ref": "SW1",
+      "symbol": "Switch:SW_Push",
+      "value": "RST"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://cdn-shop.adafruit.com/product-files/2343/SK9822_SHIJI.pdf",
+        "Description": "",
+        "Footprint": "AT-LED:SK9822",
+        "LCSC": "C2829089"
+      },
+      "footprint": "AT-LED:SK9822",
+      "ref": "U1",
+      "symbol": "AT-LED:SK9822",
+      "value": "SK9822"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://cdn-shop.adafruit.com/product-files/2343/SK9822_SHIJI.pdf",
+        "Description": "",
+        "Footprint": "AT-LED:SK9822",
+        "LCSC": "C2829089"
+      },
+      "footprint": "AT-LED:SK9822",
+      "ref": "U2",
+      "symbol": "AT-LED:SK9822",
+      "value": "SK9822"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.st.com/resource/en/datasheet/stm32g030c8.pdf",
+        "Description": "STMicroelectronics Arm Cortex-M0+ MCU, 64KB flash, 8KB RAM, 64 MHz, 2.0-3.6V, 43 GPIO, LQFP48",
+        "Footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "LCSC": "C529329"
+      },
+      "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+      "ref": "U3",
+      "symbol": "MCU_ST_STM32G0:STM32G030C8Tx",
+      "value": "STM32G030C8Tx"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+        "LCSC": "C400090",
+        "Value2": "8MHz"
+      },
+      "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+      "ref": "Y1",
+      "symbol": "Device:Crystal_GND24_Small",
+      "value": "TAXM8M4RDBCCT2T"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "",
+        "Footprint": "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm",
+        "LCSC": "C841881",
+        "Value2": "32.768kHz"
+      },
+      "footprint": "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm",
+      "ref": "Y2",
+      "symbol": "Device:Crystal",
+      "value": "Q13FC13500005"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+3.3V_LOCAL",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "BZ1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+5V_LOCAL",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+BATT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/12v0",
+      "pins": [
+        {
+          "pin": "20",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/3v3",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "17",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/5v0",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "18",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/BATT_POST",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "21",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/BATT_PRE",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "22",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/BUZZER",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "30",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_1",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_2",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_3",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_4",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "14",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_5",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "15",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/CELL_6",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DOTSTAR_MOSI",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "44",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DOTSTAR_SCK",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "42",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/LED_GREEN",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "39",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/LED_RED",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "38",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/LED_SHUTDOWN_ACK_PWR",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/LOAD_SW_PGOOD",
+      "pins": [
+        {
+          "pin": "41",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/MISO",
+      "pins": [
+        {
+          "pin": "26",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/MOSI",
+      "pins": [
+        {
+          "pin": "23",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/NRST",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "JP1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "10",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/NSS",
+      "pins": [
+        {
+          "pin": "24",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PWR_12v0_EN",
+      "pins": [
+        {
+          "pin": "45",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PWR_3v3_EN",
+      "pins": [
+        {
+          "pin": "47",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PWR_5v0_EN",
+      "pins": [
+        {
+          "pin": "46",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PWR_BTN_~{INT}",
+      "pins": [
+        {
+          "pin": "27",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PWR_~{KILL}",
+      "pins": [
+        {
+          "pin": "28",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RCC_OSC32_N",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Y2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RCC_OSC32_P",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Y2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RCC_OSC_N",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RCC_OSC_P",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/RX",
+      "pins": [
+        {
+          "pin": "32",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SCK",
+      "pins": [
+        {
+          "pin": "25",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SWCLK",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "36",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/SWDIO",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R22",
+          "unit": null
+        },
+        {
+          "pin": "35",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/TX",
+      "pins": [
+        {
+          "pin": "29",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~{LED_SHUTDOWN_ACK}",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q1",
+          "unit": null
+        },
+        {
+          "pin": "37",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D9",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "JP1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R22",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "SW1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "Y1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "Y1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(BZ1-+)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "BZ1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "D6",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "Q2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D4-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D5-A)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(Q2-G)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "Q2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1-CKO)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U1-SDO)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U3-VREF+)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "L1",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-KEY-Pad7)",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-NC/TDI-Pad8)",
+      "pins": [
+        {
+          "pin": "8",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SWO/TDO-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-CKO-Pad5)",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2-SDO-Pad6)",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PA11/PA9-Pad33)",
+      "pins": [
+        {
+          "pin": "33",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PA12/PA10-Pad34)",
+      "pins": [
+        {
+          "pin": "34",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PB0-Pad19)",
+      "pins": [
+        {
+          "pin": "19",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PB4-Pad43)",
+      "pins": [
+        {
+          "pin": "43",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PB9-Pad48)",
+      "pins": [
+        {
+          "pin": "48",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PC13-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PC7-Pad31)",
+      "pins": [
+        {
+          "pin": "31",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U3-PD2-Pad40)",
+      "pins": [
+        {
+          "pin": "40",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "~{PB}",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D9",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

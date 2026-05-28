@@ -1,6 +1,13 @@
 {
-  "accepted_count": 9,
+  "accepted_count": 18,
   "entries": [
+    {
+      "fixture_id": "12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware.kicad_sch",
+      "status": "accepted"
+    },
     {
       "fixture_id": "4-channel-switched-constant-current-source",
       "message": "Fixture ingested successfully.",
@@ -9,10 +16,24 @@
       "status": "accepted"
     },
     {
+      "fixture_id": "4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports.kicad_sch",
+      "status": "accepted"
+    },
+    {
       "fixture_id": "5v-linear-voltage-regulator-eurorack",
       "message": "Fixture ingested successfully.",
       "reason": "ready",
       "source_path": "5v-linear-voltage-regulator-eurorack.kicad_sch",
+      "status": "accepted"
+    },
+    {
+      "fixture_id": "buck-converter-xl4015-incubadora",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "buck-converter-xl4015-incubadora.kicad_sch",
       "status": "accepted"
     },
     {
@@ -30,6 +51,13 @@
       "status": "accepted"
     },
     {
+      "fixture_id": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter.kicad_sch",
+      "status": "accepted"
+    },
+    {
       "fixture_id": "mcp2551-can-transciever",
       "message": "Fixture ingested successfully.",
       "reason": "ready",
@@ -44,6 +72,27 @@
       "status": "accepted"
     },
     {
+      "fixture_id": "p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware.kicad_sch",
+      "status": "accepted"
+    },
+    {
+      "fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "rp2040-microcontroller-core-circuit-mitayi-pico-d1.kicad_sch",
+      "status": "accepted"
+    },
+    {
+      "fixture_id": "solar-charger-mppt-circuit-sts1-pcb-sidepanel",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "solar-charger-mppt-circuit-sts1-pcb-sidepanel.kicad_sch",
+      "status": "accepted"
+    },
+    {
       "fixture_id": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar",
       "message": "Fixture ingested successfully.",
       "reason": "ready",
@@ -51,10 +100,24 @@
       "status": "accepted"
     },
     {
+      "fixture_id": "stm32g030-minimal-system-circuit-electrical",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "stm32g030-minimal-system-circuit-electrical.kicad_sch",
+      "status": "accepted"
+    },
+    {
       "fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
       "message": "Fixture ingested successfully.",
       "reason": "ready",
       "source_path": "tpic8101dwrg4-tpic8101dwrg4.kicad_sch",
+      "status": "accepted"
+    },
+    {
+      "fixture_id": "w5500-spi-interface-decoupling-termination-openknx-reg1",
+      "message": "Fixture ingested successfully.",
+      "reason": "ready",
+      "source_path": "w5500-spi-interface-decoupling-termination-openknx-reg1.kicad_sch",
       "status": "accepted"
     },
     {

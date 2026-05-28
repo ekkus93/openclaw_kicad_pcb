@@ -179,6 +179,7 @@ class RoutingHeuristicPolicy:
         endpoints: list[tuple[float, float]],
         *,
         inferred_plan: SharedLanePlan | None,
+        protected_points: set[tuple[float, float]] | None = None,
         positions: Mapping[str, tuple[float, float, float | None]] | None = None,
     ) -> tuple[list[WireSegment], list[JunctionPoint]] | None:
         """Return the analog compact-tail route when that policy applies."""
@@ -188,9 +189,10 @@ class RoutingHeuristicPolicy:
             return _compact_horizontal_stage_tail_route(endpoints)
         if not self.should_skip_shared_lane_plan(endpoints, inferred_plan):
             return None
-        return _compact_vertical_tail_route(
+        return _best_compact_vertical_tail_route(
             endpoints,
-            coordinate=inferred_plan.coordinate,
+            preferred_coordinate=inferred_plan.coordinate,
+            protected_points=protected_points,
             positions=positions,
         )
 
@@ -1858,20 +1860,12 @@ def _compact_horizontal_stage_tail_route(
     return _simplify_wires(segs, protected_points=protected), []
 
 
-def _compact_vertical_tail_route(
+def _compact_vertical_tail_members(
     endpoints: list[tuple[float, float]],
     *,
     coordinate: float,
-    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
-) -> tuple[list[WireSegment], list[JunctionPoint]]:
-    """Route a compact asymmetric output tail with one long downstream run.
-
-    This keeps the upstream support point on the near-lane trunk while letting
-    the connector-side endpoint anchor one long horizontal segment toward the
-    downstream tail. When body positions are available, the final drop to the
-    downstream endpoint detours to the right of any blocking body box first so
-    `detect_body_crossings(...)` does not have to fragment the tail afterward.
-    """
+) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float], bool] | None:
+    """Return ``(upstream, pivot, downstream, exact_lane_match)`` for a compact tail."""
     lane_tolerance = (WIRE_EXTEND_MM / 4) + 0.05
     near_lane_points = [
         point for point in endpoints if math.isclose(point[0], coordinate, abs_tol=lane_tolerance)
@@ -1881,46 +1875,105 @@ def _compact_vertical_tail_route(
         for point in endpoints
         if not math.isclose(point[0], coordinate, abs_tol=lane_tolerance)
     ]
-    if len(near_lane_points) != 2 or len(other_points) != 1:
+    if len(near_lane_points) == 2 and len(other_points) == 1:
+        downstream = other_points[0]
+        pivot = min(near_lane_points, key=lambda point: abs(point[1] - downstream[1]))
+        upstream = next(point for point in near_lane_points if point != pivot)
+        return upstream, pivot, downstream, True
+    if len(endpoints) != 3:
+        return None
+    downstream = max(endpoints, key=lambda point: (point[0], -point[1]))
+    remaining = [point for point in endpoints if point != downstream]
+    if len(remaining) != 2:
+        return None
+    pivot = min(remaining, key=lambda point: abs(point[1] - downstream[1]))
+    upstream = next(point for point in remaining if point != pivot)
+    return upstream, pivot, downstream, False
+
+
+def _compact_vertical_tail_tail_y(
+    *,
+    pivot_y: float,
+    downstream_y: float,
+    prefer_below: bool,
+) -> float:
+    if abs(downstream_y - pivot_y) > (1.5 * WIRE_EXTEND_MM):
+        return pivot_y
+    edge_y = max(pivot_y, downstream_y) if prefer_below else min(pivot_y, downstream_y)
+    offset = (2.5 * WIRE_EXTEND_MM) + (1.27 if prefer_below else 0.0)
+    return _snap_grid(edge_y + offset if prefer_below else edge_y - offset)
+
+
+def _compact_vertical_tail_clearance_x(
+    *,
+    downstream_x: float,
+    downstream_y: float,
+    tail_y: float,
+    positions: Mapping[str, tuple[float, float, float | None]] | None,
+) -> float:
+    clearance_x = downstream_x
+    if positions is None or math.isclose(tail_y, downstream_y, abs_tol=0.01):
+        return clearance_x
+    for position in positions.values():
+        bx = position[0]
+        by = position[1]
+        if _wire_crosses_box(
+            downstream_x,
+            tail_y,
+            downstream_x,
+            downstream_y,
+            bx,
+            by,
+            SYMBOL_HALF_SIZE_MM,
+        ):
+            clearance_x = max(clearance_x, bx + (2 * SYMBOL_HALF_SIZE_MM))
+    return clearance_x
+
+
+def _compact_vertical_tail_route(
+    endpoints: list[tuple[float, float]],
+    *,
+    coordinate: float,
+    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+    prefer_below: bool = False,
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Route a compact asymmetric output tail with one long downstream run."""
+    members = _compact_vertical_tail_members(endpoints, coordinate=coordinate)
+    if members is None:
         return _chain_route(endpoints)
 
-    downstream_x, downstream_y = other_points[0]
-    pivot = min(near_lane_points, key=lambda point: abs(point[1] - downstream_y))
-    upstream = next(point for point in near_lane_points if point != pivot)
-
+    upstream, pivot, downstream, exact_lane_match = members
     trunk_x = coordinate
-    pivot_x, pivot_y = pivot
     upstream_x, upstream_y = upstream
-    tail_y = pivot_y
-    if abs(downstream_y - pivot_y) <= (1.5 * WIRE_EXTEND_MM):
-        tail_y = _snap_grid(min(pivot_y, downstream_y) - (2.5 * WIRE_EXTEND_MM))
-
-    clearance_x = downstream_x
-    if positions is not None and not math.isclose(tail_y, downstream_y, abs_tol=0.01):
-        for position in positions.values():
-            bx = position[0]
-            by = position[1]
-            if _wire_crosses_box(
-                downstream_x,
-                tail_y,
-                downstream_x,
-                downstream_y,
-                bx,
-                by,
-                SYMBOL_HALF_SIZE_MM,
-            ):
-                clearance_x = max(clearance_x, bx + (2 * SYMBOL_HALF_SIZE_MM))
+    pivot_x, pivot_y = pivot
+    downstream_x, downstream_y = downstream
+    tail_y = _compact_vertical_tail_tail_y(
+        pivot_y=pivot_y,
+        downstream_y=downstream_y,
+        prefer_below=prefer_below,
+    )
+    clearance_x = _compact_vertical_tail_clearance_x(
+        downstream_x=downstream_x,
+        downstream_y=downstream_y,
+        tail_y=tail_y,
+        positions=positions,
+    )
 
     segs: list[WireSegment] = []
     if not math.isclose(upstream_x, trunk_x, abs_tol=0.01):
         segs.append(WireSegment(upstream_x, upstream_y, trunk_x, upstream_y))
     if not math.isclose(upstream_y, tail_y, abs_tol=0.01):
         segs.append(WireSegment(trunk_x, upstream_y, trunk_x, tail_y))
-
-    if not math.isclose(pivot_y, tail_y, abs_tol=0.01):
-        segs.append(WireSegment(pivot_x, pivot_y, pivot_x, tail_y))
-
-    segs.append(WireSegment(pivot_x, tail_y, clearance_x, tail_y))
+    if exact_lane_match:
+        if not math.isclose(pivot_y, tail_y, abs_tol=0.01):
+            segs.append(WireSegment(pivot_x, pivot_y, pivot_x, tail_y))
+        segs.append(WireSegment(pivot_x, tail_y, clearance_x, tail_y))
+    else:
+        if not math.isclose(pivot_x, trunk_x, abs_tol=0.01):
+            segs.append(WireSegment(pivot_x, pivot_y, trunk_x, pivot_y))
+        if not math.isclose(pivot_y, tail_y, abs_tol=0.01):
+            segs.append(WireSegment(trunk_x, pivot_y, trunk_x, tail_y))
+        segs.append(WireSegment(trunk_x, tail_y, clearance_x, tail_y))
     if not math.isclose(downstream_y, tail_y, abs_tol=0.01):
         segs.append(WireSegment(clearance_x, tail_y, clearance_x, downstream_y))
     if not math.isclose(clearance_x, downstream_x, abs_tol=0.01):
@@ -1928,9 +1981,68 @@ def _compact_vertical_tail_route(
 
     protected = {(round(x, 2), round(y, 2)) for x, y in endpoints}
     junctions: list[JunctionPoint] = []
-    if not math.isclose(pivot_x, trunk_x, abs_tol=0.01):
+    if not math.isclose(trunk_x, clearance_x, abs_tol=0.01):
         junctions.append(JunctionPoint(trunk_x, tail_y))
+    if exact_lane_match and math.isclose(pivot_x, trunk_x, abs_tol=0.01):
+        junctions = []
     return _simplify_wires(segs, protected_points=protected), junctions
+
+
+def _best_compact_vertical_tail_route(
+    endpoints: list[tuple[float, float]],
+    *,
+    preferred_coordinate: float,
+    protected_points: set[tuple[float, float]] | None = None,
+    positions: Mapping[str, tuple[float, float, float | None]] | None = None,
+) -> tuple[list[WireSegment], list[JunctionPoint]]:
+    """Choose the cleanest compact vertical tail route near the preferred lane."""
+    preferred_route = _compact_vertical_tail_route(
+        endpoints,
+        coordinate=preferred_coordinate,
+        positions=positions,
+    )
+    if not protected_points:
+        return preferred_route
+
+    candidate_coordinates = [preferred_coordinate]
+    seen_coordinates = {round(preferred_coordinate, 2)}
+    for offset in range(1, 5):
+        for direction in (-1, 1):
+            candidate = _snap_grid(preferred_coordinate + (direction * offset * 1.27))
+            rounded = round(candidate, 2)
+            if rounded in seen_coordinates:
+                continue
+            seen_coordinates.add(rounded)
+            candidate_coordinates.append(candidate)
+
+    best_choice: (
+        tuple[
+            tuple[int, float, int],
+            float,
+            tuple[list[WireSegment], list[JunctionPoint]],
+        ]
+        | None
+    ) = None
+    for candidate_coordinate in candidate_coordinates:
+        for prefer_below in (False, True):
+            candidate_route = _compact_vertical_tail_route(
+                endpoints,
+                coordinate=candidate_coordinate,
+                positions=positions,
+                prefer_below=prefer_below,
+            )
+            route, junctions = candidate_route
+            route_key = _route_candidate_key(
+                route,
+                protected_points=protected_points,
+                endpoints=endpoints,
+            )
+            choice = (route_key, abs(candidate_coordinate - preferred_coordinate), candidate_route)
+            if best_choice is None or choice < best_choice:
+                best_choice = choice
+
+    assert best_choice is not None
+    return best_choice[2]
 
 
 def _compact_local_ground_cluster_route(
@@ -2910,6 +3022,8 @@ def _route_visual_cost(
     junctions: list[JunctionPoint],
 ) -> float:
     """Return a small readability-oriented cost for local routing alternatives."""
+    local_junction_penalty = WIRE_EXTEND_MM / 2
+    local_bend_penalty = (3 * WIRE_EXTEND_MM) / 4
     short_segment_threshold = WIRE_EXTEND_MM + 0.05
     short_segment_count = sum(
         1
@@ -2919,10 +3033,21 @@ def _route_visual_cost(
     bend_count = max(len(segments) - 1, 0)
     return (
         _route_length(segments)
-        + (len(junctions) * (2 * WIRE_EXTEND_MM))
-        + (bend_count * (WIRE_EXTEND_MM / 2))
+        + (len(junctions) * local_junction_penalty)
+        + (bend_count * local_bend_penalty)
         + (short_segment_count * (WIRE_EXTEND_MM / 4))
     )
+
+
+def _is_small_analog_chain_candidate(
+    endpoints: list[tuple[float, float]],
+    *,
+    refs: tuple[str, ...] = (),
+) -> bool:
+    """Return True when compact 3-pin analog heuristics should evaluate *endpoints*."""
+    if len(endpoints) != 3 or not _is_local_ladder_net(endpoints):
+        return False
+    return not (refs and all(ref.upper().startswith("R") for ref in refs))
 
 
 def _prefer_chain_route(endpoints: list[tuple[float, float]]) -> bool:
@@ -2950,9 +3075,7 @@ def _prefer_small_analog_chain_route(
     refs: tuple[str, ...] = (),
 ) -> bool:
     """Return True when a compact local analog net reads better as a chain."""
-    if len(endpoints) != 3 or not _is_local_ladder_net(endpoints):
-        return False
-    if refs and all(ref.upper().startswith("R") for ref in refs):
+    if not _is_small_analog_chain_candidate(endpoints, refs=refs):
         return False
 
     chain_segs, chain_junctions = _chain_route(endpoints)
@@ -3557,11 +3680,12 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         net.name.upper() == "GND"
                         and len(cluster) == 2
                         and use_bus
-                        and aligned_axis is not None
+                        and aligned_axis == "vertical"
                     ):
                         # KiCad 9 still drops one pin from some aligned two-pin GND
                         # fallback clusters even with an offset shared lane, so keep
-                        # those as direct per-pin GND symbol attachments instead.
+                        # vertically aligned cases as direct per-pin GND symbol
+                        # attachments instead.
                         for pin_ref, (wx, wy, wa) in cluster:
                             ex, ey = _stub_end(wx, wy, wa)
                             label_angle = _power_label_angle_for_pin(wa)
@@ -3935,12 +4059,32 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         routing.wires.append(WireSegment(wx, wy, ex, ey))
                         stub_ends.append((ex, ey))
                 compact_tail_route = None
+                small_analog_candidate = False
+                prefer_small_analog_chain = False
                 if _classification_prefers_compact_tail(net_classification):
                     compact_tail_route = heuristic_policy.route_compact_signal_tail(
                         stub_ends,
                         inferred_plan=lane_plan,
+                        protected_points=dynamic_protected_points,
                         positions=positions,
                     )
+                small_analog_candidate = (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and heuristic_policy.enable_small_analog_local_routing
+                    and _is_small_analog_chain_candidate(
+                        stub_ends,
+                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                    )
+                )
+                prefer_small_analog_chain = (
+                    small_analog_candidate
+                    and heuristic_policy.should_prefer_small_analog_chain(
+                        stub_ends,
+                        inferred_plan=lane_plan,
+                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                    )
+                )
                 if compact_tail_route is not None:
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
@@ -3961,13 +4105,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = follower_feedback_route
                     strategy = "chain"
                     heuristic_override = "small_analog_local_routing"
-                elif _classification_prefers_local_chain(
-                    net_classification
-                ) and heuristic_policy.should_prefer_small_analog_chain(
-                    stub_ends,
-                    inferred_plan=lane_plan,
-                    refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
-                ):
+                elif prefer_small_analog_chain:
                     hub_segs, hub_junctions = _chain_route(
                         stub_ends,
                         protected_points=dynamic_protected_points,
@@ -3983,6 +4121,8 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         max_bound=lane_plan.max_orthogonal,
                     )
                     strategy = "shared_lane"
+                    if small_analog_candidate:
+                        heuristic_override = "small_analog_local_routing"
             else:
                 stub_ends = []
                 for pin_ref, (wx, wy, wa) in known:
@@ -3992,12 +4132,32 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     stub_ends.append((ex, ey))
                 compact_tail_plan = _infer_bounded_local_lane_plan(stub_ends)
                 compact_tail_route = None
+                small_analog_candidate = False
+                prefer_small_analog_chain = False
                 if use_bus and _classification_prefers_compact_tail(net_classification):
                     compact_tail_route = heuristic_policy.route_compact_signal_tail(
                         stub_ends,
                         inferred_plan=compact_tail_plan,
+                        protected_points=dynamic_protected_points,
                         positions=positions,
                     )
+                small_analog_candidate = (
+                    use_bus
+                    and _classification_prefers_local_chain(net_classification)
+                    and heuristic_policy.enable_small_analog_local_routing
+                    and _is_small_analog_chain_candidate(
+                        stub_ends,
+                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                    )
+                )
+                prefer_small_analog_chain = (
+                    small_analog_candidate
+                    and heuristic_policy.should_prefer_small_analog_chain(
+                        stub_ends,
+                        inferred_plan=compact_tail_plan,
+                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
+                    )
+                )
                 if compact_tail_route is not None:
                     hub_segs, hub_junctions = compact_tail_route
                     strategy = "compact_signal_tail"
@@ -4018,15 +4178,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     hub_segs, hub_junctions = follower_feedback_route
                     strategy = "chain"
                     heuristic_override = "small_analog_local_routing"
-                elif (
-                    use_bus
-                    and _classification_prefers_local_chain(net_classification)
-                    and heuristic_policy.should_prefer_small_analog_chain(
-                        stub_ends,
-                        inferred_plan=compact_tail_plan,
-                        refs=tuple(pin_ref.ref for pin_ref, _anchor in known),
-                    )
-                ):
+                elif prefer_small_analog_chain:
                     hub_segs, hub_junctions = _chain_route(
                         stub_ends,
                         protected_points=dynamic_protected_points,
@@ -4046,16 +4198,36 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                 elif use_bus:
                     hub_segs, hub_junctions = _spine_route(stub_ends)
                     strategy = "spine"
+                    if small_analog_candidate:
+                        heuristic_override = "small_analog_local_routing"
                 else:
                     hub_segs, hub_junctions = _hub_route(stub_ends)
                     strategy = "hub"
-            if use_bus and len(stub_ends) == 3:
-                current_key = _route_candidate_key(
+            if use_bus and net.name.startswith("/") and len(stub_ends) == 3:
+                best_key = _route_candidate_key(
                     hub_segs,
                     protected_points=dynamic_protected_points,
                     endpoints=stub_ends,
                 )
-                if current_key[0] > 0:
+                if best_key[0] > 0:
+                    protected_shared_lane = _protected_shared_lane_route(
+                        stub_ends,
+                        protected_points=dynamic_protected_points,
+                    )
+                    if protected_shared_lane is not None:
+                        protected_lane_segs, protected_lane_junctions = protected_shared_lane
+                        protected_lane_key = _route_candidate_key(
+                            protected_lane_segs,
+                            protected_points=dynamic_protected_points,
+                            endpoints=stub_ends,
+                        )
+                        if protected_lane_key < best_key:
+                            hub_segs = protected_lane_segs
+                            hub_junctions = protected_lane_junctions
+                            strategy = "shared_lane"
+                            best_key = protected_lane_key
+                            if strategy != "shared_lane":
+                                heuristic_override = "protected_stub_avoidance"
                     protected_chain_segs, protected_chain_junctions = _chain_route(
                         stub_ends,
                         protected_points=dynamic_protected_points,
@@ -4065,12 +4237,12 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         protected_points=dynamic_protected_points,
                         endpoints=stub_ends,
                     )
-                    if protected_chain_key < current_key:
+                    if protected_chain_key < best_key:
                         hub_segs = protected_chain_segs
                         hub_junctions = protected_chain_junctions
                         strategy = "chain"
                         heuristic_override = "protected_stub_avoidance"
-            elif use_bus and len(stub_ends) >= 4:
+            elif use_bus and net.name.startswith("/") and len(stub_ends) >= 4:
                 current_key = _route_candidate_key(
                     hub_segs,
                     protected_points=dynamic_protected_points,

@@ -1,0 +1,2070 @@
+{
+  "components": [
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C10",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C11",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B105KBHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C14",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B105KBHNNNE",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C15",
+      "symbol": "Device:C_Small",
+      "value": "1u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Polarized capacitor, US symbol",
+        "Footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+        "LibRef": "RL81V101MDN1KX",
+        "SKU": "493-6630-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "ref": "C18",
+      "symbol": "Device:C_Polarized_US",
+      "value": "100u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B225KBHNNNE",
+        "SKU": "1276-1291-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C19",
+      "symbol": "Device:C_Small",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Polarized capacitor, US symbol",
+        "Footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+        "LibRef": "RL81V101MDN1KX",
+        "SKU": "493-6630-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+      "ref": "C20",
+      "symbol": "Device:C_Polarized_US",
+      "value": "100u"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B225KBHNNNE",
+        "SKU": "1276-1291-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C21",
+      "symbol": "Device:C_Small",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C3",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B225KBHNNNE",
+        "SKU": "1276-1291-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C33",
+      "symbol": "Device:C_Small",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B225KBHNNNE",
+        "SKU": "1276-1291-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C34",
+      "symbol": "Device:C_Small",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C4",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C46",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C6",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "GRM319R72A104KA01D",
+        "SKU": "",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C7",
+      "symbol": "Device:C_Small",
+      "value": "100nF"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Unpolarized capacitor, small symbol",
+        "Footprint": "Capacitor_SMD:C_1206_3216Metric",
+        "LibRef": "CL31B225KBHNNNE",
+        "SKU": "1276-1291-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Capacitor_SMD:C_1206_3216Metric",
+      "ref": "C9",
+      "symbol": "Device:C_Small",
+      "value": "2.2uF"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf",
+        "Description": "Green LED 100mcd 20mA Vf=2.1V",
+        "Footprint": "ColorLEDs:AA3528",
+        "LibRef": "",
+        "SKU": "754-1528-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "ColorLEDs:AA3528",
+      "ref": "D1",
+      "symbol": "ColorLEDs:AA3528CGSK",
+      "value": "AA3528CGSK"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf",
+        "Description": "Green LED 100mcd 20mA Vf=2.1V",
+        "Footprint": "ColorLEDs:AA3528",
+        "LibRef": "",
+        "SKU": "754-1528-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "ColorLEDs:AA3528",
+      "ref": "D2",
+      "symbol": "ColorLEDs:AA3528CGSK",
+      "value": "AA3528CGSK"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf",
+        "Description": "Yellow LED 200mcd 20mA Vf=2V",
+        "Footprint": "ColorLEDs:AA3528",
+        "LibRef": "",
+        "SKU": "754-1539-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "ColorLEDs:AA3528",
+      "ref": "D3",
+      "symbol": "ColorLEDs:AA3528SYSK",
+      "value": "AA3528SYSK"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf",
+        "Description": "Yellow LED 200mcd 20mA Vf=2V",
+        "Footprint": "ColorLEDs:AA3528",
+        "LibRef": "",
+        "SKU": "754-1539-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "ColorLEDs:AA3528",
+      "ref": "D4",
+      "symbol": "ColorLEDs:AA3528SYSK",
+      "value": "AA3528SYSK"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/AA3528SURSK.pdf",
+        "Description": "Red LED 100mcd 20mA Vf=1.95V",
+        "Footprint": "ColorLEDs:AA3528",
+        "LibRef": "",
+        "SKU": "754-1537-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "ColorLEDs:AA3528",
+      "ref": "D5",
+      "symbol": "ColorLEDs:AA3528SURSK",
+      "value": "AA3528SURSK"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://assets.nexperia.com/documents/data-sheet/BAT54W_SER.pdf",
+        "Description": "Schottky barrier diode, SOT-323",
+        "Footprint": "Package_TO_SOT_SMD:SOT-323_SC-70",
+        "SKU": "4878-BAT54WCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-323_SC-70",
+      "ref": "D7",
+      "symbol": "Diode:BAT54W",
+      "value": "BAT54W"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Ferrite bead, small symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "742792121",
+        "SKU": "732-4654-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "FB1",
+      "symbol": "Device:FerriteBead_Small",
+      "value": "300@100MHz"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Ferrite bead, small symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "742792121",
+        "SKU": "732-4654-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "FB2",
+      "symbol": "Device:FerriteBead_Small",
+      "value": "300@100MHz"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Ferrite bead, small symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "742792121",
+        "SKU": "732-4654-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "FB4",
+      "symbol": "Device:FerriteBead_Small",
+      "value": "300@100MHz"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Ferrite bead, small symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "742792121",
+        "SKU": "732-4654-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "FB5",
+      "symbol": "Device:FerriteBead_Small",
+      "value": "300@100MHz"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.usb.org/sites/default/files/documents/usb_type-c.zip",
+        "Description": "USB 2.0-only 16P Type-C Receptacle connector",
+        "Footprint": "project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance",
+        "LibRef": "",
+        "SKU": "2073-USB4105-GF-ACT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance",
+      "ref": "J1",
+      "symbol": "Connector:USB_C_Receptacle_USB2.0_16P",
+      "value": "USB4105-GF-A"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "USB Type A connector, stacked",
+        "Footprint": "Connector_USB:USB_A_CUI_UJ2-ADH-TH_Horizontal_Stacked",
+        "LibRef": "",
+        "SKU": "102-5876-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Connector_USB:USB_A_CUI_UJ2-ADH-TH_Horizontal_Stacked",
+      "ref": "J2",
+      "symbol": "Connector:USB_A_Stacked",
+      "value": "UJ2-ADH-3-TH"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "RC1206FR-07649RL",
+        "SKU": "311-649FRCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R1",
+      "symbol": "Device:R_US",
+      "value": "649"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R10",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF9101V",
+        "SKU": "P9.10KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R13",
+      "symbol": "Device:R_US",
+      "value": "9.1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF4701V",
+        "SKU": "P4.70KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R14",
+      "symbol": "Device:R_US",
+      "value": "4.7k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1002V",
+        "SKU": "P10.0KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R15",
+      "symbol": "Device:R_US",
+      "value": "10k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R16",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF2700V",
+        "SKU": "P270FCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R17",
+      "symbol": "Device:R_US",
+      "value": "270"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF2700V",
+        "SKU": "P270FCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R18",
+      "symbol": "Device:R_US",
+      "value": "270"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "P300FCT-ND",
+        "SKU": "P300FCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R19",
+      "symbol": "Device:R_US",
+      "value": "300"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "RC1206FR-075K1L",
+        "SKU": "311-5.10KFRCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R2",
+      "symbol": "Device:R_US",
+      "value": "5.1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "P300FCT-ND",
+        "SKU": "P300FCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R20",
+      "symbol": "Device:R_US",
+      "value": "300"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "P300FCT-ND",
+        "SKU": "P300FCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R21",
+      "symbol": "Device:R_US",
+      "value": "300"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "RC1206FR-075K1L",
+        "SKU": "311-5.10KFRCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R3",
+      "symbol": "Device:R_US",
+      "value": "5.1k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R4",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8RQF1R0V",
+        "SKU": "P1.0RCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R48",
+      "symbol": "Device:R_US",
+      "value": "1"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8RQF1R0V",
+        "SKU": "P1.0RCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R49",
+      "symbol": "Device:R_US",
+      "value": "1"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R5",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R6",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R7",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R8",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "~",
+        "Description": "Resistor, US symbol",
+        "Footprint": "Resistor_SMD:R_1206_3216Metric",
+        "LibRef": "ERJ-8ENF1003V",
+        "SKU": "P100KFCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "ref": "R9",
+      "symbol": "Device:R_US",
+      "value": "100k"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.cypress.com/file/114101/download",
+        "Description": "4 Port USB Hub Controller USB 2.0 48-TQFP",
+        "Footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "LibRef": "",
+        "SKU": "448-CY7C65632-48AXCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+      "ref": "U2",
+      "symbol": "project libraries:CY7C65632-48AXCT",
+      "value": "CY7C65632-48AXCT"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.st.com/resource/en/datasheet/usblc6-2.pdf",
+        "Description": "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-6",
+        "LibRef": "",
+        "SKU": "497-5235-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "ref": "U3",
+      "symbol": "Power_Protection:USBLC6-2SC6",
+      "value": "USBLC6-2SC6"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.st.com/resource/en/datasheet/usblc6-2.pdf",
+        "Description": "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-6",
+        "LibRef": "",
+        "SKU": "497-5235-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "ref": "U4",
+      "symbol": "Power_Protection:USBLC6-2SC6",
+      "value": "USBLC6-2SC6"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.st.com/resource/en/datasheet/usblc6-2.pdf",
+        "Description": "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-6",
+        "LibRef": "",
+        "SKU": "497-5235-1-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "ref": "U5",
+      "symbol": "Power_Protection:USBLC6-2SC6",
+      "value": "USBLC6-2SC6"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf",
+        "Description": "Current Limit IC 0.5-1.0A, SOT-23-5",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-5",
+        "LibRef": "",
+        "SKU": "BD2221G-LBTRCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "ref": "U6",
+      "symbol": "project libraries:BD2221G-LBTR",
+      "value": "BD2221G-LBTR"
+    },
+    {
+      "fields": {
+        "Datasheet": "https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf",
+        "Description": "Current Limit IC 0.5-1.0A, SOT-23-5",
+        "Footprint": "Package_TO_SOT_SMD:SOT-23-5",
+        "LibRef": "",
+        "SKU": "BD2221G-LBTRCT-ND",
+        "Supplier": "Digi-Key"
+      },
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "ref": "U7",
+      "symbol": "project libraries:BD2221G-LBTR",
+      "value": "BD2221G-LBTR"
+    }
+  ],
+  "nets": [
+    {
+      "name": "+3.3V",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "FB1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "FB2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "25",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "37",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "44",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "+5V",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C14",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C15",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/12MHZ_CLK",
+      "pins": [
+        {
+          "pin": "14",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/AMBER1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "46",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/AMBER2",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "36",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/D1+",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/D1-",
+      "pins": [
+        {
+          "pin": "5",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/D2+",
+      "pins": [
+        {
+          "pin": "10",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/D2-",
+      "pins": [
+        {
+          "pin": "9",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/DATA_USB_CONNECTED",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "D7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "26",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GANG/SUSPEND",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "39",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GREEN1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "45",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/GREEN2",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "35",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/HUB_VDD_A",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C33",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C34",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C46",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "FB1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "12",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "16",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "19",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "7",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/HUB_VDD_D",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "FB2",
+          "unit": null
+        },
+        {
+          "pin": "34",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "38",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/INTERNAL_PORT_OVR",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R8",
+          "unit": null
+        },
+        {
+          "pin": "28",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "30",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/INT_USB1.D+",
+      "pins": [
+        {
+          "pin": "18",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/INT_USB1.D-",
+      "pins": [
+        {
+          "pin": "17",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/INT_USB2.D+",
+      "pins": [
+        {
+          "pin": "22",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/INT_USB2.D-",
+      "pins": [
+        {
+          "pin": "21",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_D1+",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_D1-",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_D2+",
+      "pins": [
+        {
+          "pin": "7",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_D2-",
+      "pins": [
+        {
+          "pin": "6",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_VBUS1",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "FB4",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/PREFILT_VBUS2",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "C19",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "FB5",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/UPSTREAM_D+",
+      "pins": [
+        {
+          "pin": "4",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/UPSTREAM_D-",
+      "pins": [
+        {
+          "pin": "3",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "6",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/UPSTREAM_VBUS",
+      "pins": [
+        {
+          "pin": "A4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B4",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B9",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R14",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/US_PREFILT_D+",
+      "pins": [
+        {
+          "pin": "A6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B6",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/US_PREFILT_D-",
+      "pins": [
+        {
+          "pin": "A7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B7",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "U3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VBUS1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "FB4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U4",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/VBUS2",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C20",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "FB5",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "5",
+          "ref": "U5",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~OVR1",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R9",
+          "unit": null
+        },
+        {
+          "pin": "42",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~OVR2",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R10",
+          "unit": null
+        },
+        {
+          "pin": "40",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~PWR_EN1",
+      "pins": [
+        {
+          "pin": "43",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U6",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "/~PWR_EN2",
+      "pins": [
+        {
+          "pin": "41",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "3",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C10",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C11",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C14",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C15",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C18",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "C20",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C21",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C46",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C6",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C7",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "C9",
+          "unit": null
+        },
+        {
+          "pin": "A1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "A12",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B1",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "B12",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "4",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "9",
+          "ref": "J2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R13",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R16",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R17",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R18",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R19",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R20",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R21",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R48",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R49",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "13",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "20",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "8",
+          "ref": "U2",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U3",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U4",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U5",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U6",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "U7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C33-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C33",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R48",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(C34-Pad1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "C34",
+          "unit": null
+        },
+        {
+          "pin": "2",
+          "ref": "R49",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D1-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R17",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D2-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D2",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R18",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D3-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D3",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R19",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D4-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D4",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R20",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(D5-K)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "D5",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R21",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-CC1)",
+      "pins": [
+        {
+          "pin": "A5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(J1-CC2)",
+      "pins": [
+        {
+          "pin": "B5",
+          "ref": "J1",
+          "unit": null
+        },
+        {
+          "pin": "1",
+          "ref": "R3",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2B-RREF)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R1",
+          "unit": null
+        },
+        {
+          "pin": "11",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2B-TEST/I2C_SCL)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R15",
+          "unit": null
+        },
+        {
+          "pin": "27",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2F-AMBER[3]/SET_PORT_NUM2)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R7",
+          "unit": null
+        },
+        {
+          "pin": "33",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2F-GREEN[3]/FIXED_PORT3)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R4",
+          "unit": null
+        },
+        {
+          "pin": "32",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2G-AMBER[4]/SET_PORT_NUM1)",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R6",
+          "unit": null
+        },
+        {
+          "pin": "24",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "Net-(U2G-GREEN[4]/FIXED_PORT4)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R5",
+          "unit": null
+        },
+        {
+          "pin": "23",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(D7-NC-Pad2)",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "D7",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SBU1-PadA8)",
+      "pins": [
+        {
+          "pin": "A8",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SBU2-PadB8)",
+      "pins": [
+        {
+          "pin": "B8",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(J1-SHIELD-PadS1)",
+      "pins": [
+        {
+          "pin": "S1",
+          "ref": "J1",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2A-VCC-Pad47)",
+      "pins": [
+        {
+          "pin": "47",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2A-VREG-Pad48)",
+      "pins": [
+        {
+          "pin": "48",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2B-XOUT-Pad15)",
+      "pins": [
+        {
+          "pin": "15",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2F-~PWR[3]-Pad31)",
+      "pins": [
+        {
+          "pin": "31",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    },
+    {
+      "name": "unconnected-(U2G-~PWR[4]-Pad29)",
+      "pins": [
+        {
+          "pin": "29",
+          "ref": "U2",
+          "unit": null
+        }
+      ]
+    }
+  ],
+  "options": null,
+  "version": "1.0"
+}

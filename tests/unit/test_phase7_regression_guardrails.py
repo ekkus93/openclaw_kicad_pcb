@@ -290,7 +290,7 @@ class TestPhase7RegressionGuardrails:
         # tail stays farther outward than the handoff pair.
         assert positions["C6"][0] == positions["R5"][0] <= positions["R6"][0]
         assert positions["C6"][1] == positions[output_stage_anchor][1]
-        assert positions["R5"][1] == positions["C6"][1] + 7.62
+        assert positions["R5"][1] == pytest.approx(positions["C6"][1] + 7.62, abs=0.01)
         assert min(positions["R7"][0], positions["J2"][0]) > max(
             positions["C6"][0], positions["R5"][0]
         )

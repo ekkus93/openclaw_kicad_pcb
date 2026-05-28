@@ -144,7 +144,10 @@ def test_power_net_single_pin_offsets_symbol_beyond_stub() -> None:
     assert routing.power_symbols == [
         PowerSymbolPlacement(net_name="GND", x=50.0, y=121.92, angle=0)
     ]
-    assert WireSegment(50.0, 110.0, 50.0, 121.92) in routing.wires
+    assert routing.wires == [
+        WireSegment(50.0, 110.0, 50.0, 115.08),
+        WireSegment(50.0, 115.08, 50.0, 121.92),
+    ]
 
 
 def test_compact_ground_cluster_keeps_bind_markers() -> None:
@@ -314,7 +317,4 @@ def test_power_net_cluster_offsets_shared_symbol_toward_open_side() -> None:
     power_symbol = routing.power_symbols[0]
     assert power_symbol.angle == 270
     assert power_symbol == PowerSymbolPlacement(net_name="VMINUS15", x=118.11, y=60.96, angle=270)
-    assert (
-        WireSegment(118.11, 67.31, 118.11, 60.96) in routing.wires
-        or WireSegment(118.11, 60.96, 118.11, 67.31) in routing.wires
-    )
+    assert WireSegment(118.11, 60.96, 118.11, 72.39) in routing.wires

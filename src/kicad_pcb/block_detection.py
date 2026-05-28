@@ -540,6 +540,105 @@ def _buffer_stage_roles(
     return buffer_roles
 
 
+def _buffer_stage_unit_roles(
+    *,
+    net_pin_units: Mapping[str, list[tuple[str, str, str | None]]],
+    opamp_like_refs: set[str],
+) -> dict[str, tuple[BlockRole, str, float]]:
+    """Detect explicit follower stages at the individual op-amp-unit level."""
+    stage_feedback_nets: dict[str, str] = {}
+    stage_noninv_nets: dict[str, set[str]] = {}
+
+    for net_name, pin_members in net_pin_units.items():
+        if _is_supply_like_net(net_name):
+            continue
+
+        stage_roles_on_net: dict[str, set[str]] = {}
+        for ref, pin, unit in pin_members:
+            if ref not in opamp_like_refs:
+                continue
+            stage_pin_role = _opamp_stage_pin_role(ref, pin, unit)
+            if stage_pin_role is None:
+                continue
+
+            stage_id, pin_role = stage_pin_role
+            stage_roles_on_net.setdefault(stage_id, set()).add(pin_role)
+            if pin_role == "noninv":
+                stage_noninv_nets.setdefault(stage_id, set()).add(net_name)
+
+        for stage_id, roles_on_net in stage_roles_on_net.items():
+            if {"out", "inv"}.issubset(roles_on_net):
+                stage_feedback_nets[stage_id] = net_name
+
+    buffer_roles: dict[str, tuple[BlockRole, str, float]] = {}
+    for stage_id, feedback_net in stage_feedback_nets.items():
+        noninv_nets = {
+            net_name
+            for net_name in stage_noninv_nets.get(stage_id, set())
+            if net_name != feedback_net
+        }
+        if not noninv_nets:
+            continue
+
+        ref, unit_name = stage_id.split(":", 1)
+        buffer_roles[f"{ref}{unit_name}"] = (
+            BlockRole.BUFFER_STAGE,
+            f"Follower/buffer unit {unit_name} shorts output to inverting input on {feedback_net}",
+            0.97,
+        )
+
+    return buffer_roles
+
+
+def _augment_split_unit_assignments(
+    layout: BlockLayout,
+    ir: CircuitIR,
+    *,
+    net_pin_units: Mapping[str, list[tuple[str, str, str | None]]],
+    opamp_like_refs: set[str],
+) -> None:
+    """Add synthetic per-unit roles for unsplit multi-unit op-amp components."""
+    component_refs = {component.ref for component in ir.components}
+    if not opamp_like_refs:
+        return
+
+    stage_refs_by_base: dict[str, set[str]] = {}
+    for pin_members in net_pin_units.values():
+        for ref, pin, unit in pin_members:
+            if ref not in opamp_like_refs:
+                continue
+            stage_pin_role = _opamp_stage_pin_role(ref, pin, unit)
+            if stage_pin_role is None:
+                continue
+            stage_id, _pin_role = stage_pin_role
+            base_ref, unit_name = stage_id.split(":", 1)
+            stage_refs_by_base.setdefault(base_ref, set()).add(f"{base_ref}{unit_name}")
+
+    if not stage_refs_by_base:
+        return
+
+    buffer_unit_roles = _buffer_stage_unit_roles(
+        net_pin_units=net_pin_units,
+        opamp_like_refs=opamp_like_refs,
+    )
+    for base_ref, split_refs in stage_refs_by_base.items():
+        base_assignment = layout.assignments.get(base_ref)
+        if base_assignment is None:
+            continue
+        for split_ref in sorted(split_refs):
+            if split_ref in component_refs or split_ref in layout.assignments:
+                continue
+            role, reason, confidence = buffer_unit_roles.get(
+                split_ref,
+                (
+                    base_assignment.role,
+                    f"Split signal unit inherits {base_assignment.role.value} from {base_ref}",
+                    base_assignment.confidence,
+                ),
+            )
+            layout.add_assignment(split_ref, role, confidence=confidence, reason=reason)
+
+
 def _build_motif_roles(inputs: _MotifInputs) -> dict[str, tuple[BlockRole, str, float]]:
     """Precompute structural role assignments for stage handoff motifs."""
     motif_roles = _buffer_stage_roles(
@@ -900,6 +999,13 @@ def classify_circuit(ir: CircuitIR) -> BlockLayout:
             context,
         )
         layout.add_assignment(component.ref, role, confidence=confidence, reason=reason)
+
+    _augment_split_unit_assignments(
+        layout,
+        ir,
+        net_pin_units=net_pin_units,
+        opamp_like_refs=opamp_like_refs,
+    )
 
     # Define default page zones (can be overridden by layout engine)
     _set_default_zones(layout)

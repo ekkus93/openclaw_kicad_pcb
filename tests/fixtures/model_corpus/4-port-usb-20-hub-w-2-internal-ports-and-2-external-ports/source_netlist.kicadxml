@@ -1,0 +1,1979 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch</source>
+    <date>2026-05-27T18:27:40-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>4 Port USB 2.0 Hub w/ 2 Internal Ports and 2 External Ports</title>
+        <company>CircuitSnips</company>
+        <rev>1</rev>
+        <date>2026-05-27</date>
+        <source>source_normalized.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C3">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>92148415-f0b8-4c63-b664-0eaed08d9be8</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>65d3b063-3e84-48fc-9dcd-fce7d0efaf1e</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ebcc512e-2b0d-41f0-853e-d77be2724ff9</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>115d23a1-0553-4c52-9515-01ec353defe0</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B225KBHNNNE</field>
+        <field name="SKU">1276-1291-1-ND</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B225KBHNNNE"/>
+      <property name="SKU" value="1276-1291-1-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>639c04ce-c538-434e-b443-4f14f0ff58b2</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f8945d64-108b-4095-aa00-85b1e68e04d4</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6474f3f9-c7a5-4268-a19e-58c67086e31c</tstamps>
+    </comp>
+    <comp ref="C14">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B105KBHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B105KBHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e64b2886-73f3-445a-9a77-9dfdac4e04e0</tstamps>
+    </comp>
+    <comp ref="C15">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B105KBHNNNE</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B105KBHNNNE"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>65eb1568-3bca-4695-b54d-366176d44908</tstamps>
+    </comp>
+    <comp ref="C18">
+      <value>100u</value>
+      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Polarized capacitor, US symbol</description>
+      <fields>
+        <field name="SKU">493-6630-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">RL81V101MDN1KX</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Polarized capacitor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Polarized_US" description="Polarized capacitor, US symbol"/>
+      <property name="SKU" value="493-6630-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="RL81V101MDN1KX"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3a816e10-c1b8-40bf-b5d8-ac990cc12e94</tstamps>
+    </comp>
+    <comp ref="C19">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B225KBHNNNE</field>
+        <field name="SKU">1276-1291-1-ND</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B225KBHNNNE"/>
+      <property name="SKU" value="1276-1291-1-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>01e19645-2e3d-4fcc-9b73-e8d9b2029a3c</tstamps>
+    </comp>
+    <comp ref="C20">
+      <value>100u</value>
+      <footprint>Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Polarized capacitor, US symbol</description>
+      <fields>
+        <field name="SKU">493-6630-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">RL81V101MDN1KX</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D8.0mm_P3.50mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Polarized capacitor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Polarized_US" description="Polarized capacitor, US symbol"/>
+      <property name="SKU" value="493-6630-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="RL81V101MDN1KX"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6a163daa-dfc9-46b1-b146-984da5ea9ce6</tstamps>
+    </comp>
+    <comp ref="C21">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B225KBHNNNE</field>
+        <field name="SKU">1276-1291-1-ND</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B225KBHNNNE"/>
+      <property name="SKU" value="1276-1291-1-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4a594659-ffdc-4072-bad2-960240e3e2ff</tstamps>
+    </comp>
+    <comp ref="C33">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B225KBHNNNE</field>
+        <field name="SKU">1276-1291-1-ND</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B225KBHNNNE"/>
+      <property name="SKU" value="1276-1291-1-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2021c415-78c3-446a-80cd-eb41edf6ff09</tstamps>
+    </comp>
+    <comp ref="C34">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">CL31B225KBHNNNE</field>
+        <field name="SKU">1276-1291-1-ND</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="CL31B225KBHNNNE"/>
+      <property name="SKU" value="1276-1291-1-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e2792c65-d202-4b03-908c-61d3f399aadb</tstamps>
+    </comp>
+    <comp ref="C46">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Unpolarized capacitor, small symbol</description>
+      <fields>
+        <field name="SKU"/>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">GRM319R72A104KA01D</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="SKU" value=""/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="GRM319R72A104KA01D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>64846ac8-87cb-4b01-970a-8300536ce779</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>AA3528CGSK</value>
+      <footprint>ColorLEDs:AA3528</footprint>
+      <datasheet>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</datasheet>
+      <description>Green LED 100mcd 20mA Vf=2.1V</description>
+      <fields>
+        <field name="SKU">754-1528-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Green LED 100mcd 20mA Vf=2.1V</field>
+      </fields>
+      <libsource lib="ColorLEDs" part="AA3528CGSK" description="Green LED 100mcd 20mA Vf=2.1V"/>
+      <property name="SKU" value="754-1528-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c577dc06-f3fb-442c-91a8-2562db0cf705</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>AA3528CGSK</value>
+      <footprint>ColorLEDs:AA3528</footprint>
+      <datasheet>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</datasheet>
+      <description>Green LED 100mcd 20mA Vf=2.1V</description>
+      <fields>
+        <field name="SKU">754-1528-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Green LED 100mcd 20mA Vf=2.1V</field>
+      </fields>
+      <libsource lib="ColorLEDs" part="AA3528CGSK" description="Green LED 100mcd 20mA Vf=2.1V"/>
+      <property name="SKU" value="754-1528-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>848d40d5-9f09-4204-8084-dabf87d88f8d</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>AA3528SYSK</value>
+      <footprint>ColorLEDs:AA3528</footprint>
+      <datasheet>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</datasheet>
+      <description>Yellow LED 200mcd 20mA Vf=2V</description>
+      <fields>
+        <field name="SKU">754-1539-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Yellow LED 200mcd 20mA Vf=2V</field>
+      </fields>
+      <libsource lib="ColorLEDs" part="AA3528SYSK" description="Yellow LED 200mcd 20mA Vf=2V"/>
+      <property name="SKU" value="754-1539-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ef3c9cb3-315b-43a2-8e08-f6af833bc244</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>AA3528SYSK</value>
+      <footprint>ColorLEDs:AA3528</footprint>
+      <datasheet>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</datasheet>
+      <description>Yellow LED 200mcd 20mA Vf=2V</description>
+      <fields>
+        <field name="SKU">754-1539-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Yellow LED 200mcd 20mA Vf=2V</field>
+      </fields>
+      <libsource lib="ColorLEDs" part="AA3528SYSK" description="Yellow LED 200mcd 20mA Vf=2V"/>
+      <property name="SKU" value="754-1539-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d29c31dd-431f-42d9-8bf8-e4f3860b6b8d</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>AA3528SURSK</value>
+      <footprint>ColorLEDs:AA3528</footprint>
+      <datasheet>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528SURSK.pdf</datasheet>
+      <description>Red LED 100mcd 20mA Vf=1.95V</description>
+      <fields>
+        <field name="SKU">754-1537-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528SURSK.pdf</field>
+        <field name="Description">Red LED 100mcd 20mA Vf=1.95V</field>
+      </fields>
+      <libsource lib="ColorLEDs" part="AA3528SURSK" description="Red LED 100mcd 20mA Vf=1.95V"/>
+      <property name="SKU" value="754-1537-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>327b65e6-7bfc-4e46-b1c7-61cc3bbc80ab</tstamps>
+    </comp>
+    <comp ref="D7">
+      <value>BAT54W</value>
+      <footprint>Package_TO_SOT_SMD:SOT-323_SC-70</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/BAT54W_SER.pdf</datasheet>
+      <description>Schottky barrier diode, SOT-323</description>
+      <fields>
+        <field name="SKU">4878-BAT54WCT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-323_SC-70</field>
+        <field name="Datasheet">https://assets.nexperia.com/documents/data-sheet/BAT54W_SER.pdf</field>
+        <field name="Description">Schottky barrier diode, SOT-323</field>
+      </fields>
+      <libsource lib="Diode" part="BAT54W" description="Schottky barrier diode, SOT-323"/>
+      <property name="SKU" value="4878-BAT54WCT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="schottky diode"/>
+      <property name="ki_fp_filters" value="SOT?323*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5ea299e5-834d-47c6-b64b-619bd446be7d</tstamps>
+    </comp>
+    <comp ref="FB1">
+      <value>300@100MHz</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Ferrite bead, small symbol</description>
+      <fields>
+        <field name="SKU">732-4654-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">742792121</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead_Small" description="Ferrite bead, small symbol"/>
+      <property name="SKU" value="732-4654-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="742792121"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7d823a16-66a5-4e0e-9b2a-dbe30b20f640</tstamps>
+    </comp>
+    <comp ref="FB2">
+      <value>300@100MHz</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Ferrite bead, small symbol</description>
+      <fields>
+        <field name="SKU">732-4654-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">742792121</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead_Small" description="Ferrite bead, small symbol"/>
+      <property name="SKU" value="732-4654-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="742792121"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f71b027c-86fb-48b5-a6bd-560d5e88aabc</tstamps>
+    </comp>
+    <comp ref="FB4">
+      <value>300@100MHz</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Ferrite bead, small symbol</description>
+      <fields>
+        <field name="SKU">732-4654-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">742792121</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead_Small" description="Ferrite bead, small symbol"/>
+      <property name="SKU" value="732-4654-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="742792121"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>68f12694-2344-4407-85a5-b6ddad755374</tstamps>
+    </comp>
+    <comp ref="FB5">
+      <value>300@100MHz</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Ferrite bead, small symbol</description>
+      <fields>
+        <field name="SKU">732-4654-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">742792121</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead_Small" description="Ferrite bead, small symbol"/>
+      <property name="SKU" value="732-4654-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="742792121"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cb3d6e5c-cc1f-498c-a01e-d34a6b53423e</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>USB4105-GF-A</value>
+      <footprint>project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance</footprint>
+      <datasheet>https://www.usb.org/sites/default/files/documents/usb_type-c.zip</datasheet>
+      <description>USB 2.0-only 16P Type-C Receptacle connector</description>
+      <fields>
+        <field name="SKU">2073-USB4105-GF-ACT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance</field>
+        <field name="Datasheet">https://www.usb.org/sites/default/files/documents/usb_type-c.zip</field>
+        <field name="Description">USB 2.0-only 16P Type-C Receptacle connector</field>
+      </fields>
+      <libsource lib="Connector" part="USB_C_Receptacle_USB2.0_16P" description="USB 2.0-only 16P Type-C Receptacle connector"/>
+      <property name="SKU" value="2073-USB4105-GF-ACT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb universal serial bus type-C USB2.0"/>
+      <property name="ki_fp_filters" value="USB*C*Receptacle*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6c5fadfe-11e5-494d-af29-39ad14becd74</tstamps>
+    </comp>
+    <comp ref="J2">
+      <value>UJ2-ADH-3-TH</value>
+      <footprint>Connector_USB:USB_A_CUI_UJ2-ADH-TH_Horizontal_Stacked</footprint>
+      <datasheet>~</datasheet>
+      <description>USB Type A connector, stacked</description>
+      <fields>
+        <field name="SKU">102-5876-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Connector_USB:USB_A_CUI_UJ2-ADH-TH_Horizontal_Stacked</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">USB Type A connector, stacked</field>
+      </fields>
+      <libsource lib="Connector" part="USB_A_Stacked" description="USB Type A connector, stacked"/>
+      <property name="SKU" value="102-5876-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="connector USB"/>
+      <property name="ki_fp_filters" value="USB*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fe0c8575-d2f6-4054-b845-00d465118b82</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>649</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">RC1206FR-07649RL</field>
+        <field name="SKU">311-649FRCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="RC1206FR-07649RL"/>
+      <property name="SKU" value="311-649FRCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9613152e-062e-4d44-b021-5b241f5edaaf</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>5.1k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">RC1206FR-075K1L</field>
+        <field name="SKU">311-5.10KFRCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="RC1206FR-075K1L"/>
+      <property name="SKU" value="311-5.10KFRCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ab1b8ac5-2df7-44a3-af01-7bac45cc3dfa</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>5.1k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">RC1206FR-075K1L</field>
+        <field name="SKU">311-5.10KFRCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="RC1206FR-075K1L"/>
+      <property name="SKU" value="311-5.10KFRCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1a495d82-0d0f-46d2-a239-3fe6aa7eba76</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ce24247d-5c1e-4bff-83ae-2aa95135f5ed</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b780103c-5d05-47fb-bf50-96b31e052320</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>758efb14-713e-47e3-974a-65bc478fa9b4</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7d76c7ca-2298-4d50-9762-a20b460c0905</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>03a87130-78b9-432b-ac4e-80760547e231</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1827672e-9541-4157-b695-0e860eb3711d</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a75fc411-de9b-4025-be9f-f96fba1fa319</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>9.1k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF9101V</field>
+        <field name="SKU">P9.10KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF9101V"/>
+      <property name="SKU" value="P9.10KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>40c37a36-83de-4d81-a6a4-0dacb059c7e5</tstamps>
+    </comp>
+    <comp ref="R14">
+      <value>4.7k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF4701V</field>
+        <field name="SKU">P4.70KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF4701V"/>
+      <property name="SKU" value="P4.70KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b3fc9953-2388-4df6-8d0d-fbc73ca049ad</tstamps>
+    </comp>
+    <comp ref="R15">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1002V</field>
+        <field name="SKU">P10.0KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1002V"/>
+      <property name="SKU" value="P10.0KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>41048d39-768b-4db9-8cda-649af81da16f</tstamps>
+    </comp>
+    <comp ref="R16">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF1003V</field>
+        <field name="SKU">P100KFCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF1003V"/>
+      <property name="SKU" value="P100KFCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ae6d54b2-46ee-4197-94a0-c3ad615f401a</tstamps>
+    </comp>
+    <comp ref="R17">
+      <value>270</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF2700V</field>
+        <field name="SKU">P270FCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF2700V"/>
+      <property name="SKU" value="P270FCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>091eee0b-3190-4227-98e8-b4563c36baf9</tstamps>
+    </comp>
+    <comp ref="R18">
+      <value>270</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8ENF2700V</field>
+        <field name="SKU">P270FCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8ENF2700V"/>
+      <property name="SKU" value="P270FCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f4bb2d69-90d8-4313-a9bf-7d43f4f596da</tstamps>
+    </comp>
+    <comp ref="R19">
+      <value>300</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">P300FCT-ND</field>
+        <field name="SKU">P300FCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="P300FCT-ND"/>
+      <property name="SKU" value="P300FCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>48acf7f5-5a0e-4f8e-b63e-18c136e1f5a0</tstamps>
+    </comp>
+    <comp ref="R20">
+      <value>300</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">P300FCT-ND</field>
+        <field name="SKU">P300FCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="P300FCT-ND"/>
+      <property name="SKU" value="P300FCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>26478e99-0b03-445a-980c-262493f102d8</tstamps>
+    </comp>
+    <comp ref="R21">
+      <value>300</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">P300FCT-ND</field>
+        <field name="SKU">P300FCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="P300FCT-ND"/>
+      <property name="SKU" value="P300FCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>66a406e0-2651-4cd8-b236-f6b704bdb7a6</tstamps>
+    </comp>
+    <comp ref="R48">
+      <value>1</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8RQF1R0V</field>
+        <field name="SKU">P1.0RCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8RQF1R0V"/>
+      <property name="SKU" value="P1.0RCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>16b875d0-de8c-49e0-83fb-012339ea6c07</tstamps>
+    </comp>
+    <comp ref="R49">
+      <value>1</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor, US symbol</description>
+      <fields>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef">ERJ-8RQF1R0V</field>
+        <field name="SKU">P1.0RCT-ND</field>
+        <field name="Footprint">Resistor_SMD:R_1206_3216Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value="ERJ-8RQF1R0V"/>
+      <property name="SKU" value="P1.0RCT-ND"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f7bef9be-c759-4f61-bc24-21566a2333be</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>CY7C65632-48AXCT</value>
+      <footprint>Package_QFP:LQFP-48_7x7mm_P0.5mm</footprint>
+      <datasheet>https://www.cypress.com/file/114101/download</datasheet>
+      <description>4 Port USB Hub Controller USB 2.0 48-TQFP</description>
+      <fields>
+        <field name="SKU">448-CY7C65632-48AXCT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_QFP:LQFP-48_7x7mm_P0.5mm</field>
+        <field name="Datasheet">https://www.cypress.com/file/114101/download</field>
+        <field name="Description">4 Port USB Hub Controller USB 2.0 48-TQFP</field>
+      </fields>
+      <libsource lib="project libraries" part="CY7C65632-48AXCT" description="4 Port USB Hub Controller USB 2.0 48-TQFP"/>
+      <property name="SKU" value="448-CY7C65632-48AXCT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e967968a-3d63-4ed5-ad01-9f33df36c6ac 4576d1b0-7fb3-4d2a-b9a5-dc5c0126f48c 98b298da-921d-4b53-ad4e-33316984f526 77314b89-8d0f-4346-b373-36de1117ec15 bf1acd6a-bdbb-4947-aa00-985b46dffedd 13daf80a-aef4-4775-b4ef-c0e7c9c3ae08 1008e6bf-04b2-49f2-9f48-ab4aa6374437</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>USBLC6-2SC6</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</datasheet>
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <fields>
+        <field name="SKU">497-5235-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <libsource lib="Power_Protection" part="USBLC6-2SC6" description="Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"/>
+      <property name="SKU" value="497-5235-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb ethernet video"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d1d4536b-507c-4696-937e-56502f916280</tstamps>
+    </comp>
+    <comp ref="U4">
+      <value>USBLC6-2SC6</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</datasheet>
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <fields>
+        <field name="SKU">497-5235-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <libsource lib="Power_Protection" part="USBLC6-2SC6" description="Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"/>
+      <property name="SKU" value="497-5235-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb ethernet video"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5c865b30-f689-46ed-b5bb-f6bac5a41d4a</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>USBLC6-2SC6</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</datasheet>
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <fields>
+        <field name="SKU">497-5235-1-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <libsource lib="Power_Protection" part="USBLC6-2SC6" description="Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"/>
+      <property name="SKU" value="497-5235-1-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <property name="ki_keywords" value="usb ethernet video"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>86c8b03b-c6c1-48db-a4b1-57f8f5793db7</tstamps>
+    </comp>
+    <comp ref="U6">
+      <value>BD2221G-LBTR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <datasheet>https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</datasheet>
+      <description>Current Limit IC 0.5-1.0A, SOT-23-5</description>
+      <fields>
+        <field name="SKU">BD2221G-LBTRCT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</field>
+        <field name="Description">Current Limit IC 0.5-1.0A, SOT-23-5</field>
+      </fields>
+      <libsource lib="project libraries" part="BD2221G-LBTR" description="Current Limit IC 0.5-1.0A, SOT-23-5"/>
+      <property name="SKU" value="BD2221G-LBTRCT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0b37449a-aa87-4168-9b76-473642306982</tstamps>
+    </comp>
+    <comp ref="U7">
+      <value>BD2221G-LBTR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <datasheet>https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</datasheet>
+      <description>Current Limit IC 0.5-1.0A, SOT-23-5</description>
+      <fields>
+        <field name="SKU">BD2221G-LBTRCT-ND</field>
+        <field name="Supplier">Digi-Key</field>
+        <field name="LibRef"/>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</field>
+        <field name="Description">Current Limit IC 0.5-1.0A, SOT-23-5</field>
+      </fields>
+      <libsource lib="project libraries" part="BD2221G-LBTR" description="Current Limit IC 0.5-1.0A, SOT-23-5"/>
+      <property name="SKU" value="BD2221G-LBTRCT-ND"/>
+      <property name="Supplier" value="Digi-Key"/>
+      <property name="LibRef" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/source_normalized.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ee9df267-9b0c-4215-9d51-a110b6580461</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="ColorLEDs" part="AA3528CGSK">
+      <description>Green LED 100mcd 20mA Vf=2.1V</description>
+      <docs>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">AA3528CGSK</field>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Green LED 100mcd 20mA Vf=2.1V</field>
+        <field name="SKU">754-1528-1-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ColorLEDs" part="AA3528SURSK">
+      <description>Red LED 100mcd 20mA Vf=1.95V</description>
+      <docs>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528SURSK.pdf</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">AA3528SURSK</field>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528SURSK.pdf</field>
+        <field name="Description">Red LED 100mcd 20mA Vf=1.95V</field>
+        <field name="SKU">754-1537-1-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ColorLEDs" part="AA3528SYSK">
+      <description>Yellow LED 200mcd 20mA Vf=2V</description>
+      <docs>https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">AA3528SYSK</field>
+        <field name="Footprint">ColorLEDs:AA3528</field>
+        <field name="Datasheet">https://www.kingbrightusa.com/images/catalog/SPEC/AA3528VRVCS-A.pdf</field>
+        <field name="Description">Yellow LED 200mcd 20mA Vf=2V</field>
+        <field name="SKU">754-1539-1-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="USB_A_Stacked">
+      <description>USB Type A connector, stacked</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>USB*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">USB_A_Stacked</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">USB Type A connector, stacked</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VBUS1" type="power_in"/>
+        <pin num="2" name="D1-" type="bidirectional"/>
+        <pin num="3" name="D1+" type="bidirectional"/>
+        <pin num="4" name="GND1" type="power_in"/>
+        <pin num="5" name="VBUS2" type="power_in"/>
+        <pin num="6" name="D2-" type="bidirectional"/>
+        <pin num="7" name="D2+" type="bidirectional"/>
+        <pin num="8" name="GND2" type="power_in"/>
+        <pin num="9" name="Shield" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="USB_C_Receptacle_USB2.0_16P">
+      <description>USB 2.0-only 16P Type-C Receptacle connector</description>
+      <docs>https://www.usb.org/sites/default/files/documents/usb_type-c.zip</docs>
+      <footprints>
+        <fp>USB*C*Receptacle*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">USB_C_Receptacle_USB2.0_16P</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">https://www.usb.org/sites/default/files/documents/usb_type-c.zip</field>
+        <field name="Description">USB 2.0-only 16P Type-C Receptacle connector</field>
+      </fields>
+      <pins>
+        <pin num="A1" name="GND" type="passive"/>
+        <pin num="A4" name="VBUS" type="passive"/>
+        <pin num="A5" name="CC1" type="bidirectional"/>
+        <pin num="A6" name="D+" type="bidirectional"/>
+        <pin num="A7" name="D-" type="bidirectional"/>
+        <pin num="A8" name="SBU1" type="bidirectional"/>
+        <pin num="A9" name="VBUS" type="passive"/>
+        <pin num="A12" name="GND" type="passive"/>
+        <pin num="B1" name="GND" type="passive"/>
+        <pin num="B4" name="VBUS" type="passive"/>
+        <pin num="B5" name="CC2" type="bidirectional"/>
+        <pin num="B6" name="D+" type="bidirectional"/>
+        <pin num="B7" name="D-" type="bidirectional"/>
+        <pin num="B8" name="SBU2" type="bidirectional"/>
+        <pin num="B9" name="VBUS" type="passive"/>
+        <pin num="B12" name="GND" type="passive"/>
+        <pin num="S1" name="SHIELD" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Polarized_US">
+      <description>Polarized capacitor, US symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Polarized_US</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Polarized capacitor, US symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Small">
+      <description>Unpolarized capacitor, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="FerriteBead_Small">
+      <description>Ferrite bead, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+        <fp>*Ferrite*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">FB</field>
+        <field name="Value">FerriteBead_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R_US">
+      <description>Resistor, US symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_US</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, US symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Diode" part="BAT54W">
+      <description>Schottky barrier diode, SOT-323</description>
+      <docs>https://assets.nexperia.com/documents/data-sheet/BAT54W_SER.pdf</docs>
+      <footprints>
+        <fp>SOT?323*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">BAT54W</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-323_SC-70</field>
+        <field name="Datasheet">https://assets.nexperia.com/documents/data-sheet/BAT54W_SER.pdf</field>
+        <field name="Description">Schottky barrier diode, SOT-323</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="NC" type="no_connect"/>
+        <pin num="3" name="K" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Power_Protection" part="USBLC6-2SC6">
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <docs>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">USBLC6-2SC6</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <pins>
+        <pin num="1" name="I/O1" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="I/O2" type="passive"/>
+        <pin num="4" name="I/O2" type="passive"/>
+        <pin num="5" name="VBUS" type="passive"/>
+        <pin num="6" name="I/O1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="project libraries" part="BD2221G-LBTR">
+      <description>Current Limit IC 0.5-1.0A, SOT-23-5</description>
+      <docs>https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">BD2221G-LBTR</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">https://www.digikey.com/htmldatasheets/production/1836544/0/0/1/bd2220g-lb-bd2221g-lb.pdf</field>
+        <field name="Description">Current Limit IC 0.5-1.0A, SOT-23-5</field>
+        <field name="SKU">BD2221G-LBTRCT-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VIN" type="power_in"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="~EN" type="input"/>
+        <pin num="4" name="~OC" type="open_collector"/>
+        <pin num="5" name="VOUT" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="project libraries" part="CY7C65632-48AXCT">
+      <description>4 Port USB Hub Controller USB 2.0 48-TQFP</description>
+      <docs>https://www.cypress.com/file/114101/download</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">CY7C65632-48AXCT</field>
+        <field name="Footprint">Package_QFP:LQFP-48_7x7mm_P0.5mm</field>
+        <field name="Datasheet">https://www.cypress.com/file/114101/download</field>
+        <field name="Description">4 Port USB Hub Controller USB 2.0 48-TQFP</field>
+        <field name="SKU">448-CY7C65632-48AXCT-ND</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC_A" type="power_in"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="D-" type="bidirectional"/>
+        <pin num="4" name="D+" type="bidirectional"/>
+        <pin num="5" name="DD-[1]" type="bidirectional"/>
+        <pin num="6" name="DD+[1]" type="bidirectional"/>
+        <pin num="7" name="VCC_A" type="power_in"/>
+        <pin num="8" name="GND" type="power_in"/>
+        <pin num="9" name="DD-[2]" type="bidirectional"/>
+        <pin num="10" name="DD+[2]" type="bidirectional"/>
+        <pin num="11" name="RREF" type="passive"/>
+        <pin num="12" name="VCC_A" type="power_in"/>
+        <pin num="13" name="GND" type="power_in"/>
+        <pin num="14" name="XIN" type="passive"/>
+        <pin num="15" name="XOUT" type="passive"/>
+        <pin num="16" name="VCC_A" type="power_in"/>
+        <pin num="17" name="DD-[3]" type="bidirectional"/>
+        <pin num="18" name="DD+[3]" type="bidirectional"/>
+        <pin num="19" name="VCC_A" type="power_in"/>
+        <pin num="20" name="GND" type="power_in"/>
+        <pin num="21" name="DD-[4]" type="bidirectional"/>
+        <pin num="22" name="DD+[4]" type="bidirectional"/>
+        <pin num="23" name="GREEN[4]/FIXED_PORT4" type="bidirectional"/>
+        <pin num="24" name="AMBER[4]/SET_PORT_NUM1" type="bidirectional"/>
+        <pin num="25" name="SEL48" type="input"/>
+        <pin num="26" name="~RESET" type="input"/>
+        <pin num="27" name="TEST/I2C_SCL" type="bidirectional"/>
+        <pin num="28" name="~OVR[4]" type="input"/>
+        <pin num="29" name="~PWR[4]" type="output"/>
+        <pin num="30" name="~OVR[3]" type="input"/>
+        <pin num="31" name="~PWR[3]" type="output"/>
+        <pin num="32" name="GREEN[3]/FIXED_PORT3" type="bidirectional"/>
+        <pin num="33" name="AMBER[3]/SET_PORT_NUM2" type="bidirectional"/>
+        <pin num="34" name="VCC_D" type="power_in"/>
+        <pin num="35" name="GREEN[2]/SPI_MISO/FIXED_PORT2" type="bidirectional"/>
+        <pin num="36" name="AMBER[2]/SPI_MOSI/PWR_PIN_POL" type="output"/>
+        <pin num="37" name="SELFPWR" type="input"/>
+        <pin num="38" name="VCC_D" type="power_in"/>
+        <pin num="39" name="GANG/SUSPEND" type="input"/>
+        <pin num="40" name="~OVR[2]" type="input"/>
+        <pin num="41" name="~PWR[2]" type="output"/>
+        <pin num="42" name="~OVR[1]" type="input"/>
+        <pin num="43" name="~PWR[1]/I2C_SDA" type="bidirectional"/>
+        <pin num="44" name="SEL27" type="input"/>
+        <pin num="45" name="GREEN[1]/SPI_SK/FIXED_PORT1" type="bidirectional"/>
+        <pin num="46" name="AMBER[1]/SPI_CS" type="output"/>
+        <pin num="47" name="VCC" type="power_in"/>
+        <pin num="48" name="VREG" type="power_out"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+3.3V" class="Default">
+      <node ref="D7" pin="3" pinfunction="K" pintype="passive"/>
+      <node ref="FB1" pin="1" pintype="passive"/>
+      <node ref="FB2" pin="1" pintype="passive"/>
+      <node ref="R10" pin="2" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="R8" pin="1" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="U2" pin="25" pinfunction="SEL48" pintype="input"/>
+      <node ref="U2" pin="37" pinfunction="SELFPWR" pintype="input"/>
+      <node ref="U2" pin="44" pinfunction="SEL27" pintype="input"/>
+    </net>
+    <net code="2" name="+5V" class="Default">
+      <node ref="C14" pin="2" pintype="passive"/>
+      <node ref="C15" pin="2" pintype="passive"/>
+      <node ref="U6" pin="1" pinfunction="VIN" pintype="power_in"/>
+      <node ref="U7" pin="1" pinfunction="VIN" pintype="power_in"/>
+    </net>
+    <net code="3" name="/12MHZ_CLK" class="Default">
+      <node ref="U2" pin="14" pinfunction="XIN" pintype="passive"/>
+    </net>
+    <net code="4" name="/AMBER1" class="Default">
+      <node ref="D3" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U2" pin="46" pinfunction="AMBER[1]/SPI_CS" pintype="output"/>
+    </net>
+    <net code="5" name="/AMBER2" class="Default">
+      <node ref="D4" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U2" pin="36" pinfunction="AMBER[2]/SPI_MOSI/PWR_PIN_POL" pintype="output"/>
+    </net>
+    <net code="6" name="/D1+" class="Default">
+      <node ref="U2" pin="6" pinfunction="DD+[1]" pintype="bidirectional"/>
+      <node ref="U4" pin="4" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="7" name="/D1-" class="Default">
+      <node ref="U2" pin="5" pinfunction="DD-[1]" pintype="bidirectional"/>
+      <node ref="U4" pin="6" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="8" name="/D2+" class="Default">
+      <node ref="U2" pin="10" pinfunction="DD+[2]" pintype="bidirectional"/>
+      <node ref="U5" pin="4" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="9" name="/D2-" class="Default">
+      <node ref="U2" pin="9" pinfunction="DD-[2]" pintype="bidirectional"/>
+      <node ref="U5" pin="6" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="10" name="/DATA_USB_CONNECTED" class="Default">
+      <node ref="C21" pin="2" pintype="passive"/>
+      <node ref="D7" pin="1" pinfunction="A" pintype="passive"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="R14" pin="2" pintype="passive"/>
+      <node ref="U2" pin="26" pinfunction="~RESET" pintype="input"/>
+    </net>
+    <net code="11" name="/GANG/SUSPEND" class="Default">
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R16" pin="1" pintype="passive"/>
+      <node ref="U2" pin="39" pinfunction="GANG/SUSPEND" pintype="input"/>
+    </net>
+    <net code="12" name="/GREEN1" class="Default">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U2" pin="45" pinfunction="GREEN[1]/SPI_SK/FIXED_PORT1" pintype="bidirectional"/>
+    </net>
+    <net code="13" name="/GREEN2" class="Default">
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U2" pin="35" pinfunction="GREEN[2]/SPI_MISO/FIXED_PORT2" pintype="bidirectional"/>
+    </net>
+    <net code="14" name="/HUB_VDD_A" class="Default">
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C33" pin="2" pintype="passive"/>
+      <node ref="C34" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C46" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="FB1" pin="2" pintype="passive"/>
+      <node ref="U2" pin="1" pinfunction="VCC_A" pintype="power_in"/>
+      <node ref="U2" pin="12" pinfunction="VCC_A" pintype="power_in"/>
+      <node ref="U2" pin="16" pinfunction="VCC_A" pintype="power_in"/>
+      <node ref="U2" pin="19" pinfunction="VCC_A" pintype="power_in"/>
+      <node ref="U2" pin="7" pinfunction="VCC_A" pintype="power_in"/>
+    </net>
+    <net code="15" name="/HUB_VDD_D" class="Default">
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="FB2" pin="2" pintype="passive"/>
+      <node ref="U2" pin="34" pinfunction="VCC_D" pintype="power_in"/>
+      <node ref="U2" pin="38" pinfunction="VCC_D" pintype="power_in"/>
+    </net>
+    <net code="16" name="/INTERNAL_PORT_OVR" class="Default">
+      <node ref="R8" pin="2" pintype="passive"/>
+      <node ref="U2" pin="28" pinfunction="~OVR[4]" pintype="input"/>
+      <node ref="U2" pin="30" pinfunction="~OVR[3]" pintype="input"/>
+    </net>
+    <net code="17" name="/INT_USB1.D+" class="Default">
+      <node ref="U2" pin="18" pinfunction="DD+[3]" pintype="bidirectional"/>
+    </net>
+    <net code="18" name="/INT_USB1.D-" class="Default">
+      <node ref="U2" pin="17" pinfunction="DD-[3]" pintype="bidirectional"/>
+    </net>
+    <net code="20" name="/INT_USB2.D+" class="Default">
+      <node ref="U2" pin="22" pinfunction="DD+[4]" pintype="bidirectional"/>
+    </net>
+    <net code="21" name="/INT_USB2.D-" class="Default">
+      <node ref="U2" pin="21" pinfunction="DD-[4]" pintype="bidirectional"/>
+    </net>
+    <net code="23" name="/PREFILT_D1+" class="Default">
+      <node ref="J2" pin="3" pinfunction="D1+" pintype="bidirectional"/>
+      <node ref="U4" pin="3" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="24" name="/PREFILT_D1-" class="Default">
+      <node ref="J2" pin="2" pinfunction="D1-" pintype="bidirectional"/>
+      <node ref="U4" pin="1" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="25" name="/PREFILT_D2+" class="Default">
+      <node ref="J2" pin="7" pinfunction="D2+" pintype="bidirectional"/>
+      <node ref="U5" pin="3" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="26" name="/PREFILT_D2-" class="Default">
+      <node ref="J2" pin="6" pinfunction="D2-" pintype="bidirectional"/>
+      <node ref="U5" pin="1" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="27" name="/PREFILT_VBUS1" class="Default">
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="FB4" pin="1" pintype="passive"/>
+      <node ref="U6" pin="5" pinfunction="VOUT" pintype="power_out"/>
+    </net>
+    <net code="28" name="/PREFILT_VBUS2" class="Default">
+      <node ref="C19" pin="2" pintype="passive"/>
+      <node ref="FB5" pin="1" pintype="passive"/>
+      <node ref="U7" pin="5" pinfunction="VOUT" pintype="power_out"/>
+    </net>
+    <net code="29" name="/UPSTREAM_D+" class="Default">
+      <node ref="U2" pin="4" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="U3" pin="4" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="30" name="/UPSTREAM_D-" class="Default">
+      <node ref="U2" pin="3" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="U3" pin="6" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="31" name="/UPSTREAM_VBUS" class="Default">
+      <node ref="J1" pin="A4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="A9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="B4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="B9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="R14" pin="1" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="VBUS" pintype="passive"/>
+    </net>
+    <net code="32" name="/US_PREFILT_D+" class="Default">
+      <node ref="J1" pin="A6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="J1" pin="B6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="U3" pin="3" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="33" name="/US_PREFILT_D-" class="Default">
+      <node ref="J1" pin="A7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="J1" pin="B7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="U3" pin="1" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="34" name="/VBUS1" class="Default">
+      <node ref="C18" pin="1" pintype="passive"/>
+      <node ref="FB4" pin="2" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="VBUS1" pintype="power_in"/>
+      <node ref="U4" pin="5" pinfunction="VBUS" pintype="passive"/>
+    </net>
+    <net code="35" name="/VBUS2" class="Default">
+      <node ref="C20" pin="1" pintype="passive"/>
+      <node ref="FB5" pin="2" pintype="passive"/>
+      <node ref="J2" pin="5" pinfunction="VBUS2" pintype="power_in"/>
+      <node ref="U5" pin="5" pinfunction="VBUS" pintype="passive"/>
+    </net>
+    <net code="36" name="/~OVR1" class="Default">
+      <node ref="R9" pin="1" pintype="passive"/>
+      <node ref="U2" pin="42" pinfunction="~OVR[1]" pintype="input"/>
+      <node ref="U6" pin="4" pinfunction="~OC" pintype="open_collector"/>
+    </net>
+    <net code="37" name="/~OVR2" class="Default">
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="U2" pin="40" pinfunction="~OVR[2]" pintype="input"/>
+      <node ref="U7" pin="4" pinfunction="~OC" pintype="open_collector"/>
+    </net>
+    <net code="38" name="/~PWR_EN1" class="Default">
+      <node ref="U2" pin="43" pinfunction="~PWR[1]/I2C_SDA" pintype="bidirectional"/>
+      <node ref="U6" pin="3" pinfunction="~EN" pintype="input"/>
+    </net>
+    <net code="39" name="/~PWR_EN2" class="Default">
+      <node ref="U2" pin="41" pinfunction="~PWR[2]" pintype="output"/>
+      <node ref="U7" pin="3" pinfunction="~EN" pintype="input"/>
+    </net>
+    <net code="40" name="GND" class="Default">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="C14" pin="1" pintype="passive"/>
+      <node ref="C15" pin="1" pintype="passive"/>
+      <node ref="C18" pin="2" pintype="passive"/>
+      <node ref="C19" pin="1" pintype="passive"/>
+      <node ref="C20" pin="2" pintype="passive"/>
+      <node ref="C21" pin="1" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="C46" pin="1" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="J1" pin="A1" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="A12" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="B1" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="B12" pinfunction="GND" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="GND1" pintype="power_in"/>
+      <node ref="J2" pin="8" pinfunction="GND2" pintype="power_in"/>
+      <node ref="J2" pin="9" pinfunction="Shield" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="R15" pin="1" pintype="passive"/>
+      <node ref="R16" pin="2" pintype="passive"/>
+      <node ref="R17" pin="2" pintype="passive"/>
+      <node ref="R18" pin="2" pintype="passive"/>
+      <node ref="R19" pin="2" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="R20" pin="2" pintype="passive"/>
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="R48" pin="1" pintype="passive"/>
+      <node ref="R49" pin="1" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+      <node ref="U2" pin="13" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="20" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="8" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U5" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U6" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="U7" pin="2" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="41" name="Net-(C33-Pad1)" class="Default">
+      <node ref="C33" pin="1" pintype="passive"/>
+      <node ref="R48" pin="2" pintype="passive"/>
+    </net>
+    <net code="42" name="Net-(C34-Pad1)" class="Default">
+      <node ref="C34" pin="1" pintype="passive"/>
+      <node ref="R49" pin="2" pintype="passive"/>
+    </net>
+    <net code="43" name="Net-(D1-K)" class="Default">
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R17" pin="1" pintype="passive"/>
+    </net>
+    <net code="44" name="Net-(D2-K)" class="Default">
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R18" pin="1" pintype="passive"/>
+    </net>
+    <net code="45" name="Net-(D3-K)" class="Default">
+      <node ref="D3" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R19" pin="1" pintype="passive"/>
+    </net>
+    <net code="46" name="Net-(D4-K)" class="Default">
+      <node ref="D4" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R20" pin="1" pintype="passive"/>
+    </net>
+    <net code="47" name="Net-(D5-K)" class="Default">
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+    </net>
+    <net code="48" name="Net-(J1-CC1)" class="Default">
+      <node ref="J1" pin="A5" pinfunction="CC1" pintype="bidirectional"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+    </net>
+    <net code="49" name="Net-(J1-CC2)" class="Default">
+      <node ref="J1" pin="B5" pinfunction="CC2" pintype="bidirectional"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+    </net>
+    <net code="50" name="Net-(U2B-RREF)" class="Default">
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="U2" pin="11" pinfunction="RREF" pintype="passive"/>
+    </net>
+    <net code="51" name="Net-(U2B-TEST/I2C_SCL)" class="Default">
+      <node ref="R15" pin="2" pintype="passive"/>
+      <node ref="U2" pin="27" pinfunction="TEST/I2C_SCL" pintype="bidirectional"/>
+    </net>
+    <net code="52" name="Net-(U2F-AMBER[3]/SET_PORT_NUM2)" class="Default">
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="U2" pin="33" pinfunction="AMBER[3]/SET_PORT_NUM2" pintype="bidirectional"/>
+    </net>
+    <net code="53" name="Net-(U2F-GREEN[3]/FIXED_PORT3)" class="Default">
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="U2" pin="32" pinfunction="GREEN[3]/FIXED_PORT3" pintype="bidirectional"/>
+    </net>
+    <net code="54" name="Net-(U2G-AMBER[4]/SET_PORT_NUM1)" class="Default">
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U2" pin="24" pinfunction="AMBER[4]/SET_PORT_NUM1" pintype="bidirectional"/>
+    </net>
+    <net code="55" name="Net-(U2G-GREEN[4]/FIXED_PORT4)" class="Default">
+      <node ref="R5" pin="2" pintype="passive"/>
+      <node ref="U2" pin="23" pinfunction="GREEN[4]/FIXED_PORT4" pintype="bidirectional"/>
+    </net>
+    <net code="56" name="unconnected-(D7-NC-Pad2)" class="Default">
+      <node ref="D7" pin="2" pinfunction="NC" pintype="no_connect"/>
+    </net>
+    <net code="57" name="unconnected-(J1-SBU1-PadA8)" class="Default">
+      <node ref="J1" pin="A8" pinfunction="SBU1" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="58" name="unconnected-(J1-SBU2-PadB8)" class="Default">
+      <node ref="J1" pin="B8" pinfunction="SBU2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="59" name="unconnected-(J1-SHIELD-PadS1)" class="Default">
+      <node ref="J1" pin="S1" pinfunction="SHIELD" pintype="passive+no_connect"/>
+    </net>
+    <net code="60" name="unconnected-(U2A-VCC-Pad47)" class="Default">
+      <node ref="U2" pin="47" pinfunction="VCC" pintype="power_in+no_connect"/>
+    </net>
+    <net code="61" name="unconnected-(U2A-VREG-Pad48)" class="Default">
+      <node ref="U2" pin="48" pinfunction="VREG" pintype="power_out+no_connect"/>
+    </net>
+    <net code="62" name="unconnected-(U2B-XOUT-Pad15)" class="Default">
+      <node ref="U2" pin="15" pinfunction="XOUT" pintype="passive+no_connect"/>
+    </net>
+    <net code="63" name="unconnected-(U2F-~PWR[3]-Pad31)" class="Default">
+      <node ref="U2" pin="31" pinfunction="~PWR[3]" pintype="output+no_connect"/>
+    </net>
+    <net code="64" name="unconnected-(U2G-~PWR[4]-Pad29)" class="Default">
+      <node ref="U2" pin="29" pinfunction="~PWR[4]" pintype="output+no_connect"/>
+    </net>
+  </nets>
+</export>

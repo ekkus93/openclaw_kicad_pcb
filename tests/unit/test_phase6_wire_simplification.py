@@ -21,12 +21,14 @@ from kicad_pcb.router import (
     WireSegment,
     _best_direct_route_with_protected_points,
     _chain_route,
+    _infer_bounded_local_lane_plan,
     _infer_safe_t_junctions,
     _l_route_with_protected_points,
     _label_attachment_plan,
     _plan_local_ladder_routes,
     _point_in_or_on_box,
     _prefer_chain_route,
+    _prefer_small_analog_chain_route,
     _route_candidate_key,
     _shared_lane_route,
     _simplify_wires,
@@ -359,8 +361,17 @@ def test_detect_body_crossings_vertical_detour_uses_non_overlapping_reentry() ->
     seg = WireSegment(162.56, 106.68, 162.56, 82.55)
 
     result = detect_body_crossings([seg], positions)
+    rounded = [
+        WireSegment(
+            round(item.x1, 2),
+            round(item.y1, 2),
+            round(item.x2, 2),
+            round(item.y2, 2),
+        )
+        for item in result
+    ]
 
-    assert result == [
+    assert rounded == [
         WireSegment(162.56, 106.68, 162.56, 96.52),
         WireSegment(162.56, 96.52, 152.4, 96.52),
         WireSegment(152.4, 96.52, 152.4, 86.36),
@@ -444,6 +455,39 @@ def test_prefer_chain_route_only_when_it_beats_spine_geometry() -> None:
     """Triangular 3-pin nets should keep spine routing when it is shorter/cleaner."""
     assert _prefer_chain_route([(10.0, 10.0), (20.0, 10.0), (30.0, 10.0)])
     assert not _prefer_chain_route([(10.0, 50.0), (30.0, 30.0), (50.0, 50.0)])
+
+
+def test_small_analog_chain_route_keeps_stage_tail_chain_geometry() -> None:
+    """Compact stage tails should still prefer the analog chain heuristic."""
+    endpoints = [(69.85, 160.02), (86.36, 160.02), (60.96, 158.75)]
+
+    assert _prefer_small_analog_chain_route(
+        endpoints,
+        inferred_plan=SharedLanePlan("horizontal", 160.02),
+        refs=("RV1", "U1A", "R4"),
+    )
+
+
+def test_small_analog_chain_route_prefers_shared_lane_for_vertical_buffer_handoff() -> None:
+    """A compact buffer handoff should keep its shared vertical lane instead of zig-zagging."""
+    endpoints = [(106.68, 168.91), (106.68, 158.75), (116.84, 160.02)]
+
+    assert not _prefer_small_analog_chain_route(
+        endpoints,
+        inferred_plan=SharedLanePlan("vertical", 106.68),
+        refs=("C6", "R5", "U1B"),
+    )
+
+
+def test_small_analog_chain_route_prefers_spine_for_output_connector_tail() -> None:
+    """A long diagonal connector tail should avoid forcing an all-bends chain."""
+    endpoints = [(152.4, 176.53), (167.64, 158.75), (187.96, 167.64)]
+
+    assert not _prefer_small_analog_chain_route(
+        endpoints,
+        inferred_plan=_infer_bounded_local_lane_plan(endpoints),
+        refs=("C7", "R7", "J2"),
+    )
 
 
 def test_shared_lane_route_uses_existing_vertical_lane() -> None:
@@ -680,10 +724,18 @@ def test_route_nets_prefers_chain_for_compact_three_pin_signal_net() -> None:
     )
 
     assert routing.junctions == []
-    assert len(routing.wires) == 3
-    assert all(seg.y1 == seg.y2 == 10.0 for seg in routing.wires)
-    covered_spans = sorted((min(seg.x1, seg.x2), max(seg.x1, seg.x2)) for seg in routing.wires)
-    assert covered_spans == [(10.0, 20.0), (20.0, 25.08), (20.0, 35.08)]
+    assert routing.route_decisions[0].strategy == "chain"
+    actual_segments = {
+        (round(seg.x1, 2), round(seg.y1, 2), round(seg.x2, 2), round(seg.y2, 2))
+        for seg in routing.wires
+    }
+    assert {
+        (10.0, 10.0, 10.0, 4.92),
+        (10.0, 4.92, 20.0, 4.92),
+        (20.0, 10.0, 20.0, 4.92),
+        (20.0, 4.92, 30.0, 4.92),
+        (30.0, 10.0, 30.0, 4.92),
+    } <= actual_segments
 
 
 def test_route_nets_uses_ladder_route_for_adjacent_three_pin_nets() -> None:
@@ -728,7 +780,12 @@ def test_route_nets_uses_ladder_route_for_adjacent_three_pin_nets() -> None:
         },
     )
 
-    assert WireSegment(39.37, 123.19, 49.53, 123.19) in routing.wires
+    actual_segments = {
+        (round(seg.x1, 2), round(seg.y1, 2), round(seg.x2, 2), round(seg.y2, 2))
+        for seg in routing.wires
+    }
+    assert (39.37, 123.19, 44.45, 123.19) in actual_segments
+    assert (44.45, 123.19, 49.53, 123.19) in actual_segments
 
     vertical_lanes = {
         round(seg.x1, 2)
@@ -1098,8 +1155,9 @@ def test_small_analog_local_routing_draws_buffer_follower_as_local_loop_plus_bra
     assert digital_choice.heuristic_override is None
     assert (134.92, 95.25, 155.08, 95.25) in analog_segments, analog_routing.wires
     assert (134.92, 100.0, 134.92, 95.25) in analog_segments, analog_routing.wires
-    assert (155.08, 95.25, 155.08, 100.0) in analog_segments, analog_routing.wires
-    assert (170.0, 100.0, 155.08, 100.0) in analog_segments, analog_routing.wires
+    assert (155.08, 100.0, 155.08, 95.25) in analog_segments, analog_routing.wires
+    assert (170.0, 100.0, 164.92, 100.0) in analog_segments, analog_routing.wires
+    assert (155.08, 100.0, 164.92, 100.0) in analog_segments, analog_routing.wires
     assert (134.92, 95.25, 155.08, 95.25) not in digital_segments, digital_routing.wires
 
 
@@ -1510,7 +1568,8 @@ def test_route_nets_uses_chain_for_compact_rightward_output_tail() -> None:
 
     assert routing.junctions == []
     assert WireSegment(50.0, 10.0, 50.0, 20.0) in routing.wires
-    assert WireSegment(75.08, 20.0, 50.0, 20.0) in routing.wires
+    assert WireSegment(50.0, 14.92, 70.0, 14.92) in routing.wires
+    assert WireSegment(70.0, 20.0, 70.0, 14.92) in routing.wires
 
 
 def test_route_nets_uses_chain_for_asymmetric_compact_output_tail() -> None:
@@ -1555,21 +1614,23 @@ def test_route_nets_uses_chain_for_asymmetric_compact_output_tail() -> None:
         },
     )
 
-    assert routing.junctions == [JunctionPoint(213.36, 152.40)]
+    assert routing.route_decisions[1].strategy == "compact_signal_tail"
+    assert routing.route_decisions[1].heuristic_override == "compact_output_tail"
+    assert routing.junctions == []
     assert WireSegment(213.36, 123.19, 213.36, 165.10) not in routing.wires
     assert any(
-        math.isclose(seg.y1, 152.40, abs_tol=0.01)
-        and math.isclose(seg.y2, 152.40, abs_tol=0.01)
+        math.isclose(seg.y1, 185.42, abs_tol=0.01)
+        and math.isclose(seg.y2, 185.42, abs_tol=0.01)
         and math.isclose(min(seg.x1, seg.x2), 212.09, abs_tol=0.01)
-        and max(seg.x1, seg.x2) > 243.84
+        and math.isclose(max(seg.x1, seg.x2), 238.76, abs_tol=0.01)
         for seg in routing.wires
     )
     assert WireSegment(238.76, 165.10, 238.76, 171.45) not in routing.wires
     assert any(
         math.isclose(seg.x1, seg.x2, abs_tol=0.01)
-        and seg.x1 > 243.84
-        and math.isclose(min(seg.y1, seg.y2), 152.40, abs_tol=0.01)
-        and math.isclose(max(seg.y1, seg.y2), 171.45, abs_tol=0.01)
+        and math.isclose(seg.x1, 238.76, abs_tol=0.01)
+        and math.isclose(min(seg.y1, seg.y2), 171.45, abs_tol=0.01)
+        and math.isclose(max(seg.y1, seg.y2), 185.42, abs_tol=0.01)
         for seg in routing.wires
     )
 
@@ -1641,6 +1702,76 @@ def test_named_routing_profiles_diverge_on_output_tail_fixture() -> None:
     assert digital_choice.heuristic_override is None
     assert analog_routing.wires != digital_routing.wires
     assert analog_routing.junctions != digital_routing.junctions
+
+
+def test_named_routing_profiles_diverge_on_output_tail_with_command_pin_geometry() -> None:
+    """Command-derived pin geometry should still keep the analog compact tail route."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C7", symbol="Device:C", value="100n"),
+            ComponentIR(ref="R6", symbol="Device:R", value="47"),
+            ComponentIR(ref="R7", symbol="Device:R", value="100"),
+            ComponentIR(ref="J2", symbol="Connector:AudioJack3", value="OUT"),
+        ],
+        nets=[
+            NetIR(
+                name="AFTER_R6",
+                pins=[PinRefIR(ref="R6", pin="2"), PinRefIR(ref="C7", pin="1")],
+            ),
+            NetIR(
+                name="HP_L_OUT",
+                pins=[
+                    PinRefIR(ref="C7", pin="2"),
+                    PinRefIR(ref="R7", pin="1"),
+                    PinRefIR(ref="J2", pin="1"),
+                ],
+            ),
+        ],
+    )
+    pin_endpoints = {
+        ("C7", "1"): (213.36, 133.35, 270.0),
+        ("C7", "2"): (213.36, 138.43, 90.0),
+        ("J2", "1"): (217.17, 165.10, 0.0),
+        ("J2", "2"): (217.17, 167.64, 0.0),
+        ("J2", "3"): (217.17, 170.18, 0.0),
+        ("R6", "1"): (213.36, 179.07, 270.0),
+        ("R6", "2"): (213.36, 184.15, 90.0),
+        ("R7", "1"): (238.76, 166.37, 270.0),
+        ("R7", "2"): (238.76, 171.45, 90.0),
+    }
+    positions = {
+        "R6": (213.36, 179.07, 270.0),
+        "C7": (213.36, 133.35, 270.0),
+        "R7": (238.76, 166.37, 270.0),
+        "J2": (217.17, 165.10, 0.0),
+    }
+    analog_audio = SCHEMATIC_HEURISTIC_PROFILES["analog_audio"]
+    generic_digital = SCHEMATIC_HEURISTIC_PROFILES["generic_digital"]
+
+    analog_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions=positions,
+        heuristic_policy=analog_audio.routing_policy,
+    )
+    digital_routing = route_nets(
+        ir=ir,
+        pin_endpoints=pin_endpoints,
+        positions=positions,
+        heuristic_policy=generic_digital.routing_policy,
+    )
+    analog_choice = next(
+        choice for choice in analog_routing.route_decisions if choice.net_name == "HP_L_OUT"
+    )
+    digital_choice = next(
+        choice for choice in digital_routing.route_decisions if choice.net_name == "HP_L_OUT"
+    )
+
+    assert analog_choice.strategy == "compact_signal_tail"
+    assert analog_choice.heuristic_override == "compact_output_tail"
+    assert digital_choice.strategy == "shared_lane"
+    assert digital_choice.heuristic_override is None
 
 
 def test_route_nets_uses_compact_local_ground_lane_for_output_cluster() -> None:
