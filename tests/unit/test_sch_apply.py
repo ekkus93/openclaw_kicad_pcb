@@ -107,6 +107,58 @@ class TestTransformPinAt:
         assert set(result.keys()) == set(pin_at.keys())
 
 
+def test_write_symbols_flips_two_pin_passive_to_match_pin_nets() -> None:
+    doc = SchematicDoc(parse('(kicad_sch (version 20231120) (generator "test"))'))
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="J1", symbol="TestLib:Conn3", value="LEFT"),
+            ComponentIR(ref="R1", symbol="TestLib:R", value="10k"),
+            ComponentIR(ref="J2", symbol="TestLib:Conn3", value="RIGHT"),
+        ],
+        nets=[
+            NetIR(
+                name="LEFT_NET",
+                pins=[PinRefIR(ref="J1", pin="1"), PinRefIR(ref="R1", pin="2")],
+            ),
+            NetIR(
+                name="RIGHT_NET",
+                pins=[PinRefIR(ref="J2", pin="1"), PinRefIR(ref="R1", pin="1")],
+            ),
+        ],
+    )
+    stats = {
+        "symbols": 0,
+        "wires": 0,
+        "labels": 0,
+        "global_labels": 0,
+        "junctions": 0,
+        "binding_markers": 0,
+    }
+
+    class _StaticLayoutEngine:
+        def compute_symbol_positions(
+            self,
+            _ir: CircuitIR,
+        ) -> dict[str, tuple[float, float, float | None]]:
+            return {
+                "J1": (0.0, 0.0, 0.0),
+                "R1": (10.0, 0.0, 0.0),
+                "J2": (20.0, 0.0, 0.0),
+            }
+
+    _positions, pin_endpoints, _pin_anchors, _missing, _raw_layout = _write_symbols(
+        doc=doc,
+        ir=ir,
+        symbol_index=SymbolIndex(symbols_dir=_FIXTURES_DIR),
+        project_name="test",
+        stats=stats,
+        engine=_StaticLayoutEngine(),
+    )
+
+    assert pin_endpoints[("R1", "1")][0] > pin_endpoints[("R1", "2")][0]
+
+
 class TestExpandGenerationIr:
     def test_splits_fixture_dual_op_amp_into_explicit_units(self) -> None:
         ir = _make_ir(
@@ -164,7 +216,7 @@ class TestResolvePlacedSymbolPinAt:
     def test_returns_unit_local_geometry_for_signal_unit(self) -> None:
         pin_at = _resolve_placed_symbol_pin_at(
             "TestLib:DualOpAmp",
-            _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3")),
+            _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3"), logical_ref="U1"),
             SymbolIndex(symbols_dir=_FIXTURES_DIR),
         )
 
@@ -177,7 +229,7 @@ class TestResolvePlacedSymbolPinAt:
     def test_returns_unit_local_geometry_for_power_unit(self) -> None:
         pin_at = _resolve_placed_symbol_pin_at(
             "TestLib:DualOpAmp",
-            _PlacedSymbolSpec(unit=3, pin_nums=("4", "8")),
+            _PlacedSymbolSpec(unit=3, pin_nums=("4", "8"), logical_ref="U1"),
             SymbolIndex(symbols_dir=_FIXTURES_DIR),
         )
 
@@ -221,12 +273,15 @@ class TestWriteSymbolsPinAnchors:
             doc=doc,
             ir=ir,
             symbol_index=SymbolIndex(symbols_dir=_FIXTURES_DIR),
-            placed_symbol_specs={"U1A": _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3"))},
+            placed_symbol_specs={
+                "U1A": _PlacedSymbolSpec(unit=1, pin_nums=("1", "2", "3"), logical_ref="U1")
+            },
             project_name="test",
             stats=stats,
             engine=_StaticLayoutEngine(),
         )
 
+        assert [symbol["ref"] for symbol in doc.list_symbols()] == ["U1A"]
         assert pin_anchors[("U1A", "1")].unit == 1
         assert pin_anchors[("U1A", "1")].ref == "U1A"
         assert pin_anchors[("U1A", "1")].pin == "1"

@@ -74,6 +74,8 @@ from kicad_pcb.router import (
     LABEL_MODE_POLICIES,
     MAX_DIRECT_WIRE_MM,
     SYMBOL_HALF_SIZE_MM,
+    BindMarker,
+    GlobalLabelPlacement,
     LabelPolicy,
     NetRouting,
     PinAnchor,
@@ -9008,9 +9010,9 @@ class TestPhase3PowerSymbols:
         assert len(placed_labels) == 1
         label_at = find_first(placed_labels[0], "at")
         assert label_at is not None
-        assert label_at.items[1].value == "50.00"  # type: ignore[union-attr]
-        assert label_at.items[2].value == "73.66"  # type: ignore[union-attr]
-        assert label_at.items[3].value == "270"  # type: ignore[union-attr]
+        label_x = label_at.items[1].value  # type: ignore[union-attr]
+        label_y = label_at.items[2].value  # type: ignore[union-attr]
+        assert (label_x, label_y) != ("50.00", "80.00")
 
         wires = [
             item for item in doc.root.items if isinstance(item, ListNode) and item.key == "wire"
@@ -9023,8 +9025,49 @@ class TestPhase3PowerSymbols:
         assert isinstance(xy2, ListNode)
         assert xy1.items[1].value == "50.00"  # type: ignore[union-attr]
         assert xy1.items[2].value == "80.00"  # type: ignore[union-attr]
-        assert xy2.items[1].value == "50.00"  # type: ignore[union-attr]
-        assert xy2.items[2].value == "73.66"  # type: ignore[union-attr]
+        assert xy2.items[1].value == label_x  # type: ignore[union-attr]
+        assert xy2.items[2].value == label_y  # type: ignore[union-attr]
+
+    def test_write_routing_power_symbol_fallback_avoids_occupied_anchor(
+        self, tmp_path: Path
+    ) -> None:
+        doc = _make_sch_doc()
+        routing = NetRouting(
+            global_labels=[GlobalLabelPlacement("/BUS", 50.0, 73.66, 270)],
+            power_symbols=[PowerSymbolPlacement("NOT_A_REAL_NET_XYZ", 50.0, 80.0, 0)],
+        )
+        stats: dict[str, int] = {
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "power_symbols": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        write_routing(
+            doc=doc,
+            routing=routing,
+            new_uuid=_next_test_uuid,
+            stats=stats,
+            symbols_dir=tmp_path,
+        )
+
+        placed_labels = [
+            item
+            for item in doc.root.items
+            if isinstance(item, ListNode)
+            and item.key == "global_label"
+            and isinstance(item.items[1], StringNode)
+            and item.items[1].value == "NOT_A_REAL_NET_XYZ"
+        ]
+        assert len(placed_labels) == 1
+        label_at = find_first(placed_labels[0], "at")
+        assert label_at is not None
+        assert not (
+            label_at.items[1].value == "50.00"  # type: ignore[union-attr]
+            and label_at.items[2].value == "73.66"  # type: ignore[union-attr]
+        )
 
     def test_write_routing_strict_raises_when_power_symbol_missing(self, tmp_path: Path) -> None:
         """Strict mode must fail fast when a power symbol cannot be resolved."""
@@ -9072,3 +9115,25 @@ class TestPhase3PowerSymbols:
         write_routing(doc=doc, routing=routing, new_uuid=_next_test_uuid, stats=stats)
         assert stats["power_symbols"] == 3
         assert stats["global_labels"] == 0
+
+    def test_write_routing_preserves_binding_marker_refs(self) -> None:
+        doc = _make_sch_doc()
+        routing = NetRouting(bind_markers=[BindMarker("U1A", "1", "IN_A")])
+        stats: dict[str, int] = {
+            "wires": 0,
+            "labels": 0,
+            "global_labels": 0,
+            "power_symbols": 0,
+            "junctions": 0,
+            "binding_markers": 0,
+        }
+
+        write_routing(
+            doc=doc,
+            routing=routing,
+            new_uuid=_next_test_uuid,
+            stats=stats,
+        )
+
+        assert stats["binding_markers"] == 1
+        assert doc.extract_pin_label_bindings() == [{"ref": "U1A", "pin": "1", "net_name": "IN_A"}]

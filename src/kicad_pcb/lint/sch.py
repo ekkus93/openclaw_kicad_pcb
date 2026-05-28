@@ -256,13 +256,34 @@ def lint_schematic(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
     # ------------------------------------------------------------------
     # SCH003 — duplicate reference designators
     # ------------------------------------------------------------------
-    ref_counts: dict[str, int] = {}
+    ref_groups: dict[str, list[tuple[str, str | None]]] = {}
     for sym in placed_syms:
         ref = _get_property_value(sym, "Reference")
         if ref:
-            ref_counts[ref] = ref_counts.get(ref, 0) + 1
-    for ref, count in ref_counts.items():
-        if count > 1:
+            unit = next(
+                (
+                    child.items[1].value
+                    for child in sym.items
+                    if isinstance(child, ListNode)
+                    and child.key == "unit"
+                    and len(child.items) >= 2
+                    and isinstance(child.items[1], AtomNode)
+                ),
+                "",
+            )
+            ref_groups.setdefault(ref, []).append((unit, _symbol_lib_id(sym)))
+    for ref, entries in ref_groups.items():
+        count = len(entries)
+        if count <= 1:
+            continue
+        units = [unit for unit, _lib_id in entries]
+        lib_ids = {lib_id for _unit, lib_id in entries}
+        repeated_multi_unit = (
+            all(unit for unit in units)
+            and len(set(units)) == count
+            and len(lib_ids) == 1
+        )
+        if not repeated_multi_unit:
             issues.append(
                 LintIssue(
                     _ERR,

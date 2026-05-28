@@ -1,11 +1,38 @@
 # kicad-pcb Skill — Memory File
 
+## 2026-05-28T17:54:10Z - GPT-5.4 - Revalidated the corpus closeout state after the router gate recovery
+
+- The repo validation gate is still green on the retained router/evaluation state: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, `uv run pytest`, and `uv run pytest -m requires_kicad` all pass (`2489 passed, 1 skipped`; `23 passed` on the KiCad-backed slice).
+- A fresh full corpus evaluation now completes cleanly across all 18 fixtures with no runtime partials, but the current retained generator/evaluator state still fails `electrical_equivalence` on all 18 fixtures. The dominant remaining work is generic net identity/connectivity recovery, not harness stability.
+- The batch-2 TODO and original corpus TODO now document that current reality explicitly: representative mismatches remain on nets like `+12V`, `12MHZ_CLK`, `+5V`, `SW`, `CUR1_OUT`, `+3.3V_LOCAL`, and `+3.3V@SD` instead of the earlier runtime-partial bucket.
+
+## 2026-05-28T06:54:24Z - GPT-5.4 - Cleared the multi-unit split-ref runtime blocker for USB hub and STM32
+
+- Multi-unit symbol emission now keeps synthetic placed refs internal for layout/routing but restores logical refs in emitted symbol instances and bind markers, and `SCH003` now permits duplicate logical refs only for distinct-unit placements of the same `lib_id`.
+- That moved `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports` and `stm32g030-minimal-system-circuit-electrical` out of the evaluation-runtime/not-run bucket and back into ordinary electrical-equivalence failures. The remaining work on those fixtures is now broader connectivity/routing drift (`12MHZ_CLK` / `D2-` over-connection on USB hub; `BATT_POST` and net-name collapse on STM32), not `_sch_apply` reference leakage.
+
+## 2026-05-28T15:40:27Z - GPT-5.4 - Restored the repo gate after the final router/writeout regressions
+
+- `router.py` now limits emitted power-symbol clustering to dense same-net groups, so Phase 10 readability still collapses the over-fragmented NE5532 GND symbols without merging ordinary two-symbol unit-test cases.
+- The late 4+-pin protected-stub fallback now keeps compact local vertical groups like the headphone amp `MID_RAIL` net fully wired while still breaking out truly wide foreign-attachment cases to endpoint labels.
+- The repo gate is green again on this state: `uv run ruff check .`, `uv run mypy src/kicad_pcb src/kicad_pcb_web`, and `uv run pytest` all pass (`2489 passed, 1 skipped`).
+
+## 2026-05-28T06:37:09Z - GPT-5.4 - Closed the MicroSD electrical blocker with retained power-attachment and junction-write fixes
+
+- `microsd-card-in-spi-mode-with-hotswap-support` now lands as `pass_with_warnings` on both a focused fixture run and the full 18-fixture corpus re-run. The retained generic closeout sequence was: expand dense endpoint-label breakout search before reusing occupied anchors, route direct per-pin power symbols through protected anchor planning, route slash-power fallback labels through the same protected anchor planner in `write_routing(...)`, and split explicit router junctions into real wire endpoints before simplification/writeout so KiCad export keeps intended branch joins like `R64 pin 1`.
+- The full corpus baseline improved from 17 failed/partial fixtures to 15 after these retained fixes. Solar and MicroSD are now both out of the active Phase 5.2 blocker set, so the next representative electrical surfaces are the remaining `rp2040`, USB hub, and STM32 failures.
+
 ## 2026-05-28T02:21:59Z - GPT-5.4 - Cleared the batch-2 runtime bucket and checkpointed the first retained generator-quality follow-up
 
 - Batch-2 no longer has any `evaluation_runtime` partial fixtures. `rp2040-microcontroller-core-circuit-mitayi-pico-d1` now evaluates normally after `SymbolIndex.get_pins()` was taught to return an empty set for genuine pin-free symbols with a complete definition chain, while still raising `SYMBOL_HAS_NO_PINS` for broken `extends` chains.
 - `solar-charger-mppt-circuit-sts1-pcb-sidepanel` also now evaluates normally after `graphviz_layout/dot_builder.py` stopped wrapping feedback dummy nodes in a `cluster_feedback` subgraph. The equivalent flat dummy-node edges avoid Graphviz 12's `flat_reorder` assertion when block-zone anchors are active.
 - Phase 5.1 in `docs/MODEL_KICAD_CORPUS2_TODO.md` is now effectively complete: focused tests for the retained harness fixes are green, a full ingest refresh still reports 18 accepted / 0 partial / 0 rejected fixtures, and all 9 batch-2 fixtures now produce ordinary evaluation reports.
 - A first retained label-attachment refinement is also in place in `router.py`: already-occupied label coordinates now outrank route length in `_label_attachment_plan()`, which reduced some duplicate-label collisions and shaved current mismatch counts on at least `rp2040` and `4-port-usb`, but it did not yet eliminate the remaining shared-anchor failures across the batch-2 generator-quality fixtures.
+
+## 2026-05-28T05:55:57Z - GPT-5.4 - Closed the solar electrical blocker with retained routing and passive-pin-order fixes
+
+- `solar-charger-mppt-circuit-sts1-pcb-sidepanel` now lands as `pass_with_warnings` on the full 18-fixture corpus re-run instead of failing electrical equivalence. The retained generic closeout sequence was: actually wire the perpendicular foreign-attachment breakout preference into `_append_pin_endpoint_labels(...)`, mirror two-pin passives in `_write_symbols(...)` when the mirrored pin order better matches connected-net centroids and avoids foreign endpoint collisions, and make multi-pin power clusters abandon shared routes that still cross protected foreign attachment points.
+- The new solar-safe baseline proves the remaining Phase 5.2 work is no longer centered on the old lower-left analog cluster. The next representative electrical blockers are now the broader `rp2040`, USB hub, STM32, and MicroSD fixtures, while the repo-level focused regressions for the new retained fixes are green.
 
 ## 2026-05-28T02:00:43Z - GPT-5.4 - Completed corpus batch-2 Phase 4 triage and validated the docs checkpoint
 

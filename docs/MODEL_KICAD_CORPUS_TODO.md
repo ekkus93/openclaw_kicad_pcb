@@ -499,7 +499,7 @@ Use this mapping when creating actionable failures:
 
 Do this only after ingestion and evaluation exist.
 
-Current status: the corpus harness now ingests all current `model_kicad_files/` sources under `kicad-cli 9.0.9`, materializes fixture-local embedded symbols for evaluation, and runs full-corpus `model-corpus evaluate` end-to-end. The repo-wide validation gate is green again after the latest routing/pin-direction fixes, MCP2551 passes electrical equivalence after fixing compact decoupling rail clearance plus the repo-local `power:GND` symbol definition, and MAX232 now passes after switching aligned two-pin fallback GND clusters from a shared lane to direct per-pin GND symbol attachments. The active work is now the remaining generic tuning pass for the MicroSD fixture.
+Current status: the corpus harness still ingests all current `model_kicad_files/` sources under `kicad-cli 9.0.9`, materializes fixture-local embedded symbols for evaluation, and runs full-corpus `model-corpus evaluate` end-to-end. The repo-wide validation gate is green again after the latest router/writeout recovery, but the current full 18-fixture corpus sweep is still red on ordinary `electrical_equivalence` failures across both the original and batch-2 fixtures. The active work is no longer a runtime/harness bucket; it is the broader generic routing/connectivity tuning pass needed to recover net identity on fixtures such as MCP2551, MAX232, MicroSD, USB hub, RP2040, solar, STM32, and W5500.
 
 ### 11.1 Start with MCP2551 fixture
 - [x] Ingest `mcp2551-can-transciever.kicad_sch`.
@@ -524,9 +524,15 @@ Likely generic rules:
 - [x] Do not hard-code MAX232-specific filenames.
 
 ### 11.3 Then use MicroSD fixture
-- [ ] Ingest/evaluate `microsd-card-in-spi-mode-with-hotswap-support.kicad_sch`.
-- [ ] Add generic connector + bus signal label strategy improvements if failures show that need.
-- [ ] Keep pullups/decoupling/support parts near relevant connector/IC pins.
+- [x] Ingest/evaluate `microsd-card-in-spi-mode-with-hotswap-support.kicad_sch`.
+- [x] Add generic connector + bus signal label strategy improvements if failures show that need.
+- [x] Keep pullups/decoupling/support parts near relevant connector/IC pins.
+
+Current representative blocker notes:
+
+- MCP2551 no longer has a harness/runtime issue, but the latest full sweep still fails `electrical_equivalence` on ordinary net identity/connectivity drift (for example `+5V` membership).
+- MAX232 likewise re-evaluates cleanly through the harness, but the latest full sweep still fails on ordinary electrical mismatches (`Net-(U2-C1-)`, `Net-(U2-VS+)`).
+- MicroSD keeps the retained generic connector/power-label fixes, but the latest full sweep still fails `electrical_equivalence` on connector-side named-net recovery (`+3.3V@SD`, `DET_A`).
 
 ---
 
@@ -580,6 +586,10 @@ Then manually verify:
 - [x] Evaluation writes aggregate `summary.md`.
 - [x] Per-fixture reports include actionable failures.
 - [x] Existing readability/golden tests still pass.
+
+Current closeout note:
+
+- The harness and repo gate are green, but the latest full corpus evaluation still reports `evaluated_count=18`, `failed_count=18`, `skipped_count=0`. Do not mark the overall corpus workflow complete until the remaining generic electrical-equivalence drift is materially reduced.
 
 ---
 

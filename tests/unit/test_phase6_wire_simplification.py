@@ -7,6 +7,7 @@ merging wire segments that lie on the same horizontal or vertical line.
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 
 from kicad_pcb.block_detection import BlockLayout, BlockRole
 from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
@@ -15,10 +16,15 @@ from kicad_pcb.router import (
     DEBUG_LABEL_POLICY,
     DEFAULT_ROUTING_HEURISTIC_POLICY,
     SYMBOL_HALF_SIZE_MM,
+    GlobalLabelPlacement,
     JunctionPoint,
+    NetLabel,
+    NetRouting,
     RoutingHeuristicPolicy,
     SharedLanePlan,
     WireSegment,
+    _append_pin_endpoint_labels,
+    _append_promoted_visible_label,
     _best_direct_route_with_protected_points,
     _chain_route,
     _infer_bounded_local_lane_plan,
@@ -29,9 +35,12 @@ from kicad_pcb.router import (
     _point_in_or_on_box,
     _prefer_chain_route,
     _prefer_small_analog_chain_route,
+    _ProtectedPointContext,
     _route_candidate_key,
     _shared_lane_route,
     _simplify_wires,
+    _split_wires_at_points,
+    _VisibleLabelPromotion,
     _wire_crosses_box,
     detect_body_crossings,
     route_nets,
@@ -41,6 +50,32 @@ from kicad_pcb.router import (
 def _count_short_segments(wires: list[WireSegment], threshold_mm: float = 5.1) -> int:
     """Count short wire segments at or below *threshold_mm*."""
     return sum(1 for seg in wires if math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1) <= threshold_mm)
+
+
+def _connected_power_symbol_sets(routing: NetRouting) -> list[set[str]]:
+    parent: dict[tuple[float, float], tuple[float, float]] = {}
+
+    def find(point: tuple[float, float]) -> tuple[float, float]:
+        parent.setdefault(point, point)
+        if parent[point] != point:
+            parent[point] = find(parent[point])
+        return parent[point]
+
+    def union(left: tuple[float, float], right: tuple[float, float]) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    labels_by_root: dict[tuple[float, float], set[str]] = defaultdict(set)
+    for wire in routing.wires:
+        start = (round(wire.x1, 2), round(wire.y1, 2))
+        end = (round(wire.x2, 2), round(wire.y2, 2))
+        union(start, end)
+    for power_symbol in routing.power_symbols:
+        point = (round(power_symbol.x, 2), round(power_symbol.y, 2))
+        labels_by_root[find(point)].add(f"PWR:{power_symbol.net_name}")
+    return list(labels_by_root.values())
 
 
 def test_simplify_merges_colinear_horizontal_segments() -> None:
@@ -111,6 +146,40 @@ def test_simplify_preserves_junction_points() -> None:
     # Verify junction point (10, 10) is still an endpoint of all affected segments
     endpoints = {(seg.x1, seg.y1) for seg in result} | {(seg.x2, seg.y2) for seg in result}
     assert (10.0, 10.0) in endpoints, "Junction point must remain as a wire endpoint"
+
+
+def test_simplify_preserves_explicit_protected_midsegment_junction() -> None:
+    wires = [
+        WireSegment(10.0, 0.0, 10.0, 10.0),
+        WireSegment(10.0, 10.0, 10.0, 20.0),
+        WireSegment(5.0, 10.0, 15.0, 10.0),
+    ]
+
+    result = _simplify_wires(wires, protected_points={(10.0, 10.0)})
+
+    assert len(result) == 3
+    assert sum(
+        1
+        for seg in result
+        if math.isclose(seg.x1, 10.0, abs_tol=0.01)
+        and math.isclose(seg.x2, 10.0, abs_tol=0.01)
+    ) == 2
+
+
+def test_split_wires_at_points_breaks_segments_at_explicit_junctions() -> None:
+    result = _split_wires_at_points(
+        [
+            WireSegment(30.48, 99.06, 48.26, 99.06),
+            WireSegment(39.37, 96.52, 39.37, 102.87),
+        ],
+        {(39.37, 99.06)},
+    )
+
+    assert len(result) == 4
+    assert WireSegment(30.48, 99.06, 39.37, 99.06) in result
+    assert WireSegment(39.37, 99.06, 48.26, 99.06) in result
+    assert WireSegment(39.37, 96.52, 39.37, 99.06) in result
+    assert WireSegment(39.37, 99.06, 39.37, 102.87) in result
 
 
 def test_infer_safe_t_junctions_adds_orthogonal_tee_outside_component_bodies() -> None:
@@ -299,7 +368,7 @@ def test_label_attachment_plan_avoids_future_stub_points() -> None:
         pin_point=(7.62, 138.43),
         pin_angle=90.0,
         occupied_points=set(),
-        protected_points={(7.62, 143.51)},
+        protected=_ProtectedPointContext({(7.62, 143.51)}),
     )
 
     assert (anchor_x, anchor_y) != (7.62, 143.51)
@@ -312,8 +381,10 @@ def test_label_attachment_plan_avoids_stub_when_shared_with_another_pin() -> Non
         pin_point=(7.62, 138.43),
         pin_angle=270.0,
         occupied_points=set(),
-        protected_points={(7.62, 143.51)},
-        shared_protected_points={(7.62, 143.51)},
+        protected=_ProtectedPointContext(
+            {(7.62, 143.51)},
+            {(7.62, 143.51)},
+        ),
     )
 
     assert (anchor_x, anchor_y) != (7.62, 143.51)
@@ -326,7 +397,7 @@ def test_label_attachment_plan_avoids_future_pin_endpoints() -> None:
         pin_point=(7.62, 138.43),
         pin_angle=0.0,
         occupied_points=set(),
-        protected_points={(7.62, 143.51)},
+        protected=_ProtectedPointContext({(7.62, 143.51)}),
     )
 
     assert (anchor_x, anchor_y) != (7.62, 143.51)
@@ -342,6 +413,92 @@ def test_label_attachment_plan_avoids_occupied_pin_start_from_prior_label() -> N
     )
 
     assert (anchor_x, anchor_y) != (38.10, 124.46)
+    assert route
+    assert route[-1].x2 == anchor_x and route[-1].y2 == anchor_y
+
+
+def test_promoted_visible_label_avoids_occupied_stub_point() -> None:
+    routing = NetRouting(labels=[NetLabel("OLD_NET", 38.10, 124.46, 90)])
+
+    _append_promoted_visible_label(
+        routing,
+        promotion=_VisibleLabelPromotion(
+            net_name="NEW_NET",
+            refs=("R1", "R2"),
+            block_layout=None,
+            classification="signal_chain",
+            label_candidates=[(PinRefIR(ref="R1", pin="1"), (38.10, 129.54, 90.0))],
+        ),
+        policy=DEBUG_LABEL_POLICY,
+    )
+
+    new_labels = [label for label in routing.labels if label.name == "NEW_NET"]
+    assert len(new_labels) == 1
+    assert (round(new_labels[0].x, 2), round(new_labels[0].y, 2)) != (38.10, 124.46)
+    assert routing.wires
+
+
+def test_pin_endpoint_label_breakout_avoids_occupied_prior_label_anchor() -> None:
+    routing = NetRouting(global_labels=[GlobalLabelPlacement("/CUR1_OUT", 60.96, 132.08, 90)])
+
+    _append_pin_endpoint_labels(
+        routing,
+        net_name="/SC1_V+",
+        known=[
+            (PinRefIR(ref="R11", pin="1"), (60.96, 127.00, 90.0)),
+            (PinRefIR(ref="SC1", pin="1"), (60.96, 132.08, 90.0)),
+            (PinRefIR(ref="U11", pin="3"), (83.82, 127.00, 0.0)),
+        ],
+        protected=_ProtectedPointContext(
+            {(60.96, 127.00), (60.96, 132.08), (83.82, 127.00)},
+        ),
+    )
+
+    sc1_labels = [label for label in routing.global_labels if label.name == "/SC1_V+"]
+    assert len(sc1_labels) == 3
+    assert (60.96, 132.08) not in {
+        (round(label.x, 2), round(label.y, 2))
+        for label in sc1_labels
+    }
+    assert routing.wires
+
+
+def test_pin_endpoint_label_breakout_prefers_perpendicular_anchor() -> None:
+    route, anchor_x, anchor_y = _label_attachment_plan(
+        pin_point=(59.69, 130.81),
+        pin_angle=0.0,
+        occupied_points=set(),
+        prefer_perpendicular=True,
+    )
+
+    assert round(anchor_y, 2) in {125.73, 135.89}
+    assert round(anchor_x, 2) in {54.61, 59.69}
+    assert round(anchor_y, 2) != 130.81
+    assert route
+    assert route[-1].x2 == anchor_x and route[-1].y2 == anchor_y
+
+
+def test_label_attachment_plan_expands_search_before_reusing_bad_anchor() -> None:
+    route, anchor_x, anchor_y = _label_attachment_plan(
+        pin_point=(109.22, 144.78),
+        pin_angle=180.0,
+        occupied_points={(114.30, 144.78)},
+        protected=_ProtectedPointContext(
+            {
+                (109.22, 144.78),
+                (114.30, 139.70),
+                (114.30, 149.86),
+                (109.22, 139.70),
+                (109.22, 149.86),
+            }
+        ),
+        prefer_perpendicular=True,
+    )
+
+    assert (round(anchor_x, 2), round(anchor_y, 2)) not in {
+        (109.22, 144.78),
+        (114.30, 144.78),
+    }
     assert route
     assert route[-1].x2 == anchor_x and route[-1].y2 == anchor_y
 
@@ -2245,6 +2402,103 @@ def test_route_nets_uses_direct_symbols_for_aligned_two_pin_ground_cluster() -> 
     )
 
 
+def test_route_nets_uses_direct_symbols_when_ground_cluster_hits_foreign_endpoint() -> None:
+    """Three-pin GND clusters should fall back when a shared lane crosses a foreign endpoint."""
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="C1", symbol="Device:C", value="10u"),
+            ComponentIR(ref="C2", symbol="Device:C", value="10u"),
+            ComponentIR(ref="C3", symbol="Device:C", value="10u"),
+            ComponentIR(ref="R1", symbol="Device:R", value="10k"),
+            ComponentIR(ref="U1", symbol="TestLib:SingleOpAmp", value="AMP"),
+        ],
+        nets=[
+            NetIR(
+                name="GND",
+                pins=[
+                    PinRefIR(ref="C1", pin="2"),
+                    PinRefIR(ref="C2", pin="2"),
+                    PinRefIR(ref="C3", pin="2"),
+                ],
+            ),
+            NetIR(
+                name="SIG",
+                pins=[PinRefIR(ref="R1", pin="1"), PinRefIR(ref="U1", pin="1")],
+            ),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("C1", "2"): (38.10, 114.30, 270.0),
+            ("C2", "2"): (38.10, 134.62, 270.0),
+            ("C3", "2"): (38.10, 149.86, 270.0),
+            ("R1", "1"): (38.10, 129.54, 90.0),
+            ("U1", "1"): (76.20, 129.54, 180.0),
+        },
+        positions={
+            "C1": (38.10, 111.76, 0.0),
+            "C2": (38.10, 132.08, 0.0),
+            "C3": (38.10, 147.32, 0.0),
+            "R1": (38.10, 124.46, 0.0),
+            "U1": (83.82, 129.54, 0.0),
+        },
+        heuristic_policy=RoutingHeuristicPolicy(enable_compact_local_ground_clusters=False),
+    )
+
+    assert routing.power_symbols
+    assert all(power_symbol.net_name == "GND" for power_symbol in routing.power_symbols)
+    assert not any(
+        math.isclose(seg.x1, 38.10, abs_tol=0.01)
+        and math.isclose(seg.x2, 38.10, abs_tol=0.01)
+        and min(seg.y1, seg.y2) < 129.54 < max(seg.y1, seg.y2)
+        for seg in routing.wires
+    )
+
+
+def test_route_nets_direct_power_symbols_avoid_foreign_shared_stub_collisions() -> None:
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U14", symbol="74xGxx:74AHC1G04", value="74AHC1G04"),
+            ComponentIR(ref="C42", symbol="Device:C", value="100n"),
+            ComponentIR(ref="R58", symbol="Device:R", value="47k"),
+            ComponentIR(ref="U22", symbol="Power_Management:AP22913W6-7", value="AP22913W6-7"),
+        ],
+        nets=[
+            NetIR(name="+3.3V", pins=[PinRefIR(ref="U14", pin="5"), PinRefIR(ref="U22", pin="4")]),
+            NetIR(name="GND", pins=[PinRefIR(ref="C42", pin="2")]),
+            NetIR(name="/+3.3V@SD", pins=[PinRefIR(ref="R58", pin="1")]),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("U14", "5"): (91.44, 134.62, 90.0),
+            ("C42", "2"): (91.44, 124.46, 90.0),
+            ("R58", "1"): (109.22, 148.59, 90.0),
+            ("U22", "4"): (114.30, 137.16, 0.0),
+        },
+        positions={
+            "U14": (96.52, 144.78, 0.0),
+            "C42": (91.44, 121.92, 0.0),
+            "R58": (109.22, 144.78, 0.0),
+            "U22": (121.92, 144.78, 0.0),
+        },
+    )
+
+    mixed_power_components = _connected_power_symbol_sets(routing)
+    assert not any(
+        {"PWR:+3.3V", "PWR:GND"} <= component for component in mixed_power_components
+    )
+    assert not any(
+        {"PWR:+3.3V", "PWR:/+3.3V@SD"} <= component for component in mixed_power_components
+    )
+
+
 def test_route_nets_prefers_protected_chain_over_colliding_spine_for_three_pin_net() -> None:
     """Three-pin local routes should avoid a spine that would run through foreign stubs."""
     ir = CircuitIR(
@@ -2303,8 +2557,8 @@ def test_route_nets_prefers_protected_chain_over_colliding_spine_for_three_pin_n
     )
 
 
-def test_route_nets_prefers_protected_shared_lane_over_colliding_spine_for_four_pin_net() -> None:
-    """Four-pin local routes should avoid a colliding mean spine."""
+def test_route_nets_uses_local_labels_when_local_four_pin_net_hits_foreign_attachment() -> None:
+    """Four-pin local routes should fall back to local labels when foreign attachments collide."""
     ir = CircuitIR(
         version="1",
         components=[
@@ -2317,7 +2571,7 @@ def test_route_nets_prefers_protected_shared_lane_over_colliding_spine_for_four_
         ],
         nets=[
             NetIR(
-                name="/NET4",
+                name="NET4",
                 pins=[
                     PinRefIR(ref="A1", pin="1"),
                     PinRefIR(ref="A2", pin="1"),
@@ -2351,19 +2605,14 @@ def test_route_nets_prefers_protected_shared_lane_over_colliding_spine_for_four_
     )
 
     decision = next(
-        decision for decision in routing.route_decisions if decision.net_name == "/NET4"
+        decision for decision in routing.route_decisions if decision.net_name == "NET4"
     )
-    assert decision.strategy == "shared_lane"
-    assert decision.heuristic_override == "protected_stub_avoidance"
-    assert not any(
-        math.isclose(seg.y1, 119.38, abs_tol=0.01)
-        and math.isclose(seg.y2, 119.38, abs_tol=0.01)
-        and min(seg.x1, seg.x2) < 71.12 < max(seg.x1, seg.x2)
-        for seg in routing.wires
-    )
+    assert decision.strategy == "local_labels"
+    assert decision.heuristic_override == "foreign_attachment_label_breakout"
+    assert len([label for label in routing.labels if label.name == "NET4"]) == 4
 
 
-def test_route_nets_uses_global_labels_when_multi_pin_stub_hits_foreign_endpoint() -> None:
+def test_route_nets_uses_global_labels_when_multi_pin_stub_hits_foreign_attachment() -> None:
     ir = CircuitIR(
         version="1",
         components=[
@@ -2409,8 +2658,104 @@ def test_route_nets_uses_global_labels_when_multi_pin_stub_hits_foreign_endpoint
         decision for decision in routing.route_decisions if decision.net_name == "/NET4"
     )
     assert decision.strategy == "global_labels"
-    assert decision.heuristic_override == "foreign_endpoint_label_breakout"
+    assert decision.heuristic_override == "foreign_attachment_label_breakout"
     assert len([label for label in routing.global_labels if label.name == "/NET4"]) == 4
+
+
+def test_route_nets_uses_local_labels_when_multi_pin_stub_hits_foreign_attachment() -> None:
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="A1", symbol="Device:R", value="A"),
+            ComponentIR(ref="A2", symbol="Device:R", value="B"),
+            ComponentIR(ref="A3", symbol="Device:R", value="C"),
+            ComponentIR(ref="A4", symbol="Device:R", value="D"),
+            ComponentIR(ref="X1", symbol="Device:R", value="guard"),
+        ],
+        nets=[
+            NetIR(
+                name="NET4",
+                pins=[
+                    PinRefIR(ref="A1", pin="1"),
+                    PinRefIR(ref="A2", pin="1"),
+                    PinRefIR(ref="A3", pin="1"),
+                    PinRefIR(ref="A4", pin="1"),
+                ],
+            ),
+            NetIR(name="/GUARD", pins=[PinRefIR(ref="X1", pin="1")]),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("A1", "1"): (177.80, 83.82, 0.0),
+            ("A2", "1"): (2.54, 146.05, 0.0),
+            ("A3", "1"): (45.72, 124.46, 0.0),
+            ("A4", "1"): (109.22, 121.92, 180.0),
+            ("X1", "1"): (114.30, 121.92, 0.0),
+        },
+        positions={
+            "A1": (177.80, 83.82, 0.0),
+            "A2": (2.54, 146.05, 0.0),
+            "A3": (45.72, 124.46, 0.0),
+            "A4": (109.22, 121.92, 0.0),
+            "X1": (114.30, 121.92, 0.0),
+        },
+    )
+
+    decision = next(decision for decision in routing.route_decisions if decision.net_name == "NET4")
+    assert decision.strategy == "local_labels"
+    assert decision.heuristic_override == "foreign_attachment_label_breakout"
+    assert len([label for label in routing.labels if label.name == "NET4"]) == 4
+
+
+def test_route_nets_uses_local_labels_when_multi_pin_stub_hits_foreign_stub() -> None:
+    ir = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="A1", symbol="Device:R", value="A"),
+            ComponentIR(ref="A2", symbol="Device:R", value="B"),
+            ComponentIR(ref="A3", symbol="Device:R", value="C"),
+            ComponentIR(ref="A4", symbol="Device:R", value="D"),
+            ComponentIR(ref="X1", symbol="Device:R", value="guard"),
+        ],
+        nets=[
+            NetIR(
+                name="NET4",
+                pins=[
+                    PinRefIR(ref="A1", pin="1"),
+                    PinRefIR(ref="A2", pin="1"),
+                    PinRefIR(ref="A3", pin="1"),
+                    PinRefIR(ref="A4", pin="1"),
+                ],
+            ),
+            NetIR(name="GUARD", pins=[PinRefIR(ref="X1", pin="1")]),
+        ],
+    )
+
+    routing = route_nets(
+        ir=ir,
+        pin_endpoints={
+            ("A1", "1"): (177.80, 83.82, 0.0),
+            ("A2", "1"): (2.54, 146.05, 0.0),
+            ("A3", "1"): (45.72, 124.46, 0.0),
+            ("A4", "1"): (109.22, 121.92, 180.0),
+            ("X1", "1"): (114.30, 116.84, 270.0),
+        },
+        positions={
+            "A1": (177.80, 83.82, 0.0),
+            "A2": (2.54, 146.05, 0.0),
+            "A3": (45.72, 124.46, 0.0),
+            "A4": (109.22, 121.92, 0.0),
+            "X1": (114.30, 116.84, 0.0),
+        },
+    )
+
+    decision = next(decision for decision in routing.route_decisions if decision.net_name == "NET4")
+    assert decision.strategy == "local_labels"
+    assert decision.heuristic_override == "foreign_attachment_label_breakout"
+    assert len([label for label in routing.labels if label.name == "NET4"]) == 4
 
 
 def test_route_nets_uses_global_labels_for_wide_three_pin_connector_attachment_net() -> None:
@@ -2522,7 +2867,7 @@ def test_route_nets_uses_global_labels_for_wide_two_pin_connector_attachment_net
     assert routing.wires == []
 
 
-def test_route_nets_uses_global_labels_when_two_pin_stub_hits_foreign_endpoint() -> None:
+def test_route_nets_uses_global_labels_when_two_pin_stub_hits_foreign_attachment() -> None:
     ir = CircuitIR(
         version="1",
         components=[
@@ -2552,7 +2897,7 @@ def test_route_nets_uses_global_labels_when_two_pin_stub_hits_foreign_endpoint()
 
     decision = next(decision for decision in routing.route_decisions if decision.net_name == "/BUS")
     assert decision.strategy == "global_labels"
-    assert decision.heuristic_override == "foreign_endpoint_label_breakout"
+    assert decision.heuristic_override == "foreign_attachment_label_breakout"
     assert len([label for label in routing.global_labels if label.name == "/BUS"]) == 2
 
 

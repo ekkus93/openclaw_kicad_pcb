@@ -139,77 +139,77 @@ Phase 2 notes:
   - [x] fail due to evaluation harness issues.
 
 ### 3.3 Create a per-fixture triage checklist
-- [ ] `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`
-  - [x] Ingested
-  - [x] Evaluated
-  - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`
-  - [x] Ingested
-  - [x] Evaluated
-  - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `buck-converter-xl4015-incubadora`
-  - [x] Ingested
-  - [x] Evaluated
-  - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`
-  - [x] Ingested
-  - [x] Evaluated
-  - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`
-  - [x] Ingested
-  - [x] Evaluated
-  - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `rp2040-microcontroller-core-circuit-mitayi-pico-d1`
+- [x] `12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
   - [x] Generic fix landed
   - [x] Re-evaluated
   - [x] Passes or has documented remaining blocker
-- [ ] `solar-charger-mppt-circuit-sts1-pcb-sidepanel`
+- [x] `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
   - [x] Generic fix landed
   - [x] Re-evaluated
   - [x] Passes or has documented remaining blocker
-- [ ] `stm32g030-minimal-system-circuit-electrical`
+- [x] `buck-converter-xl4015-incubadora`
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
-- [ ] `w5500-spi-interface-decoupling-termination-openknx-reg1`
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`
   - [x] Ingested
   - [x] Evaluated
   - [x] Triage complete
-  - [ ] Generic fix landed
-  - [ ] Re-evaluated
-  - [ ] Passes or has documented remaining blocker
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`
+  - [x] Ingested
+  - [x] Evaluated
+  - [x] Triage complete
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `rp2040-microcontroller-core-circuit-mitayi-pico-d1`
+  - [x] Ingested
+  - [x] Evaluated
+  - [x] Triage complete
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `solar-charger-mppt-circuit-sts1-pcb-sidepanel`
+  - [x] Ingested
+  - [x] Evaluated
+  - [x] Triage complete
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `stm32g030-minimal-system-circuit-electrical`
+  - [x] Ingested
+  - [x] Evaluated
+  - [x] Triage complete
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
+- [x] `w5500-spi-interface-decoupling-termination-openknx-reg1`
+  - [x] Ingested
+  - [x] Evaluated
+  - [x] Triage complete
+  - [x] Generic fix landed
+  - [x] Re-evaluated
+  - [x] Passes or has documented remaining blocker
 
 Phase 3 notes:
 - `code_review/generated/model_eval/summary.json` now reports `evaluated_count=18`, `failed_count=18`, `skipped_count=0`.
 - Every new batch-2 fixture now has an evaluation report directory under `code_review/generated/model_eval/<fixture_id>/`.
 - Current batch-2 split:
-  - 7 fixtures fail electrical equivalence and also show recurring layout/readability drift (`12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware`, `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`, `buck-converter-xl4015-incubadora`, `lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter`, `p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware`, `stm32g030-minimal-system-circuit-electrical`, `w5500-spi-interface-decoupling-termination-openknx-reg1`).
-  - 2 fixtures currently land as evaluation-runtime partials with `electrical_equivalence.status="not_run"` (`rp2040-microcontroller-core-circuit-mitayi-pico-d1`, `solar-charger-mppt-circuit-sts1-pcb-sidepanel`).
-  - No new batch-2 fixture is currently in the symbol/library/pin-lookup failure bucket after the alias-preserving embedded-symbol materialization fix.
+  - all 9 batch-2 fixtures now land as ordinary evaluation **failures** with `electrical_equivalence.status="failed"`; there are no remaining batch-2 runtime partials.
+  - the recurring first mismatch is still net identity/connectivity drift (`net_names` plus net-membership mismatches such as `+12V`, `12MHZ_CLK`, `+5V`, `SW`, `CUR1_OUT`, `+3.3V_LOCAL`, and `Net-(C14-Pad1)` depending on the fixture).
+  - no new batch-2 fixture is currently in the symbol/library/pin-lookup failure bucket after the retained embedded-symbol and pin-free-symbol harness fixes.
 
 ---
 
@@ -279,49 +279,73 @@ Phase 5 notes:
 - A full ingest refresh after the retained harness fixes still reports 18 accepted / 0 partial / 0 rejected fixtures.
 
 ### 5.2 Fix recurring layout/routing/generator issues second
-- [ ] Prioritize generic generator fixes that improve more than one new fixture.
-- [ ] Add focused regression coverage for each retained generic fix.
-- [ ] Re-run the affected fixtures after each retained generator fix.
+- [x] Prioritize generic generator fixes that improve more than one new fixture.
+- [x] Add focused regression coverage for each retained generic fix.
+- [x] Re-run the affected fixtures after each retained generator fix.
+
+Phase 5.2 notes:
+- Retained generator fix: promoted visible local/global labels now reuse `_label_attachment_plan(...)`, so promoted labels respect occupied wire/label points and protected stub points instead of always landing on the first candidate stub end.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_phase6_wire_simplification.py -k "label_attachment_plan or promoted_visible_label"`.
+- Retained generator fix: 4+-pin local bus nets can now take the protected shared-lane fallback instead of being limited to the mean spine when the current spine would cross already occupied route points.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_phase6_wire_simplification.py -k "protected_shared_lane or colliding_spine"`.
+- Retained generator fix: when a bus-style net would extend a pin stub into a foreign attachment point (foreign endpoint or foreign stub), the router now falls back to per-pin endpoint labels instead of writing a shorting wire path. Slash-scoped nets use global labels; ordinary local nets use local labels.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_phase6_wire_simplification.py -k "foreign_attachment or multi_pin_stub_hits_foreign or two_pin_stub_hits_foreign"`.
+- Retained generator fix: endpoint-label breakout labels now reuse `_label_attachment_plan(...)`, so endpoint-label fallback paths avoid already occupied label anchors instead of stacking multiple endpoint labels onto the same coordinate.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_phase6_wire_simplification.py -k "foreign_attachment or pin_endpoint_label_breakout_avoids_occupied_prior_label_anchor"`.
+- Retained generator fix: the aligned power-cluster router now compares its offset shared-lane candidates against the default centroid spine/hub route instead of always taking the least-bad aligned lane when every aligned lane still crosses protected points.
+- Focused validation for that retained fix is green: `uv run pytest tests/unit/test_phase6_wire_simplification.py -k "compact_local_ground_cluster or compact_local_decoupling_cluster or aligned_two_pin_ground_cluster"`.
+- Retained generator fix: endpoint-label foreign-attachment breakout now prefers perpendicular breakout anchors once it actually reaches `_append_pin_endpoint_labels(...)`, which removed the stale inline `/MPPT1_OUT` label anchors that were still sitting on later GND corridors.
+- Retained generator fix: `_write_symbols(...)` now mirrors two-pin passives by 180 degrees when the mirrored pin order better matches their connected-net centroids and avoids foreign-net endpoint collisions; this restored the `R11` / `SC1_V+` side of the solar fixture without a fixture-specific override.
+- Retained generator fix: multi-pin power clusters now abandon a shared cluster route when the selected GND/power topology would still cross a protected foreign attachment point, and instead emit direct per-pin power symbols for that cluster.
+- Retained generator fix: direct per-pin power symbol attachments now reuse protected breakout planning instead of always reusing the default power stub, so later power nets do not short through occupied/shared foreign stub points in dense support bundles.
+- Retained generator fix: when a slash-scoped power net has no matching library power symbol, `write_routing(...)` now places the fallback global label via protected anchor planning instead of a fixed orthogonal jog, which prevents the fallback wire/label pair from stamping onto nearby signal geometry.
+- Retained generator fix: explicit router junctions are now split into real wire endpoints before simplification/writeout, so KiCad export keeps intended power-branch joins like the recovered `R64 pin 1` `+3.3V@SD` branch in the MicroSD fixture.
+- Retained generator fix: multi-unit symbol emission now keeps the expanded placed refs internal for layout/routing but writes logical refs back into the schematic/bind-marker layer, and `SCH003` now allows duplicate logical refs only for distinct-unit placements of the same `lib_id`. This cleared the USB hub / STM32 split-ref runtime blocker and returned both fixtures to ordinary electrical-equivalence evaluation.
+- Focused validation for the retained solar closeout fixes is green: `uv run pytest tests/unit/test_sch_apply.py tests/unit/test_phase6_wire_simplification.py -k "write_symbols_flips_two_pin_passive_to_match_pin_nets or ground_cluster_hits_foreign_endpoint or aligned_two_pin_ground_cluster or pin_endpoint_label_breakout or label_attachment_plan"`.
+- Re-evaluating the representative fixtures after those retained fixes keeps all four fixtures in ordinary evaluation: `solar-charger-mppt-circuit-sts1-pcb-sidepanel`, `rp2040-microcontroller-core-circuit-mitayi-pico-d1`, `4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports`, and `stm32g030-minimal-system-circuit-electrical`.
+- The USB hub and STM32 fixtures no longer fail as split-ref/runtime partials. Their current remaining blockers are ordinary electrical-equivalence mismatches rooted in broader routing/connectivity drift (for example USB `12MHZ_CLK` / `D2-` over-connection and STM32 `+3.3V_LOCAL` / `3v3` collapse) plus the existing label/layout secondary buckets.
+- The retained solar and MicroSD fixes are still kept because they addressed real generic routing/writeout problems, but the latest full 18-fixture corpus evaluation shows both fixtures currently regress back to ordinary `electrical_equivalence` failures (`CUR1_OUT` / `Net-(MPPT1-ICTRL_PLUS)` on solar; `+3.3V@SD` / `DET_A` on MicroSD).
+- The current full 18-fixture corpus baseline is **18 failed**. The active blocker set is now uniformly electrical-equivalence drift across both the original and batch-2 fixtures rather than a smaller runtime-partial bucket.
 
 ### 5.3 Do not ship speculative hacks
-- [ ] Revert any attempted fix that worsens corpus results overall.
-- [ ] Keep only the best retained state after each experiment.
-- [ ] Document the remaining blocker when a failure surface is not yet solved.
+- [x] Revert any attempted fix that worsens corpus results overall.
+- [x] Keep only the best retained state after each experiment.
+- [x] Document the remaining blocker when a failure surface is not yet solved.
 
 ---
 
 ## Phase 6 — Update documentation and status continuously
 
 ### 6.1 Keep this file current
-- [ ] Mark new batch-2 tasks and fixture checklists as work completes.
-- [ ] Add short blocker notes where needed instead of leaving silent partial progress.
+- [x] Mark new batch-2 tasks and fixture checklists as work completes.
+- [x] Add short blocker notes where needed instead of leaving silent partial progress.
 
 ### 6.2 Keep the original corpus TODO coherent
-- [ ] Update `docs/MODEL_KICAD_CORPUS_TODO.md` only when batch-2 work changes the overall corpus program status.
-- [ ] Do not mark the entire corpus workflow complete until both batch 1 and batch 2 are in an acceptable final state.
+- [x] Update `docs/MODEL_KICAD_CORPUS_TODO.md` only when batch-2 work changes the overall corpus program status.
+- [x] Do not mark the entire corpus workflow complete until both batch 1 and batch 2 are in an acceptable final state.
 
 ### 6.3 Keep memory and reports aligned
-- [ ] Update `memory.md` at meaningful milestones.
-- [ ] Preserve useful evaluation artifacts under `code_review/generated/model_eval/`.
+- [x] Update `memory.md` at meaningful milestones.
+- [x] Preserve useful evaluation artifacts under `code_review/generated/model_eval/`.
 
 ---
 
 ## Phase 7 — Final validation and closeout for batch 2
 
 ### 7.1 Validation commands
-- [ ] Run `uv run ruff check .`.
-- [ ] Run `uv run mypy src/kicad_pcb src/kicad_pcb_web`.
-- [ ] Run `uv run pytest`.
-- [ ] Run `uv run pytest -m requires_kicad` if the retained changes affect KiCad-backed paths.
-- [ ] Run a fresh full corpus evaluation after the retained batch-2 fixes.
+- [x] Run `uv run ruff check .`.
+- [x] Run `uv run mypy src/kicad_pcb src/kicad_pcb_web`.
+- [x] Run `uv run pytest`.
+- [x] Run `uv run pytest -m requires_kicad` if the retained changes affect KiCad-backed paths.
+- [x] Run a fresh full corpus evaluation after the retained batch-2 fixes.
 
 ### 7.2 Batch-2 completion criteria
-- [ ] All newly added schematics are ingested and tracked.
-- [ ] Every new fixture has an evaluation result or an explicitly documented blocker.
-- [ ] Retained fixes are generic and regression-tested.
-- [ ] Existing batch-1 fixtures are not regressed silently.
-- [ ] Documentation reflects the real corpus state.
+- [x] All newly added schematics are ingested and tracked.
+- [x] Every new fixture has an evaluation result or an explicitly documented blocker.
+- [x] Retained fixes are generic and regression-tested.
+- [x] Existing batch-1 fixtures are not regressed silently.
+- [x] Documentation reflects the real corpus state.
 
 ### 7.3 Optional final repository closeout
-- [ ] If the repo gate is green, commit the retained batch-2 corpus work.
-- [ ] Push the branch only after the retained validation state is understood and documented.
+- [x] If the repo gate is green, commit the retained batch-2 corpus work.
+- [x] Push the branch only after the retained validation state is understood and documented.

@@ -182,6 +182,7 @@ class _ApplyNetlistRequest:
 class _PlacedSymbolSpec:
     unit: int
     pin_nums: tuple[str, ...]
+    logical_ref: str
 
 
 class _UnitSplitDebugEntry(TypedDict):
@@ -689,6 +690,138 @@ def _transform_pin_at(
     }
 
 
+def _refine_two_pin_passive_mirrors(
+    *,
+    ir: CircuitIR,
+    layout: dict[str, tuple[float, float]],
+    orientations: dict[str, int],
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec] | None,
+    symbol_index: SymbolIndex,
+) -> dict[str, int]:
+    """Flip two-pin passives by 180° when that better matches connected nets."""
+
+    net_by_pin, members_by_net = _build_net_membership_maps(ir=ir, layout=layout)
+    valid_pins_by_ref, pin_at_by_ref = _build_passive_mirror_pin_maps(
+        ir=ir,
+        placed_symbol_specs=placed_symbol_specs,
+        symbol_index=symbol_index,
+    )
+
+    def _transformed_endpoints(ref: str, rotation: int) -> dict[str, tuple[float, float, float]]:
+        x, y = layout[ref]
+        return _transform_pin_at(pin_at_by_ref[ref], x, y, rotation)
+
+    refined = dict(orientations)
+    for component in ir.components:
+        ref = component.ref
+        if ref not in layout or component_type(ref) != "passive":
+            continue
+        valid_pins = valid_pins_by_ref.get(ref, ())
+        if len(valid_pins) != 2:
+            continue
+        if any((ref, pin_num) not in net_by_pin for pin_num in valid_pins):
+            continue
+
+        def _candidate_key(rotation: int) -> tuple[int, float]:
+            transformed = _transformed_endpoints(ref, rotation)
+            collision_count = 0
+            distance_score = 0.0
+            for pin_num in valid_pins:
+                endpoint = transformed.get(pin_num)
+                net_name = net_by_pin.get((ref, pin_num))
+                if endpoint is None or net_name is None:
+                    continue
+                rounded_endpoint = (round(endpoint[0], 2), round(endpoint[1], 2))
+                for other in ir.components:
+                    if other.ref == ref or other.ref not in layout:
+                        continue
+                    other_endpoints = _transformed_endpoints(
+                        other.ref,
+                        refined.get(other.ref, 0),
+                    )
+                    for other_pin_num in valid_pins_by_ref.get(other.ref, ()):
+                        other_endpoint = other_endpoints.get(other_pin_num)
+                        if other_endpoint is None:
+                            continue
+                        if rounded_endpoint != (
+                            round(other_endpoint[0], 2),
+                            round(other_endpoint[1], 2),
+                        ):
+                            continue
+                        other_net_name = net_by_pin.get((other.ref, other_pin_num))
+                        if other_net_name is not None and other_net_name != net_name:
+                            collision_count += 1
+                neighbors = [
+                    position
+                    for other_ref, position in members_by_net.get(net_name, [])
+                    if other_ref != ref
+                ]
+                if neighbors:
+                    centroid_x = sum(px for px, _py in neighbors) / len(neighbors)
+                    centroid_y = sum(py for _px, py in neighbors) / len(neighbors)
+                    distance_score += math.dist(
+                        (endpoint[0], endpoint[1]),
+                        (centroid_x, centroid_y),
+                    )
+            return collision_count, distance_score
+
+        current_rotation = refined.get(ref, 0)
+        mirrored_rotation = (current_rotation + 180) % 360
+        if _candidate_key(mirrored_rotation) < _candidate_key(current_rotation):
+            refined[ref] = mirrored_rotation
+
+    return refined
+
+
+def _build_net_membership_maps(
+    *,
+    ir: CircuitIR,
+    layout: dict[str, tuple[float, float]],
+) -> tuple[
+    dict[tuple[str, str], str],
+    dict[str, list[tuple[str, tuple[float, float]]]],
+]:
+    net_by_pin: dict[tuple[str, str], str] = {}
+    members_by_net: dict[str, list[tuple[str, tuple[float, float]]]] = {}
+    for net in ir.nets:
+        members: list[tuple[str, tuple[float, float]]] = []
+        for pin in net.pins:
+            net_by_pin[(pin.ref, pin.pin)] = net.name
+            if pin.ref in layout:
+                members.append((pin.ref, layout[pin.ref]))
+        members_by_net[net.name] = members
+
+
+    return net_by_pin, members_by_net
+
+
+def _build_passive_mirror_pin_maps(
+    *,
+    ir: CircuitIR,
+    placed_symbol_specs: dict[str, _PlacedSymbolSpec] | None,
+    symbol_index: SymbolIndex,
+) -> tuple[dict[str, tuple[str, ...]], dict[str, dict[str, tuple[float, float, float]]]]:
+    placed_specs = placed_symbol_specs or {}
+    pin_at_by_ref: dict[str, dict[str, tuple[float, float, float]]] = {}
+    valid_pins_by_ref: dict[str, tuple[str, ...]] = {}
+    for component in ir.components:
+        placed_symbol = placed_specs.get(component.ref)
+        if placed_symbol is None:
+            placed_symbol = _PlacedSymbolSpec(
+                unit=1,
+                pin_nums=tuple(sorted(symbol_index.get_pins(component.symbol))),
+                logical_ref=component.ref,
+            )
+        valid_pins_by_ref[component.ref] = tuple(placed_symbol.pin_nums)
+        pin_at_by_ref[component.ref] = _resolve_placed_symbol_pin_at(
+            component.symbol,
+            placed_symbol,
+            symbol_index,
+        )
+
+    return valid_pins_by_ref, pin_at_by_ref
+
+
 def _sorted_unit_keys(unit_pins: dict[str, list[str]]) -> list[str]:
     return sorted(unit_pins, key=lambda key: (int(key), key))
 
@@ -719,7 +852,11 @@ def _expand_generation_ir(
         unit_pins = _symbol_unit_pins(component.symbol, symbol_index)
         if len(unit_pins) <= 1:
             expanded_components.append(component.model_copy(deep=True))
-            placed_symbol_specs[component.ref] = _PlacedSymbolSpec(unit=1, pin_nums=all_symbol_pins)
+            placed_symbol_specs[component.ref] = _PlacedSymbolSpec(
+                unit=1,
+                pin_nums=all_symbol_pins,
+                logical_ref=component.ref,
+            )
             continue
 
         (
@@ -771,7 +908,13 @@ def _expand_multi_unit_component(
     if not used_pins:
         return (
             [component.model_copy(deep=True)],
-            {component.ref: _PlacedSymbolSpec(unit=1, pin_nums=fallback_pins)},
+            {
+                component.ref: _PlacedSymbolSpec(
+                    unit=1,
+                    pin_nums=fallback_pins,
+                    logical_ref=component.ref,
+                )
+            },
             {},
             {},
         )
@@ -804,6 +947,7 @@ def _expand_multi_unit_component(
         component_specs[expanded_ref] = _PlacedSymbolSpec(
             unit=int(unit),
             pin_nums=tuple(sorted(unit_pins[unit])),
+            logical_ref=component.ref,
         )
         ref_rewrite[(component.ref, unit)] = expanded_ref
     return component_copies, component_specs, pin_to_unit, ref_rewrite
@@ -1033,6 +1177,13 @@ def _write_symbols(  # noqa: PLR0913
         )
     else:
         orientations = {ref: int(pos[2]) for ref, pos in raw_layout.items() if pos[2] is not None}
+    orientations = _refine_two_pin_passive_mirrors(
+        ir=ir,
+        layout=layout,
+        orientations=orientations,
+        placed_symbol_specs=placed_symbol_specs,
+        symbol_index=symbol_index,
+    )
 
     for component in sorted(ir.components, key=lambda c: c.ref):
         x, y = layout[component.ref]
@@ -1041,6 +1192,7 @@ def _write_symbols(  # noqa: PLR0913
             placed_symbol = _PlacedSymbolSpec(
                 unit=1,
                 pin_nums=tuple(sorted(symbol_index.get_pins(component.symbol))),
+                logical_ref=component.ref,
             )
         valid_pins = list(placed_symbol.pin_nums)
         pin_uuids = [_new_uuid() for _ in valid_pins]

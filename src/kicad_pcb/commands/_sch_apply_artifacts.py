@@ -161,7 +161,8 @@ def validate_generated_schematic(  # noqa: PLR0913
             },
         ) from exc
 
-    expected_refs = sorted(component.ref for component in generation_ir.components)
+    expected_ref_list = [component.ref for component in generation_ir.components]
+    expected_refs = sorted(set(expected_ref_list))
     actual_symbol_entries = reparsed_doc.list_symbols()
     actual_refs = sorted(
         {
@@ -215,7 +216,7 @@ def validate_generated_schematic(  # noqa: PLR0913
     label_count = local_label_count + global_label_count
     junction_count = reparsed_doc.count_nodes("junction")
     binding_marker_count = len(actual_bindings)
-    expected_components = len(expected_refs)
+    expected_components = len(expected_ref_list)
     hard_failures: list[dict[str, object]] = []
 
     if expected_components and symbol_count == 0:

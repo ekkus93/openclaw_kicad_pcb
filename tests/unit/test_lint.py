@@ -112,14 +112,21 @@ class TestSCH002:
 # ---------------------------------------------------------------------------
 
 _SYM_TMPL = """\
-(symbol (lib_id "{lib}") (at 50 76 0) (unit 1) (uuid "{uuid}")
+(symbol (lib_id "{lib}") (at 50 76 0) (unit {unit}) (uuid "{uuid}")
   (property "Reference" "{ref}" (at 0 0 0))
   (property "Value" "{val}" (at 0 0 0))
 )"""
 
 
-def _sym(ref: str, uuid: str, lib: str = "Device:R", val: str = "10k") -> str:
-    return _SYM_TMPL.format(lib=lib, uuid=uuid, ref=ref, val=val)
+def _sym(
+    ref: str,
+    uuid: str,
+    lib: str = "Device:R",
+    val: str = "10k",
+    *,
+    unit: int = 1,
+) -> str:
+    return _SYM_TMPL.format(lib=lib, uuid=uuid, ref=ref, val=val, unit=unit)
 
 
 class TestSCH003:
@@ -139,6 +146,38 @@ class TestSCH003:
         root = parse(
             f"(kicad_sch (version 1) (generator t)\n"
             f'  (lib_symbols (symbol "Device:R"))\n'
+            f"  {body}\n"
+            f'  (sheet_instances (path "/"))\n'
+            f")"
+        )
+        assert "SCH003" in _err_codes(lint_schematic(root))
+
+    def test_multi_unit_ref_with_distinct_units_is_allowed(self) -> None:
+        body = _sym("U2", "u1", lib="Device:R", unit=1) + "\n" + _sym(
+            "U2",
+            "u2",
+            lib="Device:R",
+            unit=2,
+        )
+        root = parse(
+            f"(kicad_sch (version 1) (generator t)\n"
+            f'  (lib_symbols (symbol "Device:R"))\n'
+            f"  {body}\n"
+            f'  (sheet_instances (path "/"))\n'
+            f")"
+        )
+        assert "SCH003" not in _err_codes(lint_schematic(root))
+
+    def test_multi_unit_ref_with_mixed_libraries_still_triggers_sch003(self) -> None:
+        body = _sym("U2", "u1", lib="Device:R", unit=1) + "\n" + _sym(
+            "U2",
+            "u2",
+            lib="Device:C",
+            unit=2,
+        )
+        root = parse(
+            f"(kicad_sch (version 1) (generator t)\n"
+            f'  (lib_symbols (symbol "Device:R") (symbol "Device:C"))\n'
             f"  {body}\n"
             f'  (sheet_instances (path "/"))\n'
             f")"

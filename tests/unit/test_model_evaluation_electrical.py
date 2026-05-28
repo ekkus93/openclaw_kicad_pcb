@@ -44,3 +44,45 @@ def test_compare_circuit_ir_equivalence_flattens_safe_sheet_scoped_net_names() -
 
     assert report.status == "passed"
     assert report.mismatches == ()
+
+
+def test_compare_circuit_ir_equivalence_collapses_generated_split_unit_refs() -> None:
+    source = CircuitIR(
+        version="1.0",
+        components=[ComponentIR(ref="U1", symbol="Amplifier_Operational:NE5532", value="NE5532")],
+        nets=[
+            NetIR(
+                name="IN_A",
+                pins=[PinRefIR(ref="U1", pin="1", unit="1"), PinRefIR(ref="U1", pin="2", unit="1")],
+            ),
+            NetIR(
+                name="VCC",
+                pins=[PinRefIR(ref="U1", pin="8", unit="3")],
+            ),
+        ],
+    )
+    generated = CircuitIR(
+        version="1.0",
+        components=[
+            ComponentIR(ref="U1A", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+            ComponentIR(ref="U1P", symbol="Amplifier_Operational:NE5532", value="NE5532"),
+        ],
+        nets=[
+            NetIR(
+                name="IN_A",
+                pins=[
+                    PinRefIR(ref="U1A", pin="1", unit="1"),
+                    PinRefIR(ref="U1A", pin="2", unit="1"),
+                ],
+            ),
+            NetIR(
+                name="VCC",
+                pins=[PinRefIR(ref="U1P", pin="8", unit="3")],
+            ),
+        ],
+    )
+
+    report = compare_circuit_ir_equivalence(source, generated)
+
+    assert report.status == "passed"
+    assert report.mismatches == ()
