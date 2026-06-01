@@ -211,3 +211,5 @@ tmp/
 code_review/generated/
 /data/
 kicad_pcb_web.toml
+
+run_copilot.sh
