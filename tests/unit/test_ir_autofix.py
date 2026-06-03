@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.ir.autofix import autofix_circuit_ir
+from kicad_pcb.ir.autofix import _parse_pin_membership_token, autofix_circuit_ir
 
 
 class _SymbolIndexUserError:
@@ -96,6 +96,80 @@ def test_autofix_still_applies_alias_when_pin_lookup_succeeds() -> None:
     pin = outcome.ir_dict["nets"][0]["pins"][0]["pin"]  # type: ignore[index]
     assert pin == "1"
     assert not outcome.remaining_errors
+
+
+# ---------------------------------------------------------------------------
+# Section 5.1–5.4 — _parse_pin_membership_token
+# ---------------------------------------------------------------------------
+
+
+def test_parse_token_dot_separator() -> None:
+    assert _parse_pin_membership_token("U1.8") == {"ref": "U1", "pin": "8"}
+
+
+def test_parse_token_dash_separator() -> None:
+    assert _parse_pin_membership_token("R1-2") == {"ref": "R1", "pin": "2"}
+
+
+def test_parse_token_whitespace_stripped() -> None:
+    assert _parse_pin_membership_token("  U1.8  ") == {"ref": "U1", "pin": "8"}
+
+
+def test_parse_token_non_numeric_pin() -> None:
+    assert _parse_pin_membership_token("J1.A") == {"ref": "J1", "pin": "A"}
+
+
+def test_parse_token_colon_separator() -> None:
+    # Colon is a valid separator for compact tokens when both sides are non-empty.
+    # This pins down the actual behaviour: "U1:8" → ref="U1", pin="8".
+    result = _parse_pin_membership_token("U1:8")
+    assert result == {"ref": "U1", "pin": "8"}
+
+
+def test_parse_token_colon_lib_qualified_name() -> None:
+    # "Device:R" looks like a library-qualified symbol id.  With the colon
+    # separator the parser returns ref="Device", pin="R" — not ideal but
+    # documents the actual behaviour so regressions are caught.
+    result = _parse_pin_membership_token("Device:R")
+    assert result == {"ref": "Device", "pin": "R"}
+
+
+def test_parse_token_empty_string_returns_none() -> None:
+    assert _parse_pin_membership_token("") is None
+
+
+def test_parse_token_whitespace_only_returns_none() -> None:
+    assert _parse_pin_membership_token("   ") is None
+
+
+def test_parse_token_no_separator_returns_none() -> None:
+    assert _parse_pin_membership_token("U1") is None
+
+
+def test_parse_token_leading_separator_returns_none() -> None:
+    assert _parse_pin_membership_token(".8") is None
+
+
+def test_parse_token_trailing_separator_returns_none() -> None:
+    assert _parse_pin_membership_token("U1.") is None
+
+
+def test_parse_token_integration_compact_tokens_survive_autofix() -> None:
+    """Compact tokens in a 'nodes' key are converted to ref/pin objects."""
+    raw = {
+        "version": "1",
+        "components": [{"ref": "U1", "symbol": "Device:IC", "value": "v"}],
+        "nets": [
+            {
+                "name": "NET1",
+                "nodes": ["U1.3"],
+            }
+        ],
+    }
+    outcome = autofix_circuit_ir(raw)
+    pins = outcome.ir_dict["nets"][0]["pins"]
+    assert any(p.get("ref") == "U1" and p.get("pin") == "3" for p in pins)
+    assert any("U1.3" in fix or "nodes" in fix for fix in outcome.fixes_applied)
 
 
 def test_autofix_converts_legacy_connection_payload_to_circuit_ir() -> None:

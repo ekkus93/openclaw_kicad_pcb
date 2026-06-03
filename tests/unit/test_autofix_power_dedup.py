@@ -128,9 +128,13 @@ def test_autofix_removes_led_cathode_from_gnd() -> None:
         ],
         "nets": [
             {"name": "GND", "pins": [{"ref": "D1", "pin": "2"}, {"ref": "R1", "pin": "2"}]},
-            {"name": "RED_LED_NODE", "pins": [
-                {"ref": "D1", "pin": "2"}, {"ref": "R1", "pin": "1"},
-            ]},
+            {
+                "name": "RED_LED_NODE",
+                "pins": [
+                    {"ref": "D1", "pin": "2"},
+                    {"ref": "R1", "pin": "1"},
+                ],
+            },
             {"name": "+5V", "pins": [{"ref": "R1", "pin": "1"}]},
         ],
     }

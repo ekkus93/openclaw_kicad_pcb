@@ -5,7 +5,10 @@ from pathlib import Path
 import pytest
 
 import kicad_pcb.symbol_index as si_mod
+from kicad_pcb import placeholder_symbol
+from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.ir.validate import validate_ir_symbols
 from kicad_pcb.symbol_index import SymbolIndex, resolve_symbol_dirs
 
 
@@ -178,3 +181,81 @@ def test_symbol_index_caches_power_unit_reads(
 
     assert first == second == "3"
     assert calls["count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Section 7.1 — register_placeholder: cache population
+# ---------------------------------------------------------------------------
+
+
+def _build_placeholder(sym_id: str, pins: list[str]) -> placeholder_symbol.PlaceholderSymbol:
+    return placeholder_symbol.build(sym_id, frozenset(pins))
+
+
+def test_register_placeholder_get_pins(fixture_symbols_dir: Path) -> None:
+    idx = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    ph = _build_placeholder("FakeLib:FakePart", ["1", "2", "3"])
+    idx.register_placeholder("FakeLib:FakePart", ph.pin_numbers, ph.pin_at)
+    assert idx.get_pins("FakeLib:FakePart") == {"1", "2", "3"}
+
+
+def test_register_placeholder_get_unit_pins(fixture_symbols_dir: Path) -> None:
+    idx = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    ph = _build_placeholder("FakeLib:FakePart", ["A", "B"])
+    idx.register_placeholder("FakeLib:FakePart", ph.pin_numbers, ph.pin_at)
+    unit_pins = idx.get_unit_pins("FakeLib:FakePart")
+    assert "1" in unit_pins
+    assert set(unit_pins["1"]) == {"A", "B"}
+
+
+def test_register_placeholder_get_unit_pin_at(fixture_symbols_dir: Path) -> None:
+    idx = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    ph = _build_placeholder("FakeLib:FakePart", ["1", "2", "3", "4"])
+    idx.register_placeholder("FakeLib:FakePart", ph.pin_numbers, ph.pin_at)
+    unit_pin_at = idx.get_unit_pin_at("FakeLib:FakePart")
+    assert "1" in unit_pin_at
+    assert set(unit_pin_at["1"].keys()) == {"1", "2", "3", "4"}
+    for _pin_num, (x, y, angle) in unit_pin_at["1"].items():
+        assert isinstance(x, float)
+        assert isinstance(y, float)
+        assert angle in (0.0, 180.0)
+
+
+def test_register_placeholder_overwrites_cache(fixture_symbols_dir: Path) -> None:
+    """Re-registering a placeholder replaces the cached data."""
+    idx = SymbolIndex(symbols_dir=fixture_symbols_dir)
+    ph1 = _build_placeholder("FakeLib:FakePart", ["1", "2"])
+    ph2 = _build_placeholder("FakeLib:FakePart", ["1", "2", "3"])
+    idx.register_placeholder("FakeLib:FakePart", ph1.pin_numbers, ph1.pin_at)
+    idx.register_placeholder("FakeLib:FakePart", ph2.pin_numbers, ph2.pin_at)
+    assert idx.get_pins("FakeLib:FakePart") == {"1", "2", "3"}
+
+
+# ---------------------------------------------------------------------------
+# Section 7.2 — register_placeholder: downstream validate_ir_symbols
+# ---------------------------------------------------------------------------
+
+
+def test_register_placeholder_not_in_unknown_symbols_after_registration(
+    fixture_symbols_dir: Path,
+) -> None:
+    sym_id = "NoSuchLib:NoSuchPart"
+    ir = CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "U1", "symbol": sym_id, "value": "v"}],
+            "nets": [{"name": "N1", "pins": [{"ref": "U1", "pin": "5"}]}],
+        }
+    )
+    idx = SymbolIndex(symbols_dir=fixture_symbols_dir)
+
+    # Before registration: symbol appears as unknown
+    result_before = validate_ir_symbols(ir, idx)
+    assert sym_id in result_before.unknown_symbols
+
+    # Register placeholder and re-run
+    ph = _build_placeholder(sym_id, result_before.unknown_symbols[sym_id])
+    idx.register_placeholder(sym_id, result_before.unknown_symbols[sym_id], ph.pin_at)
+
+    result_after = validate_ir_symbols(ir, idx)
+    assert sym_id not in result_after.unknown_symbols
