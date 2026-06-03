@@ -429,6 +429,97 @@ function WarningCard({ warning }: { warning: Record<string, unknown> }) {
   )
 }
 
+type DiagnosticsPayload = {
+  symbol_count?: number
+  wire_count?: number
+  label_count?: number
+  global_label_count?: number
+  junction_count?: number
+  binding_marker_count?: number
+  missing_bindings?: string[]
+  unexpected_bindings?: string[]
+  duplicate_bindings?: string[]
+  hard_failures?: Array<{ code?: string; message?: string; details?: unknown }>
+  [key: string]: unknown
+}
+
+function BuildSummaryPanel({ diagnostics }: { diagnostics: DiagnosticsPayload }) {
+  const counts: Array<{ label: string; value: number }> = [
+    { label: 'Symbols', value: diagnostics.symbol_count ?? 0 },
+    { label: 'Wires', value: diagnostics.wire_count ?? 0 },
+    { label: 'Labels', value: diagnostics.label_count ?? 0 },
+    { label: 'Junctions', value: diagnostics.junction_count ?? 0 },
+    { label: 'Net bindings', value: diagnostics.binding_marker_count ?? 0 },
+  ].filter((c) => c.value > 0)
+
+  const missingBindings = diagnostics.missing_bindings ?? []
+  const unexpectedBindings = diagnostics.unexpected_bindings ?? []
+  const duplicateBindings = diagnostics.duplicate_bindings ?? []
+  const hardFailures = diagnostics.hard_failures ?? []
+
+  const hasIssues =
+    missingBindings.length > 0 ||
+    unexpectedBindings.length > 0 ||
+    duplicateBindings.length > 0 ||
+    hardFailures.length > 0
+
+  return (
+    <DisclosurePanel title="Build Summary">
+      {counts.length > 0 ? (
+        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-3 mb-4">
+          {counts.map(({ label, value }) => (
+            <div key={label} className="flex items-baseline justify-between gap-2 rounded-[14px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] px-3 py-2">
+              <dt className="text-[0.78rem] font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">{label}</dt>
+              <dd className="text-lg font-semibold text-[var(--text)]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {hasIssues ? (
+        <div className="grid gap-3">
+          {hardFailures.map((f, i) => (
+            <div key={i} className="rounded-[14px] border border-[rgba(154,45,40,0.2)] bg-[rgba(154,45,40,0.05)] p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--error)]">
+                  Hard failure
+                </span>
+                {f.code ? (
+                  <code className="ml-auto rounded bg-[rgba(88,63,39,0.08)] px-1.5 py-0.5 text-[0.75rem] text-[var(--muted)]">
+                    {f.code}
+                  </code>
+                ) : null}
+              </div>
+              {f.message ? (
+                <p className="mt-1.5 text-[0.92rem] leading-6 text-[var(--text)]">{f.message}</p>
+              ) : null}
+            </div>
+          ))}
+          {missingBindings.length > 0 ? (
+            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Missing net bindings</p>
+              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{missingBindings.join(', ')}</p>
+            </div>
+          ) : null}
+          {unexpectedBindings.length > 0 ? (
+            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Unexpected net bindings</p>
+              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{unexpectedBindings.join(', ')}</p>
+            </div>
+          ) : null}
+          {duplicateBindings.length > 0 ? (
+            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Duplicate net bindings</p>
+              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{duplicateBindings.join(', ')}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className={emptyCopyClass}>No issues detected.</p>
+      )}
+    </DisclosurePanel>
+  )
+}
+
 function WarningsPanel({ warnings }: { warnings: unknown[] }) {
   if (!warnings.length) {
     return (
@@ -839,11 +930,7 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
         ) : null}
       </section>
       <WarningsPanel warnings={warnings} />
-      {diagnostics ? (
-        <DisclosurePanel title="Build Summary">
-          <pre className={jsonBlockClass}>{formatJson(diagnostics)}</pre>
-        </DisclosurePanel>
-      ) : null}
+      {diagnostics ? <BuildSummaryPanel diagnostics={diagnostics as DiagnosticsPayload} /> : null}
     </div>
   )
 }
@@ -1941,11 +2028,7 @@ function JobPage() {
 
       {job.error ? <JsonPanel title="Error" payload={job.error} /> : null}
 
-      {diagnostics ? (
-        <DisclosurePanel title="Build Summary">
-          <pre className={jsonBlockClass}>{formatJson(diagnostics)}</pre>
-        </DisclosurePanel>
-      ) : null}
+      {diagnostics ? <BuildSummaryPanel diagnostics={diagnostics as DiagnosticsPayload} /> : null}
 
       <DisclosurePanel title="Developer Details">
         <div className={stackColumnClass}>
