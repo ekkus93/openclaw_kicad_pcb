@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from 'react'
+import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   BrowserRouter,
@@ -563,123 +563,31 @@ function WarningsPanel({ warnings }: { warnings: unknown[] }) {
 
 // ─── JSON tree viewer ────────────────────────────────────────────────────────
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue }
-
-/** Scalar leaf value — no brackets, no quotes shown to user */
-function JsonLeaf({ value }: { value: string | number | boolean | null }) {
-  if (value === null) return <span className="italic text-[var(--muted)]">empty</span>
-  if (typeof value === 'boolean')
-    return <span className="text-[#0d4c74] font-medium">{value ? 'true' : 'false'}</span>
-  if (typeof value === 'number')
-    return <span className="text-[var(--accent)]">{value}</span>
-  // string — no quotes, just the value
-  return <span className="text-[var(--brand-deep)]">{value}</span>
-}
-
-/** One row of the tree: toggle button + key label + inline leaf or child block */
-function JsonTreeRow({
-  label,
-  value,
-  depth,
-}: {
-  label: string
-  value: JsonValue
-  depth: number
-}) {
-  const isLeaf = value === null || typeof value !== 'object'
-  const isArray = Array.isArray(value)
-  const childCount = isLeaf ? 0 : isArray ? (value as JsonValue[]).length : Object.keys(value as object).length
-  const [expanded, setExpanded] = useState(depth < 2)
-
-  return (
-    <div className="grid" style={{ gridTemplateColumns: 'auto 1fr' }}>
-      {/* Toggle button */}
-      {isLeaf || childCount === 0 ? (
-        <span className="w-5 shrink-0" />
-      ) : (
-        <button
-          type="button"
-          className="flex h-6 w-5 shrink-0 items-center justify-center rounded text-[0.62rem] text-[var(--muted)] hover:bg-[rgba(88,63,39,0.1)] transition-colors select-none"
-          onClick={() => setExpanded((v) => !v)}
-          aria-label={expanded ? 'Collapse' : 'Expand'}
-        >
-          {expanded ? '▾' : '▸'}
-        </button>
-      )}
-
-      {/* Content */}
-      <div className="min-w-0">
-        {isLeaf || childCount === 0 ? (
-          /* Leaf row — key + value on one line */
-          <div className="flex flex-wrap items-baseline gap-x-2 py-[1px]">
-            <span className="text-[0.83rem] font-semibold text-[var(--text)] shrink-0">{label}</span>
-            {isLeaf ? (
-              <JsonLeaf value={value as string | number | boolean | null} />
-            ) : (
-              <span className="text-[0.78rem] text-[var(--muted)]">
-                {isArray ? '0 items' : 'empty'}
-              </span>
-            )}
-          </div>
-        ) : expanded ? (
-          /* Expanded — key on its own line, children indented with guide line */
-          <>
-            <div className="flex items-baseline gap-2 py-[1px]">
-              <span className="text-[0.83rem] font-semibold text-[var(--text)]">{label}</span>
-              <span className="text-[0.75rem] text-[var(--muted)]">
-                {isArray
-                  ? `${childCount} ${childCount === 1 ? 'item' : 'items'}`
-                  : `${childCount} ${childCount === 1 ? 'field' : 'fields'}`}
-              </span>
-            </div>
-            <div className="ml-2 border-l-2 border-[rgba(88,63,39,0.12)] pl-3">
-              <JsonTreeChildren value={value} depth={depth} />
-            </div>
-          </>
-        ) : (
-          /* Collapsed — key + summary badge on one line */
-          <button
-            type="button"
-            className="flex items-baseline gap-2 py-[1px] text-left hover:opacity-70 transition-opacity w-full"
-            onClick={() => setExpanded(true)}
-          >
-            <span className="text-[0.83rem] font-semibold text-[var(--text)]">{label}</span>
-            <span className="rounded-full bg-[rgba(88,63,39,0.08)] px-2 py-0.5 text-[0.72rem] text-[var(--muted)]">
-              {isArray
-                ? `${childCount} ${childCount === 1 ? 'item' : 'items'}`
-                : `${childCount} ${childCount === 1 ? 'field' : 'fields'}`}
-            </span>
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function JsonTreeChildren({ value, depth }: { value: JsonValue; depth: number }) {
-  if (Array.isArray(value)) {
-    return (
-      <>
-        {(value as JsonValue[]).map((item, i) => (
-          <JsonTreeRow key={i} label={String(i)} value={item} depth={depth + 1} />
-        ))}
-      </>
-    )
-  }
-  return (
-    <>
-      {Object.entries(value as Record<string, JsonValue>).map(([k, v]) => (
-        <JsonTreeRow key={k} label={k} value={v} depth={depth + 1} />
-      ))}
-    </>
-  )
-}
+// Lazy import to keep the initial bundle lean
+const ReactJsonView = React.lazy(() => import('@microlink/react-json-view'))
 
 function JsonTreeViewer({ value }: { value: unknown }) {
   if (!value || typeof value !== 'object') return null
   return (
-    <div className="overflow-auto rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,252,247,0.8)] p-4 text-[0.85rem] leading-[1.6]">
-      <JsonTreeChildren value={value as JsonValue} depth={0} />
+    <div className="overflow-auto rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,253,248,0.95)] p-4 text-[0.85rem]">
+      <React.Suspense fallback={<p className="text-[var(--muted)] text-sm">Loading viewer…</p>}>
+        <ReactJsonView
+          src={value as object}
+          theme="rjv-default"
+          iconStyle="triangle"
+          collapsed={2}
+          collapseStringsAfterLength={80}
+          displayDataTypes={false}
+          displayObjectSize={true}
+          enableClipboard={true}
+          style={{
+            backgroundColor: 'transparent',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.85rem',
+            lineHeight: '1.7',
+          }}
+        />
+      </React.Suspense>
     </div>
   )
 }
