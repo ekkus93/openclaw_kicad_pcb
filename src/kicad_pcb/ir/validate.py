@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TypeAlias
 
 from ..circuit_ir import CircuitIR
@@ -132,22 +132,67 @@ def validate_circuit_ir(ir: CircuitIR) -> None:
         )
 
 
-def validate_ir_symbols(ir: CircuitIR, symbol_index: SymbolIndex) -> None:
+@dataclass(frozen=True)
+class IrSymbolValidationResult:
+    """Result of validate_ir_symbols, separating hard errors from missing symbols.
+
+    Generation can continue for unknown symbols by registering a placeholder
+    with SymbolIndex and emitting a SYMBOL_PLACEHOLDER_USED advisory warning.
+    """
+
+    unknown_symbols: dict[str, frozenset[str]] = field(default_factory=dict)
+    """symbol_id -> frozenset of pin numbers derived from the IR for every
+    symbol not found in any library.  The pin set is exactly the set of pins
+    referenced in the IR nets — never invented."""
+
+
+def validate_ir_symbols(
+    ir: CircuitIR,
+    symbol_index: SymbolIndex,
+) -> IrSymbolValidationResult:
     """Validate symbol existence, pin existence, and explicit unit selection.
 
     Rules enforced:
-    - Every component symbol must resolve in ``symbol_index``.
+    - Every component symbol must resolve in ``symbol_index`` OR be recorded
+      as an unknown symbol in the returned result (downgraded from hard error).
     - Every pin reference must be valid for its component symbol.
     - ``PinRefIR.unit`` may be used only when the symbol exposes KiCad unit metadata.
     - When ``PinRefIR.unit`` is present, the selected unit must exist and own the pin.
+
+    Returns
+    -------
+    IrSymbolValidationResult
+        Contains ``unknown_symbols`` mapping each symbol not found in any
+        library to the pin set derived from the IR nets.  Callers should
+        build a :class:`~kicad_pcb.placeholder_symbol.PlaceholderSymbol` for
+        each entry and register it with the SymbolIndex before generation.
     """
     component_symbol_by_ref = {component.ref: component.symbol for component in ir.components}
 
     symbol_pins: dict[str, set[str]] = {}
     symbol_unit_pins: dict[str, dict[str, tuple[str, ...]]] = {}
+    unknown_symbols: dict[str, frozenset[str]] = {}
+
     for sym_id in sorted(set(component_symbol_by_ref.values())):
-        symbol_pins[sym_id] = symbol_index.get_pins(sym_id)
-        symbol_unit_pins[sym_id] = symbol_index.get_unit_pins(sym_id)
+        try:
+            symbol_pins[sym_id] = symbol_index.get_pins(sym_id)
+            symbol_unit_pins[sym_id] = symbol_index.get_unit_pins(sym_id)
+        except UserError as exc:
+            if exc.code != ErrorCode.SYMBOL_NOT_FOUND:
+                raise
+            # Derive the usable pin set directly from the IR nets so that
+            # the pin-validity checks below still run against what the IR
+            # declared, and callers can build a placeholder with exactly
+            # the right pins.
+            ir_pins: frozenset[str] = frozenset(
+                pr.pin
+                for net in ir.nets
+                for pr in net.pins
+                if component_symbol_by_ref.get(pr.ref) == sym_id
+            )
+            unknown_symbols[sym_id] = ir_pins
+            symbol_pins[sym_id] = set(ir_pins)
+            symbol_unit_pins[sym_id] = {}  # single-unit placeholder
 
     for net in ir.nets:
         for pin_ref in net.pins:
@@ -224,3 +269,5 @@ def validate_ir_symbols(ir: CircuitIR, symbol_index: SymbolIndex) -> None:
                         "valid_unit_pins": sorted(unit_valid_pins),
                     },
                 )
+
+    return IrSymbolValidationResult(unknown_symbols=unknown_symbols)

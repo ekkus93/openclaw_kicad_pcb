@@ -2012,7 +2012,8 @@ def full_validate(path: Path, symbol_index: SymbolIndex) -> CircuitIR:
     """
     ir = CircuitIR.load(path)  # Layer 1: schema
     validate_circuit_ir(ir)  # Layer 2: semantic
-    validate_ir_symbols(ir, symbol_index)  # Layer 3: symbol + pin
+    # Layer 3: symbol + pin — unknown symbols become warnings; result discarded here
+    validate_ir_symbols(ir, symbol_index)
     return ir
 
 

@@ -85,6 +85,35 @@ class SymbolIndex:
         self._unit_pins_cache: dict[str, dict[str, tuple[str, ...]]] = {}
         self._unit_pin_at_cache: dict[str, dict[str, dict[str, tuple[float, float, float]]]] = {}
 
+    def register_placeholder(
+        self,
+        symbol_id: str,
+        pin_numbers: frozenset[str],
+        pin_at: dict[str, dict[str, tuple[float, float, float]]],
+    ) -> None:
+        """Register synthesised placeholder data for a symbol not in any library.
+
+        Populates the internal caches so that :meth:`get_pins`,
+        :meth:`get_unit_pins`, and :meth:`get_unit_pin_at` return the
+        placeholder data instead of raising ``SYMBOL_NOT_FOUND``.
+
+        Should be called after :func:`~kicad_pcb.ir.validate.validate_ir_symbols`
+        identifies unknown symbols and before the layout/routing phase.
+
+        Parameters
+        ----------
+        symbol_id:
+            Fully-qualified KiCad symbol id, e.g. ``"74xx:74HC4017"``.
+        pin_numbers:
+            Set of pin number strings derived from the Circuit IR.
+        pin_at:
+            ``unit -> {pin_number -> (x_mm, y_mm, angle_deg)}`` geometry map,
+            as returned by :attr:`PlaceholderSymbol.pin_at`.
+        """
+        self._pins_cache[symbol_id] = set(pin_numbers)
+        self._unit_pins_cache[symbol_id] = {"1": tuple(sorted(pin_numbers))}
+        self._unit_pin_at_cache[symbol_id] = pin_at
+
     @property
     def directories(self) -> tuple[Path, ...]:
         """Effective lookup directories in precedence order."""

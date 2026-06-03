@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict, cast
 
+from .. import placeholder_symbol as _placeholder_mod
 from ..adapters import KicadCliAdapter
 from ..block_detection import classify_circuit
 from ..circuit_ir import CircuitIR
@@ -23,7 +24,7 @@ from ..component_types import (
 from ..errors import ErrorCode, ToolError, UserError
 from ..fs import _atomic_write, _new_uuid
 from ..graphviz_layout import DEFAULT_LAYOUT_HEURISTIC_POLICY, LayoutHeuristicPolicy
-from ..ir.validate import validate_circuit_ir, validate_ir_symbols
+from ..ir.validate import IrSymbolValidationResult, validate_circuit_ir, validate_ir_symbols
 from ..layout import compute_orientations
 from ..layout_engine import (
     LayoutEngine,
@@ -213,7 +214,30 @@ def _apply_netlist_to_project(
     warnings: list[dict[str, object]] = []
 
     symbol_index = SymbolIndex(symbols_dir=request.symbols_dir)
-    validate_ir_symbols(ir, symbol_index)
+    _sym_result: IrSymbolValidationResult = validate_ir_symbols(ir, symbol_index)
+    # Build placeholder symbols for unknown library refs and register them so
+    # every downstream call to get_pins / get_unit_pins / get_unit_pin_at works
+    # transparently without any further special-casing.
+    _placeholders: dict[str, _placeholder_mod.PlaceholderSymbol] = {}
+    for _sym_id, _ir_pins in _sym_result.unknown_symbols.items():
+        _ph = _placeholder_mod.build(_sym_id, _ir_pins)
+        _placeholders[_sym_id] = _ph
+        symbol_index.register_placeholder(_sym_id, _ir_pins, _ph.pin_at)
+        warnings.append(
+            {
+                "code": "SYMBOL_PLACEHOLDER_USED",
+                "severity": "warning",
+                "message": (
+                    f"Symbol '{_sym_id}' not found in libraries — "
+                    f"a generic placeholder was used. Replace with the real "
+                    f"symbol before fabricating."
+                ),
+                "details": {
+                    "symbol": _sym_id,
+                    "pins": sorted(_ir_pins),
+                },
+            }
+        )
     raise_for_blocking_advisories(ir, symbol_index)
     warnings.extend(advisory_warnings(ir, symbol_index))
     generation_ir, placed_symbol_specs = _expand_generation_ir(ir, symbol_index)
@@ -321,6 +345,7 @@ def _apply_netlist_to_project(
                 project=project,
                 symbol_index=symbol_index,
                 placed_symbol_specs=placed_symbol_specs,
+                placeholders=_placeholders,
                 sheet_uuid=sheet_uuid,
                 request=request,
                 active_heuristic_profile=active_heuristic_profile,
@@ -424,6 +449,7 @@ def _build_managed_mutator(  # noqa: PLR0913
     project: ProjectRef,
     symbol_index: SymbolIndex,
     placed_symbol_specs: dict[str, _PlacedSymbolSpec],
+    placeholders: dict[str, _placeholder_mod.PlaceholderSymbol],
     sheet_uuid: str,
     request: _ApplyNetlistRequest,
     active_heuristic_profile: SchematicHeuristicProfile,
@@ -467,6 +493,7 @@ def _build_managed_mutator(  # noqa: PLR0913
             ir=generation_ir,
             symbol_index=symbol_index,
             placed_symbol_specs=placed_symbol_specs,
+            placeholders=placeholders,
             project_name=project.name,
             stats=stats,
             engine=_engine,
@@ -1106,6 +1133,7 @@ def _write_symbols(  # noqa: PLR0913
     ir: CircuitIR,
     symbol_index: SymbolIndex,
     placed_symbol_specs: dict[str, _PlacedSymbolSpec] | None = None,
+    placeholders: dict[str, _placeholder_mod.PlaceholderSymbol] | None = None,
     project_name: str,
     stats: dict[str, int],
     engine: LayoutEngine | None = None,
@@ -1196,7 +1224,13 @@ def _write_symbols(  # noqa: PLR0913
         valid_pins = list(placed_symbol.pin_nums)
         pin_uuids = [_new_uuid() for _ in valid_pins]
 
-        if not _embed_symbol_if_found(doc=doc, symbol=component.symbol, symbol_index=symbol_index):
+        _ph = (placeholders or {}).get(component.symbol)
+        if not _embed_symbol_if_found(
+            doc=doc,
+            symbol=component.symbol,
+            symbol_index=symbol_index,
+            placeholder=_ph,
+        ):
             symbol_defs_missing.add(component.symbol)
 
         doc.add_symbol(
@@ -1271,13 +1305,22 @@ def _resolve_placed_symbol_pin_at(
     return {}
 
 
-def _embed_symbol_if_found(*, doc: SchematicDoc, symbol: str, symbol_index: SymbolIndex) -> bool:
+def _embed_symbol_if_found(
+    *,
+    doc: SchematicDoc,
+    symbol: str,
+    symbol_index: SymbolIndex,
+    placeholder: _placeholder_mod.PlaceholderSymbol | None = None,
+) -> bool:
     lib_name, sym_name = symbol.split(":", 1)
     for directory in symbol_index.directories:
         sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=directory)
         if sym_def is not None:
             doc.embed_lib_symbol(sym_def)
             return True
+    if placeholder is not None:
+        doc.embed_lib_symbol(placeholder.definition)
+        return True
     return False
 
 
