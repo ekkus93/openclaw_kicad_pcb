@@ -6,12 +6,10 @@ import pytest
 
 from kicad_pcb.placeholder_symbol import (
     PlaceholderSymbol,
-    _box_half_height,
     _split_pins,
     build,
 )
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -29,10 +27,12 @@ def _get_property(node: ListNode, name: str) -> str | None:
     for item in node.items:
         if not isinstance(item, ListNode) or item.key != "property":
             continue
-        if len(item.items) >= 3 and isinstance(item.items[1], StringNode) and item.items[1].value == name:
-            val = item.items[2]
-            if isinstance(val, StringNode):
-                return val.value
+        name_node = item.items[1] if len(item.items) >= 3 else None
+        if not isinstance(name_node, StringNode) or name_node.value != name:
+            continue
+        val = item.items[2]
+        if isinstance(val, StringNode):
+            return val.value
     return None
 
 
@@ -154,7 +154,7 @@ def test_build_two_pins_one_each_side() -> None:
     pins = _get_pins(sub)
     assert len(pins) == 2
     angles = {_pin_at(p)[2] for p in pins}
-    assert 0.0 in angles    # left
+    assert 0.0 in angles  # left
     assert 180.0 in angles  # right
 
 

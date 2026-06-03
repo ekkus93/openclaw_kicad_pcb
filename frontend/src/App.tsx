@@ -935,15 +935,24 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage(`Generating Circuit IR…`)
+    setBusyMessage('Generating Circuit IR…')
     setErrorMessage(null)
     try {
       let response = await api.generateWizardIr(session.id)
       // Auto-repair: if the first pass produced invalid IR, try once more
       // without making the user click anything.
       if (response.status === 'ir_needs_repair') {
-        setBusyMessage('IR has validation errors — attempting automatic repair…')
+        setBusyMessage('IR has errors — attempting automatic repair…')
         response = await api.generateWizardIr(session.id)
+      }
+      if (response.status === 'ir_needs_repair') {
+        // Both passes failed; set a clear message so the user knows auto-repair
+        // was already attempted before showing the manual button.
+        setErrorMessage(
+          'Automatic repair failed after two attempts. ' +
+          'Review the error below and click "Repair Circuit IR" to try again, ' +
+          'or go back to the spec and revise the circuit description.',
+        )
       }
       setSession(response)
       if (!response.latest_job_id) {
