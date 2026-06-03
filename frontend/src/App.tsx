@@ -935,10 +935,16 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} and validating the resulting Circuit IR…`)
+    setBusyMessage(`Generating Circuit IR…`)
     setErrorMessage(null)
     try {
-      const response = await api.generateWizardIr(session.id)
+      let response = await api.generateWizardIr(session.id)
+      // Auto-repair: if the first pass produced invalid IR, try once more
+      // without making the user click anything.
+      if (response.status === 'ir_needs_repair') {
+        setBusyMessage('IR has validation errors — attempting automatic repair…')
+        response = await api.generateWizardIr(session.id)
+      }
       setSession(response)
       if (!response.latest_job_id) {
         setLatestJob(null)
