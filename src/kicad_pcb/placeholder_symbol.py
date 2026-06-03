@@ -69,7 +69,7 @@ def build(symbol_id: str, pin_numbers: frozenset[str]) -> PlaceholderSymbol:
     if not pin_numbers:
         raise ValueError(f"Cannot build a placeholder with no pins: {symbol_id!r}")
 
-    _lib_name, sym_name = symbol_id.split(":", 1)
+    sym_name = symbol_id.split(":", 1)[-1]
 
     sorted_pins = sorted(pin_numbers, key=_pin_sort_key)
     left_pins, right_pins = _split_pins(sorted_pins)

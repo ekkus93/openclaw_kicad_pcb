@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from kicad_pcb.ir.autofix import _fix_power_net_pin_duplicates, _is_power_net, autofix_circuit_ir
 
-
 # ---------------------------------------------------------------------------
 # _is_power_net
 # ---------------------------------------------------------------------------
@@ -129,7 +128,9 @@ def test_autofix_removes_led_cathode_from_gnd() -> None:
         ],
         "nets": [
             {"name": "GND", "pins": [{"ref": "D1", "pin": "2"}, {"ref": "R1", "pin": "2"}]},
-            {"name": "RED_LED_NODE", "pins": [{"ref": "D1", "pin": "2"}, {"ref": "R1", "pin": "1"}]},
+            {"name": "RED_LED_NODE", "pins": [
+                {"ref": "D1", "pin": "2"}, {"ref": "R1", "pin": "1"},
+            ]},
             {"name": "+5V", "pins": [{"ref": "R1", "pin": "1"}]},
         ],
     }
