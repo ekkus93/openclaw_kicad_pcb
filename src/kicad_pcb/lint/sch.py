@@ -910,9 +910,9 @@ def lint_wire_quality(
         if len(node.items) >= 2 and isinstance(node.items[1], StringNode):
             text = node.items[1].value
             # Parse bind marker format: "OpenClaw:bind={...}"
-            if text.startswith("OpenClaw:bind="):
+            if text.startswith("OpenClaw:bind=") or text.startswith("kicad-pcb:bind="):
                 try:
-                    bind_json = text[len("OpenClaw:bind=") :]
+                    bind_json = text.split("=", 1)[1] if "=" in text else ""
                     bind_data = json.loads(bind_json)
                     net_name = bind_data.get("net_name", "")
                     # Get position from the bind marker (it's placed at the pin location)
@@ -1039,11 +1039,11 @@ def _collect_bind_markers(doc: SchematicDoc) -> dict[str, list[tuple[float, floa
             continue
 
         text = node.items[1].value
-        if not text.startswith("OpenClaw:bind="):
+        if not (text.startswith("OpenClaw:bind=") or text.startswith("kicad-pcb:bind=")):
             continue
 
         try:
-            bind_data = json.loads(text[len("OpenClaw:bind=") :])
+            bind_data = json.loads(text.split("=", 1)[1] if "=" in text else "{}")
         except (json.JSONDecodeError, ValueError, TypeError):
             continue
 

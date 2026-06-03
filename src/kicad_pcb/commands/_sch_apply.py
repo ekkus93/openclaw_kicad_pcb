@@ -459,7 +459,7 @@ def _build_managed_mutator(  # noqa: PLR0913
 
         _engine = _resolve_layout(
             request.layout_name,
-            cache_path=project.path / "openclaw_layout_cache.json",
+            cache_path=project.path / "layout_cache.json",
             debug_dump_path=request.debug_dump_path,
             heuristic_profile=active_heuristic_profile,
             strict=request.strict,

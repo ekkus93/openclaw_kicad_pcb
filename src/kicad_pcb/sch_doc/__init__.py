@@ -180,12 +180,20 @@ def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
     }
 
 
-def _parse_binding_marker(marker: str) -> dict[str, str] | None:
-    """Parse an ``OpenClaw:bind=<JSON>`` marker string into a ``{ref, pin, net_name}`` dict.
+_BIND_PREFIXES = ("kicad-pcb:bind=", "OpenClaw:bind=")
 
+
+def _parse_binding_marker(marker: str) -> dict[str, str] | None:
+    """Parse a ``kicad-pcb:bind=<JSON>`` marker string into a ``{ref, pin, net_name}`` dict.
+
+    Also accepts the legacy ``OpenClaw:bind=`` prefix for backward compatibility.
     Returns ``None`` when the marker is malformed or any required field is absent.
     """
-    payload = marker.removeprefix("OpenClaw:bind=")
+    payload: str | None = next(
+        (marker[len(p) :] for p in _BIND_PREFIXES if marker.startswith(p)), None
+    )
+    if payload is None:
+        return None
     try:
         data = json.loads(payload)
     except json.JSONDecodeError:
@@ -197,19 +205,16 @@ def _parse_binding_marker(marker: str) -> dict[str, str] | None:
     ref = data.get("ref")
     pin = data.get("pin")
     net_name = data.get("net_name")
-    # Check each field individually so mypy can narrow the types to `str`.
-    if not isinstance(ref, str) or not ref:
+    if not (
+        isinstance(ref, str)
+        and ref
+        and isinstance(pin, str)
+        and pin
+        and isinstance(net_name, str)
+        and net_name
+    ):
         return None
-    if not isinstance(pin, str) or not pin:
-        return None
-    if not isinstance(net_name, str) or not net_name:
-        return None
-
-    return {
-        "ref": ref,
-        "pin": pin,
-        "net_name": net_name,
-    }
+    return {"ref": ref, "pin": pin, "net_name": net_name}
 
 
 # ---------------------------------------------------------------------------
@@ -484,23 +489,31 @@ class SchematicDoc:
     # ------------------------------------------------------------------
 
     def has_openclaw_marker(self) -> bool:
-        """Return ``True`` when an OpenClaw ownership marker text exists."""
+        """Return ``True`` when a generation ownership marker text exists.
+
+        Accepts both the legacy ``OpenClaw:generated=`` prefix and the current
+        ``kicad-pcb:generated=`` prefix so that older projects are still recognised.
+        """
         for item in self.root.items:
             if (
                 isinstance(item, ListNode)
                 and item.key == "text"
                 and len(item.items) >= 2
                 and isinstance(item.items[1], StringNode)
-                and item.items[1].value.startswith("OpenClaw:generated=")
+                and (
+                    item.items[1].value.startswith("kicad-pcb:generated=")
+                    or item.items[1].value.startswith("OpenClaw:generated=")
+                )
             ):
                 return True
         return False
 
     def ensure_openclaw_marker(self) -> bool:
-        """Ensure off-canvas OpenClaw marker text nodes are present.
+        """Ensure off-canvas generation marker text nodes are present.
 
         Returns ``True`` when at least one marker is inserted, ``False`` when
-        markers already exist.
+        markers already exist.  Writes the current ``kicad-pcb:`` prefix;
+        also recognises the legacy ``OpenClaw:`` prefix on existing files.
         """
         has_generated = False
         has_region = False
@@ -512,20 +525,20 @@ class SchematicDoc:
                 and isinstance(item.items[1], StringNode)
             ):
                 value = item.items[1].value
-                if value == "OpenClaw:generated=v1":
+                if value in ("kicad-pcb:generated=v1", "OpenClaw:generated=v1"):
                     has_generated = True
-                elif value == "OpenClaw:region=managed":
+                elif value in ("kicad-pcb:region=managed", "OpenClaw:region=managed"):
                     has_region = True
 
         inserted = False
         if not has_generated:
             self._insert_before_sheet_instances(
-                make_text_node("OpenClaw:generated=v1", -1000.0, -1000.0, hidden=True)
+                make_text_node("kicad-pcb:generated=v1", -1000.0, -1000.0, hidden=True)
             )
             inserted = True
         if not has_region:
             self._insert_before_sheet_instances(
-                make_text_node("OpenClaw:region=managed", -1000.0, -1010.0, hidden=True)
+                make_text_node("kicad-pcb:region=managed", -1000.0, -1010.0, hidden=True)
             )
             inserted = True
         return inserted
@@ -566,7 +579,7 @@ class SchematicDoc:
                 continue
 
             marker = item.items[1].value
-            if not marker.startswith("OpenClaw:bind="):
+            if not any(marker.startswith(p) for p in _BIND_PREFIXES):
                 continue
 
             parsed = _parse_binding_marker(marker)

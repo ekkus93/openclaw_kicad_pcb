@@ -5141,7 +5141,7 @@ def write_routing(  # noqa: PLR0913
         stats["junctions"] = stats.get("junctions", 0) + 1
 
     for idx, bm in enumerate(routing.bind_markers):
-        binding_text = "OpenClaw:bind=" + json.dumps(
+        binding_text = "kicad-pcb:bind=" + json.dumps(
             {"ref": bm.ref, "pin": bm.pin, "net_name": bm.net_name},
             separators=(",", ":"),
             sort_keys=True,

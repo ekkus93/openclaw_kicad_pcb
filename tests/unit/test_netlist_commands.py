@@ -2893,7 +2893,9 @@ def test_apply_netlist_missing_bind_markers_raises_structural_validation_error(
     original_add_text = SchematicDoc.add_text
 
     def _drop_bind_markers(self, text, *args, **kwargs):
-        if isinstance(text, str) and text.startswith("OpenClaw:bind="):
+        if isinstance(text, str) and (
+            text.startswith("kicad-pcb:bind=") or text.startswith("OpenClaw:bind=")
+        ):
             return None
         return original_add_text(self, text, *args, **kwargs)
 

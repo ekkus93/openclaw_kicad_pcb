@@ -19,7 +19,7 @@ from ..sexpr.nodes import ListNode
 from ..sexpr.parser import parse
 from ..sexpr.serializer import serialize
 
-WARNING_REPORT_FILE = "OpenClaw_Warnings.json"
+WARNING_REPORT_FILE = "warnings.json"
 MIN_COMPONENT_PLACEMENT_RATIO = 0.8
 
 
