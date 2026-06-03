@@ -49,6 +49,8 @@ def _ir_contract_text() -> str:
         "Device:LED, or Timer:NE555.\n"
         "- every net object must include name and pins.\n"
         "- pins must be an array of objects with ref and pin, plus optional unit.\n"
+        "- each (ref, pin) pair must appear in exactly ONE net across the entire "
+        "netlist. Never list the same physical component pin in two or more nets.\n"
         "Pin numbers must be the numeric KiCad library pin numbers, not schematic "
         "pin name strings. Critical pin number rules for common symbols:\n"
         "- Device:R and Device:C: pins are '1' and '2'. Never use 'A', 'B', '+', '-'.\n"
@@ -89,7 +91,49 @@ def _format_error_location(location: Any) -> str:
 
 def _format_ir_repair_error(exc: UserError) -> str:
     lines = [str(exc), f"Error code: {exc.code}"]
-    errors = exc.details.get("errors") if isinstance(exc.details, dict) else None
+    details = exc.details if isinstance(exc.details, dict) else {}
+
+    # Pin-in-multiple-nets collisions — most actionable detail to expose
+    pin_collisions = details.get("pin_collisions")
+    if isinstance(pin_collisions, list) and pin_collisions:
+        lines.append(
+            "Each physical pin must belong to exactly ONE net. "
+            "Remove the pin from all but one net for each collision below:"
+        )
+        for collision in pin_collisions[:12]:
+            if not isinstance(collision, dict):
+                continue
+            ref = collision.get("ref", "?")
+            pin = collision.get("pin", "?")
+            nets = collision.get("nets", [])
+            lines.append(
+                f"- {ref} pin {pin} is listed in {len(nets)} nets: "
+                + ", ".join(str(n) for n in nets)
+                + ". Keep it in exactly ONE of these nets."
+            )
+
+    # Duplicate ref or net name errors
+    for key, label in (
+        ("duplicate_refs", "Duplicate component refs"),
+        ("duplicate_nets", "Duplicate net names"),
+    ):
+        values = details.get(key)
+        if isinstance(values, list) and values:
+            lines.append(f"{label} (each must be unique): {', '.join(str(v) for v in values)}")
+
+    # Invalid pin references
+    missing_refs = details.get("missing_component_refs")
+    if isinstance(missing_refs, list) and missing_refs:
+        lines.append("Pin references to unknown component refs:")
+        for entry in missing_refs[:8]:
+            if isinstance(entry, dict):
+                lines.append(
+                    f"- net {entry.get('net')} references {entry.get('ref')} "
+                    f"pin {entry.get('pin')}, but {entry.get('ref')} is not in components"
+                )
+
+    # Schema-level field errors
+    errors = details.get("errors")
     if isinstance(errors, list) and errors:
         lines.append("Field-level validation errors:")
         for entry in errors[:12]:
@@ -101,6 +145,7 @@ def _format_ir_repair_error(exc: UserError) -> str:
                 lines.append(f"- {location}: {message}")
             else:
                 lines.append(f"- {message}")
+
     return "\n".join(lines)
 
 
