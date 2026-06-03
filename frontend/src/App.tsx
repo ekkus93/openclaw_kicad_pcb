@@ -565,104 +565,121 @@ function WarningsPanel({ warnings }: { warnings: unknown[] }) {
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue }
 
-function JsonTreeNode({
-  value,
-  depth = 0,
-}: {
-  value: JsonValue
-  depth?: number
-}) {
-  const [expanded, setExpanded] = useState(depth < 2)
-  const indent = depth * 16
-
-  if (value === null) {
-    return <span className="text-[var(--muted)]">null</span>
-  }
-  if (typeof value === 'boolean') {
-    return <span className="text-[#0d4c74]">{String(value)}</span>
-  }
-  if (typeof value === 'number') {
+/** Scalar leaf value — no brackets, no quotes shown to user */
+function JsonLeaf({ value }: { value: string | number | boolean | null }) {
+  if (value === null) return <span className="italic text-[var(--muted)]">empty</span>
+  if (typeof value === 'boolean')
+    return <span className="text-[#0d4c74] font-medium">{value ? 'true' : 'false'}</span>
+  if (typeof value === 'number')
     return <span className="text-[var(--accent)]">{value}</span>
-  }
-  if (typeof value === 'string') {
-    return <span className="text-[var(--brand-deep)]">&quot;{value}&quot;</span>
-  }
+  // string — no quotes, just the value
+  return <span className="text-[var(--brand-deep)]">{value}</span>
+}
 
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return <span className="text-[var(--muted)]">[ ]</span>
-    }
-    return (
-      <span>
+/** One row of the tree: toggle button + key label + inline leaf or child block */
+function JsonTreeRow({
+  label,
+  value,
+  depth,
+}: {
+  label: string
+  value: JsonValue
+  depth: number
+}) {
+  const isLeaf = value === null || typeof value !== 'object'
+  const isArray = Array.isArray(value)
+  const childCount = isLeaf ? 0 : isArray ? (value as JsonValue[]).length : Object.keys(value as object).length
+  const [expanded, setExpanded] = useState(depth < 2)
+
+  return (
+    <div className="grid" style={{ gridTemplateColumns: 'auto 1fr' }}>
+      {/* Toggle button */}
+      {isLeaf || childCount === 0 ? (
+        <span className="w-5 shrink-0" />
+      ) : (
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded px-0.5 hover:bg-[rgba(88,63,39,0.08)] transition-colors"
+          className="flex h-6 w-5 shrink-0 items-center justify-center rounded text-[0.62rem] text-[var(--muted)] hover:bg-[rgba(88,63,39,0.1)] transition-colors select-none"
           onClick={() => setExpanded((v) => !v)}
+          aria-label={expanded ? 'Collapse' : 'Expand'}
         >
-          <span className="text-[0.68rem] text-[var(--muted)] select-none">{expanded ? '▾' : '▸'}</span>
-          {!expanded ? (
-            <span className="text-[var(--muted)] text-[0.82rem]">[{value.length} {value.length === 1 ? 'item' : 'items'}]</span>
-          ) : (
-            <span className="text-[var(--muted)]">[</span>
-          )}
+          {expanded ? '▾' : '▸'}
         </button>
-        {expanded ? (
-          <span className="block">
-            {value.map((item, i) => (
-              <span key={i} className="flex items-start gap-1" style={{ paddingLeft: indent + 16 }}>
-                <span className="text-[var(--muted)] text-[0.78rem] mt-[3px] select-none shrink-0">{i}</span>
-                <span className="text-[var(--muted)] shrink-0">:</span>
-                <span><JsonTreeNode value={item as JsonValue} depth={depth + 1} /></span>
-                {i < value.length - 1 ? <span className="text-[var(--muted)]">,</span> : null}
+      )}
+
+      {/* Content */}
+      <div className="min-w-0">
+        {isLeaf || childCount === 0 ? (
+          /* Leaf row — key + value on one line */
+          <div className="flex flex-wrap items-baseline gap-x-2 py-[1px]">
+            <span className="text-[0.83rem] font-semibold text-[var(--text)] shrink-0">{label}</span>
+            {isLeaf ? (
+              <JsonLeaf value={value as string | number | boolean | null} />
+            ) : (
+              <span className="text-[0.78rem] text-[var(--muted)]">
+                {isArray ? '0 items' : 'empty'}
               </span>
-            ))}
-            <span className="block text-[var(--muted)]" style={{ paddingLeft: indent }}>]</span>
-          </span>
-        ) : null}
-      </span>
+            )}
+          </div>
+        ) : expanded ? (
+          /* Expanded — key on its own line, children indented with guide line */
+          <>
+            <div className="flex items-baseline gap-2 py-[1px]">
+              <span className="text-[0.83rem] font-semibold text-[var(--text)]">{label}</span>
+              <span className="text-[0.75rem] text-[var(--muted)]">
+                {isArray
+                  ? `${childCount} ${childCount === 1 ? 'item' : 'items'}`
+                  : `${childCount} ${childCount === 1 ? 'field' : 'fields'}`}
+              </span>
+            </div>
+            <div className="ml-2 border-l-2 border-[rgba(88,63,39,0.12)] pl-3">
+              <JsonTreeChildren value={value} depth={depth} />
+            </div>
+          </>
+        ) : (
+          /* Collapsed — key + summary badge on one line */
+          <button
+            type="button"
+            className="flex items-baseline gap-2 py-[1px] text-left hover:opacity-70 transition-opacity w-full"
+            onClick={() => setExpanded(true)}
+          >
+            <span className="text-[0.83rem] font-semibold text-[var(--text)]">{label}</span>
+            <span className="rounded-full bg-[rgba(88,63,39,0.08)] px-2 py-0.5 text-[0.72rem] text-[var(--muted)]">
+              {isArray
+                ? `${childCount} ${childCount === 1 ? 'item' : 'items'}`
+                : `${childCount} ${childCount === 1 ? 'field' : 'fields'}`}
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function JsonTreeChildren({ value, depth }: { value: JsonValue; depth: number }) {
+  if (Array.isArray(value)) {
+    return (
+      <>
+        {(value as JsonValue[]).map((item, i) => (
+          <JsonTreeRow key={i} label={String(i)} value={item} depth={depth + 1} />
+        ))}
+      </>
     )
   }
-
-  // Object
-  const entries = Object.entries(value as Record<string, JsonValue>)
-  if (entries.length === 0) {
-    return <span className="text-[var(--muted)]">{'{ }'}</span>
-  }
   return (
-    <span>
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 rounded px-0.5 hover:bg-[rgba(88,63,39,0.08)] transition-colors"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <span className="text-[0.68rem] text-[var(--muted)] select-none">{expanded ? '▾' : '▸'}</span>
-        {!expanded ? (
-          <span className="text-[var(--muted)] text-[0.82rem]">{'{'}  {entries.length} {entries.length === 1 ? 'key' : 'keys'}  {'}'}</span>
-        ) : (
-          <span className="text-[var(--muted)]">{'{'}</span>
-        )}
-      </button>
-      {expanded ? (
-        <span className="block">
-          {entries.map(([k, v], i) => (
-            <span key={k} className="flex items-start gap-1.5" style={{ paddingLeft: indent + 16 }}>
-              <span className="text-[var(--text)] font-medium shrink-0">{k}</span>
-              <span className="text-[var(--muted)] shrink-0">:</span>
-              <span><JsonTreeNode value={v as JsonValue} depth={depth + 1} /></span>
-              {i < entries.length - 1 ? <span className="text-[var(--muted)]">,</span> : null}
-            </span>
-          ))}
-          <span className="block text-[var(--muted)]" style={{ paddingLeft: indent }}>{'}'}</span>
-        </span>
-      ) : null}
-    </span>
+    <>
+      {Object.entries(value as Record<string, JsonValue>).map(([k, v]) => (
+        <JsonTreeRow key={k} label={k} value={v} depth={depth + 1} />
+      ))}
+    </>
   )
 }
 
 function JsonTreeViewer({ value }: { value: unknown }) {
+  if (!value || typeof value !== 'object') return null
   return (
-    <div className="overflow-auto rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,252,247,0.8)] p-4 font-[var(--font-mono)] text-[0.85rem] leading-[1.8]">
-      <JsonTreeNode value={value as JsonValue} depth={0} />
+    <div className="overflow-auto rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,252,247,0.8)] p-4 text-[0.85rem] leading-[1.6]">
+      <JsonTreeChildren value={value as JsonValue} depth={0} />
     </div>
   )
 }
