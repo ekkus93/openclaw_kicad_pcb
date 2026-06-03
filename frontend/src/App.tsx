@@ -1606,17 +1606,36 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
 
           {visibleLatestJob ? (
             <>
-              {visibleLatestJob.status === 'failed' ? (
-                <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
-                  <strong>
-                    Generation failed
-                    {visibleLatestJob.error
-                      ? ` — ${asRecord(visibleLatestJob.error).message ?? 'Unknown error'}`
-                      : ''}
-                    . Open the job for full details.
-                  </strong>
-                </div>
-              ) : null}
+              {visibleLatestJob.status === 'failed' ? (() => {
+                const errMsg = String(asRecord(visibleLatestJob.error).message ?? '')
+                const isIrProblem =
+                  asRecord(visibleLatestJob.error).code === 'IR_SEMANTIC_INVALID' ||
+                  errMsg.includes('LibraryName:PartName') ||
+                  errMsg.includes('unqualified') ||
+                  errMsg.includes('pin') ||
+                  errMsg.includes('symbol')
+                return (
+                  <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'flex-col items-start gap-2')}>
+                    <strong>
+                      Generation failed{errMsg ? ` — ${errMsg}` : ''}.
+                    </strong>
+                    {isIrProblem ? (
+                      <p className="text-sm leading-6">
+                        The Circuit IR has an error that must be fixed before generating.{' '}
+                        <Link
+                          className="font-semibold underline"
+                          to={`/wizard/${session.id}/ir`}
+                        >
+                          Go back to the Circuit IR step
+                        </Link>
+                        , clear the IR, and regenerate it.
+                      </p>
+                    ) : (
+                      <p className="text-sm leading-6">Open the job for full details.</p>
+                    )}
+                  </div>
+                )
+              })() : null}
               <JobSummaryPanel job={visibleLatestJob} sessionId={session.id} />
             </>
           ) : (
