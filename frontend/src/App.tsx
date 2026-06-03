@@ -1128,77 +1128,6 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
             </div>
           </section>
 
-          <section className={panelSoftClass}>
-            <div className={headingGroupClass}>
-              <h2>Circuit Request</h2>
-              <p className={mutedCopyClass}>
-                Keep refining the prompt until the spec is ready for review.
-              </p>
-            </div>
-            <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
-              <div className={wizardFieldSectionClass}>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 text-left text-[0.82rem] font-medium text-[var(--accent)]"
-                  onClick={() => setMetaExpanded((v) => !v)}
-                >
-                  <span
-                    className={joinClasses(
-                      'text-[0.9rem] leading-none transition-transform duration-150',
-                      metaExpanded ? 'rotate-90' : '',
-                    )}
-                    aria-hidden="true"
-                  >
-                    ▸
-                  </span>
-                  {metaExpanded ? 'Hide session metadata' : 'Edit session metadata'}
-                </button>
-                {metaExpanded ? (
-                  <div className="grid gap-3 pt-1">
-                    <div className={wizardFieldGridClass}>
-                      <label>
-                        <span>Project Name</span>
-                        <input
-                          value={projectName}
-                          onChange={(event) => setProjectName(event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        <span>Symbols Directory <span className="font-normal text-[var(--muted)]">(optional)</span></span>
-                        <input
-                          placeholder="Leave blank to use built-in symbols"
-                          value={symbolsDir}
-                          onChange={(event) => setSymbolsDir(event.target.value)}
-                        />
-                      </label>
-                    </div>
-                    <p className={helpTextClass}>
-                      Adjust metadata only when the session context actually changed.
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-              <div className={wizardFieldSectionClass}>
-                <WizardComposer
-                  disabled={Boolean(busyMessage)}
-                  label="Circuit Request"
-                  placeholder="Clarify only the missing or changed details."
-                  value={message}
-                  onChange={setMessage}
-                />
-              </div>
-              <div className={wizardActionRowClass}>
-                <button
-                  type="submit"
-                  className={wizardPrimaryButtonClass}
-                  disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
-                >
-                  Send Update
-                </button>
-              </div>
-            </form>
-          </section>
-
           {session.messages.length > 0 ? (
             <section className={panelSoftClass}>
               <div className={headingGroupClass}>
@@ -1219,6 +1148,77 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               </div>
             </section>
           ) : null}
+
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>{session.messages.length > 0 ? 'Continue the conversation' : 'Circuit Request'}</h2>
+              <p className={mutedCopyClass}>
+                {session.messages.length > 0
+                  ? 'Add more detail, answer the wizard\'s questions, or refine the brief.'
+                  : 'Keep refining the prompt until the spec is ready for review.'}
+              </p>
+            </div>
+            <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
+              <div className={wizardFieldSectionClass}>
+                <WizardComposer
+                  disabled={Boolean(busyMessage)}
+                  label="Your message"
+                  placeholder="Clarify only the missing or changed details."
+                  value={message}
+                  onChange={setMessage}
+                />
+              </div>
+              <div className={wizardActionRowClass}>
+                <button
+                  type="submit"
+                  className={wizardPrimaryButtonClass}
+                  disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+                >
+                  Send
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.82rem] font-medium text-[var(--accent)] transition-colors hover:bg-[rgba(24,75,69,0.06)]"
+                  onClick={() => setMetaExpanded((v) => !v)}
+                >
+                  <span
+                    className={joinClasses(
+                      'text-[0.9rem] leading-none transition-transform duration-150',
+                      metaExpanded ? 'rotate-90' : '',
+                    )}
+                    aria-hidden="true"
+                  >
+                    ▸
+                  </span>
+                  {metaExpanded ? 'Hide metadata' : 'Edit metadata'}
+                </button>
+              </div>
+              {metaExpanded ? (
+                <div className={wizardFieldSectionClass}>
+                  <div className={wizardFieldGridClass}>
+                    <label>
+                      <span>Project Name</span>
+                      <input
+                        value={projectName}
+                        onChange={(event) => setProjectName(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      <span>Symbols Directory <span className="font-normal text-[var(--muted)]">(optional)</span></span>
+                      <input
+                        placeholder="Leave blank to use built-in symbols"
+                        value={symbolsDir}
+                        onChange={(event) => setSymbolsDir(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <p className={helpTextClass}>
+                    Adjust metadata only when the session context actually changed.
+                  </p>
+                </div>
+              ) : null}
+            </form>
+          </section>
 
           <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
             <Link className={buttonSecondaryClass} to="/wizard">
