@@ -1112,11 +1112,16 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     )
   }
 
+  const hasUnspecifiedCustomBlocks =
+    session.spec?.blocks.some(
+      (b) => b.block_type === 'custom' && b.required_components.length === 0,
+    ) ?? false
   const canApproveSpec =
     Boolean(session.spec) &&
     !session.spec_approved &&
     !session.open_questions.length &&
-    !session.unsupported_reasons.length
+    !session.unsupported_reasons.length &&
+    !hasUnspecifiedCustomBlocks
   const canGenerateIr = Boolean(session.spec) && session.spec_approved
   const canGenerateProject = Boolean(session.ir_validation?.valid)
   const visibleLatestJob = session.latest_job_id ? latestJob : null
@@ -1307,6 +1312,37 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               </div>
             ) : null}
 
+            {/* Custom block warning — blocks with no named component will likely fail at IR generation */}
+            {session.spec.blocks.some(
+              (b) => b.block_type === 'custom' && b.required_components.length === 0,
+            ) ? (
+              <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-2')}>
+                <strong className="text-[0.8rem] font-bold uppercase tracking-[0.1em]">
+                  Underspecified blocks — action required before approving
+                </strong>
+                <p className="text-sm leading-6">
+                  {session.spec.blocks
+                    .filter((b) => b.block_type === 'custom' && b.required_components.length === 0)
+                    .map((b) => b.name)
+                    .join(', ')}{' '}
+                  {session.spec.blocks.filter(
+                    (b) => b.block_type === 'custom' && b.required_components.length === 0,
+                  ).length === 1
+                    ? 'is marked "custom" with no named component.'
+                    : 'are marked "custom" with no named component.'}{' '}
+                  The Circuit IR generator will have to invent a circuit for{' '}
+                  {session.spec.blocks.filter(
+                    (b) => b.block_type === 'custom' && b.required_components.length === 0,
+                  ).length === 1
+                    ? 'it'
+                    : 'them'}
+                  , which almost always fails. Go back and tell the wizard which specific
+                  component (IC part number) should implement each of these blocks before
+                  approving.
+                </p>
+              </div>
+            ) : null}
+
             {/* 1 — Purpose */}
             <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
               <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-[0.13em] text-[var(--brand)]">Purpose</p>
@@ -1391,9 +1427,11 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                     ? 'Approve Spec is locked — resolve the open questions above first.'
                     : session.unsupported_reasons.length > 0
                       ? 'Approve Spec is locked — resolve the unsupported reasons above first.'
-                      : session.spec_approved
-                        ? 'Spec is already approved.'
-                        : 'Spec must be generated before it can be approved.'}
+                      : hasUnspecifiedCustomBlocks
+                        ? 'Approve Spec is locked — go back and ask the wizard to name a specific component for each custom block.'
+                        : session.spec_approved
+                          ? 'Spec is already approved.'
+                          : 'Spec must be generated before it can be approved.'}
                 </p>
               ) : null}
             </form>

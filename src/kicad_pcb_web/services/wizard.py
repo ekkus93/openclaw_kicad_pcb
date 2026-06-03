@@ -281,7 +281,21 @@ def _build_spec_messages(settings: WebSettings, session: WizardSessionDetail) ->
         "next_state=spec_ready_for_review when the spec is coherent enough for explicit "
         "approval, "
         "or next_state=failed when the requested design is unsupported. "
-        "Keep unsupported_reasons explicit instead of guessing."
+        "Keep unsupported_reasons explicit instead of guessing.\n"
+        "Block specification rules:\n"
+        "- Every block must name at least one specific, real component in "
+        "required_components (e.g. 'NE555', 'CD4017', 'LM358', '2N3904'). "
+        "Vague descriptions like 'counter/decoder' or 'sequencing logic' are not "
+        "acceptable without a named part.\n"
+        "- Only use block_type='custom' when no standard block_type fits AND the "
+        "required_components list already names the specific IC or component that "
+        "implements the block. Never use block_type='custom' with an empty or vague "
+        "required_components — if you do not know which specific component to use, "
+        "add a question to open_questions asking the user to specify one, and set "
+        "next_state=awaiting_user_clarification instead of spec_ready_for_review.\n"
+        "- If a block requires an IC that may not be in the standard KiCad symbol "
+        "library (e.g. CD4017, 74HC595, shift registers), name it explicitly in "
+        "required_components so the user can verify availability before approving."
     )
     messages = [LlmMessage(role="system", content=system_prompt)]
     if session.spec is not None:
