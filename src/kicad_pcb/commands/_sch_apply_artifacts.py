@@ -61,7 +61,7 @@ def _write_warning_report(  # noqa: PLR0913
     project: ProjectRef,
     request: WarningReportRequest,
     warnings: Sequence[dict[str, object]],
-    managed_sch_path: Path,
+    schematic_path: Path,
     stats: dict[str, int],
     kicad_cli_used: bool,
     symbols_dirs: tuple[str, ...],
@@ -75,7 +75,7 @@ def _write_warning_report(  # noqa: PLR0913
         "project_path": str(project.path),
         "netlist_path": str(request.netlist_path),
         "root_schematic_path": str(project.sch_file),
-        "managed_schematic_path": str(managed_sch_path),
+        "schematic_path": str(schematic_path),
         "validation_mode": request.mode_name or "kicad",
         "kicad_cli_used": kicad_cli_used,
         "symbols_dirs_used": list(symbols_dirs),
@@ -128,7 +128,7 @@ def validate_generated_schematic(  # noqa: PLR0913
     *,
     doc: SchematicDoc,
     generation_ir: CircuitIR,
-    managed_sch_path: Path,
+    schematic_path: Path,
     expected_wire_count: int,
     min_component_placement_ratio: float = MIN_COMPONENT_PLACEMENT_RATIO,
 ) -> GeneratedSchematicDiagnostics:
@@ -141,7 +141,7 @@ def validate_generated_schematic(  # noqa: PLR0913
         failure = _hard_failure(
             "REPARSE_FAILED",
             "Generated schematic could not be reparsed by the internal document model.",
-            details={"managed_schematic_path": str(managed_sch_path)},
+            details={"schematic_path": str(schematic_path)},
         )
         diagnostics = GeneratedSchematicDiagnostics(
             symbol_count=0,
@@ -156,7 +156,7 @@ def validate_generated_schematic(  # noqa: PLR0913
             "Generated managed schematic failed reparse validation",
             code=ErrorCode.PARSE_ERROR,
             details={
-                "managed_schematic_path": str(managed_sch_path),
+                "schematic_path": str(schematic_path),
                 "generated_schematic_diagnostics": diagnostics.as_dict(),
             },
         ) from exc
@@ -329,7 +329,7 @@ def validate_generated_schematic(  # noqa: PLR0913
             "Generated managed schematic failed structural validation",
             code=ErrorCode.EMPTY_GENERATION,
             details={
-                "managed_schematic_path": str(managed_sch_path),
+                "schematic_path": str(schematic_path),
                 "expected_components": expected_components,
                 "found_symbols": symbol_count,
                 "min_component_placement_ratio": min_component_placement_ratio,

@@ -943,9 +943,9 @@ def test_input_connectors_left_of_opamp(tmp_path: Path) -> None:
     )
 
     # Load the managed sheet (where symbols are actually placed)
-    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
-    assert managed_sch.exists(), "Managed sheet was not generated"
-    doc = SchematicDoc.load(managed_sch)
+    root_sch = work_dir / project_name / f"{project_name}.kicad_sch"
+    assert root_sch.exists(), "Root schematic was not generated"
+    doc = SchematicDoc.load(root_sch)
     symbols: dict[str, tuple[float, float]] = {
         cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
     }
@@ -1030,9 +1030,9 @@ def test_output_connectors_right_of_opamp(tmp_path: Path) -> None:
     )
 
     # Load the managed sheet
-    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
-    assert managed_sch.exists(), "Managed sheet was not generated"
-    doc = SchematicDoc.load(managed_sch)
+    root_sch = work_dir / project_name / f"{project_name}.kicad_sch"
+    assert root_sch.exists(), "Root schematic was not generated"
+    doc = SchematicDoc.load(root_sch)
     symbols: dict[str, tuple[float, float]] = {
         cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
     }
@@ -1095,9 +1095,9 @@ def test_output_components_not_in_left_cluster(tmp_path: Path) -> None:
     )
 
     # Load the managed sheet
-    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
-    assert managed_sch.exists(), "Managed sheet was not generated"
-    doc = SchematicDoc.load(managed_sch)
+    root_sch = work_dir / project_name / f"{project_name}.kicad_sch"
+    assert root_sch.exists(), "Root schematic was not generated"
+    doc = SchematicDoc.load(root_sch)
     symbols: dict[str, tuple[float, float]] = {
         cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
     }
@@ -1163,9 +1163,9 @@ def test_regressed_ne5532_fixture_keeps_major_blocks_in_left_to_right_order(tmp_
         )
     )
 
-    managed_sch = work_dir / project_name / "OpenClaw_Managed.kicad_sch"
-    assert managed_sch.exists(), "Managed sheet was not generated"
-    doc = SchematicDoc.load(managed_sch)
+    root_sch = work_dir / project_name / f"{project_name}.kicad_sch"
+    assert root_sch.exists(), "Root schematic was not generated"
+    doc = SchematicDoc.load(root_sch)
     symbols: dict[str, tuple[float, float]] = {
         cast(str, s["ref"]): (cast(float, s["x"]), cast(float, s["y"])) for s in doc.list_symbols()
     }

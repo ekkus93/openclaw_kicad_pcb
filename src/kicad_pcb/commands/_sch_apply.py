@@ -53,7 +53,6 @@ from ..symbol_index import SymbolIndex
 from ..tier import assign_tiers
 from ._project import minimal_schematic_text
 from ._sch_apply_artifacts import (
-    _cleanup_new_managed_file,
     _record_debug_stage,
     _write_warning_report,
     resolve_schematic_paths,  # noqa: F401
@@ -67,6 +66,9 @@ from ._validate import advisory_warnings, raise_for_blocking_advisories
 
 MANAGED_SHEET_NAME = "OpenClaw_Managed"
 MANAGED_SHEET_FILE = "OpenClaw_Managed.kicad_sch"
+# Circuit is now written directly into the root schematic (flat layout).
+# MANAGED_SHEET_NAME / MANAGED_SHEET_FILE are kept for backward-compatibility
+# with any existing projects that still have the sub-sheet on disk.
 _LOCAL_DECOUPLING_DISTANCE_WARN_MM = TIER_SPACING_MM * 1.5
 
 
@@ -308,15 +310,7 @@ def _apply_netlist_to_project(
             }
         )
 
-    sheet_uuid = _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
-
-    managed_sch_path = project.path / MANAGED_SHEET_FILE
-    # Track whether we are about to create the managed file for the first time.
-    # If generation subsequently fails we delete the empty stub so the project
-    # is left in a clean, retryable state rather than having a misleading
-    # zero-content managed schematic on disk.
-    managed_was_absent = not managed_sch_path.exists()
-    _ensure_managed_file_exists(managed_sch_path, dry_run=request.dry_run)
+    _ensure_project_root_owned(project, force=request.force, dry_run=request.dry_run)
 
     stats: dict[str, int] = {
         "symbols": 0,
@@ -333,12 +327,12 @@ def _apply_netlist_to_project(
         _record_debug_stage(
             debug_capture,
             "schematic_emission",
-            managed_schematic_path=str(managed_sch_path),
+            schematic_path=str(project.sch_file),
             validation_mode=mode.name,
             dry_run=request.dry_run,
         )
         mutate_and_validate_sch(
-            managed_sch_path,
+            project.sch_file,
             _build_managed_mutator(
                 ir=ir,
                 generation_ir=generation_ir,
@@ -346,13 +340,11 @@ def _apply_netlist_to_project(
                 symbol_index=symbol_index,
                 placed_symbol_specs=placed_symbol_specs,
                 placeholders=_placeholders,
-                sheet_uuid=sheet_uuid,
                 request=request,
                 active_heuristic_profile=active_heuristic_profile,
                 active_label_policy=active_label_policy,
                 stats=stats,
                 warnings=warnings,
-                managed_sch_path=managed_sch_path,
                 diagnostics_capture=diagnostics_capture,
                 debug_capture=debug_capture,
             ),
@@ -363,14 +355,7 @@ def _apply_netlist_to_project(
             backup=request.backup,
             strict=request.strict,
         )
-    except Exception as exc:
-        # If the managed schematic was newly created as an empty stub and the
-        # mutation failed, remove it so that the project is left in a clean state.
-        # A subsequent retry will reinitialise the file from scratch.
-        # Suppress only race-style missing-file errors so they do not shadow
-        # the original exception; surface other cleanup failures as notes.
-        if managed_was_absent and not request.dry_run:
-            _cleanup_new_managed_file(managed_sch_path, exc)
+    except Exception:
         raise
 
     if request.dry_run:
@@ -379,8 +364,7 @@ def _apply_netlist_to_project(
                 "code": "DRY_RUN_NO_WRITE",
                 "message": ("Dry-run mode: validation passed but no changes were written to disk."),
                 "details": {
-                    "root_schematic_path": str(project.sch_file),
-                    "managed_schematic_path": str(managed_sch_path),
+                    "schematic_path": str(project.sch_file),
                     "symbols_validated": stats["symbols"],
                     "nets_validated": len(ir.nets),
                 },
@@ -390,7 +374,7 @@ def _apply_netlist_to_project(
             debug_capture,
             "artifact_finalize",
             status="dry_run",
-            managed_schematic_path=str(managed_sch_path),
+            schematic_path=str(project.sch_file),
         )
 
     warning_report_path: Path | None = None
@@ -399,7 +383,7 @@ def _apply_netlist_to_project(
             project=project,
             request=request,
             warnings=warnings,
-            managed_sch_path=managed_sch_path,
+            schematic_path=project.sch_file,
             stats=stats,
             kicad_cli_used=cli is not None,
             symbols_dirs=tuple(str(d) for d in symbol_index.directories),
@@ -409,7 +393,7 @@ def _apply_netlist_to_project(
             debug_capture,
             "artifact_finalize",
             status="written",
-            managed_schematic_path=str(managed_sch_path),
+            schematic_path=str(project.sch_file),
             warning_report_path=str(warning_report_path),
         )
 
@@ -418,7 +402,7 @@ def _apply_netlist_to_project(
 
     return ApplyNetlistResult(
         schematic_path=project.sch_file,
-        managed_schematic_path=managed_sch_path,
+        managed_schematic_path=project.sch_file,
         symbols_added=stats["symbols"],
         symbols_updated=0,
         managed_items_written=(
@@ -450,13 +434,11 @@ def _build_managed_mutator(  # noqa: PLR0913
     symbol_index: SymbolIndex,
     placed_symbol_specs: dict[str, _PlacedSymbolSpec],
     placeholders: dict[str, _placeholder_mod.PlaceholderSymbol],
-    sheet_uuid: str,
     request: _ApplyNetlistRequest,
     active_heuristic_profile: SchematicHeuristicProfile,
     active_label_policy: LabelPolicy,
     stats: dict[str, int],
     warnings: list[dict[str, object]],
-    managed_sch_path: Path,
     diagnostics_capture: dict[str, GeneratedSchematicDiagnostics],
     debug_capture: dict[str, object] | None = None,
 ) -> Callable[[SchematicDoc], None]:
@@ -556,19 +538,16 @@ def _build_managed_mutator(  # noqa: PLR0913
                 }
             )
 
-        # Qualify all bare (path "/" …) entries so KiCad can resolve the
-        # sub-sheet hierarchy and assign correct reference annotations.
-        doc.update_managed_path(sheet_uuid)
         diagnostics_capture["generated_schematic"] = validate_generated_schematic(
             doc=doc,
             generation_ir=generation_ir,
-            managed_sch_path=managed_sch_path,
+            schematic_path=project.sch_file,
             expected_wire_count=len(routing.wires),
         )
         _record_debug_stage(
             debug_capture,
             "post_generation_reparse",
-            managed_schematic_path=str(managed_sch_path),
+            schematic_path=str(project.sch_file),
             hard_failure_count=len(diagnostics_capture["generated_schematic"].hard_failures),
             symbol_count=diagnostics_capture["generated_schematic"].symbol_count,
             wire_count=diagnostics_capture["generated_schematic"].wire_count,
@@ -1504,9 +1483,14 @@ def _ensure_managed_file_exists(path: Path, *, dry_run: bool) -> None:
     )
 
 
-def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: bool) -> str:
-    """Prepare the root schematic for managed-sheet use; return the managed sheet UUID."""
-    _captured_uuid: list[str] = []
+def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: bool) -> None:
+    """Ensure the root schematic carries the OpenClaw ownership marker.
+
+    In flat mode the circuit is written directly into the root schematic, so
+    no sub-sheet reference is created.  The ownership marker is still written
+    so that ``apply-netlist`` can safely detect user-authored files and refuse
+    to overwrite them when ``force=False``.
+    """
 
     def _mutate(doc: SchematicDoc) -> None:
         if not doc.has_openclaw_marker() and not force:
@@ -1516,20 +1500,11 @@ def _ensure_project_root_owned(project: ProjectRef, *, force: bool, dry_run: boo
                 details={"path": str(project.sch_file)},
             )
         doc.ensure_openclaw_marker()
-        uuid = doc.ensure_managed_sheet(
-            sheet_name=MANAGED_SHEET_NAME,
-            sheet_file=MANAGED_SHEET_FILE,
-            sheet_uuid=_new_uuid(),
-        )
-        _captured_uuid.append(uuid)
 
     mutate_and_validate_sch(
         project.sch_file,
         _mutate,
         mode=ValidationMode.LINT,
-        operation="prepare-managed-sheet",
+        operation="prepare-root-schematic",
         dry_run=dry_run,
     )
-    # _mutate is always called exactly once by mutate_and_validate_sch
-    # (dry_run skips the write but still calls the mutator for validation).
-    return _captured_uuid[0] if _captured_uuid else _new_uuid()

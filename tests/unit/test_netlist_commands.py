@@ -11,7 +11,8 @@ from typing import cast
 import pytest
 
 from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.commands._sch_apply import _cleanup_new_managed_file, _transform_pin_at
+from kicad_pcb.commands._sch_apply import MANAGED_SHEET_FILE, _transform_pin_at
+from kicad_pcb.commands._sch_apply_artifacts import _cleanup_new_managed_file
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
     cmd_fix_netlist,
@@ -1269,12 +1270,15 @@ def test_cmd_apply_netlist_creates_managed_schematic(
     assert result.managed_schematic_path.exists()
     assert result.symbols_dirs_used  # non-empty tuple of resolved dirs
 
+    # Flat layout: circuit is written directly into the root schematic,
+    # no OpenClaw_Managed sub-sheet is created.
     root_doc = SchematicDoc.load(sch_path)
     assert root_doc.has_openclaw_marker() is True
-    assert root_doc.has_managed_sheet(sheet_name="OpenClaw_Managed") is True
+    assert root_doc.has_managed_sheet(sheet_name="OpenClaw_Managed") is False
 
-    managed_doc = SchematicDoc.load(result.managed_schematic_path)
-    symbols = managed_doc.list_symbols()
+    # managed_schematic_path == root schematic in flat mode
+    assert result.managed_schematic_path == sch_path
+    symbols = root_doc.list_symbols()
     assert len(symbols) == 1
     assert symbols[0]["ref"] == "R1"
 
@@ -1311,7 +1315,7 @@ def test_cmd_apply_netlist_surfaces_input_coupling_warning(
     report = json.loads(result.warning_report_path.read_text(encoding="utf-8"))
     report_codes = {warning["code"] for warning in report["warnings"]}
     assert codes <= report_codes
-    assert report["managed_schematic_path"] == str(result.managed_schematic_path)
+    assert report["schematic_path"] == str(result.managed_schematic_path)
     assert report["validation_mode"] == "internal"
     assert report["generated_schematic_diagnostics"] is not None
     assert report["generated_schematic_diagnostics"]["symbol_count"] >= 1
@@ -2327,12 +2331,11 @@ def test_new_from_netlist_schematic_parses_and_ownership_marker_present(
     # Root must carry OpenClaw ownership marker.
     assert root_doc.has_openclaw_marker() is True
 
-    # Root must reference the managed sheet.
-    assert root_doc.has_managed_sheet(sheet_name="OpenClaw_Managed") is True
+    # Flat layout: no sub-sheet, circuit is directly in the root schematic.
+    assert root_doc.has_managed_sheet(sheet_name="OpenClaw_Managed") is False
 
-    # Managed sheet must exist, parse, and contain the generated component.
-    managed_doc = SchematicDoc.load(result.managed_schematic_path)
-    symbols = managed_doc.list_symbols()
+    # managed_schematic_path == root schematic in flat mode; contains the component.
+    symbols = root_doc.list_symbols()
     refs = [s["ref"] for s in symbols]
     assert "R1" in refs
 
@@ -2370,11 +2373,9 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
     assert info.symbols[0]["ref"] == "R1"
     assert info.pin_net_bindings == ({"ref": "R1", "pin": "1", "net_name": "N1"},)
     assert info.schematic_path == result.schematic_path
-    # P5/P7 new fields
-    assert info.managed_schematic_path is not None
-    assert info.managed_symbol_count >= 1
-    assert info.managed_label_count >= 1
-    assert info.symbol_count == 0  # root is thin (no placed symbols)
+    # Flat layout: all symbols are in the root schematic; no sub-sheet.
+    assert info.managed_schematic_path is None  # no OpenClaw_Managed.kicad_sch
+    assert info.symbol_count >= 1  # root carries the generated symbols
 
 
 def test_cmd_validate_netlist_accepts_valid_explicit_unit(tmp_path: Path) -> None:
@@ -5297,9 +5298,11 @@ def test_update_managed_path_qualifies_symbol_instances(tmp_path: Path) -> None:
             )
 
 
-def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Path) -> None:
-    """Integration: managed schematic sheet_instances and symbol instances
-    carry the UUID of the (sheet ...) entry in the parent root schematic.
+def test_flat_layout_circuit_in_root_schematic(tmp_path: Path) -> None:
+    """Flat layout: generated circuit lives directly in the root schematic file.
+
+    There is no OpenClaw_Managed.kicad_sch sub-sheet.  The root schematic
+    carries the ownership marker and contains all placed symbols.
     """
     ir_data = {
         "version": "1",
@@ -5312,7 +5315,7 @@ def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Pat
 
     result = cmd_new_from_netlist(
         Namespace(
-            name="HierTest",
+            name="FlatTest",
             out_dir=str(tmp_path),
             description="",
             netlist=str(ir_path),
@@ -5321,44 +5324,19 @@ def test_managed_schematic_hierarchy_paths_match_parent_sheet_uuid(tmp_path: Pat
         )
     )
 
-    # Extract the managed-sheet UUID from the parent (root) schematic.
-    parent_doc = SchematicDoc.load(result.schematic_path)
-    sheet_uuid: str | None = None
-    for item in parent_doc.root.items:
-        if not (isinstance(item, ListNode) and item.key == "sheet"):
-            continue
-        for sub in item.items:
-            if (
-                isinstance(sub, ListNode)
-                and sub.key == "uuid"
-                and len(sub.items) >= 2
-                and isinstance(sub.items[1], StringNode)
-            ):
-                sheet_uuid = sub.items[1].value
-                break
-        if sheet_uuid:
-            break
-    assert sheet_uuid is not None, "Parent schematic has no (sheet (uuid ...)) node"
+    # Root schematic must exist and parse.
+    root_doc = SchematicDoc.load(result.schematic_path)
 
-    expected_path = f"/{sheet_uuid}/"
+    # No sub-sheet reference in the root schematic.
+    assert root_doc.has_managed_sheet(sheet_name="OpenClaw_Managed") is False
 
-    # Check the managed schematic: all (path ...) nodes must be qualified.
-    managed_doc = SchematicDoc.load(result.managed_schematic_path)
-    unqualified: list[str] = []
-    wrong_uuid: list[str] = []
-    for node in walk(managed_doc.root):
-        if not (
-            isinstance(node, ListNode)
-            and node.key == "path"
-            and len(node.items) >= 2
-            and isinstance(node.items[1], StringNode)
-        ):
-            continue
-        val = node.items[1].value
-        if val == "/":
-            unqualified.append(repr(node))
-        elif val != expected_path:
-            wrong_uuid.append(f"{val!r} (expected {expected_path!r})")
+    # No OpenClaw_Managed.kicad_sch file on disk.
+    assert not (result.schematic_path.parent / MANAGED_SHEET_FILE).exists()
 
-    assert not unqualified, f"Unqualified '/' paths remain: {unqualified}"
-    assert not wrong_uuid, f"Paths with wrong UUID: {wrong_uuid}"
+    # Component is in the root schematic.
+    symbols = root_doc.list_symbols()
+    refs = [s["ref"] for s in symbols]
+    assert "R1" in refs
+
+    # managed_schematic_path equals the root schematic in flat mode.
+    assert result.managed_schematic_path == result.schematic_path
