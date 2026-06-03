@@ -113,6 +113,20 @@ def _format_ir_repair_error(exc: UserError) -> str:
                 + ". Keep it in exactly ONE of these nets."
             )
 
+    # Unqualified symbol IDs (missing library prefix)
+    unqualified_syms = details.get("unqualified_symbols")
+    if isinstance(unqualified_syms, list) and unqualified_syms:
+        lines.append(
+            "Symbol IDs must use 'LibraryName:PartName' format. "
+            "Add the correct library prefix to each of these:"
+        )
+        for entry in unqualified_syms[:12]:
+            if isinstance(entry, dict):
+                lines.append(
+                    f"- {entry.get('ref')}: '{entry.get('symbol')}' is missing a library "
+                    f"prefix (e.g. 'Device:{entry.get('symbol')}' or '4xxx:{entry.get('symbol')}')"
+                )
+
     # Duplicate ref or net name errors
     for key, label in (
         ("duplicate_refs", "Duplicate component refs"),

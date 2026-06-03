@@ -76,6 +76,18 @@ def find_pin_membership_collisions(index: PinMembershipIndex) -> list[dict[str, 
 
 def validate_circuit_ir(ir: CircuitIR) -> None:
     """Validate semantic constraints that are not expressible via schema alone."""
+    # Symbol IDs must be fully qualified as "LibraryName:PartName"
+    unqualified = sorted(
+        [{"ref": c.ref, "symbol": c.symbol} for c in ir.components if ":" not in c.symbol],
+        key=lambda d: d["ref"],
+    )
+    if unqualified:
+        raise UserError(
+            "Component symbols must use 'LibraryName:PartName' format",
+            code=ErrorCode.IR_SEMANTIC_INVALID,
+            details={"unqualified_symbols": unqualified},
+        )
+
     refs = [component.ref for component in ir.components]
     dup_refs = sorted([ref for ref, count in Counter(refs).items() if count > 1])
     if dup_refs:

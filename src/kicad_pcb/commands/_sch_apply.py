@@ -1291,6 +1291,8 @@ def _resolve_placed_symbol_pin_at(
                 if pin_num in placed_symbol.pin_nums
             }
 
+    if ":" not in symbol:
+        return {}
     lib_name, sym_name = symbol.split(":", 1)
     for directory in symbol_index.directories:
         from ..sch_doc import read_lib_symbol_pin_at  # noqa: PLC0415
@@ -1312,12 +1314,13 @@ def _embed_symbol_if_found(
     symbol_index: SymbolIndex,
     placeholder: _placeholder_mod.PlaceholderSymbol | None = None,
 ) -> bool:
-    lib_name, sym_name = symbol.split(":", 1)
-    for directory in symbol_index.directories:
-        sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=directory)
-        if sym_def is not None:
-            doc.embed_lib_symbol(sym_def)
-            return True
+    if ":" in symbol:
+        lib_name, sym_name = symbol.split(":", 1)
+        for directory in symbol_index.directories:
+            sym_def = read_lib_symbol_def_flat(lib_name, sym_name, symbols_dir=directory)
+            if sym_def is not None:
+                doc.embed_lib_symbol(sym_def)
+                return True
     if placeholder is not None:
         doc.embed_lib_symbol(placeholder.definition)
         return True
