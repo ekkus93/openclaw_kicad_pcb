@@ -702,8 +702,26 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
   const diagnostics = result.generated_schematic_diagnostics ?? null
   const jobPath = sessionId ? `/jobs/${job.id}?from=${encodeURIComponent(sessionId)}` : `/jobs/${job.id}`
+  const hasPreview = job.artifacts.includes('schematic_preview.png')
+  const downloadArtifacts = job.artifacts.filter((a) => a !== 'schematic_preview.png' && !a.endsWith('.svg'))
   return (
     <div className={stackColumnClass}>
+      {hasPreview ? (
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
+            <h2>Schematic Preview</h2>
+            <p className={mutedCopyClass}>
+              Generated from <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5 text-[0.85rem]">OpenClaw_Managed.kicad_sch</code>
+            </p>
+          </div>
+          <img
+            src={`/api/jobs/${job.id}/artifacts/schematic_preview.png`}
+            alt="Generated schematic preview"
+            className="w-full rounded-[18px] border border-[rgba(88,63,39,0.1)]"
+            style={{ background: '#fff' }}
+          />
+        </section>
+      ) : null}
       <section className={panelSoftClass}>
         <div className={headingGroupClass}>
           <h2>Latest Job</h2>
@@ -722,8 +740,8 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
           <Link className={buttonSecondaryClass} to={jobPath}>
             Open Job Detail
           </Link>
-          {job.artifacts.length > 0
-            ? job.artifacts.map((artifact) => (
+          {downloadArtifacts.length > 0
+            ? downloadArtifacts.map((artifact) => (
                 <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
                   {artifact}
                 </a>
@@ -1773,6 +1791,26 @@ function JobPage() {
         </div>
       </section>
 
+      {job.artifacts.includes('schematic_preview.png') ? (
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
+            <h2>Schematic Preview</h2>
+            <p className={mutedCopyClass}>
+              Generated from{' '}
+              <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5 text-[0.85rem]">
+                OpenClaw_Managed.kicad_sch
+              </code>
+            </p>
+          </div>
+          <img
+            src={`/api/jobs/${job.id}/artifacts/schematic_preview.png`}
+            alt="Generated schematic preview"
+            className="w-full rounded-[18px] border border-[rgba(88,63,39,0.1)]"
+            style={{ background: '#fff' }}
+          />
+        </section>
+      ) : null}
+
       <div className={dashboardGridClass}>
         <section className={panelSoftClass}>
           <div className={headingGroupClass}>
@@ -1780,11 +1818,13 @@ function JobPage() {
           </div>
           {job.artifacts.length ? (
             <div className={buttonRowClass}>
-              {job.artifacts.map((artifact) => (
-                <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
-                  {artifact}
-                </a>
-              ))}
+              {job.artifacts
+                .filter((a) => a !== 'schematic_preview.png' && !a.endsWith('.svg'))
+                .map((artifact) => (
+                  <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
+                    {artifact}
+                  </a>
+                ))}
             </div>
           ) : (
             <p className={emptyCopyClass}>No artifacts — generation did not complete.</p>

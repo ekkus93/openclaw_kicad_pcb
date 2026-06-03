@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import logging
 import shutil
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.commands._project import create_project_files
 from kicad_pcb.commands._sch_apply import _apply_netlist_to_project, _ApplyNetlistRequest
 from kicad_pcb.commands._validate import (
@@ -176,6 +178,49 @@ def validate_netlist_dict(
     )
 
 
+def _generate_schematic_preview(
+    managed_sch_path: Path,
+    artifacts_dir: Path,
+) -> Path | None:
+    """Export a PNG preview of the managed schematic into *artifacts_dir*.
+
+    Returns the PNG path on success, ``None`` if any step fails.
+    This is always best-effort — failures are logged but never raise.
+    """
+    kicad_cli_bin = shutil.which("kicad-cli")
+    rsvg_bin = shutil.which("rsvg-convert")
+    if not kicad_cli_bin or not rsvg_bin:
+        return None
+    if not managed_sch_path.is_file():
+        return None
+
+    svg_path = artifacts_dir / "schematic_preview.svg"
+    png_path = artifacts_dir / "schematic_preview.png"
+
+    try:
+        cli = KicadCliAdapter(kicad_cli=kicad_cli_bin)
+        result = cli.export_svg_sch(managed_sch_path, svg_path)
+        # kicad-cli may output a file named after the schematic inside the dir
+        if not svg_path.exists():
+            candidates = list(artifacts_dir.glob("*.svg"))
+            if candidates:
+                svg_path = candidates[0]
+        if not svg_path.exists() or result.returncode != 0:
+            return None
+        conv = subprocess.run(
+            [rsvg_bin, "--output", str(png_path), str(svg_path)],
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+        if conv.returncode != 0 or not png_path.exists():
+            return None
+        return png_path
+    except Exception:
+        LOGGER.debug("Schematic preview generation failed", exc_info=True)
+        return None
+
+
 def generate_project_from_netlist_job(
     *,
     settings: WebSettings,
@@ -226,6 +271,10 @@ def generate_project_from_netlist_job(
         ):
             shutil.copy2(apply_result.warning_report_path, record.artifacts_dir / "warnings.json")
 
+        _generate_schematic_preview(
+            apply_result.managed_schematic_path,
+            record.artifacts_dir,
+        )
         project_zip_path = create_project_zip(project.path, record.artifacts_dir)
         warnings_artifact_path = record.artifacts_dir / "warnings.json"
         result_payload: dict[str, Any] = {
