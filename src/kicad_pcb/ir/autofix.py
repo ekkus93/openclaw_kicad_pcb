@@ -663,6 +663,113 @@ def _fix_options(options: Any) -> tuple[dict[str, Any] | None, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Layer 3b: power-net pin deduplication
+# ---------------------------------------------------------------------------
+
+_POWER_NET_EXACT: frozenset[str] = frozenset(
+    {
+        "gnd",
+        "vcc",
+        "vss",
+        "vdd",
+        "pwr",
+        "power",
+        "agnd",
+        "dgnd",
+        "pgnd",
+        "avcc",
+        "dvcc",
+        "avdd",
+        "dvdd",
+    }
+)
+
+
+def _is_power_net(name: str) -> bool:
+    """Return True if *name* looks like a power/ground rail net."""
+    n = name.strip().lower()
+    if n in _POWER_NET_EXACT:
+        return True
+    # +NV / -NV patterns (e.g. +5V, +3.3V, -12V, +1.8v)
+    return len(n) >= 3 and n[0] in ("+", "-") and n[-1] == "v"
+
+
+def _fix_power_net_pin_duplicates(
+    raw_nets: list[Any],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Remove pins from power nets when the same pin also appears in a signal net.
+
+    When the LLM generates IR that places a component pin in both a power rail
+    (e.g. GND) and a separate signal net (e.g. RED_LED_NODE), the correct
+    interpretation is that the pin belongs to the signal net — the power
+    connection is made through the circuit path, not by direct power-net
+    membership.  This is a systematic LLM mistake for LED cathodes,
+    resistor/capacitor ends on power rails, and similar nodes.
+
+    The fix: when a (ref, pin) pair appears in at least one power net AND at
+    least one non-power (signal) net, remove the pair from every power net it
+    appears in.  If a power net becomes empty as a result, it is also dropped.
+    """
+    fixes: list[str] = []
+
+    # Build (ref, pin) -> [net_name, ...] membership map
+    membership: dict[tuple[str, str], list[str]] = {}
+    for net in raw_nets:
+        if not isinstance(net, dict):
+            continue
+        net_name = str(net.get("name", ""))
+        for pin_ref in net.get("pins") or []:
+            if not isinstance(pin_ref, dict):
+                continue
+            ref = str(pin_ref.get("ref", ""))
+            pin = str(pin_ref.get("pin", ""))
+            if ref and pin:
+                membership.setdefault((ref, pin), []).append(net_name)
+
+    # Identify (ref, pin) pairs that straddle a power net and a signal net
+    to_remove: dict[str, set[tuple[str, str]]] = {}  # power_net_name -> {(ref, pin)}
+    for (ref, pin), net_names in membership.items():
+        power = [n for n in net_names if _is_power_net(n)]
+        signal = [n for n in net_names if not _is_power_net(n)]
+        if not (power and signal):
+            continue
+        for pnet in power:
+            to_remove.setdefault(pnet, set()).add((ref, pin))
+        # One fix description per removed membership
+        for pnet in power:
+            kept = signal[0] if len(signal) == 1 else f"[{', '.join(signal)}]"
+            fixes.append(
+                f'{ref} pin {pin}: removed from power net "{pnet}" '
+                f'(pin belongs to signal net "{kept}")'
+            )
+
+    if not to_remove:
+        return [net for net in raw_nets if isinstance(net, dict)], []
+
+    result: list[dict[str, Any]] = []
+    for net in raw_nets:
+        if not isinstance(net, dict):
+            continue
+        net_name = str(net.get("name", ""))
+        removals = to_remove.get(net_name)
+        if removals is None:
+            result.append(net)
+            continue
+        kept_pins = [
+            pr
+            for pr in (net.get("pins") or [])
+            if isinstance(pr, dict)
+            and (str(pr.get("ref", "")), str(pr.get("pin", ""))) not in removals
+        ]
+        if not kept_pins:
+            fixes.append(f'net "{net_name}": dropped (became empty after deduplication)')
+            continue
+        result.append({**net, "pins": kept_pins})
+
+    return result, fixes
+
+
+# ---------------------------------------------------------------------------
 # Layer 4: pin alias fixes
 # ---------------------------------------------------------------------------
 
@@ -787,6 +894,11 @@ def autofix_circuit_ir(
         all_fixes.extend(membership_fixes)
         data["nets"], net_fixes = _fix_net_pin_types(data["nets"])
         all_fixes.extend(net_fixes)
+
+    # -- Layer 3b: power-net pin deduplication --
+    if isinstance(data.get("nets"), list):
+        data["nets"], power_dedup_fixes = _fix_power_net_pin_duplicates(data["nets"])
+        all_fixes.extend(power_dedup_fixes)
 
     fixed_options, option_fixes = _fix_options(data.get("options"))
     all_fixes.extend(option_fixes)
