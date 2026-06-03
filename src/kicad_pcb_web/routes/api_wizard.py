@@ -10,6 +10,7 @@ from ..deps import get_llm_client, get_settings
 from ..services.llm import LlmClient
 from ..services.wizard import (
     approve_wizard_spec,
+    clear_wizard_ir,
     create_wizard_session,
     generate_wizard_ir,
     generate_wizard_project,
@@ -91,6 +92,15 @@ def approve_spec(
 ) -> WizardSessionDetail:
     _read_session_or_404(settings, session_id)
     return approve_wizard_spec(settings=settings, session_id=session_id)
+
+
+@router.post("/wizard/sessions/{session_id}/clear-ir", response_model=WizardSessionDetail)
+def clear_ir(
+    session_id: str,
+    settings: WebSettings = Depends(get_settings),
+) -> WizardSessionDetail:
+    _read_session_or_404(settings, session_id)
+    return clear_wizard_ir(settings=settings, session_id=session_id)
 
 
 @router.post("/wizard/sessions/{session_id}/generate-ir", response_model=WizardSessionDetail)

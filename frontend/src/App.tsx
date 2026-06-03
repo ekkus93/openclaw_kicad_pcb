@@ -959,6 +959,26 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     }
   }
 
+  async function handleClearIr(): Promise<void> {
+    if (!session) {
+      return
+    }
+    setBusyMessage('Clearing Circuit IR…')
+    setErrorMessage(null)
+    try {
+      const response = await api.clearWizardIr(session.id)
+      setSession(response)
+      setLatestJob(null)
+      startTransition(() => {
+        navigate(`/wizard/${response.id}/ir`)
+      })
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error))
+    } finally {
+      setBusyMessage(null)
+    }
+  }
+
   async function handleGenerateProject(): Promise<void> {
     if (!session) {
       return
@@ -1456,6 +1476,16 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                   {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}
                 </button>
               )}
+              {session.ir_json ? (
+                <button
+                  type="button"
+                  className={buttonDangerClass}
+                  disabled={Boolean(busyMessage)}
+                  onClick={() => void handleClearIr()}
+                >
+                  Clear Circuit IR
+                </button>
+              ) : null}
             </div>
           </section>
 

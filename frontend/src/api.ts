@@ -110,6 +110,12 @@ export const api = {
       body: body({}),
     })
   },
+  clearWizardIr(sessionId: string): Promise<WizardSessionDetail> {
+    return requestJson(`/api/wizard/sessions/${encodeURIComponent(sessionId)}/clear-ir`, {
+      method: 'POST',
+      body: body({}),
+    })
+  },
   generateWizardIr(sessionId: string): Promise<WizardSessionDetail> {
     return requestJson(`/api/wizard/sessions/${encodeURIComponent(sessionId)}/generate-ir`, {
       method: 'POST',

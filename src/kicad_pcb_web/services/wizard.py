@@ -578,6 +578,24 @@ def approve_wizard_spec(*, settings: WebSettings, session_id: str) -> WizardSess
     return _persist_session(settings, session)
 
 
+def clear_wizard_ir(*, settings: WebSettings, session_id: str) -> WizardSessionDetail:
+    session = read_wizard_session(settings, session_id)
+    if not session.spec_approved:
+        raise UserError("Cannot clear Circuit IR on a session whose spec is not approved.")
+    session = session.model_copy(
+        update={
+            "status": "spec_approved",
+            "ir_json": None,
+            "ir_validation": None,
+            "latest_job_id": None,
+            "error": None,
+            "updated_at": _utc_now(),
+        }
+    )
+    LOGGER.info("wizard circuit IR cleared", extra={"session_id": session.id})
+    return _persist_session(settings, session)
+
+
 def generate_wizard_ir(
     *,
     settings: WebSettings,
