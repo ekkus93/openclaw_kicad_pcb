@@ -1256,48 +1256,71 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
             <div className={headingGroupClass}>
               <h2>Circuit Specification</h2>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h3>Purpose</h3>
-                <p>{session.spec.purpose}</p>
+            {/* Open questions / blockers — show at the top so they're impossible to miss */}
+            {(session.open_questions.length > 0 || session.unsupported_reasons.length > 0) ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {session.open_questions.length > 0 ? (
+                  <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-2')}>
+                    <strong className="text-[0.8rem] font-bold uppercase tracking-[0.1em]">Open Questions</strong>
+                    <LabelList items={session.open_questions} />
+                  </div>
+                ) : null}
+                {session.unsupported_reasons.length > 0 ? (
+                  <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'flex-col items-start gap-2')}>
+                    <strong className="text-[0.8rem] font-bold uppercase tracking-[0.1em]">Unsupported</strong>
+                    <LabelList items={session.unsupported_reasons} />
+                  </div>
+                ) : null}
               </div>
-              <div>
-                <h3>Inputs</h3>
-                <PortList ports={session.spec.inputs} />
-              </div>
-              <div>
-                <h3>Outputs</h3>
-                <PortList ports={session.spec.outputs} />
-              </div>
-              <div>
-                <h3>Supply Rails</h3>
-                <RailList rails={session.spec.supply_rails} />
-              </div>
-              <div>
-                <h3>Acceptance Criteria</h3>
-                <LabelList items={session.spec.acceptance_criteria} />
-              </div>
-              <div>
-                <h3>Constraints</h3>
-                <LabelList items={session.spec.constraints} />
-              </div>
-              {session.open_questions.length > 0 ? (
-                <div>
-                  <h3>Open Questions</h3>
-                  <LabelList items={session.open_questions} />
+            ) : null}
+
+            {/* 1 — Purpose */}
+            <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+              <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-[0.13em] text-[var(--brand)]">Purpose</p>
+              <p className="text-[1rem] leading-7">{session.spec.purpose}</p>
+            </div>
+
+            {/* 2 — Interface: inputs, outputs, rails */}
+            <div>
+              <p className="mb-2 text-[0.75rem] font-bold uppercase tracking-[0.13em] text-[var(--muted)]">Interface</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+                  <p className="mb-2 text-[0.82rem] font-semibold text-[var(--text)]">Inputs</p>
+                  <PortList ports={session.spec.inputs} />
                 </div>
-              ) : null}
-              {session.unsupported_reasons.length > 0 ? (
-                <div>
-                  <h3>Unsupported Reasons</h3>
-                  <LabelList items={session.unsupported_reasons} />
+                <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+                  <p className="mb-2 text-[0.82rem] font-semibold text-[var(--text)]">Outputs</p>
+                  <PortList ports={session.spec.outputs} />
                 </div>
-              ) : null}
-              <div className="md:col-span-2">
-                <h3>Blocks</h3>
-                <BlockList blocks={session.spec.blocks} />
+                <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+                  <p className="mb-2 text-[0.82rem] font-semibold text-[var(--text)]">Supply Rails</p>
+                  <RailList rails={session.spec.supply_rails} />
+                </div>
               </div>
             </div>
+
+            {/* 3 — Requirements: acceptance criteria + constraints */}
+            <div>
+              <p className="mb-2 text-[0.75rem] font-bold uppercase tracking-[0.13em] text-[var(--muted)]">Requirements</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+                  <p className="mb-2 text-[0.82rem] font-semibold text-[var(--text)]">Acceptance Criteria</p>
+                  <LabelList items={session.spec.acceptance_criteria} />
+                </div>
+                <div className="rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] p-4">
+                  <p className="mb-2 text-[0.82rem] font-semibold text-[var(--text)]">Constraints</p>
+                  <LabelList items={session.spec.constraints} />
+                </div>
+              </div>
+            </div>
+
+            {/* 4 — Architecture: blocks */}
+            {session.spec.blocks.length > 0 ? (
+              <div>
+                <p className="mb-2 text-[0.75rem] font-bold uppercase tracking-[0.13em] text-[var(--muted)]">Architecture</p>
+                <BlockList blocks={session.spec.blocks} />
+              </div>
+            ) : null}
           </section>
 
           <section className={panelSoftClass}>
