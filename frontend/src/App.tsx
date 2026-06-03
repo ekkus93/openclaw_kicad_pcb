@@ -561,6 +561,112 @@ function WarningsPanel({ warnings }: { warnings: unknown[] }) {
   )
 }
 
+// ─── JSON tree viewer ────────────────────────────────────────────────────────
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue }
+
+function JsonTreeNode({
+  value,
+  depth = 0,
+}: {
+  value: JsonValue
+  depth?: number
+}) {
+  const [expanded, setExpanded] = useState(depth < 2)
+  const indent = depth * 16
+
+  if (value === null) {
+    return <span className="text-[var(--muted)]">null</span>
+  }
+  if (typeof value === 'boolean') {
+    return <span className="text-[#0d4c74]">{String(value)}</span>
+  }
+  if (typeof value === 'number') {
+    return <span className="text-[var(--accent)]">{value}</span>
+  }
+  if (typeof value === 'string') {
+    return <span className="text-[var(--brand-deep)]">&quot;{value}&quot;</span>
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <span className="text-[var(--muted)]">[ ]</span>
+    }
+    return (
+      <span>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded px-0.5 hover:bg-[rgba(88,63,39,0.08)] transition-colors"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <span className="text-[0.68rem] text-[var(--muted)] select-none">{expanded ? '▾' : '▸'}</span>
+          {!expanded ? (
+            <span className="text-[var(--muted)] text-[0.82rem]">[{value.length} {value.length === 1 ? 'item' : 'items'}]</span>
+          ) : (
+            <span className="text-[var(--muted)]">[</span>
+          )}
+        </button>
+        {expanded ? (
+          <span className="block">
+            {value.map((item, i) => (
+              <span key={i} className="flex items-start gap-1" style={{ paddingLeft: indent + 16 }}>
+                <span className="text-[var(--muted)] text-[0.78rem] mt-[3px] select-none shrink-0">{i}</span>
+                <span className="text-[var(--muted)] shrink-0">:</span>
+                <span><JsonTreeNode value={item as JsonValue} depth={depth + 1} /></span>
+                {i < value.length - 1 ? <span className="text-[var(--muted)]">,</span> : null}
+              </span>
+            ))}
+            <span className="block text-[var(--muted)]" style={{ paddingLeft: indent }}>]</span>
+          </span>
+        ) : null}
+      </span>
+    )
+  }
+
+  // Object
+  const entries = Object.entries(value as Record<string, JsonValue>)
+  if (entries.length === 0) {
+    return <span className="text-[var(--muted)]">{'{ }'}</span>
+  }
+  return (
+    <span>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 rounded px-0.5 hover:bg-[rgba(88,63,39,0.08)] transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <span className="text-[0.68rem] text-[var(--muted)] select-none">{expanded ? '▾' : '▸'}</span>
+        {!expanded ? (
+          <span className="text-[var(--muted)] text-[0.82rem]">{'{'}  {entries.length} {entries.length === 1 ? 'key' : 'keys'}  {'}'}</span>
+        ) : (
+          <span className="text-[var(--muted)]">{'{'}</span>
+        )}
+      </button>
+      {expanded ? (
+        <span className="block">
+          {entries.map(([k, v], i) => (
+            <span key={k} className="flex items-start gap-1.5" style={{ paddingLeft: indent + 16 }}>
+              <span className="text-[var(--text)] font-medium shrink-0">{k}</span>
+              <span className="text-[var(--muted)] shrink-0">:</span>
+              <span><JsonTreeNode value={v as JsonValue} depth={depth + 1} /></span>
+              {i < entries.length - 1 ? <span className="text-[var(--muted)]">,</span> : null}
+            </span>
+          ))}
+          <span className="block text-[var(--muted)]" style={{ paddingLeft: indent }}>{'}'}</span>
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+function JsonTreeViewer({ value }: { value: unknown }) {
+  return (
+    <div className="overflow-auto rounded-[18px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,252,247,0.8)] p-4 font-[var(--font-mono)] text-[0.85rem] leading-[1.8]">
+      <JsonTreeNode value={value as JsonValue} depth={0} />
+    </div>
+  )
+}
+
 function NotFoundScreen({ heading, message }: { heading: string; message?: string }) {
   return (
     <div className={pageStackClass}>
@@ -1745,7 +1851,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               title={`Raw Circuit IR JSON — ${session.ir_validation?.component_count ?? '?'} components, ${session.ir_validation?.net_count ?? '?'} nets`}
               defaultOpen={session.ir_validation?.valid === false}
             >
-              <pre className={jsonBlockClass}>{formatJson(session.ir_json)}</pre>
+              <JsonTreeViewer value={session.ir_json} />
             </DisclosurePanel>
           ) : null}
 
