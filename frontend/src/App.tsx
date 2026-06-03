@@ -70,8 +70,6 @@ const jsonBlockClass =
 const emptyCopyClass = 'text-[var(--muted)]'
 const recordListClass = 'm-0 grid list-none gap-3 p-0'
 const compactListItemClass = 'flex items-baseline justify-between gap-3 lg:flex-col lg:items-start'
-const tagListClass = 'm-0 grid list-none gap-3 p-0 [grid-template-columns:repeat(auto-fit,minmax(160px,max-content))]'
-const tagItemClass = 'rounded-full border border-[rgba(109,47,20,0.12)] bg-[rgba(255,236,208,0.82)] px-[0.8rem] py-[0.45rem]'
 const detailListClass = 'm-0 grid list-none gap-x-3 gap-y-2 p-0 [grid-template-columns:max-content_minmax(0,1fr)]'
 const detailListGridClass = `${detailListClass} md:[grid-template-columns:repeat(2,max-content_minmax(0,1fr))]`
 const blockGridClass = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]'
@@ -413,9 +411,9 @@ function LabelList({ items }: { items: string[] }) {
     return <p className={emptyCopyClass}>None recorded.</p>
   }
   return (
-    <ul className={tagListClass}>
+    <ul className="m-0 grid list-disc gap-1.5 pl-5">
       {items.map((item) => (
-        <li key={item} className={tagItemClass}>
+        <li key={item} className="text-[0.95rem] leading-6 text-[var(--text)]">
           {item}
         </li>
       ))}
