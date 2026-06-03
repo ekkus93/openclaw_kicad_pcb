@@ -9,6 +9,7 @@ import {
   Routes,
   useNavigate,
   useParams,
+  useSearchParams,
 } from 'react-router-dom'
 
 import { ApiError, api } from './api'
@@ -31,12 +32,14 @@ const WIZARD_STEP_ORDER: Record<WizardStep, number> = {
   generate: 3,
 }
 
-const WIZARD_STEP_META: Record<WizardStep, { label: string; summary: string }> = {
-  describe: { label: 'Describe Circuit', summary: 'Start a session and refine the brief.' },
-  spec: { label: 'Review Spec', summary: 'Approve or revise the drafted specification.' },
-  ir: { label: 'Review Circuit IR', summary: 'Generate, validate, and inspect the IR payload.' },
-  generate: { label: 'Generate Project', summary: 'Launch the deterministic KiCad generation path.' },
+const WIZARD_STEP_META: Record<WizardStep, { label: string; abbrev: string; summary: string }> = {
+  describe: { label: 'Describe Circuit', abbrev: 'Describe', summary: 'Start a session and refine the brief.' },
+  spec: { label: 'Review Spec', abbrev: 'Spec', summary: 'Approve or revise the drafted specification.' },
+  ir: { label: 'Review Circuit IR', abbrev: 'IR', summary: 'Generate, validate, and inspect the IR payload.' },
+  generate: { label: 'Generate Project', abbrev: 'Generate', summary: 'Launch the deterministic KiCad generation path.' },
 }
+
+const LS_LAST_SESSION = 'lastWizardSession'
 
 const pageStackClass = 'grid gap-4 sm:gap-5'
 const stackColumnClass = 'grid gap-4 sm:gap-5'
@@ -59,6 +62,7 @@ const buttonBaseClass =
 const buttonPrimaryClass =
   `${buttonBaseClass} bg-[linear-gradient(135deg,var(--brand)_0%,var(--brand-deep)_100%)] text-[#fff8f1] shadow-[0_18px_36px_rgba(109,47,20,0.2)] hover:shadow-[0_22px_44px_rgba(109,47,20,0.24)]`
 const buttonSecondaryClass = `${buttonBaseClass} border-[rgba(24,75,69,0.12)] bg-[rgba(255,255,255,0.72)] text-[var(--accent)] hover:bg-[rgba(255,255,255,0.9)]`
+const buttonDangerClass = `${buttonBaseClass} border-[rgba(154,45,40,0.2)] bg-[rgba(255,255,255,0.72)] text-[var(--error)] hover:bg-[rgba(154,45,40,0.06)]`
 const bannerBaseClass = 'flex items-center gap-3 rounded-[18px] border px-[1.1rem] py-[0.9rem] shadow-[0_10px_24px_rgba(71,43,19,0.06)]'
 const spinnerClass = 'h-4 w-4 animate-spin rounded-full border-2 border-[rgba(13,76,116,0.16)] border-t-current'
 const jsonBlockClass =
@@ -72,15 +76,11 @@ const detailListClass = 'm-0 grid list-none gap-x-3 gap-y-2 p-0 [grid-template-c
 const detailListGridClass = `${detailListClass} md:[grid-template-columns:repeat(2,max-content_minmax(0,1fr))]`
 const blockGridClass = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]'
 const blockCardClass = 'grid gap-2 rounded-[20px] border border-[rgba(88,63,39,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.7),rgba(255,247,235,0.62))] p-4 shadow-[0_12px_28px_rgba(71,43,19,0.06)]'
-const stepTrackerClass = 'm-0 grid list-none gap-3 p-0 lg:grid-cols-4'
 const transcriptListClass = 'grid gap-4'
 const transcriptEntryClass = 'grid gap-2 rounded-[22px] border p-4 shadow-[0_10px_24px_rgba(71,43,19,0.05)] sm:max-w-[88%]'
 const heroLeadClass = 'max-w-[60ch] text-[1.02rem] leading-7 text-[var(--muted)]'
 const heroStatGridClass = 'mt-6 grid gap-3 sm:grid-cols-3'
 const heroStatCardClass = 'rounded-[22px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.58)] px-4 py-3 backdrop-blur-sm'
-const sideKickerClass = 'text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]'
-const stepCardClass = 'grid gap-3 rounded-[22px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.7)] p-4 shadow-[0_10px_24px_rgba(71,43,19,0.05)]'
-const stepBadgeClass = 'inline-flex items-center rounded-full px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.12em]'
 const wizardFormClass = 'grid gap-4 sm:gap-5'
 const wizardFieldGridClass = 'grid gap-3 sm:gap-4 md:grid-cols-2'
 const wizardFieldSectionClass = 'grid gap-4 rounded-[22px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.46)] p-3.5 sm:p-4'
@@ -97,6 +97,383 @@ const composerMetaRowClass = 'flex items-center justify-between gap-3 text-[0.82
 const workflowStepListClass = 'm-0 grid list-none gap-2 p-0 sm:grid-cols-2'
 const workflowStepItemClass = 'rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.68)] px-4 py-3 text-sm font-medium text-[var(--text)]'
 const compactStatusRowClass = 'flex flex-wrap items-center gap-2'
+const helpTextClass = 'text-[0.82rem] leading-[1.55] text-[var(--muted)]'
+
+// ─── Utility functions ────────────────────────────────────────────────────────
+
+function statusLabel(status: WizardStatus | string): string {
+  const labels: Record<string, string> = {
+    drafting_spec: 'Drafting spec…',
+    awaiting_user_clarification: 'Your input needed',
+    spec_ready_for_review: 'Spec ready for review',
+    spec_approved: 'Spec approved',
+    drafting_ir: 'Generating Circuit IR…',
+    ir_needs_repair: 'IR needs repair',
+    ir_ready_for_generation: 'IR ready',
+    generation_started: 'Generating project…',
+    completed: 'Completed',
+    failed: 'Failed',
+    succeeded: 'Succeeded',
+    queued: 'Queued',
+    running: 'Running',
+    cancelled: 'Cancelled',
+  }
+  return labels[status] ?? String(status).replaceAll('_', ' ')
+}
+
+function formatDate(isoString: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(isoString))
+  } catch {
+    return isoString
+  }
+}
+
+function displaySymbolsDir(raw: string): string {
+  if (!raw) return 'None'
+  const normalized = raw.replace(/\\/g, '/')
+  if (normalized.includes('/resources/symbols') || normalized.includes('kicad_pcb/resources')) {
+    return 'Built-in symbols'
+  }
+  const parts = normalized.split('/')
+  return parts[parts.length - 1] || parts[parts.length - 2] || raw
+}
+
+function joinClasses(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
+}
+
+function formatJson(payload: unknown): string {
+  return JSON.stringify(payload, null, 2)
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError || error instanceof Error) {
+    return error.message
+  }
+  return 'Unexpected error.'
+}
+
+function readLastSession(): string | null {
+  try { return localStorage.getItem(LS_LAST_SESSION) } catch { return null }
+}
+
+function writeLastSession(id: string): void {
+  try { localStorage.setItem(LS_LAST_SESSION, id) } catch { /* ignore */ }
+}
+
+// ─── Status helpers ───────────────────────────────────────────────────────────
+
+function statusBannerToneClass(tone: ReturnType<typeof statusTone>): string {
+  const tones: Record<ReturnType<typeof statusTone>, string> = {
+    active: 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
+    success: 'border-[rgba(35,102,79,0.2)] bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
+    warning: 'border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
+    error: 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
+    neutral: 'border-[rgba(117,99,80,0.16)] bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
+  }
+  return tones[tone]
+}
+
+function statusPillToneClass(tone: ReturnType<typeof statusTone>): string {
+  const tones: Record<ReturnType<typeof statusTone>, string> = {
+    active: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
+    success: 'bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
+    warning: 'bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
+    error: 'bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
+    neutral: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
+  }
+  return tones[tone]
+}
+
+function statusTone(status: WizardStatus | string): 'neutral' | 'active' | 'success' | 'warning' | 'error' {
+  if (
+    status === 'spec_ready_for_review' ||
+    status === 'spec_approved' ||
+    status === 'drafting_ir' ||
+    status === 'generation_started'
+  ) {
+    return 'active'
+  }
+  if (status === 'completed' || status === 'ir_ready_for_generation' || status === 'succeeded') {
+    return 'success'
+  }
+  if (status === 'awaiting_user_clarification' || status === 'ir_needs_repair' || status === 'running') {
+    return 'warning'
+  }
+  if (status === 'failed' || status === 'cancelled') {
+    return 'error'
+  }
+  return 'neutral'
+}
+
+// ─── Wizard step helpers ──────────────────────────────────────────────────────
+
+function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
+  if (session.status === 'spec_ready_for_review') {
+    return 'spec'
+  }
+  if (
+    session.status === 'spec_approved' ||
+    session.status === 'drafting_ir' ||
+    session.status === 'ir_needs_repair'
+  ) {
+    return 'ir'
+  }
+  if (
+    session.status === 'ir_ready_for_generation' ||
+    session.status === 'generation_started' ||
+    session.status === 'completed'
+  ) {
+    return 'generate'
+  }
+  if (session.status === 'failed') {
+    if (session.ir_json || session.ir_validation) {
+      return 'generate'
+    }
+    if (session.spec) {
+      return 'spec'
+    }
+  }
+  return 'describe'
+}
+
+function wizardStepUnlocked(session: WizardSessionDetail, step: WizardStep): boolean {
+  return WIZARD_STEP_ORDER[step] <= WIZARD_STEP_ORDER[canonicalWizardStep(session)]
+}
+
+function wizardStepState(session: WizardSessionDetail, currentStep: WizardStep, step: WizardStep): 'current' | 'done' | 'ready' | 'locked' {
+  if (currentStep === step) {
+    return 'current'
+  }
+  if (WIZARD_STEP_ORDER[step] < WIZARD_STEP_ORDER[currentStep]) {
+    return 'done'
+  }
+  if (wizardStepUnlocked(session, step)) {
+    return 'ready'
+  }
+  return 'locked'
+}
+
+function wizardCurrentCheckpoint(session: WizardSessionDetail, step: WizardStep): { title: string; detail: string } {
+  if (step === 'describe') {
+    return {
+      title: 'Describe the circuit in enough detail to draft a reviewable spec.',
+      detail:
+        session.status === 'awaiting_user_clarification'
+          ? 'Answer the missing questions directly in the request box so the next spec draft closes the open gaps.'
+          : 'Include the circuit purpose, rails, I/O, and constraints. Keep iterating until the spec route unlocks.',
+    }
+  }
+  if (step === 'spec') {
+    return {
+      title: 'Treat this as the approval gate before any IR is generated.',
+      detail:
+        session.open_questions.length || session.unsupported_reasons.length
+          ? 'Resolve every open question and unsupported reason before approving the spec.'
+          : 'If the purpose, blocks, ports, rails, and constraints all match intent, approve the spec to unlock IR generation.',
+    }
+  }
+  if (step === 'ir') {
+    return {
+      title: 'Generate and inspect Circuit IR before handing off generation.',
+      detail: session.ir_validation?.valid
+        ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
+        : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',
+    }
+  }
+  return {
+    title: 'Use the validated IR as the deterministic handoff into project generation.',
+    detail: session.latest_job_id
+      ? 'A job already exists for this session. Review the latest artifacts or rerun generation if needed.'
+      : 'Once the IR is valid, generate the project and review artifacts and diagnostics on the linked job.',
+  }
+}
+
+// ─── Small UI components ──────────────────────────────────────────────────────
+
+function StatusPill({ tone, children }: { tone: ReturnType<typeof statusTone>; children: string }) {
+  return (
+    <span
+      className={joinClasses(
+        'inline-flex items-center rounded-full px-[0.7rem] py-[0.35rem] text-[0.83rem] font-bold',
+        statusPillToneClass(tone),
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function JsonPanel({ title, payload }: { title: string; payload: unknown }) {
+  return (
+    <section className={panelSoftClass}>
+      <div className={headingGroupClass}>
+        <h2>{title}</h2>
+      </div>
+      <pre className={jsonBlockClass}>{formatJson(payload)}</pre>
+    </section>
+  )
+}
+
+function DisclosurePanel({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className={panelSoftClass}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 text-left"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <h2>{title}</h2>
+        <span
+          className={joinClasses(
+            'flex-shrink-0 text-[1.1rem] leading-none text-[var(--muted)] transition-transform duration-150',
+            open ? 'rotate-180' : '',
+          )}
+          aria-hidden="true"
+        >
+          ▾
+        </span>
+      </button>
+      {open ? <div className="mt-4">{children}</div> : null}
+    </section>
+  )
+}
+
+function WarningsPanel({ warnings }: { warnings: unknown[] }) {
+  if (!warnings.length) {
+    return (
+      <section className={panelSoftClass}>
+        <div className={headingGroupClass}>
+          <h2>Warnings</h2>
+        </div>
+        <p className={emptyCopyClass}>No warnings.</p>
+      </section>
+    )
+  }
+  return <JsonPanel title="Warnings" payload={warnings} />
+}
+
+function NotFoundScreen({ heading, message }: { heading: string; message?: string }) {
+  return (
+    <div className={pageStackClass}>
+      <section className={panelSoftClass}>
+        <div className={headingGroupClass}>
+          <h1>{heading}</h1>
+          {message ? <p className={mutedCopyClass}>{message}</p> : null}
+        </div>
+        <div className={buttonRowClass}>
+          <Link className={buttonPrimaryClass} to="/wizard">
+            ← Back to Wizard
+          </Link>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function MetricCard({ label, value, tone = 'warm' }: { label: string; value: string; tone?: 'warm' | 'cool' | 'neutral' }) {
+  const toneClass = {
+    warm: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,242,224,0.64))]',
+    cool: 'bg-[linear-gradient(180deg,rgba(244,255,253,0.82),rgba(222,244,240,0.68))]',
+    neutral: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(244,239,230,0.7))]',
+  }[tone]
+  return (
+    <div className={joinClasses(heroStatCardClass, toneClass)}>
+      <div className="text-[0.73rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</div>
+    </div>
+  )
+}
+
+function LabelList({ items }: { items: string[] }) {
+  if (!items.length) {
+    return <p className={emptyCopyClass}>None recorded.</p>
+  }
+  return (
+    <ul className={tagListClass}>
+      {items.map((item) => (
+        <li key={item} className={tagItemClass}>
+          {item}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PortList({ ports }: { ports: CircuitPortSpec[] }) {
+  if (!ports.length) {
+    return <p className={emptyCopyClass}>None recorded.</p>
+  }
+  return (
+    <ul className={recordListClass}>
+      {ports.map((port) => (
+        <li key={`${port.name}-${port.description ?? ''}`} className={compactListItemClass}>
+          <strong>{port.name}</strong>
+          <span className={mutedCopyClass}>{port.description ?? port.signal_type ?? 'No detail'}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function RailList({ rails }: { rails: CircuitRailSpec[] }) {
+  if (!rails.length) {
+    return <p className={emptyCopyClass}>None recorded.</p>
+  }
+  return (
+    <ul className={recordListClass}>
+      {rails.map((rail) => (
+        <li key={`${rail.name}-${rail.nominal_voltage ?? ''}`} className={compactListItemClass}>
+          <strong>{rail.name}</strong>
+          <span className={mutedCopyClass}>{rail.nominal_voltage ?? rail.description ?? 'No detail'}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function BlockList({ blocks }: { blocks: CircuitBlockSpec[] }) {
+  if (!blocks.length) {
+    return <p className={emptyCopyClass}>None recorded.</p>
+  }
+  return (
+    <div className={blockGridClass}>
+      {blocks.map((block) => (
+        <article key={`${block.name}-${block.block_type}`} className={blockCardClass}>
+          <strong>{block.name}</strong>
+          <span className={mutedCopyClass}>{block.block_type.replaceAll('_', ' ')}</span>
+          <p className={mutedCopyClass}>{block.summary}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+// ─── Transcript / Composer ────────────────────────────────────────────────────
 
 function TranscriptEntryCard({
   content,
@@ -175,358 +552,91 @@ function WizardComposer({
         />
       </label>
       <div className={composerMetaRowClass}>
-        <span>{value.trim() ? 'Ready to send' : 'Draft a message'}</span>
-        <span>Ctrl/Cmd+Enter to send</span>
+        {disabled ? (
+          <span>Waiting for response…</span>
+        ) : (
+          <>
+            <span>{value.trim() ? 'Ready to send' : 'Draft a message'}</span>
+            <span>Ctrl/Cmd+Enter to send</span>
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-function wizardStepState(session: WizardSessionDetail, currentStep: WizardStep, step: WizardStep): 'current' | 'done' | 'ready' | 'locked' {
-  if (currentStep === step) {
-    return 'current'
-  }
-  if (WIZARD_STEP_ORDER[step] < WIZARD_STEP_ORDER[currentStep]) {
-    return 'done'
-  }
-  if (wizardStepUnlocked(session, step)) {
-    return 'ready'
-  }
-  return 'locked'
-}
+// ─── WizardBreadcrumb ─────────────────────────────────────────────────────────
 
-function wizardStepActionLabel(step: WizardStep): string {
-  if (step === 'describe') {
-    return 'Refine the brief'
-  }
-  if (step === 'spec') {
-    return 'Approve the drafted spec'
-  }
-  if (step === 'ir') {
-    return 'Validate the generated IR'
-  }
-  return 'Run project generation'
-}
-
-function wizardCurrentCheckpoint(session: WizardSessionDetail, step: WizardStep): { title: string; detail: string } {
-  if (step === 'describe') {
-    return {
-      title: 'Describe the circuit in enough detail to draft a reviewable spec.',
-      detail:
-        session.status === 'awaiting_user_clarification'
-          ? 'Answer the missing questions directly in the request box so the next spec draft closes the open gaps.'
-          : 'Include the circuit purpose, rails, I/O, and constraints. Keep iterating until the spec route unlocks.',
-    }
-  }
-  if (step === 'spec') {
-    return {
-      title: 'Treat this as the approval gate before any IR is generated.',
-      detail:
-        session.open_questions.length || session.unsupported_reasons.length
-          ? 'Resolve every open question and unsupported reason before approving the spec.'
-          : 'If the purpose, blocks, ports, rails, and constraints all match intent, approve the spec to unlock IR generation.',
-    }
-  }
-  if (step === 'ir') {
-    return {
-      title: 'Generate and inspect Circuit IR before handing off generation.',
-      detail: session.ir_validation?.valid
-        ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
-        : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',
-    }
-  }
-  return {
-    title: 'Use the validated IR as the deterministic handoff into project generation.',
-    detail: session.latest_job_id
-      ? 'A job already exists for this session. Review the latest artifacts or rerun generation if needed.'
-      : 'Once the IR is valid, generate the project and review artifacts and diagnostics on the linked job.',
-  }
-}
-
-function WizardStepCard({
+function WizardBreadcrumb({
   session,
   currentStep,
-  step,
   sessionId,
 }: {
   session: WizardSessionDetail
   currentStep: WizardStep
-  step: WizardStep
   sessionId: string
 }) {
-  const state = wizardStepState(session, currentStep, step)
-  const toneClass = {
-    current: 'border-[rgba(161,69,26,0.28)] bg-[linear-gradient(180deg,rgba(255,247,234,0.98),rgba(251,238,216,0.88))]',
-    done: 'border-[rgba(35,102,79,0.18)] bg-[rgba(235,247,241,0.82)]',
-    ready: 'border-[rgba(22,93,143,0.18)] bg-[rgba(236,245,251,0.76)]',
-    locked: 'opacity-75',
-  }[state]
-  const badgeToneClass = {
-    current: 'bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]',
-    done: 'bg-[rgba(35,102,79,0.12)] text-[var(--success)]',
-    ready: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    locked: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }[state]
-  const badgeLabel = {
-    current: 'Current',
-    done: 'Done',
-    ready: 'Ready',
-    locked: 'Locked',
-  }[state]
-
   return (
-    <li className={joinClasses(stepCardClass, toneClass)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(161,69,26,0.12)] font-bold text-[var(--brand-deep)]">
-          {WIZARD_STEP_ORDER[step] + 1}
-        </div>
-        <span className={joinClasses(stepBadgeClass, badgeToneClass)}>{badgeLabel}</span>
-      </div>
-      <div className="grid gap-1.5">
-        {state === 'locked' ? (
-          <strong>{WIZARD_STEP_META[step].label}</strong>
-        ) : (
-          <Link className="font-semibold text-[var(--brand-deep)] no-underline" to={`/wizard/${sessionId}/${step}`}>
-            {WIZARD_STEP_META[step].label}
-          </Link>
-        )}
-        <p className={mutedCopyClass}>{WIZARD_STEP_META[step].summary}</p>
-      </div>
-      <p className="text-sm leading-6 text-[var(--muted)]">{wizardStepActionLabel(step)}</p>
-    </li>
-  )
-}
-
-function MetricCard({ label, value, tone = 'warm' }: { label: string; value: string; tone?: 'warm' | 'cool' | 'neutral' }) {
-  const toneClass = {
-    warm: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,242,224,0.64))]',
-    cool: 'bg-[linear-gradient(180deg,rgba(244,255,253,0.82),rgba(222,244,240,0.68))]',
-    neutral: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(244,239,230,0.7))]',
-  }[tone]
-  return (
-    <div className={joinClasses(heroStatCardClass, toneClass)}>
-      <div className="text-[0.73rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</div>
-    </div>
-  )
-}
-
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
-
-function formatJson(payload: unknown): string {
-  return JSON.stringify(payload, null, 2)
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>
-  }
-  return {}
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError || error instanceof Error) {
-    return error.message
-  }
-  return 'Unexpected error.'
-}
-
-function statusBannerToneClass(tone: ReturnType<typeof statusTone>): string {
-  const tones: Record<ReturnType<typeof statusTone>, string> = {
-    active: 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    success: 'border-[rgba(35,102,79,0.2)] bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
-    warning: 'border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
-    error: 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
-    neutral: 'border-[rgba(117,99,80,0.16)] bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }
-  return tones[tone]
-}
-
-function statusPillToneClass(tone: ReturnType<typeof statusTone>): string {
-  const tones: Record<ReturnType<typeof statusTone>, string> = {
-    active: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    success: 'bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
-    warning: 'bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
-    error: 'bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
-    neutral: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }
-  return tones[tone]
-}
-
-function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
-  if (session.status === 'spec_ready_for_review') {
-    return 'spec'
-  }
-  if (
-    session.status === 'spec_approved' ||
-    session.status === 'drafting_ir' ||
-    session.status === 'ir_needs_repair'
-  ) {
-    return 'ir'
-  }
-  if (
-    session.status === 'ir_ready_for_generation' ||
-    session.status === 'generation_started' ||
-    session.status === 'completed'
-  ) {
-    return 'generate'
-  }
-  if (session.status === 'failed') {
-    if (session.ir_json || session.ir_validation) {
-      return 'generate'
-    }
-    if (session.spec) {
-      return 'spec'
-    }
-  }
-  return 'describe'
-}
-
-function wizardStepUnlocked(session: WizardSessionDetail, step: WizardStep): boolean {
-  return WIZARD_STEP_ORDER[step] <= WIZARD_STEP_ORDER[canonicalWizardStep(session)]
-}
-
-function statusTone(status: WizardStatus | string): 'neutral' | 'active' | 'success' | 'warning' | 'error' {
-  if (
-    status === 'spec_ready_for_review' ||
-    status === 'spec_approved' ||
-    status === 'drafting_ir' ||
-    status === 'generation_started'
-  ) {
-    return 'active'
-  }
-  if (status === 'completed' || status === 'ir_ready_for_generation' || status === 'succeeded') {
-    return 'success'
-  }
-  if (status === 'awaiting_user_clarification' || status === 'ir_needs_repair' || status === 'running') {
-    return 'warning'
-  }
-  if (status === 'failed' || status === 'cancelled') {
-    return 'error'
-  }
-  return 'neutral'
-}
-
-function bannerForSession(session: WizardSessionDetail): string {
-  if (session.status === 'awaiting_user_clarification') {
-    return 'The wizard needs more detail before a reviewable spec can be approved.'
-  }
-  if (session.status === 'spec_ready_for_review') {
-    return 'The spec draft is ready for review and explicit approval.'
-  }
-  if (session.status === 'spec_approved') {
-    return 'The spec is approved. Circuit IR generation is now available.'
-  }
-  if (session.status === 'drafting_ir') {
-    return 'The backend is generating Circuit IR from the approved specification.'
-  }
-  if (session.status === 'ir_needs_repair') {
-    return 'The latest Circuit IR draft needs another repair pass before generation.'
-  }
-  if (session.status === 'ir_ready_for_generation') {
-    return 'Validated Circuit IR is ready for deterministic project generation.'
-  }
-  if (session.status === 'generation_started') {
-    return 'Project generation has started. Stay on this route for the result.'
-  }
-  if (session.status === 'completed') {
-    return 'Project generation completed. Review the job result and artifacts below.'
-  }
-  if (session.status === 'failed') {
-    return session.error?.message ?? 'The wizard hit an error.'
-  }
-  return 'Describe the circuit and keep refining the prompt until the spec is ready.'
-}
-
-function StatusPill({ tone, children }: { tone: ReturnType<typeof statusTone>; children: string }) {
-  return (
-    <span
-      className={joinClasses(
-        'inline-flex items-center rounded-full px-[0.7rem] py-[0.35rem] text-[0.83rem] font-bold capitalize',
-        statusPillToneClass(tone),
-      )}
+    <nav
+      aria-label="Wizard steps"
+      className="mb-2 rounded-[20px] border border-[var(--border)] bg-[rgba(255,252,247,0.9)] px-4 py-3 shadow-[0_6px_16px_rgba(71,43,19,0.06)]"
     >
-      {children}
-    </span>
+      <ol className="flex flex-wrap items-center gap-1">
+        {(Object.keys(WIZARD_STEP_META) as WizardStep[]).map((step, idx, arr) => {
+          const state = wizardStepState(session, currentStep, step)
+          const isLast = idx === arr.length - 1
+          const pill = (
+            <span
+              aria-current={state === 'current' ? 'step' : undefined}
+              className={joinClasses(
+                'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.82rem] font-medium transition-colors duration-150',
+                state === 'current'
+                  ? 'bg-[rgba(161,69,26,0.14)] text-[var(--brand-deep)]'
+                  : state === 'done'
+                    ? 'text-[var(--success)] hover:bg-[rgba(35,102,79,0.08)]'
+                    : state === 'ready'
+                      ? 'text-[#0d4c74] hover:bg-[rgba(22,93,143,0.08)]'
+                      : 'text-[var(--muted)]',
+              )}
+            >
+              <span
+                className={joinClasses(
+                  'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[0.68rem] font-bold',
+                  state === 'current'
+                    ? 'bg-[var(--brand)] text-white'
+                    : state === 'done'
+                      ? 'bg-[var(--success)] text-white'
+                      : 'bg-[rgba(117,99,80,0.15)] text-[var(--muted)]',
+                )}
+              >
+                {state === 'done' ? '✓' : idx + 1}
+              </span>
+              {WIZARD_STEP_META[step].abbrev}
+            </span>
+          )
+          return (
+            <li key={step} className="flex items-center">
+              {state === 'locked' || state === 'current' ? (
+                pill
+              ) : (
+                <Link className="no-underline" to={`/wizard/${sessionId}/${step}`}>
+                  {pill}
+                </Link>
+              )}
+              {!isLast && (
+                <span aria-hidden className="mx-1 select-none text-[var(--muted)]">
+                  ›
+                </span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }
 
-function JsonPanel({ title, payload }: { title: string; payload: unknown }) {
-  return (
-    <section className={panelSoftClass}>
-      <div className={headingGroupClass}>
-        <h2>{title}</h2>
-      </div>
-      <pre className={jsonBlockClass}>{formatJson(payload)}</pre>
-    </section>
-  )
-}
-
-function LabelList({ items }: { items: string[] }) {
-  if (!items.length) {
-    return <p className={emptyCopyClass}>None recorded.</p>
-  }
-  return (
-    <ul className={tagListClass}>
-      {items.map((item) => (
-        <li key={item} className={tagItemClass}>
-          {item}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function PortList({ ports }: { ports: CircuitPortSpec[] }) {
-  if (!ports.length) {
-    return <p className={emptyCopyClass}>None recorded.</p>
-  }
-  return (
-    <ul className={recordListClass}>
-      {ports.map((port) => (
-        <li key={`${port.name}-${port.description ?? ''}`} className={compactListItemClass}>
-          <strong>{port.name}</strong>
-          <span className={mutedCopyClass}>{port.description ?? port.signal_type ?? 'No detail'}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function RailList({ rails }: { rails: CircuitRailSpec[] }) {
-  if (!rails.length) {
-    return <p className={emptyCopyClass}>None recorded.</p>
-  }
-  return (
-    <ul className={recordListClass}>
-      {rails.map((rail) => (
-        <li key={`${rail.name}-${rail.nominal_voltage ?? ''}`} className={compactListItemClass}>
-          <strong>{rail.name}</strong>
-          <span className={mutedCopyClass}>{rail.nominal_voltage ?? rail.description ?? 'No detail'}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function BlockList({ blocks }: { blocks: CircuitBlockSpec[] }) {
-  if (!blocks.length) {
-    return <p className={emptyCopyClass}>None recorded.</p>
-  }
-  return (
-    <div className={blockGridClass}>
-      {blocks.map((block) => (
-        <article key={`${block.name}-${block.block_type}`} className={blockCardClass}>
-          <strong>{block.name}</strong>
-          <span className={mutedCopyClass}>{block.block_type.replaceAll('_', ' ')}</span>
-          <p className={mutedCopyClass}>{block.summary}</p>
-        </article>
-      ))}
-    </div>
-  )
-}
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 function Layout({
   bootstrap,
@@ -535,6 +645,7 @@ function Layout({
   bootstrap: UiBootstrapResponse | null
   children: ReactNode
 }) {
+  const lastSession = readLastSession()
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(245,239,226,0.82)] backdrop-blur-[18px]">
@@ -552,7 +663,7 @@ function Layout({
                     : 'text-[var(--muted)] hover:-translate-y-px hover:bg-[rgba(161,69,26,0.12)] hover:text-[var(--brand-deep)]',
                 )
               }
-              to="/wizard"
+              to={lastSession ? `/wizard/${lastSession}` : '/wizard'}
             >
               Wizard
             </NavLink>
@@ -568,15 +679,19 @@ function Layout({
   )
 }
 
-function HomePage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
-  void bootstrap
+// ─── HomePage ─────────────────────────────────────────────────────────────────
+
+function HomePage() {
   return <Navigate to="/wizard" replace />
 }
 
-function JobSummaryPanel({ job }: { job: JobDetail }) {
+// ─── JobSummaryPanel ──────────────────────────────────────────────────────────
+
+function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: string }) {
   const result = asRecord(job.result)
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
   const diagnostics = result.generated_schematic_diagnostics ?? null
+  const jobPath = sessionId ? `/jobs/${job.id}?from=${encodeURIComponent(sessionId)}` : `/jobs/${job.id}`
   return (
     <div className={stackColumnClass}>
       <section className={panelSoftClass}>
@@ -588,27 +703,38 @@ function JobSummaryPanel({ job }: { job: JobDetail }) {
           <dd>{job.project_name}</dd>
           <dt className={mutedCopyClass}>Status</dt>
           <dd>
-            <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
+            <StatusPill tone={statusTone(job.status)}>{statusLabel(job.status)}</StatusPill>
           </dd>
           <dt className={mutedCopyClass}>Updated</dt>
-          <dd>{job.updated_at}</dd>
+          <dd>{formatDate(job.updated_at)}</dd>
         </dl>
         <div className={buttonRowClass}>
-          <Link className={buttonSecondaryClass} to={`/jobs/${job.id}`}>
+          <Link className={buttonSecondaryClass} to={jobPath}>
             Open Job Detail
           </Link>
-          {job.artifacts.map((artifact) => (
-            <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
-              {artifact}
-            </a>
-          ))}
+          {job.artifacts.length > 0
+            ? job.artifacts.map((artifact) => (
+                <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
+                  {artifact}
+                </a>
+              ))
+            : null}
         </div>
+        {job.artifacts.length === 0 ? (
+          <p className={compactSupportCopyClass}>No artifacts — generation did not complete.</p>
+        ) : null}
       </section>
-      <JsonPanel title="Warnings" payload={warnings} />
-      {diagnostics ? <JsonPanel title="Diagnostics" payload={diagnostics} /> : null}
+      <WarningsPanel warnings={warnings} />
+      {diagnostics ? (
+        <DisclosurePanel title="Build Summary">
+          <pre className={jsonBlockClass}>{formatJson(diagnostics)}</pre>
+        </DisclosurePanel>
+      ) : null}
     </div>
   )
 }
+
+// ─── WizardPage ───────────────────────────────────────────────────────────────
 
 function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   const navigate = useNavigate()
@@ -623,7 +749,15 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   const [projectName, setProjectName] = useState('')
   const [symbolsDir, setSymbolsDir] = useState('')
   const [message, setMessage] = useState('')
+  const [metaExpanded, setMetaExpanded] = useState(false)
   const loading = Boolean(sessionId) && loadedSessionId !== sessionId && failedSessionId !== sessionId
+
+  // Persist session ID for smart header nav
+  useEffect(() => {
+    if (sessionId) {
+      writeLastSession(sessionId)
+    }
+  }, [sessionId])
 
   useEffect(() => {
     if (!sessionId) {
@@ -701,9 +835,25 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     return canonicalWizardStep(session)
   }, [routeStep, session])
 
+  // Update document title per step
+  useEffect(() => {
+    const base = 'KiCad PCB Web App'
+    if (!sessionId) {
+      document.title = `New Session — ${base}`
+      return
+    }
+    if (session) {
+      const projectLabel = session.project_name ?? session.spec?.project_name ?? null
+      const stepLabel = WIZARD_STEP_META[currentStep].label
+      document.title = projectLabel
+        ? `${stepLabel} — ${projectLabel} — ${base}`
+        : `${stepLabel} — ${base}`
+    }
+  }, [currentStep, session, sessionId])
+
   async function handleCreateSession(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} to draft the first spec...`)
+    setBusyMessage(`Talking to ${bootstrap.llm_provider} to draft the first spec…`)
     setErrorMessage(null)
     try {
       const response = await api.createWizardSession({
@@ -714,6 +864,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
       setSession(response)
       setLatestJob(null)
       setMessage('')
+      writeLastSession(response.id)
       startTransition(() => {
         navigate(`/wizard/${response.id}/${canonicalWizardStep(response)}`)
       })
@@ -729,7 +880,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} to revise the spec draft...`)
+    setBusyMessage(`Talking to ${bootstrap.llm_provider} to revise the spec draft…`)
     setErrorMessage(null)
     try {
       const response = await api.addWizardMessage(session.id, {
@@ -754,7 +905,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage('Locking this spec checkpoint and moving to Circuit IR...')
+    setBusyMessage('Locking this spec checkpoint and moving to Circuit IR…')
     setErrorMessage(null)
     try {
       const response = await api.approveWizardSpec(session.id)
@@ -774,7 +925,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} and validating the resulting Circuit IR...`)
+    setBusyMessage(`Talking to ${bootstrap.llm_provider} and validating the resulting Circuit IR…`)
     setErrorMessage(null)
     try {
       const response = await api.generateWizardIr(session.id)
@@ -796,7 +947,13 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage('Generating the KiCad project from the validated Circuit IR...')
+    if (
+      visibleLatestJob?.status === 'succeeded' &&
+      !window.confirm('This will replace the current job result. Continue?')
+    ) {
+      return
+    }
+    setBusyMessage('Generating the KiCad project from the validated Circuit IR…')
     setErrorMessage(null)
     try {
       const response: WizardGenerateProjectResponse = await api.generateWizardProject(session.id)
@@ -809,6 +966,7 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     }
   }
 
+  // ── Wizard start page (no session) ──────────────────────────────────────────
   if (!sessionId) {
     return (
       <div className={pageStackClass}>
@@ -826,45 +984,45 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
           </ol>
           <div className={compactStatusRowClass}>
             <StatusPill tone={bootstrap.llm_enabled ? 'success' : 'neutral'}>
-              {bootstrap.llm_enabled ? 'provider ready' : 'provider disabled'}
+              {bootstrap.llm_enabled ? 'Provider ready' : 'Provider disabled'}
             </StatusPill>
             <span className={compactSupportCopyClass}>{bootstrap.llm_provider}</span>
           </div>
-        </section>
 
-        {errorMessage ? (
-          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
-            <strong>{errorMessage}</strong>
-          </div>
-        ) : null}
-        {busyMessage ? (
-          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
-            <span className={spinnerClass} aria-hidden="true"></span>
-            <strong>{busyMessage}</strong>
-          </div>
-        ) : null}
+          {errorMessage ? (
+            <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
+              <strong>{errorMessage}</strong>
+            </div>
+          ) : null}
+          {busyMessage ? (
+            <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+              <span className={spinnerClass} aria-hidden="true"></span>
+              <strong>{busyMessage}</strong>
+            </div>
+          ) : null}
 
-        <section className={panelAccentClass}>
-          <div className={headingGroupClass}>
-            <h2>Create a New Session</h2>
-            <p className={mutedCopyClass}>
-              Describe the goal, rails, inputs, outputs, and constraints. The client keeps control
-              while the request runs.
-            </p>
-          </div>
           <form className={wizardFormClass} onSubmit={(event) => void handleCreateSession(event)}>
             <div className={wizardFieldSectionClass}>
-              <div className={wizardFieldGridClass}>
-                <label>
-                  <span>Project Name</span>
-                  <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
-                </label>
-                <label>
-                  <span>Symbols Directory</span>
-                  <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
-                </label>
-              </div>
-              <p className={compactSupportCopyClass}>Keep this short. Put the real detail into the request box.</p>
+              <label>
+                <span>Project Name</span>
+                <input
+                  placeholder="e.g. LED Blinker"
+                  value={projectName}
+                  onChange={(event) => setProjectName(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Symbols Directory <span className="font-normal text-[var(--muted)]">(optional)</span></span>
+                <input
+                  placeholder="Leave blank to use built-in symbols"
+                  value={symbolsDir}
+                  onChange={(event) => setSymbolsDir(event.target.value)}
+                />
+              </label>
+              <p className={helpTextClass}>
+                Symbols Directory: absolute path to a KiCad symbol library directory.
+                Leave blank to use the built-in symbols.
+              </p>
             </div>
             <div className={wizardFieldSectionClass}>
               <WizardComposer
@@ -884,26 +1042,35 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                 Start Session
               </button>
             </div>
+            {!bootstrap.llm_enabled ? (
+              <p className={helpTextClass}>
+                No LLM provider is configured. Set a provider in{' '}
+                <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5">kicad_pcb_web.toml</code>{' '}
+                to enable the wizard.
+              </p>
+            ) : null}
           </form>
         </section>
       </div>
     )
   }
 
+  // ── Session loading / error states ──────────────────────────────────────────
   if (loading) {
     return (
       <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
         <span className={spinnerClass} aria-hidden="true"></span>
-        <strong>Loading wizard session...</strong>
+        <strong>Loading wizard session…</strong>
       </div>
     )
   }
 
   if (!session) {
     return (
-      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
-        <strong>{errorMessage ?? 'Wizard session not found.'}</strong>
-      </div>
+      <NotFoundScreen
+        heading="Session not found"
+        message={errorMessage ?? 'This wizard session does not exist or could not be loaded.'}
+      />
     )
   }
 
@@ -916,29 +1083,11 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   const canGenerateProject = Boolean(session.ir_validation?.valid)
   const visibleLatestJob = session.latest_job_id ? latestJob : null
   const checkpoint = wizardCurrentCheckpoint(session, currentStep)
+  const projectLabel = session.project_name ?? session.spec?.project_name ?? null
 
   return (
     <div className={pageStackClass}>
-      <section className={heroPanelClass}>
-        <div className="grid gap-3">
-          <p className={eyebrowClass}>Session {session.id}</p>
-          <h1>{WIZARD_STEP_META[currentStep].label}</h1>
-          <p className={heroLeadClass}>{checkpoint.title}</p>
-          <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
-        </div>
-        <div className={heroCardClass}>
-          <div className={compactStatusRowClass}>
-            <StatusPill tone={statusTone(session.status)}>{session.status.replaceAll('_', ' ')}</StatusPill>
-            <span className={compactSupportCopyClass}>{session.llm_provider ?? bootstrap.llm_provider}</span>
-          </div>
-          <p className={compactSupportCopyClass}>{bannerForSession(session)}</p>
-          {session.latest_job_id ? (
-            <Link className={buttonSecondaryClass} to={`/jobs/${session.latest_job_id}`}>
-              Open latest job
-            </Link>
-          ) : null}
-        </div>
-      </section>
+      <WizardBreadcrumb currentStep={currentStep} session={session} sessionId={session.id} />
 
       {busyMessage ? (
         <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
@@ -957,281 +1106,441 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
         </div>
       ) : null}
 
-      <section className={panelSoftClass}>
-        <div className={headingGroupClass}>
-          <div className={sideKickerClass}>Workflow</div>
-          <h2>Step tracker</h2>
-          <p className={mutedCopyClass}>Each step says whether it is current, ready, done, or still locked.</p>
-        </div>
-        <ol className={stepTrackerClass}>
-          {(Object.keys(WIZARD_STEP_META) as WizardStep[]).map((wizardStep) => {
-            return (
-              <WizardStepCard
-                key={wizardStep}
-                currentStep={currentStep}
-                session={session}
-                sessionId={session.id}
-                step={wizardStep}
-              />
-            )
-          })}
-        </ol>
-      </section>
-
-      <div className={dashboardGridClass}>
-        <aside className={joinClasses(panelSoftClass, 'top-[6.2rem] self-start lg:static lg:top-auto')}>
-          <div className={headingGroupClass}>
-            <h2>Session</h2>
-          </div>
-          <dl className={detailListClass}>
-            <dt className={mutedCopyClass}>Project</dt>
-            <dd>{session.project_name ?? session.spec?.project_name ?? 'Not set'}</dd>
-            <dt className={mutedCopyClass}>Provider</dt>
-            <dd>{session.llm_provider ?? bootstrap.llm_provider}</dd>
-            <dt className={mutedCopyClass}>Updated</dt>
-            <dd>{session.updated_at}</dd>
-          </dl>
-          <div className={buttonRowClass}>
-            <Link className={buttonSecondaryClass} to="/wizard">
-              New Session
-            </Link>
-            {session.latest_job_id ? (
-              <Link className={buttonSecondaryClass} to={`/jobs/${session.latest_job_id}`}>
-                Open Job
-              </Link>
-            ) : null}
-          </div>
-          <section className="mt-5 grid gap-2 rounded-[20px] border border-[rgba(161,69,26,0.12)] bg-[rgba(255,249,241,0.86)] p-4">
-            <div className={sideKickerClass}>Current checkpoint</div>
-            <strong className="text-[var(--text)]">{checkpoint.title}</strong>
-            <p className="text-sm leading-6 text-[var(--muted)]">{checkpoint.detail}</p>
+      {/* ── Describe step ──────────────────────────────────────────────────── */}
+      {currentStep === 'describe' ? (
+        <>
+          <section className={panelAccentClass}>
+            <div className={headingGroupClass}>
+              <p className={eyebrowClass}>
+                Step 1 of 4{projectLabel ? ` — ${projectLabel}` : ''}
+              </p>
+              <h1>Describe Circuit</h1>
+              <p className={heroLeadClass}>{checkpoint.title}</p>
+              <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
+            </div>
+            <div className={compactStatusRowClass}>
+              <StatusPill tone={statusTone(session.status)}>
+                {statusLabel(session.status)}
+              </StatusPill>
+              <span className={compactSupportCopyClass}>
+                {session.llm_provider ?? bootstrap.llm_provider}
+              </span>
+            </div>
           </section>
-        </aside>
 
-        <div className={stackColumnClass}>
-          {currentStep === 'describe' ? (
-            <>
-              <section className={panelAccentClass}>
-                <div className={headingGroupClass}>
-                  <h2>Describe Circuit</h2>
-                  <p className={mutedCopyClass}>Keep refining the prompt until the spec is ready for review.</p>
-                </div>
-                <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
-                  <div className={wizardFieldSectionClass}>
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>Circuit Request</h2>
+              <p className={mutedCopyClass}>
+                Keep refining the prompt until the spec is ready for review.
+              </p>
+            </div>
+            <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
+              <div className={wizardFieldSectionClass}>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 text-left text-[0.82rem] font-medium text-[var(--accent)]"
+                  onClick={() => setMetaExpanded((v) => !v)}
+                >
+                  <span
+                    className={joinClasses(
+                      'text-[0.9rem] leading-none transition-transform duration-150',
+                      metaExpanded ? 'rotate-90' : '',
+                    )}
+                    aria-hidden="true"
+                  >
+                    ▸
+                  </span>
+                  {metaExpanded ? 'Hide session metadata' : 'Edit session metadata'}
+                </button>
+                {metaExpanded ? (
+                  <div className="grid gap-3 pt-1">
                     <div className={wizardFieldGridClass}>
                       <label>
                         <span>Project Name</span>
-                        <input value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+                        <input
+                          value={projectName}
+                          onChange={(event) => setProjectName(event.target.value)}
+                        />
                       </label>
                       <label>
-                        <span>Symbols Directory</span>
-                        <input value={symbolsDir} onChange={(event) => setSymbolsDir(event.target.value)} />
+                        <span>Symbols Directory <span className="font-normal text-[var(--muted)]">(optional)</span></span>
+                        <input
+                          placeholder="Leave blank to use built-in symbols"
+                          value={symbolsDir}
+                          onChange={(event) => setSymbolsDir(event.target.value)}
+                        />
                       </label>
                     </div>
-                    <p className={compactSupportCopyClass}>Adjust metadata only when the session context actually changed.</p>
-                  </div>
-                  <div className={wizardFieldSectionClass}>
-                    <WizardComposer
-                      disabled={Boolean(busyMessage)}
-                      label="Circuit Request"
-                      placeholder="Clarify only the missing or changed details."
-                      value={message}
-                      onChange={setMessage}
-                    />
-                  </div>
-                  <div className={wizardActionRowClass}>
-                    <button
-                      type="submit"
-                      className={wizardPrimaryButtonClass}
-                      disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
-                    >
-                      Send Update
-                    </button>
-                  </div>
-                </form>
-              </section>
-
-              <section className={panelSoftClass}>
-                <div className={headingGroupClass}>
-                  <h2>Conversation</h2>
-                  <p className={mutedCopyClass}>Your notes stay separated from the wizard replies so each turn is easier to scan.</p>
-                </div>
-                <div className={transcriptListClass}>
-                  {session.messages.map((entry, index) => (
-                    <TranscriptEntryCard
-                      key={`${entry.role}-${index}`}
-                      content={entry.content}
-                      index={index}
-                      role={entry.role}
-                    />
-                  ))}
-                </div>
-              </section>
-            </>
-          ) : null}
-
-          {currentStep === 'spec' && session.spec ? (
-            <>
-              <section className={panelAccentClass}>
-                <div className={headingGroupClass}>
-                  <h2>Spec Review</h2>
-                  <p className={mutedCopyClass}>Review the drafted circuit spec before allowing Circuit IR generation.</p>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <h3>Purpose</h3>
-                    <p>{session.spec.purpose}</p>
-                  </div>
-                  <div>
-                    <h3>Inputs</h3>
-                    <PortList ports={session.spec.inputs} />
-                  </div>
-                  <div>
-                    <h3>Outputs</h3>
-                    <PortList ports={session.spec.outputs} />
-                  </div>
-                  <div>
-                    <h3>Supply Rails</h3>
-                    <RailList rails={session.spec.supply_rails} />
-                  </div>
-                  <div>
-                    <h3>Acceptance Criteria</h3>
-                    <LabelList items={session.spec.acceptance_criteria} />
-                  </div>
-                  <div>
-                    <h3>Constraints</h3>
-                    <LabelList items={session.spec.constraints} />
-                  </div>
-                  <div>
-                    <h3>Open Questions</h3>
-                    <LabelList items={session.open_questions} />
-                  </div>
-                  <div>
-                    <h3>Unsupported Reasons</h3>
-                    <LabelList items={session.unsupported_reasons} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <h3>Blocks</h3>
-                    <BlockList blocks={session.spec.blocks} />
-                  </div>
-                </div>
-              </section>
-
-              <section className={panelSoftClass}>
-                <div className={headingGroupClass}>
-                  <h2>Revise or Approve</h2>
-                </div>
-                <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
-                  <div className={wizardFieldSectionClass}>
-                    <WizardComposer
-                      disabled={Boolean(busyMessage)}
-                      label="Revision Note"
-                      placeholder="List only the specific spec changes you want."
-                      value={message}
-                      onChange={setMessage}
-                    />
-                  </div>
-                  <div className={wizardActionRowClass}>
-                    <button
-                      type="submit"
-                      className={wizardSecondaryButtonClass}
-                      disabled={!message.trim() || Boolean(busyMessage)}
-                    >
-                      Send Changes
-                    </button>
-                    <button
-                      type="button"
-                      className={wizardPrimaryButtonClass}
-                      disabled={!canApproveSpec || Boolean(busyMessage)}
-                      onClick={() => void handleApproveSpec()}
-                    >
-                      Approve Spec
-                    </button>
-                  </div>
-                </form>
-              </section>
-            </>
-          ) : null}
-
-          {currentStep === 'ir' ? (
-            <>
-              <section className={panelAccentClass}>
-                <div className={headingGroupClass}>
-                  <h2>Circuit IR</h2>
-                  <p className={mutedCopyClass}>
-                    Generate the IR from the approved spec and inspect validation before creating a project.
-                  </p>
-                </div>
-                {session.ir_validation ? (
-                  <dl className={detailListGridClass}>
-                    <dt className={mutedCopyClass}>Valid</dt>
-                    <dd>{session.ir_validation.valid ? 'Yes' : 'No'}</dd>
-                    <dt className={mutedCopyClass}>Auto-fixed</dt>
-                    <dd>{session.ir_validation.auto_fixed ? 'Yes' : 'No'}</dd>
-                    <dt className={mutedCopyClass}>Components</dt>
-                    <dd>{session.ir_validation.component_count}</dd>
-                    <dt className={mutedCopyClass}>Nets</dt>
-                    <dd>{session.ir_validation.net_count}</dd>
-                    <dt className={mutedCopyClass}>Symbols Dirs Used</dt>
-                    <dd>{session.ir_validation.symbols_dirs_used.join(', ') || 'None'}</dd>
-                  </dl>
-                ) : (
-                  <p className={emptyCopyClass}>No Circuit IR draft yet.</p>
-                )}
-                {session.ir_validation?.error_message ? (
-                  <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
-                    <strong>{session.ir_validation.error_message}</strong>
+                    <p className={helpTextClass}>
+                      Adjust metadata only when the session context actually changed.
+                    </p>
                   </div>
                 ) : null}
-                <div className={buttonRowClass}>
-                  <button
-                    type="button"
-                    className={buttonPrimaryClass}
-                    disabled={!canGenerateIr || Boolean(busyMessage)}
-                    onClick={() => void handleGenerateIr()}
-                  >
-                    {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}
-                  </button>
-                </div>
-              </section>
-              {session.ir_validation?.warnings.length ? (
-                <JsonPanel title="Validation Warnings" payload={session.ir_validation.warnings} />
-              ) : null}
-              {session.ir_json ? <JsonPanel title="Raw Circuit IR JSON" payload={session.ir_json} /> : null}
-            </>
+              </div>
+              <div className={wizardFieldSectionClass}>
+                <WizardComposer
+                  disabled={Boolean(busyMessage)}
+                  label="Circuit Request"
+                  placeholder="Clarify only the missing or changed details."
+                  value={message}
+                  onChange={setMessage}
+                />
+              </div>
+              <div className={wizardActionRowClass}>
+                <button
+                  type="submit"
+                  className={wizardPrimaryButtonClass}
+                  disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+                >
+                  Send Update
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {session.messages.length > 0 ? (
+            <section className={panelSoftClass}>
+              <div className={headingGroupClass}>
+                <h2>Conversation</h2>
+                <p className={mutedCopyClass}>
+                  Your notes stay separated from the wizard replies so each turn is easier to scan.
+                </p>
+              </div>
+              <div className={transcriptListClass}>
+                {session.messages.map((entry, index) => (
+                  <TranscriptEntryCard
+                    key={`${entry.role}-${index}`}
+                    content={entry.content}
+                    index={index}
+                    role={entry.role}
+                  />
+                ))}
+              </div>
+            </section>
           ) : null}
 
-          {currentStep === 'generate' ? (
-            <>
-              <section className={panelAccentClass}>
-                <div className={headingGroupClass}>
-                  <h2>Generate Project</h2>
-                  <p className={mutedCopyClass}>
-                    Use the validated Circuit IR as the handoff into the deterministic generation pipeline.
-                  </p>
+          <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
+            <Link className={buttonSecondaryClass} to="/wizard">
+              Start New Session
+            </Link>
+            {wizardStepUnlocked(session, 'spec') ? (
+              <Link className={wizardPrimaryButtonClass} to={`/wizard/${session.id}/spec`}>
+                Continue to Spec Review →
+              </Link>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      {/* ── Spec step ──────────────────────────────────────────────────────── */}
+      {currentStep === 'spec' && session.spec ? (
+        <>
+          <section className={panelAccentClass}>
+            <div className={headingGroupClass}>
+              <p className={eyebrowClass}>
+                Step 2 of 4{projectLabel ? ` — ${projectLabel}` : ''}
+              </p>
+              <h1>Review Spec</h1>
+              <p className={heroLeadClass}>{checkpoint.title}</p>
+              <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
+            </div>
+            <div className={compactStatusRowClass}>
+              <StatusPill tone={statusTone(session.status)}>
+                {statusLabel(session.status)}
+              </StatusPill>
+            </div>
+          </section>
+
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>Circuit Specification</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <h3>Purpose</h3>
+                <p>{session.spec.purpose}</p>
+              </div>
+              <div>
+                <h3>Inputs</h3>
+                <PortList ports={session.spec.inputs} />
+              </div>
+              <div>
+                <h3>Outputs</h3>
+                <PortList ports={session.spec.outputs} />
+              </div>
+              <div>
+                <h3>Supply Rails</h3>
+                <RailList rails={session.spec.supply_rails} />
+              </div>
+              <div>
+                <h3>Acceptance Criteria</h3>
+                <LabelList items={session.spec.acceptance_criteria} />
+              </div>
+              <div>
+                <h3>Constraints</h3>
+                <LabelList items={session.spec.constraints} />
+              </div>
+              {session.open_questions.length > 0 ? (
+                <div>
+                  <h3>Open Questions</h3>
+                  <LabelList items={session.open_questions} />
                 </div>
-                <div className={buttonRowClass}>
-                  <button
-                    type="button"
-                    className={buttonPrimaryClass}
-                    disabled={!canGenerateProject || Boolean(busyMessage)}
-                    onClick={() => void handleGenerateProject()}
-                  >
-                    {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
-                  </button>
+              ) : null}
+              {session.unsupported_reasons.length > 0 ? (
+                <div>
+                  <h3>Unsupported Reasons</h3>
+                  <LabelList items={session.unsupported_reasons} />
                 </div>
-              </section>
-              {visibleLatestJob ? <JobSummaryPanel job={visibleLatestJob} /> : <p className={emptyCopyClass}>No generation job linked yet.</p>}
-            </>
+              ) : null}
+              <div className="md:col-span-2">
+                <h3>Blocks</h3>
+                <BlockList blocks={session.spec.blocks} />
+              </div>
+            </div>
+          </section>
+
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>Revise or Approve</h2>
+              <p className={mutedCopyClass}>
+                Approve the spec to unlock Circuit IR generation, or send revision notes to refine it first.
+              </p>
+            </div>
+            <form className={wizardFormClass} onSubmit={(event) => void handleSendMessage(event)}>
+              <div className={wizardFieldSectionClass}>
+                <WizardComposer
+                  disabled={Boolean(busyMessage)}
+                  label="Revision Note"
+                  placeholder="List only the specific spec changes you want."
+                  value={message}
+                  onChange={setMessage}
+                />
+              </div>
+              <div className={wizardActionRowClass}>
+                <button
+                  type="submit"
+                  className={wizardSecondaryButtonClass}
+                  disabled={!message.trim() || Boolean(busyMessage)}
+                >
+                  Send Changes
+                </button>
+                <button
+                  type="button"
+                  className={wizardPrimaryButtonClass}
+                  disabled={!canApproveSpec || Boolean(busyMessage)}
+                  onClick={() => void handleApproveSpec()}
+                >
+                  Approve Spec
+                </button>
+              </div>
+              {!canApproveSpec ? (
+                <p className={helpTextClass}>
+                  {session.open_questions.length > 0
+                    ? 'Approve Spec is locked — resolve the open questions above first.'
+                    : session.unsupported_reasons.length > 0
+                      ? 'Approve Spec is locked — resolve the unsupported reasons above first.'
+                      : session.spec_approved
+                        ? 'Spec is already approved.'
+                        : 'Spec must be generated before it can be approved.'}
+                </p>
+              ) : null}
+            </form>
+          </section>
+
+          <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
+            <Link className={buttonSecondaryClass} to={`/wizard/${session.id}/describe`}>
+              ← Back to Describe
+            </Link>
+            {canGenerateIr ? (
+              <Link className={wizardPrimaryButtonClass} to={`/wizard/${session.id}/ir`}>
+                Continue to Circuit IR →
+              </Link>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      {/* ── Circuit IR step ────────────────────────────────────────────────── */}
+      {currentStep === 'ir' ? (
+        <>
+          <section className={panelAccentClass}>
+            <div className={headingGroupClass}>
+              <p className={eyebrowClass}>
+                Step 3 of 4{projectLabel ? ` — ${projectLabel}` : ''}
+              </p>
+              <h1>Circuit IR</h1>
+              <p className={heroLeadClass}>{checkpoint.title}</p>
+              <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
+            </div>
+            <div className={compactStatusRowClass}>
+              <StatusPill tone={statusTone(session.status)}>
+                {statusLabel(session.status)}
+              </StatusPill>
+            </div>
+          </section>
+
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>
+                {session.ir_validation?.valid ? 'Circuit IR — Valid' : 'Generate Circuit IR'}
+              </h2>
+              <p className={mutedCopyClass}>
+                {session.ir_validation?.valid
+                  ? 'The IR validates cleanly. Review the counts below, then continue to project generation.'
+                  : 'Generate the IR from the approved spec and inspect validation before creating a project.'}
+              </p>
+            </div>
+            {session.ir_validation ? (
+              <dl className={detailListGridClass}>
+                <dt className={mutedCopyClass}>Valid</dt>
+                <dd>{session.ir_validation.valid ? 'Yes' : 'No'}</dd>
+                <dt className={mutedCopyClass}>Auto-fixed</dt>
+                <dd>{session.ir_validation.auto_fixed ? 'Yes' : 'No'}</dd>
+                <dt className={mutedCopyClass}>Components</dt>
+                <dd>{session.ir_validation.component_count}</dd>
+                <dt className={mutedCopyClass}>Nets</dt>
+                <dd>{session.ir_validation.net_count}</dd>
+                <dt className={mutedCopyClass}>Symbols</dt>
+                <dd>
+                  {session.ir_validation.symbols_dirs_used.map(displaySymbolsDir).join(', ') || 'None'}
+                </dd>
+              </dl>
+            ) : (
+              <p className={emptyCopyClass}>No Circuit IR draft yet.</p>
+            )}
+            {session.ir_validation?.error_message ? (
+              <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
+                <strong>{session.ir_validation.error_message}</strong>
+              </div>
+            ) : null}
+            <div className={buttonRowClass}>
+              {session.ir_validation?.valid ? (
+                <button
+                  type="button"
+                  className={buttonDangerClass}
+                  disabled={!canGenerateIr || Boolean(busyMessage)}
+                  onClick={() => void handleGenerateIr()}
+                >
+                  Regenerate Circuit IR
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={buttonPrimaryClass}
+                  disabled={!canGenerateIr || Boolean(busyMessage)}
+                  onClick={() => void handleGenerateIr()}
+                >
+                  {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}
+                </button>
+              )}
+            </div>
+          </section>
+
+          {session.ir_validation?.warnings.length ? (
+            <WarningsPanel warnings={session.ir_validation.warnings} />
           ) : null}
-        </div>
-      </div>
+          {session.ir_json ? (
+            <DisclosurePanel
+              title={`Raw Circuit IR JSON — ${session.ir_validation?.component_count ?? '?'} components, ${session.ir_validation?.net_count ?? '?'} nets`}
+              defaultOpen={session.ir_validation?.valid === false}
+            >
+              <pre className={jsonBlockClass}>{formatJson(session.ir_json)}</pre>
+            </DisclosurePanel>
+          ) : null}
+
+          <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
+            <Link className={buttonSecondaryClass} to={`/wizard/${session.id}/spec`}>
+              ← Back to Spec
+            </Link>
+            {canGenerateProject ? (
+              <Link className={wizardPrimaryButtonClass} to={`/wizard/${session.id}/generate`}>
+                Continue to Generate →
+              </Link>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      {/* ── Generate step ──────────────────────────────────────────────────── */}
+      {currentStep === 'generate' ? (
+        <>
+          <section className={panelAccentClass}>
+            <div className={headingGroupClass}>
+              <p className={eyebrowClass}>
+                Step 4 of 4{projectLabel ? ` — ${projectLabel}` : ''}
+              </p>
+              <h1>Generate Project</h1>
+              <p className={heroLeadClass}>{checkpoint.title}</p>
+              <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
+            </div>
+            <div className={compactStatusRowClass}>
+              <StatusPill tone={statusTone(session.status)}>
+                {statusLabel(session.status)}
+              </StatusPill>
+            </div>
+          </section>
+
+          <section className={panelSoftClass}>
+            <div className={headingGroupClass}>
+              <h2>Generate KiCad Project</h2>
+              <p className={mutedCopyClass}>
+                Use the validated Circuit IR as the handoff into the deterministic generation pipeline.
+              </p>
+            </div>
+            {visibleLatestJob?.status === 'succeeded' ? (
+              <p className={compactSupportCopyClass}>
+                A project has already been generated. Generating again will replace the current job result.
+              </p>
+            ) : null}
+            <div className={buttonRowClass}>
+              <button
+                type="button"
+                className={visibleLatestJob?.status === 'succeeded' ? buttonDangerClass : buttonPrimaryClass}
+                disabled={!canGenerateProject || Boolean(busyMessage)}
+                onClick={() => void handleGenerateProject()}
+              >
+                {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
+              </button>
+            </div>
+          </section>
+
+          {visibleLatestJob ? (
+            <>
+              {visibleLatestJob.status === 'failed' ? (
+                <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
+                  <strong>
+                    Generation failed
+                    {visibleLatestJob.error
+                      ? ` — ${asRecord(visibleLatestJob.error).message ?? 'Unknown error'}`
+                      : ''}
+                    . Open the job for full details.
+                  </strong>
+                </div>
+              ) : null}
+              <JobSummaryPanel job={visibleLatestJob} sessionId={session.id} />
+            </>
+          ) : (
+            <p className={emptyCopyClass}>No generation job linked yet.</p>
+          )}
+
+          <div className="flex justify-start border-t border-[var(--border)] pt-4">
+            <Link className={buttonSecondaryClass} to={`/wizard/${session.id}/ir`}>
+              ← Back to Circuit IR
+            </Link>
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }
 
+// ─── JobPage ──────────────────────────────────────────────────────────────────
+
 function JobPage() {
   const { jobId } = useParams<{ jobId: string }>()
+  const [searchParams] = useSearchParams()
+  const fromSessionId = searchParams.get('from')
   const [job, setJob] = useState<JobDetail | null>(null)
   const [loadedJobId, setLoadedJobId] = useState<string | null>(null)
   const [failedJobId, setFailedJobId] = useState<string | null>(null)
@@ -1265,54 +1574,83 @@ function JobPage() {
     }
   }, [effectiveJobId])
 
+  // Update document title
+  useEffect(() => {
+    const base = 'KiCad PCB Web App'
+    if (job) {
+      document.title = `${job.project_name} — Job — ${base}`
+    } else {
+      document.title = `Job — ${base}`
+    }
+  }, [job])
+
   if (!effectiveJobId) {
-    return (
-      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
-        <strong>Job id is required.</strong>
-      </div>
-    )
+    return <NotFoundScreen heading="Job not found" message="No job ID was provided." />
   }
 
   if (loading) {
     return (
       <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
         <span className={spinnerClass} aria-hidden="true"></span>
-        <strong>Loading job detail...</strong>
+        <strong>Loading job detail…</strong>
       </div>
     )
   }
 
   if (!job) {
     return (
-      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
-        <strong>{errorMessage ?? 'Job not found.'}</strong>
-      </div>
+      <NotFoundScreen
+        heading="Job not found"
+        message={errorMessage ?? 'This job does not exist or could not be loaded.'}
+      />
     )
   }
 
   const result = asRecord(job.result)
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
-  const diagnostics = result.generated_schematic_diagnostics ?? { message: 'No diagnostic summary recorded.' }
+  const diagnostics = result.generated_schematic_diagnostics ?? null
+  const isFailed = job.status === 'failed'
+  const hasMetrics = !isFailed && (result.component_count != null || result.net_count != null)
 
   return (
     <div className={pageStackClass}>
+      {fromSessionId ? (
+        <div className="flex items-center gap-3">
+          <Link className={buttonSecondaryClass} to={`/wizard/${fromSessionId}/generate`}>
+            ← Back to session
+          </Link>
+        </div>
+      ) : null}
+
       <section className={heroPanelClass}>
         <div>
           <p className={eyebrowClass}>Job {job.id}</p>
           <h1>{job.project_name}</h1>
-          <p className={heroLeadClass}>Inspect the full generation result, artifacts, diagnostics, and raw payloads.</p>
-          <div className={heroStatGridClass}>
-            <MetricCard label="Artifacts" tone="warm" value={String(job.artifacts.length)} />
-            <MetricCard label="Components" tone="cool" value={String(result.component_count ?? '—')} />
-            <MetricCard label="Nets" tone="neutral" value={String(result.net_count ?? '—')} />
-          </div>
+          <p className={heroLeadClass}>
+            {isFailed
+              ? 'Generation failed. Review the error and artifacts below.'
+              : 'Inspect the generation result, artifacts, and warnings.'}
+          </p>
+          {hasMetrics ? (
+            <div className={heroStatGridClass}>
+              <MetricCard label="Artifacts" tone="warm" value={String(job.artifacts.length)} />
+              <MetricCard label="Components" tone="cool" value={String(result.component_count ?? '—')} />
+              <MetricCard label="Nets" tone="neutral" value={String(result.net_count ?? '—')} />
+            </div>
+          ) : (
+            <div className={heroStatGridClass}>
+              <MetricCard label="Artifacts" tone="warm" value={String(job.artifacts.length)} />
+            </div>
+          )}
         </div>
         <div className={heroCardClass}>
           <p className={eyebrowClass}>Status</p>
-          <StatusPill tone={statusTone(job.status)}>{job.status}</StatusPill>
-          <span className={mutedCopyClass}>{job.updated_at}</span>
+          <StatusPill tone={statusTone(job.status)}>{statusLabel(job.status)}</StatusPill>
+          <span className={mutedCopyClass}>{formatDate(job.updated_at)}</span>
           <p className="text-sm leading-6 text-[var(--muted)]">
-            Review the artifact set first, then use warnings and diagnostics to understand any layout or generation issues.
+            {isFailed
+              ? 'Review the error payload below to understand what went wrong.'
+              : 'Review the artifact set first, then check warnings for any generation issues.'}
           </p>
         </div>
       </section>
@@ -1331,7 +1669,7 @@ function JobPage() {
               ))}
             </div>
           ) : (
-            <p className={emptyCopyClass}>No artifacts available.</p>
+            <p className={emptyCopyClass}>No artifacts — generation did not complete.</p>
           )}
         </section>
         <section className={panelSoftClass}>
@@ -1340,34 +1678,60 @@ function JobPage() {
           </div>
           <dl className={detailListGridClass}>
             <dt className={mutedCopyClass}>Created</dt>
-            <dd>{job.created_at}</dd>
+            <dd>{formatDate(job.created_at)}</dd>
             <dt className={mutedCopyClass}>Updated</dt>
-            <dd>{job.updated_at}</dd>
-            <dt className={mutedCopyClass}>Components</dt>
-            <dd>{String(result.component_count ?? '—')}</dd>
-            <dt className={mutedCopyClass}>Nets</dt>
-            <dd>{String(result.net_count ?? '—')}</dd>
+            <dd>{formatDate(job.updated_at)}</dd>
+            {!isFailed ? (
+              <>
+                <dt className={mutedCopyClass}>Components</dt>
+                <dd>{String(result.component_count ?? '—')}</dd>
+                <dt className={mutedCopyClass}>Nets</dt>
+                <dd>{String(result.net_count ?? '—')}</dd>
+              </>
+            ) : null}
           </dl>
         </section>
       </div>
 
-      <div className={dashboardGridClass}>
-        <JsonPanel title="Warnings" payload={warnings} />
-        <JsonPanel title="Diagnostics / Debug" payload={diagnostics} />
-      </div>
-      {job.error ? <JsonPanel title="Error Payload" payload={job.error} /> : null}
-      <JsonPanel title="Request Payload" payload={job.request} />
-      {job.result ? <JsonPanel title="Result Payload" payload={job.result} /> : null}
+      <WarningsPanel warnings={warnings} />
+
+      {job.error ? <JsonPanel title="Error" payload={job.error} /> : null}
+
+      {diagnostics ? (
+        <DisclosurePanel title="Build Summary">
+          <pre className={jsonBlockClass}>{formatJson(diagnostics)}</pre>
+        </DisclosurePanel>
+      ) : null}
+
+      <DisclosurePanel title="Developer Details">
+        <div className={stackColumnClass}>
+          <div>
+            <h3 className="mb-3">Request Payload</h3>
+            <pre className={jsonBlockClass}>{formatJson(job.request)}</pre>
+          </div>
+          {job.result ? (
+            <div>
+              <h3 className="mb-3">Result Payload</h3>
+              <pre className={jsonBlockClass}>{formatJson(job.result)}</pre>
+            </div>
+          ) : null}
+        </div>
+      </DisclosurePanel>
     </div>
   )
 }
 
+// ─── AppShell ─────────────────────────────────────────────────────────────────
+
 function AppShell() {
   const [bootstrap, setBootstrap] = useState<UiBootstrapResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
+    setBootstrap(null)
+    setErrorMessage(null)
     void api
       .getBootstrap()
       .then((response) => {
@@ -1383,7 +1747,7 @@ function AppShell() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [retryKey])
 
   if (!bootstrap) {
     return (
@@ -1396,11 +1760,20 @@ function AppShell() {
           )}
         >
           {errorMessage ? (
-            <strong>{errorMessage}</strong>
+            <>
+              <strong>{errorMessage}</strong>
+              <button
+                type="button"
+                className={joinClasses(buttonSecondaryClass, 'ml-auto')}
+                onClick={() => setRetryKey((k) => k + 1)}
+              >
+                Retry
+              </button>
+            </>
           ) : (
             <>
               <span className={spinnerClass} aria-hidden="true"></span>
-              <strong>Loading UI bootstrap...</strong>
+              <strong>Loading UI bootstrap…</strong>
             </>
           )}
         </div>
@@ -1411,7 +1784,7 @@ function AppShell() {
   return (
     <Layout bootstrap={bootstrap}>
       <Routes>
-        <Route path="/" element={<HomePage bootstrap={bootstrap} />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/wizard" element={<WizardPage bootstrap={bootstrap} />} />
         <Route path="/wizard/:sessionId" element={<WizardPage bootstrap={bootstrap} />} />
         <Route path="/wizard/:sessionId/:step" element={<WizardPage bootstrap={bootstrap} />} />
