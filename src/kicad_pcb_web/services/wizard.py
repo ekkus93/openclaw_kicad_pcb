@@ -53,7 +53,7 @@ def _ir_contract_text() -> str:
         "symbol Timer:NE556 instead of inventing separate 555 packages.\n"
         "- for a 556, keep one component ref such as U1 and use the optional unit "
         "field on pins to distinguish timer A vs timer B when needed.\n"
-        "- for a 556, describe each timer half with its own trigger/threshold/" 
+        "- for a 556, describe each timer half with its own trigger/threshold/"
         "discharge/output topology rather than merging both timing sections onto one node.\n"
         "- never use nodes instead of pins.\n"
         "- never omit component symbol fields.\n"
@@ -263,8 +263,7 @@ def _build_ir_messages(
         LlmMessage(
             role="user",
             content=(
-                "Approved circuit specification JSON:\n"
-                + session.spec.model_dump_json(indent=2)
+                "Approved circuit specification JSON:\n" + session.spec.model_dump_json(indent=2)
             ),
         )
     )
@@ -277,8 +276,7 @@ def _build_ir_messages(
                     f"Repair it using this exact error context:\n{repair_error}\n\n"
                     + _ir_contract_text()
                     + "\n\n"
-                    "Previous netlist JSON:\n"
-                    + json.dumps(prior_ir_json, indent=2)
+                    "Previous netlist JSON:\n" + json.dumps(prior_ir_json, indent=2)
                 ),
             )
         )
@@ -313,8 +311,7 @@ def _call_llm_for_json(
         elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
         response_chars = len(completion.content)
         serialized_messages = [
-            {"role": message.role, "content": message.content}
-            for message in request.messages
+            {"role": message.role, "content": message.content} for message in request.messages
         ]
         try:
             parsed = json.loads(completion.content)

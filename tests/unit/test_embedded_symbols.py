@@ -14,9 +14,7 @@ from kicad_pcb.sexpr.parser import parse_file
 from kicad_pcb.symbol_index import SymbolIndex
 
 MODEL_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "model_kicad_files"
-    / "mcp2551-can-transciever.kicad_sch"
+    Path(__file__).resolve().parents[2] / "model_kicad_files" / "mcp2551-can-transciever.kicad_sch"
 )
 CUSTOM_SYMBOL_FIXTURE = (
     Path(__file__).resolve().parents[2]

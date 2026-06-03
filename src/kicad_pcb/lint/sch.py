@@ -279,9 +279,7 @@ def lint_schematic(root: ListNode) -> list[LintIssue]:  # noqa: PLR0912, PLR0915
         units = [unit for unit, _lib_id in entries]
         lib_ids = {lib_id for _unit, lib_id in entries}
         repeated_multi_unit = (
-            all(unit for unit in units)
-            and len(set(units)) == count
-            and len(lib_ids) == 1
+            all(unit for unit in units) and len(set(units)) == count and len(lib_ids) == 1
         )
         if not repeated_multi_unit:
             issues.append(

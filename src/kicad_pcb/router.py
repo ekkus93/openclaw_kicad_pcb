@@ -1058,8 +1058,10 @@ def _safe_stub_label_anchor(
     stub = (round(stub_x, 2), round(stub_y, 2))
     if stub in occupied_label_points:
         return None
-    if protected_points and stub in protected_points and (
-        not shared_protected_points or stub not in shared_protected_points
+    if (
+        protected_points
+        and stub in protected_points
+        and (not shared_protected_points or stub not in shared_protected_points)
     ):
         return None
     return stub_x, stub_y
@@ -1392,9 +1394,8 @@ def _label_attachment_plan(
     if not start_was_occupied:
         blocked_points.discard(start)
     if (
-        (not protected or not protected.shared_points or stub not in protected.shared_points)
-        and not stub_was_occupied
-    ):
+        not protected or not protected.shared_points or stub not in protected.shared_points
+    ) and not stub_was_occupied:
         blocked_points.discard(stub)
 
     if prefer_perpendicular:
@@ -1509,8 +1510,7 @@ def _append_direct_power_symbol(
         anchor_x, anchor_y = anchor
         route = []
         if not (
-            math.isclose(wx, anchor_x, abs_tol=0.01)
-            and math.isclose(wy, anchor_y, abs_tol=0.01)
+            math.isclose(wx, anchor_x, abs_tol=0.01) and math.isclose(wy, anchor_y, abs_tol=0.01)
         ):
             route.append(WireSegment(wx, wy, anchor_x, anchor_y))
         connection_angle = _power_label_angle_for_pin(wa)
@@ -1520,10 +1520,7 @@ def _append_direct_power_symbol(
         connection_angle,
         _POWER_LABEL_CLEARANCE_MM,
     )
-    if not (
-        math.isclose(anchor_x, px, abs_tol=0.01)
-        and math.isclose(anchor_y, py, abs_tol=0.01)
-    ):
+    if not (math.isclose(anchor_x, px, abs_tol=0.01) and math.isclose(anchor_y, py, abs_tol=0.01)):
         route.append(WireSegment(anchor_x, anchor_y, px, py))
     symbol_angle = _power_symbol_angle(net_name, connection_angle)
     routing.wires.extend(route)
@@ -1538,9 +1535,7 @@ def _foreign_attachment_points_for_known(
     protected_stub_points: set[tuple[float, float]],
     shared_protected_stub_points: set[tuple[float, float]] | None = None,
 ) -> set[tuple[float, float]]:
-    current_pin_points = {
-        (round(wx, 2), round(wy, 2)) for _pin_ref, (wx, wy, _wa) in known
-    }
+    current_pin_points = {(round(wx, 2), round(wy, 2)) for _pin_ref, (wx, wy, _wa) in known}
     current_stub_points = {
         (round(ex, 2), round(ey, 2))
         for _pin_ref, (wx, wy, wa) in known
@@ -1622,15 +1617,13 @@ def _append_pin_endpoint_labels(
 def _point_on_segment(point: tuple[float, float], segment: WireSegment) -> bool:
     x, y = point
     if math.isclose(segment.y1, segment.y2, abs_tol=0.01):
-        return (
-            math.isclose(y, segment.y1, abs_tol=0.01)
-            and min(segment.x1, segment.x2) <= x <= max(segment.x1, segment.x2)
-        )
+        return math.isclose(y, segment.y1, abs_tol=0.01) and min(
+            segment.x1, segment.x2
+        ) <= x <= max(segment.x1, segment.x2)
     if math.isclose(segment.x1, segment.x2, abs_tol=0.01):
-        return (
-            math.isclose(x, segment.x1, abs_tol=0.01)
-            and min(segment.y1, segment.y2) <= y <= max(segment.y1, segment.y2)
-        )
+        return math.isclose(x, segment.x1, abs_tol=0.01) and min(
+            segment.y1, segment.y2
+        ) <= y <= max(segment.y1, segment.y2)
     return False
 
 
@@ -3520,8 +3513,7 @@ def _split_wires_at_points(
             candidate_points = sorted(
                 point
                 for point in split_points
-                if math.isclose(point[0], x1, abs_tol=0.01)
-                and min(y1, y2) < point[1] < max(y1, y2)
+                if math.isclose(point[0], x1, abs_tol=0.01) and min(y1, y2) < point[1] < max(y1, y2)
             )
             if y2 < y1:
                 candidate_points.reverse()
@@ -3529,8 +3521,7 @@ def _split_wires_at_points(
             candidate_points = sorted(
                 point
                 for point in split_points
-                if math.isclose(point[1], y1, abs_tol=0.01)
-                and min(x1, x2) < point[0] < max(x1, x2)
+                if math.isclose(point[1], y1, abs_tol=0.01) and min(x1, x2) < point[0] < max(x1, x2)
             )
             if x2 < x1:
                 candidate_points.reverse()
@@ -3688,10 +3679,9 @@ def _infer_safe_t_junctions(
         if positions is None:
             return False
         for cx, cy, _angle in positions.values():
-            if (
-                (cx - SYMBOL_HALF_SIZE_MM) <= px <= (cx + SYMBOL_HALF_SIZE_MM)
-                and (cy - SYMBOL_HALF_SIZE_MM) <= py <= (cy + SYMBOL_HALF_SIZE_MM)
-            ):
+            if (cx - SYMBOL_HALF_SIZE_MM) <= px <= (cx + SYMBOL_HALF_SIZE_MM) and (
+                cy - SYMBOL_HALF_SIZE_MM
+            ) <= py <= (cy + SYMBOL_HALF_SIZE_MM):
                 return True
         return False
 
@@ -4120,10 +4110,14 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     route_anchor = (cx, cy)
                     route_points = list(stub_ends)
                     if use_bus and aligned_axis is not None and aligned_coordinate is not None:
-                        preferred_sign = 1 if (
-                            (aligned_axis == "vertical" and power_angle == 180)
-                            or (aligned_axis == "horizontal" and power_angle == 270)
-                        ) else -1
+                        preferred_sign = (
+                            1
+                            if (
+                                (aligned_axis == "vertical" and power_angle == 180)
+                                or (aligned_axis == "horizontal" and power_angle == 270)
+                            )
+                            else -1
+                        )
                         preferred_lane_coordinate = _snap_grid(
                             aligned_coordinate + preferred_sign * WIRE_EXTEND_MM
                         )
@@ -4144,13 +4138,16 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                             seen_coordinates.add(candidate_coordinate)
                             candidate_coordinates.append(candidate_coordinate)
 
-                        best_lane: tuple[
-                            tuple[int, float, int],
-                            float,
-                            tuple[float, float],
-                            list[WireSegment],
-                            list[JunctionPoint],
-                        ] | None = None
+                        best_lane: (
+                            tuple[
+                                tuple[int, float, int],
+                                float,
+                                tuple[float, float],
+                                list[WireSegment],
+                                list[JunctionPoint],
+                            ]
+                            | None
+                        ) = None
                         for candidate_coordinate in candidate_coordinates:
                             candidate_anchor = (
                                 (candidate_coordinate, cy)
@@ -4252,9 +4249,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                         )
                         routing.wires.append(WireSegment(px, py, route_anchor[0], tail_y))
                     else:
-                        routing.wires.append(
-                            WireSegment(route_anchor[0], route_anchor[1], px, py)
-                        )
+                        routing.wires.append(WireSegment(route_anchor[0], route_anchor[1], px, py))
 
             # Off-canvas fallback for power pins with no known endpoint
             for pin_ref in unknown:
@@ -4481,11 +4476,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     RouteDecision(
                         net_name=net.name,
                         classification=net_classification,
-                        strategy=(
-                            "global_labels"
-                            if net.name.startswith("/")
-                            else "local_labels"
-                        ),
+                        strategy=("global_labels" if net.name.startswith("/") else "local_labels"),
                         pin_count=len(pins),
                         known_pin_count=len(known),
                         unknown_pin_count=len(unknown),
@@ -4769,8 +4760,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                     heuristic_override == "protected_stub_avoidance"
                     and not net.name.startswith("/")
                     and (
-                        max(point[0] for point in stub_ends)
-                        - min(point[0] for point in stub_ends)
+                        max(point[0] for point in stub_ends) - min(point[0] for point in stub_ends)
                     )
                     > 80.0
                 ):
@@ -4823,9 +4813,7 @@ def route_nets(  # noqa: PLR0912, PLR0913, PLR0915
                             net_name=net.name,
                             classification=net_classification,
                             strategy=(
-                                "global_labels"
-                                if net.name.startswith("/")
-                                else "local_labels"
+                                "global_labels" if net.name.startswith("/") else "local_labels"
                             ),
                             pin_count=len(pins),
                             known_pin_count=len(known),
@@ -5058,8 +5046,7 @@ def write_routing(  # noqa: PLR0913
         )
     emitted_protected_points: set[tuple[float, float]] = set()
     emitted_protected_points.update(
-        (round(label.x, 2), round(label.y, 2))
-        for label in routing.labels
+        (round(label.x, 2), round(label.y, 2)) for label in routing.labels
     )
     emitted_protected_points.update(
         (round(label.x, 2), round(label.y, 2)) for label in routing.global_labels

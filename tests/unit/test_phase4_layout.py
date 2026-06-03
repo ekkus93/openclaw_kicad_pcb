@@ -4970,8 +4970,7 @@ class TestApplyPostLayoutSnaps:
         )
 
         assert (
-            '__fbdummy_R1__ [label="", shape=point, style=invis, width=0, height=0];'
-            in dot_source
+            '__fbdummy_R1__ [label="", shape=point, style=invis, width=0, height=0];' in dot_source
         )
         assert "subgraph cluster_feedback" not in dot_source
         assert "R1 -> __fbdummy_R1__ [style=invis, weight=10];" in dot_source

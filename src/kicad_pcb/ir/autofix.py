@@ -590,8 +590,7 @@ def _fix_net_pin_types(
                 old = fpr["pin"]
                 fpr["pin"] = str(old)
                 fixes.append(
-                    f'net "{net_name}" {fpr.get("ref", "?")} '
-                    f'pin {old} (int) → "{fpr["pin"]}" (str)'
+                    f'net "{net_name}" {fpr.get("ref", "?")} pin {old} (int) → "{fpr["pin"]}" (str)'
                 )
             fixed_pins.append(fpr)
         fn["pins"] = fixed_pins

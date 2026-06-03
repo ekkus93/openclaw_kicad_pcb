@@ -13,9 +13,7 @@ from kicad_pcb.corpus.metadata import CorpusFixtureMetadata
 from kicad_pcb.errors import ToolError, UserError
 
 MODEL_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "model_kicad_files"
-    / "mcp2551-can-transciever.kicad_sch"
+    Path(__file__).resolve().parents[2] / "model_kicad_files" / "mcp2551-can-transciever.kicad_sch"
 )
 
 

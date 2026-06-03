@@ -6,9 +6,7 @@ from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.schematic_metrics import count_power_symbols
 
 MODEL_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "model_kicad_files"
-    / "mcp2551-can-transciever.kicad_sch"
+    Path(__file__).resolve().parents[2] / "model_kicad_files" / "mcp2551-can-transciever.kicad_sch"
 )
 
 

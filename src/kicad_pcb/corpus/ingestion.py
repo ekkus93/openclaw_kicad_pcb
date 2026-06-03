@@ -430,8 +430,7 @@ def _render_ingestion_summary(
         fixture_text = entry.fixture_id or "n/a"
         reason_text = f" ({entry.reason})" if entry.reason else ""
         lines.append(
-            f"- `{entry.source_path}` -> **{entry.status}**{reason_text}; "
-            f"fixture `{fixture_text}`"
+            f"- `{entry.source_path}` -> **{entry.status}**{reason_text}; fixture `{fixture_text}`"
         )
     return "\n".join(lines)
 

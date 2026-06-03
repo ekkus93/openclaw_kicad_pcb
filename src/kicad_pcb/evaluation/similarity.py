@@ -65,8 +65,7 @@ def _score_role_counts(source: LayoutFeatures, generated: LayoutFeatures) -> flo
     if not roles:
         return 25.0
     total_delta = sum(
-        abs(source.role_counts.get(role, 0) - generated.role_counts.get(role, 0))
-        for role in roles
+        abs(source.role_counts.get(role, 0) - generated.role_counts.get(role, 0)) for role in roles
     )
     return max(25.0 - total_delta * 3.0, 0.0)
 

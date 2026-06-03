@@ -102,10 +102,7 @@ def kicadxml_to_circuit_ir(
         nets.append(
             NetIR(
                 name=net.name,
-                pins=[
-                    PinRefIR(ref=pin.ref, pin=pin.pin, unit=pin.unit)
-                    for pin in net.pins
-                ],
+                pins=[PinRefIR(ref=pin.ref, pin=pin.pin, unit=pin.unit) for pin in net.pins],
             )
         )
     return canonicalize_circuit_ir(

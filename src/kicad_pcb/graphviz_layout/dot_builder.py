@@ -141,10 +141,7 @@ def _non_power_net_uses_only_power_output_pins(
         return False
 
     candidate_pins = [
-        pin
-        for pin in net.pins
-        if pin.ref != cap_ref
-        and component_type(pin.ref) == "ic"
+        pin for pin in net.pins if pin.ref != cap_ref and component_type(pin.ref) == "ic"
     ]
     if not candidate_pins:
         return False

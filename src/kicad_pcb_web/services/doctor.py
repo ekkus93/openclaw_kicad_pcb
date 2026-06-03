@@ -80,9 +80,7 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
         DoctorCheck(
             name="llm_provider",
             ok=True,
-            detail=(
-                f"Provider: {settings.llm.provider}; model: {settings.llm.model or 'not set'}"
-            ),
+            detail=(f"Provider: {settings.llm.provider}; model: {settings.llm.model or 'not set'}"),
         ),
         DoctorCheck(
             name="llm_configuration",
@@ -90,10 +88,7 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
                 not settings.llm.enabled
                 or (
                     settings.llm.model is not None
-                    and (
-                        settings.llm.provider == "openai"
-                        or settings.llm.base_url is not None
-                    )
+                    and (settings.llm.provider == "openai" or settings.llm.base_url is not None)
                 )
             ),
             detail=(

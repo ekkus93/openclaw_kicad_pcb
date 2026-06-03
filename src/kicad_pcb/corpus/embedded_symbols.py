@@ -167,11 +167,7 @@ def _build_alias_symbol(base_symbol: ListNode, *, alias_name: str, base_name: st
     for child in base_symbol.items[2:]:
         if isinstance(child, ListNode) and child.key == "symbol":
             continue
-        if (
-            not inserted_extends
-            and isinstance(child, ListNode)
-            and child.key == "property"
-        ):
+        if not inserted_extends and isinstance(child, ListNode) and child.key == "property":
             alias_items.append(extends_node)
             inserted_extends = True
         alias_items.append(child)

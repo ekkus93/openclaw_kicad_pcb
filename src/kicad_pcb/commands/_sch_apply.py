@@ -791,7 +791,6 @@ def _build_net_membership_maps(
                 members.append((pin.ref, layout[pin.ref]))
         members_by_net[net.name] = members
 
-
     return net_by_pin, members_by_net
 
 

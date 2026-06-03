@@ -11,9 +11,7 @@ from urllib.parse import urlparse
 
 LlmProvider = Literal["disabled", "openai", "ollama", "llama_server"]
 
-_VALID_LLM_PROVIDERS: frozenset[str] = frozenset(
-    {"disabled", "openai", "ollama", "llama_server"}
-)
+_VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})
 
 
 @dataclass(frozen=True)

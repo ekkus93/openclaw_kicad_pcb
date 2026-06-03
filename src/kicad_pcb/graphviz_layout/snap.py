@@ -4964,12 +4964,9 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     decouple_skip: frozenset[tuple[str, str]] = frozenset(
         (min(cap, ic), max(cap, ic)) for cap, ic in decoupling_map.items()
     )
-    has_buffer_stage = (
-        block_layout is not None
-        and any(
-            assignment.role == BlockRole.BUFFER_STAGE
-            for assignment in block_layout.assignments.values()
-        )
+    has_buffer_stage = block_layout is not None and any(
+        assignment.role == BlockRole.BUFFER_STAGE
+        for assignment in block_layout.assignments.values()
     )
     result = _spread_x_columns(result)
     result = _deoverlap_positions(result, skip_pairs=decouple_skip)
@@ -5047,8 +5044,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         for ref, (x, _y, _rot) in result.items():
             assignment = block_layout.assignments.get(ref)
             if assignment is None or (
-                assignment.role
-                not in {BlockRole.DECOUPLING, BlockRole.PRECONDITIONING}
+                assignment.role not in {BlockRole.DECOUPLING, BlockRole.PRECONDITIONING}
                 and not is_core_like_role(assignment.role)
             ):
                 continue
@@ -5236,11 +5232,7 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     has_amplifier_symbol = any(
         "AMPLIFIER" in component.symbol.upper() for component in ir.components
     )
-    if (
-        block_layout is not None
-        and has_amplifier_symbol
-        and not has_buffer_stage
-    ):
+    if block_layout is not None and has_amplifier_symbol and not has_buffer_stage:
         result = _snap_opamp_stage_non_inverting_input_node_shape(
             result,
             ir,

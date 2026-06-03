@@ -272,7 +272,5 @@ def test_autofix_repairs_compact_node_tokens_and_strips_invalid_options() -> Non
     }
     assert 'options: removed unsupported key "notes"' in outcome.fixes_applied
     assert (
-        'net "VCC": converted compact pin token "U1.8" into ref/pin object'
-        in outcome.fixes_applied
+        'net "VCC": converted compact pin token "U1.8" into ref/pin object' in outcome.fixes_applied
     )
-

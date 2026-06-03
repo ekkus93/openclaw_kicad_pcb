@@ -158,12 +158,14 @@ def test_simplify_preserves_explicit_protected_midsegment_junction() -> None:
     result = _simplify_wires(wires, protected_points={(10.0, 10.0)})
 
     assert len(result) == 3
-    assert sum(
-        1
-        for seg in result
-        if math.isclose(seg.x1, 10.0, abs_tol=0.01)
-        and math.isclose(seg.x2, 10.0, abs_tol=0.01)
-    ) == 2
+    assert (
+        sum(
+            1
+            for seg in result
+            if math.isclose(seg.x1, 10.0, abs_tol=0.01) and math.isclose(seg.x2, 10.0, abs_tol=0.01)
+        )
+        == 2
+    )
 
 
 def test_split_wires_at_points_breaks_segments_at_explicit_junctions() -> None:
@@ -456,10 +458,7 @@ def test_pin_endpoint_label_breakout_avoids_occupied_prior_label_anchor() -> Non
 
     sc1_labels = [label for label in routing.global_labels if label.name == "/SC1_V+"]
     assert len(sc1_labels) == 3
-    assert (60.96, 132.08) not in {
-        (round(label.x, 2), round(label.y, 2))
-        for label in sc1_labels
-    }
+    assert (60.96, 132.08) not in {(round(label.x, 2), round(label.y, 2)) for label in sc1_labels}
     assert routing.wires
 
 
@@ -2392,14 +2391,10 @@ def test_route_nets_uses_direct_symbols_for_aligned_two_pin_ground_cluster() -> 
         for seg in routing.wires
     )
     assert not any(
-        math.isclose(seg.x1, 180.34, abs_tol=0.01)
-        and math.isclose(seg.x2, 180.34, abs_tol=0.01)
+        math.isclose(seg.x1, 180.34, abs_tol=0.01) and math.isclose(seg.x2, 180.34, abs_tol=0.01)
         for seg in routing.wires
     )
-    assert not any(
-        math.isclose(jpt.x, 180.34, abs_tol=0.01)
-        for jpt in routing.junctions
-    )
+    assert not any(math.isclose(jpt.x, 180.34, abs_tol=0.01) for jpt in routing.junctions)
 
 
 def test_route_nets_uses_direct_symbols_when_ground_cluster_hits_foreign_endpoint() -> None:
@@ -2491,9 +2486,7 @@ def test_route_nets_direct_power_symbols_avoid_foreign_shared_stub_collisions() 
     )
 
     mixed_power_components = _connected_power_symbol_sets(routing)
-    assert not any(
-        {"PWR:+3.3V", "PWR:GND"} <= component for component in mixed_power_components
-    )
+    assert not any({"PWR:+3.3V", "PWR:GND"} <= component for component in mixed_power_components)
     assert not any(
         {"PWR:+3.3V", "PWR:/+3.3V@SD"} <= component for component in mixed_power_components
     )
@@ -2604,9 +2597,7 @@ def test_route_nets_uses_local_labels_when_local_four_pin_net_hits_foreign_attac
         },
     )
 
-    decision = next(
-        decision for decision in routing.route_decisions if decision.net_name == "NET4"
-    )
+    decision = next(decision for decision in routing.route_decisions if decision.net_name == "NET4")
     assert decision.strategy == "local_labels"
     assert decision.heuristic_override == "foreign_attachment_label_breakout"
     assert len([label for label in routing.labels if label.name == "NET4"]) == 4

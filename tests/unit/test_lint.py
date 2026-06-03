@@ -153,11 +153,15 @@ class TestSCH003:
         assert "SCH003" in _err_codes(lint_schematic(root))
 
     def test_multi_unit_ref_with_distinct_units_is_allowed(self) -> None:
-        body = _sym("U2", "u1", lib="Device:R", unit=1) + "\n" + _sym(
-            "U2",
-            "u2",
-            lib="Device:R",
-            unit=2,
+        body = (
+            _sym("U2", "u1", lib="Device:R", unit=1)
+            + "\n"
+            + _sym(
+                "U2",
+                "u2",
+                lib="Device:R",
+                unit=2,
+            )
         )
         root = parse(
             f"(kicad_sch (version 1) (generator t)\n"
@@ -169,11 +173,15 @@ class TestSCH003:
         assert "SCH003" not in _err_codes(lint_schematic(root))
 
     def test_multi_unit_ref_with_mixed_libraries_still_triggers_sch003(self) -> None:
-        body = _sym("U2", "u1", lib="Device:R", unit=1) + "\n" + _sym(
-            "U2",
-            "u2",
-            lib="Device:C",
-            unit=2,
+        body = (
+            _sym("U2", "u1", lib="Device:R", unit=1)
+            + "\n"
+            + _sym(
+                "U2",
+                "u2",
+                lib="Device:C",
+                unit=2,
+            )
         )
         root = parse(
             f"(kicad_sch (version 1) (generator t)\n"

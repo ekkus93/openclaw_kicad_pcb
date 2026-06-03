@@ -36,12 +36,8 @@ def compare_circuit_ir_equivalence(
     )
     mismatches: list[ElectricalMismatch] = []
 
-    source_components = {
-        component.ref: component for component in source_ir.components
-    }
-    generated_components = {
-        component.ref: component for component in generated_ir.components
-    }
+    source_components = {component.ref: component for component in source_ir.components}
+    generated_components = {component.ref: component for component in generated_ir.components}
     if source_components.keys() != generated_components.keys():
         mismatches.append(
             ElectricalMismatch(

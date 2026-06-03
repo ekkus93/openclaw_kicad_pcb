@@ -118,9 +118,7 @@ def test_llama_server_uses_openai_compatible_contract() -> None:
             json={
                 "id": "llama-req-1",
                 "model": "qwen2.5",
-                "choices": [
-                    {"message": {"content": "Hello"}, "finish_reason": "stop"}
-                ],
+                "choices": [{"message": {"content": "Hello"}, "finish_reason": "stop"}],
             },
         )
 
@@ -289,8 +287,7 @@ def test_live_llama_server_handles_real_wizard_spec_prompt() -> None:
             WizardMessage(
                 role="user",
                 content=(
-                    "Create a simple RC low-pass filter with one input, one output, "
-                    "and 5V supply."
+                    "Create a simple RC low-pass filter with one input, one output, and 5V supply."
                 ),
             )
         ],

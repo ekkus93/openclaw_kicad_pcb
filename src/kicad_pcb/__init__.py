@@ -257,6 +257,7 @@ def main() -> None:
 
     importlib.import_module("kicad_pcb.cli").main()
 
+
 __all__ = [
     # errors
     "KiCadError",

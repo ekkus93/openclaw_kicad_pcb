@@ -11,9 +11,7 @@ from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr import parse as parse_sexpr
 
 MODEL_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "model_kicad_files"
-    / "mcp2551-can-transciever.kicad_sch"
+    Path(__file__).resolve().parents[2] / "model_kicad_files" / "mcp2551-can-transciever.kicad_sch"
 )
 
 
@@ -49,7 +47,7 @@ def test_extract_layout_features_from_synthetic_doc(tmp_path: Path) -> None:
                 ),
                 (
                     '(symbol (lib_id "power:GND") (at 40 30 0) (unit 1) '
-                    '(in_bom no) (on_board no) '
+                    "(in_bom no) (on_board no) "
                     '(property "Reference" "#PWR01" (at 40 30 0)) '
                     '(property "Value" "GND" (at 40 32 0)))'
                 ),

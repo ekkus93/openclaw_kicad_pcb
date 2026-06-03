@@ -536,8 +536,7 @@ def test_wizard_generate_ir_accepts_simple_555_blinker_without_pwm_only_lints(
                     "spec": {
                         "project_name": "Simple555Blinker",
                         "purpose": (
-                            "Blink a single LED on and off at approximately 1 Hz "
-                            "using a 555 timer."
+                            "Blink a single LED on and off at approximately 1 Hz using a 555 timer."
                         ),
                     },
                     "assumptions": [],
@@ -785,8 +784,7 @@ def test_wizard_surfaces_ir_needs_repair_for_hallucinated_symbol_regression(
         },
         {
             "assistant_message": (
-                "The requested design is unsupported because the constraints "
-                "contradict each other."
+                "The requested design is unsupported because the constraints contradict each other."
             ),
             "next_state": "failed",
             "open_questions": [],

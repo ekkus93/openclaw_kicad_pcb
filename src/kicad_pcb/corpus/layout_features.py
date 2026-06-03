@@ -141,10 +141,7 @@ def write_layout_features(features: LayoutFeatures, path: Path) -> None:
     """Write *features* as stable JSON."""
 
     payload = features.model_dump(mode="json")
-    payload["symbols"] = {
-        ref: payload["symbols"][ref]
-        for ref in sorted(payload["symbols"])
-    }
+    payload["symbols"] = {ref: payload["symbols"][ref] for ref in sorted(payload["symbols"])}
     payload["relative_positions"] = sorted(
         payload["relative_positions"],
         key=lambda item: (item["a"], item["b"], item["relation"]),
@@ -233,9 +230,7 @@ def _relative_positions(symbols: dict[str, SymbolLayoutFeature]) -> list[Relativ
         if not symbol.is_power_symbol and (symbol.is_connector or symbol.is_major_ic)
     ]
     passives = [
-        symbol
-        for symbol in symbols.values()
-        if not symbol.is_power_symbol and symbol.is_passive
+        symbol for symbol in symbols.values() if not symbol.is_power_symbol and symbol.is_passive
     ]
     relations: set[tuple[str, str, RelativeRelation]] = set()
 
@@ -253,8 +248,7 @@ def _relative_positions(symbols: dict[str, SymbolLayoutFeature]) -> list[Relativ
                 relations.add((passive.ref, symbol.ref, _inverse_relation(relation)))
 
     return [
-        RelativePositionFeature(a=a, b=b, relation=relation)
-        for a, b, relation in sorted(relations)
+        RelativePositionFeature(a=a, b=b, relation=relation) for a, b, relation in sorted(relations)
     ]
 
 

@@ -153,7 +153,7 @@ def evaluate_model_corpus(
                 context,
                 exc,
             )
-        
+
         if report.result in {"fail", "partial"}:
             failed_count += 1
         summaries.append(
@@ -611,8 +611,7 @@ def _render_summary_markdown(
     ]
     for summary in summaries:
         lines.append(
-            f"- `{summary.fixture_id}` -> **{summary.result}** "
-            f"score={summary.total_score:.2f}"
+            f"- `{summary.fixture_id}` -> **{summary.result}** score={summary.total_score:.2f}"
         )
     return "\n".join(lines)
 
