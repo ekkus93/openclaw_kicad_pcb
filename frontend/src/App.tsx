@@ -444,19 +444,13 @@ type DiagnosticsPayload = {
 }
 
 function BuildSummaryPanel({ diagnostics }: { diagnostics: DiagnosticsPayload }) {
-  const counts: Array<{ label: string; value: number }> = [
-    { label: 'Symbols', value: diagnostics.symbol_count ?? 0 },
-    { label: 'Wires', value: diagnostics.wire_count ?? 0 },
-    { label: 'Labels', value: diagnostics.label_count ?? 0 },
-    { label: 'Junctions', value: diagnostics.junction_count ?? 0 },
-    { label: 'Net bindings', value: diagnostics.binding_marker_count ?? 0 },
-  ].filter((c) => c.value > 0)
-
+  const symbols = diagnostics.symbol_count ?? 0
+  const wires = diagnostics.wire_count ?? 0
+  const labels = diagnostics.label_count ?? 0
   const missingBindings = diagnostics.missing_bindings ?? []
   const unexpectedBindings = diagnostics.unexpected_bindings ?? []
   const duplicateBindings = diagnostics.duplicate_bindings ?? []
   const hardFailures = diagnostics.hard_failures ?? []
-
   const hasIssues =
     missingBindings.length > 0 ||
     unexpectedBindings.length > 0 ||
@@ -465,57 +459,73 @@ function BuildSummaryPanel({ diagnostics }: { diagnostics: DiagnosticsPayload })
 
   return (
     <DisclosurePanel title="Build Summary">
-      {counts.length > 0 ? (
-        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-3 mb-4">
-          {counts.map(({ label, value }) => (
-            <div key={label} className="flex items-baseline justify-between gap-2 rounded-[14px] border border-[rgba(88,63,39,0.1)] bg-[rgba(255,255,255,0.5)] px-3 py-2">
-              <dt className="text-[0.78rem] font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">{label}</dt>
-              <dd className="text-lg font-semibold text-[var(--text)]">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-      {hasIssues ? (
-        <div className="grid gap-3">
-          {hardFailures.map((f, i) => (
-            <div key={i} className="rounded-[14px] border border-[rgba(154,45,40,0.2)] bg-[rgba(154,45,40,0.05)] p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--error)]">
-                  Hard failure
-                </span>
+      <div className="grid gap-4">
+        {/* Plain-language summary of what was built */}
+        <ul className="m-0 grid list-disc gap-2 pl-5 text-[0.95rem] leading-6 text-[var(--text)]">
+          <li>
+            <strong>{symbols}</strong>{' '}
+            {symbols === 1 ? 'component' : 'components'} placed in the schematic
+          </li>
+          <li>
+            <strong>{wires}</strong>{' '}
+            wire {wires === 1 ? 'connection' : 'connections'} routed between pins
+          </li>
+          {labels > 0 ? (
+            <li>
+              <strong>{labels}</strong>{' '}
+              net {labels === 1 ? 'label' : 'labels'} added to identify signal connections
+            </li>
+          ) : null}
+        </ul>
+
+        {/* Issues — only shown when something went wrong */}
+        {hasIssues ? (
+          <div className="grid gap-3">
+            {hardFailures.map((f, i) => (
+              <div key={i} className="rounded-[14px] border border-[rgba(154,45,40,0.2)] bg-[rgba(154,45,40,0.05)] p-3">
+                <p className="text-[0.82rem] font-bold text-[var(--error)]">Generation error</p>
+                {f.message ? (
+                  <p className="mt-1 text-[0.92rem] leading-6 text-[var(--text)]">{f.message}</p>
+                ) : null}
                 {f.code ? (
-                  <code className="ml-auto rounded bg-[rgba(88,63,39,0.08)] px-1.5 py-0.5 text-[0.75rem] text-[var(--muted)]">
-                    {f.code}
-                  </code>
+                  <p className="mt-1 text-[0.78rem] text-[var(--muted)]">Code: {f.code}</p>
                 ) : null}
               </div>
-              {f.message ? (
-                <p className="mt-1.5 text-[0.92rem] leading-6 text-[var(--text)]">{f.message}</p>
-              ) : null}
-            </div>
-          ))}
-          {missingBindings.length > 0 ? (
-            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
-              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Missing net bindings</p>
-              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{missingBindings.join(', ')}</p>
-            </div>
-          ) : null}
-          {unexpectedBindings.length > 0 ? (
-            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
-              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Unexpected net bindings</p>
-              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{unexpectedBindings.join(', ')}</p>
-            </div>
-          ) : null}
-          {duplicateBindings.length > 0 ? (
-            <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
-              <p className="text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[var(--warning)]">Duplicate net bindings</p>
-              <p className="mt-1 text-[0.88rem] text-[var(--muted)]">{duplicateBindings.join(', ')}</p>
-            </div>
-          ) : null}
-        </div>
-      ) : (
-        <p className={emptyCopyClass}>No issues detected.</p>
-      )}
+            ))}
+            {missingBindings.length > 0 ? (
+              <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+                <p className="text-[0.82rem] font-bold text-[var(--warning)]">Missing net connections</p>
+                <p className="mt-1 text-[0.88rem] leading-6 text-[var(--muted)]">
+                  These nets were declared in the IR but have no corresponding wire or label in the schematic:{' '}
+                  <span className="text-[var(--text)]">{missingBindings.join(', ')}</span>
+                </p>
+              </div>
+            ) : null}
+            {unexpectedBindings.length > 0 ? (
+              <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+                <p className="text-[0.82rem] font-bold text-[var(--warning)]">Unexpected net connections</p>
+                <p className="mt-1 text-[0.88rem] leading-6 text-[var(--muted)]">
+                  These connections appear in the schematic but were not in the IR:{' '}
+                  <span className="text-[var(--text)]">{unexpectedBindings.join(', ')}</span>
+                </p>
+              </div>
+            ) : null}
+            {duplicateBindings.length > 0 ? (
+              <div className="rounded-[14px] border border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)] p-3">
+                <p className="text-[0.82rem] font-bold text-[var(--warning)]">Duplicate net connections</p>
+                <p className="mt-1 text-[0.88rem] leading-6 text-[var(--muted)]">
+                  These nets appear more than once in the schematic:{' '}
+                  <span className="text-[var(--text)]">{duplicateBindings.join(', ')}</span>
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[0.88rem] text-[var(--success)]">
+            All net connections verified — no issues detected.
+          </p>
+        )}
+      </div>
     </DisclosurePanel>
   )
 }
