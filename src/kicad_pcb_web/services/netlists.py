@@ -178,61 +178,72 @@ def validate_netlist_dict(
     )
 
 
-def _generate_schematic_preview(
-    schematic_path: Path,
-    artifacts_dir: Path,
-) -> Path | None:
+def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Path:
     """Export a PNG preview of the schematic into *artifacts_dir*.
 
-    Returns the PNG path on success, ``None`` if any step fails.
-    This is always best-effort — failures are logged but never raise.
+    Raises ``RuntimeError`` if any step fails — missing tools, failed SVG
+    export, or failed PNG conversion.  The caller should let this propagate
+    so the job is marked as failed rather than silently succeeding without a
+    preview.
     """
     kicad_cli_bin = shutil.which("kicad-cli")
+    if not kicad_cli_bin:
+        raise RuntimeError(
+            "kicad-cli is not installed or not on PATH. "
+            "Install KiCad (version 9+) to enable schematic preview generation."
+        )
     rsvg_bin = shutil.which("rsvg-convert")
-    if not kicad_cli_bin or not rsvg_bin:
-        return None
+    if not rsvg_bin:
+        raise RuntimeError(
+            "rsvg-convert is not installed or not on PATH. "
+            "Install librsvg2-bin (Debian/Ubuntu) or librsvg (macOS) to enable "
+            "schematic preview generation."
+        )
     if not schematic_path.is_file():
-        return None
+        raise RuntimeError(f"Schematic file not found: {schematic_path}")
 
     png_path = artifacts_dir / "schematic_preview.png"
 
-    try:
-        return _run_preview(kicad_cli_bin, rsvg_bin, schematic_path, artifacts_dir, png_path)
-    except Exception:
-        LOGGER.debug("Schematic preview generation failed", exc_info=True)
-        return None
-
-
-def _run_preview(
-    kicad_cli_bin: str,
-    rsvg_bin: str,
-    schematic_path: Path,
-    artifacts_dir: Path,
-    png_path: Path,
-) -> Path | None:
-    # kicad-cli sch export svg --output takes a *directory*; it writes a
-    # file named after the schematic inside that directory.  Use a temp
-    # sub-directory so we can reliably find the produced SVG.
+    # kicad-cli sch export svg --output takes a *directory*; it writes a file
+    # named after the schematic inside that directory.
     svg_dir = artifacts_dir / "_svg_tmp"
     svg_dir.mkdir(exist_ok=True)
+    try:
+        cli = KicadCliAdapter(kicad_cli=kicad_cli_bin)
+        result = cli.export_svg_sch(schematic_path, svg_dir)
+        if result.returncode != 0:
+            stderr = getattr(result, "stderr", b"") or b""
+            raise RuntimeError(
+                f"kicad-cli SVG export failed (exit {result.returncode}): "
+                f"{stderr.decode(errors='replace').strip() or '(no output)'}"
+            )
 
-    cli = KicadCliAdapter(kicad_cli=kicad_cli_bin)
-    result = cli.export_svg_sch(schematic_path, svg_dir)
-    if result.returncode != 0:
-        return None
+        svgs = list(svg_dir.glob("*.svg"))
+        if not svgs:
+            raise RuntimeError(
+                "kicad-cli reported success but produced no SVG file. "
+                f"Expected an SVG in {svg_dir}"
+            )
 
-    svgs = list(svg_dir.glob("*.svg"))
-    if not svgs:
-        return None
+        conv = subprocess.run(
+            [rsvg_bin, "--output", str(png_path), str(svgs[0])],
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+        if conv.returncode != 0:
+            raise RuntimeError(
+                f"rsvg-convert PNG conversion failed (exit {conv.returncode}): "
+                f"{conv.stderr.decode(errors='replace').strip() or '(no output)'}"
+            )
+        if not png_path.exists():
+            raise RuntimeError(
+                f"rsvg-convert reported success but {png_path.name} was not created."
+            )
+    finally:
+        shutil.rmtree(svg_dir, ignore_errors=True)
 
-    conv = subprocess.run(
-        [rsvg_bin, "--output", str(png_path), str(svgs[0])],
-        capture_output=True,
-        timeout=30,
-        check=False,
-    )
-    shutil.rmtree(svg_dir, ignore_errors=True)
-    return png_path if conv.returncode == 0 and png_path.exists() else None
+    return png_path
 
 
 def generate_project_from_netlist_job(
@@ -285,17 +296,7 @@ def generate_project_from_netlist_job(
         ):
             shutil.copy2(apply_result.warning_report_path, record.artifacts_dir / "warnings.json")
 
-        preview_path = _generate_schematic_preview(
-            apply_result.schematic_path,
-            record.artifacts_dir,
-        )
-        if preview_path is None:
-            LOGGER.warning(
-                "Schematic preview generation failed for job %s — "
-                "kicad-cli or rsvg-convert may be unavailable or the export failed. "
-                "Check that kicad-cli >= 9 and rsvg-convert are installed.",
-                record.id,
-            )
+        _generate_schematic_preview(apply_result.schematic_path, record.artifacts_dir)
         project_zip_path = create_project_zip(project.path, record.artifacts_dir)
         warnings_artifact_path = record.artifacts_dir / "warnings.json"
         result_payload: dict[str, Any] = {
