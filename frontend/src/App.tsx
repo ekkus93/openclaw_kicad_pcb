@@ -88,7 +88,6 @@ const wizardTextareaClass =
   'min-h-[10rem] text-base leading-7 sm:min-h-[12rem] sm:text-[1.02rem] [&::-webkit-resizer]:hidden'
 const wizardActionRowClass = 'flex flex-col gap-3 sm:flex-row sm:flex-wrap'
 const wizardPrimaryButtonClass = `${buttonPrimaryClass} w-full justify-center text-center sm:w-auto`
-const wizardSecondaryButtonClass = `${buttonSecondaryClass} w-full justify-center text-center sm:w-auto`
 const compactSupportCopyClass = 'text-sm leading-6 text-[var(--muted)]'
 const transcriptMetaClass = 'flex items-center justify-between gap-3 text-[0.76rem] font-semibold uppercase tracking-[0.12em]'
 const transcriptBodyClass = 'whitespace-pre-wrap break-words text-[0.98rem] leading-7 text-[var(--text)]'
@@ -511,12 +510,16 @@ function WizardComposer({
   value,
   onChange,
   disabled,
+  submitLabel,
+  submitDisabled,
 }: {
   label: string
   placeholder: string
   value: string
   onChange: (value: string) => void
   disabled: boolean
+  submitLabel?: string
+  submitDisabled?: boolean
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -555,11 +558,20 @@ function WizardComposer({
         {disabled ? (
           <span>Waiting for response…</span>
         ) : (
-          <>
-            <span>{value.trim() ? 'Ready to send' : 'Draft a message'}</span>
-            <span>Ctrl/Cmd+Enter to send</span>
-          </>
+          <span className="text-[var(--muted)]">Ctrl/Cmd+Enter to send</span>
         )}
+        {submitLabel ? (
+          <button
+            type="submit"
+            className={joinClasses(
+              'rounded-full px-4 py-1.5 text-sm font-semibold transition-[transform,opacity,background-color] duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.55] disabled:transform-none',
+              'bg-[linear-gradient(135deg,var(--brand)_0%,var(--brand-deep)_100%)] text-[#fff8f1] shadow-[0_4px_12px_rgba(109,47,20,0.2)]',
+            )}
+            disabled={submitDisabled ?? disabled}
+          >
+            {submitLabel}
+          </button>
+        ) : null}
       </div>
     </div>
   )
@@ -1031,16 +1043,9 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                 placeholder="Goal, rails, inputs, outputs, constraints."
                 value={message}
                 onChange={setMessage}
+                submitLabel="Start Session"
+                submitDisabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
               />
-            </div>
-            <div className={wizardActionRowClass}>
-              <button
-                type="submit"
-                className={wizardPrimaryButtonClass}
-                disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
-              >
-                Start Session
-              </button>
             </div>
             {!bootstrap.llm_enabled ? (
               <p className={helpTextClass}>
@@ -1166,16 +1171,11 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                   placeholder="Clarify only the missing or changed details."
                   value={message}
                   onChange={setMessage}
+                  submitLabel="Send"
+                  submitDisabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
                 />
               </div>
-              <div className={wizardActionRowClass}>
-                <button
-                  type="submit"
-                  className={wizardPrimaryButtonClass}
-                  disabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
-                >
-                  Send
-                </button>
+              <div className="flex">
                 <button
                   type="button"
                   className="flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.82rem] font-medium text-[var(--accent)] transition-colors hover:bg-[rgba(24,75,69,0.06)]"
@@ -1315,16 +1315,11 @@ function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
                   placeholder="List only the specific spec changes you want."
                   value={message}
                   onChange={setMessage}
+                  submitLabel="Send Changes"
+                  submitDisabled={!message.trim() || Boolean(busyMessage)}
                 />
               </div>
               <div className={wizardActionRowClass}>
-                <button
-                  type="submit"
-                  className={wizardSecondaryButtonClass}
-                  disabled={!message.trim() || Boolean(busyMessage)}
-                >
-                  Send Changes
-                </button>
                 <button
                   type="button"
                   className={wizardPrimaryButtonClass}
