@@ -221,8 +221,7 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
         svgs = list(svg_dir.glob("*.svg"))
         if not svgs:
             raise RuntimeError(
-                "kicad-cli reported success but produced no SVG file. "
-                f"Expected an SVG in {svg_dir}"
+                f"kicad-cli reported success but produced no SVG file. Expected an SVG in {svg_dir}"
             )
 
         conv = subprocess.run(
