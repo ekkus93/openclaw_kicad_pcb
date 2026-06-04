@@ -1061,19 +1061,15 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     if (!session) {
       return
     }
-    setBusyMessage('Generating Circuit IR…')
+    setBusyMessage('Generating Circuit IR… the backend will attempt automatic repair if needed.')
     setErrorMessage(null)
     try {
-      let response = await api.generateWizardIr(session.id)
-      if (response.status === 'ir_needs_repair') {
-        setBusyMessage('IR has errors — attempting automatic repair…')
-        response = await api.generateWizardIr(session.id)
-      }
+      const response = await api.generateWizardIr(session.id)
       if (response.status === 'ir_needs_repair') {
         setErrorMessage(
-          'Automatic repair failed after two attempts. ' +
-          'Review the error below and click "Repair Circuit IR" to try again, ' +
-          'or go back to the spec and revise the circuit description.',
+          'The backend could not produce valid Circuit IR after its repair passes. ' +
+          'Review the error below, then click "Repair Circuit IR" to try again or ' +
+          'go back to the spec and revise the circuit description.',
         )
       }
       setSession(response)
@@ -1149,6 +1145,15 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
             <li className={workflowStepItemClass}>3. Validate the Circuit IR.</li>
             <li className={workflowStepItemClass}>4. Generate the KiCad project.</li>
           </ol>
+          <div className="rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.5)] p-4">
+            <p className="mb-1.5 text-[0.75rem] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
+              Example prompt
+            </p>
+            <p className="font-[var(--font-mono)] text-[0.85rem] leading-6 text-[var(--text)] whitespace-pre-wrap">{`Make a 555 timer LED blinker.
+Supply: 5V.
+Output: one LED.
+Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
+          </div>
           <div className={compactStatusRowClass}>
             <StatusPill tone={bootstrap.llm_enabled ? 'success' : 'neutral'}>
               {bootstrap.llm_enabled ? 'Provider ready' : 'Provider disabled'}
@@ -1210,6 +1215,24 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
               </p>
             ) : null}
           </form>
+          {!bootstrap.llm_enabled ? (
+            <div className="mt-4 rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.5)] p-4">
+              <p className="mb-3 text-[0.82rem] font-semibold text-[var(--muted)]">
+                You can still use these workflows without an LLM provider:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link className={buttonSecondaryClass} to="/generate-json">
+                  Generate from Circuit IR JSON
+                </Link>
+                <Link className={buttonSecondaryClass} to="/jobs">
+                  View Recent Jobs
+                </Link>
+                <Link className={buttonSecondaryClass} to="/setup">
+                  Check Setup
+                </Link>
+              </div>
+            </div>
+          ) : null}
         </section>
       </div>
     )
