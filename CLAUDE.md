@@ -40,6 +40,15 @@ uv run bash scripts/validate.sh
 
 ---
 
+## Commit rules
+
+- **Never add `Co-Authored-By:` trailers to commit messages.** Do not include
+  `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` or any similar
+  attribution line. Commit messages should be plain and contain only the change
+  description.
+
+---
+
 ## Working rules
 
 - Read relevant files before making changes. Inspect adjacent files before editing.
