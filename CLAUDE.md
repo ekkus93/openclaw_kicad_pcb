@@ -28,7 +28,8 @@ uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src/kicad_pcb src/kicad_pcb_web
-uv run pytest tests/unit/
+uv run python -m pytest tests/unit/   # use python -m pytest — uv run pytest
+                                       # resolves to mambaforge Python 3.10
 
 # Frontend (run from project root or frontend/)
 cd frontend && npm run build

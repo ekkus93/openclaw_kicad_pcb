@@ -31,7 +31,27 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   })
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    const message = payload?.error?.message ?? `Request failed with status ${response.status}`
+    // Priority: structured error > FastAPI detail > generic HTTP status
+    let message: string = `Request failed with status ${response.status}`
+    const structuredMessage = payload?.error?.message
+    if (typeof structuredMessage === 'string' && structuredMessage) {
+      message = structuredMessage
+    } else {
+      const detail = payload?.detail
+      if (typeof detail === 'string' && detail) {
+        message = detail
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // FastAPI validation errors: array of {loc, msg, type}
+        message = detail
+          .map((e: unknown) => {
+            if (e && typeof e === 'object' && 'msg' in e) return String((e as { msg: unknown }).msg)
+            return String(e)
+          })
+          .join('; ')
+      } else if (detail && typeof detail === 'object') {
+        message = JSON.stringify(detail)
+      }
+    }
     throw new ApiError(message, response.status, payload)
   }
   return payload as T
