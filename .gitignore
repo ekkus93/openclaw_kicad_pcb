@@ -213,3 +213,4 @@ code_review/generated/
 kicad_pcb_web.toml
 
 run_copilot.sh
+run_claude.sh*
