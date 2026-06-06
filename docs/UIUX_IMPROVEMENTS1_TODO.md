@@ -131,11 +131,11 @@ called as a plain event handler the return value is discarded. Every keystroke c
 timer that is never cleaned up.
 
 ### 5.1 Rewrite `handleQueryChange` to use a `useRef` timer
-- [ ] Add `const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)`
-- [ ] In `handleQueryChange`, call `clearTimeout(debounceRef.current ?? undefined)` before
+- [x] Added `const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)`
+- [x] In `handleQueryChange`, call `clearTimeout(debounceRef.current ?? undefined)` before
       setting a new timeout, and store the new timer ID in `debounceRef.current`
-- [ ] Remove the `return () => clearTimeout(timer)` line (it is never called anyway)
-- [ ] Add a `useEffect` cleanup: `return () => clearTimeout(debounceRef.current ?? undefined)`
+- [x] Removed the `return () => clearTimeout(timer)` line (it was never called)
+- [x] Added a `useEffect` cleanup: `return () => clearTimeout(debounceRef.current ?? undefined)`
       so pending timers are cleared on unmount
 
 ---

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useSymbolSearchQuery } from '../queries/symbolQueries'
 import {
@@ -21,20 +21,23 @@ function joinClasses(...classes: Array<string | false | null | undefined>): stri
 export function SymbolsPage() {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Simple debounce via timeout
+  useEffect(() => {
+    return () => clearTimeout(debounceRef.current ?? undefined)
+  }, [])
+
   function handleQueryChange(value: string) {
     setQuery(value)
+    clearTimeout(debounceRef.current ?? undefined)
     const trimmed = value.trim()
-    // Immediately clear debounced query when input is empty
     if (!trimmed) {
       setDebouncedQuery('')
       return
     }
-    const timer = setTimeout(() => {
+    debounceRef.current = setTimeout(() => {
       setDebouncedQuery(trimmed)
     }, 300)
-    return () => clearTimeout(timer)
   }
 
   const { data, isLoading, error } = useSymbolSearchQuery(debouncedQuery)
