@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useSymbolSearchQuery } from '../queries/symbolQueries'
+import { joinClasses } from '../utils'
 import {
   bannerBaseClass,
   eyebrowClass,
@@ -11,10 +12,6 @@ import {
   panelSoftClass,
   spinnerClass,
 } from '../styles/designTokens'
-
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
 
 // ─── SymbolsPage ──────────────────────────────────────────────────────────────
 

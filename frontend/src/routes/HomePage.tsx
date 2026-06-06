@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { useBootstrapQuery } from '../queries/bootstrapQueries'
+import { joinClasses } from '../utils'
 import {
   eyebrowClass,
   headingGroupClass,
@@ -9,10 +10,6 @@ import {
   panelAccentClass,
   panelSoftClass,
 } from '../styles/designTokens'
-
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
 
 // ─── Workflow card ────────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { useJobsQuery } from '../queries/jobQueries'
 import type { JobStatus } from '../types'
+import { joinClasses, formatDate } from '../utils'
 import {
   bannerBaseClass,
   buttonRowClass,
@@ -13,24 +14,6 @@ import {
   panelSoftClass,
   spinnerClass,
 } from '../styles/designTokens'
-
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
-
-function formatDate(isoString: string): string {
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date(isoString))
-  } catch {
-    return isoString
-  }
-}
 
 function statusTone(status: JobStatus | string): 'neutral' | 'active' | 'success' | 'warning' | 'error' {
   if (status === 'queued' || status === 'running') return 'active'

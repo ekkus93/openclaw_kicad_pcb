@@ -210,13 +210,12 @@ The following are copy-pasted across `WizardPage.tsx`, `JobPage.tsx`, and
 does not propagate to the others.
 
 ### 10.1 Create `src/utils.ts` (or `src/utils/`) for shared pure helpers
-- [ ] Move `joinClasses(...)` to a shared `utils.ts` and import it in all pages
-- [ ] Move `formatDate(...)` to the same file
-- [ ] Move `getErrorMessage(...)` to the same file
-- [ ] Move `statusBannerToneClass(...)` to the same file (identical in 3+ files)
-- [ ] Move `statusTone(...)` to the same file (or a `statusHelpers.ts`)
-- [ ] Move `statusLabel(...)` to the same file
-- [ ] Move `readLastSession()` and `writeLastSession()` to `utils/session.ts` (see 10.4)
+- [x] Created `frontend/src/utils.ts` exporting `joinClasses`, `formatDate`, `getErrorMessage`,
+      `StatusTone`, `statusBannerToneClass`
+- [x] Updated App.tsx, JsonGeneratePage, SetupPage, SymbolsPage, HomePage, JobPage, JobsPage,
+      and WizardPage to import from `../utils` instead of defining locally
+- Note: `statusTone` and `statusLabel` intentionally kept per-file — WizardPage has wizard-specific
+  statuses while JobPage/JobsPage handle job statuses; they are not identical
 
 ### 10.2 Create `src/components/StatusPill.tsx`
 - [ ] Extract the `StatusPill` component from `WizardPage.tsx`, `JobPage.tsx`, and

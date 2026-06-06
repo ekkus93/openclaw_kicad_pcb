@@ -2,9 +2,9 @@ import React, { startTransition, useEffect, useMemo, useRef, useState } from 're
 import type { FormEvent, ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { ApiError } from '../api'
 import { useBootstrapQuery } from '../queries/bootstrapQueries'
 import { writeLastSession } from '../utils/session'
+import { joinClasses, formatDate, getErrorMessage, statusBannerToneClass } from '../utils'
 import {
   useAddWizardMessageMutation,
   useApproveWizardSpecMutation,
@@ -103,20 +103,6 @@ function statusLabel(status: WizardStatus | string): string {
   return labels[status] ?? String(status).replaceAll('_', ' ')
 }
 
-function formatDate(isoString: string): string {
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date(isoString))
-  } catch {
-    return isoString
-  }
-}
-
 function displaySymbolsDir(raw: string): string {
   if (!raw) return 'None'
   const normalized = raw.replace(/\\/g, '/')
@@ -127,23 +113,11 @@ function displaySymbolsDir(raw: string): string {
   return parts[parts.length - 1] || parts[parts.length - 2] || raw
 }
 
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
-
-
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>
   }
   return {}
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError || error instanceof Error) {
-    return error.message
-  }
-  return 'Unexpected error.'
 }
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -167,17 +141,6 @@ function statusTone(status: WizardStatus | string): 'neutral' | 'active' | 'succ
     return 'error'
   }
   return 'neutral'
-}
-
-function statusBannerToneClass(tone: ReturnType<typeof statusTone>): string {
-  const tones: Record<ReturnType<typeof statusTone>, string> = {
-    active: 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    success: 'border-[rgba(35,102,79,0.2)] bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
-    warning: 'border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
-    error: 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
-    neutral: 'border-[rgba(117,99,80,0.16)] bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }
-  return tones[tone]
 }
 
 function statusPillToneClass(tone: ReturnType<typeof statusTone>): string {

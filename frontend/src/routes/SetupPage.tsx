@@ -1,4 +1,5 @@
 import { useDoctorQuery } from '../queries/setupQueries'
+import { joinClasses } from '../utils'
 import {
   bannerBaseClass,
   eyebrowClass,
@@ -9,10 +10,6 @@ import {
   panelSoftClass,
   spinnerClass,
 } from '../styles/designTokens'
-
-function joinClasses(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ')
-}
 
 // ─── Required vs optional tool heuristics ────────────────────────────────────
 
