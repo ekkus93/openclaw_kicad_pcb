@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   BrowserRouter,
@@ -8,9 +7,10 @@ import {
   Route,
   Routes,
 } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
-import { ApiError, api } from './api'
-import type { UiBootstrapResponse } from './types'
+import { useBootstrapQuery } from './queries/bootstrapQueries'
+import { queryKeys } from './queryKeys'
 
 import {
   bannerBaseClass,
@@ -20,24 +20,18 @@ import {
 } from './styles/designTokens'
 
 import { HomePage } from './routes/HomePage'
-import { WizardPage, readLastSession } from './routes/WizardPage'
+import { WizardPage } from './routes/WizardPage'
 import { JobPage } from './routes/JobPage'
 import { JobsPage } from './routes/JobsPage'
 import { SetupPage } from './routes/SetupPage'
 import { JsonGeneratePage } from './routes/JsonGeneratePage'
 import { SymbolsPage } from './routes/SymbolsPage'
+import { readLastSession } from './utils/session'
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
 function joinClasses(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(' ')
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError || error instanceof Error) {
-    return error.message
-  }
-  return 'Unexpected error.'
 }
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -58,10 +52,10 @@ function statusBannerToneClass(tone: StatusTone): string {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 function Layout({
-  bootstrap,
+  providerLabel,
   children,
 }: {
-  bootstrap: UiBootstrapResponse | null
+  providerLabel: string | null
   children: ReactNode
 }) {
   const lastSession = readLastSession()
@@ -98,7 +92,7 @@ function Layout({
           </nav>
           <div className="flex flex-col items-end gap-px text-right text-[0.86rem] text-[var(--muted)] lg:items-start lg:text-left">
             <span>Provider</span>
-            <strong>{bootstrap?.llm_provider ?? 'loading'}</strong>
+            <strong>{providerLabel ?? 'loading'}</strong>
           </div>
         </div>
       </header>
@@ -110,70 +104,45 @@ function Layout({
 // ─── AppShell ─────────────────────────────────────────────────────────────────
 
 function AppShell() {
-  const [bootstrap, setBootstrap] = useState<UiBootstrapResponse | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [retryKey, setRetryKey] = useState(0)
+  const queryClient = useQueryClient()
+  const { data: bootstrap, isLoading, error } = useBootstrapQuery()
 
-  useEffect(() => {
-    let cancelled = false
-    setBootstrap(null)
-    setErrorMessage(null)
-    void api
-      .getBootstrap()
-      .then((response) => {
-        if (!cancelled) {
-          setBootstrap(response)
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setErrorMessage(getErrorMessage(error))
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [retryKey])
-
-  if (!bootstrap) {
+  if (isLoading || (!bootstrap && !error)) {
     return (
-      <Layout bootstrap={null}>
-        <div
-          className={joinClasses(
-            bannerBaseClass,
-            statusBannerToneClass(errorMessage ? 'error' : 'active'),
-            'mt-4',
-          )}
-        >
-          {errorMessage ? (
-            <>
-              <strong>{errorMessage}</strong>
-              <button
-                type="button"
-                className={joinClasses(buttonSecondaryClass, 'ml-auto')}
-                onClick={() => setRetryKey((k) => k + 1)}
-              >
-                Retry
-              </button>
-            </>
-          ) : (
-            <>
-              <span className={spinnerClass} aria-hidden="true"></span>
-              <strong>Loading UI bootstrap…</strong>
-            </>
-          )}
+      <Layout providerLabel={null}>
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
+          <span className={spinnerClass} aria-hidden="true"></span>
+          <strong>Loading UI bootstrap…</strong>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (error || !bootstrap) {
+    const message = error instanceof Error ? error.message : 'Failed to load bootstrap.'
+    return (
+      <Layout providerLabel={null}>
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
+          <strong>{message}</strong>
+          <button
+            type="button"
+            className={joinClasses(buttonSecondaryClass, 'ml-auto')}
+            onClick={() => void queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap })}
+          >
+            Retry
+          </button>
         </div>
       </Layout>
     )
   }
 
   return (
-    <Layout bootstrap={bootstrap}>
+    <Layout providerLabel={bootstrap.llm_provider}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/wizard" element={<WizardPage bootstrap={bootstrap} />} />
-        <Route path="/wizard/:sessionId" element={<WizardPage bootstrap={bootstrap} />} />
-        <Route path="/wizard/:sessionId/:step" element={<WizardPage bootstrap={bootstrap} />} />
+        <Route path="/wizard" element={<WizardPage />} />
+        <Route path="/wizard/:sessionId" element={<WizardPage />} />
+        <Route path="/wizard/:sessionId/:step" element={<WizardPage />} />
         <Route path="/jobs" element={<JobsPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
         <Route path="/setup" element={<SetupPage />} />

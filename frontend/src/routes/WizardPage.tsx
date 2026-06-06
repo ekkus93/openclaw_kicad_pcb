@@ -2,14 +2,24 @@ import React, { startTransition, useEffect, useMemo, useRef, useState } from 're
 import type { FormEvent, ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { ApiError, api } from '../api'
+import { ApiError } from '../api'
+import { useBootstrapQuery } from '../queries/bootstrapQueries'
+import { writeLastSession } from '../utils/session'
+import {
+  useAddWizardMessageMutation,
+  useApproveWizardSpecMutation,
+  useClearWizardIrMutation,
+  useCreateWizardSessionMutation,
+  useGenerateWizardIrMutation,
+  useGenerateWizardProjectMutation,
+  useWizardSessionQuery,
+} from '../queries/wizardQueries'
+import { useJobQuery } from '../queries/jobQueries'
 import type {
   CircuitBlockSpec,
   CircuitPortSpec,
   CircuitRailSpec,
   JobDetail,
-  UiBootstrapResponse,
-  WizardGenerateProjectResponse,
   WizardSessionDetail,
   WizardStatus,
   WizardStep,
@@ -70,8 +80,6 @@ const WIZARD_STEP_META: Record<WizardStep, { label: string; abbrev: string; summ
   ir: { label: 'Review Circuit IR', abbrev: 'IR', summary: 'Generate, validate, and inspect the IR payload.' },
   generate: { label: 'Generate Project', abbrev: 'Generate', summary: 'Launch the deterministic KiCad generation path.' },
 }
-
-const LS_LAST_SESSION = 'lastWizardSession'
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
@@ -136,14 +144,6 @@ function getErrorMessage(error: unknown): string {
     return error.message
   }
   return 'Unexpected error.'
-}
-
-function readLastSession(): string | null {
-  try { return localStorage.getItem(LS_LAST_SESSION) } catch { return null }
-}
-
-function writeLastSession(id: string): void {
-  try { localStorage.setItem(LS_LAST_SESSION, id) } catch { /* ignore */ }
 }
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -874,21 +874,68 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
 
 // ─── WizardPage ───────────────────────────────────────────────────────────────
 
-export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
+export function WizardPage() {
   const navigate = useNavigate()
   const { sessionId, step } = useParams<{ sessionId?: string; step?: string }>()
+  const { data: bootstrap } = useBootstrapQuery()
   const routeStep = step as WizardStep | undefined
-  const [session, setSession] = useState<WizardSessionDetail | null>(null)
-  const [latestJob, setLatestJob] = useState<JobDetail | null>(null)
-  const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null)
-  const [failedSessionId, setFailedSessionId] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [busyMessage, setBusyMessage] = useState<string | null>(null)
+
   const [projectName, setProjectName] = useState('')
   const [symbolsDir, setSymbolsDir] = useState('')
   const [message, setMessage] = useState('')
   const [metaExpanded, setMetaExpanded] = useState(false)
-  const loading = Boolean(sessionId) && loadedSessionId !== sessionId && failedSessionId !== sessionId
+  const [irRepairWarning, setIrRepairWarning] = useState(false)
+
+  const { data: session, isLoading: sessionLoading, error: sessionError } = useWizardSessionQuery(sessionId)
+  const { data: latestJob } = useJobQuery(session?.latest_job_id ?? undefined)
+
+  const createMutation = useCreateWizardSessionMutation()
+  const addMessageMutation = useAddWizardMessageMutation(session?.id ?? '')
+  const approveSpecMutation = useApproveWizardSpecMutation(session?.id ?? '')
+  const generateIrMutation = useGenerateWizardIrMutation(session?.id ?? '')
+  const clearIrMutation = useClearWizardIrMutation(session?.id ?? '')
+  const generateProjectMutation = useGenerateWizardProjectMutation(session?.id ?? '')
+
+  const loading = Boolean(sessionId) && sessionLoading
+
+  // AppShell ensures bootstrap is loaded before rendering WizardPage, but the
+  // query return type is T | undefined — derive stable primitives for safety.
+  const llmProvider = bootstrap?.llm_provider ?? ''
+  const llmEnabled = bootstrap?.llm_enabled ?? false
+
+  const busyMessage: string | null = createMutation.isPending
+    ? `Talking to ${llmProvider} to draft the first spec…`
+    : addMessageMutation.isPending
+      ? `Talking to ${llmProvider} to revise the spec draft…`
+      : approveSpecMutation.isPending
+        ? 'Locking this spec checkpoint and moving to Circuit IR…'
+        : generateIrMutation.isPending
+          ? 'Generating Circuit IR… the backend will attempt automatic repair if needed.'
+          : clearIrMutation.isPending
+            ? 'Clearing Circuit IR…'
+            : generateProjectMutation.isPending
+              ? 'Generating the KiCad project from the validated Circuit IR…'
+              : null
+
+  const errorMessage: string | null = irRepairWarning
+    ? 'The backend could not produce valid Circuit IR after its repair passes. Review the error below, then click "Repair Circuit IR" to try again or go back to the spec and revise the circuit description.'
+    : createMutation.error
+      ? getErrorMessage(createMutation.error)
+      : addMessageMutation.error
+        ? getErrorMessage(addMessageMutation.error)
+        : approveSpecMutation.error
+          ? getErrorMessage(approveSpecMutation.error)
+          : generateIrMutation.error
+            ? getErrorMessage(generateIrMutation.error)
+            : clearIrMutation.error
+              ? getErrorMessage(clearIrMutation.error)
+              : generateProjectMutation.error
+                ? getErrorMessage(generateProjectMutation.error)
+                : null
+
+  // Track which session ID we've already synced form fields from, to avoid
+  // overwriting user edits when session data refreshes after a mutation.
+  const syncedSessionIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (sessionId) {
@@ -897,61 +944,14 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   }, [sessionId])
 
   useEffect(() => {
-    if (!sessionId) {
-      return
-    }
-
-    let cancelled = false
-    void api
-      .getWizardSession(sessionId)
-      .then((response) => {
-        if (cancelled) {
-          return
-        }
-        setSession(response)
-        setLoadedSessionId(sessionId)
-        setFailedSessionId(null)
-        setErrorMessage(null)
-        setProjectName(response.project_name ?? '')
-        setSymbolsDir(response.symbols_dir ?? '')
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setFailedSessionId(sessionId)
-          setErrorMessage(getErrorMessage(error))
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [sessionId])
+    if (!session || session.id === syncedSessionIdRef.current) return
+    syncedSessionIdRef.current = session.id
+    setProjectName(session.project_name ?? '')
+    setSymbolsDir(session.symbols_dir ?? '')
+  }, [session])
 
   useEffect(() => {
-    if (!session?.latest_job_id) {
-      return
-    }
-    let cancelled = false
-    void api
-      .getJob(session.latest_job_id)
-      .then((job) => {
-        if (!cancelled) {
-          setLatestJob(job)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setLatestJob(null)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [session?.latest_job_id])
-
-  useEffect(() => {
-    if (!session) {
-      return
-    }
+    if (!session) return
     const canonical = canonicalWizardStep(session)
     const targetStep = routeStep && wizardStepUnlocked(session, routeStep) ? routeStep : canonical
     const targetPath = `/wizard/${session.id}/${targetStep}`
@@ -963,12 +963,8 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
   }, [navigate, routeStep, session])
 
   const currentStep: WizardStep = useMemo(() => {
-    if (!session) {
-      return 'describe'
-    }
-    if (routeStep && wizardStepUnlocked(session, routeStep)) {
-      return routeStep
-    }
+    if (!session) return 'describe'
+    if (routeStep && wizardStepUnlocked(session, routeStep)) return routeStep
     return canonicalWizardStep(session)
   }, [routeStep, session])
 
@@ -987,145 +983,110 @@ export function WizardPage({ bootstrap }: { bootstrap: UiBootstrapResponse }) {
     }
   }, [currentStep, session, sessionId])
 
+  function resetAll(): void {
+    createMutation.reset()
+    addMessageMutation.reset()
+    approveSpecMutation.reset()
+    generateIrMutation.reset()
+    clearIrMutation.reset()
+    generateProjectMutation.reset()
+    setIrRepairWarning(false)
+  }
+
   async function handleCreateSession(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} to draft the first spec…`)
-    setErrorMessage(null)
+    resetAll()
     try {
-      const response = await api.createWizardSession({
+      const response = await createMutation.mutateAsync({
         message,
         project_name: projectName || null,
         symbols_dir: symbolsDir || null,
       })
-      setSession(response)
-      setLatestJob(null)
       setMessage('')
       writeLastSession(response.id)
       startTransition(() => {
         navigate(`/wizard/${response.id}/${canonicalWizardStep(response)}`)
       })
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+    } catch {
+      // Error captured in createMutation.error
     }
   }
 
   async function handleSendMessage(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    if (!session) {
-      return
-    }
-    setBusyMessage(`Talking to ${bootstrap.llm_provider} to revise the spec draft…`)
-    setErrorMessage(null)
+    if (!session) return
+    resetAll()
     try {
-      const response = await api.addWizardMessage(session.id, {
+      const response = await addMessageMutation.mutateAsync({
         message,
         project_name: projectName || null,
         symbols_dir: symbolsDir || null,
       })
-      setSession(response)
-      setLatestJob(null)
       setMessage('')
       startTransition(() => {
         navigate(`/wizard/${response.id}/${canonicalWizardStep(response)}`)
       })
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+    } catch {
+      // Error captured in addMessageMutation.error
     }
   }
 
   async function handleApproveSpec(): Promise<void> {
-    if (!session) {
-      return
-    }
-    setBusyMessage('Locking this spec checkpoint and moving to Circuit IR…')
-    setErrorMessage(null)
+    if (!session) return
+    resetAll()
     try {
-      const response = await api.approveWizardSpec(session.id)
-      setSession(response)
-      setLatestJob(null)
+      const response = await approveSpecMutation.mutateAsync()
       startTransition(() => {
         navigate(`/wizard/${response.id}/${canonicalWizardStep(response)}`)
       })
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+    } catch {
+      // Error captured in approveSpecMutation.error
     }
   }
 
   async function handleGenerateIr(): Promise<void> {
-    if (!session) {
-      return
-    }
-    setBusyMessage('Generating Circuit IR… the backend will attempt automatic repair if needed.')
-    setErrorMessage(null)
+    if (!session) return
+    resetAll()
     try {
-      const response = await api.generateWizardIr(session.id)
+      const response = await generateIrMutation.mutateAsync()
       if (response.status === 'ir_needs_repair') {
-        setErrorMessage(
-          'The backend could not produce valid Circuit IR after its repair passes. ' +
-          'Review the error below, then click "Repair Circuit IR" to try again or ' +
-          'go back to the spec and revise the circuit description.',
-        )
-      }
-      setSession(response)
-      if (!response.latest_job_id) {
-        setLatestJob(null)
+        setIrRepairWarning(true)
       }
       startTransition(() => {
         navigate(`/wizard/${response.id}/${canonicalWizardStep(response)}`)
       })
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+    } catch {
+      // Error captured in generateIrMutation.error
     }
   }
 
   async function handleClearIr(): Promise<void> {
-    if (!session) {
-      return
-    }
-    setBusyMessage('Clearing Circuit IR…')
-    setErrorMessage(null)
+    if (!session) return
+    resetAll()
     try {
-      const response = await api.clearWizardIr(session.id)
-      setSession(response)
-      setLatestJob(null)
+      const response = await clearIrMutation.mutateAsync()
       startTransition(() => {
         navigate(`/wizard/${response.id}/ir`)
       })
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+    } catch {
+      // Error captured in clearIrMutation.error
     }
   }
 
   async function handleGenerateProject(): Promise<void> {
-    if (!session) {
-      return
-    }
+    if (!session) return
     if (
       visibleLatestJob?.status === 'succeeded' &&
       !window.confirm('This will replace the current job result. Continue?')
     ) {
       return
     }
-    setBusyMessage('Generating the KiCad project from the validated Circuit IR…')
-    setErrorMessage(null)
+    resetAll()
     try {
-      const response: WizardGenerateProjectResponse = await api.generateWizardProject(session.id)
-      setSession(response.session)
-      setLatestJob(response.job)
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setBusyMessage(null)
+      await generateProjectMutation.mutateAsync()
+      // session and job are updated in the query cache by onSuccess in wizardQueries.ts
+    } catch {
+      // Error captured in generateProjectMutation.error
     }
   }
 
@@ -1155,10 +1116,10 @@ Output: one LED.
 Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
           </div>
           <div className={compactStatusRowClass}>
-            <StatusPill tone={bootstrap.llm_enabled ? 'success' : 'neutral'}>
-              {bootstrap.llm_enabled ? 'Provider ready' : 'Provider disabled'}
+            <StatusPill tone={llmEnabled ? 'success' : 'neutral'}>
+              {llmEnabled ? 'Provider ready' : 'Provider disabled'}
             </StatusPill>
-            <span className={compactSupportCopyClass}>{bootstrap.llm_provider}</span>
+            <span className={compactSupportCopyClass}>{llmProvider}</span>
           </div>
 
           {errorMessage ? (
@@ -1204,10 +1165,10 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                 value={message}
                 onChange={setMessage}
                 submitLabel="Start Session"
-                submitDisabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+                submitDisabled={!llmEnabled || !message.trim() || Boolean(busyMessage)}
               />
             </div>
-            {!bootstrap.llm_enabled ? (
+            {!llmEnabled ? (
               <p className={helpTextClass}>
                 No LLM provider is configured. Set a provider in{' '}
                 <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5">kicad_pcb_web.toml</code>{' '}
@@ -1215,7 +1176,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
               </p>
             ) : null}
           </form>
-          {!bootstrap.llm_enabled ? (
+          {!llmEnabled ? (
             <div className="mt-4 rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.5)] p-4">
               <p className="mb-3 text-[0.82rem] font-semibold text-[var(--muted)]">
                 You can still use these workflows without an LLM provider:
@@ -1252,7 +1213,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
     return (
       <NotFoundScreen
         heading="Session not found"
-        message={errorMessage ?? 'This wizard session does not exist or could not be loaded.'}
+        message={sessionError instanceof Error ? sessionError.message : 'This wizard session does not exist or could not be loaded.'}
       />
     )
   }
@@ -1269,7 +1230,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
     !hasUnspecifiedCustomBlocks
   const canGenerateIr = Boolean(session.spec) && session.spec_approved
   const canGenerateProject = Boolean(session.ir_validation?.valid)
-  const visibleLatestJob = session.latest_job_id ? latestJob : null
+  const visibleLatestJob: JobDetail | null = session.latest_job_id ? (latestJob ?? null) : null
   const checkpoint = wizardCurrentCheckpoint(session, currentStep)
   const projectLabel = session.project_name ?? session.spec?.project_name ?? null
 
@@ -1311,7 +1272,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                 {statusLabel(session.status)}
               </StatusPill>
               <span className={compactSupportCopyClass}>
-                {session.llm_provider ?? bootstrap.llm_provider}
+                {session.llm_provider ?? llmProvider}
               </span>
             </div>
           </section>
@@ -1355,7 +1316,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                   value={message}
                   onChange={setMessage}
                   submitLabel="Send"
-                  submitDisabled={!bootstrap.llm_enabled || !message.trim() || Boolean(busyMessage)}
+                  submitDisabled={!llmEnabled || !message.trim() || Boolean(busyMessage)}
                 />
               </div>
               <div className="flex">
@@ -1792,5 +1753,3 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
   )
 }
 
-// Re-export readLastSession for use in Layout
-export { readLastSession }
