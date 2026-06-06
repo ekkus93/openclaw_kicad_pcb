@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import type { ValidateNetlistResponse } from '../types'
 import { joinClasses, getErrorMessage, statusBannerToneClass } from '../utils'
+import { WarningCard } from '../components/WarningCard'
 import {
   bannerBaseClass,
   buttonPrimaryClass,
@@ -22,51 +23,6 @@ import {
   panelSoftClass,
   spinnerClass,
 } from '../styles/designTokens'
-
-function WarningCard({ warning }: { warning: Record<string, unknown> }) {
-  const code = typeof warning.code === 'string' ? warning.code : null
-  const message = typeof warning.message === 'string' ? warning.message : null
-  const severity = typeof warning.severity === 'string' ? warning.severity : 'warning'
-  const family = typeof warning.family === 'string' ? warning.family : null
-
-  const severityColors = {
-    error: 'border-[rgba(154,45,40,0.2)] bg-[rgba(154,45,40,0.05)]',
-    warning: 'border-[rgba(155,106,18,0.2)] bg-[rgba(155,106,18,0.05)]',
-    info: 'border-[rgba(22,93,143,0.15)] bg-[rgba(22,93,143,0.05)]',
-  }
-  const badgeColors = {
-    error: 'bg-[rgba(154,45,40,0.1)] text-[var(--error)]',
-    warning: 'bg-[rgba(155,106,18,0.12)] text-[var(--warning)]',
-    info: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-  }
-  const border = severityColors[severity as keyof typeof severityColors] ?? severityColors.warning
-  const badge = badgeColors[severity as keyof typeof badgeColors] ?? badgeColors.warning
-
-  return (
-    <div className={joinClasses('rounded-[18px] border p-4', border)}>
-      <div className="flex flex-wrap items-start gap-2">
-        {severity !== 'warning' ? (
-          <span className={joinClasses('rounded-full px-2 py-0.5 text-[0.72rem] font-bold uppercase tracking-[0.1em]', badge)}>
-            {severity}
-          </span>
-        ) : null}
-        {family ? (
-          <span className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
-            {family.replaceAll('_', ' ')}
-          </span>
-        ) : null}
-        {code ? (
-          <code className="ml-auto rounded bg-[rgba(88,63,39,0.08)] px-1.5 py-0.5 text-[0.75rem] text-[var(--muted)]">
-            {code}
-          </code>
-        ) : null}
-      </div>
-      {message ? (
-        <p className="mt-2 text-[0.95rem] leading-6 text-[var(--text)]">{message}</p>
-      ) : null}
-    </div>
-  )
-}
 
 // ─── JsonGeneratePage ─────────────────────────────────────────────────────────
 

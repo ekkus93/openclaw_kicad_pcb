@@ -225,11 +225,12 @@ does not propagate to the others.
       from WizardPage
 
 ### 10.3 Create `src/components/WarningCard.tsx` and `src/components/DisclosurePanel.tsx`
-- [ ] Extract `WarningCard` from `WizardPage.tsx`, `JobPage.tsx`, and `JsonGeneratePage.tsx`
-- [ ] Extract `DisclosurePanel` from `WizardPage.tsx` and `JobPage.tsx`
-- [ ] Extract `BuildSummaryPanel` from `WizardPage.tsx` and `JobPage.tsx`
-- [ ] Extract `WarningsPanel` from `WizardPage.tsx` and `JobPage.tsx`
-- [ ] Update all import sites
+- [x] Created `frontend/src/components/WarningCard.tsx` exporting `WarningCard` and `WarningsPanel`
+      (with the hint-filter rule documented via comment)
+- [x] Created `frontend/src/components/DisclosurePanel.tsx` exporting `DisclosurePanel`,
+      `BuildSummaryPanel`, and the `DiagnosticsPayload` type
+- [x] Removed local copies from WizardPage, JobPage, and JsonGeneratePage
+- [x] Updated all import sites; removed now-unused `ReactNode`, `useState` imports from JobPage
 
 ### 10.4 Move `readLastSession` / `writeLastSession` out of `WizardPage.tsx`
 - [x] Created `src/utils/session.ts` with `readLastSession()`, `writeLastSession()`, and the
@@ -259,10 +260,9 @@ does not propagate to the others.
       IR step already serves as the recovery affordance
 
 ### 11.4 `WarningCard` detail filter is inconsistently applied
-- [ ] `WizardPage.tsx` line 350 filters `hint` from `detailEntries` but `JobPage.tsx`'s copy
-      of `WarningCard` has the same filter (both are fine) — once extracted to a shared
-      component (Task 10.3) this inconsistency is resolved automatically; document the
-      intended filter rule in a comment in the shared component
+- [x] Resolved automatically by Task 10.3 extraction — the shared `WarningCard` in
+      `components/WarningCard.tsx` documents the hint-filter rule with a comment explaining
+      when `hint` is suppressed (when already embedded in the message paragraph)
 
 ---
 
