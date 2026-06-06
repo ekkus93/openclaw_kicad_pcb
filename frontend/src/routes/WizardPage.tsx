@@ -1726,7 +1726,11 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                   disabled={!canGenerateProject || Boolean(busyMessage)}
                   onClick={() => void handleGenerateProject()}
                 >
-                  {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
+                  {!visibleLatestJob
+                    ? 'Generate Project'
+                    : visibleLatestJob.status === 'failed'
+                      ? 'Retry Generation'
+                      : 'Generate Again'}
                 </button>
               </div>
             )}

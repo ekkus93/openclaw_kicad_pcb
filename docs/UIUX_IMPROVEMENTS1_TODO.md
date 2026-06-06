@@ -164,20 +164,9 @@ with the label "Generate Again". "Generate Again" implies a completed state bein
 a failed state warrants "Retry Generation" with a neutral style.
 
 ### 7.1 Differentiate label and style by previous job outcome
-- [ ] Change the button label logic:
-  ```tsx
-  {!visibleLatestJob
-    ? 'Generate Project'
-    : visibleLatestJob.status === 'failed'
-      ? 'Retry Generation'
-      : 'Generate Again'}
-  ```
-- [ ] Change the button class logic:
-  ```tsx
-  {visibleLatestJob?.status === 'succeeded' ? buttonDangerClass : buttonPrimaryClass}
-  ```
-  A failed job retry should use `buttonPrimaryClass` (not danger), since regenerating after
-  failure is the expected recovery action, not a destructive one.
+- [x] Button label now: "Generate Project" / "Retry Generation" (failed) / "Generate Again" (succeeded)
+- [x] Button class: `buttonDangerClass` only when previous job succeeded; `buttonPrimaryClass`
+      for failed jobs (retry is recovery, not destructive)
 
 ---
 
