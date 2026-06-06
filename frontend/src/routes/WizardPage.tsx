@@ -885,6 +885,7 @@ export function WizardPage() {
   const [message, setMessage] = useState('')
   const [metaExpanded, setMetaExpanded] = useState(false)
   const [irRepairWarning, setIrRepairWarning] = useState(false)
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false)
 
   const { data: session, isLoading: sessionLoading, error: sessionError } = useWizardSessionQuery(sessionId)
   const { data: latestJob } = useJobQuery(session?.latest_job_id ?? undefined)
@@ -991,6 +992,7 @@ export function WizardPage() {
     clearIrMutation.reset()
     generateProjectMutation.reset()
     setIrRepairWarning(false)
+    setConfirmRegenerate(false)
   }
 
   async function handleCreateSession(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -1075,10 +1077,8 @@ export function WizardPage() {
 
   async function handleGenerateProject(): Promise<void> {
     if (!session) return
-    if (
-      visibleLatestJob?.status === 'succeeded' &&
-      !window.confirm('This will replace the current job result. Continue?')
-    ) {
+    if (visibleLatestJob?.status === 'succeeded' && !confirmRegenerate) {
+      setConfirmRegenerate(true)
       return
     }
     resetAll()
@@ -1697,21 +1697,39 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                 Use the validated Circuit IR as the handoff into the deterministic generation pipeline.
               </p>
             </div>
-            {visibleLatestJob?.status === 'succeeded' ? (
-              <p className={compactSupportCopyClass}>
-                A project has already been generated. Generating again will replace the current job result.
-              </p>
-            ) : null}
-            <div className={buttonRowClass}>
-              <button
-                type="button"
-                className={visibleLatestJob?.status === 'succeeded' ? buttonDangerClass : buttonPrimaryClass}
-                disabled={!canGenerateProject || Boolean(busyMessage)}
-                onClick={() => void handleGenerateProject()}
-              >
-                {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
-              </button>
-            </div>
+            {confirmRegenerate ? (
+              <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-3')}>
+                <strong>This will replace the current generation result.</strong>
+                <div className={buttonRowClass}>
+                  <button
+                    type="button"
+                    className={buttonDangerClass}
+                    disabled={Boolean(busyMessage)}
+                    onClick={() => void handleGenerateProject()}
+                  >
+                    Confirm — Generate Again
+                  </button>
+                  <button
+                    type="button"
+                    className={buttonSecondaryClass}
+                    onClick={() => setConfirmRegenerate(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={buttonRowClass}>
+                <button
+                  type="button"
+                  className={visibleLatestJob?.status === 'succeeded' ? buttonDangerClass : buttonPrimaryClass}
+                  disabled={!canGenerateProject || Boolean(busyMessage)}
+                  onClick={() => void handleGenerateProject()}
+                >
+                  {visibleLatestJob ? 'Generate Again' : 'Generate Project'}
+                </button>
+              </div>
+            )}
           </section>
 
           {visibleLatestJob ? (

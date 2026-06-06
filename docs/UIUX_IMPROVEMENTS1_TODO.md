@@ -146,15 +146,14 @@ timer that is never cleaned up.
 when a successful job already exists. This is visually inconsistent with the rest of the UI.
 
 ### 6.1 Add inline confirmation state to the Generate step
-- [ ] Add a `confirmRegenerate` boolean state, defaulting to `false`
-- [ ] When the "Generate Again" button is clicked and a succeeded job exists, set
+- [x] Added `confirmRegenerate` boolean state, defaulting to `false`
+- [x] When "Generate Again" is clicked and a succeeded job exists, sets
       `confirmRegenerate = true` instead of calling `window.confirm()`
-- [ ] Render a warning banner when `confirmRegenerate` is true:
-      "This will replace the current generation result." with two buttons:
-      "Confirm — Generate Again" (danger) and "Cancel" (secondary)
-- [ ] "Confirm" calls `handleGenerateProject` directly and resets `confirmRegenerate = false`
-- [ ] "Cancel" resets `confirmRegenerate = false`
-- [ ] Remove the `window.confirm()` call from `handleGenerateProject`
+- [x] Renders a warning banner when `confirmRegenerate` is true with
+      "Confirm — Generate Again" (danger) and "Cancel" (secondary) buttons
+- [x] "Confirm" calls `handleGenerateProject` directly (resets via `resetAll`)
+- [x] "Cancel" resets `confirmRegenerate = false`
+- [x] Removed the `window.confirm()` call from `handleGenerateProject`
 
 ---
 
