@@ -1123,8 +1123,15 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
           </div>
 
           {errorMessage ? (
-            <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
-              <strong>{errorMessage}</strong>
+            <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'flex-wrap gap-2')}>
+              <strong className="flex-1">{errorMessage}</strong>
+              <button
+                type="button"
+                className={buttonSecondaryClass}
+                onClick={() => createMutation.reset()}
+              >
+                Dismiss
+              </button>
             </div>
           ) : null}
           {busyMessage ? (
@@ -1245,8 +1252,25 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
         </div>
       ) : null}
       {errorMessage ? (
-        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
-          <strong>{errorMessage}</strong>
+        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'flex-wrap gap-2')}>
+          <strong className="flex-1 min-w-0">{errorMessage}</strong>
+          {generateIrMutation.error && !irRepairWarning ? (
+            <button
+              type="button"
+              className={buttonSecondaryClass}
+              onClick={() => void handleGenerateIr()}
+            >
+              Try again
+            </button>
+          ) : !irRepairWarning ? (
+            <button
+              type="button"
+              className={buttonSecondaryClass}
+              onClick={resetAll}
+            >
+              Dismiss
+            </button>
+          ) : null}
         </div>
       ) : null}
       {session.error?.message ? (

@@ -251,12 +251,12 @@ does not propagate to the others.
 - [x] Removed `loadedJobId`, `failedJobId`, `errorMessage` state; loading/error now from query
 
 ### 11.3 "Retry" button on wizard action failures
-- [ ] Currently only the bootstrap load has a "Retry" button; wizard mutation failures show
-      an error banner with no recovery affordance
-- [ ] After migrating to TanStack Query mutations (Task 1), add a "Try again" button to
-      the error banner that calls `mutation.reset()` followed by re-submitting
-- [ ] Scoping: add "Try again" to the IR generation failure case first (most common failure
-      point), then extend to other actions if needed
+- [x] Added a "Try again" button on the wizard error banner for `generateIrMutation.error`
+      that calls `handleGenerateIr()` (which resets all mutations then re-runs)
+- [x] Added a "Dismiss" button for all other mutation errors (calls `resetAll()`)
+- [x] On the start-page error banner (createMutation.error only), "Dismiss" calls `createMutation.reset()`
+- [x] `irRepairWarning` banner has no button — the "Repair Circuit IR" action button in the
+      IR step already serves as the recovery affordance
 
 ### 11.4 `WarningCard` detail filter is inconsistently applied
 - [ ] `WizardPage.tsx` line 350 filters `hint` from `detailEntries` but `JobPage.tsx`'s copy
