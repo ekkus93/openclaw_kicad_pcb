@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
-import { ApiError, api } from '../api'
-import type { JobDetail } from '../types'
+import { ApiError } from '../api'
+import { useJobQuery } from '../queries/jobQueries'
 import {
   bannerBaseClass,
   buttonPrimaryClass,
@@ -204,16 +204,6 @@ function WarningCard({ warning }: { warning: Record<string, unknown> }) {
 }
 
 function WarningsPanel({ warnings }: { warnings: unknown[] }) {
-  if (!warnings.length) {
-    return (
-      <section className={panelSoftClass}>
-        <div className={headingGroupClass}>
-          <h2>Warnings</h2>
-        </div>
-        <p className={emptyCopyClass}>No warnings.</p>
-      </section>
-    )
-  }
   return (
     <section className={panelSoftClass}>
       <div className={headingGroupClass}>
@@ -393,38 +383,9 @@ export function JobPage() {
   const { jobId } = useParams<{ jobId: string }>()
   const [searchParams] = useSearchParams()
   const fromSessionId = searchParams.get('from')
-  const [job, setJob] = useState<JobDetail | null>(null)
-  const [loadedJobId, setLoadedJobId] = useState<string | null>(null)
-  const [failedJobId, setFailedJobId] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const effectiveJobId = jobId ?? ''
-  const loading = Boolean(effectiveJobId) && loadedJobId !== effectiveJobId && failedJobId !== effectiveJobId
 
-  useEffect(() => {
-    if (!effectiveJobId) {
-      return
-    }
-    let cancelled = false
-    void api
-      .getJob(effectiveJobId)
-      .then((response) => {
-        if (!cancelled) {
-          setJob(response)
-          setLoadedJobId(effectiveJobId)
-          setFailedJobId(null)
-          setErrorMessage(null)
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setFailedJobId(effectiveJobId)
-          setErrorMessage(getErrorMessage(error))
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [effectiveJobId])
+  const { data: job, isLoading, error, isFetching } = useJobQuery(jobId)
+  const isInProgress = job?.status === 'queued' || job?.status === 'running'
 
   useEffect(() => {
     const base = 'KiCad PCB Web App'
@@ -435,11 +396,11 @@ export function JobPage() {
     }
   }, [job])
 
-  if (!effectiveJobId) {
+  if (!jobId) {
     return <NotFoundScreen heading="Job not found" message="No job ID was provided." />
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
         <span className={spinnerClass} aria-hidden="true"></span>
@@ -448,11 +409,11 @@ export function JobPage() {
     )
   }
 
-  if (!job) {
+  if (error || !job) {
     return (
       <NotFoundScreen
         heading="Job not found"
-        message={errorMessage ?? 'This job does not exist or could not be loaded.'}
+        message={getErrorMessage(error) !== 'Unexpected error.' ? getErrorMessage(error) : 'This job does not exist or could not be loaded.'}
       />
     )
   }
@@ -498,6 +459,12 @@ export function JobPage() {
           <p className={eyebrowClass}>Status</p>
           <StatusPill tone={statusTone(job.status)}>{statusLabel(job.status)}</StatusPill>
           <span className={mutedCopyClass}>{formatDate(job.updated_at)}</span>
+          {isInProgress && isFetching ? (
+            <span className="flex items-center gap-1.5 text-[0.78rem] text-[var(--muted)]">
+              <span className={spinnerClass} aria-hidden="true"></span>
+              Checking for updates…
+            </span>
+          ) : null}
           <p className="text-sm leading-6 text-[var(--muted)]">
             {isFailed
               ? 'Review the error payload below to understand what went wrong.'
@@ -566,7 +533,7 @@ export function JobPage() {
         </section>
       </div>
 
-      <WarningsPanel warnings={warnings} />
+      {warnings.length > 0 ? <WarningsPanel warnings={warnings} /> : null}
 
       {job.error ? <JsonPanel title="Error" payload={job.error} /> : null}
 

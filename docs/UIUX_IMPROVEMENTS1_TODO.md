@@ -192,20 +192,14 @@ buttons fire and fail with a raw API error rather than a clearly disabled state.
 the user must manually reload the page to see completion.
 
 ### 9.1 Auto-refresh job data on `JobPage` while job is in-progress
-- [ ] In `JobPage`, replace the raw `useState`/`useEffect` fetch with `useJobQuery` from
-      `queries/jobQueries.ts`
-- [ ] Add a `refetchInterval` to `useJobQuery` that returns `5000` (5 seconds) when
-      `job.status === 'queued' || job.status === 'running'`, and `false` otherwise:
-      ```ts
-      refetchInterval: (data) =>
-        data?.status === 'queued' || data?.status === 'running' ? 5000 : false,
-      ```
-- [ ] When the job transitions to `succeeded` or `failed`, refetching stops automatically
+- [x] In `JobPage`, replaced the raw `useState`/`useEffect` fetch with `useJobQuery` from
+      `queries/jobQueries.ts` (which already has 3s polling built in for active statuses)
+- [x] When the job transitions to `succeeded` or `failed`, refetching stops automatically
 
 ### 9.2 Show a live "checking for updates" indicator while polling
-- [ ] When the job is in-progress and the query is refetching (`isFetching`), show a small
-      spinner or "Checking for updates…" note near the Status field in the hero card
-- [ ] Do not show a full-page loading banner for background refetches — it should be subtle
+- [x] When the job is in-progress and the query is refetching (`isFetching`), shows a small
+      spinner and "Checking for updates…" note near the Status field in the hero card
+- [x] Full-page loading banner only appears on initial load; background refetches are subtle
 
 ---
 
@@ -248,18 +242,13 @@ does not propagate to the others.
 ## 11. Minor UX polish (P3)
 
 ### 11.1 Suppress the "Warnings" section when empty on `JobPage`
-- [ ] In `JobPage`, conditionally render `WarningsPanel` only when `warnings.length > 0`:
-      ```tsx
-      {warnings.length > 0 ? <WarningsPanel warnings={warnings} /> : null}
-      ```
-- [ ] The "No warnings." reassurance is already shown in `JobSummaryPanel` on the wizard
+- [x] In `JobPage`, conditionally renders `WarningsPanel` only when `warnings.length > 0`
+- [x] The "No warnings." reassurance is already shown in `JobSummaryPanel` on the wizard
       Generate step — that context benefits from it; the standalone job page does not
 
 ### 11.2 Fix `JobPage` to stop using raw `useState`/`useEffect`
-- [ ] Confirm whether `useJobQuery` exists in `queries/jobQueries.ts` (it is used in
-      `JobsPage.tsx` so the hooks file exists — verify the individual job query)
-- [ ] Replace the manual fetch in `JobPage` with the appropriate TanStack Query hook
-- [ ] This is a prerequisite for Task 9 (polling)
+- [x] Replaced the manual fetch in `JobPage` with `useJobQuery` from `queries/jobQueries.ts`
+- [x] Removed `loadedJobId`, `failedJobId`, `errorMessage` state; loading/error now from query
 
 ### 11.3 "Retry" button on wizard action failures
 - [ ] Currently only the bootstrap load has a "Retry" button; wizard mutation failures show
