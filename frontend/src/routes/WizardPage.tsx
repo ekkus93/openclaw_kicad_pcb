@@ -1508,8 +1508,13 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                   value={message}
                   onChange={setMessage}
                   submitLabel="Send Changes"
-                  submitDisabled={!message.trim() || Boolean(busyMessage)}
+                  submitDisabled={!llmEnabled || !message.trim() || Boolean(busyMessage)}
                 />
+                {!llmEnabled ? (
+                  <p className={helpTextClass}>
+                    LLM provider is not available — revision requires a configured provider.
+                  </p>
+                ) : null}
               </div>
               <div className={wizardActionRowClass}>
                 <button
@@ -1603,12 +1608,17 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                 <strong>{session.ir_validation.error_message}</strong>
               </div>
             ) : null}
+            {!llmEnabled ? (
+              <p className={helpTextClass}>
+                LLM provider is not available — IR generation requires a configured provider.
+              </p>
+            ) : null}
             <div className={buttonRowClass}>
               {session.ir_validation?.valid ? (
                 <button
                   type="button"
                   className={buttonDangerClass}
-                  disabled={!canGenerateIr || Boolean(busyMessage)}
+                  disabled={!canGenerateIr || !llmEnabled || Boolean(busyMessage)}
                   onClick={() => void handleGenerateIr()}
                 >
                   Regenerate Circuit IR
@@ -1617,7 +1627,7 @@ Constraints: through-hole parts, use NE555, about 1 Hz blink rate.`}</p>
                 <button
                   type="button"
                   className={buttonPrimaryClass}
-                  disabled={!canGenerateIr || Boolean(busyMessage)}
+                  disabled={!canGenerateIr || !llmEnabled || Boolean(busyMessage)}
                   onClick={() => void handleGenerateIr()}
                 >
                   {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}

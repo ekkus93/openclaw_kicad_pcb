@@ -189,16 +189,12 @@ check `bootstrap.llm_enabled`. If the provider goes offline after a session is c
 buttons fire and fail with a raw API error rather than a clearly disabled state.
 
 ### 8.1 Disable spec revision "Send Changes" when LLM is not available
-- [ ] In the spec step's `WizardComposer`, add `!bootstrap.llm_enabled` to the
-      `submitDisabled` condition (mirror the describe step's pattern)
-- [ ] Add a help text line below the composer when `!bootstrap.llm_enabled`:
-      "LLM provider is not available — revision requires a configured provider."
+- [x] Added `!llmEnabled` to the `submitDisabled` condition on the spec step's `WizardComposer`
+- [x] Added help text below the composer when LLM is unavailable
 
 ### 8.2 Disable IR generation button when LLM is not available
-- [ ] Add `!bootstrap.llm_enabled` to the `disabled` condition on the "Generate Circuit IR"
-      and "Repair Circuit IR" buttons
-- [ ] Add a `<p>` help text when `!bootstrap.llm_enabled`:
-      "LLM provider is not available — IR generation requires a configured provider."
+- [x] Added `!llmEnabled` to `disabled` on "Regenerate/Generate/Repair Circuit IR" buttons
+- [x] Added help text paragraph above the button row when LLM is unavailable
 
 ---
 
