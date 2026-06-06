@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useJobsQuery } from '../queries/jobQueries'
 import type { JobStatus } from '../types'
 import { joinClasses, formatDate } from '../utils'
+import { StatusPill } from '../components/StatusPill'
 import {
   bannerBaseClass,
   buttonRowClass,
@@ -32,26 +33,6 @@ function statusLabel(status: JobStatus | string): string {
     cancelled: 'Cancelled',
   }
   return labels[status] ?? String(status).replaceAll('_', ' ')
-}
-
-function StatusPill({ tone, children }: { tone: ReturnType<typeof statusTone>; children: string }) {
-  const tones: Record<ReturnType<typeof statusTone>, string> = {
-    active: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    success: 'bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
-    warning: 'bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
-    error: 'bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
-    neutral: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }
-  return (
-    <span
-      className={joinClasses(
-        'inline-flex items-center rounded-full px-[0.7rem] py-[0.35rem] text-[0.83rem] font-bold',
-        tones[tone],
-      )}
-    >
-      {children}
-    </span>
-  )
 }
 
 // ─── JobsPage ─────────────────────────────────────────────────────────────────

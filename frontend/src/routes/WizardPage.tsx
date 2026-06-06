@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useBootstrapQuery } from '../queries/bootstrapQueries'
 import { writeLastSession } from '../utils/session'
 import { joinClasses, formatDate, getErrorMessage, statusBannerToneClass } from '../utils'
+import { StatusPill } from '../components/StatusPill'
 import {
   useAddWizardMessageMutation,
   useApproveWizardSpecMutation,
@@ -143,17 +144,6 @@ function statusTone(status: WizardStatus | string): 'neutral' | 'active' | 'succ
   return 'neutral'
 }
 
-function statusPillToneClass(tone: ReturnType<typeof statusTone>): string {
-  const tones: Record<ReturnType<typeof statusTone>, string> = {
-    active: 'bg-[rgba(22,93,143,0.1)] text-[#0d4c74]',
-    success: 'bg-[rgba(35,102,79,0.1)] text-[var(--success)]',
-    warning: 'bg-[rgba(155,106,18,0.11)] text-[var(--warning)]',
-    error: 'bg-[rgba(154,45,40,0.09)] text-[var(--error)]',
-    neutral: 'bg-[rgba(117,99,80,0.1)] text-[var(--muted)]',
-  }
-  return tones[tone]
-}
-
 // ─── Wizard step helpers ──────────────────────────────────────────────────────
 
 function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
@@ -238,20 +228,6 @@ function wizardCurrentCheckpoint(session: WizardSessionDetail, step: WizardStep)
 }
 
 // ─── Small UI components ──────────────────────────────────────────────────────
-
-function StatusPill({ tone, children }: { tone: ReturnType<typeof statusTone>; children: string }) {
-  return (
-    <span
-      className={joinClasses(
-        'inline-flex items-center rounded-full px-[0.7rem] py-[0.35rem] text-[0.83rem] font-bold',
-        statusPillToneClass(tone),
-      )}
-    >
-      {children}
-    </span>
-  )
-}
-
 
 function DisclosurePanel({
   title,

@@ -218,10 +218,11 @@ does not propagate to the others.
   statuses while JobPage/JobsPage handle job statuses; they are not identical
 
 ### 10.2 Create `src/components/StatusPill.tsx`
-- [ ] Extract the `StatusPill` component from `WizardPage.tsx`, `JobPage.tsx`, and
-      `JobsPage.tsx` into a shared component file
-- [ ] Accept `tone` and `children` as props (same interface already used everywhere)
-- [ ] Update all import sites
+- [x] Created `frontend/src/components/StatusPill.tsx` exporting the shared `StatusPill`
+      component with `tone: StatusTone` and `children: string` props
+- [x] Updated WizardPage, JobPage, and JobsPage to import `StatusPill` from the shared file
+- [x] Removed local `StatusPill` definitions and the now-unused `statusPillToneClass` helper
+      from WizardPage
 
 ### 10.3 Create `src/components/WarningCard.tsx` and `src/components/DisclosurePanel.tsx`
 - [ ] Extract `WarningCard` from `WizardPage.tsx`, `JobPage.tsx`, and `JsonGeneratePage.tsx`
