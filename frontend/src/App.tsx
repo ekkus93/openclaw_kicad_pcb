@@ -6,6 +6,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -59,6 +60,7 @@ function Layout({
   children: ReactNode
 }) {
   const lastSession = readLastSession()
+  const { pathname } = useLocation()
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(245,239,226,0.82)] backdrop-blur-[18px]">
@@ -76,14 +78,18 @@ function Layout({
             ].map(({ to, label }) => (
               <NavLink
                 key={label}
-                className={({ isActive }) =>
-                  joinClasses(
+                className={({ isActive }) => {
+                  // The Wizard link may point to /wizard/:sessionId when a previous
+                  // session exists. React Router NavLink won't match /wizard by prefix
+                  // in that case, so we check pathname directly.
+                  const active = label === 'Wizard' ? pathname.startsWith('/wizard') : isActive
+                  return joinClasses(
                     'rounded-full px-4 py-2 text-sm font-medium no-underline transition-all duration-150',
-                    isActive
+                    active
                       ? '-translate-y-px bg-[rgba(161,69,26,0.12)] text-[var(--brand-deep)]'
                       : 'text-[var(--muted)] hover:-translate-y-px hover:bg-[rgba(161,69,26,0.12)] hover:text-[var(--brand-deep)]',
                   )
-                }
+                }}
                 to={to}
               >
                 {label}

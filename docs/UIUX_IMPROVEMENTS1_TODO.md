@@ -115,19 +115,12 @@ checks prefix matching — `/wizard/abc123` does not prefix-match `/wizard`, so 
 pill appears inactive even though the user is on the wizard page.
 
 ### 4.1 Fix NavLink active detection for the Wizard entry
-- [ ] In `App.tsx` `Layout`, pass `end={false}` to the "Wizard" `NavLink` so it matches any
-      `/wizard/*` sub-path, not just the specific stored session path:
-      ```tsx
-      <NavLink end={false} ...>
-      ```
-      This is safe because no other nav item starts with `/wizard`.
-- [ ] Alternatively, use the `isActive` callback form and check
-      `location.pathname.startsWith('/wizard')` for this specific item
+- [x] In `App.tsx` `Layout`, use the `isActive` callback form and check
+      `pathname.startsWith('/wizard')` specifically for the "Wizard" nav item
 
 ### 4.2 Keep the "last session" redirect working
-- [ ] Verify that after the active-state fix, navigating via the "Wizard" nav still takes
-      the user to `lastSession` if one exists (the `to` prop still does this; only the
-      `isActive` detection changes)
+- [x] The `to` prop still points to `/wizard/${lastSession}` when a session exists;
+      only the active detection logic changed
 
 ---
 
