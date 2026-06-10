@@ -1,5 +1,5 @@
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -26,48 +26,53 @@ vi.mock('../routes/wizard/WizardStartStep', () => ({
   WizardStartStep: () => React.createElement('div', { 'data-testid': 'start-step' }),
 }))
 
-// Stub the controller to return a describe-step session without any mutations.
-const mockSession = makeSession({ status: 'drafting_spec' })
-
+// Spy on the controller so tests can assert which args were passed.
 vi.mock('../routes/wizard/useWizardController', () => ({
-  useWizardController: () => ({
-    session: mockSession,
-    sessionError: null,
-    latestJob: undefined,
-    currentStep: 'describe' as const,
-    loading: false,
-    projectName: '',
-    setProjectName: () => undefined,
-    symbolsDir: '',
-    setSymbolsDir: () => undefined,
-    message: '',
-    setMessage: () => undefined,
-    metaExpanded: false,
-    setMetaExpanded: () => undefined,
-    irRepairWarning: false,
-    confirmRegenerate: false,
-    setConfirmRegenerate: () => undefined,
-    llmEnabled: true,
-    llmProvider: 'openai',
-    busyMessage: null,
-    errorMessage: null,
-    hasUnspecifiedCustomBlocks: false,
-    canApproveSpec: false,
-    canGenerateIr: false,
-    canGenerateProject: false,
-    visibleLatestJob: null,
-    checkpoint: { title: 'Describe the circuit', detail: 'Provide details.' },
-    projectLabel: null,
-    generateIrMutationHasError: false,
-    resetAll: () => undefined,
-    handleCreateSession: async () => undefined,
-    handleSendMessage: async () => undefined,
-    handleApproveSpec: async () => undefined,
-    handleGenerateIr: async () => undefined,
-    handleClearIr: async () => undefined,
-    handleGenerateProject: async () => undefined,
-  }),
+  useWizardController: vi.fn(),
 }))
+
+const mockSession = makeSession({ status: 'drafting_spec' })
+const mockControllerReturn = {
+  session: mockSession,
+  sessionError: null,
+  latestJob: undefined,
+  currentStep: 'describe' as const,
+  loading: false,
+  projectName: '',
+  setProjectName: () => undefined,
+  symbolsDir: '',
+  setSymbolsDir: () => undefined,
+  message: '',
+  setMessage: () => undefined,
+  metaExpanded: false,
+  setMetaExpanded: () => undefined,
+  irRepairWarning: false,
+  confirmRegenerate: false,
+  setConfirmRegenerate: () => undefined,
+  llmEnabled: true,
+  llmProvider: 'openai',
+  busyMessage: null,
+  errorMessage: null,
+  hasUnspecifiedCustomBlocks: false,
+  canApproveSpec: false,
+  canGenerateIr: false,
+  canGenerateProject: false,
+  visibleLatestJob: null,
+  checkpoint: { title: 'Describe the circuit', detail: 'Provide details.' },
+  projectLabel: null,
+  generateIrMutationHasError: false,
+  resetAll: () => undefined,
+  handleCreateSession: async () => undefined,
+  handleSendMessage: async () => undefined,
+  handleApproveSpec: async () => undefined,
+  handleGenerateIr: async () => undefined,
+  handleClearIr: async () => undefined,
+  handleGenerateProject: async () => undefined,
+}
+
+// Import after mocks so the module picks up mocked dependencies.
+import { WizardPage } from '../routes/WizardPage'
+import { useWizardController } from '../routes/wizard/useWizardController'
 
 function renderWizardAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -82,10 +87,12 @@ function renderWizardAt(path: string) {
   )
 }
 
-// Import after mocks so the module picks up mocked dependencies.
-import { WizardPage } from '../routes/WizardPage'
-
 describe('WizardPage — invalid route step', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(useWizardController).mockReturnValue(mockControllerReturn)
+  })
+
   it('renders the canonical describe step for an unrecognized step segment', () => {
     renderWizardAt('/wizard/abc123/not-a-step')
     expect(screen.getByTestId('describe-step')).toBeTruthy()
@@ -98,5 +105,15 @@ describe('WizardPage — invalid route step', () => {
     renderWizardAt('/wizard/abc123/totally-invalid')
     expect(screen.getByTestId('wizard-breadcrumb')).toBeTruthy()
     expect(screen.getByTestId('describe-step')).toBeTruthy()
+  })
+
+  it('passes undefined to the controller for an invalid route step', () => {
+    renderWizardAt('/wizard/abc123/not-a-step')
+    expect(vi.mocked(useWizardController)).toHaveBeenCalledWith('abc123', undefined)
+  })
+
+  it('passes the step name to the controller for a valid route step', () => {
+    renderWizardAt('/wizard/abc123/spec')
+    expect(vi.mocked(useWizardController)).toHaveBeenCalledWith('abc123', 'spec')
   })
 })

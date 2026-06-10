@@ -330,10 +330,10 @@ uv run --extra dev --extra web python -m pytest tests/unit/
 If KiCad-specific tests exist, also run:
 
 ```bash
-uv run --extra dev --extra web python -m pytest -m kicad
+uv run --extra dev --extra web python -m pytest -m requires_kicad
 ```
 
-or document that they were skipped because KiCad CLI was unavailable.
+or document that they were skipped because KiCad CLI or system symbol libraries were unavailable.
 
 ### Artifact hygiene
 

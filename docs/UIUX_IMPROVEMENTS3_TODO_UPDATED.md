@@ -241,17 +241,17 @@ The app still shows `OpenClaw_Managed.kicad_sch` in normal user-facing UI. Remov
 
 ### 7.1 Avoid broad `any`
 
-- [ ] Do not introduce broad `any`
-- [ ] Prefer generated/API types and local specific types
-- [ ] If an unavoidable cast is required, keep it narrow and comment why
+- [x] Do not introduce broad `any`
+- [x] Prefer generated/API types and local specific types
+- [x] If an unavoidable cast is required, keep it narrow and comment why
 
 ### 7.2 Avoid suppressions
 
-- [ ] Do not add `// @ts-ignore`
-- [ ] Do not add `// @ts-expect-error` unless the test specifically requires it and the reason is documented
-- [ ] Do not add unexplained `eslint-disable`
-- [ ] Do not weaken `tsconfig` strictness
-- [ ] Do not weaken Python lint/mypy settings
+- [x] Do not add `// @ts-ignore`
+- [x] Do not add `// @ts-expect-error` unless the test specifically requires it and the reason is documented
+- [x] Do not add unexplained `eslint-disable`
+- [x] Do not weaken `tsconfig` strictness
+- [x] Do not weaken Python lint/mypy settings
 
 ### 7.3 Preserve existing behavior
 

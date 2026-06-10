@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from kicad_pcb.lib_symbol import read_lib_symbol_def_flat
+from tests.conftest import requires_kicad
 
 
+@requires_kicad
 def test_read_lib_symbol_def_flat_falls_through_to_system_library() -> None:
     """Missing repo-local power variants should fall through to later symbol dirs."""
     sym_def = read_lib_symbol_def_flat("power", "+5V", symbols_dir=None)

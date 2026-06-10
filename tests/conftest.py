@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from kicad_pcb.compat import KiCadVersion, parse_version
+from kicad_pcb.config import SYMBOLS_CANDIDATES
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -59,14 +60,26 @@ def rsvg_convert_available() -> bool:
     return shutil.which("rsvg-convert") is not None
 
 
+def kicad_system_symbols_available() -> bool:
+    """Return True if any system KiCad symbol library directory contains .kicad_sym files."""
+    return any(d.is_dir() and any(d.glob("*.kicad_sym")) for d in SYMBOLS_CANDIDATES)
+
+
 def requires_kicad(test_func):
-    """Mark a test as requiring repo-compatible kicad-cli and skip when unavailable."""
+    """Mark a test as requiring kicad-cli and system KiCad symbol libraries."""
 
     marked = pytest.mark.requires_kicad(test_func)
-    return pytest.mark.skipif(
-        not kicad_cli_supports_repo_schematics(),
-        reason="kicad-cli >= 9.0.0 is required for repo schematic integration tests",
-    )(marked)
+    missing = []
+    if not kicad_cli_supports_repo_schematics():
+        missing.append("kicad-cli >= 9.0.0")
+    if not kicad_system_symbols_available():
+        missing.append("KiCad system symbol libraries")
+    reason = (
+        f"Requires {' and '.join(missing)}"
+        if missing
+        else "kicad-cli and KiCad system symbol libraries are required"
+    )
+    return pytest.mark.skipif(bool(missing), reason=reason)(marked)
 
 
 def requires_generation_pipeline(test_func):
