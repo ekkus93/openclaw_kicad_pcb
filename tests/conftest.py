@@ -36,12 +36,15 @@ def kicad_cli_version() -> KiCadVersion | None:
     kicad_cli = shutil.which("kicad-cli")
     if not kicad_cli:
         return None
-    proc = subprocess.run(
-        [kicad_cli, "--version"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [kicad_cli, "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
     text = proc.stdout.strip() or proc.stderr.strip()
     if not text:
         return None

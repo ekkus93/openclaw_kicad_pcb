@@ -173,13 +173,7 @@ uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_eva
 
 ### Problem
 
-`docs/UIUX_IMPROVEMENTS4_1_SPEC.md` still shows this stale command in a code block:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-Even if the surrounding prose says it is stale, putting it in a code block makes it look runnable and can confuse future agents.
+`docs/UIUX_IMPROVEMENTS4_1_SPEC.md` previously showed the obsolete `-m kicad` marker command in a runnable-looking code block, since replaced with prose in Batch 4.2. A previous Batch 4 spec referenced the obsolete `-m kicad` marker. Active commands must use `-m requires_kicad`.
 
 ### Required behavior
 
