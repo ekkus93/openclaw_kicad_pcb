@@ -25,10 +25,11 @@ uv sync --extra dev --extra web
 uv run uvicorn kicad_pcb_web.main:app --host 127.0.0.1 --port 8000 --reload
 
 # Python quality gates
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src/kicad_pcb src/kicad_pcb_web
-uv run python -m pytest tests/unit/   # use python -m pytest — uv run pytest
+uv run --extra dev --extra web ruff check .
+uv run --extra dev --extra web ruff format --check .
+uv run --extra dev --extra web mypy src/kicad_pcb src/kicad_pcb_web
+uv run --extra dev --extra web python -m pytest tests/unit/
+                                       # use python -m pytest — uv run pytest
                                        # resolves to mambaforge Python 3.10
 
 # Frontend (run from project root or frontend/)
@@ -65,10 +66,10 @@ uv run bash scripts/validate.sh
 ## Commit discipline
 
 Only commit when:
-1. `uv run ruff check .` passes with zero errors
-2. `uv run ruff format --check .` passes
-3. `uv run mypy src/kicad_pcb src/kicad_pcb_web` passes
-4. `uv run pytest tests/unit/` passes
+1. `uv run --extra dev --extra web ruff check .` passes with zero errors
+2. `uv run --extra dev --extra web ruff format --check .` passes
+3. `uv run --extra dev --extra web mypy src/kicad_pcb src/kicad_pcb_web` passes
+4. `uv run --extra dev --extra web python -m pytest tests/unit/` passes
 5. If frontend code changed: `cd frontend && npm run build` passes
 
 Commit message convention: `type(scope): description` — e.g.

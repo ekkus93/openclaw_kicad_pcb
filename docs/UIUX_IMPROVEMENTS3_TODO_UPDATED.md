@@ -141,36 +141,25 @@ The current documented mypy command may miss web dependencies. Make the validati
 
 ### 4.1 Inspect project dependency declaration
 
-- [ ] Open `pyproject.toml`
-- [ ] Determine whether the project uses extras, dependency groups, or both
-- [ ] Identify the correct way to install/run dev dependencies
-- [ ] Identify the correct way to include web dependencies such as FastAPI
+- [x] Open `pyproject.toml`
+- [x] Determine whether the project uses extras, dependency groups, or both — uses optional-dependencies with `dev` and `web` extras
+- [x] Identify the correct way to install/run dev dependencies — `uv sync --extra dev --extra web`
+- [x] Identify the correct way to include web dependencies such as FastAPI — `--extra web`
 
 ### 4.2 Update validation docs
 
-- [ ] Search docs for stale commands:
-  - [ ] `uv run mypy src/kicad_pcb src/kicad_pcb_web`
-  - [ ] `uv run pytest tests/unit/`
-  - [ ] other commands missing required extras/groups
-- [ ] Update docs to use the repo-supported full commands
-
-Preferred if supported:
-
-```bash
-uv run --extra dev --extra web ruff check .
-uv run --extra dev --extra web ruff format --check .
-uv run --extra dev --extra web mypy src/kicad_pcb src/kicad_pcb_web
-uv run --extra dev --extra web python -m pytest tests/unit/
-```
-
-- [ ] Do not document unsupported `uv` flags
-- [ ] Keep frontend validation commands unchanged unless needed
+- [x] Search docs for stale commands
+- [x] Updated `CLAUDE.md` — primary developer reference, now uses `--extra dev --extra web` for mypy and pytest
+- [x] Updated `docs/UIUX_IMPROVEMENTS3_SPEC_UPDATED.md` — corrected stale mypy example in problem statement
+- [x] Historical completion notes (UIUX_IMPROVEMENTS2_TODO.md, older specs) left as-is — they record past runs
+- [x] `uv run --extra dev --extra web` confirmed supported and working
+- [x] Frontend validation commands unchanged
 
 ### 4.3 Update completion checklist docs
 
-- [ ] If `docs/UIUX_IMPROVEMENTS2_TODO(1).md` or copied Batch 2 docs exist in the repo, update their validation command examples or add an erratum
-- [ ] Add Batch 3 validation commands to the new Batch 3 TODO/docs if those docs are committed
-- [ ] Make clear when KiCad CLI is required versus optional
+- [x] `docs/UIUX_IMPROVEMENTS2_TODO(1).md` does not exist in repo — no erratum needed
+- [x] Batch 3 TODO/docs use `--extra dev --extra web` form in validation sections
+- [x] KiCad CLI requirement documented via `requires_kicad` marker (Task 5)
 
 ---
 

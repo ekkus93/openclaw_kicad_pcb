@@ -176,13 +176,13 @@ Add or update Generate-step tests for:
 
 ### Problem
 
-The current validation checklist says:
+The current validation checklist said:
 
 ```bash
 uv run mypy src/kicad_pcb src/kicad_pcb_web
 ```
 
-In a clean environment this can fail if FastAPI/web dependencies are not installed. The reproducible command should include the relevant extras.
+In a clean environment this can fail if FastAPI/web dependencies are not installed. The reproducible command must include the relevant extras.
 
 ### Required behavior
 
