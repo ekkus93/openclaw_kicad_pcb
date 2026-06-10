@@ -10,16 +10,16 @@ Derived from the Batch 2 code review. Batch 2 is accepted overall, but this batc
 
 ### 1.1 Add normalization helper
 
-- [ ] Open `frontend/src/routes/wizard/wizardStepLogic.ts`
-- [ ] Add a pure helper named `normalizeWizardStep`
-- [ ] Accept `raw: string | undefined`
-- [ ] Return a `WizardStep` only for:
-  - [ ] `describe`
-  - [ ] `spec`
-  - [ ] `ir`
-  - [ ] `generate`
-- [ ] Return `undefined` for all other values
-- [ ] Keep the helper free of React hooks and side effects
+- [x] Open `frontend/src/routes/wizard/wizardStepLogic.ts`
+- [x] Add a pure helper named `normalizeWizardStep`
+- [x] Accept `raw: string | undefined`
+- [x] Return a `WizardStep` only for:
+  - [x] `describe`
+  - [x] `spec`
+  - [x] `ir`
+  - [x] `generate`
+- [x] Return `undefined` for all other values
+- [x] Keep the helper free of React hooks and side effects
 
 Suggested implementation:
 
@@ -34,38 +34,38 @@ export function normalizeWizardStep(raw: string | undefined): WizardStep | undef
 
 ### 1.2 Use the helper in `WizardPage.tsx`
 
-- [ ] Open `frontend/src/routes/WizardPage.tsx`
-- [ ] Replace this pattern or equivalent:
+- [x] Open `frontend/src/routes/WizardPage.tsx`
+- [x] Replace this pattern or equivalent:
 
 ```tsx
 const routeStep = step as WizardStep | undefined
 ```
 
-- [ ] Use:
+- [x] Use:
 
 ```tsx
 const routeStep = normalizeWizardStep(step)
 ```
 
-- [ ] Import `normalizeWizardStep` from `./wizard/wizardStepLogic`
-- [ ] Verify invalid route steps redirect through existing canonical-step logic
-- [ ] Do not change valid wizard route behavior
+- [x] Import `normalizeWizardStep` from `./wizard/wizardStepLogic`
+- [x] Verify invalid route steps redirect through existing canonical-step logic
+- [x] Do not change valid wizard route behavior
 
 ### 1.3 Add helper tests
 
-- [ ] Add tests in the existing wizard step logic test file
-- [ ] Assert `normalizeWizardStep(undefined)` returns `undefined`
-- [ ] Assert all valid steps return themselves
-- [ ] Assert unknown values return `undefined`
-- [ ] Assert mixed-case values such as `SPEC` return `undefined` unless the app intentionally supports case-insensitive routes
+- [x] Add tests in the existing wizard step logic test file
+- [x] Assert `normalizeWizardStep(undefined)` returns `undefined`
+- [x] Assert all valid steps return themselves
+- [x] Assert unknown values return `undefined`
+- [x] Assert mixed-case values such as `SPEC` return `undefined` unless the app intentionally supports case-insensitive routes
 
 ### 1.4 Add invalid-route behavior test
 
-- [ ] Add or update a route-level wizard test
-- [ ] Render `/wizard/abc123/not-a-step`
-- [ ] Mock a representative session
-- [ ] Verify the app redirects/navigates to the canonical wizard step
-- [ ] Verify no broken/blank page is rendered
+- [x] Add or update a route-level wizard test (new file: WizardInvalidRoute.test.tsx)
+- [x] Render `/wizard/abc123/not-a-step`
+- [x] Mock a representative session
+- [x] Verify the app redirects/navigates to the canonical wizard step
+- [x] Verify no broken/blank page is rendered
 
 ---
 

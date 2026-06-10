@@ -14,6 +14,13 @@ export const WIZARD_STEP_META: Record<WizardStep, { label: string; abbrev: strin
   generate: { label: 'Generate Project', abbrev: 'Generate', summary: 'Launch the deterministic KiCad generation path.' },
 }
 
+export function normalizeWizardStep(raw: string | undefined): WizardStep | undefined {
+  if (raw === 'describe' || raw === 'spec' || raw === 'ir' || raw === 'generate') {
+    return raw
+  }
+  return undefined
+}
+
 export function statusLabel(status: WizardStatus | string): string {
   const labels: Record<string, string> = {
     drafting_spec: 'Drafting spec…',

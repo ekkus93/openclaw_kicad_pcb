@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { joinClasses, statusBannerToneClass } from '../utils'
-import type { WizardStep } from '../types'
 import {
   bannerBaseClass,
   buttonPrimaryClass,
@@ -14,7 +13,7 @@ import {
   panelSoftClass,
   spinnerClass,
 } from '../styles/designTokens'
-import { WIZARD_STEP_META } from './wizard/wizardStepLogic'
+import { WIZARD_STEP_META, normalizeWizardStep } from './wizard/wizardStepLogic'
 import { useWizardController } from './wizard/useWizardController'
 import { WizardBreadcrumb } from './wizard/WizardBreadcrumb'
 import { WizardStartStep } from './wizard/WizardStartStep'
@@ -43,7 +42,7 @@ function NotFoundScreen({ heading, message }: { heading: string; message?: strin
 
 export function WizardPage() {
   const { sessionId, step } = useParams<{ sessionId?: string; step?: string }>()
-  const routeStep = step as WizardStep | undefined
+  const routeStep = normalizeWizardStep(step)
 
   const ctrl = useWizardController(sessionId, routeStep)
   const { session, currentStep } = ctrl

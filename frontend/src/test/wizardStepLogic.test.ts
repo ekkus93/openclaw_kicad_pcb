@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
 import {
+  normalizeWizardStep,
   statusLabel,
   statusTone,
   displaySymbolsDir,
@@ -10,6 +11,32 @@ import {
   wizardStepState,
 } from '../routes/wizard/wizardStepLogic'
 import { makeSession } from './fixtures'
+
+describe('normalizeWizardStep', () => {
+  it('returns undefined for undefined input', () => {
+    expect(normalizeWizardStep(undefined)).toBeUndefined()
+  })
+
+  it('returns each valid step unchanged', () => {
+    expect(normalizeWizardStep('describe')).toBe('describe')
+    expect(normalizeWizardStep('spec')).toBe('spec')
+    expect(normalizeWizardStep('ir')).toBe('ir')
+    expect(normalizeWizardStep('generate')).toBe('generate')
+  })
+
+  it('returns undefined for unknown strings', () => {
+    expect(normalizeWizardStep('not-a-step')).toBeUndefined()
+    expect(normalizeWizardStep('abc123')).toBeUndefined()
+    expect(normalizeWizardStep('')).toBeUndefined()
+  })
+
+  it('returns undefined for mixed-case values', () => {
+    expect(normalizeWizardStep('SPEC')).toBeUndefined()
+    expect(normalizeWizardStep('Describe')).toBeUndefined()
+    expect(normalizeWizardStep('IR')).toBeUndefined()
+    expect(normalizeWizardStep('Generate')).toBeUndefined()
+  })
+})
 
 describe('statusLabel', () => {
   it('returns human-readable labels for known statuses', () => {
