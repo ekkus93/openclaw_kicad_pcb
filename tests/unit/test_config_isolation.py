@@ -173,6 +173,24 @@ _DEPRECATED_CONSTANTS: frozenset[str] = frozenset(
 )
 
 
+def _dotted_attr_chain(node: ast.AST) -> list[str] | None:
+    """Resolve a nested ``ast.Attribute`` chain to its component names.
+
+    Returns ``["kicad_pcb", "config", "PROJECTS_DIR"]`` for
+    ``kicad_pcb.config.PROJECTS_DIR``, or ``None`` if the chain does not
+    terminate in a plain ``ast.Name``.
+    """
+    parts: list[str] = []
+    current: ast.AST = node
+    while isinstance(current, ast.Attribute):
+        parts.append(current.attr)
+        current = current.value
+    if isinstance(current, ast.Name):
+        parts.append(current.id)
+        return list(reversed(parts))
+    return None
+
+
 def _check_source_for_deprecated_constants(source: str, filename: str = "<string>") -> list[str]:
     """Return violation messages for deprecated config-constant use in *source*.
 
@@ -181,6 +199,8 @@ def _check_source_for_deprecated_constants(source: str, filename: str = "<string
     - Relative imports: ``from ..config import CONFIG_DIR``
     - Module-qualified access after alias bindings such as
       ``import kicad_pcb.config as cfg`` or ``from kicad_pcb import config``.
+    - Bare dotted-chain access: ``import kicad_pcb.config`` followed by
+      ``kicad_pcb.config.PROJECTS_DIR``.
     """
     try:
         tree = ast.parse(source, filename=filename)
@@ -210,14 +230,28 @@ def _check_source_for_deprecated_constants(source: str, filename: str = "<string
                     config_aliases.add(local_name)
 
     for node in ast.walk(tree):
+        if not isinstance(node, ast.Attribute):
+            continue
+        # Alias-based: config.PROJECTS_DIR (where "config" is a bound alias)
         if (
-            isinstance(node, ast.Attribute)
-            and isinstance(node.value, ast.Name)
+            isinstance(node.value, ast.Name)
             and node.value.id in config_aliases
             and node.attr in _DEPRECATED_CONSTANTS
         ):
             violations.append(
                 f"uses deprecated constant '{node.attr}' via module alias '{node.value.id}'"
+            )
+            continue
+        # Bare dotted-chain: kicad_pcb.config.PROJECTS_DIR
+        chain = _dotted_attr_chain(node)
+        if (
+            chain is not None
+            and len(chain) >= 3
+            and chain[:2] == ["kicad_pcb", "config"]
+            and chain[-1] in _DEPRECATED_CONSTANTS
+        ):
+            violations.append(
+                f"uses deprecated constant '{chain[-1]}' via bare module access 'kicad_pcb.config'"
             )
 
     return violations
@@ -278,3 +312,27 @@ def test_guard_helper_allows_dynamic_helpers() -> None:
 def test_guard_helper_allows_relative_dynamic_helper() -> None:
     source = "from ..config import get_config_dir\nfoo = get_config_dir()\n"
     assert _check_source_for_deprecated_constants(source) == []
+
+
+def test_guard_helper_catches_bare_import_module_qualified_access() -> None:
+    source = "import kicad_pcb.config\n\nvalue = kicad_pcb.config.PROJECTS_DIR\n"
+    violations = _check_source_for_deprecated_constants(source, "example.py")
+    assert any("PROJECTS_DIR" in v for v in violations)
+
+
+@pytest.mark.parametrize(
+    "constant",
+    [
+        "CONFIG_DIR",
+        "CONFIG_FILE",
+        "PROJECTS_DIR",
+        "CURRENT_PROJECT_FILE",
+        "CURRENT_SESSION_FILE",
+    ],
+)
+def test_guard_helper_catches_bare_import_module_qualified_deprecated_constants(
+    constant: str,
+) -> None:
+    source = f"import kicad_pcb.config\n\nvalue = kicad_pcb.config.{constant}\n"
+    violations = _check_source_for_deprecated_constants(source, "example.py")
+    assert any(constant in v for v in violations)
