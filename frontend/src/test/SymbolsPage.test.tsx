@@ -10,6 +10,22 @@ vi.mock('../queries/symbolQueries', () => ({
 
 import { useSymbolSearchQuery } from '../queries/symbolQueries'
 
+describe('SymbolsPage — accessibility roles (task 2)', () => {
+  it('exposes searching state via role="status"', () => {
+    vi.mocked(useSymbolSearchQuery).mockReturnValueOnce({ data: undefined, isLoading: true, error: null } as ReturnType<typeof useSymbolSearchQuery>)
+    renderWithProviders(<SymbolsPage />)
+    const status = screen.getByRole('status')
+    expect(status.textContent).toMatch(/searching/i)
+  })
+
+  it('exposes error state via role="alert"', () => {
+    vi.mocked(useSymbolSearchQuery).mockReturnValueOnce({ data: undefined, isLoading: false, error: new Error('Library unavailable') } as ReturnType<typeof useSymbolSearchQuery>)
+    renderWithProviders(<SymbolsPage />)
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toContain('Library unavailable')
+  })
+})
+
 describe('SymbolsPage — search debounce (task 4.7)', () => {
   beforeEach(() => {
     vi.useFakeTimers()

@@ -75,26 +75,26 @@ Batch 2 covered major async/error UI, but `SymbolsPage` still needs semantic rol
 
 ### 2.1 Add loading/search status semantics
 
-- [ ] Open `frontend/src/routes/SymbolsPage.tsx`
-- [ ] Find the searching/loading banner or inline loading message
-- [ ] Add `role="status"`
-- [ ] Add `aria-live="polite"`
-- [ ] Keep visible loading text intact
-- [ ] Do not rely on spinner-only feedback
+- [x] Open `frontend/src/routes/SymbolsPage.tsx`
+- [x] Find the searching/loading banner or inline loading message
+- [x] Add `role="status"`
+- [x] Add `aria-live="polite"`
+- [x] Keep visible loading text intact
+- [x] Do not rely on spinner-only feedback
 
 ### 2.2 Add error alert semantics
 
-- [ ] Find the Symbols search/load error banner
-- [ ] Add `role="alert"`
-- [ ] Avoid nested `role="alert"` elements for the same error
-- [ ] Preserve the current error text and styling
+- [x] Find the Symbols search/load error banner
+- [x] Add `role="alert"`
+- [x] Avoid nested `role="alert"` elements for the same error
+- [x] Preserve the current error text and styling
 
 ### 2.3 Add/update tests
 
-- [ ] Update `SymbolsPage` tests
-- [ ] Verify searching/loading text is exposed through `getByRole('status')`
-- [ ] Verify error text is exposed through `getByRole('alert')`
-- [ ] Ensure existing debounce tests still pass
+- [x] Update `SymbolsPage` tests
+- [x] Verify searching/loading text is exposed through `getByRole('status')`
+- [x] Verify error text is exposed through `getByRole('alert')`
+- [x] Ensure existing debounce tests still pass
 
 ---
 

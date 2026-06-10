@@ -67,14 +67,14 @@ export function SymbolsPage() {
       </section>
 
       {isLoading ? (
-        <div className={joinClasses(bannerBaseClass, 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]')}>
+        <div role="status" aria-live="polite" className={joinClasses(bannerBaseClass, 'border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.1)] text-[#0d4c74]')}>
           <span className={spinnerClass} aria-hidden="true"></span>
           <strong>Searching…</strong>
         </div>
       ) : null}
 
       {error ? (
-        <div className={joinClasses(bannerBaseClass, 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]')}>
+        <div role="alert" className={joinClasses(bannerBaseClass, 'border-[rgba(154,45,40,0.18)] bg-[rgba(154,45,40,0.09)] text-[var(--error)]')}>
           <strong>
             {error instanceof Error ? error.message : 'Failed to search symbols.'}
           </strong>
