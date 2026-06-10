@@ -7,7 +7,7 @@ import zipfile as _zipfile
 from datetime import datetime
 from pathlib import Path
 
-from ..config import PROJECTS_DIR, load_config, set_current_project
+from ..config import get_projects_dir, load_config, set_current_project
 from ..errors import UserError
 from ..fs import _atomic_write, _new_uuid
 from ..models import ProjectRef
@@ -102,7 +102,7 @@ def _create_project(*, name: str, out_dir: Path | None, description: str) -> Pro
     """Create a new KiCad project directory, write seed files, and register it."""
     if out_dir is None:
         cfg = load_config()
-        base = Path(cfg.get("projects_dir", PROJECTS_DIR))
+        base = Path(cfg.get("projects_dir", str(get_projects_dir())))
     else:
         base = out_dir
 

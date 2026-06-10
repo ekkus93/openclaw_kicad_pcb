@@ -4,15 +4,20 @@ These tests verify that:
 - Dynamic helpers honour KICAD_PCB_CONFIG_DIR and KICAD_PCB_PROJECTS_DIR.
 - Runtime I/O writes to the override dirs, not to the real home directory.
 - Direct Path.home() / ".kicad-pcb" construction does not appear outside config.py.
+- Deprecated config constants are not imported or used in runtime command modules.
 """
 
 from __future__ import annotations
 
 import datetime
+import types
 from pathlib import Path
 
 import pytest
 
+from kicad_pcb.adapters import FakeRunner
+from kicad_pcb.commands._project import _create_project
+from kicad_pcb.commands.doctor import cmd_doctor
 from kicad_pcb.config import (
     get_config_dir,
     get_current_project_file,
@@ -92,7 +97,43 @@ def test_set_current_project_writes_under_override_dir(
 
 
 # ---------------------------------------------------------------------------
-# Source guard
+# Runtime command: cmd_doctor honours KICAD_PCB_PROJECTS_DIR
+# ---------------------------------------------------------------------------
+
+
+def test_cmd_doctor_projects_dir_uses_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """cmd_doctor() reports the override projects dir, not the stale PROJECTS_DIR constant."""
+    projects_override = tmp_path / "projects-override"
+    monkeypatch.setenv("KICAD_PCB_PROJECTS_DIR", str(projects_override))
+
+    result = cmd_doctor(types.SimpleNamespace(), runner=FakeRunner({}))
+
+    writable_check = next(c for c in result.checks if c.label == "Projects dir writable")
+    assert str(projects_override) in writable_check.message
+    assert projects_override.exists()
+
+
+# ---------------------------------------------------------------------------
+# Runtime command: project fallback honours get_projects_dir()
+# ---------------------------------------------------------------------------
+
+
+def test_create_project_fallback_uses_projects_dir_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """_create_project(out_dir=None) falls back to get_projects_dir(), not the stale constant."""
+    projects_override = tmp_path / "projects-override"
+    monkeypatch.setenv("KICAD_PCB_PROJECTS_DIR", str(projects_override))
+
+    ref = _create_project(name="MyProj", out_dir=None, description="")
+
+    assert ref.path.parent == projects_override
+
+
+# ---------------------------------------------------------------------------
+# Source guard: no hardcoded home path outside config.py
 # ---------------------------------------------------------------------------
 
 
@@ -113,4 +154,43 @@ def test_source_guard_no_hardcoded_home_kicad_pcb_outside_config() -> None:
     assert not violations, (
         f"Direct '{forbidden}' construction found outside config.py:\n"
         + "\n".join(f"  {v}" for v in violations)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Source guard: deprecated config constants not imported in runtime modules
+# ---------------------------------------------------------------------------
+
+_DEPRECATED_CONSTANTS = (
+    "CONFIG_DIR",
+    "CONFIG_FILE",
+    "PROJECTS_DIR",
+    "CURRENT_PROJECT_FILE",
+    "CURRENT_SESSION_FILE",
+)
+
+_ALLOWED_FILES = {"config.py", "__init__.py"}
+
+
+def test_source_guard_no_deprecated_constants_in_runtime_modules() -> None:
+    """Deprecated config constants must not be imported in runtime command modules."""
+    src_dir = Path(__file__).resolve().parents[2] / "src" / "kicad_pcb"
+
+    violations: list[str] = []
+    for py_file in sorted(src_dir.rglob("*.py")):
+        if py_file.name in _ALLOWED_FILES:
+            continue
+        content = py_file.read_text(encoding="utf-8")
+        for name in _DEPRECATED_CONSTANTS:
+            # Check only import lines to avoid false positives from comments or
+            # legitimate local variable names that happen to match.
+            for line in content.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("from ") and "import" in stripped and name in stripped:
+                    rel = str(py_file.relative_to(src_dir.parent.parent))
+                    violations.append(f"{rel}: imports deprecated constant '{name}'")
+                    break
+
+    assert not violations, "Deprecated config constants imported in runtime modules:\n" + "\n".join(
+        f"  {v}" for v in violations
     )

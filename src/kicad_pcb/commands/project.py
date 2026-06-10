@@ -7,7 +7,7 @@ import uuid as _uuid_module
 from datetime import datetime
 from pathlib import Path
 
-from ..config import PROJECTS_DIR, get_current_project, load_config, set_current_project
+from ..config import get_current_project, get_projects_dir, load_config, set_current_project
 from ..errors import UserError
 from ..fs import _atomic_write
 from ..models import ProjectRef
@@ -99,7 +99,7 @@ def cmd_new(args) -> NewProjectResult:
     """Create new KiCad project."""
     name = args.name.replace(" ", "_")
     config = load_config()
-    projects_dir = Path(config.get("projects_dir", PROJECTS_DIR))
+    projects_dir = Path(config.get("projects_dir", str(get_projects_dir())))
 
     project_dir = projects_dir / name
     if project_dir.exists():

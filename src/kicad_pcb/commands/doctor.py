@@ -8,7 +8,7 @@ from typing import Literal
 
 from ..adapters import RunnerProtocol, SubprocessRunner
 from ..compat import MINIMUM_VERSION, parse_version
-from ..config import CONFIG_DIR, PROJECTS_DIR, discover_symbols_dir, get_current_project
+from ..config import discover_symbols_dir, get_config_dir, get_current_project, get_projects_dir
 from ..graphviz_layout import find_dot_source
 from ..results import DoctorCheckItem, DoctorResult
 
@@ -137,11 +137,12 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         overall_ok = False
 
     # Config dir
+    config_dir = get_config_dir()
     checks.append(
         DoctorCheckItem(
-            status="ok" if CONFIG_DIR.exists() else "warn",
+            status="ok" if config_dir.exists() else "warn",
             label="Config dir",
-            message=str(CONFIG_DIR),
+            message=str(config_dir),
         )
     )
 
@@ -166,20 +167,21 @@ def cmd_doctor(args, *, runner: RunnerProtocol | None = None) -> DoctorResult:  
         )
 
     # Projects dir writable
+    projects_dir = get_projects_dir()
     try:
-        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
-        probe = PROJECTS_DIR / ".write_probe"
+        projects_dir.mkdir(parents=True, exist_ok=True)
+        probe = projects_dir / ".write_probe"
         probe.write_text("probe", encoding="utf-8")
         probe.unlink()
         checks.append(
-            DoctorCheckItem(status="ok", label="Projects dir writable", message=str(PROJECTS_DIR))
+            DoctorCheckItem(status="ok", label="Projects dir writable", message=str(projects_dir))
         )
     except OSError as exc:
         checks.append(
             DoctorCheckItem(
                 status="error",
                 label="Projects dir writable",
-                message=f"{PROJECTS_DIR}  ({exc})",
+                message=f"{projects_dir}  ({exc})",
             )
         )
         overall_ok = False

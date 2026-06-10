@@ -115,7 +115,7 @@ Do not treat Python-only checks as sufficient for TypeScript changes.
   via `KICAD_PCB_CONFIG_DIR` and `KICAD_PCB_PROJECTS_DIR`. Do not patch the deprecated
   module-level constants (`CURRENT_PROJECT_FILE`, etc.); use the env vars or the dynamic
   helpers (`get_current_project_file()`, `get_config_dir()`, etc.) instead.
-- Manual isolation check: `KICAD_PCB_CONFIG_DIR="$(mktemp -d)" uv run --extra dev --extra web python -m pytest tests/unit/ -q`
+- Manual isolation check: `KICAD_PCB_CONFIG_DIR="$(mktemp -d)" KICAD_PCB_PROJECTS_DIR="$(mktemp -d)" uv run --extra dev --extra web python -m pytest tests/unit/ -q`
 
 ---
 
