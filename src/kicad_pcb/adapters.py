@@ -88,6 +88,10 @@ class SubprocessRunner:
             return RunResult(r.returncode, "", "")
         except FileNotFoundError:
             return RunResult(127, "", f"command not found: {cmd[0]}")
+        except PermissionError as exc:
+            return RunResult(126, "", f"command not executable: {cmd[0]}: {exc}")
+        except OSError as exc:
+            return RunResult(127, "", f"command launch failed: {cmd[0]}: {exc}")
 
 
 class FakeRunner:

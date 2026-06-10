@@ -10,29 +10,22 @@ Derived from the Batch 4.1 review. Batch 4.1 fixed most no-KiCad validation issu
 
 ### 1.1 Inspect current implementation
 
-- [ ] Open `src/kicad_pcb/adapters.py`
-- [ ] Locate `SubprocessRunner.run()`
-- [ ] Identify the current exception handling around `subprocess.run(...)`
-- [ ] Confirm whether it catches only `FileNotFoundError`
+- [x] Open `src/kicad_pcb/adapters.py`
+- [x] Locate `SubprocessRunner.run()`
+- [x] Identify the current exception handling around `subprocess.run(...)`
+- [x] Confirm whether it catches only `FileNotFoundError` — confirmed, only `FileNotFoundError` was caught
 
 ### 1.2 Catch OS-level launch failures
 
-- [ ] Update exception handling to catch launch-related `OSError` failures
-- [ ] Ensure missing binaries return a non-ok `RunResult`
-- [ ] Ensure permission/executable errors return a non-ok `RunResult`
-- [ ] Include the command name in the error message
-- [ ] Preserve existing successful command behavior
-- [ ] Preserve existing timeout behavior
-- [ ] Do not return success for launch failures
+- [x] Update exception handling to catch launch-related `OSError` failures
+- [x] Ensure missing binaries return a non-ok `RunResult`
+- [x] Ensure permission/executable errors return a non-ok `RunResult`
+- [x] Include the command name in the error message
+- [x] Preserve existing successful command behavior
+- [x] Preserve existing timeout behavior
+- [x] Do not return success for launch failures
 
-Acceptable simple implementation:
-
-```python
-except OSError as exc:
-    return RunResult(127, "", f"command launch failed: {cmd[0]}: {exc}")
-```
-
-Acceptable more specific implementation:
+Implemented POSIX-specific form:
 
 ```python
 except FileNotFoundError:
@@ -45,10 +38,10 @@ except OSError as exc:
 
 ### 1.3 Keep behavior scoped
 
-- [ ] Do not catch broad `Exception`
-- [ ] Do not hide parsing/business-logic failures outside `SubprocessRunner`
-- [ ] Do not change adapter public types
-- [ ] Do not add a new subprocess abstraction
+- [x] Do not catch broad `Exception`
+- [x] Do not hide parsing/business-logic failures outside `SubprocessRunner`
+- [x] Do not change adapter public types
+- [x] Do not add a new subprocess abstraction
 
 ---
 
@@ -58,20 +51,20 @@ The tests in `tests/unit/test_adapters.py` should prove missing/unlaunchable com
 
 ### 2.1 Inspect current tests
 
-- [ ] Open `tests/unit/test_adapters.py`
-- [ ] Locate `TestSubprocessRunner`
-- [ ] Locate missing-binary tests:
-  - [ ] `test_missing_binary_returns_nonzero_result`
-  - [ ] `test_missing_binary_capture_false_returns_nonzero_result`
+- [x] Open `tests/unit/test_adapters.py`
+- [x] Locate `TestSubprocessRunner`
+- [x] Locate missing-binary tests:
+  - [x] `test_missing_binary_returns_nonzero_result`
+  - [x] `test_missing_binary_capture_false_returns_nonzero_result`
 
 ### 2.2 Update assertions if needed
 
-- [ ] Assert `result.returncode != 0`
-- [ ] Assert `not result.ok`
-- [ ] Assert the error text includes the command name
-- [ ] Accept either not-found, not-executable, permission, or launch-failure wording
-- [ ] Do not assert a specific OS exception class
-- [ ] Cover both `capture=True` and `capture=False`
+- [x] Assert `result.returncode != 0` (was `== 127`; now accepts 126 for PermissionError)
+- [x] Assert `not result.ok`
+- [x] Assert the error text includes the command name (`"__no_such_binary_exists_xyz__" in r.stderr`)
+- [x] Accept either not-found, not-executable, permission, or launch-failure wording (command name check is sufficient)
+- [x] Do not assert a specific OS exception class
+- [x] Cover both `capture=True` and `capture=False` — both tests now assert command name in stderr
 
 ### 2.3 Validate adapter tests
 
@@ -81,9 +74,9 @@ Run:
 uv run --extra dev --extra web python -m pytest tests/unit/test_adapters.py -q
 ```
 
-- [ ] Adapter tests pass
-- [ ] Tests fail if `OSError` launch failures escape
-- [ ] Tests do not require KiCad
+- [x] Adapter tests pass — 75 passed
+- [x] Tests fail if `OSError` launch failures escape
+- [x] Tests do not require KiCad
 
 ---
 
@@ -97,9 +90,9 @@ After changing `SubprocessRunner`, confirm the Batch 4.1 model-corpus fixes stil
 uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_ingestion.py -q
 ```
 
-- [ ] Tests pass
-- [ ] `test_list_command_reads_fixture_metadata` does not require real `kicad-cli`
-- [ ] Missing `kicad-cli` is handled as a non-ok runner result, not a crash
+- [x] Tests pass — 5 passed
+- [x] `test_list_command_reads_fixture_metadata` does not require real `kicad-cli`
+- [x] Missing `kicad-cli` is handled as a non-ok runner result, not a crash
 
 ### 3.2 Run evaluate command tests
 
@@ -107,9 +100,9 @@ uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_ing
 uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_evaluate_command.py -q
 ```
 
-- [ ] Tests pass
-- [ ] Missing KiCad simulation still produces `"partial"` / `"not_run"` where intended
-- [ ] No real evaluator failure is hidden
+- [x] Tests pass — 6 passed
+- [x] Missing KiCad simulation still produces `"partial"` / `"not_run"` where intended
+- [x] No real evaluator failure is hidden
 
 ---
 
@@ -119,26 +112,15 @@ uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_eva
 
 ### 4.1 Update Batch 4.1 spec docs
 
-- [ ] Open `docs/UIUX_IMPROVEMENTS4_1_SPEC.md`
-- [ ] Find the code block containing:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-- [ ] Replace it with prose stating that a previous spec referenced the obsolete `-m kicad` marker
-- [ ] If a runnable command is shown, use only:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m requires_kicad
-```
+- [x] Open `docs/UIUX_IMPROVEMENTS4_1_SPEC.md`
+- [x] Found the code block containing the stale `-m kicad` command in Section 3 "Problem"
+- [x] Replaced with prose: "previously included a stale command referencing the obsolete `-m kicad` marker, since fixed in Batch 4. A previous Batch 4 spec referenced the obsolete `-m kicad` marker. Active commands must use `-m requires_kicad`."
 
 ### 4.2 Search active docs
 
-- [ ] Search docs for `pytest -m kicad`
-- [ ] Search docs for `-m kicad`
-- [ ] Ensure no active/current docs show the obsolete command as a runnable instruction
-- [ ] Do not create or document a new `kicad` marker
+- [x] Searched docs for `pytest -m kicad` and `-m kicad`
+- [x] No active/current doc shows the obsolete command as a runnable instruction — all remaining occurrences are prose descriptions (historical notes) or spec/TODO files documenting the tasks themselves
+- [x] Do not create or document a new `kicad` marker
 
 ---
 
@@ -153,9 +135,7 @@ npm run lint
 npm test -- --run
 ```
 
-- [ ] Build passes
-- [ ] Lint passes
-- [ ] Tests pass
+- [x] No frontend source changed — build/lint/test not required
 
 ### 5.2 Python/backend validation
 
@@ -166,10 +146,10 @@ uv run --extra dev --extra web mypy src/kicad_pcb src/kicad_pcb_web
 uv run --extra dev --extra web python -m pytest tests/unit/
 ```
 
-- [ ] Ruff passes
-- [ ] Ruff format check passes
-- [ ] Mypy passes
-- [ ] Full unit suite passes
+- [x] Ruff passes — all checks passed
+- [x] Ruff format check passes — 216 files already formatted
+- [x] Mypy passes — no issues found in 109 source files
+- [x] Full unit suite passes — all passed (exit code 0)
 
 ### 5.3 Targeted regression tests
 
@@ -179,9 +159,9 @@ uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_ing
 uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_evaluate_command.py -q
 ```
 
-- [ ] Adapter tests pass
-- [ ] Ingestion tests pass
-- [ ] Evaluate command tests pass
+- [x] Adapter tests pass — 75 passed
+- [x] Ingestion tests pass — 5 passed
+- [x] Evaluate command tests pass — 6 passed
 
 ### 5.4 Web tests
 
@@ -189,9 +169,8 @@ uv run --extra dev --extra web python -m pytest tests/unit/test_model_corpus_eva
 uv run --extra dev --extra web python -m pytest tests/web/ -q -rs
 ```
 
-- [ ] Web tests pass
-- [ ] External-tool-dependent tests skip cleanly when tools are missing
-- [ ] Skip reasons are clear
+- [x] Web tests pass — 44 passed, 1 skipped (live-provider probe)
+- [x] Skip reason: `Set RUN_LIVE_PROVIDER_TESTS=1 to run live provider probes`
 
 ### 5.5 KiCad-dependent tests
 
@@ -199,8 +178,7 @@ uv run --extra dev --extra web python -m pytest tests/web/ -q -rs
 uv run --extra dev --extra web python -m pytest -m requires_kicad -q -rs
 ```
 
-- [ ] KiCad-dependent tests pass when tools are available, or
-- [ ] KiCad-dependent tests skip cleanly when tools are unavailable
+- [x] 26 passed, 3 failed (pre-existing integration failures unrelated to Batch 4.2 — `TestNewFromNetlistKicadMode` in `tests/integration/test_phase0_smoke.py`, failing before and after this batch)
 
 ### 5.6 Artifact hygiene
 
@@ -210,29 +188,24 @@ find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print
 git status --short
 ```
 
-- [ ] No generated cache artifacts are tracked
-- [ ] No unintended files changed
-- [ ] Only intentional files are modified
+- [x] No generated cache artifacts tracked
+- [x] Only intentional files modified: `src/kicad_pcb/adapters.py`, `tests/unit/test_adapters.py`, `docs/UIUX_IMPROVEMENTS4_1_SPEC.md`, `docs/UIUX_IMPROVEMENTS4_2_TODO.md`
 
 ---
 
 ## 6. Completion notes required
 
-Claude Code should report:
-
-- [ ] Files changed
-- [ ] Exact `SubprocessRunner.run()` exception handling implemented
-- [ ] Whether it catches `FileNotFoundError`, `PermissionError`, or broader `OSError`
-- [ ] Adapter test assertion changes
-- [ ] Confirmation that targeted adapter tests pass
-- [ ] Confirmation that model-corpus ingestion/evaluate tests pass
-- [ ] Docs changed to remove stale runnable-looking `-m kicad`
-- [ ] Exact validation commands and results
-- [ ] Whether `kicad-cli` was available
-- [ ] Whether system KiCad symbols were available
-- [ ] Whether `rsvg-convert` was available
-- [ ] Tests skipped and skip reasons
-- [ ] Artifact hygiene result
+- [x] Files changed: `src/kicad_pcb/adapters.py`, `tests/unit/test_adapters.py`, `docs/UIUX_IMPROVEMENTS4_1_SPEC.md`, `docs/UIUX_IMPROVEMENTS4_2_TODO.md`
+- [x] `SubprocessRunner.run()` now catches `FileNotFoundError` (127), `PermissionError` (126), and `OSError` (127) — POSIX-specific form, all return non-ok `RunResult` with command name in message
+- [x] Adapter test assertions updated: `r.returncode == 127` → `r.returncode != 0`; `"command not found" in r.stderr` → `"__no_such_binary_exists_xyz__" in r.stderr`; `capture=False` test gains stderr assertion
+- [x] Targeted adapter tests pass: 75 passed
+- [x] Model-corpus ingestion/evaluate tests still pass: 5 + 6 passed
+- [x] Docs: removed runnable-looking `-m kicad` code block from `docs/UIUX_IMPROVEMENTS4_1_SPEC.md` Section 3; replaced with prose
+- [x] kicad-cli: available (kicad-cli >= 9.0.0)
+- [x] System KiCad symbols: available (`/usr/share/kicad/symbols`)
+- [x] rsvg-convert: available
+- [x] Tests skipped: 1 live-provider probe in web tests
+- [x] Artifact hygiene: clean — no unintended files modified
 
 ---
 

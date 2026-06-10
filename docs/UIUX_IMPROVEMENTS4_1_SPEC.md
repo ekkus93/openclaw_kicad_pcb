@@ -161,11 +161,7 @@ Add or update assertions to make the intended distinction explicit:
 
 ### Problem
 
-`docs/UIUX_IMPROVEMENTS4_SPEC.md` still contains:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
+`docs/UIUX_IMPROVEMENTS4_SPEC.md` previously included a stale command referencing the obsolete `-m kicad` marker, since fixed in Batch 4. A previous Batch 4 spec referenced the obsolete `-m kicad` marker. Active commands must use `-m requires_kicad`.
 
 The project uses the existing marker:
 
