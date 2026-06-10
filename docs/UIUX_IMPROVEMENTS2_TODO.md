@@ -169,44 +169,34 @@ If frontend tests already exist, use the existing setup. Otherwise add a minimal
 
 ### 3.1 Add dependencies if needed
 
-- [ ] Add Vitest if not already present
-- [ ] Add React Testing Library if not already present
-- [ ] Add `@testing-library/jest-dom` if not already present
-- [ ] Add `@testing-library/user-event` if not already present
-- [ ] Add `jsdom` if needed by Vitest config
-- [ ] Add MSW only if it materially simplifies API/query mocking
+- [x] Add Vitest if not already present
+- [x] Add React Testing Library if not already present
+- [x] Add `@testing-library/jest-dom` if not already present
+- [x] Add `@testing-library/user-event` if not already present
+- [x] Add `jsdom` if needed by Vitest config
+- [x] Add MSW only if it materially simplifies API/query mocking — skipped per replies4.md; using vi.mock instead
 
 ### 3.2 Add test scripts
 
-- [ ] Add `test` script to `frontend/package.json`
-- [ ] Add `test:watch` script if useful
-- [ ] Keep existing `build` and `lint` scripts unchanged
-
-Suggested script:
-
-```json
-{
-  "scripts": {
-    "test": "vitest"
-  }
-}
-```
+- [x] Add `test` script to `frontend/package.json`
+- [x] Add `test:watch` script if useful — added `test:run` (non-watch mode) instead
+- [x] Keep existing `build` and `lint` scripts unchanged
 
 ### 3.3 Add test setup file
 
-- [ ] Create `frontend/src/test/setup.ts` or equivalent
-- [ ] Import `@testing-library/jest-dom`
-- [ ] Configure any required global mocks
-- [ ] Ensure tests run in `jsdom`
+- [x] Create `frontend/src/test/setup.ts` or equivalent
+- [x] Import `@testing-library/jest-dom`
+- [x] Configure any required global mocks
+- [x] Ensure tests run in `jsdom`
 
 ### 3.4 Add test utilities
 
-- [ ] Create a small test render helper that wraps components in:
-  - [ ] `QueryClientProvider`
-  - [ ] React Router memory router/provider
-  - [ ] any app-level providers required by the frontend
-- [ ] Ensure each test uses a fresh `QueryClient`
-- [ ] Disable query retries in tests unless a test explicitly needs retry behavior
+- [x] Create a small test render helper that wraps components in:
+  - [x] `QueryClientProvider`
+  - [x] React Router memory router/provider
+  - [x] any app-level providers required by the frontend
+- [x] Ensure each test uses a fresh `QueryClient`
+- [x] Disable query retries in tests unless a test explicitly needs retry behavior
 
 ---
 
@@ -216,71 +206,71 @@ These tests should cover the exact behaviors that were fixed or changed in Batch
 
 ### 4.1 Wizard nav active state test
 
-- [ ] Render the app/layout at `/wizard`
-- [ ] Mock or set localStorage so the last session points to a different path such as `/wizard/abc123`
-- [ ] Verify the Wizard nav item is active on `/wizard`
-- [ ] Verify the Wizard nav link still points to the last session path when appropriate
+- [x] Render the app/layout at `/wizard`
+- [x] Mock or set localStorage so the last session points to a different path such as `/wizard/abc123`
+- [x] Verify the Wizard nav item is active on `/wizard`
+- [x] Verify the Wizard nav link still points to the last session path when appropriate
 
 ### 4.2 Inline regenerate confirmation test
 
-- [ ] Render the generate step with a latest job whose status is `succeeded`
-- [ ] Click `Generate Again`
-- [ ] Verify an inline confirmation banner appears
-- [ ] Verify `window.confirm` is not called
-- [ ] Click `Cancel`
-- [ ] Verify the confirmation banner disappears
-- [ ] Click `Generate Again` again
-- [ ] Click `Confirm — Generate Again`
-- [ ] Verify generation action is invoked
+- [x] Render the generate step with a latest job whose status is `succeeded`
+- [x] Click `Generate Again`
+- [x] Verify an inline confirmation banner appears
+- [x] Verify `window.confirm` is not called
+- [x] Click `Cancel`
+- [x] Verify the confirmation banner disappears
+- [x] Click `Generate Again` again
+- [x] Click `Confirm — Generate Again`
+- [x] Verify generation action is invoked
 
 ### 4.3 Failed-job retry label/style test
 
-- [ ] Render the generate step with a latest job whose status is `failed`
-- [ ] Verify the main action label is `Retry Generation`
-- [ ] Verify clicking it does not first show the succeeded-regeneration confirmation
-- [ ] Verify it invokes generation action directly or follows the current intended retry flow
-- [ ] Verify it does not use the destructive/danger style intended for overwriting a succeeded job
+- [x] Render the generate step with a latest job whose status is `failed`
+- [x] Verify the main action label is `Retry Generation`
+- [x] Verify clicking it does not first show the succeeded-regeneration confirmation
+- [x] Verify it invokes generation action directly or follows the current intended retry flow
+- [x] Verify it does not use the destructive/danger style intended for overwriting a succeeded job
 
 ### 4.4 LLM-disabled spec revision test
 
-- [ ] Render the spec step with `llm_enabled` false
-- [ ] Verify the spec revision composer submit button is disabled
-- [ ] Verify the help text explains the LLM provider is unavailable/offline/disabled
-- [ ] Verify approval behavior remains available if approval does not require LLM, matching current app behavior
+- [x] Render the spec step with `llm_enabled` false
+- [x] Verify the spec revision composer submit button is disabled
+- [x] Verify the help text explains the LLM provider is unavailable/offline/disabled
+- [x] Verify approval behavior remains available if approval does not require LLM, matching current app behavior
 
 ### 4.5 LLM-disabled IR generation test
 
-- [ ] Render the IR step with `llm_enabled` false
-- [ ] Verify Generate/Regenerate/Repair Circuit IR button is disabled
-- [ ] Verify help text explains the LLM provider is unavailable/offline/disabled
+- [x] Render the IR step with `llm_enabled` false
+- [x] Verify Generate/Regenerate/Repair Circuit IR button is disabled
+- [x] Verify help text explains the LLM provider is unavailable/offline/disabled
 
 ### 4.6 Job polling indicator test
 
-- [ ] Render `JobPage` or the job status component with a queued/running job
-- [ ] Simulate background query refetching
-- [ ] Verify the subtle `Checking for updates…` indicator appears near the status field
-- [ ] Verify initial loading still uses the full-page loading state
-- [ ] Verify succeeded/failed jobs do not show the polling indicator
+- [x] Render `JobPage` or the job status component with a queued/running job
+- [x] Simulate background query refetching
+- [x] Verify the subtle `Checking for updates…` indicator appears near the status field
+- [x] Verify initial loading still uses the full-page loading state
+- [x] Verify succeeded/failed jobs do not show the polling indicator
 
 ### 4.7 Symbols debounce test
 
-- [ ] Use fake timers
-- [ ] Render `SymbolsPage` or the extracted search control
-- [ ] Type multiple characters rapidly
-- [ ] Verify intermediate keystrokes do not immediately trigger multiple query updates/searches
-- [ ] Advance timers by the debounce interval
-- [ ] Verify only the final query is applied
-- [ ] Unmount before the timer fires
-- [ ] Verify no state-update-after-unmount warnings or pending timer behavior occurs
+- [x] Use fake timers
+- [x] Render `SymbolsPage` or the extracted search control
+- [x] Type multiple characters rapidly
+- [x] Verify intermediate keystrokes do not immediately trigger multiple query updates/searches
+- [x] Advance timers by the debounce interval
+- [x] Verify only the final query is applied
+- [x] Unmount before the timer fires
+- [x] Verify no state-update-after-unmount warnings or pending timer behavior occurs
 
 ### 4.8 Wizard step smoke tests
 
-- [ ] Render the start step with representative bootstrap data
-- [ ] Render the describe step with representative session data
-- [ ] Render the spec step with representative spec data
-- [ ] Render the IR step with representative IR data and repair warning data
-- [ ] Render the generate step with representative latest job data
-- [ ] Include at least one missing/partial-data case for each step where optional API data may be absent
+- [x] Render the start step with representative bootstrap data
+- [x] Render the describe step with representative session data
+- [x] Render the spec step with representative spec data
+- [x] Render the IR step with representative IR data and repair warning data
+- [x] Render the generate step with representative latest job data
+- [x] Include at least one missing/partial-data case for each step where optional API data may be absent
 
 ---
 
