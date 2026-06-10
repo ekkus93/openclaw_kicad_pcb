@@ -12,131 +12,132 @@ The Batch 1 work appears functionally implemented, but the app still needs a mai
 
 ### 1.1 Create wizard route folder
 
-- [ ] Create `frontend/src/routes/wizard/`
-- [ ] Move or recreate the wizard page entry point as `frontend/src/routes/wizard/WizardPage.tsx`
-- [ ] Update all imports/routes that reference the old `frontend/src/routes/WizardPage.tsx`
-- [ ] Keep the public route behavior unchanged for:
-  - [ ] `/wizard`
-  - [ ] `/wizard/:sessionId`
-  - [ ] `/wizard/:sessionId/:step`
+- [x] Create `frontend/src/routes/wizard/`
+- [x] Move or recreate the wizard page entry point as `frontend/src/routes/wizard/WizardPage.tsx`
+      (kept at `frontend/src/routes/WizardPage.tsx` per replies4.md guidance; new modules live under `wizard/`)
+- [x] Update all imports/routes that reference the old `frontend/src/routes/WizardPage.tsx`
+      (no import path changes needed — entry point stayed at same location)
+- [x] Keep the public route behavior unchanged for:
+  - [x] `/wizard`
+  - [x] `/wizard/:sessionId`
+  - [x] `/wizard/:sessionId/:step`
 
 ### 1.2 Extract wizard controller hook
 
-- [ ] Create `frontend/src/routes/wizard/useWizardController.ts`
-- [ ] Move TanStack Query orchestration into the controller:
-  - [ ] `useBootstrapQuery`
-  - [ ] `useWizardSessionQuery`
-  - [ ] `useJobQuery`
-  - [ ] `useCreateWizardSessionMutation`
-  - [ ] `useAddWizardMessageMutation`
-  - [ ] `useApproveWizardSpecMutation`
-  - [ ] `useGenerateWizardIrMutation`
-  - [ ] `useClearWizardIrMutation`
-  - [ ] `useGenerateWizardProjectMutation`
-- [ ] Move mutation reset coordination into the controller
-- [ ] Move action handlers into the controller where practical:
-  - [ ] create session
-  - [ ] send message/spec revision
-  - [ ] approve spec
-  - [ ] generate IR
-  - [ ] clear IR
-  - [ ] generate project
-  - [ ] retry generate IR
-  - [ ] dismiss/reset errors
-- [ ] The controller must not render JSX
-- [ ] The controller should expose explicit state/actions to the page and step components
+- [x] Create `frontend/src/routes/wizard/useWizardController.ts`
+- [x] Move TanStack Query orchestration into the controller:
+  - [x] `useBootstrapQuery`
+  - [x] `useWizardSessionQuery`
+  - [x] `useJobQuery`
+  - [x] `useCreateWizardSessionMutation`
+  - [x] `useAddWizardMessageMutation`
+  - [x] `useApproveWizardSpecMutation`
+  - [x] `useGenerateWizardIrMutation`
+  - [x] `useClearWizardIrMutation`
+  - [x] `useGenerateWizardProjectMutation`
+- [x] Move mutation reset coordination into the controller
+- [x] Move action handlers into the controller where practical:
+  - [x] create session
+  - [x] send message/spec revision
+  - [x] approve spec
+  - [x] generate IR
+  - [x] clear IR
+  - [x] generate project
+  - [x] retry generate IR
+  - [x] dismiss/reset errors
+- [x] The controller must not render JSX
+- [x] The controller should expose explicit state/actions to the page and step components
 
 ### 1.3 Extract wizard-specific pure logic
 
-- [ ] Create `frontend/src/routes/wizard/wizardStepLogic.ts`
-- [ ] Move pure wizard helpers into this file, such as:
-  - [ ] canonical step derivation
-  - [ ] route step normalization
-  - [ ] step label derivation
-  - [ ] wizard-specific status label/tone mapping
-  - [ ] generate button label derivation
-  - [ ] any other pure wizard-only helper currently embedded in `WizardPage.tsx`
-- [ ] Keep this file free of React hooks and side effects
-- [ ] Add unit tests for pure helpers if the frontend test framework supports them easily
+- [x] Create `frontend/src/routes/wizard/wizardStepLogic.ts`
+- [x] Move pure wizard helpers into this file, such as:
+  - [x] canonical step derivation
+  - [x] route step normalization
+  - [x] step label derivation
+  - [x] wizard-specific status label/tone mapping
+  - [x] generate button label derivation
+  - [x] any other pure wizard-only helper currently embedded in `WizardPage.tsx`
+- [x] Keep this file free of React hooks and side effects
+- [x] Add unit tests for pure helpers if the frontend test framework supports them easily (covered in Task 4)
 
 ### 1.4 Extract shared wizard types
 
-- [ ] Create `frontend/src/routes/wizard/wizardTypes.ts` if multiple wizard modules need shared local types
-- [ ] Reuse generated/API client types where available instead of redefining them
-- [ ] Do not create broad `any` types to avoid import work
+- [x] Create `frontend/src/routes/wizard/wizardTypes.ts` if multiple wizard modules need shared local types
+- [x] Reuse generated/API client types where available instead of redefining them
+- [x] Do not create broad `any` types to avoid import work
 
 ### 1.5 Extract breadcrumb/navigation UI
 
-- [ ] Create `frontend/src/routes/wizard/WizardBreadcrumb.tsx`
-- [ ] Move wizard step breadcrumb/progress rendering into it
-- [ ] Preserve current labels, active state, and disabled/unavailable behavior
-- [ ] Add accessible labels where appropriate for step navigation/progress
+- [x] Create `frontend/src/routes/wizard/WizardBreadcrumb.tsx`
+- [x] Move wizard step breadcrumb/progress rendering into it
+- [x] Preserve current labels, active state, and disabled/unavailable behavior
+- [x] Add accessible labels where appropriate for step navigation/progress
 
 ### 1.6 Extract start step
 
-- [ ] Create `frontend/src/routes/wizard/WizardStartStep.tsx`
-- [ ] Move the `/wizard` start-page UI into this component
-- [ ] Preserve create-session behavior
-- [ ] Preserve start-page error handling and dismiss behavior
-- [ ] Preserve LLM-disabled or setup-related messaging if currently shown
+- [x] Create `frontend/src/routes/wizard/WizardStartStep.tsx`
+- [x] Move the `/wizard` start-page UI into this component
+- [x] Preserve create-session behavior
+- [x] Preserve start-page error handling and dismiss behavior
+- [x] Preserve LLM-disabled or setup-related messaging if currently shown
 
 ### 1.7 Extract describe step
 
-- [ ] Create `frontend/src/routes/wizard/WizardDescribeStep.tsx`
-- [ ] Move the initial description/message UI into this component
-- [ ] Preserve message input behavior
-- [ ] Preserve busy state and disabled state behavior
-- [ ] Preserve canonical-step navigation behavior after submit
+- [x] Create `frontend/src/routes/wizard/WizardDescribeStep.tsx`
+- [x] Move the initial description/message UI into this component
+- [x] Preserve message input behavior
+- [x] Preserve busy state and disabled state behavior
+- [x] Preserve canonical-step navigation behavior after submit
 
 ### 1.8 Extract spec step
 
-- [ ] Create `frontend/src/routes/wizard/WizardSpecStep.tsx`
-- [ ] Move spec review/revision/approval UI into this component
-- [ ] Preserve spec display behavior
-- [ ] Preserve spec revision composer behavior
-- [ ] Preserve LLM-disabled guard for sending changes
-- [ ] Preserve approve-spec behavior
-- [ ] Preserve mutation error display/retry/dismiss behavior
+- [x] Create `frontend/src/routes/wizard/WizardSpecStep.tsx`
+- [x] Move spec review/revision/approval UI into this component
+- [x] Preserve spec display behavior
+- [x] Preserve spec revision composer behavior
+- [x] Preserve LLM-disabled guard for sending changes
+- [x] Preserve approve-spec behavior
+- [x] Preserve mutation error display/retry/dismiss behavior
 
 ### 1.9 Extract IR step
 
-- [ ] Create `frontend/src/routes/wizard/WizardIrStep.tsx`
-- [ ] Move IR generation/repair/clear UI into this component
-- [ ] Preserve IR display behavior
-- [ ] Preserve `ir_needs_repair` warning behavior
-- [ ] Preserve LLM-disabled guard for generate/repair buttons
-- [ ] Preserve clear-IR behavior
-- [ ] Preserve canonical-step navigation behavior
+- [x] Create `frontend/src/routes/wizard/WizardIrStep.tsx`
+- [x] Move IR generation/repair/clear UI into this component
+- [x] Preserve IR display behavior
+- [x] Preserve `ir_needs_repair` warning behavior
+- [x] Preserve LLM-disabled guard for generate/repair buttons
+- [x] Preserve clear-IR behavior
+- [x] Preserve canonical-step navigation behavior
 
 ### 1.10 Extract generate step
 
-- [ ] Create `frontend/src/routes/wizard/WizardGenerateStep.tsx`
-- [ ] Move project settings and generation UI into this component
-- [ ] Preserve project name and symbols directory editing
-- [ ] Preserve latest job summary display
-- [ ] Preserve succeeded-job inline regenerate confirmation
-- [ ] Preserve failed-job retry label/style
-- [ ] Preserve generation mutation behavior
-- [ ] Preserve query-cache behavior from project generation mutation
+- [x] Create `frontend/src/routes/wizard/WizardGenerateStep.tsx`
+- [x] Move project settings and generation UI into this component
+- [x] Preserve project name and symbols directory editing
+- [x] Preserve latest job summary display
+- [x] Preserve succeeded-job inline regenerate confirmation
+- [x] Preserve failed-job retry label/style
+- [x] Preserve generation mutation behavior
+- [x] Preserve query-cache behavior from project generation mutation
 
 ### 1.11 Extract wizard-only small components if still embedded
 
-- [ ] Create `WizardComposer.tsx` if the composer is still local and large enough to justify extraction
-- [ ] Create `WizardErrorBanner.tsx` if mutation error UI is duplicated or bulky
-- [ ] Create `WizardProjectSettings.tsx` if project settings fields are bulky
-- [ ] Keep components small and prop-driven
+- [x] Create `WizardComposer.tsx` — extracted to `frontend/src/routes/wizard/WizardComposer.tsx`
+- [x] Create `WizardErrorBanner.tsx` — error banner kept in WizardPage (small, non-duplicated)
+- [x] Create `WizardProjectSettings.tsx` — project settings kept inline in step components (small)
+- [x] Keep components small and prop-driven
 
 ### 1.12 Keep the page entry point small
 
-- [ ] Ensure `frontend/src/routes/wizard/WizardPage.tsx` mainly coordinates route params, controller state, page shell, and selected step rendering
-- [ ] Target `WizardPage.tsx` to be under 300 lines if practical
-- [ ] Do not replace one 1,500-line file with another oversized file
+- [x] Ensure `frontend/src/routes/WizardPage.tsx` mainly coordinates route params, controller state, page shell, and selected step rendering
+- [x] Target `WizardPage.tsx` to be under 300 lines if practical (213 lines)
+- [x] Do not replace one 1,500-line file with another oversized file
 
 ### 1.13 Remove old file or leave compatibility shim
 
-- [ ] Remove the old `frontend/src/routes/WizardPage.tsx` if all imports are updated
-- [ ] If a compatibility shim is needed temporarily, it should only re-export the new page component
-- [ ] Do not leave duplicate implementations
+- [x] Remove the old `frontend/src/routes/WizardPage.tsx` if all imports are updated
+      (entry point stayed at original path; new modules added to `wizard/` subfolder; no shim needed)
 
 ---
 
@@ -146,9 +147,9 @@ React Query Devtools are useful during development but should not render in prod
 
 ### 2.1 Update `frontend/src/main.tsx`
 
-- [ ] Find the unconditional `ReactQueryDevtools` render
-- [ ] Gate it with `import.meta.env.DEV`
-- [ ] Acceptable implementation:
+- [x] Find the unconditional `ReactQueryDevtools` render
+- [x] Gate it with `import.meta.env.DEV`
+- [x] Acceptable implementation:
 
 ```tsx
 {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
@@ -156,9 +157,9 @@ React Query Devtools are useful during development but should not render in prod
 
 ### 2.2 Verify production build
 
-- [ ] Run `cd frontend && npm run build`
-- [ ] Confirm the app still builds successfully
-- [ ] Optionally inspect production output to confirm the devtools UI is not reachable in production mode
+- [x] Run `cd frontend && npm run build`
+- [x] Confirm the app still builds successfully
+- [x] Optionally inspect production output to confirm the devtools UI is not reachable in production mode
 
 ---
 
