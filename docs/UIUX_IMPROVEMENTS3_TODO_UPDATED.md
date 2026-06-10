@@ -104,33 +104,34 @@ The Generate step must show the project settings that will be used for generatio
 
 ### 3.1 Add read-only summary UI
 
-- [ ] Open `frontend/src/routes/wizard/WizardGenerateStep.tsx`
-- [ ] Add a small “Project settings” or “Generation settings” section near the generation controls
-- [ ] Display the current project name
-- [ ] Display the current symbols directory
-- [ ] Show fallback text such as `Not set` for missing/empty values
-- [ ] Use semantic heading/label text
-- [ ] Keep the fields read-only
-- [ ] Do not duplicate editable form state in the Generate step
-- [ ] Do not add a new backend update call
-- [ ] If safe and useful, add an “Edit project details” link/button back to the Describe step
+- [x] Open `frontend/src/routes/wizard/WizardGenerateStep.tsx`
+- [x] Add a small “Project settings” section near the generation controls
+- [x] Display the current project name
+- [x] Display the current symbols directory
+- [x] Show fallback text `Not set` for missing/empty values
+- [x] Use semantic heading/label text
+- [x] Keep the fields read-only
+- [x] Do not duplicate editable form state in the Generate step
+- [x] Do not add a new backend update call
+- [x] Added “Edit project details” link back to Describe step (disabled/hidden while busy)
 
 ### 3.2 Preserve existing generation behavior
 
-- [ ] Existing Generate Project behavior still works
-- [ ] Existing Generate Again confirmation still works
-- [ ] Existing Retry Generation behavior for failed jobs still works
-- [ ] Existing latest-job summary display still works
-- [ ] Existing query-cache behavior from project generation mutation is unchanged
+- [x] Existing Generate Project behavior still works
+- [x] Existing Generate Again confirmation still works
+- [x] Existing Retry Generation behavior for failed jobs still works
+- [x] Existing latest-job summary display still works
+- [x] Existing query-cache behavior from project generation mutation is unchanged
 
 ### 3.3 Add/update tests
 
-- [ ] Verify project name appears on the Generate step
-- [ ] Verify symbols directory appears on the Generate step
-- [ ] Verify missing values show fallback text
-- [ ] If adding an edit link, verify it points to the Describe step
-- [ ] Verify existing regenerate confirmation tests still pass
-- [ ] Verify failed-job retry tests still pass
+- [x] Verify project name appears on the Generate step
+- [x] Verify symbols directory appears on the Generate step
+- [x] Verify missing values show fallback text
+- [x] Verify edit link points to the Describe step
+- [x] Verify edit link is absent (replaced by disabled text) when busyMessage is set
+- [x] Verify existing regenerate confirmation tests still pass
+- [x] Verify failed-job retry tests still pass
 
 ---
 

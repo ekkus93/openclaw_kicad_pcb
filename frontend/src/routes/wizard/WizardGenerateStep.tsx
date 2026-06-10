@@ -24,7 +24,7 @@ import {
   panelSoftClass,
   stackColumnClass,
 } from '../../styles/designTokens'
-import { asRecord, statusLabel, statusTone } from './wizardStepLogic'
+import { asRecord, displaySymbolsDir, statusLabel, statusTone } from './wizardStepLogic'
 
 // ─── JobSummaryPanel ──────────────────────────────────────────────────────────
 
@@ -132,6 +132,29 @@ export function WizardGenerateStep({
           <StatusPill tone={statusTone(session.status)}>
             {statusLabel(session.status)}
           </StatusPill>
+        </div>
+      </section>
+
+      <section className={panelSoftClass}>
+        <div className={headingGroupClass}>
+          <h2>Project settings</h2>
+        </div>
+        <dl className={detailListGridClass}>
+          <dt className={mutedCopyClass}>Project name</dt>
+          <dd>{session.project_name || 'Not set'}</dd>
+          <dt className={mutedCopyClass}>Symbols directory</dt>
+          <dd>{session.symbols_dir ? displaySymbolsDir(session.symbols_dir) : 'Not set'}</dd>
+        </dl>
+        <div className={buttonRowClass}>
+          {busyMessage ? (
+            <span aria-disabled="true" className="text-[0.84rem] text-[var(--muted)]">
+              Edit project details (not available while action is running)
+            </span>
+          ) : (
+            <Link className={buttonSecondaryClass} to={`/wizard/${sessionId}/describe`}>
+              Edit project details
+            </Link>
+          )}
         </div>
       </section>
 

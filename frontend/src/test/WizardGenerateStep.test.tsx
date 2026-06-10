@@ -46,6 +46,61 @@ function GenerateStepHarness({
   )
 }
 
+function renderGenerateStep(sessionOverrides: Parameters<typeof makeSession>[0] = {}, busyMessage: string | null = null) {
+  const session = makeSession({ status: 'ir_ready_for_generation', spec_approved: true, ...sessionOverrides })
+  const checkpoint = wizardCurrentCheckpoint(session, 'generate')
+  return renderWithProviders(
+    <WizardGenerateStep
+      session={session}
+      sessionId="test-session-123"
+      projectLabel={null}
+      checkpoint={checkpoint}
+      busyMessage={busyMessage}
+      canGenerateProject
+      visibleLatestJob={null}
+      confirmRegenerate={false}
+      setConfirmRegenerate={() => undefined}
+      onGenerateProject={() => undefined}
+    />,
+  )
+}
+
+describe('WizardGenerateStep — project settings summary (task 3)', () => {
+  it('displays the project name when present', () => {
+    renderGenerateStep({ project_name: 'LED Blinker' })
+    expect(screen.getByText('LED Blinker')).toBeInTheDocument()
+  })
+
+  it('displays the symbols directory (formatted) when present', () => {
+    renderGenerateStep({ symbols_dir: '/home/user/my_symbols' })
+    expect(screen.getByText('my_symbols')).toBeInTheDocument()
+  })
+
+  it('shows fallback text for missing project name', () => {
+    renderGenerateStep({ project_name: undefined })
+    const notSetEls = screen.getAllByText('Not set')
+    expect(notSetEls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows fallback text for missing symbols directory', () => {
+    renderGenerateStep({ symbols_dir: undefined })
+    const notSetEls = screen.getAllByText('Not set')
+    expect(notSetEls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows an Edit project details link when not busy', () => {
+    renderGenerateStep()
+    const link = screen.getByRole('link', { name: 'Edit project details' })
+    expect(link).toHaveAttribute('href', '/wizard/test-session-123/describe')
+  })
+
+  it('disables the Edit project details link when a busy action is running', () => {
+    renderGenerateStep({}, 'Generating…')
+    expect(screen.queryByRole('link', { name: 'Edit project details' })).toBeNull()
+    expect(screen.getByText(/Edit project details/)).toBeInTheDocument()
+  })
+})
+
 describe('WizardGenerateStep — inline regenerate confirmation (task 4.2)', () => {
   it('shows Generate Again when a succeeded job exists', () => {
     renderWithProviders(<GenerateStepHarness jobStatus="succeeded" onGenerate={vi.fn()} />)
