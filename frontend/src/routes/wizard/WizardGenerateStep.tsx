@@ -41,12 +41,7 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
         <section className={panelSoftClass}>
           <div className={headingGroupClass}>
             <h2>Schematic Preview</h2>
-            <p className={mutedCopyClass}>
-              Generated from{' '}
-              <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5 text-[0.85rem]">
-                OpenClaw_Managed.kicad_sch
-              </code>
-            </p>
+            <p className={mutedCopyClass}>Generated managed schematic</p>
           </div>
           <img
             src={`/api/jobs/${job.id}/artifacts/schematic_preview.png`}

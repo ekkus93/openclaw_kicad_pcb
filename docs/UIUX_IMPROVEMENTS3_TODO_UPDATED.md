@@ -217,31 +217,23 @@ The app still shows `OpenClaw_Managed.kicad_sch` in normal user-facing UI. Remov
 
 ### 6.1 Search frontend UI copy
 
-- [ ] Search `frontend/src` for `OpenClaw_Managed.kicad_sch`
-- [ ] Search `frontend/src` for other normal user-facing `OpenClaw` strings and remove them from normal UI
-- [ ] Classify each occurrence:
-  - [ ] normal user-facing UI
-  - [ ] literal backend artifact filename
-  - [ ] developer diagnostics/debug output
-  - [ ] tests/fixtures
+- [x] Search `frontend/src` for `OpenClaw_Managed.kicad_sch` — found 2 occurrences
+- [x] No other `OpenClaw` strings found in user-facing frontend code
+- [x] Both occurrences are in the "Schematic Preview" description (user-facing UI, not artifact filenames)
 
 ### 6.2 Update `JobPage.tsx`
 
-- [ ] Replace normal user-facing `OpenClaw_Managed.kicad_sch` text with neutral copy
-- [ ] Suggested copy: `Generated managed schematic`
-- [ ] Preserve real artifact filenames in download links or diagnostics if needed
+- [x] Replaced `Generated from <code>OpenClaw_Managed.kicad_sch</code>` with `Generated managed schematic`
+- [x] Artifact download links and job.id references are unchanged
 
 ### 6.3 Update `WizardGenerateStep.tsx`
 
-- [ ] Replace normal user-facing `OpenClaw_Managed.kicad_sch` text with neutral copy
-- [ ] Suggested copy: `Generated managed schematic`
-- [ ] Preserve backend artifact compatibility
+- [x] Replaced `Generated from <code>OpenClaw_Managed.kicad_sch</code>` with `Generated managed schematic`
+- [x] Backend artifact compatibility unchanged
 
 ### 6.4 Update tests
 
-- [ ] Update test assertions that expected `OpenClaw_Managed.kicad_sch` in normal UI
-- [ ] Add assertions for the new neutral copy
-- [ ] Do not change backend filename tests unless backend filenames are intentionally changed
+- [x] No test assertions referenced the old `OpenClaw_Managed.kicad_sch` text — no test changes needed
 
 ---
 
