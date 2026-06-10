@@ -9,6 +9,7 @@ These tests verify that:
 
 from __future__ import annotations
 
+import ast
 import datetime
 import types
 from pathlib import Path
@@ -158,39 +159,122 @@ def test_source_guard_no_hardcoded_home_kicad_pcb_outside_config() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Source guard: deprecated config constants not imported in runtime modules
+# Source guard: deprecated config constants not imported or accessed in runtime modules
 # ---------------------------------------------------------------------------
 
-_DEPRECATED_CONSTANTS = (
-    "CONFIG_DIR",
-    "CONFIG_FILE",
-    "PROJECTS_DIR",
-    "CURRENT_PROJECT_FILE",
-    "CURRENT_SESSION_FILE",
+_DEPRECATED_CONSTANTS: frozenset[str] = frozenset(
+    {
+        "CONFIG_DIR",
+        "CONFIG_FILE",
+        "PROJECTS_DIR",
+        "CURRENT_PROJECT_FILE",
+        "CURRENT_SESSION_FILE",
+    }
 )
 
-_ALLOWED_FILES = {"config.py", "__init__.py"}
+
+def _check_source_for_deprecated_constants(source: str, filename: str = "<string>") -> list[str]:
+    """Return violation messages for deprecated config-constant use in *source*.
+
+    Detects:
+    - Direct imports: ``from kicad_pcb.config import PROJECTS_DIR``
+    - Relative imports: ``from ..config import CONFIG_DIR``
+    - Module-qualified access after alias bindings such as
+      ``import kicad_pcb.config as cfg`` or ``from kicad_pcb import config``.
+    """
+    try:
+        tree = ast.parse(source, filename=filename)
+    except SyntaxError:
+        return []
+
+    violations: list[str] = []
+    config_aliases: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            is_config_module = (
+                module == "kicad_pcb.config" or module.endswith(".config") or module == "config"
+            )
+            for alias in node.names:
+                if is_config_module and alias.name in _DEPRECATED_CONSTANTS:
+                    violations.append(
+                        f"imports deprecated constant '{alias.name}' from config module"
+                    )
+                elif alias.name == "config":
+                    config_aliases.add(alias.asname if alias.asname else "config")
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "kicad_pcb.config" or alias.name.endswith(".config"):
+                    local_name = alias.asname if alias.asname else alias.name.split(".")[-1]
+                    config_aliases.add(local_name)
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id in config_aliases
+            and node.attr in _DEPRECATED_CONSTANTS
+        ):
+            violations.append(
+                f"uses deprecated constant '{node.attr}' via module alias '{node.value.id}'"
+            )
+
+    return violations
 
 
 def test_source_guard_no_deprecated_constants_in_runtime_modules() -> None:
-    """Deprecated config constants must not be imported in runtime command modules."""
+    """Deprecated config constants must not be imported or accessed in runtime modules."""
     src_dir = Path(__file__).resolve().parents[2] / "src" / "kicad_pcb"
+    allowed_paths = {
+        (src_dir / "config.py").resolve(),
+        (src_dir / "__init__.py").resolve(),
+    }
 
     violations: list[str] = []
     for py_file in sorted(src_dir.rglob("*.py")):
-        if py_file.name in _ALLOWED_FILES:
+        if py_file.resolve() in allowed_paths:
             continue
-        content = py_file.read_text(encoding="utf-8")
-        for name in _DEPRECATED_CONSTANTS:
-            # Check only import lines to avoid false positives from comments or
-            # legitimate local variable names that happen to match.
-            for line in content.splitlines():
-                stripped = line.strip()
-                if stripped.startswith("from ") and "import" in stripped and name in stripped:
-                    rel = str(py_file.relative_to(src_dir.parent.parent))
-                    violations.append(f"{rel}: imports deprecated constant '{name}'")
-                    break
+        source = py_file.read_text(encoding="utf-8")
+        for msg in _check_source_for_deprecated_constants(source, str(py_file)):
+            rel = str(py_file.relative_to(src_dir.parent.parent))
+            violations.append(f"{rel}: {msg}")
 
-    assert not violations, "Deprecated config constants imported in runtime modules:\n" + "\n".join(
+    assert not violations, "Deprecated config constants used in runtime modules:\n" + "\n".join(
         f"  {v}" for v in violations
     )
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for the guard helper
+# ---------------------------------------------------------------------------
+
+
+def test_guard_helper_catches_direct_import() -> None:
+    source = "from kicad_pcb.config import PROJECTS_DIR\nfoo = PROJECTS_DIR\n"
+    assert any("PROJECTS_DIR" in v for v in _check_source_for_deprecated_constants(source))
+
+
+def test_guard_helper_catches_relative_config_import() -> None:
+    source = "from ..config import CONFIG_DIR\nfoo = CONFIG_DIR\n"
+    assert any("CONFIG_DIR" in v for v in _check_source_for_deprecated_constants(source))
+
+
+def test_guard_helper_catches_module_qualified_access() -> None:
+    source = "import kicad_pcb.config as cfg\nfoo = cfg.PROJECTS_DIR\n"
+    assert any("PROJECTS_DIR" in v for v in _check_source_for_deprecated_constants(source))
+
+
+def test_guard_helper_catches_from_import_then_qualified_access() -> None:
+    source = "from kicad_pcb import config\nfoo = config.CONFIG_DIR\n"
+    assert any("CONFIG_DIR" in v for v in _check_source_for_deprecated_constants(source))
+
+
+def test_guard_helper_allows_dynamic_helpers() -> None:
+    source = "from kicad_pcb.config import get_projects_dir\nfoo = get_projects_dir()\n"
+    assert _check_source_for_deprecated_constants(source) == []
+
+
+def test_guard_helper_allows_relative_dynamic_helper() -> None:
+    source = "from ..config import get_config_dir\nfoo = get_config_dir()\n"
+    assert _check_source_for_deprecated_constants(source) == []

@@ -116,6 +116,10 @@ Do not treat Python-only checks as sufficient for TypeScript changes.
   module-level constants (`CURRENT_PROJECT_FILE`, etc.); use the env vars or the dynamic
   helpers (`get_current_project_file()`, `get_config_dir()`, etc.) instead.
 - Manual isolation check: `KICAD_PCB_CONFIG_DIR="$(mktemp -d)" KICAD_PCB_PROJECTS_DIR="$(mktemp -d)" uv run --extra dev --extra web python -m pytest tests/unit/ -q`
+- **Web test counts are environment-dependent**: tests marked `requires_kicad` or
+  `requires_generation_pipeline` skip when `kicad-cli`, KiCad system symbol libraries,
+  or `rsvg-convert` are unavailable. Record the exact local pass/skip counts and skip
+  reasons in completion notes; do not hard-code universal counts.
 
 ---
 
@@ -131,8 +135,12 @@ Do not treat Python-only checks as sufficient for TypeScript changes.
   KiCad symbols for unknown library refs. Registered via `SymbolIndex.register_placeholder`.
 - **Wizard service**: `src/kicad_pcb_web/services/wizard.py` — session lifecycle, LLM
   prompts, IR generation loop. The IR contract text is in `_ir_contract_text()`.
-- **Frontend state**: all wizard and job UI lives in `frontend/src/App.tsx` — one large
-  component file. Build the bundle after any TSX/CSS change.
+- **Frontend state**: the app shell and top-level routing live in `frontend/src/App.tsx`.
+  Wizard UI is split across `frontend/src/routes/WizardPage.tsx` and
+  `frontend/src/routes/wizard/*`. Job UI lives in `frontend/src/routes/JobPage.tsx`
+  and related route modules. Shared UI utilities and components live under
+  `frontend/src/components/` and `frontend/src/utils*`. Keep route components focused;
+  avoid rebuilding a monolithic `App.tsx`.
 
 ---
 

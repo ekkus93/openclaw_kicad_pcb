@@ -154,7 +154,7 @@ In `tests/unit/test_config_isolation.py`:
 - [x] **Focused override tests added**: `test_cmd_doctor_projects_dir_uses_override`, `test_create_project_fallback_uses_projects_dir_override`
 - [x] **Docs updated**: `CLAUDE.md` manual isolation command now sets both env vars
 - [x] **Full unit suite**: 2542 passed
-- [x] **Real home directory touched**: no
+- [x] **Config/project test isolation**: preserved — tests write under `KICAD_PCB_CONFIG_DIR` and `KICAD_PCB_PROJECTS_DIR` overrides, not the user's real `~/.kicad-pcb` or `~/kicad-projects`.
 - [x] **Artifact hygiene**: clean
 - [x] **Remaining known issues**: none
 

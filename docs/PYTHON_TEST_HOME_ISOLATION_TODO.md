@@ -191,7 +191,7 @@ KICAD_PCB_CONFIG_DIR="$(mktemp -d)" uv run --extra dev --extra web python -m pyt
 - **Tests updated**: `test_project_scaffold.py`, `test_session.py`, `test_model_corpus_evaluate_command.py`
 - **Regression tests added**: 8 tests in `test_config_isolation.py` (default path, override, file location, runtime write, source guard)
 - **Validation**: ruff clean, format clean, mypy clean, 2539 unit tests passed, 48 web tests passed (1 skipped), isolation run passed
-- **Real home directory touched**: no (the existing `~/.kicad-pcb/current_project.json` on dev machine was pre-existing, not created by our changes)
+- **Config/project test isolation**: preserved — tests write under `KICAD_PCB_CONFIG_DIR` and `KICAD_PCB_PROJECTS_DIR` overrides, not the user's real `~/.kicad-pcb` or `~/kicad-projects`. Note: `doctor.py` legitimately probes `Path.home()` for optional tools (Freerouting JAR); that probe is read-only and is not a config/project write.
 - **Artifact hygiene**: clean
 - **Remaining known issues**: none
 
