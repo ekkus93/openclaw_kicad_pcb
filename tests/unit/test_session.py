@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import kicad_pcb.commands.session as session_mod
 import kicad_pcb.config as cfg_mod
 from kicad_pcb.commands.session import cmd_close_session, cmd_new_session, cmd_session_info
 from kicad_pcb.config import (
@@ -28,29 +27,8 @@ from kicad_pcb.results import NewSessionResult, SessionInfoResult
 
 
 @pytest.fixture()
-def session_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Patch config so all session I/O goes into tmp_path.
-
-    Two patches are required for each symbol:
-    * ``cfg_mod`` — affects code that calls via the module (e.g. config helpers).
-    * ``session_mod`` — affects ``cmd_new_session`` / ``cmd_session_info`` /
-      ``cmd_close_session``, which import the names directly
-      (``from ..config import get_sessions_base_dir``) and therefore hold a
-      direct binding that is unaffected by patching the config module.
-    """
-    sessions_dir = tmp_path / "sessions"
-    current_file = tmp_path / "current_session.json"
-
-    # Patch config module (for helpers called via cfg_mod.*)
-    monkeypatch.setattr(cfg_mod, "CURRENT_SESSION_FILE", current_file)
-    monkeypatch.setattr(cfg_mod, "get_sessions_base_dir", lambda: sessions_dir)
-
-    # Patch commands.session module (for direct-import bindings in cmd_*)
-    monkeypatch.setattr(session_mod, "get_sessions_base_dir", lambda: sessions_dir)
-    monkeypatch.setattr(session_mod, "get_current_session", get_current_session)
-    monkeypatch.setattr(session_mod, "set_current_session", set_current_session)
-    monkeypatch.setattr(session_mod, "clear_current_session", clear_current_session)
-
+def session_env(tmp_path: Path) -> Path:
+    """Return tmp_path; isolation is handled by the autouse isolated_config_dirs fixture."""
     return tmp_path
 
 
@@ -122,8 +100,8 @@ def test_new_session_sets_current_session(session_env: Path):
     args = types.SimpleNamespace(name="amp", description="")
     result = cmd_new_session(args)
 
-    assert cfg_mod.CURRENT_SESSION_FILE.exists()
-    data = json.loads(cfg_mod.CURRENT_SESSION_FILE.read_text())
+    assert cfg_mod.get_current_session_file().exists()
+    data = json.loads(cfg_mod.get_current_session_file().read_text())
     assert data["name"] == "amp"
     assert data["uuid"] == result.uuid
 
@@ -134,7 +112,7 @@ def test_new_session_sets_current_session(session_env: Path):
 
 
 def test_get_current_session_returns_none_when_no_file(session_env: Path):
-    assert not cfg_mod.CURRENT_SESSION_FILE.exists()
+    assert not cfg_mod.get_current_session_file().exists()
     assert get_current_session() is None
 
 
@@ -177,16 +155,17 @@ def test_get_current_session_returns_none_for_missing_dir(session_env: Path, tmp
     # Deliberately do NOT create missing_dir
     ref = SessionRef(name="stale", uuid=uid, path=missing_dir, created="", description="")
     set_current_session(ref)
-    assert cfg_mod.CURRENT_SESSION_FILE.exists()
+    assert cfg_mod.get_current_session_file().exists()
 
     result = get_current_session()
 
     assert result is None
-    assert not cfg_mod.CURRENT_SESSION_FILE.exists()
+    assert not cfg_mod.get_current_session_file().exists()
 
 
 def test_get_current_session_malformed_state_raises(session_env: Path) -> None:
-    cfg_mod.CURRENT_SESSION_FILE.write_text("{not-json", encoding="utf-8")
+    cfg_mod.get_current_session_file().parent.mkdir(parents=True, exist_ok=True)
+    cfg_mod.get_current_session_file().write_text("{not-json", encoding="utf-8")
 
     with pytest.raises(UserError) as exc_info:
         get_current_session()
@@ -207,7 +186,7 @@ def test_get_current_session_stale_marker_unlink_failure_raises(
     original_unlink = Path.unlink
 
     def _unlink_raise(self: Path, *args, **kwargs) -> None:
-        if self == cfg_mod.CURRENT_SESSION_FILE:
+        if self == cfg_mod.get_current_session_file():
             raise OSError("permission denied")
         original_unlink(self, *args, **kwargs)
 
@@ -219,13 +198,9 @@ def test_get_current_session_stale_marker_unlink_failure_raises(
     assert exc_info.value.code == ErrorCode.IO_ERROR
 
 
-def test_get_current_project_malformed_state_raises(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    project_file = tmp_path / "current_project.json"
-    monkeypatch.setattr(cfg_mod, "CURRENT_PROJECT_FILE", project_file)
-
+def test_get_current_project_malformed_state_raises() -> None:
+    project_file = cfg_mod.get_current_project_file()
+    project_file.parent.mkdir(parents=True, exist_ok=True)
     project_file.write_text("{not-json", encoding="utf-8")
 
     with pytest.raises(UserError) as exc_info:

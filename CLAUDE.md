@@ -110,6 +110,12 @@ Do not treat Python-only checks as sufficient for TypeScript changes.
 - Cover both happy path and error/edge cases for each public function.
 - TDD preferred: small failing test → minimal implementation → refactor.
 - Do not create stub implementations to satisfy tests. Implement real behavior.
+- **Config isolation**: unit tests must not read from or write to `~/.kicad-pcb` or
+  `~/kicad-projects`. The autouse fixture in `tests/unit/conftest.py` redirects both
+  via `KICAD_PCB_CONFIG_DIR` and `KICAD_PCB_PROJECTS_DIR`. Do not patch the deprecated
+  module-level constants (`CURRENT_PROJECT_FILE`, etc.); use the env vars or the dynamic
+  helpers (`get_current_project_file()`, `get_config_dir()`, etc.) instead.
+- Manual isolation check: `KICAD_PCB_CONFIG_DIR="$(mktemp -d)" uv run --extra dev --extra web python -m pytest tests/unit/ -q`
 
 ---
 

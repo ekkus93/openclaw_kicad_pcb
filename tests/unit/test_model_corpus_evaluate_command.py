@@ -114,11 +114,9 @@ def test_model_corpus_evaluate_skips_fixtures_without_circuit_ir_in_all_fixtures
 
 
 def test_model_corpus_evaluate_does_not_write_current_project_state(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     fixture_dir = _write_fixture(tmp_path)
-    current_project_file = tmp_path / "current_project.json"
-    monkeypatch.setattr(config_mod, "CURRENT_PROJECT_FILE", current_project_file)
 
     cmd_model_corpus_evaluate(
         SimpleNamespace(
@@ -131,7 +129,7 @@ def test_model_corpus_evaluate_does_not_write_current_project_state(
         )
     )
 
-    assert not current_project_file.exists()
+    assert not config_mod.get_current_project_file().exists()
 
 
 def test_model_corpus_evaluate_uses_fixture_embedded_symbol_libraries(tmp_path: Path) -> None:

@@ -20,7 +20,50 @@ from .errors import ErrorCode, UserError
 from .models import ProjectRef, SessionRef
 
 # ---------------------------------------------------------------------------
-# Constants
+# Dynamic path helpers
+#
+# All runtime I/O must call these helpers instead of the module-level
+# constants so that KICAD_PCB_CONFIG_DIR / KICAD_PCB_PROJECTS_DIR
+# environment-variable overrides are honoured (used by unit tests).
+# ---------------------------------------------------------------------------
+
+
+def get_config_dir() -> Path:
+    """Return the config directory, honouring ``KICAD_PCB_CONFIG_DIR`` if set."""
+    override = os.environ.get("KICAD_PCB_CONFIG_DIR")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".kicad-pcb"
+
+
+def get_projects_dir() -> Path:
+    """Return the projects directory, honouring ``KICAD_PCB_PROJECTS_DIR`` if set."""
+    override = os.environ.get("KICAD_PCB_PROJECTS_DIR")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / "kicad-projects"
+
+
+def get_config_file() -> Path:
+    """Return the path to ``config.json`` under the config directory."""
+    return get_config_dir() / "config.json"
+
+
+def get_current_project_file() -> Path:
+    """Return the path to ``current_project.json`` under the config directory."""
+    return get_config_dir() / "current_project.json"
+
+
+def get_current_session_file() -> Path:
+    """Return the path to ``current_session.json`` under the config directory."""
+    return get_config_dir() / "current_session.json"
+
+
+# ---------------------------------------------------------------------------
+# Deprecated compatibility constants.
+# Runtime I/O must use get_config_dir(), get_current_project_file(),
+# get_current_session_file(), get_config_file(), and get_projects_dir()
+# so test/env overrides are honoured.
 # ---------------------------------------------------------------------------
 
 CONFIG_DIR = Path.home() / ".kicad-pcb"
@@ -177,41 +220,43 @@ def set_symbols_dir_config(path: Path | str | None) -> None:
 
 def ensure_dirs() -> None:
     """Create necessary directories."""
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    get_config_dir().mkdir(parents=True, exist_ok=True)
+    get_projects_dir().mkdir(parents=True, exist_ok=True)
 
 
 def load_config() -> dict:
     """Load configuration; return defaults if file is absent or corrupt."""
     ensure_dirs()
-    if CONFIG_FILE.exists():
+    config_file = get_config_file()
+    if config_file.exists():
         try:
-            with CONFIG_FILE.open(encoding="utf-8") as f:
+            with config_file.open(encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
-    return {"projects_dir": str(PROJECTS_DIR)}
+    return {"projects_dir": str(get_projects_dir())}
 
 
 def save_config(config: dict) -> None:
     """Persist configuration to disk."""
     ensure_dirs()
-    with CONFIG_FILE.open("w", encoding="utf-8") as f:
+    with get_config_file().open("w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
 
 
 def get_current_project() -> ProjectRef | None:
     """Return the currently-selected project as a :class:`.ProjectRef`, or None."""
-    if CURRENT_PROJECT_FILE.exists():
+    current_file = get_current_project_file()
+    if current_file.exists():
         try:
-            with CURRENT_PROJECT_FILE.open(encoding="utf-8") as f:
+            with current_file.open(encoding="utf-8") as f:
                 data = json.load(f)
             return ProjectRef.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError) as exc:
             raise UserError(
-                f"Failed to load current project state from '{CURRENT_PROJECT_FILE}': {exc}",
+                f"Failed to load current project state from '{current_file}': {exc}",
                 code=ErrorCode.IO_ERROR,
-                details={"path": str(CURRENT_PROJECT_FILE)},
+                details={"path": str(current_file)},
             ) from exc
     return None
 
@@ -219,7 +264,7 @@ def get_current_project() -> ProjectRef | None:
 def set_current_project(project: ProjectRef) -> None:
     """Persist *project* to ``current_project.json``."""
     ensure_dirs()
-    with CURRENT_PROJECT_FILE.open("w", encoding="utf-8") as f:
+    with get_current_project_file().open("w", encoding="utf-8") as f:
         json.dump(project.to_dict(), f, indent=2)
 
 
@@ -235,26 +280,27 @@ def get_current_session() -> SessionRef | None:
     manually deleted), the stale marker is silently removed and ``None`` is
     returned so the bot does not accidentally create files in a missing path.
     """
-    if CURRENT_SESSION_FILE.exists():
+    current_file = get_current_session_file()
+    if current_file.exists():
         try:
-            with CURRENT_SESSION_FILE.open(encoding="utf-8") as f:
+            with current_file.open(encoding="utf-8") as f:
                 data = json.load(f)
             ref = SessionRef.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError) as exc:
             raise UserError(
-                f"Failed to load current session state from '{CURRENT_SESSION_FILE}': {exc}",
+                f"Failed to load current session state from '{current_file}': {exc}",
                 code=ErrorCode.IO_ERROR,
-                details={"path": str(CURRENT_SESSION_FILE)},
+                details={"path": str(current_file)},
             ) from exc
         if not ref.path.exists():
             # Session directory was deleted; clean up the stale marker.
             try:
-                CURRENT_SESSION_FILE.unlink()
+                current_file.unlink()
             except OSError as exc:
                 raise UserError(
-                    f"Failed to clear stale session marker '{CURRENT_SESSION_FILE}': {exc}",
+                    f"Failed to clear stale session marker '{current_file}': {exc}",
                     code=ErrorCode.IO_ERROR,
-                    details={"path": str(CURRENT_SESSION_FILE)},
+                    details={"path": str(current_file)},
                 ) from exc
             return None
         return ref
@@ -264,18 +310,19 @@ def get_current_session() -> SessionRef | None:
 def set_current_session(session: SessionRef) -> None:
     """Persist *session* to ``current_session.json``."""
     ensure_dirs()
-    with CURRENT_SESSION_FILE.open("w", encoding="utf-8") as f:
+    with get_current_session_file().open("w", encoding="utf-8") as f:
         json.dump(session.to_dict(), f, indent=2)
 
 
 def clear_current_session() -> None:
     """Remove the active session marker (does not delete the session directory)."""
-    if CURRENT_SESSION_FILE.exists():
-        CURRENT_SESSION_FILE.unlink()
+    current_file = get_current_session_file()
+    if current_file.exists():
+        current_file.unlink()
 
 
 def get_sessions_base_dir() -> Path:
     """Return the base directory for session folders (``{projects_dir}/sessions/``)."""
     cfg = load_config()
-    base = Path(cfg.get("projects_dir", PROJECTS_DIR))
+    base = Path(cfg.get("projects_dir", str(get_projects_dir())))
     return base / SESSIONS_SUBDIR
