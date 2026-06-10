@@ -323,33 +323,27 @@ The reviewed zip contained generated Python cache artifacts. Remove them and pre
 
 ### 6.1 Remove generated Python cache files
 
-- [ ] Run:
-
-```bash
-find . -type d -name '__pycache__' -prune -exec rm -rf {} +
-find . -type f -name '*.py[co]' -delete
-```
-
-- [ ] Verify no `__pycache__` directories remain
-- [ ] Verify no `.pyc` or `.pyo` files remain
+- [x] Run cleanup commands — no `__pycache__` or `.pyc`/`.pyo` files were present
+- [x] Verify no `__pycache__` directories remain
+- [x] Verify no `.pyc` or `.pyo` files remain
 
 ### 6.2 Verify `.gitignore`
 
-- [ ] Confirm `.gitignore` contains patterns for:
-  - [ ] `__pycache__/`
-  - [ ] `*.py[cod]`
-  - [ ] `.pytest_cache/`
-  - [ ] `.mypy_cache/`
-  - [ ] `.ruff_cache/`
-  - [ ] frontend build output, if applicable
-  - [ ] dependency folders such as `node_modules/`
-- [ ] Add missing patterns if needed
+- [x] Confirm `.gitignore` contains patterns for:
+  - [x] `__pycache__/` — present in root `.gitignore`
+  - [x] `*.py[cod]` — present as `*.py[codz]` in root `.gitignore`
+  - [x] `.pytest_cache/` — present in root `.gitignore`
+  - [x] `.mypy_cache/` — present in root `.gitignore`
+  - [x] `.ruff_cache/` — present in root `.gitignore`
+  - [x] frontend build output — `dist` in `frontend/.gitignore`; SPA output intentionally committed
+  - [x] dependency folders such as `node_modules/` — in `frontend/.gitignore`
+- [x] Add missing patterns if needed — none needed
 
 ### 6.3 Confirm cleanup does not remove fixtures
 
-- [ ] Check `git status` or equivalent
-- [ ] Ensure no source files, test fixtures, golden files, or snapshots were accidentally removed
-- [ ] If any generated fixture is intentionally tracked, document why and exclude it from broad cleanup rules
+- [x] Check `git status` — clean, no accidental removals
+- [x] Ensure no source files, test fixtures, golden files, or snapshots were accidentally removed
+- [x] No tracked cache files found — nothing to remove from git history
 
 ---
 
@@ -359,25 +353,15 @@ Frontend job polling supports queued/running jobs, but current backend generatio
 
 ### 7.1 Add a short code comment near polling logic
 
-- [ ] In `frontend/src/queries/jobQueries.ts`, add a concise comment explaining:
-  - [ ] `useJobQuery` polls only while the job is active
-  - [ ] Polling supports queued/running backends
-  - [ ] In the current backend mode, project generation may complete synchronously, so polling may be visible only briefly or in future async modes
+- [x] In `frontend/src/queries/jobQueries.ts`, added comment explaining synchronous backend, polling interval, and future async model
 
 ### 7.2 Add optional developer doc
 
-- [ ] Create `docs/JOB_EXECUTION_MODEL.md` if not already present
-- [ ] Document current behavior:
-  - [ ] job statuses
-  - [ ] when frontend polling occurs
-  - [ ] whether project generation is synchronous today
-  - [ ] what a future async worker model would need
-- [ ] Keep this doc short and factual
+- [x] Created `docs/JOB_EXECUTION_MODEL.md` with job statuses, polling behaviour, current sync model, and future async model notes
 
 ### 7.3 Do not implement a half-finished worker
 
-- [ ] Do not introduce a queue/worker system unless it is already fully designed and tested
-- [ ] Do not fake queued/running statuses purely to make the polling indicator appear
+- [x] No worker system added
 
 ---
 
@@ -387,23 +371,20 @@ The wizard refactor should not hide type problems.
 
 ### 8.1 Avoid broad `any`
 
-- [ ] Do not add broad `any` types to make extracted components compile
-- [ ] Prefer existing API/client types
-- [ ] If a narrow type assertion is unavoidable, add a short justification comment
+- [x] No broad `any` types introduced — all extracted components use specific types from `types.ts`
+- [x] One narrow `as Error | null` cast in `useWizardController.ts` for TanStack Query v5 unknown error type, documented in code
 
 ### 8.2 Avoid new suppressions
 
-- [ ] Do not add new `// eslint-disable` comments unless there is a narrow, documented reason
-- [ ] Do not add new `// @ts-ignore`
-- [ ] Prefer `// @ts-expect-error` only in tests where the type error is intentional
-- [ ] Do not loosen `tsconfig` strictness
+- [x] No `// eslint-disable`, `// @ts-ignore`, or `// @ts-expect-error` added
+- [x] No changes to `tsconfig` strictness
 
 ### 8.3 Keep query cache behavior intact
 
-- [ ] Preserve query keys from existing query modules
-- [ ] Preserve cache update behavior for project generation results
-- [ ] Preserve polling stop behavior for terminal job statuses
-- [ ] Preserve bootstrap invalidation behavior for AppShell retry
+- [x] All query keys from existing modules preserved
+- [x] Project generation cache update behavior preserved in `useWizardController.ts`
+- [x] Polling stop behaviour for terminal statuses preserved (`useJobQuery`)
+- [x] Bootstrap invalidation on AppShell retry preserved
 
 ---
 
