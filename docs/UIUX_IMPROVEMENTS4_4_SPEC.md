@@ -47,13 +47,7 @@ The previous Batch 4.3 patch fixed `docs/UIUX_IMPROVEMENTS4_2_SPEC.md`, but `doc
 
 ### Problem
 
-`docs/UIUX_IMPROVEMENTS4_3_SPEC.md` still contains a fenced command block like:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-This looks like an instruction that can be copied and run, but `kicad` is not the canonical marker. The canonical marker is `requires_kicad`.
+`docs/UIUX_IMPROVEMENTS4_3_SPEC.md` previously showed the obsolete `-m kicad` marker in a runnable-looking code block, since replaced with prose in Batch 4.4. A previous spec referenced the obsolete `-m kicad` marker. Active commands must use `-m requires_kicad`.
 
 ### Required behavior
 

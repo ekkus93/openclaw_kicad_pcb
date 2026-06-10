@@ -37,13 +37,7 @@ This batch should be a tiny documentation/test-infrastructure polish patch. Do n
 
 ### Problem
 
-`docs/UIUX_IMPROVEMENTS4_2_SPEC.md` still contains the obsolete marker command in a code block:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-Even when used as an example of a stale command, a fenced shell block makes it look runnable and can confuse future agents or developers.
+`docs/UIUX_IMPROVEMENTS4_2_SPEC.md` previously showed the obsolete `-m kicad` marker in a runnable-looking code block, since replaced with prose in Batch 4.3. A previous spec referenced the obsolete `-m kicad` marker. Active commands must use `-m requires_kicad`.
 
 ### Required behavior
 
