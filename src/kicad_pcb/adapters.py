@@ -80,11 +80,14 @@ class SubprocessRunner:
     """Real implementation that delegates to ``subprocess.run``."""
 
     def run(self, cmd: list[str], *, capture: bool = True) -> RunResult:
-        if capture:
-            r = subprocess.run(cmd, capture_output=True, text=True, check=False)
-            return RunResult(r.returncode, r.stdout, r.stderr)
-        r = subprocess.run(cmd, text=True, check=False)
-        return RunResult(r.returncode, "", "")
+        try:
+            if capture:
+                r = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                return RunResult(r.returncode, r.stdout, r.stderr)
+            r = subprocess.run(cmd, text=True, check=False)
+            return RunResult(r.returncode, "", "")
+        except FileNotFoundError:
+            return RunResult(127, "", f"command not found: {cmd[0]}")
 
 
 class FakeRunner:

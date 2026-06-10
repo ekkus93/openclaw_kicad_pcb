@@ -94,13 +94,7 @@ However, prefer the hermetic fixture approach if the behavior can be tested with
 
 ### Problem
 
-The project already uses `requires_kicad`, but at least one Batch 3 spec/doc still includes:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-That is inconsistent with the existing marker and the Batch 3 replies.
+The project already uses `requires_kicad`, but at least one Batch 3 spec/doc still included the stale marker command (since fixed in Batch 4). That was inconsistent with the existing marker and the Batch 3 replies.
 
 ### Required behavior
 

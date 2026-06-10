@@ -147,6 +147,19 @@ class TestSubprocessRunner:
         assert r.stdout == ""
         assert r.stderr == ""
 
+    def test_missing_binary_returns_nonzero_result(self):
+        runner = SubprocessRunner()
+        r = runner.run(["__no_such_binary_exists_xyz__", "--version"])
+        assert not r.ok
+        assert r.returncode == 127
+        assert "command not found" in r.stderr
+
+    def test_missing_binary_capture_false_returns_nonzero_result(self):
+        runner = SubprocessRunner()
+        r = runner.run(["__no_such_binary_exists_xyz__", "--version"], capture=False)
+        assert not r.ok
+        assert r.returncode == 127
+
     def test_implements_runner_protocol(self):
         assert isinstance(SubprocessRunner(), RunnerProtocol)
 

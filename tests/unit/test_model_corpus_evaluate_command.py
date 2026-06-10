@@ -8,13 +8,26 @@ from types import SimpleNamespace
 import pytest
 
 from kicad_pcb import config as config_mod
+from kicad_pcb.adapters import FakeRunner, KicadCliAdapter, RunResult
 from kicad_pcb.commands.model_corpus import cmd_model_corpus_evaluate
 from kicad_pcb.corpus.kicadxml import kicadxml_to_circuit_ir, parse_kicadxml_netlist
 from kicad_pcb.corpus.metadata import CorpusFixtureMetadata, write_fixture_metadata
 from kicad_pcb.errors import UserError
 
 
-def test_model_corpus_evaluate_generates_partial_reports_without_repo_kicad(tmp_path: Path) -> None:
+def test_model_corpus_evaluate_generates_partial_reports_without_repo_kicad(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Simulate absent/old kicad-cli so the electrical equivalence check returns
+    # "not_run" and the report result is "partial" regardless of the host environment.
+    no_kicad_adapter = KicadCliAdapter(
+        runner=FakeRunner({"--version": RunResult(1, "", "kicad-cli unavailable")})
+    )
+    monkeypatch.setattr(
+        "kicad_pcb.evaluation.reports.KicadCliAdapter",
+        lambda *, kicad_cli: no_kicad_adapter,
+    )
+
     fixture_dir = _write_fixture(tmp_path)
 
     result = cmd_model_corpus_evaluate(
@@ -34,9 +47,11 @@ def test_model_corpus_evaluate_generates_partial_reports_without_repo_kicad(tmp_
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["fixture_id"] == fixture_dir.name
     assert report["generated_artifacts"]["schematic_path"].endswith("generated.kicad_sch")
-    assert report["result"] == "fail"
-    assert report["electrical_equivalence"]["status"] == "failed"
-    assert report["electrical_equivalence"]["mismatches"][0]["field"] == "generated_netlist"
+    # Without kicad-cli the electrical equivalence check cannot run; the evaluator
+    # produces partial report artifacts rather than a total failure.
+    assert report["result"] == "partial"
+    assert report["electrical_equivalence"]["status"] == "not_run"
+    assert report["electrical_equivalence"]["mismatches"] == []
 
 
 def test_model_corpus_evaluate_rejects_selected_fixture_without_circuit_ir(tmp_path: Path) -> None:
