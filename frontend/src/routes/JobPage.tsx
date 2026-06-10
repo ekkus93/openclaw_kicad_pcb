@@ -137,7 +137,7 @@ export function JobPage() {
 
   if (isLoading) {
     return (
-      <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
+      <div role="status" aria-live="polite" className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
         <span className={spinnerClass} aria-hidden="true"></span>
         <strong>Loading job detail…</strong>
       </div>
@@ -195,7 +195,7 @@ export function JobPage() {
           <StatusPill tone={statusTone(job.status)}>{statusLabel(job.status)}</StatusPill>
           <span className={mutedCopyClass}>{formatDate(job.updated_at)}</span>
           {isInProgress && isFetching ? (
-            <span className="flex items-center gap-1.5 text-[0.78rem] text-[var(--muted)]">
+            <span role="status" aria-live="polite" className="flex items-center gap-1.5 text-[0.78rem] text-[var(--muted)]">
               <span className={spinnerClass} aria-hidden="true"></span>
               Checking for updates…
             </span>

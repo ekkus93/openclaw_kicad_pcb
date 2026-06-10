@@ -143,7 +143,7 @@ export function WizardGenerateStep({
           </p>
         </div>
         {confirmRegenerate ? (
-          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-3')}>
+          <div aria-live="polite" className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-3')}>
             <strong>This will replace the current generation result.</strong>
             <div className={buttonRowClass}>
               <button

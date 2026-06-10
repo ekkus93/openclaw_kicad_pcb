@@ -280,40 +280,40 @@ Add semantic roles and live regions where state changes are important.
 
 ### 5.1 Error banners
 
-- [ ] Add `role="alert"` to wizard mutation error banners
-- [ ] Add `role="alert"` to start-page create-session error banner
-- [ ] Add `role="alert"` to page-level fatal load error banners
-- [ ] Add `role="alert"` to job-page fatal load error banners
-- [ ] Do not add multiple nested `role="alert"` regions for the same error
+- [x] Add `role="alert"` to wizard mutation error banners — WizardPage.tsx
+- [x] Add `role="alert"` to start-page create-session error banner — WizardStartStep.tsx
+- [x] Add `role="alert"` to page-level fatal load error banners — App.tsx AppShell, WizardPage.tsx
+- [x] Add `role="alert"` to job-page fatal load error banners — JobPage error renders NotFoundScreen (full page, not a banner); generation-failed banner in WizardGenerateStep.tsx covered
+- [x] Do not add multiple nested `role="alert"` regions for the same error
 
 ### 5.2 Loading and busy states
 
-- [ ] Add `role="status"` to full-page loading banners where appropriate
-- [ ] Add `aria-live="polite"` to non-blocking loading/busy indicators
-- [ ] Ensure visible loading text remains present; do not rely on spinner-only feedback
+- [x] Add `role="status"` to full-page loading banners where appropriate — App.tsx, JobPage.tsx, WizardPage.tsx
+- [x] Add `aria-live="polite"` to non-blocking loading/busy indicators — WizardStartStep.tsx busy banner, WizardPage.tsx
+- [x] Ensure visible loading text remains present; do not rely on spinner-only feedback
 
 ### 5.3 Polling indicator
 
-- [ ] Add `role="status"` to the `Checking for updates…` indicator
-- [ ] Add `aria-live="polite"`
-- [ ] Avoid assertive announcements during polling
+- [x] Add `role="status"` to the `Checking for updates…` indicator — JobPage.tsx
+- [x] Add `aria-live="polite"` — JobPage.tsx
+- [x] Avoid assertive announcements during polling
 
 ### 5.4 Success/status messages
 
-- [ ] Add `role="status"` and `aria-live="polite"` to success or completion messages that appear dynamically
-- [ ] Do not add live regions to static decorative labels
+- [x] Add `role="status"` and `aria-live="polite"` to success or completion messages that appear dynamically — no standalone success banners exist; status is shown via StatusPill which is static labelling
+- [x] Do not add live regions to static decorative labels
 
 ### 5.5 Confirmation/warning UI
 
-- [ ] Ensure the regenerate confirmation banner has a clear heading or accessible label
-- [ ] Ensure `Confirm — Generate Again` and `Cancel` buttons have clear accessible names
-- [ ] Use `role="alert"` only if the confirmation is urgent/blocking; otherwise prefer a labelled region
+- [x] Ensure the regenerate confirmation banner has a clear heading or accessible label — `<strong>` is the visual label; `aria-live="polite"` added so screen readers announce it
+- [x] Ensure `Confirm — Generate Again` and `Cancel` buttons have clear accessible names — button text is the accessible name
+- [x] Use `role="alert"` only if the confirmation is urgent/blocking; otherwise prefer a labelled region — used `aria-live="polite"` (non-assertive)
 
 ### 5.6 Preserve keyboard usability
 
-- [ ] Confirm all new/extracted controls remain keyboard reachable
-- [ ] Confirm no clickable `div`/`span` controls are introduced
-- [ ] Confirm focus outlines are not removed
+- [x] Confirm all new/extracted controls remain keyboard reachable — all controls use native button/input/textarea elements
+- [x] Confirm no clickable `div`/`span` controls are introduced — none added
+- [x] Confirm focus outlines are not removed — Tailwind defaults preserved
 
 ---
 

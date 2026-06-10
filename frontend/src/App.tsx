@@ -96,7 +96,7 @@ function AppShell() {
   if (isLoading || (!bootstrap && !error)) {
     return (
       <Layout providerLabel={null}>
-        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
+        <div role="status" aria-live="polite" className={joinClasses(bannerBaseClass, statusBannerToneClass('active'), 'mt-4')}>
           <span className={spinnerClass} aria-hidden="true"></span>
           <strong>Loading UI bootstrap…</strong>
         </div>
@@ -108,7 +108,7 @@ function AppShell() {
     const message = error instanceof Error ? error.message : 'Failed to load bootstrap.'
     return (
       <Layout providerLabel={null}>
-        <div className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
+        <div role="alert" className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'mt-4')}>
           <strong>{message}</strong>
           <button
             type="button"
