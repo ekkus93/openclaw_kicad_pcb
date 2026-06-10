@@ -418,7 +418,10 @@ class TestGraphvizRequiredEndToEnd:
         }
         bad_engine = GraphvizLayoutEngine(dot_path="/nonexistent/dot")
         with (
-            patch("kicad_pcb.commands._sch_apply.make_layout_engine", return_value=bad_engine),
+            patch(
+                "kicad_pcb.commands._sch_apply_write.make_layout_engine",
+                return_value=bad_engine,
+            ),
             pytest.raises(RuntimeError, match="dot.*failed|dot.*not found"),
         ):
             _write_symbols(
@@ -454,7 +457,7 @@ class TestResolveLayout:
         """Default (None) fails fast when dot is unavailable."""
         _side_fx = RuntimeError("dot not found")
         with (
-            patch("kicad_pcb.commands._sch_apply.make_layout_engine", side_effect=_side_fx),
+            patch("kicad_pcb.commands._sch_apply_resolve.make_layout_engine", side_effect=_side_fx),
             pytest.raises(RuntimeError, match="dot not found"),
         ):
             _resolve_layout(None)
@@ -463,7 +466,7 @@ class TestResolveLayout:
         """'graphviz' must raise RuntimeError when dot is unavailable."""
         _side_fx = RuntimeError("dot not found")
         with (
-            patch("kicad_pcb.commands._sch_apply.make_layout_engine", side_effect=_side_fx),
+            patch("kicad_pcb.commands._sch_apply_resolve.make_layout_engine", side_effect=_side_fx),
             pytest.raises(RuntimeError, match="dot not found"),
         ):
             _resolve_layout("graphviz")
@@ -475,7 +478,7 @@ class TestResolveLayout:
             _resolve_layout("banana")
 
     def test_strict_flag_is_forwarded_to_make_layout_engine(self) -> None:
-        with patch("kicad_pcb.commands._sch_apply.make_layout_engine") as mocked_factory:
+        with patch("kicad_pcb.commands._sch_apply_resolve.make_layout_engine") as mocked_factory:
             _resolve_layout("graphviz", strict=True)
         mocked_factory.assert_called_once_with(
             cache_path=None,
@@ -726,7 +729,7 @@ class TestResolveLayoutFailFast:
         """When dot is absent, default _resolve_layout(None) raises RuntimeError."""
         with (
             patch(
-                "kicad_pcb.commands._sch_apply.make_layout_engine",
+                "kicad_pcb.commands._sch_apply_resolve.make_layout_engine",
                 side_effect=RuntimeError("dot not found"),
             ),
             pytest.raises(RuntimeError, match="dot not found"),
@@ -737,7 +740,7 @@ class TestResolveLayoutFailFast:
         """Explicit graphviz also raises RuntimeError when dot is missing."""
         with (
             patch(
-                "kicad_pcb.commands._sch_apply.make_layout_engine",
+                "kicad_pcb.commands._sch_apply_resolve.make_layout_engine",
                 side_effect=RuntimeError("dot not found"),
             ),
             pytest.raises(RuntimeError, match="dot not found"),
