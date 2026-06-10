@@ -13,6 +13,7 @@ from kicad_pcb_web.main import app
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
 from kicad_pcb_web.settings import load_settings
 from kicad_pcb_web.wizard_models import CircuitSpec
+from tests.conftest import requires_generation_pipeline
 
 _VALID_NETLIST = {
     "version": "1",
@@ -58,6 +59,7 @@ def test_circuit_spec_rejects_pathlike_project_name() -> None:
         raise AssertionError("Expected CircuitSpec project-name validation to fail.")
 
 
+@requires_generation_pipeline
 def test_wizard_api_happy_path(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
     scripted = ScriptedLlmClient(

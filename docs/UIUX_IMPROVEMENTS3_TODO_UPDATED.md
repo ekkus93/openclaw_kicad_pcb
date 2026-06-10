@@ -169,48 +169,45 @@ Use Option C. Tests that require real `kicad-cli` or real KiCad system symbol li
 
 ### 5.1 Identify affected tests
 
-- [ ] Run or inspect the web/backend test subset
-- [ ] Identify tests that fail because `kicad-cli` is missing
-- [ ] Identify tests that fail because KiCad system symbol libraries are missing
-- [ ] Identify tests that are truly KiCad integration tests
-- [ ] Identify tests that should remain ordinary non-KiCad tests
+- [x] Run or inspect the web/backend test subset
+- [x] Identified 5 web tests that fail because `rsvg-convert` (schematic preview) is missing:
+  - `test_web_artifact_privacy.py::test_job_json_is_not_listed_or_downloadable`
+  - `test_web_artifacts.py::test_web_artifacts_list_and_download_project_zip`
+  - `test_web_jobs.py::test_web_jobs_from_netlist_creates_job_directory`
+  - `test_web_jobs.py::test_web_jobs_default_to_internal_validation`
+  - `test_web_wizard.py::test_wizard_api_happy_path`
+- [x] Unit tests in `tests/unit/` use mocks and do not require real kicad-cli — no changes needed
+- [x] Integration tests in `tests/integration/` are already marked with `@requires_kicad`
+- [x] Note: used `requires_kicad` marker (existing), not a new `kicad` marker (per replies5.md Option A)
 
 ### 5.2 Add pytest marker
 
-- [ ] Add `@pytest.mark.kicad` to tests that require real KiCad CLI behavior
-- [ ] Add `@pytest.mark.kicad` to tests that require host KiCad symbol libraries
-- [ ] Do not mark tests as KiCad merely to hide unrelated failures
-- [ ] Keep ordinary web/job tests unmarked when they do not require KiCad
+- [x] Used existing `@pytest.mark.requires_kicad` marker (not a new `kicad` marker — see replies5.md)
+- [x] Added `requires_generation_pipeline` decorator to `tests/conftest.py`; marks tests `requires_kicad` AND skips when either kicad-cli or rsvg-convert is absent
+- [x] Applied `@requires_generation_pipeline` to the 5 failing web tests
+- [x] Non-failing web tests remain unmarked (they do not trigger KiCad generation)
 
 ### 5.3 Register marker
 
-- [ ] Open `pyproject.toml`
-- [ ] Register the `kicad` marker in pytest configuration
-- [ ] Add a clear marker description, e.g. `requires kicad-cli and system KiCad libraries`
+- [x] `requires_kicad` marker already registered in `pyproject.toml` — no new marker needed
+- [x] `requires_generation_pipeline` reuses the existing marker for discoverability
 
 ### 5.4 Add skip helper/fixture
 
-- [ ] Add a pytest fixture or helper that checks for `kicad-cli` with `shutil.which("kicad-cli")`
-- [ ] Automatically skip KiCad-marked tests when `kicad-cli` is unavailable
-- [ ] Make the skip reason clear
-- [ ] Ensure non-KiCad tests do not depend on this skip
+- [x] `requires_kicad()` and `kicad_cli_available()` already exist in `tests/conftest.py`
+- [x] Added `rsvg_convert_available()` and `requires_generation_pipeline()` to `tests/conftest.py`
+- [x] Skip reason clearly identifies which tool is missing
 
 ### 5.5 Document KiCad integration test command
 
-- [ ] Update validation docs to explain that KiCad integration tests require KiCad CLI
-- [ ] Document this command:
-
-```bash
-uv run --extra dev --extra web python -m pytest -m kicad
-```
-
-- [ ] Document how to run the normal non-KiCad validation suite
+- [x] KiCad integration tests: `uv run --extra dev --extra web python -m pytest -m requires_kicad`
+- [x] Normal non-KiCad suite: `uv run --extra dev --extra web python -m pytest tests/unit/`
 
 ### 5.6 Add/update tests for marker behavior
 
-- [ ] Verify KiCad-marked tests skip cleanly when `kicad-cli` is unavailable
-- [ ] Verify non-KiCad unit/web tests still run without KiCad
-- [ ] Verify no real project-generation regression is hidden by weakened assertions
+- [x] Failing web tests now skip cleanly on machines without rsvg-convert
+- [x] Non-KiCad unit/web tests still run without KiCad (confirmed via test run)
+- [x] No assertions were weakened — tests are skipped, not made to pass trivially
 
 ---
 

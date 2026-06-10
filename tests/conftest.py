@@ -55,6 +55,10 @@ def kicad_cli_supports_repo_schematics() -> bool:
     return version is not None and version >= KiCadVersion(9, 0, 0)
 
 
+def rsvg_convert_available() -> bool:
+    return shutil.which("rsvg-convert") is not None
+
+
 def requires_kicad(test_func):
     """Mark a test as requiring repo-compatible kicad-cli and skip when unavailable."""
 
@@ -63,6 +67,23 @@ def requires_kicad(test_func):
         not kicad_cli_supports_repo_schematics(),
         reason="kicad-cli >= 9.0.0 is required for repo schematic integration tests",
     )(marked)
+
+
+def requires_generation_pipeline(test_func):
+    """Mark a test as requiring both kicad-cli and rsvg-convert (full project generation)."""
+
+    marked = pytest.mark.requires_kicad(test_func)
+    skip_reasons = []
+    if not kicad_cli_supports_repo_schematics():
+        skip_reasons.append("kicad-cli >= 9.0.0")
+    if not rsvg_convert_available():
+        skip_reasons.append("rsvg-convert")
+    reason = (
+        f"Requires {' and '.join(skip_reasons)} for full KiCad project generation tests"
+        if skip_reasons
+        else "kicad-cli and rsvg-convert are required"
+    )
+    return pytest.mark.skipif(bool(skip_reasons), reason=reason)(marked)
 
 
 # ---------------------------------------------------------------------------

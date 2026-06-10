@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web.main import app
+from tests.conftest import requires_generation_pipeline
 
 _VALID_NETLIST = {
     "version": "1",
@@ -20,6 +21,7 @@ _VALID_NETLIST = {
 }
 
 
+@requires_generation_pipeline
 def test_web_jobs_from_netlist_creates_job_directory(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(data_dir))
@@ -41,6 +43,7 @@ def test_web_jobs_from_netlist_creates_job_directory(tmp_path, monkeypatch) -> N
     assert "project.zip" in payload["artifacts"]
 
 
+@requires_generation_pipeline
 def test_web_jobs_default_to_internal_validation(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
 

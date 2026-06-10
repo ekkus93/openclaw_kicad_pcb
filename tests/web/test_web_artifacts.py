@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web.main import app
+from tests.conftest import requires_generation_pipeline
 
 _VALID_NETLIST = {
     "version": "1",
@@ -20,6 +21,7 @@ _VALID_NETLIST = {
 }
 
 
+@requires_generation_pipeline
 def test_web_artifacts_list_and_download_project_zip(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
 
