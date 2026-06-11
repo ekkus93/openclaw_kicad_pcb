@@ -15,6 +15,7 @@ from ._router_types import (
     LabelPolicy,
     NetLabel,
     NetRouting,
+    RoutingClassification,
     WireSegment,
     _ProtectedPointContext,
 )
@@ -291,16 +292,7 @@ def _classify_routing_net(
     refs: tuple[str, ...],
     *,
     block_layout: BlockLayout | None = None,
-) -> Literal[
-    "power",
-    "local_decoupling",
-    "shunt_ground",
-    "connector_only",
-    "connector_attachment",
-    "signal_chain",
-    "feedback",
-    "generic_signal",
-]:
+) -> RoutingClassification:
     """Return a first-class routing taxonomy for one net."""
     component_kinds = tuple(_component_type(ref) for ref in refs)
     has_connector = any(kind == "connector" for kind in component_kinds)

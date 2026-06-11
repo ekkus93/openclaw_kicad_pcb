@@ -15,6 +15,20 @@ if TYPE_CHECKING:
     from .circuit_ir import PinRefIR
 
 # ---------------------------------------------------------------------------
+# Type aliases
+# ---------------------------------------------------------------------------
+RoutingClassification = Literal[
+    "power",
+    "local_decoupling",
+    "shunt_ground",
+    "connector_only",
+    "connector_attachment",
+    "signal_chain",
+    "feedback",
+    "generic_signal",
+]
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 WIRE_EXTEND_MM: float = 5.08  # pin stub length — 200 mil (one KiCad grid unit)
