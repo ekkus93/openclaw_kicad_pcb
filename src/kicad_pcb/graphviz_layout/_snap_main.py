@@ -1,110 +1,7 @@
-"""Coordinate-space transforms for the Graphviz schematic layout engine.
+"""Composite snap coordinator — the ``_apply_post_layout_snaps`` entry point.
 
-Responsibilities
-----------------
-This module handles everything that happens *after* ``dot -Tplain`` produces
-raw node positions:
-
-1. **Parsing** — extract ``(gv_x, gv_y)`` from the ``dot -Tplain`` plain-text
-   format (:func:`_parse_plain_positions`).
-
-2. **Coordinate mapping** — convert Graphviz "inch" coordinates (origin
-   bottom-left, y↑) to KiCad mm coordinates (origin top-left, y↓) and
-   fit the result within an A4 page (:func:`_gv_to_kicad`,
-   :func:`_fit_to_page`).
-
-3. **Grid snapping** — quantise positions to the KiCad 50-mil (1.27 mm)
-   grid (:func:`snap_positions`, :func:`_snap`).
-
-4. **Post-layout specialised snaps** — rule-based position overrides that
-   enforce schematic readability conventions after the grid snap:
-
-   * :func:`_snap_power_symbols` — pin ``#PWR``/``#FLG`` symbols to the
-     top or bottom page row.
-   * :func:`_snap_feedback_components` — pull feedback passives above their
-     anchor IC/connector.
-   * :func:`_post_snap_decoupling_caps` — align bypass caps directly above
-     their associated IC.
-   * :func:`_apply_stereo_split` — compress L/R stereo components into the
-     top or bottom half of the page.
-   * :func:`_compact_y_gap` — collapse the largest vertical gap in the
-     layout for non-power-symbol components so the circuit appears as one
-     connected region (fixes the "split circuit" artifact that arises when
-     isolated source-tier connectors land far from the amp body).
-   * :func:`_spread_x_columns` — when > *max_per_column* symbols share the
-     same x-coordinate after grid-snapping, split them into sub-columns
-     spaced 25.4 mm apart (centered on the original column x), preserving
-     the tier-ordered y-sort within each group.
-   * :func:`_deoverlap_positions` — push any components that share the
-     same grid cell apart after all previous snaps complete (fixes grid
-     collisions introduced by snapping or compression).
-
-Coordinate system
------------------
-``dot -Tplain`` reports node centres in inches with the origin at the
-lower-left corner and y increasing upward.  KiCad uses mm with the origin
-at the upper-left and y increasing downward.  The transform is::
-
-    x_mm = ORIGIN_X + gv_x × SCALE_MM_PER_GV
-    y_mm = ORIGIN_Y + (max_gv_y − gv_y) × SCALE_MM_PER_GV
-
-Ordering of post-layout snap passes
-------------------------------------
-The canonical ordering in
-:meth:`~kicad_pcb.graphviz_layout.GraphvizLayoutEngine.compute_symbol_positions`
-is:
-
-1. :func:`snap_positions` (grid)
-2. :func:`_snap_power_symbols`
-2b. :func:`_snap_connectors_to_ic_y` (Rule 2: connector y-alignment)
-2c. :func:`_snap_block_zones` (Phase 1.2: bias toward functional block zones)
-2d. :func:`_apply_density_spreading` (Phase 2.3: reduce local crowding)
-3. :func:`_snap_feedback_components` (if any feedback refs exist)
-4. :func:`_apply_stereo_split` (if any L/R channels exist)
-5. :func:`_compact_y_gap` (always; no-op when gap ≤ threshold)
-6. :func:`_center_ics_in_columns` (always; no-op when no ICs present)
-7. :func:`_post_snap_decoupling_caps` (if any decoupling caps exist)
-8. :func:`_spread_x_columns` (always; spreads overloaded x-columns into sub-columns)
-9. :func:`_deoverlap_positions` (always; final guard against grid collisions after X-spread)
-10. :func:`_remediate_crossings` (always; includes its own inner deoverlap)
-
-Power symbols must run before connector-y-snap so that ``#PWR``/``#FLG``
-refs are already at their fixed rows before connectors compute their median.
-Connector-y-snap runs before feedback snap so feedback-adjusted y values
-take a correctly-anchored connector y as their starting point.
-Block zone bias and density spreading run before feedback snap so that
-functional block organization and crowding reduction happen early in the
-pipeline, providing a cleaner baseline for specialized adjustments.
-Density spreading runs after block zones so that block assignments are
-respected when distributing dense clusters along the y-axis.
-Stereo split runs after feedback snap so that feedback-adjusted y values are
-used as the input to channel compression.
-``_compact_y_gap`` runs before decoupling caps so that bypass-cap y positions
-are relative to the compacted IC y values.
-``_center_ics_in_columns`` runs before decoupling caps so that bypass caps
-are re-snapped relative to the ICs' newly-centred positions.
-``_spread_x_columns`` runs before ``_deoverlap_positions`` so that the
-Y deoverlap operates on already-spread columns rather than tall stacks.
-``_deoverlap_positions`` runs after X-spread to resolve any residual Y
-collisions regardless of which earlier pass introduced them.
-``_remediate_crossings`` runs after deoverlap as a final sweep: it measures the
-crossing ratio and iteratively applies barycentric column-sort if the ratio
-exceeds the threshold, then re-runs deoverlap to fix any new collisions.
-
-Implementation note
--------------------
-This file is a thin re-export wrapper for most symbols. The actual
-implementations live in focused sub-modules:
-
-- :mod:`._snap_types`    — constants, helpers, policy classes
-- :mod:`._snap_parse`    — parsing and coordinate mapping
-- :mod:`._snap_basic`    — connector/IC/power alignment, op-amp locality
-- :mod:`._snap_geometry` — block zones, stereo, deoverlap, page balance
-- :mod:`._snap_opamp`    — op-amp/buffer stage composition, block spacing
-
-:func:`_apply_post_layout_snaps` lives here directly so that
-``patch.object(snap_mod, '_snap_xxx', ...)`` in tests correctly intercepts
-calls made from within the orchestrator.
+All individual snap passes are imported from the focused sub-modules and
+called in the canonical ordering documented in the function docstring.
 """
 
 from __future__ import annotations
@@ -120,22 +17,13 @@ if TYPE_CHECKING:
     from ..layout import ComponentAnnotation as _ComponentAnnotation
 
 from ..block_detection import is_core_like_role
-
-# ---------------------------------------------------------------------------
-# Re-exports from ._snap_basic (connector/IC/power, op-amp locality)
-# ---------------------------------------------------------------------------
 from ._snap_basic import (
     _snap_connectors_to_ic_y,
     _snap_feedback_components,
     _snap_input_connector_signal_attachment,
     _snap_opamp_halo,
-    _snap_opamp_locality,
     _snap_power_symbols,
 )
-
-# ---------------------------------------------------------------------------
-# Re-exports from ._snap_geometry (block zones, stereo, deoverlap, balance)
-# ---------------------------------------------------------------------------
 from ._snap_geometry import (
     _apply_density_spreading,
     _apply_property_text_spacing,
@@ -143,9 +31,8 @@ from ._snap_geometry import (
     _center_ics_in_columns,
     _clamp_to_page,
     _compact_y_gap,
-    _compute_page_quadrant_utilization,
     _deoverlap_positions,
-    _post_snap_decoupling_caps,
+    _enforce_connector_x_bounds,
     _post_stereo_barycentric,
     _remediate_crossings,
     _snap_block_zones,
@@ -153,10 +40,6 @@ from ._snap_geometry import (
     _snap_page_balance,
     _spread_x_columns,
 )
-
-# ---------------------------------------------------------------------------
-# Re-exports from ._snap_opamp (op-amp/buffer stage, block spacing)
-# ---------------------------------------------------------------------------
 from ._snap_opamp import (
     _snap_buffer_stage_direct_output_support,
     _snap_buffer_stage_feedback_corridor,
@@ -175,49 +58,15 @@ from ._snap_opamp import (
     _snap_output_transition_subbands,
     _snap_power_block_cohesion,
 )
-
-# ---------------------------------------------------------------------------
-# Re-exports from ._snap_parse (parsing and coordinate mapping)
-# ---------------------------------------------------------------------------
-from ._snap_parse import (
-    _fit_to_page,
-    _gv_to_kicad,
-    _parse_plain_positions,
-    _snap,
-    snap_positions,
-)
-
-# ---------------------------------------------------------------------------
-# Re-exports from ._snap_types (constants and policy classes)
-# ---------------------------------------------------------------------------
+from ._snap_parse import snap_positions
 from ._snap_types import (
-    _MAJOR_BLOCK_MAX_GAP_MM,
-    _MAJOR_BLOCK_MIN_GAP_MM,
-    _MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM,
-    _MIN_CIRCUIT_SPAN_FRACTION,
-    _OPAMP_LOWER_LIMIT_FRACTION,
-    _OPAMP_UPPER_LIMIT_FRACTION,
-    _PAGE_BALANCE_CORRECTION,
-    _PAGE_BALANCE_DEAD_ZONE_MM,
-    _POWER_BLOCK_MAX_X_OFFSET_MM,
     _STEREO_DEOVERLAP_MIN_MM,
-    _TITLE_BLOCK_CLEARANCE_MM,
     DEFAULT_LAYOUT_HEURISTIC_POLICY,
-    GRID_ROW_MM,
-    ORIGIN_X,
-    ORIGIN_Y,
     PAGE_MAX_X,
     PAGE_MAX_Y,
-    SCALE_MM_PER_GV,
     LayoutHeuristicPolicy,
     _OpAmpLocalityContext,
-    _QuadrantUtilization,
 )
-
-# ---------------------------------------------------------------------------
-# Re-import _snap_multi_unit_sibling_cohesion to make it patchable here
-# (it is already re-exported from ._snap_opamp above)
-# ---------------------------------------------------------------------------
 
 
 def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
@@ -255,82 +104,42 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
         block zones (INPUT left, OUTPUT right, POWER top; skipped when
         *block_layout* is ``None``).
     3d. :func:`_apply_density_spreading` — push apart symbols in dense
-        clusters (≥ 5 neighbors within 30mm) to reduce local crowding;
-        respects block boundaries when *block_layout* is provided (Phase
-        2.3; skipped when *block_layout* is ``None``).
+        clusters (skipped when *block_layout* is ``None``).
     4. :func:`_apply_stereo_split` — compress L/R components into page halves
        (skipped when no L or R channel is present in *channels*).
     4b. :func:`_post_stereo_barycentric` — reduce intra-channel crossings after
-       the stereo split by applying a two-pass barycentric sort within each
-       channel band (R3-3; skipped when no L/R channels present).
+       the stereo split (skipped when no L/R channels present).
     5. :func:`_compact_y_gap` — collapse the largest vertical gap.
     6. :func:`_center_ics_in_columns` — re-sort each column so ICs land at the
-       vertical midpoint with passives above and below (always runs; no-op
-       when no column contains an IC).
-    7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their
-       IC (skipped when *decoupling_map* is empty).
-    7b. :func:`_snap_opamp_locality` — enforce op-amp-centric local staging
-        (input-side left, output-side right, feedback near op-amp, decoupling
-        separated from feedback).
+       vertical midpoint with passives above and below.
+    7. :func:`_post_snap_decoupling_caps` — co-locate bypass caps above their IC.
+    7b. :func:`_snap_opamp_locality` — enforce op-amp-centric local staging.
     7c. :func:`_snap_input_stage_cohesion` — keep input connector and
-        preconditioning parts as a compact left-side stage with a short,
-        readable transition into the op-amp input side.
+        preconditioning parts as a compact left-side stage.
     7d. :func:`_snap_output_stage_cohesion` — keep output connector and
-        feedback parts as a compact right-side stage with a short,
-        readable transition from the op-amp output side.
+        feedback parts as a compact right-side stage.
     7e. :func:`_snap_page_balance` — nudge signal-path components toward the
-        vertical page centre when the circuit's centre of gravity deviates by
-        more than :data:`_PAGE_BALANCE_DEAD_ZONE_MM`.  Power-entry and
-        decoupling components are excluded (they belong at the top by
-        convention).  Only a gentle proportional correction is applied so that
-        the balance pass does not fight the earlier structural snap passes.
-    7f. :func:`_post_snap_decoupling_caps` (if *decoupling_map* non-empty) —
-        re-anchors bypass caps after the balance shift.  Because block
-        detection can assign a non-DECOUPLING role to a cap (e.g. POWER_ENTRY
-        when it sits on a VCC_* net), the balance pass may move only the IC
-        and leave the cap behind.  A second run of this pass restores the
-        cap.y = IC.y − GRID_ROW_MM invariant.
-    7g. :func:`_snap_central_composition` — enforce sensible vertical
-        composition: (1) shift signal-path components up when any of them
-        encroaches on the KiCad title-block clearance zone at the page bottom;
-        (2) nudge when the op-amp (OPAMP_CORE) average y-coordinate falls
-        outside the central 60 % of the vertical range; (3) emit a debug
-        warning when the circuit vertical span is very small.
-    7h. :func:`_snap_major_signal_axis` — align representative input/core/
-        output refs onto a shared horizontal axis so the main left-to-right
-        flow reads as one continuous chain without flattening feedback or
-        power support lanes.
-    7i. :func:`_snap_major_block_spacing` — keep adjacent major input/core/
-        output blocks within a readable horizontal gap range by shifting later
-        blocks together while preserving each block's internal geometry.
-    7j. :func:`_snap_output_transition_subbands` — keep explicit downstream
-        transition roles in readable left-to-right sub-bands after the
-        op-amp/output-stage cohesion passes compact the local neighborhood.
-    7k. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally
-        tied to the active/signal cluster so the power block still reads as
-        part of the same design after the signal path recenters.
-    7l. :func:`_snap_multi_unit_sibling_cohesion` — compact ordered multi-unit
-        IC siblings into adjacent x-lanes and re-center any power-only unit
-        over that signal-unit cluster so the final coordinates preserve the
-        intended grouping after later locality/composition passes.
-    7m. :func:`_snap_interstage_handoff_between_stages` — keep ``INTERSTAGE``
-        refs between the main gain stage and any buffer stage after late
-        sibling compaction re-tightens split op-amp units.
-    7n. :func:`_apply_property_text_spacing` — reserve extra vertical space
-        for components that share the same or a nearby x-lane so visible
-        ``Reference``/``Value`` text does not collapse onto nearby symbol
-        bodies or short local wire corridors.
-    8. :func:`_spread_x_columns` — split overloaded x-columns (> 3 symbols at
-       the same x) into sub-columns spaced 25.4 mm apart so the Y deoverlap
-       does not produce unreadable vertical stacks.
+        vertical page centre.
+    7f. Re-apply decoupling snap after page balance shift.
+    7g. :func:`_snap_central_composition` — enforce sensible vertical composition.
+    7h. :func:`_snap_major_signal_axis` — align input/core/output refs onto a
+        shared horizontal axis.
+    7i. :func:`_snap_major_block_spacing` — normalize adjacent major-block gaps.
+    7j. :func:`_snap_output_transition_subbands` — keep downstream transitions
+        in readable sub-bands.
+    7k. :func:`_snap_power_block_cohesion` — keep POWER_ENTRY refs laterally tied
+        to the active signal cluster.
+    7l. :func:`_snap_multi_unit_sibling_cohesion` — compact split-unit IC siblings.
+    7m. :func:`_snap_interstage_handoff_between_stages` — keep INTERSTAGE refs
+        between the gain stage and any buffer stage.
+    7n. :func:`_apply_property_text_spacing` — reserve vertical space for
+        visible Reference/Value text.
+    8. :func:`_spread_x_columns` — split overloaded x-columns.
     9. :func:`_deoverlap_positions` — push any remaining grid collisions apart.
-    10. :func:`_remediate_crossings` — measure crossing ratio; if ≥ 0.30 apply
-        barycentric column-sort sweeps (up to 3) then re-run deoverlap.
-    11. :func:`_clamp_to_page` — clamp every position to the A4 printable area
-        (``ORIGIN_X..PAGE_MAX_X`` × ``ORIGIN_Y..PAGE_MAX_Y``); prevents LAY004.
+    10. :func:`_remediate_crossings` — fix crossing ratio ≥ 0.30.
+    11. :func:`_clamp_to_page` — clamp every position to the A4 printable area.
     """
     from ..block_detection import BlockRole  # noqa: PLC0415
-    from ._snap_geometry import _enforce_connector_x_bounds  # noqa: PLC0415
 
     result = snap_positions(result)
     result = _snap_power_symbols(result, ir)
@@ -695,66 +504,3 @@ def _apply_post_layout_snaps(  # noqa: PLR0913, PLR0915
     result = _snap_core_local_shunts(result, ir, block_layout=block_layout)
     result = _clamp_to_page(result, max_x=grid_max_x, max_y=grid_max_y)
     return result
-
-
-__all__ = [
-    # constants
-    "DEFAULT_LAYOUT_HEURISTIC_POLICY",
-    "GRID_ROW_MM",
-    "ORIGIN_X",
-    "ORIGIN_Y",
-    "PAGE_MAX_X",
-    "PAGE_MAX_Y",
-    "SCALE_MM_PER_GV",
-    # policy classes
-    "LayoutHeuristicPolicy",
-    "_OpAmpLocalityContext",
-    "_QuadrantUtilization",
-    # private constants
-    "_MAJOR_BLOCK_MAX_GAP_MM",
-    "_MAJOR_BLOCK_MIN_GAP_MM",
-    "_MAJOR_SIGNAL_AXIS_GROUP_SPACING_MM",
-    "_MIN_CIRCUIT_SPAN_FRACTION",
-    "_OPAMP_LOWER_LIMIT_FRACTION",
-    "_OPAMP_UPPER_LIMIT_FRACTION",
-    "_PAGE_BALANCE_CORRECTION",
-    "_PAGE_BALANCE_DEAD_ZONE_MM",
-    "_POWER_BLOCK_MAX_X_OFFSET_MM",
-    "_TITLE_BLOCK_CLEARANCE_MM",
-    # parse
-    "_fit_to_page",
-    "_gv_to_kicad",
-    "_parse_plain_positions",
-    "_snap",
-    "snap_positions",
-    # basic
-    "_snap_connectors_to_ic_y",
-    "_snap_feedback_components",
-    "_snap_input_connector_signal_attachment",
-    "_snap_opamp_halo",
-    "_snap_opamp_locality",
-    "_snap_power_symbols",
-    # geometry
-    "_apply_density_spreading",
-    "_apply_property_text_spacing",
-    "_apply_stereo_split",
-    "_center_ics_in_columns",
-    "_clamp_to_page",
-    "_compact_y_gap",
-    "_compute_page_quadrant_utilization",
-    "_deoverlap_positions",
-    "_post_snap_decoupling_caps",
-    "_post_stereo_barycentric",
-    "_remediate_crossings",
-    "_snap_block_zones",
-    "_snap_page_balance",
-    "_spread_x_columns",
-    # opamp
-    "_snap_central_composition",
-    "_snap_major_block_spacing",
-    "_snap_major_signal_axis",
-    "_snap_output_transition_subbands",
-    "_snap_power_block_cohesion",
-    # main
-    "_apply_post_layout_snaps",
-]
