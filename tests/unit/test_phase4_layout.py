@@ -906,7 +906,7 @@ class TestGraphvizLayoutEngineCache:
         }
         cache_file: Path = tmp_path / "layout.json"
         monkeypatch.setattr(
-            _gv_mod,
+            _gv_mod._gv_engine,
             "_load_layout_cache_entry",
             lambda *_args: _gv_mod.LayoutCacheEntry(positions=positions, decoupling_map={}),
         )
@@ -1031,7 +1031,7 @@ class TestGraphvizLayoutEngineCache:
         debug_dump = tmp_path / "layout-debug.json"
 
         monkeypatch.setattr(
-            _gv_mod,
+            _gv_mod._gv_engine,
             "_load_layout_cache_entry",
             lambda *_args: _gv_mod.LayoutCacheEntry(
                 positions=cached_positions,
@@ -1042,7 +1042,9 @@ class TestGraphvizLayoutEngineCache:
         def fail_if_refine_called(*_args: object, **_kwargs: object) -> dict[str, str]:
             raise AssertionError("cache hit should not recompute decoupling_map refinement")
 
-        monkeypatch.setattr(_gv_mod, "_refine_shared_rail_decoupling_map", fail_if_refine_called)
+        monkeypatch.setattr(
+            _gv_mod._gv_engine, "_refine_shared_rail_decoupling_map", fail_if_refine_called
+        )
 
         run_dot_called = False
 
@@ -1182,7 +1184,7 @@ class TestFindDotSource:
         monkeypatch.delenv("GRAPHVIZ_DOT", raising=False)
         monkeypatch.setattr(_gv_mod.shutil, "which", lambda _cmd: None)
         # Point bundled path to a location that doesn't exist.
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", tmp_path / "no_dot")
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", tmp_path / "no_dot")
         assert _gv_mod.find_dot_source() is None
 
     def test_env_var_takes_precedence(
@@ -1195,7 +1197,7 @@ class TestFindDotSource:
         monkeypatch.setenv("GRAPHVIZ_DOT", str(fake_dot))
         # Patch bundled path to non-existent so env var wins.
         bundled = tmp_path / "no_bundled"
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", bundled)
 
         result = _gv_mod.find_dot_source()
         assert result is not None
@@ -1207,7 +1209,7 @@ class TestFindDotSource:
         """Falls back to PATH when no env var set; source is 'PATH'."""
         monkeypatch.delenv("GRAPHVIZ_DOT", raising=False)
         bundled = tmp_path / "no_bundled"
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", bundled)
         fake_dot = tmp_path / "dot"
         fake_dot.write_text("#!/bin/sh\n")
         fake_dot.chmod(0o755)
@@ -1225,7 +1227,7 @@ class TestFindDotSource:
         """Invalid GRAPHVIZ_DOT falls back to PATH in default (non-strict) mode."""
         monkeypatch.setenv("GRAPHVIZ_DOT", str(tmp_path / "missing-dot"))
         bundled = tmp_path / "no_bundled"
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", bundled)
         fake_dot = tmp_path / "dot"
         fake_dot.write_text("#!/bin/sh\n")
         fake_dot.chmod(0o755)
@@ -1243,7 +1245,7 @@ class TestFindDotSource:
         """Invalid GRAPHVIZ_DOT raises in strict mode instead of falling back."""
         monkeypatch.setenv("GRAPHVIZ_DOT", str(tmp_path / "missing-dot"))
         bundled = tmp_path / "no_bundled"
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", bundled)
         with pytest.raises(UserError, match="GRAPHVIZ_DOT") as exc_info:
             _gv_mod.find_dot_source(strict=True)
         assert exc_info.value.code == ErrorCode.TOOL_ERROR
@@ -1253,7 +1255,7 @@ class TestFindDotSource:
         bundled = tmp_path / "dot"
         bundled.write_text("#!/bin/sh\n")
         bundled.chmod(0o755)
-        monkeypatch.setattr(_gv_mod, "_BUNDLED_DOT_PATH", bundled)
+        monkeypatch.setattr(_gv_mod._gv_discovery, "_BUNDLED_DOT_PATH", bundled)
         # Even if env var and PATH would return something else, bundled wins.
         monkeypatch.setenv("GRAPHVIZ_DOT", "/some/other/dot")
 

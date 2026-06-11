@@ -152,7 +152,7 @@ def test_graphviz_engine_records_role_degradation_diagnostic(
     }
     monkeypatch.setattr(engine, "_run_dot", lambda dot_source: fake_positions)
     monkeypatch.setattr(
-        _gv_mod,
+        _gv_mod._gv_engine,
         "_classify_connector_roles",
         lambda refs, tiers, ir=None: {"J_IN": "input", "J_OUT": "unknown"},
     )
