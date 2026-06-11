@@ -1,11 +1,13 @@
 """KiCad schematic document wrapper — AST-based editing for ``.kicad_sch`` files.
 
 This module is the public entry point to the schematic editing layer.  The
-implementation is split across three sibling modules:
+implementation is split across sibling modules:
 
-* :mod:`kicad_pcb.sch_nodes`  — pure AST emitter functions (``make_*``).
-* :mod:`kicad_pcb.lib_symbol` — ``.kicad_sym`` library reader functions.
-* :mod:`kicad_pcb.sch_doc`    — (this module) :class:`SchematicDoc` wrapper
+* :mod:`kicad_pcb.sch_nodes`         — pure AST emitter functions (``make_*``).
+* :mod:`kicad_pcb.lib_symbol`        — ``.kicad_sym`` library reader functions.
+* :mod:`kicad_pcb.sch_doc._sch_doc_helpers`  — module-level parsing helpers.
+* :mod:`kicad_pcb.sch_doc._sch_doc_mutation` — embedding + element-addition mixin.
+* :mod:`kicad_pcb.sch_doc`           — (this module) :class:`SchematicDoc` wrapper
   and backward-compatible re-exports of the public API.
 
 All symbols listed in ``__all__`` remain importable from ``kicad_pcb.sch_doc``
@@ -14,14 +16,11 @@ so existing callers require no changes.
 
 from __future__ import annotations
 
-import contextlib
-import json
 from pathlib import Path
 
 from ..errors import ParseError
 from ..fs import _atomic_write
-from ..lib_symbol import (
-    _symbol_id,
+from ..lib_symbol import (  # noqa: F401
     read_lib_symbol_def,
     read_lib_symbol_def_chain,
     read_lib_symbol_def_flat,
@@ -31,22 +30,29 @@ from ..lib_symbol import (
     read_lib_symbol_unit_pin_at,
     read_lib_symbol_unit_pins,
 )
-from ..sexpr.builder import L, atom, string
-from ..sexpr.nodes import AtomNode, ListNode, Node, StringNode
+from ..sexpr.builder import string
+from ..sexpr.nodes import ListNode, Node, StringNode
 from ..sexpr.parser import parse_file
 from ..sexpr.serializer import serialize
-from ..sexpr.utils import find_first, replace_section
+from ._sch_doc_helpers import (  # noqa: F401
+    _BIND_PREFIXES,
+    _get_sheet_uuid,
+    _parse_binding_marker,
+    _sheet_property_value,
+    _symbol_metadata,
+)
+from ._sch_doc_mutation import _SchDocMixin
 from .nodes import (
     ManagedSheetSpec,
-    make_global_label_node,
-    make_junction_node,
-    make_label_node,
+    make_global_label_node,  # noqa: F401
+    make_junction_node,  # noqa: F401
+    make_label_node,  # noqa: F401
     make_managed_sheet_node,
-    make_no_connect_node,
-    make_power_symbol_node,
-    make_symbol_node,
+    make_no_connect_node,  # noqa: F401
+    make_power_symbol_node,  # noqa: F401
+    make_symbol_node,  # noqa: F401
     make_text_node,
-    make_wire_node,
+    make_wire_node,  # noqa: F401
 )
 
 __all__ = [
@@ -71,158 +77,8 @@ __all__ = [
     "read_lib_symbol_unit_pins",
 ]
 
-# ---------------------------------------------------------------------------
-# SchematicDoc helpers  (used by SchematicDoc methods; defined here so they
-# appear before the class that calls them)
-# ---------------------------------------------------------------------------
 
-
-def _get_sheet_uuid(sheet_node: ListNode) -> str | None:
-    """Extract ``(uuid "value")`` from a ``(sheet ...)`` node."""
-    for item in sheet_node.items:
-        if (
-            isinstance(item, ListNode)
-            and item.key == "uuid"
-            and len(item.items) >= 2
-            and isinstance(item.items[1], StringNode)
-        ):
-            return item.items[1].value
-    return None
-
-
-def _sheet_property_value(sheet_node: ListNode, prop_name: str) -> str | None:
-    """Return the value of a named ``(property ...)`` inside a ``(sheet ...)`` node."""
-    for child in sheet_node.items:
-        if not isinstance(child, ListNode) or child.key != "property":
-            continue
-        if len(child.items) < 3:
-            continue
-        name_node = child.items[1]
-        value_node = child.items[2]
-        if (
-            isinstance(name_node, StringNode)
-            and isinstance(value_node, StringNode)
-            and name_node.value == prop_name
-        ):
-            return value_node.value
-    return None
-
-
-def _parse_float_atom(node: Node) -> float:
-    """Parse a float from an :class:`AtomNode`.
-
-    Raises :class:`ParseError` when the node is not an atom or the atom value
-    is not numeric.
-    """
-    if not isinstance(node, AtomNode):
-        raise ParseError("Malformed symbol (at ...) coordinate: expected numeric atom")
-    try:
-        return float(node.value)
-    except ValueError as exc:
-        raise ParseError(
-            f"Malformed symbol (at ...) coordinate: expected numeric atom, got {node.value!r}"
-        ) from exc
-
-
-def _symbol_metadata(symbol_node: ListNode) -> dict[str, object]:
-    """Extract placement metadata from a placed symbol ``(symbol ...)`` AST node.
-
-    Returns a dict with keys ``ref``, ``symbol_id``, ``value``, ``uuid``,
-    ``unit`` (all ``str``) and ``x``, ``y`` (both ``float``).
-    """
-    symbol_id = ""
-    ref = ""
-    value = ""
-    sym_uuid = ""
-    unit = ""
-    x = 0.0
-    y = 0.0
-    rotation = 0.0
-
-    for child in symbol_node.items:
-        if not isinstance(child, ListNode):
-            continue
-        if (
-            child.key == "lib_id"
-            and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
-        ):
-            symbol_id = child.items[1].value
-        elif (
-            child.key == "uuid" and len(child.items) >= 2 and isinstance(child.items[1], StringNode)
-        ):
-            sym_uuid = child.items[1].value
-        elif child.key == "unit" and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
-            unit = child.items[1].value
-        elif child.key == "at" and len(child.items) >= 3:
-            x = _parse_float_atom(child.items[1])
-            y = _parse_float_atom(child.items[2])
-            if len(child.items) >= 4:
-                rotation = _parse_float_atom(child.items[3])
-        elif child.key == "property" and len(child.items) >= 3:
-            name_node = child.items[1]
-            value_node = child.items[2]
-            if isinstance(name_node, StringNode) and isinstance(value_node, StringNode):
-                if name_node.value == "Reference":
-                    ref = value_node.value
-                elif name_node.value == "Value":
-                    value = value_node.value
-
-    return {
-        "ref": ref,
-        "symbol_id": symbol_id,
-        "value": value,
-        "uuid": sym_uuid,
-        "x": x,
-        "y": y,
-        "rotation": rotation,
-        "unit": unit,
-    }
-
-
-_BIND_PREFIXES = ("kicad-pcb:bind=", "OpenClaw:bind=")
-
-
-def _parse_binding_marker(marker: str) -> dict[str, str] | None:
-    """Parse a ``kicad-pcb:bind=<JSON>`` marker string into a ``{ref, pin, net_name}`` dict.
-
-    Also accepts the legacy ``OpenClaw:bind=`` prefix for backward compatibility.
-    Returns ``None`` when the marker is malformed or any required field is absent.
-    """
-    payload: str | None = next(
-        (marker[len(p) :] for p in _BIND_PREFIXES if marker.startswith(p)), None
-    )
-    if payload is None:
-        return None
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError:
-        return None
-
-    if not isinstance(data, dict):
-        return None
-
-    ref = data.get("ref")
-    pin = data.get("pin")
-    net_name = data.get("net_name")
-    if not (
-        isinstance(ref, str)
-        and ref
-        and isinstance(pin, str)
-        and pin
-        and isinstance(net_name, str)
-        and net_name
-    ):
-        return None
-    return {"ref": ref, "pin": pin, "net_name": net_name}
-
-
-# ---------------------------------------------------------------------------
-# SchematicDoc
-# ---------------------------------------------------------------------------
-
-
-class SchematicDoc:
+class SchematicDoc(_SchDocMixin):
     """Mutable wrapper around a parsed KiCad schematic (``.kicad_sch``) AST.
 
     All mutation methods update ``self.root`` in-place by constructing
@@ -269,223 +125,7 @@ class SchematicDoc:
         _atomic_write(path, text, "kicad_sch", backup=backup, operation="save-schematic")
 
     # ------------------------------------------------------------------
-    # Library symbol embedding
-    # ------------------------------------------------------------------
-
-    def ensure_lib_symbols_section(self) -> None:
-        """Add an empty ``(lib_symbols)`` section if none exists."""
-        if find_first(self.root, "lib_symbols") is None:
-            new_section = L(atom("lib_symbols"))
-            self.root = ListNode(self.root.items + (new_section,), self.root.pos)
-
-    def embed_lib_symbol(self, sym_def_node: ListNode) -> bool:
-        """Embed *sym_def_node* into ``(lib_symbols)``, skipping duplicates.
-
-        The symbol id is determined from the second item of *sym_def_node*
-        (expected to be a :class:`~kicad_pcb.sexpr.nodes.StringNode`).
-
-        Returns
-        -------
-        bool
-            ``True``  — symbol added or was already present.
-            ``False`` — symbol id could not be determined.
-        """
-        full_id = _symbol_id(sym_def_node)
-        if full_id is None:
-            return False
-
-        self.ensure_lib_symbols_section()
-        lib_symbols = find_first(self.root, "lib_symbols")
-        if lib_symbols is None:
-            return False  # shouldn't happen after ensure_lib_symbols_section
-
-        # Check for existing embedding.
-        for item in lib_symbols.items:
-            if isinstance(item, ListNode) and item.key == "symbol" and _symbol_id(item) == full_id:
-                return True  # Already embedded.
-
-        new_lib_symbols = ListNode(lib_symbols.items + (sym_def_node,), lib_symbols.pos)
-        self.root = replace_section(self.root, "lib_symbols", new_lib_symbols)
-        return True
-
-    # ------------------------------------------------------------------
-    # Element additions
-    # ------------------------------------------------------------------
-
-    def add_symbol(  # noqa: PLR0913
-        self,
-        lib_sym: str,
-        ref: str,
-        value: str,
-        footprint: str,
-        x: float,
-        y: float,
-        sym_uuid: str,
-        pin_nums: list[str],
-        pin_uuids: list[str],
-        project_name: str,
-        *,
-        unit: int = 1,
-        rotation: int = 0,
-    ) -> None:
-        """Append a placed symbol instance to the schematic.
-
-        Parameters mirror :func:`make_symbol_node`.
-        """
-        node = make_symbol_node(
-            lib_sym,
-            ref,
-            value,
-            footprint,
-            x,
-            y,
-            sym_uuid,
-            pin_nums,
-            pin_uuids,
-            project_name,
-            unit=unit,
-            rotation=rotation,
-        )
-        self._insert_before_sheet_instances(node)
-
-    def add_wire(self, x1: float, y1: float, x2: float, y2: float, wire_uuid: str) -> None:
-        """Append a wire segment to the schematic."""
-        self._insert_before_sheet_instances(make_wire_node(x1, y1, x2, y2, wire_uuid))
-
-    def add_label(self, name: str, x: float, y: float, label_uuid: str, *, angle: int = 0) -> None:
-        """Append a net label to the schematic.
-
-        Parameters
-        ----------
-        angle:
-            Label orientation in degrees (0=right, 90=down, 180=left, 270=up).
-            Pass the outward direction of the pin the label will attach to so
-            the label visually extends away from the symbol body.
-        """
-        self._insert_before_sheet_instances(make_label_node(name, x, y, label_uuid, angle=angle))
-
-    def add_text(self, text: str, x: float, y: float, *, hidden: bool = False) -> None:
-        """Append a text node to the schematic."""
-        self._insert_before_sheet_instances(make_text_node(text, x, y, hidden=hidden))
-
-    def add_junction(self, x: float, y: float, junction_uuid: str) -> None:
-        """Append a junction node at *(x, y)* to the schematic.
-
-        Junctions are required wherever wire segments meet at a T- or
-        X-intersection so KiCad treats them as electrically connected.
-        """
-        self._insert_before_sheet_instances(make_junction_node(x, y, junction_uuid))
-
-    def add_no_connect(self, x: float, y: float, no_connect_uuid: str) -> None:
-        """Append a KiCad no-connect marker at *(x, y)* to the schematic."""
-        self._insert_before_sheet_instances(make_no_connect_node(x, y, no_connect_uuid))
-
-    def add_global_label(  # noqa: PLR0913
-        self,
-        name: str,
-        x: float,
-        y: float,
-        label_uuid: str,
-        *,
-        angle: int = 0,
-        shape: str = "input",
-    ) -> None:
-        """Append a global label node to the schematic.
-
-        Global labels are used for power nets (GND, VCC, …) and for any net
-        that should cross sheet boundaries without fragmented local labels.
-        """
-        self._insert_before_sheet_instances(
-            make_global_label_node(name, x, y, label_uuid, angle=angle, shape=shape)
-        )
-
-    def add_power_symbol(  # noqa: PLR0913
-        self,
-        net_name: str,
-        x: float,
-        y: float,
-        sym_uuid: str,
-        pin_uuid: str,
-        ref: str,
-        project_name: str,
-        *,
-        angle: int = 0,
-        symbols_dir: Path | None = None,
-    ) -> bool:
-        """Embed and place a KiCad power symbol (e.g. ``power:GND``).
-
-        Looks up ``power:<net_name>`` in the KiCad symbol library, embeds the
-        definition in ``lib_symbols``, and adds a placed instance at *(x, y)*.
-
-        Parameters
-        ----------
-        net_name:     Net name, e.g. ``"GND"`` — also determines the lib lookup
-                      (``power:GND``) and the placed symbol's ``Value``.
-        x, y:         Placement coordinates in mm.  The symbol's pin is here;
-                      a stub wire should end at this point.
-        sym_uuid:     UUID for the placed symbol instance.
-        pin_uuid:     UUID for the pin node inside the placed instance.
-        ref:          Reference string, typically ``"#PWRnn"``.
-        project_name: KiCad project name (for the ``(instances …)`` block).
-        angle:        Symbol rotation in degrees CCW (default 0).
-        symbols_dir:  Path to ``.kicad_sym`` files.  ``None`` uses the system
-                      default (``/usr/share/kicad/symbols``).
-
-        Returns
-        -------
-        bool
-            ``True`` when the symbol was found and placed successfully.
-            ``False`` when the symbol is not in the library — caller should
-            fall back to a ``global_label``.
-        """
-        sym_def = read_lib_symbol_def_flat("power", net_name, symbols_dir=symbols_dir)
-        if sym_def is None:
-            return False
-        self.embed_lib_symbol(sym_def)
-        node = make_power_symbol_node(
-            f"power:{net_name}",
-            net_name,
-            ref,
-            x,
-            y,
-            sym_uuid,
-            pin_uuid,
-            project_name,
-            angle=angle,
-        )
-        self._insert_before_sheet_instances(node)
-        return True
-
-    # ------------------------------------------------------------------
-    # Layout query
-    # ------------------------------------------------------------------
-
-    def next_component_position(self) -> tuple[float, float]:
-        """Return ``(x, y)`` coordinates for the next component placement.
-
-        Steps 25.4 mm right of the rightmost existing symbol ``(at X Y 0)``
-        on the root schematic level.  Defaults to ``(50.8, 76.2)`` for empty
-        schematics.
-        """
-        xs: list[float] = []
-        for item in self.root.items:
-            if isinstance(item, ListNode) and item.key == "symbol":
-                at_node = find_first(item, "at")
-                if at_node is not None and len(at_node.items) >= 4:
-                    x_node = at_node.items[1]
-                    angle_node = at_node.items[3]
-                    if (
-                        isinstance(x_node, AtomNode)
-                        and isinstance(angle_node, AtomNode)
-                        and angle_node.value == "0"
-                    ):
-                        with contextlib.suppress(ValueError):
-                            xs.append(float(x_node.value))
-        base_x = (max(xs) + 25.4) if xs else 50.8
-        return (base_x, 76.2)
-
-    # ------------------------------------------------------------------
-    # Introspection helpers (CODE_REVIEW3)
+    # Introspection helpers
     # ------------------------------------------------------------------
 
     def has_openclaw_marker(self) -> bool:
@@ -588,12 +228,17 @@ class SchematicDoc:
 
         return sorted(bindings, key=lambda entry: (entry["ref"], entry["pin"], entry["net_name"]))
 
+    # ------------------------------------------------------------------
+    # Sheet management
+    # ------------------------------------------------------------------
+
     def has_managed_sheet(self, *, sheet_name: str = "OpenClaw_Managed") -> bool:
         """Return ``True`` if a sheet with ``Sheetname=<sheet_name>`` exists."""
         for item in self.root.items:
             if (
                 isinstance(item, ListNode)
                 and item.key == "sheet"
+                and _get_sheet_uuid(item) is not None
                 and _sheet_property_value(item, "Sheetname") == sheet_name
             ):
                 return True
@@ -663,18 +308,3 @@ class SchematicDoc:
         result = _fix(self.root)
         assert isinstance(result, ListNode)
         self.root = result
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _insert_before_sheet_instances(self, node: ListNode) -> None:
-        """Insert *node* in root items just before ``(sheet_instances …)``."""
-        items = list(self.root.items)
-        insertion_idx = len(items)
-        for i, item in enumerate(items):
-            if isinstance(item, ListNode) and item.key == "sheet_instances":
-                insertion_idx = i
-                break
-        items.insert(insertion_idx, node)
-        self.root = ListNode(tuple(items), self.root.pos)
