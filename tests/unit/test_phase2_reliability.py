@@ -521,7 +521,7 @@ class TestKiCadErrorHintPrinting:
             )
 
         with (
-            patch("kicad_pcb.cli.cmd_set_board_size", side_effect=_fake_func),
+            patch("kicad_pcb._cli_subcommands_hardware.cmd_set_board_size", side_effect=_fake_func),
             pytest.raises(SystemExit) as exc_info,
         ):
             self._run_main_with_argv(["set-board-size", "50x30"])
@@ -538,7 +538,7 @@ class TestKiCadErrorHintPrinting:
             raise UserError("something went wrong")
 
         with (
-            patch("kicad_pcb.cli.cmd_set_board_size", side_effect=_fake_func),
+            patch("kicad_pcb._cli_subcommands_hardware.cmd_set_board_size", side_effect=_fake_func),
             pytest.raises(SystemExit) as exc_info,
         ):
             self._run_main_with_argv(["set-board-size", "50x30"])
