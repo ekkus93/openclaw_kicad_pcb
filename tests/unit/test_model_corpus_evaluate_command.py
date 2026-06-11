@@ -189,7 +189,7 @@ def test_model_corpus_evaluate_converts_runtime_failures_into_partial_reports(
         raise RuntimeError("dot timed out after 24.24s")
 
     monkeypatch.setattr(
-        "kicad_pcb.evaluation.reports._apply_netlist_to_project",
+        "kicad_pcb.evaluation._reports_fixture._apply_netlist_to_project",
         _raise_runtime_error,
     )
 
