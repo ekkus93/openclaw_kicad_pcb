@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-from kicad_pcb import lib_symbol as _lib_symbol
 from kicad_pcb.errors import UserError
 from kicad_pcb.patterns import (
     pattern_connector_breakout,
@@ -56,7 +55,9 @@ def _no_sym_library(monkeypatch: pytest.MonkeyPatch) -> None:
     ``read_lib_symbol_pins`` falls back to the ``["1","2"]`` path via the
     patched ``_DEFAULT_SYMBOLS_DIR``.
     """
-    monkeypatch.setattr(_lib_symbol, "_DEFAULT_SYMBOLS_DIR", Path("/nonexistent"))
+    monkeypatch.setattr(
+        "kicad_pcb._lib_symbol_primitives._DEFAULT_SYMBOLS_DIR", Path("/nonexistent")
+    )
 
 
 def _make_doc(src: str = MINIMAL_SCH) -> SchematicDoc:

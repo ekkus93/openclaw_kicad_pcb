@@ -931,7 +931,7 @@ class TestReadLibSymbolPins:
         def _raise_oserror(path: Path):
             raise OSError(f"permission denied: {path}")
 
-        monkeypatch.setattr("kicad_pcb.lib_symbol._parse_lib_file", _raise_oserror)
+        monkeypatch.setattr("kicad_pcb._lib_symbol_primitives._parse_lib_file", _raise_oserror)
 
         with pytest.raises(UserError) as exc_info:
             read_lib_symbol_pins("Device", "R", symbols_dir=tmp_path)
