@@ -20,7 +20,7 @@ This workflow is a deterministic regression harness for the schematic generator.
    ```bash
    uv run python -m kicad_pcb.cli model-corpus evaluate \
      --corpus-dir tests/fixtures/model_corpus \
-     --out-dir code_review/generated/model_eval
+     --out-dir data/model_eval
    ```
 
 5. Read `summary.md` plus each fixture's `actionable_failures.md`.
