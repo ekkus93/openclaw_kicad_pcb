@@ -56,9 +56,37 @@ async def wizard_step(session_id: str, step: str) -> FileResponse:
     return _spa_index_response()
 
 
+@router.get("/generate-json", response_class=HTMLResponse)
+async def generate_json() -> FileResponse:
+    """Serve the SPA direct JSON generate route."""
+
+    return _spa_index_response()
+
+
+@router.get("/jobs", response_class=HTMLResponse)
+async def jobs_list() -> FileResponse:
+    """Serve the SPA jobs list route."""
+
+    return _spa_index_response()
+
+
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail(job_id: str) -> FileResponse:
     """Serve one SPA job-detail route."""
 
     del job_id
+    return _spa_index_response()
+
+
+@router.get("/setup", response_class=HTMLResponse)
+async def setup() -> FileResponse:
+    """Serve the SPA setup route."""
+
+    return _spa_index_response()
+
+
+@router.get("/symbols", response_class=HTMLResponse)
+async def symbols() -> FileResponse:
+    """Serve the SPA symbols route."""
+
     return _spa_index_response()

@@ -212,5 +212,9 @@ code_review/generated/
 /data/
 kicad_pcb_web.toml
 
+# Playwright E2E test artifacts
+frontend/test-results/
+frontend/playwright-report/
+
 run_copilot.sh
 run_claude.sh*
