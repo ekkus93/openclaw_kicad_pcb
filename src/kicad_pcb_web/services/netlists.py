@@ -174,7 +174,7 @@ def _validation_issue_from_user_error(exc: UserError) -> ValidationIssue:
 def _safe_symbols_dirs_used(symbols_dir: Path | None) -> list[str]:
     try:
         return [str(p) for p in SymbolIndex(symbols_dir=symbols_dir).directories]
-    except Exception:
+    except UserError:
         return []
 
 

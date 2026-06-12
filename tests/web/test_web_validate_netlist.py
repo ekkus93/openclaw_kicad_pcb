@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
+from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb_web.main import app
+from kicad_pcb_web.services.netlists import _safe_symbols_dirs_used
 
 _VALID_NETLIST = {
     "version": "1",
@@ -71,6 +74,27 @@ def test_web_validate_netlist_invalid_ir_has_null_counts(tmp_path, monkeypatch) 
     payload = response.json()
     assert payload["component_count"] is None
     assert payload["net_count"] is None
+
+
+def test_web_safe_symbols_dirs_used_swallows_user_error(monkeypatch) -> None:
+    """UserError from SymbolIndex is expected; _safe_symbols_dirs_used returns []."""
+
+    def raise_user_error(*_a, **_kw) -> None:
+        raise UserError("No libraries found", code=ErrorCode.SYMBOL_DIR_MISSING)
+
+    monkeypatch.setattr("kicad_pcb_web.services.netlists.SymbolIndex", raise_user_error)
+    assert _safe_symbols_dirs_used(None) == []
+
+
+def test_web_safe_symbols_dirs_used_propagates_unexpected_error(monkeypatch) -> None:
+    """Unexpected exceptions must not be silently swallowed."""
+
+    def raise_runtime(*_a, **_kw) -> None:
+        raise RuntimeError("disk failure")
+
+    monkeypatch.setattr("kicad_pcb_web.services.netlists.SymbolIndex", raise_runtime)
+    with pytest.raises(RuntimeError, match="disk failure"):
+        _safe_symbols_dirs_used(None)
 
 
 def test_web_validate_netlist_invalid_ir_does_not_leak_temp_paths(tmp_path, monkeypatch) -> None:

@@ -13,6 +13,9 @@ from kicad_pcb.errors import KiCadError, ToolError, UserError
 
 _CAMEL_CASE_BOUNDARY_RE = re.compile(r"(?<!^)(?=[A-Z])")
 
+# Matches private absolute path substrings embedded anywhere in a string.
+_PRIVATE_PATH_RE = re.compile(r"/(?:tmp|var/folders|private/var|home/[^/\s]+|Users/[^/\s]+)/\S*")
+
 
 def _error_type_name(exc: KiCadError) -> str:
     """Return a stable public error-type name for one KiCad error."""
@@ -21,13 +24,15 @@ def _error_type_name(exc: KiCadError) -> str:
 
 
 def _sanitize_path_text(value: str) -> str:
-    """Redact absolute filesystem prefixes from public error payloads."""
+    """Redact private filesystem paths from public error text.
 
-    candidate = Path(value)
-    if candidate.is_absolute():
-        name = candidate.name
-        return name if name else "<absolute-path>"
-    return value
+    Standalone absolute paths are replaced entirely. Embedded private path
+    substrings (under /tmp, /home, /Users, /var/folders, /private/var) are
+    replaced with a stable placeholder wherever they appear in longer strings.
+    """
+    if Path(value.strip()).is_absolute():
+        return "<redacted-path>"
+    return _PRIVATE_PATH_RE.sub("<redacted-path>", value)
 
 
 def _sanitize_detail_value(value: object) -> object:
@@ -72,7 +77,7 @@ def kicad_error_to_payload(exc: KiCadError) -> dict[str, object]:
         "error": {
             "type": _error_type_name(exc),
             "code": getattr(exc, "code", None),
-            "message": str(exc),
+            "message": _sanitize_path_text(str(exc)),
             "details": _public_error_details(exc),
         }
     }
