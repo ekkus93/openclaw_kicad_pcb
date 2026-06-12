@@ -153,11 +153,35 @@ untracked (covered by `.gitignore`). No generated cache files are committed.
 
 ---
 
+## Playwright E2E tests added
+
+`frontend/e2e/json-generate.spec.ts` — 7 automated smoke tests for the direct
+JSON flow (see commit `feat(e2e): add Playwright smoke tests for direct JSON flow`):
+
+- Valid IR validates successfully
+- Generate button present and enabled after valid validation
+- Invalid IR shows Validation Failed with error messages
+- Generate button absent after invalid validation
+- Changing Symbols Directory clears prior validation result
+- Validation result does not leak private paths in error response
+- Generate KiCad project navigates to the job page
+
+`frontend/e2e/wizard.spec.ts` — 1 test gated behind `RUN_E2E_WIZARD_TESTS=1`:
+LLM session creation, assistant reply, IR generation, no browser console errors.
+
+Run with: `cd frontend && npm run test:e2e`
+
+**Side fix:** `src/kicad_pcb_web/routes/ui.py` was missing server-side routes
+for `/generate-json`, `/jobs`, `/setup`, and `/symbols`. Deep-link navigation
+to these paths returned HTTP 404 instead of serving the SPA `index.html`. Fixed
+as part of the E2E implementation when tests exposed this gap.
+
+---
+
 ## Manual smoke-test status
 
-**Direct JSON flow:** Manual smoke tests not performed in this environment.
+**Direct JSON flow:** Covered by automated Playwright E2E tests (7 passing).
 
 **Wizard flow with LLM:** Manual smoke tests not performed in this environment.
-
-The developer should run the manual smoke flows and update this section with
-PASS/FAIL details when complete.
+Set `RUN_E2E_WIZARD_TESTS=1` to run the automated wizard E2E test when an LLM
+provider is configured.
