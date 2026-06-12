@@ -19,6 +19,8 @@ _VALID_NETLIST = {
     ],
 }
 
+_INVALID_NETLIST = {"version": "1"}  # missing components and nets
+
 
 def test_web_validate_netlist_accepts_valid_payload(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
@@ -31,14 +33,54 @@ def test_web_validate_netlist_accepts_valid_payload(tmp_path, monkeypatch) -> No
     assert payload["valid"] is True
     assert payload["component_count"] == 3
     assert payload["net_count"] == 2
+    assert payload["errors"] == []
 
 
-def test_web_validate_netlist_returns_structured_400_for_invalid_ir(tmp_path, monkeypatch) -> None:
+def test_web_validate_netlist_returns_200_with_valid_false_for_invalid_ir(
+    tmp_path, monkeypatch
+) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
 
     client = TestClient(app)
-    response = client.post("/api/netlists/validate", json={"netlist_json": {"version": "1"}})
+    response = client.post("/api/netlists/validate", json={"netlist_json": _INVALID_NETLIST})
 
-    assert response.status_code == 400
+    assert response.status_code == 200
     payload = response.json()
-    assert "error" in payload
+    assert payload["valid"] is False
+
+
+def test_web_validate_netlist_invalid_ir_has_nonempty_errors(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+
+    client = TestClient(app)
+    response = client.post("/api/netlists/validate", json={"netlist_json": _INVALID_NETLIST})
+
+    payload = response.json()
+    assert len(payload["errors"]) >= 1
+    first = payload["errors"][0]
+    assert "message" in first
+    assert first["message"]
+
+
+def test_web_validate_netlist_invalid_ir_has_null_counts(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+
+    client = TestClient(app)
+    response = client.post("/api/netlists/validate", json={"netlist_json": _INVALID_NETLIST})
+
+    payload = response.json()
+    assert payload["component_count"] is None
+    assert payload["net_count"] is None
+
+
+def test_web_validate_netlist_invalid_ir_does_not_leak_temp_paths(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+
+    client = TestClient(app)
+    response = client.post("/api/netlists/validate", json={"netlist_json": _INVALID_NETLIST})
+
+    text = response.text
+    assert "/tmp/" not in text
+    assert "kicad-pcb-web-prepare" not in text

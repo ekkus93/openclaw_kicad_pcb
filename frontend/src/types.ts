@@ -59,12 +59,20 @@ export interface JobDetail extends JobSummary {
   artifacts: string[]
 }
 
+export interface ValidationIssue {
+  type: string
+  code: string | null
+  message: string
+  details: Record<string, unknown>
+}
+
 export interface ValidateNetlistResponse {
   valid: boolean
-  component_count: number
-  net_count: number
+  component_count: number | null
+  net_count: number | null
   warnings: Array<Record<string, unknown>>
   symbols_dirs_used: string[]
+  errors: ValidationIssue[]
 }
 
 export interface CircuitPortSpec {

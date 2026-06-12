@@ -16,14 +16,24 @@ class ValidateNetlistRequest(BaseModel):
     symbols_dir: str | None = None
 
 
+class ValidationIssue(BaseModel):
+    """One structured validation error returned when Circuit IR is invalid."""
+
+    type: str = "validation_error"
+    code: str | None = None
+    message: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
 class ValidateNetlistResponse(BaseModel):
     """Validation response payload."""
 
     valid: bool
-    component_count: int
-    net_count: int
+    component_count: int | None = None
+    net_count: int | None = None
     warnings: list[dict[str, Any]] = Field(default_factory=list)
     symbols_dirs_used: list[str] = Field(default_factory=list)
+    errors: list[ValidationIssue] = Field(default_factory=list)
 
 
 class CreateJobFromNetlistRequest(BaseModel):

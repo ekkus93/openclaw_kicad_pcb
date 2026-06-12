@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { api } from '../api'
-import type { ValidateNetlistResponse } from '../types'
+import type { ValidateNetlistResponse, ValidationIssue } from '../types'
 import { joinClasses, getErrorMessage, statusBannerToneClass } from '../utils'
 import { WarningCard } from '../components/WarningCard'
 import {
@@ -82,6 +82,12 @@ export function JsonGeneratePage() {
     } catch {
       return null
     }
+  }
+
+  function handleSymbolsDirChange(value: string) {
+    setSymbolsDir(value)
+    setValidationResult(null)
+    setErrorMessage(null)
   }
 
   async function handleValidate(event: FormEvent<HTMLFormElement>) {
@@ -221,7 +227,7 @@ export function JsonGeneratePage() {
                   className="rounded-[14px] border border-[rgba(88,63,39,0.14)] bg-[rgba(255,255,255,0.72)] px-3 py-2 text-[0.9rem] focus:border-[rgba(109,47,20,0.3)] focus:outline-none focus:ring-2 focus:ring-[rgba(109,47,20,0.12)]"
                   placeholder="Leave blank to use built-in symbols"
                   value={symbolsDir}
-                  onChange={(e) => setSymbolsDir(e.target.value)}
+                  onChange={(e) => handleSymbolsDirChange(e.target.value)}
                   disabled={validating || generating}
                 />
               </label>
@@ -272,10 +278,30 @@ export function JsonGeneratePage() {
             <dt className={mutedCopyClass}>Valid</dt>
             <dd>{validationResult.valid ? 'Yes' : 'No'}</dd>
             <dt className={mutedCopyClass}>Components</dt>
-            <dd>{validationResult.component_count}</dd>
+            <dd>{validationResult.component_count ?? '—'}</dd>
             <dt className={mutedCopyClass}>Nets</dt>
-            <dd>{validationResult.net_count}</dd>
+            <dd>{validationResult.net_count ?? '—'}</dd>
           </dl>
+
+          {validationResult.errors.length > 0 ? (
+            <div>
+              <p className="mb-2 text-[0.82rem] font-semibold text-[var(--muted)]">
+                {validationResult.errors.length} validation error{validationResult.errors.length === 1 ? '' : 's'}
+              </p>
+              <div className="grid gap-3">
+                {validationResult.errors.map((issue: ValidationIssue, i: number) => (
+                  <WarningCard
+                    key={i}
+                    warning={{
+                      code: issue.code ?? undefined,
+                      message: issue.message,
+                      details: issue.details,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {validationResult.warnings.length > 0 ? (
             <div>
@@ -292,7 +318,7 @@ export function JsonGeneratePage() {
               </div>
             </div>
           ) : (
-            <p className={emptyCopyClass}>No warnings.</p>
+            validationResult.valid ? <p className={emptyCopyClass}>No warnings.</p> : null
           )}
 
           {validationResult.valid ? (

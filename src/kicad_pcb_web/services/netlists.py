@@ -24,7 +24,12 @@ from kicad_pcb.ir.autofix import autofix_circuit_ir
 from kicad_pcb.symbol_index import SymbolIndex
 
 from ..errors import kicad_error_to_payload, unexpected_error_to_payload
-from ..schemas import CreateJobFromNetlistRequest, JobDetail, ValidateNetlistResponse
+from ..schemas import (
+    CreateJobFromNetlistRequest,
+    JobDetail,
+    ValidateNetlistResponse,
+    ValidationIssue,
+)
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
 from .jobs import JobRecord, create_job_workspace, update_job_status, write_job
@@ -156,6 +161,23 @@ def prepare_netlist_dict(
     )
 
 
+def _validation_issue_from_user_error(exc: UserError) -> ValidationIssue:
+    payload = cast(dict[str, Any], kicad_error_to_payload(exc)["error"])
+    return ValidationIssue(
+        type=str(payload.get("type") or "validation_error"),
+        code=cast(str | None, payload.get("code")),
+        message=str(payload.get("message") or "Validation failed."),
+        details=cast(dict[str, Any], payload.get("details") or {}),
+    )
+
+
+def _safe_symbols_dirs_used(symbols_dir: Path | None) -> list[str]:
+    try:
+        return [str(p) for p in SymbolIndex(symbols_dir=symbols_dir).directories]
+    except Exception:
+        return []
+
+
 def validate_netlist_dict(
     *,
     netlist_json: dict[str, Any],
@@ -163,11 +185,18 @@ def validate_netlist_dict(
 ) -> ValidateNetlistResponse:
     """Validate a raw Circuit IR payload without creating a project."""
 
-    prepared = prepare_netlist_dict(
-        netlist_json=netlist_json,
-        symbols_dir=symbols_dir,
-        auto_fix=False,
-    )
+    try:
+        prepared = prepare_netlist_dict(
+            netlist_json=netlist_json,
+            symbols_dir=symbols_dir,
+            auto_fix=False,
+        )
+    except UserError as exc:
+        return ValidateNetlistResponse(
+            valid=False,
+            errors=[_validation_issue_from_user_error(exc)],
+            symbols_dirs_used=_safe_symbols_dirs_used(symbols_dir),
+        )
 
     return ValidateNetlistResponse(
         valid=True,
