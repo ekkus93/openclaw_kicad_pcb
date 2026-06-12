@@ -334,8 +334,8 @@ Use `git mv`, not delete/recreate, so history remains clear.
 Recommended archive directories:
 
 ```text
-docs/archive/2026-06-11/
-code_review/archive/2026-06-11/
+docs/archive/2026-06-09/
+code_review/archive/2026-06-09/
 ```
 
 Add a short archive README if useful:
@@ -355,7 +355,7 @@ Archive these categories:
 - typo variants such as `repsonses*.md`
 - old code-review support artifacts under `code_review/`
 
-The whole current top-level `code_review/` content appears historical. It is acceptable to move all current `code_review/*` files into `code_review/archive/2026-06-11/`, leaving only an archive README at `code_review/README.md` or `code_review/archive/README.md`.
+The whole current top-level `code_review/` content appears historical. It is acceptable to move all current `code_review/*` files into `code_review/archive/2026-06-09/`, leaving only an archive README at `code_review/README.md` or `code_review/archive/README.md`.
 
 For `docs/`, be more conservative. Keep active/current operator or design references at top level, such as:
 

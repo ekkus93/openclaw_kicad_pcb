@@ -127,11 +127,11 @@
 ## Phase 5 — Archive Historical Markdown/Review Files
 
 - [ ] Create archive directories.
-  - [ ] `docs/archive/2026-06-11/`
-  - [ ] `code_review/archive/2026-06-11/`
+  - [ ] `docs/archive/2026-06-09/`
+  - [ ] `code_review/archive/2026-06-09/`
 
 - [ ] Archive `code_review/` historical files.
-  - [ ] Move existing top-level `code_review/*` files into `code_review/archive/2026-06-11/` with `git mv`.
+  - [ ] Move existing top-level `code_review/*` files into `code_review/archive/2026-06-09/` with `git mv`.
   - [ ] Leave a small `code_review/README.md` or `code_review/archive/README.md` explaining that historical review artifacts live under dated archive directories.
 
 - [ ] Archive old docs in `docs/` conservatively.
