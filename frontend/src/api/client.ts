@@ -10,20 +10,15 @@ export class ApiError extends Error {
   }
 }
 
-export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers)
-  if (init?.body !== undefined && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json')
-  }
-  const response = await fetch(path, { ...init, headers })
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    let message: string = `Request failed with status ${response.status}`
-    const structuredMessage = payload?.error?.message
+function _buildApiError(status: number, payload: unknown): ApiError {
+  let message: string = `Request failed with status ${status}`
+  if (payload && typeof payload === 'object') {
+    const p = payload as Record<string, unknown>
+    const structuredMessage = (p['error'] as Record<string, unknown> | undefined)?.['message']
     if (typeof structuredMessage === 'string' && structuredMessage) {
       message = structuredMessage
     } else {
-      const detail = payload?.detail
+      const detail = p['detail']
       if (typeof detail === 'string' && detail) {
         message = detail
       } else if (Array.isArray(detail) && detail.length > 0) {
@@ -37,9 +32,38 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
         message = JSON.stringify(detail)
       }
     }
-    throw new ApiError(message, response.status, payload)
   }
-  return payload as T
+  return new ApiError(message, status, payload)
+}
+
+export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (init?.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  const response = await fetch(path, { ...init, headers })
+
+  if (response.ok) {
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch {
+      throw new ApiError(
+        'Expected JSON response but received invalid JSON.',
+        response.status,
+        null,
+      )
+    }
+    return payload as T
+  }
+
+  let errorPayload: unknown
+  try {
+    errorPayload = await response.json()
+  } catch {
+    errorPayload = null
+  }
+  throw _buildApiError(response.status, errorPayload)
 }
 
 export function jsonBody(payload: unknown): string {
