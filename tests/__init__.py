@@ -10,7 +10,7 @@ REPO_ROOT = TESTS_ROOT.parent
 FIXTURES_DIR = TESTS_ROOT / "fixtures"
 SYMBOLS_FIXTURE_DIR = FIXTURES_DIR / "symbols"
 READABILITY_FIXTURES_DIR = FIXTURES_DIR / "readability"
-CODE_REVIEW_DIR = REPO_ROOT / "code_review"
+CIRCUITS_DOCS_DIR = REPO_ROOT / "docs" / "circuits"
 
 
 @dataclass(frozen=True)
@@ -84,5 +84,5 @@ def readability_fixture(name: str) -> ReadabilityFixture:
 
 NE5532_HEADPHONE_REVIEW_FIXTURE = ReviewNetlistFixture(
     name="real_ne5532_headphone_amp",
-    netlist_path=CODE_REVIEW_DIR / "ne5532_headphone_amp_netlist.json",
+    netlist_path=CIRCUITS_DOCS_DIR / "ne5532_headphone_amp_netlist.json",
 )

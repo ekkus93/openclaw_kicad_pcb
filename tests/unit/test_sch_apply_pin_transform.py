@@ -30,7 +30,7 @@ pytestmark = pytest.mark.unit
 _FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
 _KICAD_SYSTEM_SYMBOLS = Path("/usr/share/kicad/symbols")
 _REAL_NE5532_REVIEW_NETLIST = (
-    Path(__file__).resolve().parents[2] / "code_review" / "ne5532_headphone_amp_netlist.json"
+    Path(__file__).resolve().parents[2] / "docs" / "circuits" / "ne5532_headphone_amp_netlist.json"
 )
 
 

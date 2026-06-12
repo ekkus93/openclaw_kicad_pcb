@@ -73,9 +73,7 @@ def test_web_validate_netlist_invalid_ir_has_null_counts(tmp_path, monkeypatch) 
     assert payload["net_count"] is None
 
 
-def test_web_validate_netlist_invalid_ir_does_not_leak_temp_paths(
-    tmp_path, monkeypatch
-) -> None:
+def test_web_validate_netlist_invalid_ir_does_not_leak_temp_paths(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
 
     client = TestClient(app)
