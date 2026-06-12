@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from pathlib import Path
 
 from fastapi import Depends
@@ -19,7 +20,15 @@ def get_settings() -> WebSettings:
     return load_settings()
 
 
-def get_llm_client(settings: WebSettings = Depends(get_settings)) -> LlmClient | None:
-    """Return the configured LLM client, or ``None`` when disabled."""
+def get_llm_client(
+    settings: WebSettings = Depends(get_settings),
+) -> Generator[LlmClient | None, None, None]:
+    """Yield the configured LLM client and close it after the request."""
 
-    return build_llm_client(settings)
+    client = build_llm_client(settings)
+    try:
+        yield client
+    finally:
+        close = getattr(client, "close", None)
+        if callable(close):
+            close()

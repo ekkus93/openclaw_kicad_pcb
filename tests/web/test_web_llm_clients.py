@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 from pathlib import Path
@@ -8,6 +9,7 @@ import httpx
 import pytest
 
 from kicad_pcb.errors import ToolError
+from kicad_pcb_web.deps import get_llm_client
 from kicad_pcb_web.services.llm import LlmMessage, LlmRequest, build_llm_client
 from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json
 from kicad_pcb_web.settings import LlmSettings, WebSettings, load_settings
@@ -313,3 +315,82 @@ def test_live_llama_server_handles_real_wizard_spec_prompt() -> None:
     assert result.next_state in {"awaiting_user_clarification", "spec_ready_for_review"}
     assert result.spec is not None
     assert elapsed_s > 0
+
+
+# ---------------------------------------------------------------------------
+# get_llm_client dependency lifecycle
+# ---------------------------------------------------------------------------
+
+
+def _disabled_settings(tmp_path: Path) -> WebSettings:
+    return WebSettings(
+        data_dir=tmp_path,
+        jobs_dir=tmp_path / "jobs",
+        llm=LlmSettings(
+            provider="disabled",
+            model=None,
+            base_url=None,
+            api_key=None,
+        ),
+    )
+
+
+def test_dep_disabled_llm_yields_none(tmp_path: Path) -> None:
+    settings = _disabled_settings(tmp_path)
+    gen = get_llm_client(settings)  # type: ignore[call-arg]
+    client = next(gen)
+    assert client is None
+    with contextlib.suppress(StopIteration):
+        next(gen)
+
+
+def test_dep_closable_client_closed_after_successful_use(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    closed: list[bool] = []
+
+    class _FakeClosable:
+        def close(self) -> None:
+            closed.append(True)
+
+    monkeypatch.setattr("kicad_pcb_web.deps.build_llm_client", lambda _s: _FakeClosable())
+    settings = _disabled_settings(tmp_path)
+    gen = get_llm_client(settings)  # type: ignore[call-arg]
+    client = next(gen)
+    assert hasattr(client, "close")
+    assert not closed
+    with contextlib.suppress(StopIteration):
+        next(gen)
+    assert closed == [True]
+
+
+def test_dep_closable_client_closed_after_route_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    closed: list[bool] = []
+
+    class _FakeClosable:
+        def close(self) -> None:
+            closed.append(True)
+
+    monkeypatch.setattr("kicad_pcb_web.deps.build_llm_client", lambda _s: _FakeClosable())
+    settings = _disabled_settings(tmp_path)
+    gen = get_llm_client(settings)  # type: ignore[call-arg]
+    next(gen)
+    with pytest.raises(RuntimeError):
+        gen.throw(RuntimeError("route failed"))
+    assert closed == [True]
+
+
+def test_dep_non_closable_client_does_not_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FakeNoClose:
+        pass
+
+    monkeypatch.setattr("kicad_pcb_web.deps.build_llm_client", lambda _s: _FakeNoClose())
+    settings = _disabled_settings(tmp_path)
+    gen = get_llm_client(settings)  # type: ignore[call-arg]
+    next(gen)
+    with contextlib.suppress(StopIteration):
+        next(gen)  # finalizer must not raise
