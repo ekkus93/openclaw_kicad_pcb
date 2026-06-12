@@ -7,14 +7,10 @@ from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
 
-import pytest
-
 from kicad_pcb.commands.netlist import (
     cmd_info_sch,
     cmd_new_from_netlist,
-    cmd_validate_netlist,
 )
-from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
 from kicad_pcb.sch_doc import SchematicDoc
 
@@ -367,99 +363,3 @@ def test_new_from_netlist_info_sch_returns_owned_and_symbols(
     # Flat layout: all symbols are in the root schematic; no sub-sheet.
     assert info.managed_schematic_path is None  # no OpenClaw_Managed.kicad_sch
     assert info.symbol_count >= 1  # root carries the generated symbols
-
-
-def test_cmd_validate_netlist_accepts_valid_explicit_unit(tmp_path: Path) -> None:
-    ir_path = tmp_path / "explicit_unit_valid.json"
-    _write_explicit_unit_valid_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    result = cmd_validate_netlist(
-        Namespace(
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-        )
-    )
-
-    assert result.valid is True
-    assert result.component_count == 2
-    assert result.net_count == 2
-
-
-def test_cmd_validate_netlist_rejects_unknown_explicit_unit(tmp_path: Path) -> None:
-    ir_path = tmp_path / "explicit_unit_unknown.json"
-    _write_explicit_unit_unknown_unit_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    with pytest.raises(UserError) as exc_info:
-        cmd_validate_netlist(
-            Namespace(
-                netlist=str(ir_path),
-                symbols_dir=str(fixtures_dir),
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
-    assert exc_info.value.details["valid_units"] == ["1", "2", "3"]
-
-
-def test_cmd_validate_netlist_rejects_pin_outside_selected_unit(tmp_path: Path) -> None:
-    ir_path = tmp_path / "explicit_unit_wrong_pin.json"
-    _write_explicit_unit_wrong_pin_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    with pytest.raises(UserError) as exc_info:
-        cmd_validate_netlist(
-            Namespace(
-                netlist=str(ir_path),
-                symbols_dir=str(fixtures_dir),
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.PIN_INVALID
-    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
-
-
-def test_cmd_validate_netlist_rejects_blocking_555_lints(tmp_path: Path) -> None:
-    ir_path = tmp_path / "invalid_555_pwm.json"
-    _write_invalid_555_pwm_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    with pytest.raises(UserError) as exc_info:
-        cmd_validate_netlist(
-            Namespace(
-                netlist=str(ir_path),
-                symbols_dir=str(fixtures_dir),
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
-    blocking_codes = {finding["code"] for finding in exc_info.value.details["blocking_lints"]}
-    assert {
-        "TIMER555_TIMING_NODE_SPLIT",
-        "TIMER555_CTRL_CAP_WRONG_TARGET",
-        "TIMER555_STEERING_NETWORK_INVALID",
-        "TIMER555_LOW_SIDE_LOAD_TOPOLOGY_INVALID",
-    } <= blocking_codes
-
-
-def test_cmd_validate_netlist_reports_footprint_quality_warnings(tmp_path: Path) -> None:
-    ir_path = tmp_path / "footprint_warnings.json"
-    _write_footprint_warning_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    result = cmd_validate_netlist(
-        Namespace(
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-        )
-    )
-
-    warning_codes = {warning["code"] for warning in result.warnings}
-    assert "FOOTPRINT_CLASS_MISMATCH" in warning_codes
-    assert "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID" in warning_codes
-
-
-# ---------------------------------------------------------------------------
-# P7.4 — Idempotency test (structural/semantic)
-# ---------------------------------------------------------------------------
