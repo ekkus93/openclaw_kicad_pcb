@@ -1,0 +1,164 @@
+"""Netlist commands: cmd_apply_netlist decoupling distance warning tests."""
+
+from __future__ import annotations
+
+import json
+from argparse import Namespace
+from datetime import datetime
+from pathlib import Path
+
+import pytest
+
+from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.commands.netlist import (
+    cmd_apply_netlist,
+)
+from kicad_pcb.models import ProjectRef
+
+pytestmark = pytest.mark.unit
+
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+
+
+class _FakeLayoutEngine:
+    def __init__(self, placements: dict[str, tuple[float, float, float | None]]) -> None:
+        self._placements = placements
+
+    def compute_symbol_positions(
+        self,
+        ir: CircuitIR,
+    ) -> dict[str, tuple[float, float, float | None]]:
+        return {
+            component.ref: self._placements.get(component.ref, (50.8, 76.2, 0.0))
+            for component in ir.components
+        }
+
+
+def _write_minimal_sch(path: Path) -> None:
+    path.write_text(
+        """(kicad_sch (version 20230121) (generator eeschema)
+  (uuid "12345678-1234-1234-1234-123456789012")
+  (paper "A4")
+  (lib_symbols)
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
+""",
+        encoding="utf-8",
+    )
+
+
+def _write_decoupling_distance_warning_ir(path: Path) -> None:
+    payload = {
+        "version": "1",
+        "components": [
+            {"ref": "U1", "symbol": "TestLib:R", "value": "Active"},
+            {"ref": "C1", "symbol": "TestLib:R", "value": "100n"},
+            {"ref": "J1", "symbol": "TestLib:Conn3", "value": "Signal"},
+        ],
+        "nets": [
+            {
+                "name": "VCC",
+                "pins": [
+                    {"ref": "U1", "pin": "1"},
+                    {"ref": "C1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "SIG",
+                "pins": [
+                    {"ref": "U1", "pin": "2"},
+                    {"ref": "J1", "pin": "1"},
+                ],
+            },
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "C1", "pin": "2"},
+                    {"ref": "J1", "pin": "2"},
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_cmd_apply_netlist_surfaces_decoupling_distance_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "decoupling_warning_ir.json"
+    _write_decoupling_distance_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (50.8, 76.2, 0.0),
+                "C1": (127.0, 76.2, 0.0),
+                "J1": (30.48, 76.2, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" in codes
+
+
+def test_cmd_apply_netlist_skips_decoupling_distance_warning_when_local(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "proj"
+    project_dir.mkdir(parents=True)
+    sch_path = project_dir / "proj.kicad_sch"
+    _write_minimal_sch(sch_path)
+    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
+    ir_path = project_dir / "decoupling_warning_ir.json"
+    _write_decoupling_distance_warning_ir(ir_path)
+
+    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
+    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
+    monkeypatch.setattr(
+        "kicad_pcb.commands._sch_apply._resolve_layout",
+        lambda *args, **kwargs: _FakeLayoutEngine(
+            {
+                "U1": (50.8, 76.2, 0.0),
+                "C1": (76.2, 76.2, 0.0),
+                "J1": (30.48, 76.2, 0.0),
+            }
+        ),
+    )
+
+    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
+    result = cmd_apply_netlist(
+        Namespace(
+            netlist=str(ir_path),
+            symbols_dir=str(fixtures_dir),
+            mode="internal",
+            force=True,
+            dry_run=False,
+        )
+    )
+
+    codes = {warning["code"] for warning in result.warnings}
+    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" not in codes

@@ -7,11 +7,15 @@ from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import (
     cmd_apply_netlist,
 )
 from kicad_pcb.models import ProjectRef
+
+pytestmark = pytest.mark.unit
 
 
 class _FakeLayoutEngine:
@@ -344,83 +348,3 @@ def test_cmd_apply_netlist_surfaces_stage_topology_warning(
 
     codes = {warning["code"] for warning in result.warnings}
     assert "OPAMP_STAGE_TOPOLOGY_LIKELY_MISTAKEN" in codes
-
-
-def test_cmd_apply_netlist_surfaces_decoupling_distance_warning(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    project_dir = tmp_path / "proj"
-    project_dir.mkdir(parents=True)
-    sch_path = project_dir / "proj.kicad_sch"
-    _write_minimal_sch(sch_path)
-    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
-    ir_path = project_dir / "decoupling_warning_ir.json"
-    _write_decoupling_distance_warning_ir(ir_path)
-
-    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
-    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
-    monkeypatch.setattr(
-        "kicad_pcb.commands._sch_apply._resolve_layout",
-        lambda *args, **kwargs: _FakeLayoutEngine(
-            {
-                "U1": (50.8, 76.2, 0.0),
-                "C1": (127.0, 76.2, 0.0),
-                "J1": (30.48, 76.2, 0.0),
-            }
-        ),
-    )
-
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-    result = cmd_apply_netlist(
-        Namespace(
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-            mode="internal",
-            force=True,
-            dry_run=False,
-        )
-    )
-
-    codes = {warning["code"] for warning in result.warnings}
-    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" in codes
-
-
-def test_cmd_apply_netlist_skips_decoupling_distance_warning_when_local(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    project_dir = tmp_path / "proj"
-    project_dir.mkdir(parents=True)
-    sch_path = project_dir / "proj.kicad_sch"
-    _write_minimal_sch(sch_path)
-    (project_dir / "proj.kicad_pcb").write_text("(kicad_pcb (version 20230121))", encoding="utf-8")
-    ir_path = project_dir / "decoupling_warning_ir.json"
-    _write_decoupling_distance_warning_ir(ir_path)
-
-    project = ProjectRef(name="proj", path=project_dir, created=datetime.now().isoformat())
-    monkeypatch.setattr("kicad_pcb.commands.netlist.get_current_project", lambda: project)
-    monkeypatch.setattr(
-        "kicad_pcb.commands._sch_apply._resolve_layout",
-        lambda *args, **kwargs: _FakeLayoutEngine(
-            {
-                "U1": (50.8, 76.2, 0.0),
-                "C1": (76.2, 76.2, 0.0),
-                "J1": (30.48, 76.2, 0.0),
-            }
-        ),
-    )
-
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-    result = cmd_apply_netlist(
-        Namespace(
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-            mode="internal",
-            force=True,
-            dry_run=False,
-        )
-    )
-
-    codes = {warning["code"] for warning in result.warnings}
-    assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" not in codes
