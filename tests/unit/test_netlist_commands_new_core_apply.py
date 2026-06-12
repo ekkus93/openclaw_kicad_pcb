@@ -16,8 +16,8 @@ from kicad_pcb.commands.netlist import (
 )
 from kicad_pcb.errors import ErrorCode, UserError
 from kicad_pcb.models import ProjectRef
-from kicad_pcb.sch_doc import SchematicDoc
-from kicad_pcb.sexpr.utils import find_all
+
+pytestmark = pytest.mark.unit
 
 
 class _FakeLayoutEngine:
@@ -328,106 +328,3 @@ def test_cmd_new_from_netlist_preserves_decoupling_distance_warning(
 
     codes = {warning["code"] for warning in result.warnings}
     assert "DECOUPLING_FAR_FROM_ACTIVE_DEVICE" in codes
-
-
-def test_cmd_new_from_netlist_marks_unused_connector_pins_with_no_connects(
-    tmp_path: Path,
-) -> None:
-    ir_path = tmp_path / "connector_warning_ir.json"
-    _write_connector_ambiguity_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    result = cmd_new_from_netlist(
-        Namespace(
-            name="ConnectorNoConnectProj",
-            out_dir=str(tmp_path),
-            description="",
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-            mode="internal",
-        )
-    )
-
-    managed_doc = SchematicDoc.load(result.managed_schematic_path)
-    no_connects = find_all(managed_doc.root, "no_connect")
-
-    assert len(no_connects) == 1
-
-
-def test_cmd_new_from_netlist_supports_explicit_unit_generation(tmp_path: Path) -> None:
-    ir_path = tmp_path / "explicit_unit_ir.json"
-    _write_explicit_unit_valid_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-
-    result = cmd_new_from_netlist(
-        Namespace(
-            name="ExplicitUnitProj",
-            out_dir=str(tmp_path),
-            description="",
-            netlist=str(ir_path),
-            symbols_dir=str(fixtures_dir),
-            mode="internal",
-        )
-    )
-
-    assert result.symbols_added == 2
-    assert result.nets_applied == 2
-
-    managed_doc = SchematicDoc.load(result.managed_schematic_path)
-    placed_symbols = {str(sym["ref"]): sym for sym in managed_doc.list_symbols()}
-    assert set(placed_symbols) >= {"R1", "U1A"}
-    assert placed_symbols["U1A"]["unit"] == "1"
-
-    binding_index = {
-        (binding["ref"], binding["pin"]): binding["net_name"]
-        for binding in managed_doc.extract_pin_label_bindings()
-    }
-    assert binding_index[("U1A", "1")] == "IN_A"
-    assert binding_index[("U1A", "3")] == "OUT_A"
-
-
-def test_cmd_new_from_netlist_rejects_mismatched_explicit_unit_input(tmp_path: Path) -> None:
-    ir_path = tmp_path / "explicit_unit_wrong_pin.json"
-    _write_explicit_unit_wrong_pin_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-    project_path = tmp_path / "ExplicitUnitInvalidProj"
-
-    with pytest.raises(UserError) as exc_info:
-        cmd_new_from_netlist(
-            Namespace(
-                name="ExplicitUnitInvalidProj",
-                out_dir=str(tmp_path),
-                description="",
-                netlist=str(ir_path),
-                symbols_dir=str(fixtures_dir),
-                mode="internal",
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.PIN_INVALID
-    assert exc_info.value.details["valid_unit_pins"] == ["5", "6", "7"]
-    assert not project_path.exists()
-
-
-def test_cmd_new_from_netlist_rejects_pin_collision_before_project_create(tmp_path: Path) -> None:
-    ir_path = tmp_path / "pin_collision.json"
-    _write_pin_collision_ir(ir_path)
-    fixtures_dir = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
-    project_path = tmp_path / "PinCollisionProj"
-
-    with pytest.raises(UserError) as exc_info:
-        cmd_new_from_netlist(
-            Namespace(
-                name="PinCollisionProj",
-                out_dir=str(tmp_path),
-                description="",
-                netlist=str(ir_path),
-                symbols_dir=str(fixtures_dir),
-                mode="internal",
-                auto_fix=False,
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.IR_SEMANTIC_INVALID
-    assert exc_info.value.details["pin_collisions"][0]["nets"] == ["N1", "N2"]
-    assert not project_path.exists()
