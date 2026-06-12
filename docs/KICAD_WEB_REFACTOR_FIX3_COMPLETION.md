@@ -133,6 +133,8 @@ uv run --extra dev --extra web mypy src/kicad_pcb src/kicad_pcb_web
                                                     → no issues found in 211 source files
 uv run --extra dev --extra web python -m pytest tests/web/
                                                     → 74 passed, 1 skipped
+uv run --extra dev --extra web python -m pytest tests/unit/
+                                                    → passed (exit 0)
 cd frontend && npm run lint                         → passed
 cd frontend && npm run test:run                     → 105 passed (11 test files)
 cd frontend && npm run build                        → succeeded
@@ -144,6 +146,10 @@ expected and environment-dependent.
 
 **Tool availability:** `kicad-cli` available at `/usr/bin/kicad-cli`.
 `rsvg-convert` available at `/usr/bin/rsvg-convert`.
+
+**Artifact hygiene:** `__pycache__` directories exist locally but are
+untracked (covered by `.gitignore`). No generated cache files are committed.
+`git status` shows no unintended staged or unstaged changes.
 
 ---
 
