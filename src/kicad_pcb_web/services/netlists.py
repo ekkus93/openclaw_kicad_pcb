@@ -211,9 +211,7 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
     """Export a PNG preview of the schematic into *artifacts_dir*.
 
     Raises ``RuntimeError`` if any step fails — missing tools, failed SVG
-    export, or failed PNG conversion.  The caller should let this propagate
-    so the job is marked as failed rather than silently succeeding without a
-    preview.
+    export, or failed PNG conversion.
     """
     kicad_cli_bin = shutil.which("kicad-cli")
     if not kicad_cli_bin:
@@ -324,7 +322,13 @@ def generate_project_from_netlist_job(
         ):
             shutil.copy2(apply_result.warning_report_path, record.artifacts_dir / "warnings.json")
 
-        _generate_schematic_preview(apply_result.schematic_path, record.artifacts_dir)
+        preview_warning: str | None = None
+        try:
+            _generate_schematic_preview(apply_result.schematic_path, record.artifacts_dir)
+        except RuntimeError as exc:
+            LOGGER.warning("Schematic preview generation skipped (non-fatal): %s", exc)
+            preview_warning = str(exc)
+
         project_zip_path = create_project_zip(project.path, record.artifacts_dir)
         warnings_artifact_path = record.artifacts_dir / "warnings.json"
         result_payload: dict[str, Any] = {
@@ -350,7 +354,18 @@ def generate_project_from_netlist_job(
             "heuristic_profile_name": apply_result.heuristic_profile_name,
             "label_mode_name": apply_result.label_mode_name,
             "symbols_dirs_used": [str(path) for path in symbol_index.directories],
-            "warnings": list(apply_result.warnings),
+            "preview_warning": preview_warning,
+            "warnings": (
+                [
+                    {
+                        "code": "PREVIEW_GENERATION_SKIPPED",
+                        "message": f"Schematic preview skipped: {preview_warning}",
+                    }
+                ]
+                + list(apply_result.warnings)
+                if preview_warning
+                else list(apply_result.warnings)
+            ),
             "generated_schematic_diagnostics": (
                 apply_result.generated_schematic_diagnostics.as_dict()
                 if apply_result.generated_schematic_diagnostics is not None
