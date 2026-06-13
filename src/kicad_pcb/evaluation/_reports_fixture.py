@@ -237,6 +237,8 @@ def _runtime_failure_report(
             "label_strategy": 0.0,
             "geometry_spread": 0.0,
             "wire_stub_ratio": 0.0,
+            "zone_positions": 0.0,
+            "orientation_match": 0.0,
         },
         reasons=(
             "relative_positions: evaluation runtime failed before source comparison could run.",

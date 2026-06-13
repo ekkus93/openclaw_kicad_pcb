@@ -57,7 +57,7 @@ def _reason_failures(reasons: tuple[str, ...]) -> list[ActionableFailure]:
         suggested_files = _suggested_files(rule)
         if rule in {"validity", "electrical_equivalence"}:
             severity = "high"
-        elif rule in {"spread", "geometry_spread", "relative_positions"}:
+        elif rule in {"spread", "geometry_spread", "relative_positions", "zone_positions"}:
             severity = "medium"
         else:
             severity = "low"
@@ -86,6 +86,11 @@ def _suggested_files(rule: str) -> tuple[str, ...]:
             "src/kicad_pcb/graphviz_layout/dot_builder.py",
             "src/kicad_pcb/graphviz_layout/snap.py",
         ),
+        "zone_positions": (
+            "src/kicad_pcb/commands/_sch_apply_write.py",
+            "src/kicad_pcb/graphviz_layout/snap.py",
+        ),
+        "orientation_match": ("src/kicad_pcb/commands/_sch_apply_write.py",),
         "overlap": (
             "src/kicad_pcb/schematic_metrics.py",
             "src/kicad_pcb/corpus/layout_features.py",
