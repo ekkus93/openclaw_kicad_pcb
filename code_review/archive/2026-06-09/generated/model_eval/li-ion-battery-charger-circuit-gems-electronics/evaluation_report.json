@@ -1,0 +1,138 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "ADC1_3-Pad15),CAN+,CAN-,FSPIQ),Net-(D2-PadA),Net-(D3-PadA),Net-(D4-PadA),Net-(J1-CASE),Net-(J1-CC2),Net-(Q2B-S2),Net-(Q3-B),Net-(Q4-C),Net-(Q5-G),Net-(U5-stat),U0RXD-Pad11),U0TXD-Pad12),V_BATT,unconnected-(U6-NC-Pad5)",
+        "expected": "+3V3,+BATT,CAN+,CAN-,CAN_RX,CAN_TX,GND,I_BATT,Net-(CAN2-CAN_H),Net-(CAN2-CAN_L),Net-(D2-PadA),Net-(D3-PadA),Net-(D4-PadA),Net-(D5-PadA),Net-(J1-CASE),Net-(J1-CC1),Net-(J1-CC2),Net-(J1-D+-PadA6),Net-(J1-D--PadA7),Net-(J2-+batt),Net-(Q1-S),Net-(Q2A-G1),Net-(Q2A-S1),Net-(Q2B-G2),Net-(Q2B-S2),Net-(Q3-B),Net-(Q3-C),Net-(Q4-C),Net-(Q5-D),Net-(Q5-G),Net-(R18-Pad1),Net-(U2-EN),Net-(U2-IO2/ADC1_2/FSPIQ),Net-(U2-IO8),Net-(U2-IO9),Net-(U4A-+),Net-(U4A--),Net-(U4B-+),Net-(U5-prog),Net-(U5-stat),SHDN_I,SHDN_uC,USB_D+,USB_D-,VBUS,V_BATT,unconnected-(J1-SBU1-PadA8),unconnected-(J1-SBU2-PadB8),unconnected-(U1-NC-Pad3),unconnected-(U2-IO10/FSPICS0-Pad10),unconnected-(U2-IO20/U0RXD-Pad11),unconnected-(U2-IO21/U0TXD-Pad12),unconnected-(U2-IO3/ADC1_3-Pad15),unconnected-(U2-IO6/FSPICLK/MTCK-Pad5),unconnected-(U6-NC-Pad5),unconnected-(U6-NC-Pad8)",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('CAN1', '3', ''), ('R30', '1', '')]",
+        "expected": "[('CAN1', '3', ''), ('R30', '1', ''), ('U6', '7', '')]",
+        "field": "net_pins:CAN+"
+      },
+      {
+        "actual": "[('D4', 'A', '')]",
+        "expected": "[('D4', 'A', ''), ('R20', '2', '')]",
+        "field": "net_pins:Net-(D4-PadA)"
+      },
+      {
+        "actual": "[('R8', '1', '')]",
+        "expected": "[('J1', 'B5', ''), ('R8', '1', '')]",
+        "field": "net_pins:Net-(J1-CC2)"
+      },
+      {
+        "actual": "[('C1', '1', ''), ('C1', '2', ''), ('C10', '1', ''), ('C10', '2', ''), ('C11', '2', ''), ('C12', '1', ''), ('C12', '2', ''), ('C13', '1', ''), ('C13', '2', ''), ('C2', '1', ''), ('C2', '2', ''), ('C3', '1', ''), ('C3', '2', ''), ('C4', '1', ''), ('C5', '1', ''), ('C5', '2', ''), ('C6', '1', ''), ('C6', '2', ''), ('C7', '1', ''), ('C7', '2', ''), ('C8', '1', ''), ('C8', '2', ''), ('C9', '1', ''), ('C9', '2', ''), ('CAN1', '1', ''), ('CAN1', '2', ''), ('CAN1', '4', ''), ('CAN1', '6', ''), ('CAN1', '7', ''), ('CAN1', '8', ''), ('CAN2', '1', ''), ('CAN2', '2', ''), ('CAN2', '3', ''), ('CAN2', '4', ''), ('CAN2', '6', ''), ('CAN2', '7', ''), ('CAN2', '8', ''), ('D1', 'A', ''), ('D1', 'K', ''), ('D2', 'K', ''), ('D3', 'K', ''), ('D4', 'K', ''), ('J1', 'A1', ''), ('J1', 'A12', ''), ('J1', 'A4', ''), ('J1', 'A5', ''), ('J1', 'A6', ''), ('J1', 'A7', ''), ('J1', 'A8', ''), ('J1', 'A9', ''), ('J1', 'B1', ''), ('J1', 'B12', ''), ('J1', 'B4', ''), ('J1', 'B6', ''), ('J1', 'B7', ''), ('J1', 'B8', ''), ('J1', 'B9', ''), ('J2', '+', ''), ('J2', '-', ''), ('Q1', '1', ''), ('Q1', '2', ''), ('Q1', '3', ''), ('Q2', '1', ''), ('Q2', '2', ''), ('Q2', '3', ''), ('Q2', '4', ''), ('Q2', '5', ''), ('Q2', '6', ''), ('Q2', '7', ''), ('Q2', '8', ''), ('Q3', '2', ''), ('Q4', '2', ''), ('Q5', '2', ''), ('R1', '1', ''), ('R1', '2', ''), ('R10', '1', ''), ('R10', '2', ''), ('R11', '1', ''), ('R11', '2', ''), ('R12', '2', ''), ('R13', '1', ''), ('R13', '2', ''), ('R14', '2', ''), ('R15', '1', ''), ('R16', '2', ''), ('R17', '1', ''), ('R19', '1', ''), ('R2', '1', ''), ('R2', '2', ''), ('R20', '1', ''), ('R21', '2', ''), ('R22', '1', ''), ('R22', '2', ''), ('R23', '1', ''), ('R24', '1', ''), ('R25', '2', ''), ('R26', '2', ''), ('R27', '2', ''), ('R28', '1', ''), ('R29', '2', ''), ('R3', '1', ''), ('R31', '1', ''), ('R31', '2', ''), ('R4', '1', ''), ('R4', '2', ''), ('R5', '1', ''), ('R6', '1', ''), ('R6', '2', ''), ('R7', '1', ''), ('R7', '2', ''), ('R8', '2', ''), ('SW1', 'COM', ''), ('SW1', 'NO', ''), ('SW2', 'COM', ''), ('SW2', 'NO', ''), ('SW3', 'NO', ''), ('SW4', 'RC', ''), ('U1', '1', ''), ('U1', '2', ''), ('U1', '4', ''), ('U1', '5', ''), ('U2', '1', ''), ('U2', '10', ''), ('U2', '13', ''), ('U2', '14', ''), ('U2', '17', ''), ('U2', '19', ''), ('U2', '2', ''), ('U2', '3', ''), ('U2', '4', ''), ('U2', '5', ''), ('U2', '6', ''), ('U2', '7', ''), ('U2', '8', ''), ('U2', '9', ''), ('U3', '1', ''), ('U3', '2', ''), ('U3', '3', ''), ('U3', '4', ''), ('U3', '5', ''), ('U3', '6', ''), ('U4', '1', ''), ('U4', '2', ''), ('U4', '3', ''), ('U4', '4', ''), ('U4', '7', ''), ('U4', '8', ''), ('U5', '3', ''), ('U5', '4', ''), ('U5', '5', ''), ('U6', '1', ''), ('U6', '2', ''), ('U6', '3', ''), ('U6', '4', ''), ('U6', '8', '')]",
+        "expected": "[('Q2', '3', ''), ('R13', '2', ''), ('R15', '2', ''), ('R16', '1', ''), ('R19', '1', ''), ('SW3', 'NO', ''), ('SW4', 'RC', '')]",
+        "field": "net_pins:Net-(Q2B-S2)"
+      },
+      {
+        "actual": "[('Q3', '1', ''), ('Q3', '3', ''), ('Q4', '1', ''), ('Q5', '3', ''), ('R17', '2', ''), ('R18', '2', ''), ('R21', '1', ''), ('R26', '1', ''), ('R27', '1', ''), ('R29', '1', '')]",
+        "expected": "[('Q3', '1', ''), ('R21', '1', ''), ('R27', '1', '')]",
+        "field": "net_pins:Net-(Q3-B)"
+      },
+      {
+        "actual": "[('Q4', '3', ''), ('R18', '1', ''), ('SW3', 'COM', ''), ('SW4', 'LC', '')]",
+        "expected": "[('Q4', '3', ''), ('SW4', 'LC', '')]",
+        "field": "net_pins:Net-(Q4-C)"
+      },
+      {
+        "actual": "[('D5', 'A', ''), ('R23', '2', ''), ('U5', '1', '')]",
+        "expected": "[('D5', 'K', ''), ('U5', '1', '')]",
+        "field": "net_pins:Net-(U5-stat)"
+      },
+      {
+        "actual": "[('C4', '2', ''), ('U6', '5', '')]",
+        "expected": "[('U6', '5', '')]",
+        "field": "net_pins:unconnected-(U6-NC-Pad5)"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "li-ion-battery-charger-circuit-gems-electronics",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/li-ion-battery-charger-circuit-gems-electronics/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/li-ion-battery-charger-circuit-gems-electronics/generated_project",
+    "schematic_path": "code_review/generated/model_eval/li-ion-battery-charger-circuit-gems-electronics/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 76.28,
+    "intrinsic_sub_scores": {
+      "label_strategy": 15.0,
+      "overlap": 0.0,
+      "page_bounds": 10.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 11.28,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 0.0,
+      "label_strategy": 0.0,
+      "relative_positions": 1.56,
+      "role_counts": 4.0,
+      "wire_stub_ratio": 15.0
+    },
+    "source_similarity": 20.56,
+    "validity": 20.0
+  },
+  "source_file_name": "li-ion-battery-charger-circuit-gems-electronics.kicad_sch",
+  "total_score": 0.0
+}

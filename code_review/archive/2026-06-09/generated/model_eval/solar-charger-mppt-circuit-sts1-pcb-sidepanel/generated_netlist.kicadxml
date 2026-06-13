@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch</source>
+    <date>2026-05-28T10:41:42-0700</date>
+    <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>generated.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C11">
+      <value>22u</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>376b9ee3-3cb7-40e6-8efd-a7f8e5d58346</tstamps>
+    </comp>
+    <comp ref="C21">
+      <value>1n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>60926533-a4a0-42d4-8b52-a28be3437f08</tstamps>
+    </comp>
+    <comp ref="C31">
+      <value>1n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ada96a63-1794-4112-8cf7-ad41cf8f98e1</tstamps>
+    </comp>
+    <comp ref="C41">
+      <value>22u</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>433e1797-41b9-4826-9b9b-2f852dda02b8</tstamps>
+    </comp>
+    <comp ref="C51">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8b5be1fa-9c06-4126-91fb-f4388040fdea</tstamps>
+    </comp>
+    <comp ref="C61">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C_Small" description="Unpolarized capacitor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="capacitor cap"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9003fccb-9822-4816-b288-09e95acff872</tstamps>
+    </comp>
+    <comp ref="D11">
+      <value>PMEG2020EH</value>
+      <footprint>Diode_SMD:D_SOD-123F</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Diode_SMD:D_SOD-123F</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Diode" part="PMEG2020EH" description="20V, 2A very low Vf MEGA Schottky barrier rectifier, SOD-123F"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="forward voltage diode"/>
+      <property name="ki_fp_filters" value="D*SOD?123F*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>016b8cbe-e9e4-409e-bc7d-874df48030fd</tstamps>
+    </comp>
+    <comp ref="D21">
+      <value>SMM4F5.0</value>
+      <footprint>STS_semiconductor:DIO_SMM4F5.0A-TR</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">STS_semiconductor:DIO_SMM4F5.0A-TR</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1335c680-c265-44ab-800a-224cb4cd1a1f</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>10u</value>
+      <footprint>STS_Inductor_SMD:IND_XAL6060-103MEC</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">STS_Inductor_SMD:IND_XAL6060-103MEC</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="L_Small" description="Inductor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8032526c-527b-4556-9a90-96ef46b5c257</tstamps>
+    </comp>
+    <comp ref="MPPT1">
+      <value>SPV1040TTR</value>
+      <footprint>Package_SO:TSSOP-8_4.4x3mm_P0.65mm</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Package_SO:TSSOP-8_4.4x3mm_P0.65mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="SamacSys" part="SPV1040TTR" description="Switching Voltage Regulators Hi Eff Solar Charger MPPT 0.3V to 5.5V"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>14ac5fa6-01af-48f3-a429-cc787095643f</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>10m</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bdeea0cd-002e-4dd1-921c-0b255c0af935</tstamps>
+    </comp>
+    <comp ref="R21">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>675b1726-6e16-492d-b619-f92523362991</tstamps>
+    </comp>
+    <comp ref="R31">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0140a87d-2ec9-458d-b767-49c3fd7efaa0</tstamps>
+    </comp>
+    <comp ref="R41">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5e28b826-515b-4219-a88a-ca7883f9fc21</tstamps>
+    </comp>
+    <comp ref="R51">
+      <value>220m</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>643b2be0-fc14-429f-9e1d-530c88c97ea3</tstamps>
+    </comp>
+    <comp ref="R61">
+      <value>3k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0566f0a7-bd7a-4350-bcbb-36d8bdf4cbf8</tstamps>
+    </comp>
+    <comp ref="R71">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="R_Small" description="Resistor, small symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="R resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3d8fcbef-ffbf-4172-8c73-d660305e2d7b</tstamps>
+    </comp>
+    <comp ref="SC1">
+      <value>Solar_Cell</value>
+      <footprint>STS_solder:3G30A_40x80_Z+</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">STS_solder:3G30A_40x80_Z+</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="Solar_Cell" description="Single solar cell"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="solar cell"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1d59a521-9808-4f02-9a9d-81fcc2e0a713</tstamps>
+    </comp>
+    <comp ref="U11">
+      <value>INA180A4</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">~</field>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Amplifier_Current" part="INA180A4" description="Current Sense Amplifier, 1 Circuit, Rail-to-Rail, 26V, Gain 200 V/V, SOT-23-5"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/generated.kicad_sch"/>
+      <property name="ki_keywords" value="current monitor shunt sensor"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>817e1930-ead8-452f-bc52-d50757f1404d</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Amplifier_Current" part="INA180A4">
+      <description>Current Sense Amplifier, 1 Circuit, Rail-to-Rail, 26V, Gain 200 V/V, SOT-23-5</description>
+      <docs>http://www.ti.com/lit/ds/symlink/ina180.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U?</field>
+        <field name="Value">INA180A4</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/ina180.pdf</field>
+        <field name="Description">Current Sense Amplifier, 1 Circuit, Rail-to-Rail, 26V, Gain 200 V/V, SOT-23-5</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="output"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="+" type="input"/>
+        <pin num="4" name="-" type="input"/>
+        <pin num="5" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Small">
+      <description>Unpolarized capacitor, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Schottky diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L_Small">
+      <description>Inductor, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Inductor, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R_Small">
+      <description>Resistor, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Solar_Cell">
+      <description>Single solar cell</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">SC</field>
+        <field name="Value">Solar_Cell</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Single solar cell</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+" type="passive"/>
+        <pin num="2" name="-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Diode" part="PMEG2020EH">
+      <description>20V, 2A very low Vf MEGA Schottky barrier rectifier, SOD-123F</description>
+      <docs>https://assets.nexperia.com/documents/data-sheet/PMEG2020EH_EJ.pdf</docs>
+      <footprints>
+        <fp>D*SOD?123F*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">PMEG2020EH</field>
+        <field name="Footprint">Diode_SMD:D_SOD-123F</field>
+        <field name="Datasheet">https://assets.nexperia.com/documents/data-sheet/PMEG2020EH_EJ.pdf</field>
+        <field name="Description">20V, 2A very low Vf MEGA Schottky barrier rectifier, SOD-123F</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="SamacSys" part="SPV1040TTR">
+      <description>Switching Voltage Regulators Hi Eff Solar Charger MPPT 0.3V to 5.5V</description>
+      <fields>
+        <field name="Reference">IC?</field>
+        <field name="Value">SPV1040TTR</field>
+        <field name="Footprint">SamacSys:SOP65P640X120-8N</field>
+        <field name="Datasheet"/>
+        <field name="Description">Switching Voltage Regulators Hi Eff Solar Charger MPPT 0.3V to 5.5V</field>
+        <field name="Height">1.2</field>
+        <field name="Mouser Part Number">511-SPV1040TTR</field>
+        <field name="Mouser Price/Stock">https://www.mouser.co.uk/ProductDetail/STMicroelectronics/SPV1040TTR?qs=AHLdMMsI%252Bhr%2Fj5DYN1qCwQ%3D%3D</field>
+        <field name="Manufacturer_Name">STMicroelectronics</field>
+        <field name="Manufacturer_Part_Number">SPV1040TTR</field>
+      </fields>
+      <pins>
+        <pin num="1" name="MPP-SET" type="input"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="LX" type="input"/>
+        <pin num="4" name="VOUT" type="output"/>
+        <pin num="5" name="VCTRL" type="input"/>
+        <pin num="6" name="ICTRL_MINUS" type="input"/>
+        <pin num="7" name="ICTRL_PLUS" type="input"/>
+        <pin num="8" name="XSHUT" type="input"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="/CUR1_OUT" class="Default">
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="C61" pin="1" pintype="passive"/>
+      <node ref="L1" pin="1" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="U11" pin="3" pinfunction="+" pintype="input"/>
+      <node ref="U11" pin="4" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="2" name="/MPPT1" class="Default">
+      <node ref="R41" pin="1" pintype="passive"/>
+      <node ref="R51" pin="1" pintype="passive"/>
+      <node ref="R61" pin="2" pintype="passive"/>
+      <node ref="U11" pin="5" pinfunction="V+" pintype="power_in"/>
+    </net>
+    <net code="3" name="/MPPT1_OUT" class="Default">
+      <node ref="C41" pin="1" pintype="passive"/>
+      <node ref="D11" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D21" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="MPPT1" pin="4" pinfunction="VOUT" pintype="output"/>
+      <node ref="R31" pin="1" pintype="passive"/>
+      <node ref="R51" pin="2" pintype="passive"/>
+    </net>
+    <net code="4" name="/Net-(D11-A)" class="Default">
+      <node ref="D11" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="L1" pin="2" pintype="passive"/>
+      <node ref="MPPT1" pin="3" pinfunction="LX" pintype="input"/>
+    </net>
+    <net code="5" name="/Net-(MPPT1-ICTRL_MINUS)" class="Default">
+      <node ref="C51" pin="1" pintype="passive"/>
+      <node ref="MPPT1" pin="6" pinfunction="ICTRL_MINUS" pintype="input"/>
+      <node ref="R41" pin="2" pintype="passive"/>
+    </net>
+    <net code="6" name="/Net-(MPPT1-ICTRL_PLUS)" class="Default">
+      <node ref="C51" pin="2" pintype="passive"/>
+    </net>
+    <net code="7" name="/Net-(MPPT1-MPP-SET)" class="Default">
+      <node ref="C21" pin="2" pintype="passive"/>
+      <node ref="MPPT1" pin="1" pinfunction="MPP-SET" pintype="input"/>
+      <node ref="MPPT1" pin="8" pinfunction="XSHUT" pintype="input"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+    </net>
+    <net code="8" name="/Net-(MPPT1-VCTRL)" class="Default">
+      <node ref="C31" pin="1" pintype="passive"/>
+      <node ref="MPPT1" pin="5" pinfunction="VCTRL" pintype="input"/>
+      <node ref="R61" pin="1" pintype="passive"/>
+      <node ref="R71" pin="2" pintype="passive"/>
+    </net>
+    <net code="9" name="/SC1_I+" class="Default">
+      <node ref="MPPT1" pin="7" pinfunction="ICTRL_PLUS" pintype="input"/>
+      <node ref="U11" pin="1" pintype="output"/>
+    </net>
+    <net code="10" name="GND" class="Default">
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C21" pin="1" pintype="passive"/>
+      <node ref="C31" pin="2" pintype="passive"/>
+      <node ref="C41" pin="2" pintype="passive"/>
+      <node ref="C61" pin="2" pintype="passive"/>
+      <node ref="D21" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="MPPT1" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="R71" pin="1" pintype="passive"/>
+      <node ref="SC1" pin="2" pinfunction="-" pintype="passive"/>
+      <node ref="U11" pin="2" pinfunction="GND" pintype="power_in"/>
+    </net>
+  </nets>
+</export>

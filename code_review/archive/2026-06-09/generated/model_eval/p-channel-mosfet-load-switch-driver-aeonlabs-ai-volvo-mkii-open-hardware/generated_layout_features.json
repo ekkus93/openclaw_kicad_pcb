@@ -1,0 +1,514 @@
+{
+  "counts": {
+    "global_labels": 0,
+    "junctions": 15,
+    "labels": 27,
+    "no_connects": 0,
+    "non_power_symbols": 21,
+    "power_symbols": 7,
+    "symbols": 28,
+    "wires": 177
+  },
+  "geometry": {
+    "average_symbol_spacing_mm": 13.743,
+    "distinct_x_columns": 12,
+    "max_x": 160.02,
+    "max_y": 198.12,
+    "min_x": 30.48,
+    "min_y": 68.58,
+    "wire_stub_ratio": 0.367
+  },
+  "intrinsic_lints": [
+    {
+      "code": "LAY001",
+      "message": "Net label 'Net-(U12-UP)' appears 4 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (60.96,129.54) and (60.96,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,114.3) and (101.6,107.95) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,114.3) and (91.44,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (91.44,91.44) and (81.28,87.63) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (111.76,129.54) and (105.41,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (111.76,129.54) and (111.76,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (105.41,137.16) and (111.76,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,114.3) and (30.48,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY005",
+      "message": "Wire graph has 23 disconnected islands (threshold 2); schematic may have isolated regions",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    }
+  ],
+  "net_label_strategy": {
+    "global_label_count": 0,
+    "local_label_count": 27,
+    "power_symbol_count": 10
+  },
+  "relative_positions": [
+    {
+      "a": "CJC3",
+      "b": "U12",
+      "relation": "near"
+    },
+    {
+      "a": "CJQ1",
+      "b": "U12",
+      "relation": "near"
+    },
+    {
+      "a": "U12",
+      "b": "CJC3",
+      "relation": "near"
+    },
+    {
+      "a": "U12",
+      "b": "CJQ1",
+      "relation": "near"
+    }
+  ],
+  "role_counts": {
+    "major_ic": 1,
+    "passive": 20,
+    "power_symbol": 7
+  },
+  "schema_version": "1.0",
+  "source": {
+    "file": "generated.kicad_sch",
+    "fixture_id": "p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware"
+  },
+  "symbols": {
+    "#PWR01": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR01",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 106.68,
+      "y": 78.74
+    },
+    "#PWR02": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR02",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 91.44,
+      "y": 99.06
+    },
+    "#PWR03": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR03",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 81.28,
+      "y": 72.39
+    },
+    "#PWR04": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR04",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 88.9,
+      "y": 125.73
+    },
+    "#PWR05": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR05",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 101.6,
+      "y": 90.17
+    },
+    "#PWR06": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR06",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 121.92,
+      "y": 76.2
+    },
+    "#PWR07": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR07",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 30.48,
+      "y": 68.58
+    },
+    "CJC1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC1",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "2.2nF",
+      "x": 60.96,
+      "y": 129.54
+    },
+    "CJC2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 81.28,
+      "y": 152.4
+    },
+    "CJC3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC3",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 91.44,
+      "y": 114.3
+    },
+    "CJC4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC4",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 91.44,
+      "y": 91.44
+    },
+    "CJC5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC5",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 60.96,
+      "y": 99.06
+    },
+    "CJC6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC6",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 121.92,
+      "y": 91.44
+    },
+    "CJC7": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC7",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "33nF",
+      "x": 81.28,
+      "y": 87.63
+    },
+    "CJC8": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJC8",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "33nF",
+      "x": 81.28,
+      "y": 137.16
+    },
+    "CJQ1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJQ1",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Transistor_FET:AO3400A",
+      "unit": "1",
+      "value": "AO3400A",
+      "x": 101.6,
+      "y": 107.95
+    },
+    "CJR1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR1",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "61R9",
+      "x": 111.76,
+      "y": 129.54
+    },
+    "CJR10": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR10",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "100K",
+      "x": 105.41,
+      "y": 137.16
+    },
+    "CJR11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR11",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "4K7",
+      "x": 105.41,
+      "y": 167.64
+    },
+    "CJR2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "10K",
+      "x": 30.48,
+      "y": 83.82
+    },
+    "CJR3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR3",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "300R",
+      "x": 111.76,
+      "y": 137.16
+    },
+    "CJR4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR4",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "31K6",
+      "x": 105.41,
+      "y": 198.12
+    },
+    "CJR5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR5",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "4K7",
+      "x": 30.48,
+      "y": 114.3
+    },
+    "CJR6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR6",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "100K",
+      "x": 60.96,
+      "y": 121.92
+    },
+    "CJR7": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR7",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "470K",
+      "x": 30.48,
+      "y": 121.92
+    },
+    "CJR8": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR8",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "100K",
+      "x": 160.02,
+      "y": 167.64
+    },
+    "CJR9": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "CJR9",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "6K8",
+      "x": 142.24,
+      "y": 133.35
+    },
+    "U12": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U12",
+      "role_guess": "major_ic",
+      "rotation": 0.0,
+      "symbol_id": "AeonLabs_Automotive:CJ125",
+      "unit": "1",
+      "value": "CJ125",
+      "x": 91.44,
+      "y": 121.92
+    }
+  }
+}

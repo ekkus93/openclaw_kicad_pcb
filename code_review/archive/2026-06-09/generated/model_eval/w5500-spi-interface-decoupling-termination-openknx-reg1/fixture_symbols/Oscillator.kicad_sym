@@ -1,0 +1,113 @@
+(kicad_symbol_lib
+  (version 20231120)
+  (generator "kicad_pcb_corpus")
+  (symbol
+    "TXC-7C"
+    (pin_names (offset 0.254))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "X"
+      (at -5.08 6.35 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property
+      "Value"
+      "TXC-7C"
+      (at 1.27 -6.35 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property
+      "Footprint"
+      "Oscillator:Oscillator_SMD_TXC_7C-4Pin_5.0x3.2mm"
+      (at 17.78 -8.89 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Datasheet"
+      "http://www.txccorp.com/download/products/osc/7C_o.pdf"
+      (at -2.54 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "Description"
+      "CMOS SMD Crystal Clock Oscillator, TXC"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_keywords"
+      "CMOS SMD Crystal Clock Oscillator"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (property
+      "ki_fp_filters"
+      "Oscillator*SMD*TXC*7C*5.0x3.2mm*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol
+      "TXC-7C_0_1"
+      (rectangle
+        (start -5.08 5.08)
+        (end 5.08 -5.08)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (polyline
+        (pts
+          (xy -1.27 -0.762)
+          (xy -1.016 -0.762)
+          (xy -1.016 0.762)
+          (xy -0.508 0.762)
+          (xy -0.508 -0.762)
+          (xy 0 -0.762)
+          (xy 0 0.762)
+          (xy 0.508 0.762)
+          (xy 0.508 -0.762)
+          (xy 0.762 -0.762)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "TXC-7C_1_1"
+      (pin
+        input
+        line
+        (at -7.62 0 0)
+        (length 2.54)
+        (name "EN" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        power_in
+        line
+        (at 0 -7.62 90)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        output
+        line
+        (at 7.62 0 180)
+        (length 2.54)
+        (name "OUT" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        power_in
+        line
+        (at 0 7.62 270)
+        (length 2.54)
+        (name "Vdd" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+)

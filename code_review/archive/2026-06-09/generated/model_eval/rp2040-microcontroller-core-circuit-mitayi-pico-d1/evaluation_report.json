@@ -1,0 +1,131 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "too many global labels are exposed.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+1V1,GPIO1,GPIO27,QSPI_SD0,QSPI_SD1,QSPI_SD2,QSPI_SD3,SWCLK,VBUS,unconnected-(J2-SBU1-PadA8),unconnected-(J2-SBU2-PadB8),unconnected-(J6-ID-Pad4)",
+        "expected": "+1V1,+3V3,AREF,GND,GPIO0,GPIO1,GPIO10,GPIO11,GPIO12,GPIO13,GPIO14,GPIO15,GPIO16,GPIO17,GPIO18,GPIO19,GPIO2,GPIO20,GPIO21,GPIO22,GPIO23,GPIO24,GPIO25,GPIO26,GPIO27,GPIO28,GPIO29,GPIO3,GPIO4,GPIO5,GPIO6,GPIO7,GPIO8,GPIO9,Net-(C18-Pad1),Net-(D2-A),Net-(D2-K),Net-(D3-K),Net-(J2-CC1),Net-(J2-CC2),Net-(JP6-C),Net-(U2-BP),Net-(U3-USB-DM),Net-(U3-USB-DP),QSPI_SCLK,QSPI_SD0,QSPI_SD1,QSPI_SD2,QSPI_SD3,QSPI_SS,RUN,SWCLK,SWDIO,USB_D+,USB_D-,VBUS,VSYS,V_EN,XIN,XOUT,unconnected-(J2-SBU1-PadA8),unconnected-(J2-SBU2-PadB8),unconnected-(J6-ID-Pad4),~{USB_BOOT}",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('C2', '1', ''), ('C4', '1', ''), ('U3', '23', ''), ('U3', '45', ''), ('U3', '50', '')]",
+        "expected": "[('C2', '1', ''), ('C3', '1', ''), ('C4', '1', ''), ('U3', '23', ''), ('U3', '45', ''), ('U3', '50', '')]",
+        "field": "net_pins:+1V1"
+      },
+      {
+        "actual": "[('J3', '2', ''), ('J4', '8', ''), ('U3', '3', ''), ('U3', '41', '')]",
+        "expected": "[('J3', '2', ''), ('U3', '3', '')]",
+        "field": "net_pins:GPIO1"
+      },
+      {
+        "actual": "[('J3', '4', ''), ('J4', '10', ''), ('U3', '39', ''), ('U3', '5', '')]",
+        "expected": "[('J4', '10', ''), ('U3', '39', '')]",
+        "field": "net_pins:GPIO27"
+      },
+      {
+        "actual": "[('J5', '1', '')]",
+        "expected": "[('J5', '1', ''), ('U3', '24', '')]",
+        "field": "net_pins:SWCLK"
+      },
+      {
+        "actual": "[('C1', '1', ''), ('C1', '2', ''), ('C10', '1', ''), ('C10', '2', ''), ('C11', '1', ''), ('C12', '1', ''), ('C12', '2', ''), ('C13', '1', ''), ('C14', '1', ''), ('C14', '2', ''), ('C15', '2', ''), ('C16', '1', ''), ('C16', '2', ''), ('C17', '1', ''), ('C18', '1', ''), ('C18', '2', ''), ('C19', '1', ''), ('C19', '2', ''), ('C3', '1', ''), ('C3', '2', ''), ('C4', '2', ''), ('C5', '1', ''), ('C5', '2', ''), ('C6', '1', ''), ('C6', '2', ''), ('C7', '1', ''), ('C7', '2', ''), ('C8', '1', ''), ('C8', '2', ''), ('C9', '1', ''), ('C9', '2', ''), ('D1', '1', ''), ('D1', '2', ''), ('D2', '1', ''), ('D2', '2', ''), ('D3', '1', ''), ('D3', '2', ''), ('J1', '2', ''), ('J1', '3', ''), ('J1', '4', ''), ('J1', '5', ''), ('J1', '6', ''), ('J1', '7', ''), ('J1', '8', ''), ('J2', 'A1', ''), ('J2', 'A12', ''), ('J2', 'A4', ''), ('J2', 'A5', ''), ('J2', 'A6', ''), ('J2', 'A7', ''), ('J2', 'A9', ''), ('J2', 'B1', ''), ('J2', 'B12', ''), ('J2', 'B4', ''), ('J2', 'B5', ''), ('J2', 'B6', ''), ('J2', 'B7', ''), ('J2', 'B9', ''), ('J2', 'S1', ''), ('J3', '1', ''), ('J3', '11', ''), ('J3', '12', ''), ('J3', '14', ''), ('J3', '15', ''), ('J3', '16', ''), ('J3', '17', ''), ('J3', '18', ''), ('J3', '19', ''), ('J3', '3', ''), ('J3', '5', ''), ('J3', '6', ''), ('J3', '7', ''), ('J3', '8', ''), ('J3', '9', ''), ('J4', '1', ''), ('J4', '11', ''), ('J4', '12', ''), ('J4', '13', ''), ('J4', '14', ''), ('J4', '15', ''), ('J4', '17', ''), ('J4', '18', ''), ('J4', '2', ''), ('J4', '20', ''), ('J4', '5', ''), ('J4', '6', ''), ('J4', '7', ''), ('J4', '9', ''), ('J5', '2', ''), ('J6', '1', ''), ('J6', '2', ''), ('J6', '3', ''), ('J6', '5', ''), ('J6', '6', ''), ('JP1', '1', ''), ('JP1', '2', ''), ('JP4', '1', ''), ('JP6', '2', ''), ('JP6', '3', ''), ('R1', '1', ''), ('R1', '2', ''), ('R10', '1', ''), ('R10', '2', ''), ('R11', '1', ''), ('R11', '2', ''), ('R2', '1', ''), ('R3', '1', ''), ('R3', '2', ''), ('R4', '2', ''), ('R5', '1', ''), ('R5', '2', ''), ('R6', '1', ''), ('R7', '1', ''), ('R7', '2', ''), ('R8', '1', ''), ('R9', '1', ''), ('R9', '2', ''), ('SW1', '1', ''), ('SW1', '2', ''), ('SW2', '1', ''), ('SW2', '2', ''), ('U1', '1', ''), ('U1', '4', ''), ('U1', '6', ''), ('U1', '8', ''), ('U2', '1', ''), ('U2', '2', ''), ('U2', '3', ''), ('U2', '4', ''), ('U2', '5', ''), ('U3', '1', ''), ('U3', '10', ''), ('U3', '11', ''), ('U3', '12', ''), ('U3', '13', ''), ('U3', '14', ''), ('U3', '15', ''), ('U3', '16', ''), ('U3', '17', ''), ('U3', '19', ''), ('U3', '2', ''), ('U3', '20', ''), ('U3', '21', ''), ('U3', '22', ''), ('U3', '25', ''), ('U3', '26', ''), ('U3', '27', ''), ('U3', '28', ''), ('U3', '29', ''), ('U3', '30', ''), ('U3', '31', ''), ('U3', '32', ''), ('U3', '33', ''), ('U3', '34', ''), ('U3', '35', ''), ('U3', '36', ''), ('U3', '38', ''), ('U3', '4', ''), ('U3', '40', ''), ('U3', '42', ''), ('U3', '44', ''), ('U3', '46', ''), ('U3', '48', ''), ('U3', '49', ''), ('U3', '52', ''), ('U3', '56', ''), ('U3', '57', ''), ('U3', '6', ''), ('U3', '7', ''), ('U3', '8', ''), ('U3', '9', ''), ('Y1', '1', ''), ('Y1', '2', ''), ('Y1', '3', ''), ('Y1', '4', '')]",
+        "expected": "[('D1', '2', ''), ('J2', 'A4', ''), ('J2', 'A9', ''), ('J2', 'B4', ''), ('J2', 'B9', ''), ('J4', '1', ''), ('J6', '1', '')]",
+        "field": "net_pins:VBUS"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated_project",
+    "schematic_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 74.06,
+    "intrinsic_sub_scores": {
+      "label_strategy": 12.0,
+      "overlap": 0.0,
+      "page_bounds": 10.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 12.06,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 0.0,
+      "label_strategy": 0.0,
+      "relative_positions": 4.52,
+      "role_counts": 0.0,
+      "wire_stub_ratio": 15.0
+    },
+    "source_similarity": 19.52,
+    "validity": 20.0
+  },
+  "source_file_name": "rp2040-microcontroller-core-circuit-mitayi-pico-d1.kicad_sch",
+  "total_score": 0.0
+}

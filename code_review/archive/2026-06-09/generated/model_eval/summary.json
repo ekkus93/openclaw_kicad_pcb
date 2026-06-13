@@ -1,0 +1,133 @@
+{
+  "evaluated_count": 18,
+  "failed_count": 18,
+  "fixtures": [
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/actionable_failures.md",
+      "fixture_id": "12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware",
+      "report_path": "code_review/generated/model_eval/12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/actionable_failures.md",
+      "fixture_id": "4-channel-switched-constant-current-source",
+      "report_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/actionable_failures.md",
+      "fixture_id": "4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports",
+      "report_path": "code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/5v-linear-voltage-regulator-eurorack/actionable_failures.md",
+      "fixture_id": "5v-linear-voltage-regulator-eurorack",
+      "report_path": "code_review/generated/model_eval/5v-linear-voltage-regulator-eurorack/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/buck-converter-xl4015-incubadora/actionable_failures.md",
+      "fixture_id": "buck-converter-xl4015-incubadora",
+      "report_path": "code_review/generated/model_eval/buck-converter-xl4015-incubadora/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/actionable_failures.md",
+      "fixture_id": "dual-ttl-uart-to-rs232-max232-reference-design",
+      "report_path": "code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/li-ion-battery-charger-circuit-gems-electronics/actionable_failures.md",
+      "fixture_id": "li-ion-battery-charger-circuit-gems-electronics",
+      "report_path": "code_review/generated/model_eval/li-ion-battery-charger-circuit-gems-electronics/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/actionable_failures.md",
+      "fixture_id": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+      "report_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/mcp2551-can-transciever/actionable_failures.md",
+      "fixture_id": "mcp2551-can-transciever",
+      "report_path": "code_review/generated/model_eval/mcp2551-can-transciever/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/microsd-card-in-spi-mode-with-hotswap-support/actionable_failures.md",
+      "fixture_id": "microsd-card-in-spi-mode-with-hotswap-support",
+      "report_path": "code_review/generated/model_eval/microsd-card-in-spi-mode-with-hotswap-support/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/actionable_failures.md",
+      "fixture_id": "p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware",
+      "report_path": "code_review/generated/model_eval/p-channel-mosfet-load-switch-driver-aeonlabs-ai-volvo-mkii-open-hardware/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/actionable_failures.md",
+      "fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+      "report_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/actionable_failures.md",
+      "fixture_id": "solar-charger-mppt-circuit-sts1-pcb-sidepanel",
+      "report_path": "code_review/generated/model_eval/solar-charger-mppt-circuit-sts1-pcb-sidepanel/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/actionable_failures.md",
+      "fixture_id": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar",
+      "report_path": "code_review/generated/model_eval/st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/actionable_failures.md",
+      "fixture_id": "stm32g030-minimal-system-circuit-electrical",
+      "report_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/tpic8101dwrg4-tpic8101dwrg4/actionable_failures.md",
+      "fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
+      "report_path": "code_review/generated/model_eval/tpic8101dwrg4-tpic8101dwrg4/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/actionable_failures.md",
+      "fixture_id": "w5500-spi-interface-decoupling-termination-openknx-reg1",
+      "report_path": "code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    },
+    {
+      "actionable_failures_path": "code_review/generated/model_eval/ws2812c-addressable-led-chain-cleverhand-hardware/actionable_failures.md",
+      "fixture_id": "ws2812c-addressable-led-chain-cleverhand-hardware",
+      "report_path": "code_review/generated/model_eval/ws2812c-addressable-led-chain-cleverhand-hardware/evaluation_report.json",
+      "result": "fail",
+      "total_score": 0.0
+    }
+  ],
+  "skipped_count": 0
+}

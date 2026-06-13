@@ -1,0 +1,154 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "local labels dominate the schematic.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "symbols extend beyond a single A4 page envelope.",
+      "rule": "page_bounds",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+5V,12V,5V,A+,A-,ADC1_CH0-Pad39),ADC1_CH2-Pad15),ADC2_CH6-Pad10),B+,B-,CLK_OUT1-Pad34),ENA_CH1,ENA_CH2,ENB_CH1,ENB_CH2,GPIO42-Pad35),IN2_CH1,IO2,LED,M0,M1,M2,Net-(D2-A),Net-(D7-K),Net-(D8-A),Net-(D9-A),Net-(J14-Dat0),RESET,RS_CLK,RS_D,RS_SW,SCL,SDA,SPI_CS,STEPPER_DIR,STEPPER_EN,STEPPER_STEP,SUBSPICLK-Pad29),SUBSPICLK_N_DIFF-Pad25),SUBSPICLK_P_DIFF-Pad24),SUBSPICS1-Pad32),SUBSPID-Pad28),SUBSPIQ-Pad30),SUBSPIWP-Pad31),U0RXD,U0TXD,VIN,spi_clk,spi_miso,spi_mosi,unconnected-(A1-~{FLT}-Pad2),unconnected-(A1-~{RST}-Pad13),unconnected-(A1-~{SLP}-Pad14),unconnected-(J11-Pin_3-Pad3),unconnected-(J11-Pin_4-Pad4),unconnected-(J12-Pin_3-Pad3),unconnected-(J12-Pin_4-Pad4),unconnected-(J14-Dat1-Pad8),unconnected-(J14-Dat2-Pad1),unconnected-(U3-GPIO21-Pad23),unconnected-(U3-GPIO45-Pad26),unconnected-(U3-GPIO46-Pad16)",
+        "expected": "+3V3,+5V,12V,5V,A+,A-,B+,B-,D,Dat3,ENA_CH1,ENA_CH2,ENB_CH1,ENB_CH2,FB,GND,IN1_CH1,IN1_CH2,IN2_CH1,IN2_CH2,IO0,IO2,LED,M0,M1,M2,Net-(D10-A),Net-(D2-A),Net-(D3-A),Net-(D7-K),Net-(D8-A),Net-(D9-A),Net-(F1-Pad1),Net-(J14-CLK),Net-(J14-CMD),Net-(J14-Dat0),Net-(U5-VC),RESET,RS_CLK,RS_D,RS_SW,SCL,SDA,SD_cs,SPI_CS,SPI_MISO,SPI_MOSI,SPI_SCLK,STEPPER_DIR,STEPPER_EN,STEPPER_STEP,U0RXD,U0TXD,USB_D+,USB_D-,VDL_3V3,VIN,VIN_5V,V_USB,spi_clk,spi_miso,spi_mosi,unconnected-(A1-~{FLT}-Pad2),unconnected-(A1-~{RST}-Pad13),unconnected-(A1-~{SLP}-Pad14),unconnected-(J11-Pin_3-Pad3),unconnected-(J11-Pin_4-Pad4),unconnected-(J12-Pin_3-Pad3),unconnected-(J12-Pin_4-Pad4),unconnected-(J14-Dat1-Pad8),unconnected-(J14-Dat2-Pad1),unconnected-(P1-CC-PadA5),unconnected-(P1-VCONN-PadB5),unconnected-(U3-GPIO1/TOUCH1/ADC1_CH0-Pad39),unconnected-(U3-GPIO14/TOUCH14/ADC2_CH3/FSPIWP/FSPIDQS/SUBSPIWP-Pad22),unconnected-(U3-GPIO15/U0RTS/ADC2_CH4/XTAL_32K_P-Pad8),unconnected-(U3-GPIO16/U0CTS/ADC2_CH5/XTAL_32K_N-Pad9),unconnected-(U3-GPIO17/U1TXD/ADC2_CH6-Pad10),unconnected-(U3-GPIO18/U1RXD/ADC2_CH7/CLK_OUT3-Pad11),unconnected-(U3-GPIO21-Pad23),unconnected-(U3-GPIO3/TOUCH3/ADC1_CH2-Pad15),unconnected-(U3-GPIO38/FSPIWP/SUBSPIWP-Pad31),unconnected-(U3-GPIO45-Pad26),unconnected-(U3-GPIO46-Pad16),unconnected-(U3-GPIO47/SPICLK_P/SUBSPICLK_P_DIFF-Pad24),unconnected-(U3-GPIO48/SPICLK_N/SUBSPICLK_N_DIFF-Pad25),unconnected-(U3-MTCK/GPIO39/CLK_OUT3/SUBSPICS1-Pad32),unconnected-(U3-MTDI/GPIO41/CLK_OUT1-Pad34),unconnected-(U3-MTDO/GPIO40/CLK_OUT2-Pad33),unconnected-(U3-MTMS/GPIO42-Pad35),unconnected-(U3-SPIDQS/GPIO37/FSPIQ/SUBSPIQ-Pad30),unconnected-(U3-SPIIO6/GPIO35/FSPID/SUBSPID-Pad28),unconnected-(U3-SPIIO7/GPIO36/FSPICLK/SUBSPICLK-Pad29)",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('C16', '1', ''), ('R11', '1', '')]",
+        "expected": "[('C16', '1', ''), ('D11', '1', ''), ('J5', '3', ''), ('Q2', '2', ''), ('R11', '1', ''), ('U6', '3', '')]",
+        "field": "net_pins:+5V"
+      },
+      {
+        "actual": "[('A1', '1', ''), ('A1', '7', ''), ('A1', '8', ''), ('C1', '2', ''), ('C10', '2', ''), ('C11', '1', ''), ('C11', '2', ''), ('C12', '1', ''), ('C12', '2', ''), ('C13', '1', ''), ('C13', '2', ''), ('C14', '1', ''), ('C14', '2', ''), ('C15', '2', ''), ('C17', '1', ''), ('C6', '2', ''), ('C7', '1', ''), ('C7', '2', ''), ('C8', '1', ''), ('C8', '2', ''), ('C9', '1', ''), ('C9', '2', ''), ('D10', '1', ''), ('D10', '2', ''), ('D11', '2', ''), ('D3', '1', ''), ('D3', '2', ''), ('D4', '2', ''), ('D6', '1', ''), ('D6', '2', ''), ('D7', '2', ''), ('J11', '7', ''), ('J12', '8', ''), ('J13', '2', ''), ('J14', '2', ''), ('J14', '3', ''), ('J14', '6', ''), ('J14', '9', ''), ('J4', '1', ''), ('J4', '2', ''), ('J9', '1', ''), ('J9', '2', ''), ('L1', '2', ''), ('P1', 'A1', ''), ('P1', 'A12', ''), ('P1', 'A4', ''), ('P1', 'A5', ''), ('P1', 'A9', ''), ('P1', 'B1', ''), ('P1', 'B12', ''), ('P1', 'B4', ''), ('P1', 'B9', ''), ('P1', 'S1', ''), ('Q2', '1', ''), ('Q2', '3', ''), ('R10', '1', ''), ('R12', '2', ''), ('R13', '1', ''), ('R13', '2', ''), ('R3', '2', ''), ('R5', '1', ''), ('R5', '2', ''), ('R6', '1', ''), ('R6', '2', ''), ('R7', '1', ''), ('R8', '1', ''), ('R9', '2', ''), ('SW1', '1', ''), ('SW1', '2', ''), ('SW1', '3', ''), ('SW1', '4', ''), ('SW2', '1', ''), ('SW2', '2', ''), ('U3', '1', ''), ('U3', '11', ''), ('U3', '19', ''), ('U3', '2', ''), ('U3', '20', ''), ('U3', '21', ''), ('U3', '22', ''), ('U3', '27', ''), ('U3', '33', ''), ('U3', '40', ''), ('U3', '41', ''), ('U3', '8', ''), ('U3', '9', ''), ('U5', '1', ''), ('U5', '4', ''), ('U5', '5', ''), ('U6', '1', ''), ('U6', '2', '')]",
+        "expected": "[('A1', '8', ''), ('C11', '1', ''), ('C12', '1', ''), ('C13', '1', ''), ('J3', '1', ''), ('J4', '1', ''), ('J9', '1', ''), ('U5', '5', '')]",
+        "field": "net_pins:12V"
+      },
+      {
+        "actual": "[('J11', '2', ''), ('J12', '2', ''), ('J14', '10', '')]",
+        "expected": "[('J11', '2', ''), ('J12', '2', '')]",
+        "field": "net_pins:5V"
+      },
+      {
+        "actual": "[('A1', '4', ''), ('J10', '1', ''), ('J12', '7', ''), ('R2', '2', '')]",
+        "expected": "[('A1', '4', ''), ('J10', '1', '')]",
+        "field": "net_pins:A+"
+      },
+      {
+        "actual": "[('A1', '5', ''), ('J1', '1', ''), ('J10', '3', '')]",
+        "expected": "[('A1', '5', ''), ('J10', '3', '')]",
+        "field": "net_pins:B+"
+      },
+      {
+        "actual": "[('A1', '6', ''), ('J1', '2', ''), ('J10', '4', '')]",
+        "expected": "[('A1', '6', ''), ('J10', '4', '')]",
+        "field": "net_pins:B-"
+      },
+      {
+        "actual": "[('R1', '2', '')]",
+        "expected": "[('J14', '7', ''), ('R1', '2', '')]",
+        "field": "net_pins:Net-(J14-Dat0)"
+      },
+      {
+        "actual": "[('F1', '1', ''), ('F1', '2', '')]",
+        "expected": "[('F1', '2', ''), ('J3', '2', '')]",
+        "field": "net_pins:VIN"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "buck-converter-xl4015-incubadora",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/buck-converter-xl4015-incubadora/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/buck-converter-xl4015-incubadora/generated_project",
+    "schematic_path": "code_review/generated/model_eval/buck-converter-xl4015-incubadora/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 61.3,
+    "intrinsic_sub_scores": {
+      "label_strategy": 10.0,
+      "overlap": 0.0,
+      "page_bounds": 0.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 11.3,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 0.0,
+      "label_strategy": 0.0,
+      "relative_positions": 7.32,
+      "role_counts": 0.0,
+      "wire_stub_ratio": 15.0
+    },
+    "source_similarity": 22.32,
+    "validity": 20.0
+  },
+  "source_file_name": "buck-converter-xl4015-incubadora.kicad_sch",
+  "total_score": 0.0
+}

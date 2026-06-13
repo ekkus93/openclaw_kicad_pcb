@@ -1,0 +1,159 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "too many global labels are exposed.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "symbols extend beyond a single A4 page envelope.",
+      "rule": "page_bounds",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+3.3V_LOCAL,+5V_LOCAL,+BATT,12v0,3v3,BATT_PRE,BUZZER,CELL_6,DOTSTAR_MOSI,DOTSTAR_SCK,LED_SHUTDOWN_ACK_PWR,LOAD_SW_PGOOD,MISO,MOSI,NSS,Net-(D4-A),Net-(U1-SDO),PA10-Pad34),PA9-Pad33),PWR_12v0_EN,PWR_3v3_EN,PWR_5v0_EN,PWR_BTN_~{INT},PWR_~{KILL},RX,SCK,TDI-Pad8),TDO-Pad6),TX,unconnected-(U2-CKO-Pad5),unconnected-(U2-SDO-Pad6),unconnected-(U3-PB4-Pad43),unconnected-(U3-PB9-Pad48),unconnected-(U3-PC7-Pad31),~{LED_SHUTDOWN_ACK}",
+        "expected": "+3.3V_LOCAL,+5V_LOCAL,+BATT,12v0,3v3,5v0,BATT_POST,BATT_PRE,BUZZER,CELL_1,CELL_2,CELL_3,CELL_4,CELL_5,CELL_6,DOTSTAR_MOSI,DOTSTAR_SCK,GND,LED_GREEN,LED_RED,LED_SHUTDOWN_ACK_PWR,LOAD_SW_PGOOD,MISO,MOSI,NRST,NSS,Net-(BZ1-+),Net-(D2-A),Net-(D3-A),Net-(D4-A),Net-(D5-A),Net-(Q2-G),Net-(U1-CKO),Net-(U1-SDO),Net-(U3-VREF+),PWR_12v0_EN,PWR_3v3_EN,PWR_5v0_EN,PWR_BTN_~{INT},PWR_~{KILL},RCC_OSC32_N,RCC_OSC32_P,RCC_OSC_N,RCC_OSC_P,RX,SCK,SWCLK,SWDIO,TX,unconnected-(J1-KEY-Pad7),unconnected-(J1-NC/TDI-Pad8),unconnected-(J1-SWO/TDO-Pad6),unconnected-(U2-CKO-Pad5),unconnected-(U2-SDO-Pad6),unconnected-(U3-PA11/PA9-Pad33),unconnected-(U3-PA12/PA10-Pad34),unconnected-(U3-PB0-Pad19),unconnected-(U3-PB4-Pad43),unconnected-(U3-PB9-Pad48),unconnected-(U3-PC13-Pad1),unconnected-(U3-PC7-Pad31),unconnected-(U3-PD2-Pad40),~{LED_SHUTDOWN_ACK},~{PB}",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('BZ1', '1', ''), ('C7', '1', ''), ('C8', '1', ''), ('D6', '1', ''), ('J1', '1', ''), ('L1', '2', ''), ('Q1', '2', ''), ('R1', '1', ''), ('U2', '2', ''), ('U3', '1', ''), ('U3', '4', ''), ('U3', '6', '')]",
+        "expected": "[('BZ1', '1', ''), ('C7', '1', ''), ('C8', '1', ''), ('D6', '1', ''), ('J1', '1', ''), ('L1', '2', ''), ('Q1', '2', ''), ('R1', '1', ''), ('U3', '4', ''), ('U3', '6', '')]",
+        "field": "net_pins:+3.3V_LOCAL"
+      },
+      {
+        "actual": "[('C6', '2', ''), ('D7', '4', ''), ('U1', '4', ''), ('U2', '4', '')]",
+        "expected": "[('C6', '2', ''), ('U1', '4', ''), ('U2', '4', '')]",
+        "field": "net_pins:+5V_LOCAL"
+      },
+      {
+        "actual": "[('R6', '1', '')]",
+        "expected": "[('J2', '1', ''), ('R6', '1', '')]",
+        "field": "net_pins:+BATT"
+      },
+      {
+        "actual": "[('BZ1', '2', ''), ('C1', '1', ''), ('C2', '1', ''), ('C2', '2', ''), ('C3', '1', ''), ('C3', '2', ''), ('C4', '1', ''), ('C4', '2', ''), ('C5', '1', ''), ('C5', '2', ''), ('C6', '1', ''), ('C8', '2', ''), ('C9', '1', ''), ('C9', '2', ''), ('D2', '1', ''), ('D2', '2', ''), ('D3', '1', ''), ('D3', '2', ''), ('D4', '1', ''), ('D5', '1', ''), ('D5', '2', ''), ('D6', '2', ''), ('D7', '1', ''), ('D7', '3', ''), ('D7', '5', ''), ('D8', '1', ''), ('D8', '2', ''), ('D8', '4', ''), ('D8', '5', ''), ('D8', '6', ''), ('D9', '1', ''), ('D9', '2', ''), ('D9', '4', ''), ('D9', '5', ''), ('D9', '6', ''), ('J1', '10', ''), ('J1', '2', ''), ('J1', '3', ''), ('J1', '4', ''), ('J1', '5', ''), ('J1', '9', ''), ('JP1', '2', ''), ('L1', '1', ''), ('Q2', '2', ''), ('Q2', '3', ''), ('R1', '2', ''), ('R2', '1', ''), ('R2', '2', ''), ('R22', '1', ''), ('R22', '2', ''), ('R3', '1', ''), ('R3', '2', ''), ('R4', '1', ''), ('R4', '2', ''), ('R6', '2', ''), ('R7', '2', ''), ('SW1', '2', ''), ('U1', '3', ''), ('U2', '3', ''), ('U3', '10', ''), ('U3', '11', ''), ('U3', '13', ''), ('U3', '14', ''), ('U3', '15', ''), ('U3', '17', ''), ('U3', '18', ''), ('U3', '2', ''), ('U3', '3', ''), ('U3', '35', ''), ('U3', '36', ''), ('U3', '38', ''), ('U3', '39', ''), ('U3', '7', ''), ('U3', '8', ''), ('U3', '9', ''), ('Y1', '1', ''), ('Y1', '2', ''), ('Y1', '3', ''), ('Y1', '4', ''), ('Y2', '1', ''), ('Y2', '2', '')]",
+        "expected": "[('D8', '4', ''), ('U3', '17', '')]",
+        "field": "net_pins:3v3"
+      },
+      {
+        "actual": "[('U1', '2', '')]",
+        "expected": "[('U1', '2', ''), ('U3', '42', '')]",
+        "field": "net_pins:DOTSTAR_SCK"
+      },
+      {
+        "actual": "[('D9', '3', ''), ('J2', '2', ''), ('Q1', '3', ''), ('Q2', '1', ''), ('R5', '1', ''), ('R8', '2', '')]",
+        "expected": "[('D9', '3', ''), ('J2', '2', ''), ('Q1', '3', ''), ('R5', '1', '')]",
+        "field": "net_pins:LED_SHUTDOWN_ACK_PWR"
+      },
+      {
+        "actual": "[('U2', '1', '')]",
+        "expected": "[('U1', '6', ''), ('U2', '1', '')]",
+        "field": "net_pins:Net-(U1-SDO)"
+      },
+      {
+        "actual": "[('U3', '31', ''), ('U3', '40', '')]",
+        "expected": "[('U3', '31', '')]",
+        "field": "net_pins:unconnected-(U3-PC7-Pad31)"
+      },
+      {
+        "actual": "[('Q1', '1', ''), ('U3', '19', ''), ('U3', '37', '')]",
+        "expected": "[('Q1', '1', ''), ('U3', '37', '')]",
+        "field": "net_pins:~{LED_SHUTDOWN_ACK}"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "stm32g030-minimal-system-circuit-electrical",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated_project",
+    "schematic_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 64.06,
+    "intrinsic_sub_scores": {
+      "label_strategy": 12.0,
+      "overlap": 0.0,
+      "page_bounds": 0.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 12.06,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 12.0,
+      "label_strategy": 0.0,
+      "relative_positions": 3.12,
+      "role_counts": 0.0,
+      "wire_stub_ratio": 15.0
+    },
+    "source_similarity": 30.12,
+    "validity": 20.0
+  },
+  "source_file_name": "stm32g030-minimal-system-circuit-electrical.kicad_sch",
+  "total_score": 0.0
+}

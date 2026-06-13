@@ -1,0 +1,109 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "local labels dominate the schematic.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+12V,CONST_CURR_0,CONST_CURR_1,CONST_CURR_3,GATE_ISOURCE1,GATE_ISOURCE2,GATE_ISOURCE3,GND,MCU_ISOURCE0,MCU_ISOURCE1,MCU_ISOURCE2,MCU_ISOURCE3,Net-(PS5-VOUT_1),Net-(PS6-VOUT_1),Net-(Q5-G),Net-(Q6-G),Net-(Q7-G),unconnected-(IC12-5B-Pad5),unconnected-(IC12-5C-Pad12),unconnected-(IC12-6B-Pad6),unconnected-(IC12-6C-Pad11),unconnected-(IC12-7B-Pad7),unconnected-(IC12-7C-Pad10)",
+        "expected": "+12V,CONST_CURR2,CONST_CURR_0,CONST_CURR_1,CONST_CURR_3,GATE_ISOURCE0,GATE_ISOURCE1,GATE_ISOURCE2,GATE_ISOURCE3,GND,MCU_ISOURCE0,MCU_ISOURCE1,MCU_ISOURCE2,MCU_ISOURCE3,Net-(PS3-VIN),Net-(PS3-VOUT_1),Net-(PS4-VIN),Net-(PS4-VOUT_1),Net-(PS5-VIN),Net-(PS5-VOUT_1),Net-(PS6-VIN),Net-(PS6-VOUT_1),Net-(Q4-G),Net-(Q5-G),Net-(Q6-G),Net-(Q7-G),unconnected-(IC12-5B-Pad5),unconnected-(IC12-5C-Pad12),unconnected-(IC12-6B-Pad6),unconnected-(IC12-6C-Pad11),unconnected-(IC12-7B-Pad7),unconnected-(IC12-7C-Pad10)",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('C56', '1', ''), ('C59', '1', ''), ('IC12', '16', ''), ('IC12', '9', ''), ('PS3', '3', ''), ('PS4', '2', ''), ('PS4', '4', ''), ('PS5', '1', ''), ('PS6', '3', ''), ('Q4', '1', ''), ('Q4', '2', ''), ('Q4', '3', ''), ('Q5', '3', ''), ('Q6', '3', ''), ('Q7', '3', ''), ('R51', '1', ''), ('R51', '2', ''), ('R52', '1', ''), ('R52', '2', ''), ('R55', '1', ''), ('R59', '1', ''), ('R60', '1', '')]",
+        "expected": "[('IC12', '9', ''), ('Q4', '3', ''), ('Q5', '3', ''), ('Q6', '3', ''), ('Q7', '3', ''), ('R52', '1', ''), ('R55', '1', ''), ('R59', '1', ''), ('R60', '1', '')]",
+        "field": "net_pins:+12V"
+      },
+      {
+        "actual": "[('R62', '1', '')]",
+        "expected": "[('PS6', '1', ''), ('R62', '1', '')]",
+        "field": "net_pins:CONST_CURR_3"
+      },
+      {
+        "actual": "[('R58', '2', '')]",
+        "expected": "[('IC12', '13', ''), ('R58', '2', '')]",
+        "field": "net_pins:GATE_ISOURCE3"
+      },
+      {
+        "actual": "[('C56', '2', ''), ('C59', '2', ''), ('IC12', '8', '')]",
+        "expected": "[('C56', '2', ''), ('C57', '2', ''), ('C58', '2', ''), ('C59', '2', ''), ('IC12', '8', '')]",
+        "field": "net_pins:GND"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "4-channel-switched-constant-current-source",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated_project",
+    "schematic_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 70.48,
+    "intrinsic_sub_scores": {
+      "label_strategy": 10.0,
+      "overlap": 0.0,
+      "page_bounds": 10.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 10.48,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 15.0,
+      "label_strategy": 0.0,
+      "relative_positions": 0.0,
+      "role_counts": 22.0,
+      "wire_stub_ratio": 15.0
+    },
+    "source_similarity": 52.0,
+    "validity": 20.0
+  },
+  "source_file_name": "4-channel-switched-constant-current-source.kicad_sch",
+  "total_score": 0.0
+}

@@ -1,0 +1,138 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "local labels dominate the schematic.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "too many global labels are exposed.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    },
+    {
+      "message": "generated routing is noticeably stubbier than the source.",
+      "rule": "wire_stub_ratio",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+5VD,5V-KNOCK,Float-Pad1),KNOCK-CH1N,KNOCK-CH1P,KNOCK-CH2N,KNOCK-TESTN,Net-(C84-Pad2),Net-(C85-Pad2),SPI-KNOCK-CS,SPI-MISO,unconnected-(IC19-NC_1-Pad5),unconnected-(IC19-NC_2-Pad6),unconnected-(IC19-XOUT-Pad10)",
+        "expected": "+5VD,5V-KNOCK,KNOCK-CH1N,KNOCK-CH1P,KNOCK-CH2N,KNOCK-INTN-HOLD,KNOCK-TESTN,Net-(C84-Pad2),Net-(C85-Pad2),Net-(IC19-CH1FB),Net-(IC19-CH1N),Net-(IC19-CH1P),Net-(IC19-CH2FB),Net-(IC19-CH2N),Net-(IC19-XIN),SPI-KNOCK-CS,SPI-MISO,SPI-MOSI,SPI-SCLK,unconnected-(IC19-NC_1-Pad5),unconnected-(IC19-NC_2-Pad6),unconnected-(IC19-XOUT-Pad10),unconnected-(Y1-EN-H/Float-Pad1)",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('C83', '1', ''), ('C86', '2', ''), ('IC19', '15', ''), ('IC19', '16', ''), ('IC19', '17', ''), ('IC19', '19', ''), ('IC19', '20', ''), ('IC19', '3', ''), ('IC19', '7', ''), ('R84', '2', ''), ('R85', '2', ''), ('R86', '2', ''), ('R91', '2', ''), ('R93', '2', ''), ('Y1', '4', '')]",
+        "expected": "[('C82', '1', ''), ('C83', '1', ''), ('C87', '1', ''), ('IC19', '1', ''), ('Y1', '4', '')]",
+        "field": "net_pins:+5VD"
+      },
+      {
+        "actual": "[('C82', '2', ''), ('C83', '2', ''), ('C86', '1', ''), ('C87', '2', ''), ('C88', '1', ''), ('C88', '2', ''), ('C89', '2', ''), ('IC19', '2', ''), ('IC19', '9', ''), ('R87', '1', ''), ('R88', '1', ''), ('R89', '1', ''), ('R90', '1', ''), ('R91', '1', ''), ('R92', '1', ''), ('R93', '1', ''), ('Y1', '2', ''), ('Y1', '3', '')]",
+        "expected": "[('C82', '2', ''), ('C83', '2', ''), ('C86', '1', ''), ('C87', '2', ''), ('C88', '2', ''), ('C89', '2', ''), ('IC19', '2', ''), ('R87', '1', ''), ('R88', '1', ''), ('R89', '1', ''), ('R90', '1', ''), ('R91', '1', ''), ('R92', '1', ''), ('R93', '1', ''), ('Y1', '2', '')]",
+        "field": "net_pins:KNOCK-CH1P"
+      },
+      {
+        "actual": "[('C82', '1', ''), ('C85', '1', ''), ('IC19', '1', ''), ('IC19', '18', ''), ('R83', '2', '')]",
+        "expected": "[('C85', '1', '')]",
+        "field": "net_pins:KNOCK-CH2N"
+      },
+      {
+        "actual": "[('R87', '2', '')]",
+        "expected": "[('IC19', '14', ''), ('R87', '2', '')]",
+        "field": "net_pins:KNOCK-TESTN"
+      },
+      {
+        "actual": "[('IC19', '12', ''), ('IC19', '8', ''), ('R88', '2', ''), ('R90', '2', '')]",
+        "expected": "[('IC19', '8', ''), ('R88', '2', '')]",
+        "field": "net_pins:SPI-KNOCK-CS"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/tpic8101dwrg4-tpic8101dwrg4/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/tpic8101dwrg4-tpic8101dwrg4/generated_project",
+    "schematic_path": "code_review/generated/model_eval/tpic8101dwrg4-tpic8101dwrg4/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 68.4,
+    "intrinsic_sub_scores": {
+      "label_strategy": 7.0,
+      "overlap": 0.0,
+      "page_bounds": 10.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 11.4,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 0.0,
+      "label_strategy": 0.0,
+      "relative_positions": 25.0,
+      "role_counts": 7.0,
+      "wire_stub_ratio": 6.0
+    },
+    "source_similarity": 38.0,
+    "validity": 20.0
+  },
+  "source_file_name": "tpic8101dwrg4-tpic8101dwrg4.kicad_sch",
+  "total_score": 0.0
+}

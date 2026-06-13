@@ -1,0 +1,161 @@
+(kicad_symbol_lib
+  (version 20231120)
+  (generator "kicad_pcb_corpus")
+  (symbol
+    "INA219AIDCNR"
+    (pin_names (offset 1.016))
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "U"
+      (at -12.7 16.24 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property
+      "Value"
+      "INA219AIDCNR"
+      (at -12.7 -19.24 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property
+      "Footprint"
+      "AeonLabs_Sensors:INA219AIDCNR SOT65P280X145-8N"
+      (at -1.27 20.32 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Datasheet"
+      ""
+      (at 7.62 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "MF"
+      "Texas Instruments"
+      (at 1.27 21.59 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Description"
+      "\n26V, 12-bit, i2c output current/voltage/power monitor\n"
+      (at -2.54 24.13 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Package"
+      "SOT-23-8 Texas Instruments"
+      (at 1.27 26.67 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Price"
+      "None"
+      (at -1.27 16.51 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "SnapEDA_Link"
+      "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=snap"
+      (at 0 24.13 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "MP"
+      "INA219AIDCNR"
+      (at -3.81 22.86 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Purchase-URL"
+      "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=271718&manufacturer=Texas Instruments&part_name=INA219AIDCNR&search_term=None"
+      (at 0 22.86 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Availability"
+      "In Stock"
+      (at 0 24.13 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "Check_prices"
+      "https://www.snapeda.com/parts/INA219AIDCNR/Texas+Instruments/view-part/?ref=eda"
+      (at -1.27 22.86 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (symbol
+      "INA219AIDCNR_0_0"
+      (rectangle
+        (start -5.08 10.16)
+        (end 5.08 -8.89)
+        (stroke (width 0.41) (type default))
+        (fill (type background))
+      )
+      (pin
+        input
+        line
+        (at -10.16 2.54 0)
+        (length 5.08)
+        (name "IN+" (effects (font (size 1.016 1.016))))
+        (number "1" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -10.16 0 0)
+        (length 5.08)
+        (name "IN-" (effects (font (size 1.016 1.016))))
+        (number "2" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        power_in
+        line
+        (at 10.16 -7.62 180)
+        (length 5.08)
+        (name "GND" (effects (font (size 1.016 1.016))))
+        (number "3" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        power_in
+        line
+        (at 10.16 7.62 180)
+        (length 5.08)
+        (name "VS" (effects (font (size 1.016 1.016))))
+        (number "4" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -10.16 -2.54 0)
+        (length 5.08)
+        (name "SCL" (effects (font (size 1.016 1.016))))
+        (number "5" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        bidirectional
+        line
+        (at -10.16 -7.62 0)
+        (length 5.08)
+        (name "SDA" (effects (font (size 1.016 1.016))))
+        (number "6" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -10.16 7.62 0)
+        (length 5.08)
+        (name "A0" (effects (font (size 1.016 1.016))))
+        (number "7" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -10.16 5.08 0)
+        (length 5.08)
+        (name "A1" (effects (font (size 1.016 1.016))))
+        (number "8" (effects (font (size 1.016 1.016))))
+      )
+    )
+  )
+)

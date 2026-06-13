@@ -1,0 +1,193 @@
+{
+  "generated_at_utc": "2026-05-28T17:26:02Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 197,
+    "duplicate_bindings": [],
+    "global_label_count": 76,
+    "hard_failures": [],
+    "junction_count": 21,
+    "label_count": 103,
+    "missing_bindings": [],
+    "symbol_count": 79,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 331
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 197,
+    "global_labels": 76,
+    "junctions": 21,
+    "labels": 27,
+    "power_symbols": 18,
+    "symbols": 61,
+    "wires": 331
+  },
+  "netlist_path": "tests/fixtures/model_corpus/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/4-port-usb-20-hub-w-2-internal-ports-and-2-external-ports/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 12,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "/12MHZ_CLK",
+          "/INT_USB1.D+",
+          "/INT_USB1.D-",
+          "/INT_USB2.D+",
+          "/INT_USB2.D-",
+          "unconnected-(D7-NC-Pad2)",
+          "unconnected-(J1-SBU1-PadA8)",
+          "unconnected-(J1-SBU2-PadB8)",
+          "unconnected-(J1-SHIELD-PadS1)",
+          "unconnected-(U2A-VCC-Pad47)",
+          "unconnected-(U2A-VREG-Pad48)",
+          "unconnected-(U2B-XOUT-Pad15)",
+          "unconnected-(U2F-~PWR[3]-Pad31)",
+          "unconnected-(U2G-~PWR[4]-Pad29)"
+        ]
+      },
+      "family": "generic",
+      "message": "14 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "ColorLEDs:AA3528",
+        "ref": "D1",
+        "symbol": "ColorLEDs:AA3528CGSK"
+      },
+      "family": "generic",
+      "message": "Component D1 uses footprint ColorLEDs:AA3528, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "ColorLEDs:AA3528",
+        "ref": "D2",
+        "symbol": "ColorLEDs:AA3528CGSK"
+      },
+      "family": "generic",
+      "message": "Component D2 uses footprint ColorLEDs:AA3528, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "ColorLEDs:AA3528",
+        "ref": "D3",
+        "symbol": "ColorLEDs:AA3528SYSK"
+      },
+      "family": "generic",
+      "message": "Component D3 uses footprint ColorLEDs:AA3528, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "ColorLEDs:AA3528",
+        "ref": "D4",
+        "symbol": "ColorLEDs:AA3528SYSK"
+      },
+      "family": "generic",
+      "message": "Component D4 uses footprint ColorLEDs:AA3528, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "ColorLEDs:AA3528",
+        "ref": "D5",
+        "symbol": "ColorLEDs:AA3528SURSK"
+      },
+      "family": "generic",
+      "message": "Component D5 uses footprint ColorLEDs:AA3528, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "Package_TO_SOT_SMD:SOT-323_SC-70",
+        "ref": "D7",
+        "symbol": "Diode:BAT54W"
+      },
+      "family": "generic",
+      "message": "Component D7 uses footprint Package_TO_SOT_SMD:SOT-323_SC-70, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance",
+        "ref": "J1",
+        "symbol": "Connector:USB_C_Receptacle_USB2.0_16P"
+      },
+      "family": "generic",
+      "message": "Component J1 uses footprint project libraries:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal-ExtraHoleClearance, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "capacitor",
+        "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "ref": "U2",
+        "symbol": "project libraries:CY7C65632-48AXCT"
+      },
+      "family": "generic",
+      "message": "Component U2 uses footprint Package_QFP:LQFP-48_7x7mm_P0.5mm, which does not look compatible with its capacitor symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C14",
+        "distance_mm": 57.15,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U7",
+        "rail_net": "+5V",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C14 between +5V and GND is placed 57.15 mm from active device U7, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C15",
+        "distance_mm": 68.58,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U7",
+        "rail_net": "+5V",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C15 between +5V and GND is placed 68.58 mm from active device U7, which is too far to read as local support circuitry."
+    }
+  ]
+}

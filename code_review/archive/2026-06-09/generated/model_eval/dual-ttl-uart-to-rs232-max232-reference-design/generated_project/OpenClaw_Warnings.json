@@ -1,0 +1,65 @@
+{
+  "generated_at_utc": "2026-05-28T17:35:43Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 26,
+    "duplicate_bindings": [],
+    "global_label_count": 0,
+    "hard_failures": [],
+    "junction_count": 2,
+    "label_count": 14,
+    "missing_bindings": [],
+    "symbol_count": 11,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 38
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 26,
+    "global_labels": 0,
+    "junctions": 2,
+    "labels": 14,
+    "power_symbols": 5,
+    "symbols": 6,
+    "wires": 38
+  },
+  "netlist_path": "tests/fixtures/model_corpus/dual-ttl-uart-to-rs232-max232-reference-design/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/dual-ttl-uart-to-rs232-max232-reference-design/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 2,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "RS232_0_RX",
+          "RS232_0_TX",
+          "RS232_1_RX",
+          "RS232_1_TX",
+          "TTL_0_RX",
+          "TTL_0_TX",
+          "TTL_1_RX",
+          "TTL_1_TX"
+        ]
+      },
+      "family": "generic",
+      "message": "8 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    }
+  ]
+}

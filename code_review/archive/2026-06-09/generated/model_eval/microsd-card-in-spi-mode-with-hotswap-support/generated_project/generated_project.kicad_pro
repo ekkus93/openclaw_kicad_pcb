@@ -1,0 +1,18 @@
+{
+  "board": {
+    "design_settings": {}
+  },
+  "meta": {
+    "filename": "generated_project.kicad_pro",
+    "version": 1
+  },
+  "schematic": {
+    "drawing": {}
+  },
+  "sheets": [
+    [
+      "generated_project.kicad_sch",
+      ""
+    ]
+  ]
+}

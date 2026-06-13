@@ -1,0 +1,1510 @@
+{
+  "counts": {
+    "global_labels": 0,
+    "junctions": 26,
+    "labels": 39,
+    "no_connects": 0,
+    "non_power_symbols": 47,
+    "power_symbols": 34,
+    "symbols": 81,
+    "wires": 266
+  },
+  "geometry": {
+    "average_symbol_spacing_mm": 9.729,
+    "distinct_x_columns": 30,
+    "max_x": 285.75,
+    "max_y": 214.63,
+    "min_x": 30.48,
+    "min_y": 59.69,
+    "wire_stub_ratio": 0.323
+  },
+  "intrinsic_lints": [
+    {
+      "code": "LAY001",
+      "message": "Net label '3V3_PROBE_IN' appears 6 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY001",
+      "message": "Net label '5V_PROBE_IN' appears 5 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY001",
+      "message": "Net label 'GPIO8_I2C_SDA' appears 4 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY001",
+      "message": "Net label 'Net-(D1-K)' appears 5 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY001",
+      "message": "Net label 'Net-(MPD1-K)' appears 4 times (threshold 3); consider using direct wires",
+      "path": "kicad_sch/label",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (40.64,160.02) and (36.83,160.02) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,199.39) and (33.02,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,199.39) and (33.02,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,199.39) and (30.48,190.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,199.39) and (30.48,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,129.54) and (30.48,121.92) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (97.79,129.54) and (97.79,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,199.39) and (33.02,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,199.39) and (30.48,190.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,199.39) and (30.48,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,199.39) and (30.48,190.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (33.02,199.39) and (30.48,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (30.48,190.5) and (30.48,199.39) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (72.39,129.54) and (82.55,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (46.99,199.39) and (46.99,190.5) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY003",
+      "message": "Symbols at (82.55,144.78) and (82.55,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY005",
+      "message": "Wire graph has 60 disconnected islands (threshold 2); schematic may have isolated regions",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    }
+  ],
+  "net_label_strategy": {
+    "global_label_count": 0,
+    "local_label_count": 39,
+    "power_symbol_count": 38
+  },
+  "relative_positions": [
+    {
+      "a": "C32",
+      "b": "TP2",
+      "relation": "below"
+    },
+    {
+      "a": "C32",
+      "b": "TP3",
+      "relation": "below"
+    },
+    {
+      "a": "C32",
+      "b": "TP4",
+      "relation": "left_of"
+    },
+    {
+      "a": "C32",
+      "b": "U2",
+      "relation": "near"
+    },
+    {
+      "a": "C42",
+      "b": "TP1",
+      "relation": "left_of"
+    },
+    {
+      "a": "C42",
+      "b": "TP2",
+      "relation": "below"
+    },
+    {
+      "a": "C42",
+      "b": "U2",
+      "relation": "below"
+    },
+    {
+      "a": "C6",
+      "b": "TP1",
+      "relation": "left_of"
+    },
+    {
+      "a": "C6",
+      "b": "TP4",
+      "relation": "left_of"
+    },
+    {
+      "a": "R69",
+      "b": "TP3",
+      "relation": "left_of"
+    },
+    {
+      "a": "TP1",
+      "b": "C42",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP1",
+      "b": "C6",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP1",
+      "b": "TP2",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP1",
+      "b": "TP3",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP1",
+      "b": "TP4",
+      "relation": "below"
+    },
+    {
+      "a": "TP1",
+      "b": "U2",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP2",
+      "b": "C32",
+      "relation": "above"
+    },
+    {
+      "a": "TP2",
+      "b": "C42",
+      "relation": "above"
+    },
+    {
+      "a": "TP2",
+      "b": "TP1",
+      "relation": "left_of"
+    },
+    {
+      "a": "TP2",
+      "b": "TP3",
+      "relation": "below"
+    },
+    {
+      "a": "TP2",
+      "b": "TP4",
+      "relation": "left_of"
+    },
+    {
+      "a": "TP2",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "TP3",
+      "b": "C32",
+      "relation": "above"
+    },
+    {
+      "a": "TP3",
+      "b": "R69",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP3",
+      "b": "TP1",
+      "relation": "left_of"
+    },
+    {
+      "a": "TP3",
+      "b": "TP2",
+      "relation": "above"
+    },
+    {
+      "a": "TP3",
+      "b": "TP4",
+      "relation": "left_of"
+    },
+    {
+      "a": "TP3",
+      "b": "U2",
+      "relation": "above"
+    },
+    {
+      "a": "TP4",
+      "b": "C32",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP4",
+      "b": "C6",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP4",
+      "b": "TP1",
+      "relation": "above"
+    },
+    {
+      "a": "TP4",
+      "b": "TP2",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP4",
+      "b": "TP3",
+      "relation": "right_of"
+    },
+    {
+      "a": "TP4",
+      "b": "U2",
+      "relation": "right_of"
+    },
+    {
+      "a": "U2",
+      "b": "C32",
+      "relation": "near"
+    },
+    {
+      "a": "U2",
+      "b": "C42",
+      "relation": "above"
+    },
+    {
+      "a": "U2",
+      "b": "TP1",
+      "relation": "left_of"
+    },
+    {
+      "a": "U2",
+      "b": "TP2",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "TP3",
+      "relation": "below"
+    },
+    {
+      "a": "U2",
+      "b": "TP4",
+      "relation": "left_of"
+    }
+  ],
+  "role_counts": {
+    "connector": 4,
+    "major_ic": 1,
+    "passive": 9,
+    "power_symbol": 34,
+    "support": 33
+  },
+  "schema_version": "1.0",
+  "source": {
+    "file": "generated.kicad_sch",
+    "fixture_id": "12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware"
+  },
+  "symbols": {
+    "#PWR01": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR01",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 91.44,
+      "y": 121.92
+    },
+    "#PWR02": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR02",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 128.27,
+      "y": 121.92
+    },
+    "#PWR03": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR03",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 30.48,
+      "y": 205.74
+    },
+    "#PWR04": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR04",
+      "role_guess": "power_symbol",
+      "rotation": 180.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 30.48,
+      "y": 118.11
+    },
+    "#PWR05": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR05",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 158.75,
+      "y": 146.05
+    },
+    "#PWR06": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR06",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 250.19,
+      "y": 68.58
+    },
+    "#PWR07": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR07",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 280.67,
+      "y": 80.01
+    },
+    "#PWR08": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR08",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+12V",
+      "unit": "1",
+      "value": "+12V",
+      "x": 285.75,
+      "y": 149.86
+    },
+    "#PWR09": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR09",
+      "role_guess": "power_symbol",
+      "rotation": 180.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 204.47,
+      "y": 125.73
+    },
+    "#PWR10": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR10",
+      "role_guess": "power_symbol",
+      "rotation": 270.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 30.48,
+      "y": 67.31
+    },
+    "#PWR11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR11",
+      "role_guess": "power_symbol",
+      "rotation": 180.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 30.48,
+      "y": 127.0
+    },
+    "#PWR12": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR12",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 30.48,
+      "y": 214.63
+    },
+    "#PWR13": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR13",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 113.03,
+      "y": 170.18
+    },
+    "#PWR14": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR14",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 36.83,
+      "y": 160.02
+    },
+    "#PWR15": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR15",
+      "role_guess": "power_symbol",
+      "rotation": 180.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 167.64,
+      "y": 86.36
+    },
+    "#PWR16": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR16",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+3V3",
+      "unit": "1",
+      "value": "+3V3",
+      "x": 210.82,
+      "y": 83.82
+    },
+    "#PWR17": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR17",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 46.99,
+      "y": 148.84
+    },
+    "#PWR18": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR18",
+      "role_guess": "power_symbol",
+      "rotation": 180.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 33.02,
+      "y": 73.66
+    },
+    "#PWR19": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR19",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 67.31,
+      "y": 198.12
+    },
+    "#PWR20": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR20",
+      "role_guess": "power_symbol",
+      "rotation": 90.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 285.75,
+      "y": 121.92
+    },
+    "#PWR21": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR21",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 30.48,
+      "y": 154.94
+    },
+    "#PWR22": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR22",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 30.48,
+      "y": 189.23
+    },
+    "#PWR23": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR23",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 52.07,
+      "y": 129.54
+    },
+    "#PWR24": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR24",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 30.48,
+      "y": 74.93
+    },
+    "#PWR25": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR25",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 101.6,
+      "y": 118.11
+    },
+    "#PWR26": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR26",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 74.93,
+      "y": 201.93
+    },
+    "#PWR27": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR27",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 46.99,
+      "y": 214.63
+    },
+    "#PWR28": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR28",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 97.79,
+      "y": 152.4
+    },
+    "#PWR29": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR29",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 124.46,
+      "y": 144.78
+    },
+    "#PWR30": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR30",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 82.55,
+      "y": 160.02
+    },
+    "#PWR31": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR31",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 109.22,
+      "y": 194.31
+    },
+    "#PWR32": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR32",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 210.82,
+      "y": 99.06
+    },
+    "#PWR33": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR33",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 158.75,
+      "y": 176.53
+    },
+    "#PWR34": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR34",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 250.19,
+      "y": 99.06
+    },
+    "AUR1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Power_Management:ST01S09_AUR9718x_DFN_3x3mm_6_pin",
+      "unit": "1",
+      "value": "AUR9718x_DFN_3x3mm_6_pin",
+      "x": 30.48,
+      "y": 144.78
+    },
+    "AUR_C1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR_C1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "22uF",
+      "x": 58.42,
+      "y": 101.6
+    },
+    "AUR_C2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR_C2",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "4.7uF",
+      "x": 30.48,
+      "y": 59.69
+    },
+    "AUR_R1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR_R1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "75k",
+      "x": 68.58,
+      "y": 152.4
+    },
+    "AUR_R2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR_R2",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "24k",
+      "x": 40.64,
+      "y": 160.02
+    },
+    "AUR_l1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "AUR_l1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:L",
+      "unit": "1",
+      "value": "3.3uF",
+      "x": 134.62,
+      "y": 121.92
+    },
+    "BT1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "BT1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:Battery_Cell",
+      "unit": "1",
+      "value": "Battery_Cell",
+      "x": 30.48,
+      "y": 175.26
+    },
+    "C1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C1",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "0.1uF",
+      "x": 30.48,
+      "y": 109.22
+    },
+    "C2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C2",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "100pF",
+      "x": 30.48,
+      "y": 199.39
+    },
+    "C3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C3",
+      "role_guess": "passive",
+      "rotation": 90.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "10uF",
+      "x": 33.02,
+      "y": 129.54
+    },
+    "C32": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C32",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "4.7uF",
+      "x": 97.79,
+      "y": 129.54
+    },
+    "C4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C4",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "47uF",
+      "x": 48.26,
+      "y": 86.36
+    },
+    "C42": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C42",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "100pF",
+      "x": 97.79,
+      "y": 106.68
+    },
+    "C5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C5",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "10uF",
+      "x": 67.31,
+      "y": 114.3
+    },
+    "C6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C6",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:CP",
+      "unit": "1",
+      "value": "10uF",
+      "x": 128.27,
+      "y": 106.68
+    },
+    "D1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "D1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:D_Schottky",
+      "unit": "1",
+      "value": "SS36",
+      "x": 33.02,
+      "y": 199.39
+    },
+    "D11": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "D11",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:D_Schottky",
+      "unit": "1",
+      "value": "SS36",
+      "x": 33.02,
+      "y": 199.39
+    },
+    "D13": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "D13",
+      "role_guess": "support",
+      "rotation": 180.0,
+      "symbol_id": "Device:D_Schottky",
+      "unit": "1",
+      "value": "D_Schottky",
+      "x": 219.71,
+      "y": 125.73
+    },
+    "ER4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "ER4",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1R",
+      "x": 30.48,
+      "y": 190.5
+    },
+    "ER5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "ER5",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1R",
+      "x": 67.31,
+      "y": 182.88
+    },
+    "ER6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "ER6",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1R",
+      "x": 30.48,
+      "y": 82.55
+    },
+    "HLL1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "HLL1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Power_Management:Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm",
+      "unit": "1",
+      "value": "SQ1010_8x5mm",
+      "x": 58.42,
+      "y": 199.39
+    },
+    "HLL2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "HLL2",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:L",
+      "unit": "1",
+      "value": "6.8uH",
+      "x": 30.48,
+      "y": 97.79
+    },
+    "INA1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "AeonLabs_Sensors:INA219AIDCNR",
+      "unit": "1",
+      "value": "INA219AIDCNR",
+      "x": 30.48,
+      "y": 121.92
+    },
+    "INA1_C1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA1_C1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 30.48,
+      "y": 199.39
+    },
+    "INA1_C4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA1_C4",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 97.79,
+      "y": 167.64
+    },
+    "INA1_C5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA1_C5",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100nF",
+      "x": 128.27,
+      "y": 152.4
+    },
+    "INA4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA4",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "AeonLabs_Sensors:INA219AIDCNR",
+      "unit": "1",
+      "value": "INA219AIDCNR",
+      "x": 36.83,
+      "y": 160.02
+    },
+    "INA5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "INA5",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "AeonLabs_Sensors:INA219AIDCNR",
+      "unit": "1",
+      "value": "INA219AIDCNR",
+      "x": 189.23,
+      "y": 91.44
+    },
+    "MPC1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPC1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "10uF",
+      "x": 158.75,
+      "y": 161.29
+    },
+    "MPC2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPC2",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "100Nf",
+      "x": 72.39,
+      "y": 129.54
+    },
+    "MPC3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPC3",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "220PF",
+      "x": 46.99,
+      "y": 175.26
+    },
+    "MPC4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPC4",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "22UF",
+      "x": 46.99,
+      "y": 199.39
+    },
+    "MPD1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPD1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:D_Schottky",
+      "unit": "1",
+      "value": "SS12",
+      "x": 72.39,
+      "y": 167.64
+    },
+    "MPL1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPL1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:L",
+      "unit": "1",
+      "value": "10uF",
+      "x": 46.99,
+      "y": 190.5
+    },
+    "MPR1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR1",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "24.9K",
+      "x": 250.19,
+      "y": 83.82
+    },
+    "MPR2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR2",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "100k",
+      "x": 280.67,
+      "y": 95.25
+    },
+    "MPR3": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR3",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "200K",
+      "x": 134.62,
+      "y": 137.16
+    },
+    "MPR4": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR4",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "68.1K",
+      "x": 109.22,
+      "y": 121.92
+    },
+    "MPR5": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR5",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "40.2K",
+      "x": 82.55,
+      "y": 144.78
+    },
+    "MPR6": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "MPR6",
+      "role_guess": "support",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "124K",
+      "x": 82.55,
+      "y": 137.16
+    },
+    "R69": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R69",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1k",
+      "x": 72.39,
+      "y": 199.39
+    },
+    "TP1": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "TP1",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:TestPoint",
+      "unit": "1",
+      "value": "VIN",
+      "x": 285.75,
+      "y": 110.49
+    },
+    "TP2": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "TP2",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:TestPoint",
+      "unit": "1",
+      "value": "VOut",
+      "x": 97.79,
+      "y": 152.4
+    },
+    "TP3": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "TP3",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:TestPoint",
+      "unit": "1",
+      "value": "GND",
+      "x": 109.22,
+      "y": 182.88
+    },
+    "TP4": {
+      "is_connector": true,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "TP4",
+      "role_guess": "connector",
+      "rotation": 0.0,
+      "symbol_id": "Connector:TestPoint",
+      "unit": "1",
+      "value": "12V",
+      "x": 285.75,
+      "y": 138.43
+    },
+    "U2": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U2",
+      "role_guess": "major_ic",
+      "rotation": 0.0,
+      "symbol_id": "Power_Management:MP1584EN",
+      "unit": "1",
+      "value": "MP1584EN",
+      "x": 97.79,
+      "y": 137.16
+    }
+  }
+}

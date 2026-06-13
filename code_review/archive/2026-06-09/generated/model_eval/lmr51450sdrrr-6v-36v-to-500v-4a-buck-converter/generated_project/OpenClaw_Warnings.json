@@ -1,0 +1,71 @@
+{
+  "generated_at_utc": "2026-05-28T17:38:27Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 41,
+    "duplicate_bindings": [],
+    "global_label_count": 14,
+    "hard_failures": [],
+    "junction_count": 8,
+    "label_count": 19,
+    "missing_bindings": [],
+    "symbol_count": 23,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 60
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 41,
+    "global_labels": 14,
+    "junctions": 8,
+    "labels": 5,
+    "power_symbols": 8,
+    "symbols": 15,
+    "wires": 60
+  },
+  "netlist_path": "tests/fixtures/model_corpus/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 3,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "+5V",
+          "unconnected-(IC1-PG-Pad5)"
+        ]
+      },
+      "family": "generic",
+      "message": "2 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "Library:1778764",
+        "ref": "J7",
+        "symbol": "Connector_Generic:Conn_01x02"
+      },
+      "family": "generic",
+      "message": "Component J7 uses footprint Library:1778764, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    }
+  ]
+}

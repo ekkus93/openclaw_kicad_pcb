@@ -1,0 +1,127 @@
+{
+  "generated_at_utc": "2026-05-28T17:24:47Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 76,
+    "duplicate_bindings": [],
+    "global_label_count": 0,
+    "hard_failures": [],
+    "junction_count": 15,
+    "label_count": 37,
+    "missing_bindings": [],
+    "symbol_count": 36,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 187
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 76,
+    "global_labels": 0,
+    "junctions": 15,
+    "labels": 37,
+    "power_symbols": 11,
+    "symbols": 25,
+    "wires": 187
+  },
+  "netlist_path": "tests/fixtures/model_corpus/4-channel-switched-constant-current-source/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/4-channel-switched-constant-current-source/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/4-channel-switched-constant-current-source/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 7,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "MCU_ISOURCE0",
+          "MCU_ISOURCE1",
+          "MCU_ISOURCE2",
+          "MCU_ISOURCE3",
+          "unconnected-(IC12-5B-Pad5)",
+          "unconnected-(IC12-5C-Pad12)",
+          "unconnected-(IC12-6B-Pad6)",
+          "unconnected-(IC12-6C-Pad11)",
+          "unconnected-(IC12-7B-Pad7)",
+          "unconnected-(IC12-7C-Pad10)"
+        ]
+      },
+      "family": "generic",
+      "message": "10 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": null,
+        "footprint": "SOIC127P600X175-16N",
+        "ref": "IC12",
+        "symbol": "SamacSys_Parts:ULQ2003AQDRQ1"
+      },
+      "family": "generic",
+      "message": "Component IC12 uses footprint SOIC127P600X175-16N, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "SOT230P700X175-4N",
+        "ref": "PS3",
+        "symbol": "SamacSys_Parts:NCV317MBSTT3G"
+      },
+      "family": "generic",
+      "message": "Component PS3 uses footprint SOT230P700X175-4N, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "SOT230P700X175-4N",
+        "ref": "PS4",
+        "symbol": "SamacSys_Parts:NCV317MBSTT3G"
+      },
+      "family": "generic",
+      "message": "Component PS4 uses footprint SOT230P700X175-4N, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "SOT230P700X175-4N",
+        "ref": "PS5",
+        "symbol": "SamacSys_Parts:NCV317MBSTT3G"
+      },
+      "family": "generic",
+      "message": "Component PS5 uses footprint SOT230P700X175-4N, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "SOT230P700X175-4N",
+        "ref": "PS6",
+        "symbol": "SamacSys_Parts:NCV317MBSTT3G"
+      },
+      "family": "generic",
+      "message": "Component PS6 uses footprint SOT230P700X175-4N, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    }
+  ]
+}

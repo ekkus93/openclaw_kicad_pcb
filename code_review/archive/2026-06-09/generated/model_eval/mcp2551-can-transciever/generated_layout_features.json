@@ -1,0 +1,200 @@
+{
+  "counts": {
+    "global_labels": 0,
+    "junctions": 2,
+    "labels": 6,
+    "no_connects": 0,
+    "non_power_symbols": 5,
+    "power_symbols": 4,
+    "symbols": 9,
+    "wires": 32
+  },
+  "geometry": {
+    "average_symbol_spacing_mm": 13.801,
+    "distinct_x_columns": 4,
+    "max_x": 146.05,
+    "max_y": 158.75,
+    "min_x": 58.42,
+    "min_y": 101.6,
+    "wire_stub_ratio": 0.344
+  },
+  "intrinsic_lints": [
+    {
+      "code": "LAY003",
+      "message": "Symbols at (135.89,129.54) and (135.89,137.16) overlap (approx bounding box ±5.08 mm)",
+      "path": "kicad_sch/symbol",
+      "severity": "warning"
+    },
+    {
+      "code": "LAY005",
+      "message": "Wire graph has 9 disconnected islands (threshold 2); schematic may have isolated regions",
+      "path": "kicad_sch/wire",
+      "severity": "warning"
+    }
+  ],
+  "net_label_strategy": {
+    "global_label_count": 0,
+    "local_label_count": 6,
+    "power_symbol_count": 6
+  },
+  "relative_positions": [
+    {
+      "a": "C60",
+      "b": "U1",
+      "relation": "near"
+    },
+    {
+      "a": "C61",
+      "b": "U1",
+      "relation": "below"
+    },
+    {
+      "a": "U1",
+      "b": "C60",
+      "relation": "near"
+    },
+    {
+      "a": "U1",
+      "b": "C61",
+      "relation": "above"
+    }
+  ],
+  "role_counts": {
+    "interface_ic": 1,
+    "passive": 4,
+    "power_symbol": 4
+  },
+  "schema_version": "1.0",
+  "source": {
+    "file": "generated.kicad_sch",
+    "fixture_id": "mcp2551-can-transciever"
+  },
+  "symbols": {
+    "#PWR01": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR01",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:+5V",
+      "unit": "1",
+      "value": "+5V",
+      "x": 146.05,
+      "y": 115.57
+    },
+    "#PWR02": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR02",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 135.89,
+      "y": 114.3
+    },
+    "#PWR03": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR03",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 135.89,
+      "y": 158.75
+    },
+    "#PWR04": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": false,
+      "is_power_symbol": true,
+      "ref": "#PWR04",
+      "role_guess": "power_symbol",
+      "rotation": 0.0,
+      "symbol_id": "power:GND",
+      "unit": "1",
+      "value": "GND",
+      "x": 58.42,
+      "y": 101.6
+    },
+    "C60": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C60",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "30pf",
+      "x": 135.89,
+      "y": 129.54
+    },
+    "C61": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "C61",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:C",
+      "unit": "1",
+      "value": "0.1uf",
+      "x": 135.89,
+      "y": 106.68
+    },
+    "R1": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R1",
+      "role_guess": "passive",
+      "rotation": 180.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "1k",
+      "x": 58.42,
+      "y": 116.84
+    },
+    "R2": {
+      "is_connector": false,
+      "is_major_ic": false,
+      "is_passive": true,
+      "is_power_symbol": false,
+      "ref": "R2",
+      "role_guess": "passive",
+      "rotation": 0.0,
+      "symbol_id": "Device:R",
+      "unit": "1",
+      "value": "60R",
+      "x": 105.41,
+      "y": 144.78
+    },
+    "U1": {
+      "is_connector": false,
+      "is_major_ic": true,
+      "is_passive": false,
+      "is_power_symbol": false,
+      "ref": "U1",
+      "role_guess": "interface_ic",
+      "rotation": 0.0,
+      "symbol_id": "Interface_CAN_LIN:MCP2551-I-SN",
+      "unit": "1",
+      "value": "MCP2551-I-SN",
+      "x": 135.89,
+      "y": 137.16
+    }
+  }
+}

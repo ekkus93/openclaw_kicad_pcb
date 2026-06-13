@@ -1,0 +1,450 @@
+(kicad_symbol_lib
+  (version 20231120)
+  (generator "kicad_pcb_corpus")
+  (symbol
+    "Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm"
+    (pin_names (offset 0.254) hide)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "HLL2"
+      (at 0 3.8268 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm"
+      (at -0.254 5.588 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      "Inductor_THT:Common Mode Inductor SQ1010 8x5mm"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Datasheet" "~" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property
+      "ki_keywords"
+      "inductor choke coil reactor magnetic coupled"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "ki_description"
+      "Coupled inductor"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "ki_fp_filters"
+      "Choke_* *Coil* Inductor_* L_*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (symbol
+      "Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm_0_1"
+      (circle
+        (center -3.048 -1.27)
+        (radius 0.254)
+        (stroke (width 0) (type default))
+        (fill (type outline))
+      )
+      (circle
+        (center -3.048 1.524)
+        (radius 0.254)
+        (stroke (width 0) (type default))
+        (fill (type outline))
+      )
+      (arc
+        (start -2.54 2.032)
+        (mid -2.032 1.5262)
+        (end -1.524 2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start -1.524 -2.032)
+        (mid -2.032 -1.5262)
+        (end -2.54 -2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start -1.524 2.032)
+        (mid -1.016 1.5262)
+        (end -0.508 2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start -0.508 -2.032)
+        (mid -1.016 -1.5262)
+        (end -1.524 -2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start -0.508 2.032)
+        (mid 0 1.5262)
+        (end 0.508 2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy -2.54 -2.032) (xy -2.54 -2.54))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy -2.54 2.032) (xy -2.54 2.54))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 2.54 -2.032) (xy 2.54 -2.54))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts (xy 2.54 2.54) (xy 2.54 2.032))
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start 0.508 -2.032)
+        (mid 0 -1.5262)
+        (end -0.508 -2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start 0.508 2.032)
+        (mid 1.016 1.5262)
+        (end 1.524 2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start 1.524 -2.032)
+        (mid 1.016 -1.5262)
+        (end 0.508 -2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start 1.524 2.032)
+        (mid 2.032 1.5262)
+        (end 2.54 2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (arc
+        (start 2.54 -2.032)
+        (mid 2.032 -1.5262)
+        (end 1.524 -2.032)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+    )
+    (symbol
+      "Inductor_THT{colon}Common_Mode_Inductor_SQ1010_8x5mm_1_1"
+      (pin
+        passive
+        line
+        (at -5.08 2.54 0)
+        (length 2.54)
+        (name "1" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 5.08 2.54 180)
+        (length 2.54)
+        (name "2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at -5.08 -2.54 0)
+        (length 2.54)
+        (name "3" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 5.08 -2.54 180)
+        (length 2.54)
+        (name "4" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+  (symbol
+    "MP1584EN"
+    (pin_names (offset 1.016))
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "U"
+      (at -10.185 10.6942 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property
+      "Value"
+      "MP1584EN"
+      (at -10.1723 -12.7154 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property
+      "Footprint"
+      "Package_SO:MP1584 SOIC127P600X170-9N"
+      (at 0.3556 14.8844 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property
+      "DESCRIPTION"
+      ""
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "MP"
+      "MP1584EN"
+      (at 0.7112 17.4752 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "PACKAGE"
+      "None"
+      (at 0.7112 17.4752 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "MF"
+      "Monolithic Power Systems"
+      (at 0.7112 17.4752 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "AVAILABILITY"
+      "Unavailable"
+      (at 0.5588 12.9032 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "STANDARD"
+      "IPC-7351B"
+      (at 0.7112 17.4752 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property
+      "PRICE"
+      "None"
+      (at 0.7112 17.4752 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (symbol
+      "MP1584EN_0_0"
+      (rectangle
+        (start -10.16 -10.16)
+        (end 10.16 10.16)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin
+        output
+        line
+        (at 15.24 5.08 180)
+        (length 5.08)
+        (name "SW" (effects (font (size 1.016 1.016))))
+        (number "1" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -15.24 0 0)
+        (length 5.08)
+        (name "EN" (effects (font (size 1.016 1.016))))
+        (number "2" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        output
+        line
+        (at 15.24 -2.54 180)
+        (length 5.08)
+        (name "COMP" (effects (font (size 1.016 1.016))))
+        (number "3" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at 15.24 2.54 180)
+        (length 5.08)
+        (name "FB" (effects (font (size 1.016 1.016))))
+        (number "4" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        power_in
+        line
+        (at 15.24 -7.62 180)
+        (length 5.08)
+        (name "GND" (effects (font (size 1.016 1.016))))
+        (number "5" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -15.24 -5.08 0)
+        (length 5.08)
+        (name "FREQ" (effects (font (size 1.016 1.016))))
+        (number "6" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        input
+        line
+        (at -15.24 5.08 0)
+        (length 5.08)
+        (name "VIN" (effects (font (size 1.016 1.016))))
+        (number "7" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        passive
+        line
+        (at 15.24 7.62 180)
+        (length 5.08)
+        (name "BST" (effects (font (size 1.016 1.016))))
+        (number "8" (effects (font (size 1.016 1.016))))
+      )
+      (pin
+        power_in
+        line
+        (at 15.24 -7.62 180)
+        (length 5.08)
+        (name "GND" (effects (font (size 1.016 1.016))))
+        (number "9" (effects (font (size 1.016 1.016))))
+      )
+    )
+  )
+  (symbol
+    "ST01S09_AUR9718x_DFN_3x3mm_6_pin"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "AU1"
+      (at -2.54 10.033 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "AUR9718x_DFN_3x3mm_6_pin"
+      (at -2.54 7.493 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      "Package_DFN_QFN:AUR9718 ST1S09 SON95P300X300X100-7N"
+      (at -1.016 20.32 0)
+      (effects (font (size 1.27 1.27) italic) hide)
+    )
+    (property
+      "Datasheet"
+      "https://www.infineon.com/dgdl/auips7111s.pdf?fileId=5546d462533600a4015355a7c94e1326"
+      (at 1.27 20.828 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "ki_keywords"
+      "high side switch"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "ki_description"
+      "Current Sense High Side Switch, 65V, 30A, D2PAK-5L"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "ki_fp_filters"
+      "TO?263*"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (symbol
+      "ST01S09_AUR9718x_DFN_3x3mm_6_pin_0_1"
+      (rectangle
+        (start -7.62 5.08)
+        (end 2.54 -5.08)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+    )
+    (symbol
+      "ST01S09_AUR9718x_DFN_3x3mm_6_pin_1_1"
+      (pin
+        input
+        line
+        (at -10.16 3.048 0)
+        (length 2.54)
+        (name "FB" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        output
+        line
+        (at -10.16 -0.254 0)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        bidirectional
+        line
+        (at -10.16 -4.064 0)
+        (length 2.54)
+        (name "SW" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 5.08 -4.064 180)
+        (length 2.54)
+        (name "VIN_SW" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        power_out
+        line
+        (at 5.08 -0.254 180)
+        (length 2.54)
+        (name "VIN_A" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        power_in
+        line
+        (at 5.08 3.048 180)
+        (length 2.54)
+        (name "EN" (effects (font (size 1.27 1.27))))
+        (number "6" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        output
+        line
+        (at -10.16 -0.254 0)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "7" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+)

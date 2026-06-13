@@ -1,0 +1,152 @@
+(kicad_symbol_lib
+  (version 20231120)
+  (generator "kicad_pcb_corpus")
+  (symbol
+    "SPV1040TTR"
+    (pin_names (offset 0.762))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "IC?"
+      (at 20.32 7.62 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "SPV1040TTR"
+      (at 20.32 5.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      "SamacSys:SOP65P640X120-8N"
+      (at 36.83 2.54 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Datasheet"
+      ""
+      (at 36.83 0 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Description"
+      "Switching Voltage Regulators Hi Eff Solar Charger MPPT 0.3V to 5.5V"
+      (at 36.83 -2.54 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Height"
+      "1.2"
+      (at 36.83 -5.08 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Mouser Part Number"
+      "511-SPV1040TTR"
+      (at 36.83 -7.62 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Mouser Price/Stock"
+      "https://www.mouser.co.uk/ProductDetail/STMicroelectronics/SPV1040TTR?qs=AHLdMMsI%252Bhr%2Fj5DYN1qCwQ%3D%3D"
+      (at 36.83 -10.16 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Manufacturer_Name"
+      "STMicroelectronics"
+      (at 36.83 -12.7 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (property
+      "Manufacturer_Part_Number"
+      "SPV1040TTR"
+      (at 36.83 -15.24 0)
+      (effects (font (size 1.27 1.27)) (justify left) (hide yes))
+    )
+    (symbol
+      "SPV1040TTR_0_0"
+      (pin
+        input
+        line
+        (at 0 -7.62 0)
+        (length 5.08)
+        (name "MPP-SET" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        power_in
+        line
+        (at 0 -5.08 0)
+        (length 5.08)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 0 0 0)
+        (length 5.08)
+        (name "LX" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        output
+        line
+        (at 40.64 0 180)
+        (length 5.08)
+        (name "VOUT" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 40.64 -7.62 180)
+        (length 5.08)
+        (name "VCTRL" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 40.64 -5.08 180)
+        (length 5.08)
+        (name "ICTRL_MINUS" (effects (font (size 1.27 1.27))))
+        (number "6" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 40.64 -2.54 180)
+        (length 5.08)
+        (name "ICTRL_PLUS" (effects (font (size 1.27 1.27))))
+        (number "7" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        input
+        line
+        (at 0 -2.54 0)
+        (length 5.08)
+        (name "XSHUT" (effects (font (size 1.27 1.27))))
+        (number "8" (effects (font (size 1.27 1.27))))
+      )
+    )
+    (symbol
+      "SPV1040TTR_0_1"
+      (polyline
+        (pts
+          (xy 5.08 2.54)
+          (xy 35.56 2.54)
+          (xy 35.56 -10.16)
+          (xy 5.08 -10.16)
+          (xy 5.08 2.54)
+        )
+        (stroke (width 0.1524) (type default))
+        (fill (type none))
+      )
+    )
+  )
+)

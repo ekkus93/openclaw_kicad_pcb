@@ -1,0 +1,129 @@
+{
+  "actionable_failures": [
+    {
+      "message": "Generated schematic connectivity differs from the source fixture.",
+      "rule": "electrical_equivalence",
+      "severity": "high",
+      "suggested_files": [
+        "src/kicad_pcb/router.py",
+        "src/kicad_pcb/commands/_sch_apply.py"
+      ]
+    },
+    {
+      "message": "generated x-column spread is significantly worse.",
+      "rule": "geometry_spread",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "major-symbol ordering diverges from the source fixture.",
+      "rule": "relative_positions",
+      "severity": "medium",
+      "suggested_files": [
+        "src/kicad_pcb/graphviz_layout/dot_builder.py",
+        "src/kicad_pcb/graphviz_layout/snap.py"
+      ]
+    },
+    {
+      "message": "too many global labels are exposed.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "generated label/global-label strategy diverges from the source.",
+      "rule": "label_strategy",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    },
+    {
+      "message": "layout lints reported potential crowding or composition issues.",
+      "rule": "overlap",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/schematic_metrics.py",
+        "src/kicad_pcb/corpus/layout_features.py",
+        "src/kicad_pcb/evaluation/"
+      ]
+    },
+    {
+      "message": "generated symbol-role counts diverge from the source fixture.",
+      "rule": "role_counts",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/block_detection.py"
+      ]
+    },
+    {
+      "message": "generated routing is noticeably stubbier than the source.",
+      "rule": "wire_stub_ratio",
+      "severity": "low",
+      "suggested_files": [
+        "src/kicad_pcb/router.py"
+      ]
+    }
+  ],
+  "electrical_equivalence": {
+    "mismatches": [
+      {
+        "actual": "+5V,GND,Net-(IC1-BOOT),Net-(IC1-RT),SW,VIN,VOUT,unconnected-(IC1-PG-Pad5)",
+        "expected": "+5V,GND,Net-(D4-A2),Net-(IC1-BOOT),Net-(IC1-FB),Net-(IC1-RT),SW,VIN,VOUT,unconnected-(IC1-PG-Pad5)",
+        "field": "net_names"
+      },
+      {
+        "actual": "[('C10', '2', ''), ('C17', '2', ''), ('C18', '2', ''), ('C8', '2', ''), ('C9', '2', ''), ('D4', '2', ''), ('D5', '2', ''), ('IC1', '13', ''), ('IC1', '8', ''), ('R11', '2', ''), ('R13', '1', '')]",
+        "expected": "[('C10', '2', ''), ('C17', '2', ''), ('C18', '2', ''), ('C8', '2', ''), ('C9', '2', ''), ('D4', '1', ''), ('IC1', '13', ''), ('IC1', '8', ''), ('J7', '1', ''), ('R11', '2', ''), ('R13', '1', '')]",
+        "field": "net_pins:GND"
+      },
+      {
+        "actual": "[('IC1', '1', ''), ('IC1', '2', ''), ('IC1', '3', '')]",
+        "expected": "[('Cboot1', '2', ''), ('IC1', '1', ''), ('IC1', '2', ''), ('IC1', '3', ''), ('L1', '1', '')]",
+        "field": "net_pins:SW"
+      },
+      {
+        "actual": "[('C8', '1', ''), ('C9', '1', ''), ('D5', '1', ''), ('IC1', '10', ''), ('IC1', '11', ''), ('IC1', '12', ''), ('IC1', '7', ''), ('IC1', '9', ''), ('R12', '2', ''), ('R13', '2', '')]",
+        "expected": "[('C8', '1', ''), ('C9', '1', ''), ('D5', '1', ''), ('IC1', '10', ''), ('IC1', '11', ''), ('IC1', '12', ''), ('IC1', '9', '')]",
+        "field": "net_pins:VIN"
+      }
+    ],
+    "status": "failed"
+  },
+  "fixture_id": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+  "generated_artifacts": {
+    "layout_features": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated_layout_features.json",
+    "project_dir": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated_project",
+    "schematic_path": "code_review/generated/model_eval/lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter/generated.kicad_sch"
+  },
+  "result": "fail",
+  "schema_version": "1.0",
+  "scores": {
+    "intrinsic_quality": 72.34,
+    "intrinsic_sub_scores": {
+      "label_strategy": 12.0,
+      "overlap": 0.0,
+      "page_bounds": 10.0,
+      "power_symbols": 10.0,
+      "routing_simplicity": 10.34,
+      "spread": 10.0,
+      "validity": 20.0
+    },
+    "similarity_sub_scores": {
+      "geometry_spread": 0.0,
+      "label_strategy": 0.0,
+      "relative_positions": 0.0,
+      "role_counts": 13.0,
+      "wire_stub_ratio": 13.8
+    },
+    "source_similarity": 26.8,
+    "validity": 20.0
+  },
+  "source_file_name": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter.kicad_sch",
+  "total_score": 0.0
+}

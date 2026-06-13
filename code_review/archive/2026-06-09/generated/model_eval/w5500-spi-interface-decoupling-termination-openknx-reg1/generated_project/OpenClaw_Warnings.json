@@ -1,0 +1,164 @@
+{
+  "generated_at_utc": "2026-05-28T17:48:28Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 141,
+    "duplicate_bindings": [],
+    "global_label_count": 8,
+    "hard_failures": [],
+    "junction_count": 24,
+    "label_count": 55,
+    "missing_bindings": [],
+    "symbol_count": 63,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 303
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 141,
+    "global_labels": 8,
+    "junctions": 24,
+    "labels": 47,
+    "power_symbols": 22,
+    "symbols": 41,
+    "wires": 303
+  },
+  "netlist_path": "tests/fixtures/model_corpus/w5500-spi-interface-decoupling-termination-openknx-reg1/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/w5500-spi-interface-decoupling-termination-openknx-reg1/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 9,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "MISO",
+          "MOSI",
+          "SCLK",
+          "XO",
+          "unconnected-(U1-DNC-Pad7)",
+          "unconnected-(U1-DUPLED-Pad26)",
+          "unconnected-(U1-NC-Pad12)",
+          "unconnected-(U1-NC-Pad13)",
+          "unconnected-(U1-NC-Pad46)",
+          "unconnected-(U1-NC-Pad47)",
+          "unconnected-(U1-PMODE0-Pad45)",
+          "unconnected-(U1-PMODE1-Pad44)",
+          "unconnected-(U1-PMODE2-Pad43)",
+          "unconnected-(U1-RSVD-Pad23)",
+          "unconnected-(U1-SPDLED-Pad24)",
+          "unconnected-(U1-VBG-Pad18)",
+          "unconnected-(X1-EN-Pad1)"
+        ]
+      },
+      "family": "generic",
+      "message": "17 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "DomsKiCADLib:HANRUN_HR911105A-small",
+        "ref": "P1",
+        "symbol": "DomsKiCADLib:HR911105A"
+      },
+      "family": "generic",
+      "message": "Component P1 uses footprint DomsKiCADLib:HANRUN_HR911105A-small, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C23",
+        "distance_mm": 52.99,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3.3VA",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C23 between +3.3VA and GND is placed 52.99 mm from active device U1, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C3",
+        "distance_mm": 107.16,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3.3VA",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C3 between +3.3VA and GND is placed 107.16 mm from active device U1, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C4",
+        "distance_mm": 66.93,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3.3VA",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C4 between +3.3VA and GND is placed 66.93 mm from active device U1, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C5",
+        "distance_mm": 134.12,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3.3VA",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C5 between +3.3VA and GND is placed 134.12 mm from active device U1, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C6",
+        "distance_mm": 66.93,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3.3VA",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C6 between +3.3VA and GND is placed 66.93 mm from active device U1, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C9",
+        "distance_mm": 162.32,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U1",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C9 between +3V3 and GND is placed 162.32 mm from active device U1, which is too far to read as local support circuitry."
+    }
+  ]
+}

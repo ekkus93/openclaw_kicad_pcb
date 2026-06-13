@@ -1,0 +1,287 @@
+{
+  "generated_at_utc": "2026-05-28T17:41:35Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 227,
+    "duplicate_bindings": [],
+    "global_label_count": 104,
+    "hard_failures": [],
+    "junction_count": 43,
+    "label_count": 117,
+    "missing_bindings": [],
+    "symbol_count": 82,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 468
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 227,
+    "global_labels": 104,
+    "junctions": 43,
+    "labels": 13,
+    "power_symbols": 29,
+    "symbols": 53,
+    "wires": 468
+  },
+  "netlist_path": "tests/fixtures/model_corpus/rp2040-microcontroller-core-circuit-mitayi-pico-d1/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/rp2040-microcontroller-core-circuit-mitayi-pico-d1/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 20,
+  "warnings": [
+    {
+      "code": "COMPONENT_NOT_IN_ANY_NET",
+      "details": {
+        "refs": [
+          "H1",
+          "H2",
+          "H3",
+          "H4"
+        ]
+      },
+      "family": "generic",
+      "message": "4 component(s) are not referenced in any net and will be floating in the schematic.",
+      "severity": "warning"
+    },
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "unconnected-(J2-SBU1-PadA8)",
+          "unconnected-(J2-SBU2-PadB8)",
+          "unconnected-(J6-ID-Pad4)"
+        ]
+      },
+      "family": "generic",
+      "message": "3 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "LED_SMD:LED_0603_1608Metric",
+        "ref": "D2",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D2 uses footprint LED_SMD:LED_0603_1608Metric, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "LED_SMD:LED_0603_1608Metric",
+        "ref": "D3",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D3 uses footprint LED_SMD:LED_0603_1608Metric, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+        "ref": "JP1",
+        "symbol": "Jumper:SolderJumper_2_Open"
+      },
+      "family": "generic",
+      "message": "Component JP1 uses footprint CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+        "ref": "JP4",
+        "symbol": "Jumper:SolderJumper_2_Open"
+      },
+      "family": "generic",
+      "message": "Component JP4 uses footprint CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402",
+        "ref": "JP5",
+        "symbol": "Jumper:SolderJumper_2_Open"
+      },
+      "family": "generic",
+      "message": "Component JP5 uses footprint CIRCUITSTATE_Jumper_SMD:Solder-Jumper_2P_Open_0402, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "CIRCUITSTATE_Jumper_SMD:Solder-Jumper_3P_Open_0402",
+        "ref": "JP6",
+        "symbol": "Jumper:SolderJumper_3_Open"
+      },
+      "family": "generic",
+      "message": "Component JP6 uses footprint CIRCUITSTATE_Jumper_SMD:Solder-Jumper_3P_Open_0402, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "resistor",
+        "footprint": "CIRCUITSTATE-QFN:RP2040-QFN-56",
+        "ref": "U3",
+        "symbol": "CIRCUITSTATE-Microcontrollers:RP2040"
+      },
+      "family": "generic",
+      "message": "Component U3 uses footprint CIRCUITSTATE-QFN:RP2040-QFN-56, which does not look compatible with its resistor symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "capacitor",
+        "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+        "ref": "Y1",
+        "symbol": "Device:Crystal_GND24_Small"
+      },
+      "family": "generic",
+      "message": "Component Y1 uses footprint Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm, which does not look compatible with its capacitor symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C15",
+        "distance_mm": 52.12,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U2",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C15 between +3V3 and GND is placed 52.12 mm from active device U2, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C2",
+        "distance_mm": 76.2,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U3",
+        "rail_net": "+1V1",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C2 between +1V1 and GND is placed 76.20 mm from active device U3, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C3",
+        "distance_mm": 77.75,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U3",
+        "rail_net": "+1V1",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C3 between +1V1 and GND is placed 77.75 mm from active device U3, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C4",
+        "distance_mm": 99.06,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U3",
+        "rail_net": "+1V1",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C4 between +1V1 and GND is placed 99.06 mm from active device U3, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C5",
+        "distance_mm": 59.95,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U2",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C5 between +3V3 and GND is placed 59.95 mm from active device U2, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C6",
+        "distance_mm": 127.73,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U3",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C6 between +3V3 and GND is placed 127.73 mm from active device U3, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C7",
+        "distance_mm": 59.95,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U2",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C7 between +3V3 and GND is placed 59.95 mm from active device U2, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C8",
+        "distance_mm": 157.09,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U3",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C8 between +3V3 and GND is placed 157.09 mm from active device U3, which is too far to read as local support circuitry."
+    },
+    {
+      "code": "DECOUPLING_FAR_FROM_ACTIVE_DEVICE",
+      "details": {
+        "capacitor_ref": "C9",
+        "distance_mm": 59.95,
+        "max_local_distance_mm": 45.72,
+        "nearest_active_ref": "U2",
+        "rail_net": "+3V3",
+        "rail_polarity": "positive",
+        "reference_net": "GND"
+      },
+      "message": "Decoupling capacitor C9 between +3V3 and GND is placed 59.95 mm from active device U2, which is too far to read as local support circuitry."
+    }
+  ]
+}

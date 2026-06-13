@@ -1,0 +1,228 @@
+{
+  "generated_at_utc": "2026-05-28T17:47:21Z",
+  "generated_schematic_diagnostics": {
+    "binding_marker_count": 157,
+    "duplicate_bindings": [],
+    "global_label_count": 65,
+    "hard_failures": [],
+    "junction_count": 19,
+    "label_count": 88,
+    "missing_bindings": [],
+    "symbol_count": 65,
+    "unexpected_bindings": [],
+    "unresolved_refs": [],
+    "wire_count": 317
+  },
+  "kicad_cli_used": false,
+  "managed_schematic_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated_project/OpenClaw_Managed.kicad_sch",
+  "managed_stats": {
+    "binding_markers": 157,
+    "global_labels": 65,
+    "junctions": 19,
+    "labels": 23,
+    "power_symbols": 14,
+    "symbols": 51,
+    "wires": 317
+  },
+  "netlist_path": "tests/fixtures/model_corpus/stm32g030-minimal-system-circuit-electrical/circuit_ir.json",
+  "project_name": "generated_project",
+  "project_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated_project",
+  "root_schematic_path": "code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/generated_project/generated_project.kicad_sch",
+  "symbols_dirs_used": [
+    "/home/phil/work/openclaw_kicad_pcb/code_review/generated/model_eval/stm32g030-minimal-system-circuit-electrical/fixture_symbols",
+    "/home/phil/work/openclaw_kicad_pcb/src/kicad_pcb/resources/symbols",
+    "/usr/share/kicad/symbols"
+  ],
+  "validation_mode": "internal",
+  "warning_count": 14,
+  "warnings": [
+    {
+      "code": "SINGLE_PIN_NET",
+      "details": {
+        "nets": [
+          "/12v0",
+          "/LOAD_SW_PGOOD",
+          "/MISO",
+          "/MOSI",
+          "/NSS",
+          "/PWR_12v0_EN",
+          "/PWR_3v3_EN",
+          "/PWR_5v0_EN",
+          "/PWR_BTN_~{INT}",
+          "/PWR_~{KILL}",
+          "/RX",
+          "/SCK",
+          "/TX",
+          "unconnected-(J1-KEY-Pad7)",
+          "unconnected-(J1-NC/TDI-Pad8)",
+          "unconnected-(J1-SWO/TDO-Pad6)",
+          "unconnected-(U2-CKO-Pad5)",
+          "unconnected-(U2-SDO-Pad6)",
+          "unconnected-(U3-PA11/PA9-Pad33)",
+          "unconnected-(U3-PA12/PA10-Pad34)",
+          "unconnected-(U3-PB0-Pad19)",
+          "unconnected-(U3-PB4-Pad43)",
+          "unconnected-(U3-PB9-Pad48)",
+          "unconnected-(U3-PC13-Pad1)",
+          "unconnected-(U3-PC7-Pad31)",
+          "unconnected-(U3-PD2-Pad40)",
+          "~{PB}"
+        ]
+      },
+      "family": "generic",
+      "message": "27 net(s) have only one connected pin. This is usually a wiring mistake.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "AT-LED:LED0603",
+        "ref": "D2",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D2 uses footprint AT-LED:LED0603, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "AT-LED:LED0603",
+        "ref": "D3",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D3 uses footprint AT-LED:LED0603, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "AT-LED:LED0603",
+        "ref": "D4",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D4 uses footprint AT-LED:LED0603, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "AT-LED:LED0603",
+        "ref": "D5",
+        "symbol": "Device:LED"
+      },
+      "family": "generic",
+      "message": "Component D5 uses footprint AT-LED:LED0603, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "ref": "D7",
+        "symbol": "Power_Protection:PESD3V3L5UY"
+      },
+      "family": "generic",
+      "message": "Component D7 uses footprint Package_TO_SOT_SMD:SOT-363_SC-70-6, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "ref": "D8",
+        "symbol": "Power_Protection:PESD3V3L5UY"
+      },
+      "family": "generic",
+      "message": "Component D8 uses footprint Package_TO_SOT_SMD:SOT-363_SC-70-6, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "diode",
+        "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+        "ref": "D9",
+        "symbol": "Power_Protection:PESD3V3L5UY"
+      },
+      "family": "generic",
+      "message": "Component D9 uses footprint Package_TO_SOT_SMD:SOT-363_SC-70-6, which does not look compatible with its diode symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "connector",
+        "footprint": "AT-BoardFeatures:SolderJumper-2_2.0x1.2mm_Open",
+        "ref": "JP1",
+        "symbol": "Jumper:SolderJumper_2_Open"
+      },
+      "family": "generic",
+      "message": "Component JP1 uses footprint AT-BoardFeatures:SolderJumper-2_2.0x1.2mm_Open, which does not look compatible with its connector symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "ic",
+        "footprint": "AT-LED:SK9822",
+        "ref": "U1",
+        "symbol": "AT-LED:SK9822"
+      },
+      "family": "generic",
+      "message": "Component U1 uses footprint AT-LED:SK9822, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_LOOKS_PLACEHOLDER_OR_SYMBOL_ID",
+      "details": {
+        "expected_category": "ic",
+        "footprint": "AT-LED:SK9822",
+        "ref": "U2",
+        "symbol": "AT-LED:SK9822"
+      },
+      "family": "generic",
+      "message": "Component U2 uses footprint AT-LED:SK9822, which looks like a symbol id or placeholder footprint rather than a concrete package.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "capacitor",
+        "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+        "ref": "Y1",
+        "symbol": "Device:Crystal_GND24_Small"
+      },
+      "family": "generic",
+      "message": "Component Y1 uses footprint Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm, which does not look compatible with its capacitor symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "FOOTPRINT_CLASS_MISMATCH",
+      "details": {
+        "expected_category": "capacitor",
+        "footprint": "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm",
+        "ref": "Y2",
+        "symbol": "Device:Crystal"
+      },
+      "family": "generic",
+      "message": "Component Y2 uses footprint Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm, which does not look compatible with its capacitor symbol class.",
+      "severity": "warning"
+    },
+    {
+      "code": "VALIDATION_MODE_INTERNAL",
+      "details": {
+        "kicad_cli_used": false
+      },
+      "message": "Using internal validation mode (kicad-cli not required)."
+    }
+  ]
+}
