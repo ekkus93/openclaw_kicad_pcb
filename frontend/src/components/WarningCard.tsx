@@ -1,6 +1,5 @@
 import { joinClasses } from '../utils'
 import {
-  emptyCopyClass,
   headingGroupClass,
   mutedCopyClass,
   panelSoftClass,
@@ -77,16 +76,7 @@ export function WarningCard({ warning }: { warning: Record<string, unknown> }) {
 }
 
 export function WarningsPanel({ warnings }: { warnings: unknown[] }) {
-  if (!warnings.length) {
-    return (
-      <section className={panelSoftClass}>
-        <div className={headingGroupClass}>
-          <h2>Warnings</h2>
-        </div>
-        <p className={emptyCopyClass}>No warnings.</p>
-      </section>
-    )
-  }
+  if (!warnings.length) return null
   return (
     <section className={panelSoftClass}>
       <div className={headingGroupClass}>
