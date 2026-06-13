@@ -14,6 +14,7 @@ export function formatDate(isoString: string): string {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZoneName: 'short',
     }).format(new Date(isoString))
   } catch {
     return isoString

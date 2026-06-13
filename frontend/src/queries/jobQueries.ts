@@ -9,6 +9,13 @@ export function useJobsQuery() {
   return useQuery({
     queryKey: queryKeys.jobs,
     queryFn: () => api.getJobs(),
+    refetchInterval: (query) => {
+      const jobs = query.state.data
+      if (Array.isArray(jobs) && jobs.some((j) => ACTIVE_STATUSES.includes(j.status as JobStatus))) {
+        return 5_000
+      }
+      return false
+    },
   })
 }
 

@@ -7,6 +7,7 @@ import type { StatusTone } from '../utils'
 import { StatusPill } from '../components/StatusPill'
 import { WarningsPanel } from '../components/WarningCard'
 import { DisclosurePanel, BuildSummaryPanel } from '../components/DisclosurePanel'
+import { CopyButton } from '../components/CopyButton'
 import type { DiagnosticsPayload } from '../components/DisclosurePanel'
 import {
   bannerBaseClass,
@@ -158,20 +159,33 @@ export function JobPage() {
   const diagnostics = result.generated_schematic_diagnostics ?? null
   const isFailed = job.status === 'failed'
   const hasMetrics = !isFailed && (result.component_count != null || result.net_count != null)
+  const errorMessage =
+    isFailed && job.error && typeof job.error.message === 'string' ? job.error.message : null
 
   return (
     <div className={pageStackClass}>
-      {fromSessionId ? (
-        <div className="flex items-center gap-3">
+      <div className={buttonRowClass}>
+        <Link className={buttonSecondaryClass} to="/jobs">
+          ← All Jobs
+        </Link>
+        {fromSessionId ? (
           <Link className={buttonSecondaryClass} to={`/wizard/${fromSessionId}/generate`}>
             ← Back to session
           </Link>
-        </div>
-      ) : null}
+        ) : null}
+        {isFailed && !fromSessionId ? (
+          <Link className={buttonSecondaryClass} to="/generate-json">
+            Try from Circuit IR JSON
+          </Link>
+        ) : null}
+      </div>
 
       <section className={heroPanelClass}>
         <div>
-          <p className={eyebrowClass}>Job {job.id}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={eyebrowClass}>Job {job.id}</p>
+            <CopyButton text={job.id} label="Copy ID" />
+          </div>
           <h1>{job.project_name}</h1>
           <p className={heroLeadClass}>
             {isFailed
@@ -199,6 +213,9 @@ export function JobPage() {
               <span className={spinnerClass} aria-hidden="true"></span>
               Checking for updates…
             </span>
+          ) : null}
+          {errorMessage ? (
+            <p className="text-sm font-medium leading-6 text-[var(--error)]">{errorMessage}</p>
           ) : null}
           <p className="text-sm leading-6 text-[var(--muted)]">
             {isFailed
@@ -233,7 +250,7 @@ export function JobPage() {
               {job.artifacts
                 .filter((a) => a !== 'schematic_preview.png' && !a.endsWith('.svg'))
                 .map((artifact) => (
-                  <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
+                  <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`} title={artifact}>
                     {artifact}
                   </a>
                 ))}

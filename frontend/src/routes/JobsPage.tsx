@@ -39,13 +39,22 @@ function statusLabel(status: JobStatus | string): string {
 
 export function JobsPage() {
   const { data: jobs, isLoading, error } = useJobsQuery()
+  const hasActiveJobs = jobs?.some((j) => j.status === 'queued' || j.status === 'running') ?? false
 
   return (
     <div className={pageStackClass}>
       <section className={panelAccentClass}>
         <div className={headingGroupClass}>
           <p className={eyebrowClass}>Jobs</p>
-          <h1>Recent Jobs</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1>Recent Jobs</h1>
+            {hasActiveJobs ? (
+              <span className="flex items-center gap-1.5 rounded-full border border-[rgba(22,93,143,0.2)] bg-[rgba(22,93,143,0.08)] px-2.5 py-0.5 text-[0.75rem] font-semibold text-[#0d4c74]">
+                <span className={spinnerClass} aria-hidden="true"></span>
+                Live
+              </span>
+            ) : null}
+          </div>
           <p className={heroLeadClass}>
             Browse previously generated KiCad projects. Click a job to inspect its artifacts,
             warnings, and build diagnostics.
