@@ -38,6 +38,15 @@ function formatJson(payload: unknown): string {
   return JSON.stringify(payload, null, 2)
 }
 
+function artifactLabel(filename: string): string {
+  if (filename.endsWith('.zip')) return 'KiCad Project (ZIP)'
+  if (filename === 'managed_schematic.kicad_sch') return 'Managed Schematic'
+  if (filename === 'schematic.kicad_sch') return 'Schematic'
+  if (filename === 'warnings.json') return 'Warnings Report'
+  if (filename === 'debug.json') return 'Debug Data'
+  return filename
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>
@@ -77,19 +86,6 @@ function MetricCard({ label, value, tone = 'warm' }: { label: string; value: str
       <div className="text-[0.73rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{label}</div>
       <div className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</div>
     </div>
-  )
-}
-
-// ─── JsonPanel ────────────────────────────────────────────────────────────────
-
-function JsonPanel({ title, payload }: { title: string; payload: unknown }) {
-  return (
-    <section className={panelSoftClass}>
-      <div className={headingGroupClass}>
-        <h2>{title}</h2>
-      </div>
-      <pre className={jsonBlockClass}>{formatJson(payload)}</pre>
-    </section>
   )
 }
 
@@ -251,7 +247,7 @@ export function JobPage() {
                 .filter((a) => a !== 'schematic_preview.png' && !a.endsWith('.svg'))
                 .map((artifact) => (
                   <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`} title={artifact}>
-                    {artifact}
+                    Download {artifactLabel(artifact)}
                   </a>
                 ))}
             </div>
@@ -282,9 +278,22 @@ export function JobPage() {
 
       {warnings.length > 0 ? <WarningsPanel warnings={warnings} /> : null}
 
-      {job.error ? <JsonPanel title="Error" payload={job.error} /> : null}
-
       {diagnostics ? <BuildSummaryPanel diagnostics={diagnostics as DiagnosticsPayload} /> : null}
+
+      {job.status === 'succeeded' ? (
+        <section className={panelSoftClass}>
+          <div className={headingGroupClass}>
+            <h2>Next steps</h2>
+            <p className={mutedCopyClass}>Open the downloaded project and verify the result in KiCad.</p>
+          </div>
+          <ol className="m-0 grid list-decimal gap-2 pl-5">
+            <li className="text-[0.95rem] leading-6 text-[var(--text)]">Download the KiCad Project ZIP and extract it.</li>
+            <li className="text-[0.95rem] leading-6 text-[var(--text)]">Open the <code className="rounded bg-[rgba(88,63,39,0.08)] px-1 py-0.5">.kicad_pro</code> file in KiCad.</li>
+            <li className="text-[0.95rem] leading-6 text-[var(--text)]">Run the ERC (Electrical Rules Check) and resolve any errors.</li>
+            <li className="text-[0.95rem] leading-6 text-[var(--text)]">Review and assign footprints to symbols, then proceed to layout.</li>
+          </ol>
+        </section>
+      ) : null}
 
       <DisclosurePanel title="Developer Details">
         <div className={stackColumnClass}>
@@ -292,6 +301,12 @@ export function JobPage() {
             <h3 className="mb-3">Request Payload</h3>
             <pre className={jsonBlockClass}>{formatJson(job.request)}</pre>
           </div>
+          {job.error ? (
+            <div>
+              <h3 className="mb-3">Error Payload</h3>
+              <pre className={jsonBlockClass}>{formatJson(job.error)}</pre>
+            </div>
+          ) : null}
           {job.result ? (
             <div>
               <h3 className="mb-3">Result Payload</h3>

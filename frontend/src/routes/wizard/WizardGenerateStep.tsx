@@ -27,6 +27,17 @@ import {
 } from '../../styles/designTokens'
 import { asRecord, displaySymbolsDir, statusLabel, statusTone } from './wizardStepLogic'
 
+// ─── Artifact helpers ─────────────────────────────────────────────────────────
+
+function artifactLabel(filename: string): string {
+  if (filename.endsWith('.zip')) return 'KiCad Project (ZIP)'
+  if (filename === 'managed_schematic.kicad_sch') return 'Managed Schematic'
+  if (filename === 'schematic.kicad_sch') return 'Schematic'
+  if (filename === 'warnings.json') return 'Warnings Report'
+  if (filename === 'debug.json') return 'Debug Data'
+  return filename
+}
+
 // ─── JobSummaryPanel ──────────────────────────────────────────────────────────
 
 function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: string }) {
@@ -71,8 +82,8 @@ function JobSummaryPanel({ job, sessionId }: { job: JobDetail; sessionId?: strin
             Open Job Detail
           </Link>
           {downloadArtifacts.map((artifact) => (
-            <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`}>
-              {artifact}
+            <a key={artifact} className={buttonSecondaryClass} href={`/api/jobs/${job.id}/artifacts/${artifact}`} title={artifact}>
+              Download {artifactLabel(artifact)}
             </a>
           ))}
         </div>
