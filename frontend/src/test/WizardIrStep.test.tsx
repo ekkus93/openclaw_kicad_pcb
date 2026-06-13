@@ -39,7 +39,7 @@ describe('WizardIrStep — ir_needs_repair contextual banner (A2)', () => {
       />,
     )
     expect(
-      screen.getByText(/errors that could not be auto-fixed/),
+      screen.getByText(/The generated circuit plan has errors that could not be auto-fixed/),
     ).toBeInTheDocument()
   })
 
@@ -55,7 +55,7 @@ describe('WizardIrStep — ir_needs_repair contextual banner (A2)', () => {
       />,
     )
     expect(
-      screen.queryByText(/errors that could not be auto-fixed/),
+      screen.queryByText(/The generated circuit plan has errors that could not be auto-fixed/),
     ).not.toBeInTheDocument()
   })
 
@@ -71,15 +71,15 @@ describe('WizardIrStep — ir_needs_repair contextual banner (A2)', () => {
       />,
     )
     expect(
-      screen.queryByText(/errors that could not be auto-fixed/),
+      screen.queryByText(/The generated circuit plan has errors that could not be auto-fixed/),
     ).not.toBeInTheDocument()
   })
 })
 
 describe('WizardIrStep — LLM-disabled IR generation (task 4.5)', () => {
-  it('disables Generate Circuit IR when llm_enabled is false', () => {
+  it('disables Generate Circuit Plan when llm_enabled is false', () => {
     renderWithProviders(<WizardIrStep {...BASE_PROPS} llmEnabled={false} />)
-    const btn = screen.getByRole('button', { name: 'Generate Circuit IR' })
+    const btn = screen.getByRole('button', { name: 'Generate Circuit Plan' })
     expect(btn).toBeDisabled()
   })
 
@@ -90,9 +90,9 @@ describe('WizardIrStep — LLM-disabled IR generation (task 4.5)', () => {
     ).toBeInTheDocument()
   })
 
-  it('enables Generate Circuit IR when llm_enabled is true', () => {
+  it('enables Generate Circuit Plan when llm_enabled is true', () => {
     renderWithProviders(<WizardIrStep {...BASE_PROPS} llmEnabled />)
-    const btn = screen.getByRole('button', { name: 'Generate Circuit IR' })
+    const btn = screen.getByRole('button', { name: 'Generate Circuit Plan' })
     expect(btn).not.toBeDisabled()
   })
 
@@ -103,7 +103,7 @@ describe('WizardIrStep — LLM-disabled IR generation (task 4.5)', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('disables Regenerate Circuit IR when llm_enabled is false and IR exists', () => {
+  it('disables Regenerate Circuit Plan when llm_enabled is false and IR exists', () => {
     const sessionWithIr = makeSession({
       status: 'ir_ready_for_generation',
       spec_approved: true,
@@ -126,7 +126,7 @@ describe('WizardIrStep — LLM-disabled IR generation (task 4.5)', () => {
         llmEnabled={false}
       />,
     )
-    const btn = screen.getByRole('button', { name: 'Regenerate Circuit IR' })
+    const btn = screen.getByRole('button', { name: 'Regenerate Circuit Plan' })
     expect(btn).toBeDisabled()
   })
 })

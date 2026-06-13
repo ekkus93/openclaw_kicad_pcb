@@ -87,7 +87,7 @@ export function WizardIrStep({
           <p className={eyebrowClass}>
             Step 3 of 4{projectLabel ? ` — ${projectLabel}` : ''}
           </p>
-          <h1>Circuit IR</h1>
+          <h1>Circuit Plan</h1>
           <p className={heroLeadClass}>{checkpoint.title}</p>
           <p className={compactSupportCopyClass}>{checkpoint.detail}</p>
         </div>
@@ -101,18 +101,18 @@ export function WizardIrStep({
       <section className={panelSoftClass}>
         <div className={headingGroupClass}>
           <h2>
-            {session.ir_validation?.valid ? 'Circuit IR — Valid' : 'Generate Circuit IR'}
+            {session.ir_validation?.valid ? 'Circuit Plan — Valid' : 'Generate Circuit Plan'}
           </h2>
           <p className={mutedCopyClass}>
             {session.ir_validation?.valid
-              ? 'The IR validates cleanly. Review the counts below, then continue to project generation.'
-              : 'Generate the IR from the approved spec and inspect validation before creating a project.'}
+              ? 'The circuit plan validates cleanly. Review the counts below, then continue to project generation.'
+              : 'Generate the circuit plan from the approved spec and inspect validation before creating a project.'}
           </p>
         </div>
         {session.status === 'ir_needs_repair' && !busyMessage ? (
           <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
             <strong>
-              The generated IR has errors that could not be auto-fixed. Use "Repair Circuit IR" to
+              The generated circuit plan has errors that could not be auto-fixed. Use "Repair Circuit Plan" to
               try again, or go back to Spec and clarify the circuit description.
             </strong>
           </div>
@@ -134,7 +134,7 @@ export function WizardIrStep({
             </dd>
           </dl>
         ) : (
-          <p className={emptyCopyClass}>No Circuit IR draft yet.</p>
+          <p className={emptyCopyClass}>No circuit plan generated yet.</p>
         )}
         {session.ir_validation?.error_message ? (
           <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
@@ -154,7 +154,7 @@ export function WizardIrStep({
               disabled={!canGenerateIr || !llmEnabled || Boolean(busyMessage)}
               onClick={onGenerateIr}
             >
-              Regenerate Circuit IR
+              Regenerate Circuit Plan
             </button>
           ) : (
             <button
@@ -163,7 +163,7 @@ export function WizardIrStep({
               disabled={!canGenerateIr || !llmEnabled || Boolean(busyMessage)}
               onClick={onGenerateIr}
             >
-              {session.status === 'ir_needs_repair' ? 'Repair Circuit IR' : 'Generate Circuit IR'}
+              {session.status === 'ir_needs_repair' ? 'Repair Circuit Plan' : 'Generate Circuit Plan'}
             </button>
           )}
           {session.ir_json ? (
@@ -173,7 +173,7 @@ export function WizardIrStep({
               disabled={Boolean(busyMessage)}
               onClick={onClearIr}
             >
-              Clear Circuit IR
+              Clear Circuit Plan
             </button>
           ) : null}
         </div>
@@ -184,7 +184,7 @@ export function WizardIrStep({
       ) : null}
       {session.ir_json ? (
         <DisclosurePanel
-          title={`Raw Circuit IR JSON — ${session.ir_validation?.component_count ?? '?'} components, ${session.ir_validation?.net_count ?? '?'} nets`}
+          title={`Advanced: Circuit IR JSON — ${session.ir_validation?.component_count ?? '?'} components, ${session.ir_validation?.net_count ?? '?'} nets`}
           defaultOpen={session.ir_validation?.valid === false}
         >
           <JsonTreeViewer value={session.ir_json} />

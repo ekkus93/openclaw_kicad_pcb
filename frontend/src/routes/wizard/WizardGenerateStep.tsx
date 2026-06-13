@@ -158,7 +158,7 @@ export function WizardGenerateStep({
         <div className={headingGroupClass}>
           <h2>Generate KiCad Project</h2>
           <p className={mutedCopyClass}>
-            Use the validated Circuit IR as the handoff into the deterministic generation pipeline.
+            Use the validated circuit plan as the handoff into the deterministic generation pipeline.
           </p>
         </div>
         {confirmRegenerate ? (
@@ -226,9 +226,9 @@ export function WizardGenerateStep({
                 </strong>
                 {isIrProblem ? (
                   <p className="text-sm leading-6">
-                    The Circuit IR has an error that must be fixed before generating.{' '}
+                    The circuit plan has an error that must be fixed before generating.{' '}
                     <Link className="font-semibold underline" to={`/wizard/${sessionId}/ir`}>
-                      Go back to the Circuit IR step
+                      Go back to the Circuit Plan step
                     </Link>
                     , clear the IR, and regenerate it.
                   </p>
@@ -246,7 +246,7 @@ export function WizardGenerateStep({
 
       <div className="flex justify-start border-t border-[var(--border)] pt-4">
         <Link className={buttonSecondaryClass} to={`/wizard/${sessionId}/ir`}>
-          ← Back to Circuit IR
+          ← Back to Circuit Plan
         </Link>
       </div>
     </>

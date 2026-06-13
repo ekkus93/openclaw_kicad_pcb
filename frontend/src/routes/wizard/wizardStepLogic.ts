@@ -10,7 +10,7 @@ export const WIZARD_STEP_ORDER: Record<WizardStep, number> = {
 export const WIZARD_STEP_META: Record<WizardStep, { label: string; abbrev: string; summary: string }> = {
   describe: { label: 'Describe Circuit', abbrev: 'Describe', summary: 'Start a session and refine the brief.' },
   spec: { label: 'Review Spec', abbrev: 'Spec', summary: 'Approve or revise the drafted specification.' },
-  ir: { label: 'Review Circuit IR', abbrev: 'IR', summary: 'Generate, validate, and inspect the IR payload.' },
+  ir: { label: 'Circuit Plan', abbrev: 'Plan', summary: 'Generate and validate the circuit plan before project generation.' },
   generate: { label: 'Generate Project', abbrev: 'Generate', summary: 'Launch the deterministic KiCad generation path.' },
 }
 
@@ -27,8 +27,8 @@ export function statusLabel(status: WizardStatus | string): string {
     awaiting_user_clarification: 'Your input needed',
     spec_ready_for_review: 'Spec ready for review',
     spec_approved: 'Spec approved',
-    drafting_ir: 'Generating Circuit IR…',
-    ir_needs_repair: 'IR needs repair',
+    drafting_ir: 'Generating circuit plan…',
+    ir_needs_repair: 'Circuit plan needs repair',
     ir_ready_for_generation: 'IR ready',
     generation_started: 'Generating project…',
     completed: 'Completed',
@@ -132,12 +132,12 @@ export function wizardCurrentCheckpoint(
       detail:
         session.open_questions.length || session.unsupported_reasons.length
           ? 'Resolve every open question and unsupported reason before approving the spec.'
-          : 'If the purpose, blocks, ports, rails, and constraints all match intent, approve the spec to unlock IR generation.',
+          : 'If the purpose, blocks, ports, rails, and constraints all match intent, approve the spec to unlock circuit plan generation.',
     }
   }
   if (step === 'ir') {
     return {
-      title: 'Generate and inspect Circuit IR before handing off generation.',
+      title: 'Generate and validate the circuit plan before handing off to project generation.',
       detail: session.ir_validation?.valid
         ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
         : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',

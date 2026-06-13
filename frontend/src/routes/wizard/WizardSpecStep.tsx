@@ -172,7 +172,7 @@ export function WizardSpecStep({
               {underspecifiedBlocks.length === 1
                 ? 'is marked "custom" with no named component.'
                 : 'are marked "custom" with no named component.'}{' '}
-              The Circuit IR generator will have to invent a circuit for{' '}
+              The circuit plan generator will have to invent a circuit for{' '}
               {underspecifiedBlocks.length === 1 ? 'it' : 'them'}, which almost always fails.
               Go back and tell the wizard which specific component (IC part number) should
               implement each of these blocks before approving.
@@ -289,7 +289,7 @@ export function WizardSpecStep({
         </Link>
         {canGenerateIr ? (
           <Link className={wizardPrimaryButtonClass} to={`/wizard/${sessionId}/ir`}>
-            Continue to Circuit IR →
+            Continue to Circuit Plan →
           </Link>
         ) : null}
       </div>

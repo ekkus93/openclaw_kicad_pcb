@@ -62,7 +62,7 @@ export function WizardStartStep({
         <ol className={workflowStepListClass}>
           <li className={workflowStepItemClass}>1. Describe the circuit.</li>
           <li className={workflowStepItemClass}>2. Approve the drafted spec.</li>
-          <li className={workflowStepItemClass}>3. Validate the Circuit IR.</li>
+          <li className={workflowStepItemClass}>3. Validate the circuit plan.</li>
           <li className={workflowStepItemClass}>4. Generate the KiCad project.</li>
         </ol>
         <div className="rounded-[18px] border border-[rgba(88,63,39,0.12)] bg-[rgba(255,255,255,0.5)] p-4">

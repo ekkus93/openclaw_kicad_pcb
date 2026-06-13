@@ -57,17 +57,17 @@ export function useWizardController(
     : addMessageMutation.isPending
       ? `Talking to ${llmProvider} to revise the spec draft…`
       : approveSpecMutation.isPending
-        ? 'Locking this spec checkpoint and moving to Circuit IR…'
+        ? 'Locking this spec checkpoint and moving to Circuit Plan…'
         : generateIrMutation.isPending
-          ? 'Generating Circuit IR… the backend will attempt automatic repair if needed.'
+          ? 'Generating circuit plan… the backend will attempt automatic repair if needed.'
           : clearIrMutation.isPending
-            ? 'Clearing Circuit IR…'
+            ? 'Clearing circuit plan…'
             : generateProjectMutation.isPending
-              ? 'Generating the KiCad project from the validated Circuit IR…'
+              ? 'Generating the KiCad project from the validated circuit plan…'
               : null
 
   const errorMessage: string | null = irRepairWarning
-    ? 'The backend could not produce valid Circuit IR after its repair passes. Review the error below, then click "Repair Circuit IR" to try again or go back to the spec and revise the circuit description.'
+    ? 'The backend could not produce a valid circuit plan after its repair passes. Review the error below, then click "Repair Circuit Plan" to try again or go back to the spec and revise the circuit description.'
     : createMutation.error
       ? getErrorMessage(createMutation.error)
       : addMessageMutation.error

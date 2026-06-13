@@ -40,7 +40,7 @@ describe('WizardSpecStep — D1: revision section copy', () => {
   it('does not show old description text', () => {
     renderWithProviders(<WizardSpecStep {...BASE_PROPS} llmEnabled />)
     expect(
-      screen.queryByText(/Approve the spec to unlock Circuit IR generation/),
+      screen.queryByText(/Approve the spec to unlock/),
     ).not.toBeInTheDocument()
   })
 })

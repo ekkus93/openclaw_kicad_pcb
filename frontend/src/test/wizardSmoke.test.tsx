@@ -199,9 +199,9 @@ describe('WizardIrStep smoke (task 4.8)', () => {
 
   it('renders without crashing when no IR exists', () => {
     renderWithProviders(<WizardIrStep {...BASE} />)
-    // Level 1 avoids ambiguity with the "Generate Circuit IR" h2 subheading
-    screen.getByRole('heading', { name: /Circuit IR/i, level: 1 })
-    screen.getByText('No Circuit IR draft yet.')
+    // Level 1 avoids ambiguity with the "Generate Circuit Plan" h2 subheading
+    screen.getByRole('heading', { name: /Circuit Plan/i, level: 1 })
+    screen.getByText('No circuit plan generated yet.')
   })
 
   it('renders validation summary when IR exists and is valid', () => {
@@ -227,7 +227,7 @@ describe('WizardIrStep smoke (task 4.8)', () => {
         canGenerateProject
       />,
     )
-    screen.getByRole('heading', { name: /Circuit IR — Valid/i })
+    screen.getByRole('heading', { name: /Circuit Plan — Valid/i })
   })
 
   it('shows repair button when status is ir_needs_repair', () => {
@@ -242,7 +242,7 @@ describe('WizardIrStep smoke (task 4.8)', () => {
         checkpoint={wizardCurrentCheckpoint(sessionRepair, 'ir')}
       />,
     )
-    screen.getByRole('button', { name: 'Repair Circuit IR' })
+    screen.getByRole('button', { name: 'Repair Circuit Plan' })
   })
 })
 
