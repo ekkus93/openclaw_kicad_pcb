@@ -22,6 +22,7 @@ import {
   mutedCopyClass,
   panelAccentClass,
   panelSoftClass,
+  spinnerClass,
   stackColumnClass,
 } from '../../styles/designTokens'
 import { asRecord, displaySymbolsDir, statusLabel, statusTone } from './wizardStepLogic'
@@ -198,6 +199,15 @@ export function WizardGenerateStep({
           </div>
         )}
       </section>
+
+      {visibleLatestJob &&
+      (visibleLatestJob.status === 'queued' || visibleLatestJob.status === 'running') &&
+      !busyMessage ? (
+        <div role="status" aria-live="polite" className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+          <span className={spinnerClass} aria-hidden="true"></span>
+          <strong>Generation in progress — checking for updates…</strong>
+        </div>
+      ) : null}
 
       {visibleLatestJob ? (
         <>

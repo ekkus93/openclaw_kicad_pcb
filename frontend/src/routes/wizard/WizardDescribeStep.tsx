@@ -1,10 +1,11 @@
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 
-import { joinClasses } from '../../utils'
+import { joinClasses, statusBannerToneClass } from '../../utils'
 import { StatusPill } from '../../components/StatusPill'
 import type { WizardSessionDetail } from '../../types'
 import {
+  bannerBaseClass,
   buttonSecondaryClass,
   compactStatusRowClass,
   compactSupportCopyClass,
@@ -15,6 +16,7 @@ import {
   mutedCopyClass,
   panelAccentClass,
   panelSoftClass,
+  spinnerClass,
   transcriptBodyClass,
   transcriptEntryClass,
   transcriptListClass,
@@ -123,6 +125,13 @@ export function WizardDescribeStep({
           </span>
         </div>
       </section>
+
+      {session.status === 'drafting_spec' && !busyMessage ? (
+        <div role="status" aria-live="polite" className={joinClasses(bannerBaseClass, statusBannerToneClass('active'))}>
+          <span className={spinnerClass} aria-hidden="true"></span>
+          <strong>Drafting spec… The assistant is preparing the first draft.</strong>
+        </div>
+      ) : null}
 
       {session.messages.length > 0 ? (
         <section className={panelSoftClass}>

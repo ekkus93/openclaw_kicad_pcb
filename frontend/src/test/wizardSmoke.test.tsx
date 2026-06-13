@@ -48,6 +48,11 @@ describe('WizardStartStep smoke (task 4.8)', () => {
     screen.getByText('Something went wrong.')
   })
 
+  it('error dismiss button is labelled "Edit and try again" (C2)', () => {
+    renderWithProviders(<WizardStartStep {...BASE} errorMessage="Something went wrong." />)
+    expect(screen.getByRole('button', { name: 'Edit and try again' })).toBeInTheDocument()
+  })
+
   it('renders LLM unavailable note when llmEnabled is false', () => {
     renderWithProviders(<WizardStartStep {...BASE} llmEnabled={false} />)
     screen.getByText(/No LLM provider is configured/i)
@@ -80,6 +85,29 @@ describe('WizardDescribeStep smoke (task 4.8)', () => {
   it('renders without crashing', () => {
     renderWithProviders(<WizardDescribeStep {...BASE} />)
     screen.getByRole('heading', { name: /Describe Circuit/i })
+  })
+
+  it('shows drafting indicator when status is drafting_spec and not busy (A1)', () => {
+    renderWithProviders(<WizardDescribeStep {...BASE} />)
+    // The status banner contains unique text not present in the StatusPill label
+    expect(screen.getByText(/The assistant is preparing the first draft/)).toBeInTheDocument()
+  })
+
+  it('hides drafting indicator when busyMessage is set (A1)', () => {
+    renderWithProviders(<WizardDescribeStep {...BASE} busyMessage="Sending…" />)
+    expect(screen.queryByText(/The assistant is preparing the first draft/)).not.toBeInTheDocument()
+  })
+
+  it('does not show drafting indicator when status is not drafting_spec (A1)', () => {
+    const sessionReady = makeSession({ status: 'spec_ready_for_review', messages: [] })
+    renderWithProviders(
+      <WizardDescribeStep
+        {...BASE}
+        session={sessionReady}
+        checkpoint={wizardCurrentCheckpoint(sessionReady, 'describe')}
+      />,
+    )
+    expect(screen.queryByText(/The assistant is preparing the first draft/)).not.toBeInTheDocument()
   })
 
   it('renders with conversation messages', () => {

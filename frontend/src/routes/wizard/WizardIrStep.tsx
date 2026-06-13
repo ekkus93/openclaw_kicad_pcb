@@ -109,6 +109,15 @@ export function WizardIrStep({
               : 'Generate the IR from the approved spec and inspect validation before creating a project.'}
           </p>
         </div>
+        {session.status === 'ir_needs_repair' && !busyMessage ? (
+          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'))}>
+            <strong>
+              The generated IR has errors that could not be auto-fixed. Use "Repair Circuit IR" to
+              try again, or go back to Spec and clarify the circuit description.
+            </strong>
+          </div>
+        ) : null}
+
         {session.ir_validation ? (
           <dl className={detailListGridClass}>
             <dt className={mutedCopyClass}>Valid</dt>

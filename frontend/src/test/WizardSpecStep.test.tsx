@@ -29,6 +29,48 @@ const BASE_PROPS = {
   onApproveSpec: vi.fn(),
 }
 
+describe('WizardSpecStep — D1: revision section copy', () => {
+  it('shows updated revision description text', () => {
+    renderWithProviders(<WizardSpecStep {...BASE_PROPS} llmEnabled />)
+    expect(
+      screen.getByText(/Send revision notes to regenerate the spec from scratch/),
+    ).toBeInTheDocument()
+  })
+
+  it('does not show old description text', () => {
+    renderWithProviders(<WizardSpecStep {...BASE_PROPS} llmEnabled />)
+    expect(
+      screen.queryByText(/Approve the spec to unlock Circuit IR generation/),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('WizardSpecStep — D2: underspecified alert in revise section', () => {
+  it('shows underspecified alert in revise section when hasUnspecifiedCustomBlocks and not busy', () => {
+    renderWithProviders(
+      <WizardSpecStep {...BASE_PROPS} llmEnabled hasUnspecifiedCustomBlocks={true} busyMessage={null} />,
+    )
+    expect(screen.getByText(/Action required before approving/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Go back to Describe and name a specific component/),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the revise-section alert when busyMessage is set', () => {
+    renderWithProviders(
+      <WizardSpecStep {...BASE_PROPS} llmEnabled hasUnspecifiedCustomBlocks={true} busyMessage="Sending…" />,
+    )
+    expect(screen.queryByText(/Action required before approving/)).not.toBeInTheDocument()
+  })
+
+  it('does not show the revise-section alert when hasUnspecifiedCustomBlocks is false', () => {
+    renderWithProviders(
+      <WizardSpecStep {...BASE_PROPS} llmEnabled hasUnspecifiedCustomBlocks={false} busyMessage={null} />,
+    )
+    expect(screen.queryByText(/Action required before approving/)).not.toBeInTheDocument()
+  })
+})
+
 describe('WizardSpecStep — LLM-disabled spec revision (task 4.4)', () => {
   it('disables Send Changes button when llm_enabled is false', () => {
     renderWithProviders(

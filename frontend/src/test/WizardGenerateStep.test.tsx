@@ -65,6 +65,52 @@ function renderGenerateStep(sessionOverrides: Parameters<typeof makeSession>[0] 
   )
 }
 
+describe('WizardGenerateStep — job polling indicator (A3)', () => {
+  function renderWithJob(jobStatus: string, busyMessage: string | null) {
+    const session = makeSession({ status: 'ir_ready_for_generation', spec_approved: true })
+    const checkpoint = wizardCurrentCheckpoint(session, 'generate')
+    return renderWithProviders(
+      <WizardGenerateStep
+        session={session}
+        sessionId="test-session-123"
+        projectLabel={null}
+        checkpoint={checkpoint}
+        busyMessage={busyMessage}
+        canGenerateProject
+        visibleLatestJob={makeJob({ status: jobStatus as 'queued' | 'running' | 'succeeded' })}
+        confirmRegenerate={false}
+        setConfirmRegenerate={() => undefined}
+        onGenerateProject={() => undefined}
+      />,
+    )
+  }
+
+  it('shows polling indicator when job is queued and not busy', () => {
+    renderWithJob('queued', null)
+    expect(screen.getByText(/Generation in progress/)).toBeInTheDocument()
+  })
+
+  it('shows polling indicator when job is running and not busy', () => {
+    renderWithJob('running', null)
+    expect(screen.getByText(/Generation in progress/)).toBeInTheDocument()
+  })
+
+  it('hides polling indicator when busyMessage is set', () => {
+    renderWithJob('running', 'Submitting job…')
+    expect(screen.queryByText(/Generation in progress/)).not.toBeInTheDocument()
+  })
+
+  it('does not show polling indicator for succeeded jobs', () => {
+    renderWithJob('succeeded', null)
+    expect(screen.queryByText(/Generation in progress/)).not.toBeInTheDocument()
+  })
+
+  it('does not show polling indicator for failed jobs', () => {
+    renderWithJob('failed', null)
+    expect(screen.queryByText(/Generation in progress/)).not.toBeInTheDocument()
+  })
+})
+
 describe('WizardGenerateStep — project settings summary (task 3)', () => {
   it('displays the project name when present', () => {
     renderGenerateStep({ project_name: 'LED Blinker' })

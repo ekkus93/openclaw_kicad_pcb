@@ -117,3 +117,38 @@ describe('WizardPage — invalid route step', () => {
     expect(vi.mocked(useWizardController)).toHaveBeenCalledWith('abc123', 'spec')
   })
 })
+
+describe('WizardPage — NotFoundScreen (C1)', () => {
+  function renderNotFound() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    vi.mocked(useWizardController).mockReturnValue({
+      ...mockControllerReturn,
+      session: undefined,
+      loading: false,
+      sessionError: new Error('Session not found'),
+    })
+    return render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={['/wizard/missing-session/describe']}>
+          <Routes>
+            <Route path="/wizard/:sessionId/:step?" element={<WizardPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('NotFoundScreen button is labelled "Start New Session"', () => {
+    renderNotFound()
+    expect(screen.getByRole('link', { name: 'Start New Session' })).toBeInTheDocument()
+  })
+
+  it('NotFoundScreen button links to /wizard', () => {
+    renderNotFound()
+    expect(screen.getByRole('link', { name: 'Start New Session' })).toHaveAttribute('href', '/wizard')
+  })
+})

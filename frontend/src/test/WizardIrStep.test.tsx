@@ -26,6 +26,56 @@ const BASE_PROPS = {
   onClearIr: vi.fn(),
 }
 
+describe('WizardIrStep — ir_needs_repair contextual banner (A2)', () => {
+  it('shows the repair banner when status is ir_needs_repair and not busy', () => {
+    const session = makeSession({ status: 'ir_needs_repair', spec_approved: true })
+    renderWithProviders(
+      <WizardIrStep
+        {...BASE_PROPS}
+        llmEnabled
+        session={session}
+        checkpoint={wizardCurrentCheckpoint(session, 'ir')}
+        busyMessage={null}
+      />,
+    )
+    expect(
+      screen.getByText(/errors that could not be auto-fixed/),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the repair banner when busyMessage is set', () => {
+    const session = makeSession({ status: 'ir_needs_repair', spec_approved: true })
+    renderWithProviders(
+      <WizardIrStep
+        {...BASE_PROPS}
+        llmEnabled
+        session={session}
+        checkpoint={wizardCurrentCheckpoint(session, 'ir')}
+        busyMessage="Repairing…"
+      />,
+    )
+    expect(
+      screen.queryByText(/errors that could not be auto-fixed/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not show the repair banner for unrelated statuses', () => {
+    const session = makeSession({ status: 'spec_approved', spec_approved: true })
+    renderWithProviders(
+      <WizardIrStep
+        {...BASE_PROPS}
+        llmEnabled
+        session={session}
+        checkpoint={wizardCurrentCheckpoint(session, 'ir')}
+        busyMessage={null}
+      />,
+    )
+    expect(
+      screen.queryByText(/errors that could not be auto-fixed/),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('WizardIrStep — LLM-disabled IR generation (task 4.5)', () => {
   it('disables Generate Circuit IR when llm_enabled is false', () => {
     renderWithProviders(<WizardIrStep {...BASE_PROPS} llmEnabled={false} />)

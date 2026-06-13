@@ -32,7 +32,7 @@ function NotFoundScreen({ heading, message }: { heading: string; message?: strin
         </div>
         <div className={buttonRowClass}>
           <Link className={buttonPrimaryClass} to="/wizard">
-            ← Back to Wizard
+            Start New Session
           </Link>
         </div>
       </section>

@@ -229,9 +229,17 @@ export function WizardSpecStep({
         <div className={headingGroupClass}>
           <h2>Revise or Approve</h2>
           <p className={mutedCopyClass}>
-            Approve the spec to unlock Circuit IR generation, or send revision notes to refine it first.
+            Send revision notes to regenerate the spec from scratch, or approve it as-is to proceed.
           </p>
         </div>
+        {hasUnspecifiedCustomBlocks && !busyMessage ? (
+          <div className={joinClasses(bannerBaseClass, statusBannerToneClass('warning'), 'flex-col items-start gap-1')}>
+            <strong className="text-[0.8rem] font-bold uppercase tracking-[0.1em]">Action required before approving</strong>
+            <p className="text-sm leading-6">
+              Go back to Describe and name a specific component (IC part number) for each underspecified custom block.
+            </p>
+          </div>
+        ) : null}
         <form className={wizardFormClass} onSubmit={onSendMessage}>
           <div className={wizardFieldSectionClass}>
             <WizardComposer

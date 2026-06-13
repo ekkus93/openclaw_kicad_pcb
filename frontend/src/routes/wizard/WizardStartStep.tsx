@@ -82,7 +82,7 @@ export function WizardStartStep({
           <div role="alert" className={joinClasses(bannerBaseClass, statusBannerToneClass('error'), 'flex-wrap gap-2')}>
             <strong className="flex-1">{errorMessage}</strong>
             <button type="button" className={buttonSecondaryClass} onClick={onDismissError}>
-              Dismiss
+              Edit and try again
             </button>
           </div>
         ) : null}
