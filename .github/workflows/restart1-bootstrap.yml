@@ -1,4 +1,4 @@
-name: RESTART1 Bootstrap
+name: RESTART1 Direct Apply
 
 on:
   pull_request:
@@ -6,17 +6,15 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
-  issues: write
 
 jobs:
-  apply-payload:
+  apply:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
-      REPOSITORY: ${{ github.repository }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      BASE_SHA: 0298a9f3f3139367a3e437a0464ed2eb18c3a07f
+      EXPECTED_WEBAPP_HEAD: a547c3f95e7d86f63d0211d92feaca26632fbbb6
+      EXPECTED_PAYLOAD_SHA256: 6374147fa46ba6d0acbffeed09e066a889759dce725e21dcff415c5cbfc9e6bb
     steps:
       - uses: actions/checkout@v6
         with:
@@ -24,135 +22,59 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Detect complete payload
-        id: payload
+      - name: Reconstruct and verify payload
         run: |
-          if test -f .restart1/READY; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Payload is not complete yet; refusing to apply it."
-          fi
-
-      - name: Reconstruct and verify payload comments
-        if: steps.payload.outputs.ready == 'true'
-        run: |
-          gh api --paginate --slurp \
-            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            > /tmp/restart1-comments.json
-          python - <<'PY'
-          from __future__ import annotations
-
-          import base64
-          import hashlib
-          import json
-          import re
-          from pathlib import Path
-
-          diagnostics_path = Path('/tmp/restart1-diagnostics.txt')
-          pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
-          comments = [comment for page in pages for comment in page]
-          chunk_pattern = re.compile(
-              r'<!-- RESTART1_CHUNK:(\d{3}) -->\n(.*?)\n<!-- END_RESTART1_CHUNK -->',
-              re.DOTALL,
-          )
-          manifest_pattern = re.compile(
-              r'<!-- RESTART1_MANIFEST -->\n([0-9a-f]{64})\n<!-- END_RESTART1_MANIFEST -->'
-          )
-
-          chunks: dict[int, str] = {}
-          expected_sha: str | None = None
-          for comment in comments:
-              body = comment.get('body') or ''
-              for match in chunk_pattern.finditer(body):
-                  index = int(match.group(1))
-                  chunks.setdefault(index, ''.join(match.group(2).split()))
-              manifest_match = manifest_pattern.search(body)
-              if manifest_match and expected_sha is None:
-                  expected_sha = manifest_match.group(1)
-
-          diagnostics = [
-              f'comment_count={len(comments)}',
-              f'found_indices={sorted(chunks)}',
-              f'expected_payload_sha256={expected_sha}',
-          ]
-          for index in sorted(chunks):
-              encoded_chunk = chunks[index]
-              diagnostics.append(
-                  f'chunk-{index:03d} length={len(encoded_chunk)} '
-                  f'sha256={hashlib.sha256(encoded_chunk.encode()).hexdigest()}'
-              )
-          diagnostics_path.write_text('\n'.join(diagnostics) + '\n')
-
-          expected_indices = list(range(15))
-          if sorted(chunks) != expected_indices:
-              raise SystemExit(
-                  f'expected chunks {expected_indices}, found {sorted(chunks)}'
-              )
-          if expected_sha is None:
-              raise SystemExit('RESTART1 manifest is missing')
-
-          encoded = ''.join(chunks[index] for index in expected_indices)
-          payload = base64.b64decode(encoded, validate=True)
-          actual_sha = hashlib.sha256(payload).hexdigest()
-          diagnostics.append(f'actual_payload_sha256={actual_sha}')
-          diagnostics_path.write_text('\n'.join(diagnostics) + '\n')
-          if actual_sha != expected_sha:
-              raise SystemExit(
-                  f'payload checksum mismatch: expected {expected_sha}, got {actual_sha}'
-              )
-          Path('/tmp/restart1-payload.tar.gz').write_bytes(payload)
-          PY
+          set -euo pipefail
+          test "$(cat .restart1-direct/READY)" = "${EXPECTED_PAYLOAD_SHA256}"
+          : >/tmp/restart1-payload.b64
+          for path in \
+            p1-0.b64 \
+            p1-1.b64 \
+            p1-2.b64 \
+            p1-3.b64 \
+            p1-4a.b64 \
+            p1-4b.b64 \
+            p1-5.b64 \
+            payload-2a.b64 \
+            tail-0.b64 \
+            tail-1.b64 \
+            tail-2.b64 \
+            tail-3.b64; do
+            cat ".restart1-direct/${path}" >>/tmp/restart1-payload.b64
+          done
+          base64 --decode /tmp/restart1-payload.b64 >/tmp/restart1-payload.tar.gz
+          test "$(sha256sum /tmp/restart1-payload.tar.gz | cut -d' ' -f1)" = "${EXPECTED_PAYLOAD_SHA256}"
           gzip -t /tmp/restart1-payload.tar.gz
 
-      - name: Upload payload diagnostics
-        if: always() && steps.payload.outputs.ready == 'true'
-        uses: actions/upload-artifact@v6
-        with:
-          name: restart1-payload-diagnostics-${{ github.run_id }}
-          path: /tmp/restart1-diagnostics.txt
-          if-no-files-found: warn
-          retention-days: 1
-
-      - name: Apply RESTART1 implementation
-        if: steps.payload.outputs.ready == 'true'
+      - name: Build clean implementation commit
         run: |
+          set -euo pipefail
+          git fetch origin webapp
+          test "$(git rev-parse origin/webapp)" = "${EXPECTED_WEBAPP_HEAD}"
+          git checkout --detach "${BASE_SHA}"
           tar -xzf /tmp/restart1-payload.tar.gz -C .
-          rm -rf code_review/archive/2026-06-09/generated
-          rm -rf .restart1
-          rm -f .github/workflows/restart1-bootstrap.yml
-
-      - name: Commit implementation
-        if: steps.payload.outputs.ready == 'true'
-        env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          while IFS= read -r path; do
+            test -n "${path}"
+            case "${path}" in
+              /*|*'..'*) echo "Unsafe deletion path: ${path}" >&2; exit 1 ;;
+            esac
+            rm -rf -- "${path}"
+          done <.restart1-delete-paths
+          rm -f .restart1-delete-paths
+          test ! -e .github/workflows/restart1-direct-apply.yml
+          test ! -e .github/workflows/restart1-bootstrap.yml
+          test ! -e .restart1
+          test ! -e .restart1-direct
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          git diff --cached --check
           git diff --cached --stat
-          git commit -m "Implement RESTART1 hardening pass"
-          git push origin "HEAD:${HEAD_BRANCH}"
+          git commit -m 'Implement RESTART1 hardening pass'
 
-      - name: Remove transport comments
-        if: steps.payload.outputs.ready == 'true'
+      - name: Update webapp
         run: |
-          gh api --paginate --slurp \
-            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            > /tmp/restart1-comments.json
-          python - <<'PY' > /tmp/restart1-comment-ids
-          import json
-          from pathlib import Path
-
-          pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
-          for page in pages:
-              for comment in page:
-                  body = comment.get('body') or ''
-                  if 'RESTART1_CHUNK:' in body or 'RESTART1_MANIFEST' in body:
-                      print(comment['id'])
-          PY
-          while read -r comment_id; do
-            test -n "$comment_id" || continue
-            gh api --method DELETE \
-              "repos/${REPOSITORY}/issues/comments/${comment_id}"
-          done < /tmp/restart1-comment-ids
+          set -euo pipefail
+          git push \
+            --force-with-lease="refs/heads/webapp:${EXPECTED_WEBAPP_HEAD}" \
+            origin HEAD:refs/heads/webapp
