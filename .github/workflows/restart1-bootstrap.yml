@@ -7,11 +7,16 @@ on:
 permissions:
   contents: write
   pull-requests: read
+  issues: write
 
 jobs:
   apply-payload:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -29,16 +34,75 @@ jobs:
             echo "Payload is not complete yet; refusing to apply it."
           fi
 
-      - name: Reconstruct and verify payload
+      - name: Reconstruct and verify payload comments
         if: steps.payload.outputs.ready == 'true'
         run: |
-          test -f .restart1/manifest.sha256
-          test -n "$(find .restart1 -maxdepth 1 -name 'chunk-*' -print -quit)"
-          cat .restart1/chunk-* > /tmp/restart1-payload.b64
-          base64 --decode /tmp/restart1-payload.b64 > /tmp/restart1-payload.tar.gz
-          EXPECTED="$(cut -d' ' -f1 .restart1/manifest.sha256)"
-          ACTUAL="$(sha256sum /tmp/restart1-payload.tar.gz | cut -d' ' -f1)"
-          test "$ACTUAL" = "$EXPECTED"
+          gh api --paginate --slurp \
+            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            > /tmp/restart1-comments.json
+          python - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
+          comments = [comment for page in pages for comment in page]
+          chunk_pattern = re.compile(
+              r'<!-- RESTART1_CHUNK:(\d{3}) -->\n(.*?)\n<!-- END_RESTART1_CHUNK -->',
+              re.DOTALL,
+          )
+          manifest_pattern = re.compile(
+              r'<!-- RESTART1_MANIFEST -->\n([0-9a-f]{64})\n<!-- END_RESTART1_MANIFEST -->'
+          )
+
+          chunks: dict[int, str] = {}
+          expected_sha: str | None = None
+          transport_comment_ids: list[int] = []
+          for comment in comments:
+              body = comment.get('body') or ''
+              matched_transport = False
+              for match in chunk_pattern.finditer(body):
+                  index = int(match.group(1))
+                  if index in chunks:
+                      raise SystemExit(f'duplicate RESTART1 chunk {index:03d}')
+                  chunks[index] = ''.join(match.group(2).split())
+                  matched_transport = True
+              manifest_match = manifest_pattern.search(body)
+              if manifest_match:
+                  if expected_sha is not None:
+                      raise SystemExit('duplicate RESTART1 manifest')
+                  expected_sha = manifest_match.group(1)
+                  matched_transport = True
+              if body.strip() == 'RESTART1 READY':
+                  matched_transport = True
+              if matched_transport:
+                  transport_comment_ids.append(int(comment['id']))
+
+          expected_indices = list(range(15))
+          if sorted(chunks) != expected_indices:
+              raise SystemExit(
+                  f'expected chunks {expected_indices}, found {sorted(chunks)}'
+              )
+          if expected_sha is None:
+              raise SystemExit('RESTART1 manifest is missing')
+
+          encoded = ''.join(chunks[index] for index in expected_indices)
+          payload = base64.b64decode(encoded, validate=True)
+          actual_sha = hashlib.sha256(payload).hexdigest()
+          if actual_sha != expected_sha:
+              raise SystemExit(
+                  f'payload checksum mismatch: expected {expected_sha}, got {actual_sha}'
+              )
+
+          Path('/tmp/restart1-payload.tar.gz').write_bytes(payload)
+          Path('/tmp/restart1-comment-ids').write_text(
+              ''.join(f'{comment_id}\n' for comment_id in transport_comment_ids)
+          )
+          PY
           gzip -t /tmp/restart1-payload.tar.gz
 
       - name: Apply RESTART1 implementation
@@ -60,3 +124,12 @@ jobs:
           git diff --cached --stat
           git commit -m "Implement RESTART1 hardening pass"
           git push origin "HEAD:${HEAD_BRANCH}"
+
+      - name: Remove transport comments
+        if: steps.payload.outputs.ready == 'true'
+        run: |
+          while read -r comment_id; do
+            test -n "$comment_id" || continue
+            gh api --method DELETE \
+              "repos/${REPOSITORY}/issues/comments/${comment_id}"
+          done < /tmp/restart1-comment-ids
