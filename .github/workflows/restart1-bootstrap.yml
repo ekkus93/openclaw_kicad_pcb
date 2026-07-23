@@ -5,11 +5,10 @@ on:
     branches: [webapp]
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  apply-payload:
+  diagnose-payload:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -17,21 +16,27 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
-          persist-credentials: true
-      - name: Apply RESTART1 implementation
+      - name: Capture Git and payload metadata
         run: |
-          test -f .restart1/payload.tar.gz
-          tar -xzf .restart1/payload.tar.gz -C .
-          rm -rf code_review/archive/2026-06-09/generated
-          rm -rf .restart1
-          rm -f .github/workflows/restart1-bootstrap.yml
-      - name: Commit implementation
-        env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --stat
-          git commit -m "Implement RESTART1 hardening pass"
-          git push origin "HEAD:${HEAD_BRANCH}"
+          {
+            echo "commit=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+            if test -f .restart1/payload.tar.gz; then
+              echo "payload_size=$(stat -c %s .restart1/payload.tar.gz)"
+              echo "payload_sha256=$(sha256sum .restart1/payload.tar.gz | awk '{print $1}')"
+              if gzip -t .restart1/payload.tar.gz; then
+                echo "payload_gzip=valid"
+              else
+                echo "payload_gzip=invalid"
+              fi
+            else
+              echo "payload=missing"
+            fi
+          } > /tmp/restart1-git-metadata.txt
+          cat /tmp/restart1-git-metadata.txt
+      - name: Upload Git metadata
+        uses: actions/upload-artifact@v6
+        with:
+          name: restart1-git-metadata
+          path: /tmp/restart1-git-metadata.txt
+          retention-days: 1
