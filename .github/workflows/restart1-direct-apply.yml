@@ -51,10 +51,15 @@ jobs:
         run: |
           set -euo pipefail
           : >/tmp/restart1-payload.b64
-          for part in 1 2; do
+          for path in \
+            payload-1.b64 \
+            payload-2a.b64 \
+            payload-2b.b64 \
+            payload-2c.b64 \
+            payload-2d.b64; do
             gh api \
               -H 'Accept: application/vnd.github.raw+json' \
-              "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/payload-${part}.b64?ref=${HEAD_SHA}" \
+              "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/${path}?ref=${HEAD_SHA}" \
               >>/tmp/restart1-payload.b64
           done
           base64 --decode /tmp/restart1-payload.b64 >/tmp/restart1-payload.tar.gz
