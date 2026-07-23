@@ -34,78 +34,18 @@ jobs:
             echo "Payload is not complete yet; refusing to apply it."
           fi
 
-      - name: Reconstruct and verify payload comments
+      - name: Reconstruct and verify payload files
         if: steps.payload.outputs.ready == 'true'
         run: |
-          gh api --paginate --slurp \
-            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            > /tmp/restart1-comments.json
-          python - <<'PY'
-          from __future__ import annotations
-
-          import base64
-          import hashlib
-          import json
-          import re
-          from pathlib import Path
-
-          pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
-          comments = [comment for page in pages for comment in page]
-          chunk_pattern = re.compile(
-              r'<!-- RESTART1_CHUNK:(\d{3}) -->\n(.*?)\n<!-- END_RESTART1_CHUNK -->',
-              re.DOTALL,
-          )
-          manifest_pattern = re.compile(
-              r'<!-- RESTART1_MANIFEST -->\n([0-9a-f]{64})\n<!-- END_RESTART1_MANIFEST -->'
-          )
-
-          chunks: dict[int, str] = {}
-          expected_sha: str | None = None
-          transport_comment_ids: list[int] = []
-          for comment in comments:
-              body = comment.get('body') or ''
-              matched_transport = False
-              for match in chunk_pattern.finditer(body):
-                  index = int(match.group(1))
-                  encoded_chunk = ''.join(match.group(2).split())
-                  existing = chunks.get(index)
-                  if existing is not None and existing != encoded_chunk:
-                      raise SystemExit(f'conflicting RESTART1 chunk {index:03d}')
-                  chunks[index] = encoded_chunk
-                  matched_transport = True
-              manifest_match = manifest_pattern.search(body)
-              if manifest_match:
-                  manifest_sha = manifest_match.group(1)
-                  if expected_sha is not None and expected_sha != manifest_sha:
-                      raise SystemExit('conflicting RESTART1 manifest')
-                  expected_sha = manifest_sha
-                  matched_transport = True
-              if body.strip() == 'RESTART1 READY':
-                  matched_transport = True
-              if matched_transport:
-                  transport_comment_ids.append(int(comment['id']))
-
-          expected_indices = list(range(15))
-          if sorted(chunks) != expected_indices:
-              raise SystemExit(
-                  f'expected chunks {expected_indices}, found {sorted(chunks)}'
-              )
-          if expected_sha is None:
-              raise SystemExit('RESTART1 manifest is missing')
-
-          encoded = ''.join(chunks[index] for index in expected_indices)
-          payload = base64.b64decode(encoded, validate=True)
-          actual_sha = hashlib.sha256(payload).hexdigest()
-          if actual_sha != expected_sha:
-              raise SystemExit(
-                  f'payload checksum mismatch: expected {expected_sha}, got {actual_sha}'
-              )
-
-          Path('/tmp/restart1-payload.tar.gz').write_bytes(payload)
-          Path('/tmp/restart1-comment-ids').write_text(
-              ''.join(f'{comment_id}\n' for comment_id in transport_comment_ids)
-          )
-          PY
+          test -f .restart1/manifest.sha256
+          for index in $(seq -w 0 14); do
+            test -f ".restart1/chunk-${index}"
+          done
+          cat .restart1/chunk-* > /tmp/restart1-payload.b64
+          base64 --decode /tmp/restart1-payload.b64 > /tmp/restart1-payload.tar.gz
+          EXPECTED="$(cut -d' ' -f1 .restart1/manifest.sha256)"
+          ACTUAL="$(sha256sum /tmp/restart1-payload.tar.gz | cut -d' ' -f1)"
+          test "$ACTUAL" = "$EXPECTED"
           gzip -t /tmp/restart1-payload.tar.gz
 
       - name: Apply RESTART1 implementation
@@ -131,6 +71,20 @@ jobs:
       - name: Remove transport comments
         if: steps.payload.outputs.ready == 'true'
         run: |
+          gh api --paginate --slurp \
+            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            > /tmp/restart1-comments.json
+          python - <<'PY' > /tmp/restart1-comment-ids
+          import json
+          from pathlib import Path
+
+          pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
+          for page in pages:
+              for comment in page:
+                  body = comment.get('body') or ''
+                  if 'RESTART1_CHUNK:' in body or 'RESTART1_MANIFEST' in body:
+                      print(comment['id'])
+          PY
           while read -r comment_id; do
             test -n "$comment_id" || continue
             gh api --method DELETE \
