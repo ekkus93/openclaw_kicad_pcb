@@ -23,3 +23,8 @@
 
     2026-07-23T23:32:47.0877539Z ##[error]Process completed with exit code 1.
     2026-07-23T23:32:47.0877565Z ##[error]Process completed with exit code 1.
+
+## Failure excerpts
+
+    2026-07-23T23:34:18.4953386Z ##[error]Process completed with exit code 1.
+    2026-07-23T23:34:18.4953403Z ##[error]Process completed with exit code 1.
