@@ -51,7 +51,13 @@ jobs:
         run: |
           set -euo pipefail
           : >/tmp/restart1-payload.b64
-          for path in payload-1.b64 payload-2a.b64 tail.b64; do
+          for path in \
+            payload-1.b64 \
+            payload-2a.b64 \
+            tail-0.b64 \
+            tail-1.b64 \
+            tail-2.b64 \
+            tail-3.b64; do
             gh api \
               -H 'Accept: application/vnd.github.raw+json' \
               "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/${path}?ref=${HEAD_SHA}" \
