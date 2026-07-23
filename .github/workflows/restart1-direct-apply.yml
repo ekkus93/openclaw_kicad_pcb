@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   apply:
@@ -19,6 +19,7 @@ jobs:
       EXPECTED_PAYLOAD_SHA256: 6374147fa46ba6d0acbffeed09e066a889759dce725e21dcff415c5cbfc9e6bb
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       EXPECTED_WEBAPP_HEAD: ${{ github.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -94,3 +95,14 @@ jobs:
           git push \
             --force-with-lease="refs/heads/webapp:${EXPECTED_WEBAPP_HEAD}" \
             origin HEAD:refs/heads/webapp
+
+      - name: Close obsolete PR and delete carrier branch
+        if: steps.payload.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr close "${PR_NUMBER}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --delete-branch \
+            --comment 'RESTART1 was applied directly to webapp. Closing and deleting the temporary carrier branch.'
