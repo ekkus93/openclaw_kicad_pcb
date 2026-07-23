@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Create source snapshot
+      - name: Create source snapshot and metadata
         run: |
           tar \
             --exclude=.git \
@@ -21,9 +21,19 @@ jobs:
             --exclude=.venv \
             --exclude=data \
             -czf /tmp/openclaw-kicad-pcb-source.tar.gz .
+          {
+            echo "commit=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+          } > /tmp/restart1-git-metadata.txt
       - name: Upload source snapshot
         uses: actions/upload-artifact@v6
         with:
           name: restart1-source
           path: /tmp/openclaw-kicad-pcb-source.tar.gz
+          retention-days: 1
+      - name: Upload Git metadata
+        uses: actions/upload-artifact@v6
+        with:
+          name: restart1-git-metadata
+          path: /tmp/restart1-git-metadata.txt
           retention-days: 1
