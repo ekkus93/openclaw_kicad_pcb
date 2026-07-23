@@ -1,8 +1,8 @@
 name: RESTART1 Direct Apply
 
 on:
-  pull_request_target:
-    types: [synchronize]
+  push:
+    branches: [webapp]
 
 permissions:
   contents: write
@@ -10,16 +10,13 @@ permissions:
 
 jobs:
   apply:
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login == github.repository_owner
     runs-on: ubuntu-latest
     env:
       BASE_SHA: 0298a9f3f3139367a3e437a0464ed2eb18c3a07f
+      CARRIER_SHA: e17c2aca1e795a7d897272eb37b34bb3f9dd67f8
       EXPECTED_PAYLOAD_SHA256: 6374147fa46ba6d0acbffeed09e066a889759dce725e21dcff415c5cbfc9e6bb
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       EXPECTED_WEBAPP_HEAD: ${{ github.sha }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: 1
     steps:
       - uses: actions/checkout@v6
         with:
@@ -27,29 +24,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Detect complete payload
-        id: payload
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh api \
-            -H 'Accept: application/vnd.github.raw+json' \
-            "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/READY?ref=${HEAD_SHA}" \
-            >/tmp/restart1-ready 2>/dev/null; then
-            test "$(cat /tmp/restart1-ready)" = "${EXPECTED_PAYLOAD_SHA256}"
-            echo 'ready=true' >>"${GITHUB_OUTPUT}"
-          else
-            echo 'ready=false' >>"${GITHUB_OUTPUT}"
-            echo 'RESTART1 payload is incomplete; refusing to apply it.'
-          fi
-
       - name: Reconstruct and verify payload
-        if: steps.payload.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          gh api \
+            -H 'Accept: application/vnd.github.raw+json' \
+            "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/READY?ref=${CARRIER_SHA}" \
+            >/tmp/restart1-ready
+          test "$(cat /tmp/restart1-ready)" = "${EXPECTED_PAYLOAD_SHA256}"
+
           : >/tmp/restart1-payload.b64
           for path in \
             p1-0.b64 \
@@ -66,15 +51,15 @@ jobs:
             tail-3.b64; do
             gh api \
               -H 'Accept: application/vnd.github.raw+json' \
-              "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/${path}?ref=${HEAD_SHA}" \
+              "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/${path}?ref=${CARRIER_SHA}" \
               >>/tmp/restart1-payload.b64
           done
+
           base64 --decode /tmp/restart1-payload.b64 >/tmp/restart1-payload.tar.gz
           test "$(sha256sum /tmp/restart1-payload.tar.gz | cut -d' ' -f1)" = "${EXPECTED_PAYLOAD_SHA256}"
           gzip -t /tmp/restart1-payload.tar.gz
 
       - name: Apply implementation on clean webapp baseline
-        if: steps.payload.outputs.ready == 'true'
         run: |
           set -euo pipefail
           git fetch origin webapp
@@ -95,7 +80,6 @@ jobs:
           test ! -e .restart1-direct
 
       - name: Commit directly to webapp
-        if: steps.payload.outputs.ready == 'true'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -109,7 +93,6 @@ jobs:
             origin HEAD:refs/heads/webapp
 
       - name: Close obsolete PR and delete carrier branch
-        if: steps.payload.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
