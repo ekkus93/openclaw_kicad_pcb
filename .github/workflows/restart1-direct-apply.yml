@@ -52,7 +52,12 @@ jobs:
           set -euo pipefail
           : >/tmp/restart1-payload.b64
           for path in \
-            payload-1.b64 \
+            p1-0.b64 \
+            p1-1.b64 \
+            p1-2.b64 \
+            p1-3.b64 \
+            p1-4.b64 \
+            p1-5.b64 \
             payload-2a.b64 \
             tail-0.b64 \
             tail-1.b64 \
