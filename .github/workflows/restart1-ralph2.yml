@@ -1,0 +1,163 @@
+name: RESTART1 Ralph Gate 2
+
+on:
+  pull_request:
+    branches: [webapp]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: restart1-ralph2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
+
+jobs:
+  ralph:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify implementation payload landed
+        run: |
+          test -f docs/RESTART1_TODO.md
+          test -f src/kicad_pcb_web/services/atomic_io.py
+          test ! -e .restart1/READY
+          test ! -e .github/workflows/restart1-bootstrap.yml
+          test ! -e .github/workflows/restart1-apply.yml
+
+      - name: Install system dependencies
+        run: |
+          sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad kicad-symbols
+          command -v dot
+          test -d "$KICAD_SYMBOLS_DIR"
+          kicad-cli version
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Refresh locked Python environment
+        run: |
+          uv lock
+          uv sync --frozen --extra dev --extra web
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Apply deterministic formatting and lint fixes
+        run: |
+          uv run ruff format .
+          uv run ruff check --fix .
+          npm --prefix frontend run lint -- --fix
+          npm --prefix frontend run build
+
+      - name: Commit deterministic corrections
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            uv.lock \
+            pyproject.toml \
+            src \
+            tests \
+            scripts \
+            frontend \
+            README.md \
+            MANIFEST.in \
+            .gitignore \
+            .github/workflows/ci.yml
+          if ! git diff --cached --quiet; then
+            git commit -m "Apply RESTART1 generated corrections"
+            git push origin "HEAD:${HEAD_BRANCH}"
+          fi
+
+      - name: Python static checks
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/kicad_pcb src/kicad_pcb_web
+          uv run python scripts/check_ci_config.py
+          bash scripts/check-generated-tree.sh
+
+      - name: Python unit and web tests
+        run: |
+          uv run pytest tests/unit tests/web \
+            --cov \
+            --cov-report=term-missing \
+            -v
+
+      - name: Frontend checks
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm run test:run -- --coverage
+          npm run build
+
+      - name: Package smoke test
+        run: |
+          rm -rf dist
+          uv build
+          python scripts/package_smoke_test.py
+
+      - name: Playwright browser smoke
+        working-directory: frontend
+        env:
+          KICAD_PCB_WEB_DATA_DIR: ${{ runner.temp }}/kicad-pcb-web-data
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+
+      - name: KiCad integration tests
+        env:
+          GRAPHVIZ_DOT: /usr/bin/dot
+        run: |
+          uv run pytest tests/integration \
+            -m requires_kicad \
+            -v \
+            --tb=long
+
+      - name: Remove temporary RESTART1 workflows
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f \
+            .github/workflows/restart1-ralph.yml \
+            .github/workflows/restart1-ralph2.yml \
+            .github/workflows/restart1-controller.yml \
+            .github/workflows/restart1-controller2.yml
+          rm -f docs/RESTART1_RALPH_REPORT.md
+          git add -A
+          git commit -m "Complete RESTART1 Ralph verification"
+          git push origin "HEAD:${HEAD_BRANCH}"
