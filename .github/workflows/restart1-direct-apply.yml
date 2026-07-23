@@ -1,0 +1,96 @@
+name: RESTART1 Direct Apply
+
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    env:
+      BASE_SHA: 0298a9f3f3139367a3e437a0464ed2eb18c3a07f
+      EXPECTED_PAYLOAD_SHA256: 6374147fa46ba6d0acbffeed09e066a889759dce725e21dcff415c5cbfc9e6bb
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_WEBAPP_HEAD: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Detect complete payload
+        id: payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh api \
+            -H 'Accept: application/vnd.github.raw+json' \
+            "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/READY?ref=${HEAD_SHA}" \
+            >/tmp/restart1-ready 2>/dev/null; then
+            test "$(cat /tmp/restart1-ready)" = "${EXPECTED_PAYLOAD_SHA256}"
+            echo 'ready=true' >>"${GITHUB_OUTPUT}"
+          else
+            echo 'ready=false' >>"${GITHUB_OUTPUT}"
+            echo 'RESTART1 payload is incomplete; refusing to apply it.'
+          fi
+
+      - name: Reconstruct and verify payload
+        if: steps.payload.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          : >/tmp/restart1-payload.b64
+          for part in 1 2; do
+            gh api \
+              -H 'Accept: application/vnd.github.raw+json' \
+              "repos/${GITHUB_REPOSITORY}/contents/.restart1-direct/payload-${part}.b64?ref=${HEAD_SHA}" \
+              >>/tmp/restart1-payload.b64
+          done
+          base64 --decode /tmp/restart1-payload.b64 >/tmp/restart1-payload.tar.gz
+          test "$(sha256sum /tmp/restart1-payload.tar.gz | cut -d' ' -f1)" = "${EXPECTED_PAYLOAD_SHA256}"
+          gzip -t /tmp/restart1-payload.tar.gz
+
+      - name: Apply implementation on clean webapp baseline
+        if: steps.payload.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin webapp
+          test "$(git rev-parse HEAD)" = "${EXPECTED_WEBAPP_HEAD}"
+          git checkout --detach "${BASE_SHA}"
+          tar -xzf /tmp/restart1-payload.tar.gz -C .
+          while IFS= read -r path; do
+            test -n "${path}"
+            case "${path}" in
+              /*|*'..'*) echo "Unsafe deletion path: ${path}" >&2; exit 1 ;;
+            esac
+            rm -rf -- "${path}"
+          done <.restart1-delete-paths
+          rm -f .restart1-delete-paths
+          test ! -e .github/workflows/restart1-direct-apply.yml
+          test ! -e .github/workflows/restart1-bootstrap.yml
+          test ! -e .restart1
+          test ! -e .restart1-direct
+
+      - name: Commit directly to webapp
+        if: steps.payload.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'Implement RESTART1 hardening pass'
+          git push \
+            --force-with-lease="refs/heads/webapp:${EXPECTED_WEBAPP_HEAD}" \
+            origin HEAD:refs/heads/webapp
