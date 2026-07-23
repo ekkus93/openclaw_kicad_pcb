@@ -1,0 +1,29 @@
+name: RESTART1 Bootstrap
+
+on:
+  pull_request:
+    branches: [webapp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Create source snapshot
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=frontend/node_modules \
+            --exclude=.venv \
+            --exclude=data \
+            -czf /tmp/openclaw-kicad-pcb-source.tar.gz .
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v6
+        with:
+          name: restart1-source
+          path: /tmp/openclaw-kicad-pcb-source.tar.gz
+          retention-days: 1
