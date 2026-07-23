@@ -1,0 +1,132 @@
+name: RESTART1 Ralph Controller 2
+
+on:
+  pull_request:
+    branches: [webapp]
+    paths:
+      - .github/workflows/restart1-controller2.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  capture-result:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Wait for corrected Ralph gate
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 160); do
+            if gh api \
+              "repos/${REPOSITORY}/actions/workflows/restart1-ralph2.yml/runs?branch=${HEAD_BRANCH}&event=pull_request&per_page=10" \
+              > /tmp/restart1-runs.json 2>/dev/null; then
+              run_id="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          runs = json.loads(Path('/tmp/restart1-runs.json').read_text()).get('workflow_runs', [])
+          print(runs[0]['id'] if runs else '')
+          PY
+          )"
+              status="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          runs = json.loads(Path('/tmp/restart1-runs.json').read_text()).get('workflow_runs', [])
+          print(runs[0]['status'] if runs else '')
+          PY
+          )"
+              if test -n "$run_id" && test "$status" = "completed"; then
+                break
+              fi
+            fi
+            sleep 15
+          done
+          test -n "$run_id"
+          echo "$run_id" > /tmp/restart1-run-id
+
+      - name: Capture job and failure details
+        run: |
+          set -euo pipefail
+          run_id="$(cat /tmp/restart1-run-id)"
+          gh api "repos/${REPOSITORY}/actions/runs/${run_id}" > /tmp/restart1-run.json
+          gh api --paginate --slurp \
+            "repos/${REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            > /tmp/restart1-jobs.json
+
+          mkdir -p docs
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          run = json.loads(Path('/tmp/restart1-run.json').read_text())
+          pages = json.loads(Path('/tmp/restart1-jobs.json').read_text())
+          jobs = [job for page in pages for job in page.get('jobs', [])]
+          lines = [
+              '# RESTART1 Ralph Gate Report',
+              '',
+              f"- Run ID: `{run['id']}`",
+              f"- Head SHA: `{run.get('head_sha')}`",
+              f"- Conclusion: **{run.get('conclusion') or 'unknown'}**",
+              f"- Workflow: {run.get('html_url')}",
+              '',
+              '## Jobs and steps',
+              '',
+          ]
+          for job in jobs:
+              lines.append(f"### {job.get('name')} — {job.get('conclusion')}")
+              lines.append('')
+              for step in job.get('steps', []):
+                  lines.append(
+                      f"- `{step.get('number')}` {step.get('name')}: "
+                      f"**{step.get('conclusion')}**"
+                  )
+              lines.append('')
+          Path('docs/RESTART1_RALPH_REPORT.md').write_text('\n'.join(lines) + '\n')
+          PY
+
+          conclusion="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path('/tmp/restart1-run.json').read_text()).get('conclusion') or 'unknown')
+          PY
+          )"
+          if test "$conclusion" != "success"; then
+            mkdir -p /tmp/restart1-logs
+            gh api "repos/${REPOSITORY}/actions/runs/${run_id}/logs" > /tmp/restart1-logs.zip
+            unzip -q /tmp/restart1-logs.zip -d /tmp/restart1-logs || true
+            {
+              echo
+              echo "## Failure excerpts"
+              echo
+              grep -RIEh '(^|[^a-z])(error|failed|failure|traceback|assertionerror|typeerror|syntaxerror|command not found)([^a-z]|$)' /tmp/restart1-logs \
+                | tail -n 300 \
+                | sed 's/^/    /' \
+                || true
+            } >> docs/RESTART1_RALPH_REPORT.md
+          fi
+
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin "$HEAD_BRANCH"
+          git add docs/RESTART1_RALPH_REPORT.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Record corrected RESTART1 Ralph gate result"
+            git push origin "HEAD:${HEAD_BRANCH}"
+          fi
