@@ -1,0 +1,105 @@
+name: RESTART1 Ralph Controller
+
+on:
+  pull_request:
+    branches: [webapp]
+    paths:
+      - .github/workflows/restart1-*.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  capture-result:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Wait for Ralph gate and capture result
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 120); do
+            runs_json="$(gh api "repos/${REPOSITORY}/actions/workflows/restart1-ralph.yml/runs?branch=${HEAD_BRANCH}&event=pull_request&per_page=10")"
+            run_id="$(python -c 'import json,sys; data=json.load(sys.stdin); runs=data.get("workflow_runs", []); print(runs[0]["id"] if runs else "")' <<<"$runs_json")"
+            status="$(python -c 'import json,sys; data=json.load(sys.stdin); runs=data.get("workflow_runs", []); print(runs[0]["status"] if runs else "")' <<<"$runs_json")"
+            if test -n "$run_id" && test "$status" = "completed"; then
+              break
+            fi
+            sleep 15
+          done
+          test -n "$run_id"
+
+          run_json="$(gh api "repos/${REPOSITORY}/actions/runs/${run_id}")"
+          conclusion="$(python -c 'import json,sys; print(json.load(sys.stdin).get("conclusion") or "unknown")' <<<"$run_json")"
+          html_url="$(python -c 'import json,sys; print(json.load(sys.stdin).get("html_url") or "")' <<<"$run_json")"
+          jobs_json="$(gh api --paginate --slurp "repos/${REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100")"
+
+          mkdir -p docs
+          python - "$run_id" "$conclusion" "$html_url" <<'PY' <<<"$jobs_json"
+          from __future__ import annotations
+
+          import json
+          import sys
+          from pathlib import Path
+
+          run_id, conclusion, html_url = sys.argv[1:4]
+          pages = json.load(sys.stdin)
+          jobs = [job for page in pages for job in page.get("jobs", [])]
+          lines = [
+              "# RESTART1 Ralph Gate Report",
+              "",
+              f"- Run ID: `{run_id}`",
+              f"- Conclusion: **{conclusion}**",
+              f"- Workflow: {html_url}",
+              "",
+              "## Jobs and steps",
+              "",
+          ]
+          for job in jobs:
+              lines.append(f"### {job.get('name')} — {job.get('conclusion')}")
+              lines.append("")
+              for step in job.get("steps", []):
+                  lines.append(
+                      f"- `{step.get('number')}` {step.get('name')}: "
+                      f"**{step.get('conclusion')}**"
+                  )
+              lines.append("")
+          Path("docs/RESTART1_RALPH_REPORT.md").write_text("\n".join(lines) + "\n")
+          PY
+
+          if test "$conclusion" != "success"; then
+            mkdir -p /tmp/restart1-logs
+            gh api "repos/${REPOSITORY}/actions/runs/${run_id}/logs" > /tmp/restart1-logs.zip
+            unzip -q /tmp/restart1-logs.zip -d /tmp/restart1-logs || true
+            {
+              echo
+              echo "## Failure excerpts"
+              echo
+              grep -RIEh '(^|[^a-z])(error|failed|failure|traceback|assertionerror|typeerror|syntaxerror)([^a-z]|$)' /tmp/restart1-logs \
+                | tail -n 250 \
+                | sed 's/^/    /' \
+                || true
+            } >> docs/RESTART1_RALPH_REPORT.md
+          fi
+
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/RESTART1_RALPH_REPORT.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Record RESTART1 Ralph gate result"
+            git push origin "HEAD:${HEAD_BRANCH}"
+          fi
