@@ -1,0 +1,220 @@
+name: RESTART1 Ralph Gate 4
+
+on:
+  pull_request:
+    branches: [webapp]
+    paths-ignore:
+      - docs/RESTART1_RALPH_REPORT.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: restart1-ralph4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
+
+jobs:
+  ralph:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Prepare, correct, and run every gate
+        id: gates
+        env:
+          KICAD_PCB_WEB_DATA_DIR: ${{ runner.temp }}/kicad-pcb-web-data
+          GRAPHVIZ_DOT: /usr/bin/dot
+        run: |
+          set +e
+          mkdir -p /tmp/restart1-gates
+          : > /tmp/restart1-gates/results.tsv
+
+          run_gate() {
+            name="$1"
+            shift
+            log="/tmp/restart1-gates/${name}.log"
+            echo "Running ${name}: $*"
+            "$@" >"$log" 2>&1
+            status=$?
+            printf '%s\t%s\t%s\n' "$name" "$status" "$*" >> /tmp/restart1-gates/results.tsv
+            cat "$log"
+            return 0
+          }
+
+          rm -rf .restart1
+          rm -f \
+            .github/workflows/restart1-bootstrap.yml \
+            .github/workflows/restart1-apply.yml \
+            .github/workflows/restart1-ralph.yml \
+            .github/workflows/restart1-ralph2.yml \
+            .github/workflows/restart1-ralph3.yml \
+            .github/workflows/restart1-controller.yml \
+            .github/workflows/restart1-controller2.yml
+
+          if test -f src/kicad_pcb_web/services/atomic_io.py; then
+            printf 'implementation-present\t0\tatomic_io.py exists\n' >> /tmp/restart1-gates/results.tsv
+          else
+            printf 'implementation-present\t1\tatomic_io.py exists\n' >> /tmp/restart1-gates/results.tsv
+          fi
+
+          run_gate apt-update sudo apt-get update -q
+          run_gate graphviz-symbols-install sudo apt-get install -y graphviz kicad-symbols
+          run_gate kicad-ppa sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
+          run_gate apt-update-kicad sudo apt-get update -q
+          run_gate kicad-install sudo apt-get install -y kicad
+          run_gate kicad-version kicad-cli version
+
+          run_gate uv-lock uv lock
+          run_gate uv-sync uv sync --frozen --extra dev --extra web
+          run_gate npm-ci npm --prefix frontend ci
+
+          if test -d frontend/node_modules/vitest && ! test -d frontend/node_modules/@vitest/coverage-v8; then
+            VITEST_VERSION="$(node -p "require('./frontend/node_modules/vitest/package.json').version" 2>/dev/null)"
+            if test -n "$VITEST_VERSION"; then
+              run_gate coverage-adapter npm --prefix frontend install --save-dev --save-exact "@vitest/coverage-v8@${VITEST_VERSION}"
+            else
+              printf 'coverage-adapter\t1\tresolve installed Vitest version\n' >> /tmp/restart1-gates/results.tsv
+            fi
+          else
+            printf 'coverage-adapter\t0\tcoverage adapter already present or npm unavailable\n' >> /tmp/restart1-gates/results.tsv
+          fi
+
+          run_gate ruff-format-fix uv run ruff format .
+          run_gate ruff-lint-fix uv run ruff check --fix .
+          run_gate frontend-lint-fix npm --prefix frontend run lint -- --fix
+          run_gate frontend-build-fix npm --prefix frontend run build
+
+          run_gate ruff-check uv run ruff check .
+          run_gate ruff-format uv run ruff format --check .
+          run_gate mypy uv run mypy src/kicad_pcb src/kicad_pcb_web
+          run_gate ci-config uv run python scripts/check_ci_config.py
+          run_gate generated-tree bash scripts/check-generated-tree.sh
+          run_gate python-tests uv run pytest tests/unit tests/web --cov --cov-report=term-missing -v
+          run_gate frontend-lint npm --prefix frontend run lint
+          run_gate frontend-tests npm --prefix frontend run test:run -- --coverage
+          run_gate frontend-build npm --prefix frontend run build
+          run_gate package-build uv build
+          run_gate package-smoke python scripts/package_smoke_test.py
+          run_gate playwright-install bash -lc 'cd frontend && npx playwright install --with-deps chromium'
+          run_gate playwright bash -lc 'cd frontend && npm run test:e2e'
+          run_gate kicad-integration uv run pytest tests/integration -m requires_kicad -v --tb=long
+
+          if awk -F '\t' '$2 != 0 { failed=1 } END { exit failed ? 0 : 1 }' /tmp/restart1-gates/results.tsv; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Write bounded gate report
+        if: always()
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import subprocess
+
+          results_path = Path('/tmp/restart1-gates/results.tsv')
+          head_sha = subprocess.run(
+              ['git', 'rev-parse', 'HEAD'],
+              check=False,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          lines = [
+              '# RESTART1 Ralph Gate Report',
+              '',
+              f'- Head SHA: `{head_sha}`',
+              '',
+              '## Gate results',
+              '',
+          ]
+          failed_names: list[str] = []
+          if results_path.exists():
+              for raw in results_path.read_text().splitlines():
+                  name, status, command = raw.split('\t', 2)
+                  conclusion = 'PASS' if status == '0' else 'FAIL'
+                  lines.append(f'- **{conclusion}** `{name}` — `{command}`')
+                  if status != '0':
+                      failed_names.append(name)
+          else:
+              failed_names.append('gate-runner')
+              lines.append('- **FAIL** `gate-runner` — results file was not created')
+
+          if failed_names:
+              lines.extend(['', '## Failure excerpts', ''])
+              for name in failed_names:
+                  log_path = Path(f'/tmp/restart1-gates/{name}.log')
+                  excerpt = (
+                      log_path.read_text(errors='replace').splitlines()[-200:]
+                      if log_path.exists()
+                      else ['No log file was produced.']
+                  )
+                  lines.append(f'### `{name}`')
+                  lines.append('')
+                  lines.append('```text')
+                  lines.extend(excerpt)
+                  lines.append('```')
+                  lines.append('')
+
+          Path('docs/RESTART1_RALPH_REPORT.md').write_text('\n'.join(lines) + '\n')
+          PY
+
+      - name: Commit corrections and report on failure
+        if: always() && steps.gates.outputs.failed != 'false'
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Record RESTART1 gate failures and corrections"
+            git pull --rebase origin "$HEAD_BRANCH"
+            git push origin "HEAD:${HEAD_BRANCH}"
+          fi
+          exit 1
+
+      - name: Complete RESTART1 after green gate
+        if: steps.gates.outputs.failed == 'false'
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/restart1-ralph4.yml
+          rm -f docs/RESTART1_RALPH_REPORT.md
+          git add -A
+          git commit -m "Complete RESTART1 Ralph verification"
+          git pull --rebase origin "$HEAD_BRANCH"
+          git push origin "HEAD:${HEAD_BRANCH}"
