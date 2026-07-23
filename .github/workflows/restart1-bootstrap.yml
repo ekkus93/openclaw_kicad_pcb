@@ -49,6 +49,7 @@ jobs:
           import re
           from pathlib import Path
 
+          diagnostics_path = Path('/tmp/restart1-diagnostics.txt')
           pages = json.loads(Path('/tmp/restart1-comments.json').read_text())
           comments = [comment for page in pages for comment in page]
           chunk_pattern = re.compile(
@@ -70,6 +71,19 @@ jobs:
               if manifest_match and expected_sha is None:
                   expected_sha = manifest_match.group(1)
 
+          diagnostics = [
+              f'comment_count={len(comments)}',
+              f'found_indices={sorted(chunks)}',
+              f'expected_payload_sha256={expected_sha}',
+          ]
+          for index in sorted(chunks):
+              encoded_chunk = chunks[index]
+              diagnostics.append(
+                  f'chunk-{index:03d} length={len(encoded_chunk)} '
+                  f'sha256={hashlib.sha256(encoded_chunk.encode()).hexdigest()}'
+              )
+          diagnostics_path.write_text('\n'.join(diagnostics) + '\n')
+
           expected_indices = list(range(15))
           if sorted(chunks) != expected_indices:
               raise SystemExit(
@@ -81,6 +95,8 @@ jobs:
           encoded = ''.join(chunks[index] for index in expected_indices)
           payload = base64.b64decode(encoded, validate=True)
           actual_sha = hashlib.sha256(payload).hexdigest()
+          diagnostics.append(f'actual_payload_sha256={actual_sha}')
+          diagnostics_path.write_text('\n'.join(diagnostics) + '\n')
           if actual_sha != expected_sha:
               raise SystemExit(
                   f'payload checksum mismatch: expected {expected_sha}, got {actual_sha}'
@@ -88,6 +104,15 @@ jobs:
           Path('/tmp/restart1-payload.tar.gz').write_bytes(payload)
           PY
           gzip -t /tmp/restart1-payload.tar.gz
+
+      - name: Upload payload diagnostics
+        if: always() && steps.payload.outputs.ready == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: restart1-payload-diagnostics-${{ github.run_id }}
+          path: /tmp/restart1-diagnostics.txt
+          if-no-files-found: warn
+          retention-days: 1
 
       - name: Apply RESTART1 implementation
         if: steps.payload.outputs.ready == 'true'
