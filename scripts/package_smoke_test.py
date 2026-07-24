@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Inspect distributions and verify the installed wheel serves its bundled SPA."""
+"""Inspect distributions and verify the wheel serves its bundled SPA."""
 
 from __future__ import annotations
 
 import os
 import re
 import subprocess
+import sys
 import tarfile
 import tempfile
-import venv
 import zipfile
+from email.parser import Parser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,10 @@ _REQUIRED_WHEEL_SUFFIXES = (
     "kicad_pcb_web/static/spa/favicon.svg",
 )
 _FORBIDDEN_PARTS = ("/data/", "kicad_pcb_web.toml", "node_modules/", "debug_artifacts/")
+_REQUIRED_RUNTIME_REQUIREMENTS = frozenset({"pydantic"})
+_REQUIRED_WEB_REQUIREMENTS = frozenset(
+    {"fastapi", "httpx", "jinja2", "python-multipart", "uvicorn"}
+)
 
 
 def _single(pattern: str) -> Path:
@@ -28,9 +33,44 @@ def _single(pattern: str) -> Path:
     return matches[0]
 
 
+def _normalized_requirement_name(requirement: str) -> str:
+    name = re.split(r"[\s(;<>=!~\[]", requirement, maxsplit=1)[0]
+    return name.lower().replace("_", "-")
+
+
+def _assert_dependency_metadata(metadata_text: str) -> None:
+    metadata = Parser().parsestr(metadata_text)
+    requirements = metadata.get_all("Requires-Dist", [])
+    runtime_requirements = {
+        _normalized_requirement_name(requirement)
+        for requirement in requirements
+        if "extra ==" not in requirement
+    }
+    web_requirements = {
+        _normalized_requirement_name(requirement)
+        for requirement in requirements
+        if 'extra == "web"' in requirement or "extra == 'web'" in requirement
+    }
+
+    missing_runtime = _REQUIRED_RUNTIME_REQUIREMENTS - runtime_requirements
+    if missing_runtime:
+        raise RuntimeError(
+            f"Wheel metadata is missing runtime dependencies: {sorted(missing_runtime)}"
+        )
+    missing_web = _REQUIRED_WEB_REQUIREMENTS - web_requirements
+    if missing_web:
+        raise RuntimeError(f"Wheel metadata is missing web dependencies: {sorted(missing_web)}")
+
+
 def _assert_distribution_contents(wheel: Path, sdist: Path) -> None:
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
+        metadata_names = [name for name in names if name.endswith(".dist-info/METADATA")]
+        if len(metadata_names) != 1:
+            raise RuntimeError(f"Expected one wheel METADATA file, found {metadata_names}")
+        metadata_text = archive.read(metadata_names[0]).decode("utf-8")
+
+    _assert_dependency_metadata(metadata_text)
     for suffix in _REQUIRED_WHEEL_SUFFIXES:
         if not any(name.endswith(suffix) for name in names):
             raise RuntimeError(f"Wheel is missing required package data: {suffix}")
@@ -54,26 +94,26 @@ def _assert_distribution_contents(wheel: Path, sdist: Path) -> None:
             raise RuntimeError(f"sdist contains forbidden path fragment: {forbidden}")
 
 
-def _venv_python(directory: Path) -> Path:
-    if os.name == "nt":
-        return directory / "Scripts" / "python.exe"
-    return directory / "bin" / "python"
-
-
-def _install_and_probe(wheel: Path) -> None:
+def _extract_and_probe(wheel: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="kicad-pcb-wheel-smoke-") as temp:
         temp_path = Path(temp)
-        env_dir = temp_path / "venv"
-        venv.EnvBuilder(with_pip=True).create(env_dir)
-        python = _venv_python(env_dir)
-        subprocess.run(
-            [str(python), "-m", "pip", "install", f"{wheel}[web]"],
-            check=True,
-            cwd=temp_path,
-        )
+        install_root = temp_path / "site-packages"
+        install_root.mkdir()
+        with zipfile.ZipFile(wheel) as archive:
+            archive.extractall(install_root)
+
         probe = r"""
+import os
+import re
+from pathlib import Path
+
 from fastapi.testclient import TestClient
+import kicad_pcb_web
 from kicad_pcb_web.main import app
+
+install_root = Path(os.environ["KICAD_PCB_SMOKE_INSTALL_ROOT"]).resolve()
+package_file = Path(kicad_pcb_web.__file__).resolve()
+assert package_file.is_relative_to(install_root), (package_file, install_root)
 
 client = TestClient(app)
 bootstrap = client.get("/api/ui/bootstrap")
@@ -102,14 +142,18 @@ for asset in sorted(asset_paths):
     response = client.get(asset)
     assert response.status_code == 200, (asset, response.text)
 """
-        subprocess.run([str(python), "-c", probe], check=True, cwd=temp_path)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(install_root)
+        env["KICAD_PCB_SMOKE_INSTALL_ROOT"] = str(install_root)
+        env["KICAD_PCB_WEB_DATA_DIR"] = str(temp_path / "data")
+        subprocess.run([sys.executable, "-c", probe], check=True, cwd=temp_path, env=env)
 
 
 def main() -> int:
     wheel = _single("*.whl")
     sdist = _single("*.tar.gz")
     _assert_distribution_contents(wheel, sdist)
-    _install_and_probe(wheel)
+    _extract_and_probe(wheel)
     return 0
 
 
