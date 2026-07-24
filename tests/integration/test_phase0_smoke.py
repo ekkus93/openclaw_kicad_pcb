@@ -504,12 +504,8 @@ class TestNewFromNetlistKicadMode:
             )
             assert res.returncode == 0, f"{cmd} failed (exit {res.returncode}):\n{res.stderr}"
 
-        bindings_a = _extract_bindings_from_sch(
-            self.projects_dir / "ProjA" / "ProjA.kicad_sch"
-        )
-        bindings_b = _extract_bindings_from_sch(
-            self.projects_dir / "ProjB" / "ProjB.kicad_sch"
-        )
+        bindings_a = _extract_bindings_from_sch(self.projects_dir / "ProjA" / "ProjA.kicad_sch")
+        bindings_b = _extract_bindings_from_sch(self.projects_dir / "ProjB" / "ProjB.kicad_sch")
         assert bindings_a == bindings_b, (
             f"Binding mismatch between new-from-netlist and compile-netlist:\n"
             f"  ProjA: {bindings_a}\n  ProjB: {bindings_b}"
