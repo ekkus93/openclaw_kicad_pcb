@@ -273,7 +273,7 @@ uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
 
 `compile-netlist` is an alias for `new-from-netlist` with identical arguments.
 
-**Apply Circuit IR to the current/open project** (updates managed region):
+**Apply Circuit IR to the current/open project**:
 ```bash
 uv run python legacy/openclaw-skill/scripts/kicad_pcb.py open MyProject/
 uv run python legacy/openclaw-skill/scripts/kicad_pcb.py apply-netlist \
@@ -298,8 +298,9 @@ own generated content from user-authored content.
 - If the marker is absent, `apply-netlist` **refuses** to modify the schematic
   (prevents accidental rewrites of manually authored files).
 - Pass `--force` to adopt an existing schematic and insert the marker.
-- Generated components live in a dedicated embedded sheet (`OpenClaw_Managed`),
-  leaving the rest of the schematic untouched.
+- New generation writes components, wires, and labels directly to the main
+  `<name>.kicad_sch` file. The legacy `OpenClaw_Managed.kicad_sch` name remains
+  recognized only for backward compatibility with older projects.
 
 ### Validation modes
 
@@ -381,7 +382,7 @@ When a run fails, inspect these artifacts in order:
 
 1. The source Circuit IR JSON.
 2. `validate-netlist` output and advisory/blocking codes.
-3. The emitted managed schematic: `OpenClaw_Managed.kicad_sch`.
+3. The generated main schematic: `DebugProject.kicad_sch`.
 4. The post-generation diagnostics in `OpenClaw_Warnings.json`.
 5. The optional debug dump stage markers and routing/layout summaries in `OpenClaw_Debug.json`.
 
@@ -458,13 +459,52 @@ CI rebuilds the SPA and fails when the committed bundle is stale. Node is requir
 for frontend development, not for running an already built wheel.
 
 ```bash
+uv sync --frozen --extra web
 uv build
-python scripts/package_smoke_test.py
+uv run --frozen --extra web python scripts/package_smoke_test.py
 ```
 
-The package smoke test installs the wheel into a clean virtual environment outside
-the source tree and verifies the API, SPA shell, deep routes, JavaScript, CSS, and
-favicon are served from installed package data.
+The package smoke test validates wheel and sdist contents, checks declared runtime
+and web dependency metadata, extracts the wheel outside the checkout, verifies that
+imports resolve from the extracted wheel, and probes the API, SPA shell, deep routes,
+JavaScript, CSS, and favicon.
+
+## Generated model-evaluation output
+
+Curated model-corpus inputs belong under `tests/fixtures/model_corpus/`. Regenerable
+evaluation projects and reports belong under the ignored path:
+
+```text
+code_review/generated/model_eval/
+```
+
+Regenerate reports with:
+
+```bash
+uv run python legacy/openclaw-skill/scripts/kicad_pcb.py model-corpus evaluate \
+  --corpus-dir tests/fixtures/model_corpus \
+  --out-dir code_review/generated/model_eval
+```
+
+List generated output without deleting it:
+
+```bash
+bash scripts/cleanup-generated.sh
+```
+
+Delete only the contents of the canonical generated-output directory after reviewing
+the dry-run list:
+
+```bash
+bash scripts/cleanup-generated.sh --apply
+```
+
+The cleanup command has no user-supplied path argument and refuses any target other
+than `code_review/generated/`. Curated fixtures and the committed SPA bundle are not
+inside that directory. CI artifacts such as coverage, Playwright reports, package
+archives, and failure diagnostics belong in GitHub Actions artifacts rather than Git.
+Deleting current generated files does not rewrite or reduce historical Git objects;
+repository-history cleanup would require a separate explicit project.
 
 ## Development
 
@@ -490,7 +530,7 @@ git diff --exit-code -- src/kicad_pcb_web/static/spa
 # Ordinary local gates; add --python-only for a Python-only loop
 bash scripts/validate.sh
 
-# Full gates including wheel smoke and Playwright
+# Full non-KiCad gates including wheel smoke and Playwright
 bash scripts/validate-all.sh
 
 # KiCad integration tests (requires kicad-cli >= 9 and system libraries)
@@ -501,7 +541,7 @@ uv run pytest tests/integration -m requires_kicad
 
 The single **[CI workflow](.github/workflows/ci.yml)** runs on `webapp` pushes and
 pull requests. It contains separate jobs for Python quality and coverage, frontend
-lint/tests/build, installed-wheel smoke testing, Playwright browser smoke tests,
+lint/tests/build, extracted-wheel smoke testing, Playwright browser smoke tests,
 and KiCad 9 integration tests. Missing external tools fail the relevant job rather
 than being reported as successful validation.
 
