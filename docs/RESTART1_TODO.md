@@ -3,9 +3,9 @@
 **Repository:** `ekkus93/openclaw_kicad_pcb`  
 **Implementation branch:** `webapp`  
 **Closeout date:** 2026-07-23/24  
-**Status:** Implementation complete; final closeout CI confirmation pending on the documentation/guard commits listed below.
+**Status:** RESTART1 complete; the final `webapp` CI workflow passed after the closeout documentation and guard commits.
 
-This document replaces the original unchecked implementation template. It records what was actually implemented, what was verified, what remains externally unverifiable, and the final release-readiness gate. It must not be interpreted as evidence for a check that is explicitly marked pending or unavailable.
+This document replaces the original unchecked implementation template. It records what was actually implemented, what was verified, what remains externally unverifiable, and the final release-readiness decision. It must not be interpreted as evidence for a check that is explicitly marked unavailable.
 
 ## 1. Locked architecture and behavior
 
@@ -109,7 +109,7 @@ The missing baseline shell transcript is an evidence gap, not an unresolved prod
 - [x] README commands and workflow descriptions were reconciled with current files.
 - [x] README and CLI help no longer describe the retired separate managed-sheet architecture.
 - [x] The dangerous-fallback audit below was completed.
-- [ ] Confirm the complete CI workflow passes on the final closeout head that includes this record and the latest documentation/guard commits.
+- [x] The user confirmed that the complete CI workflow passed after the final closeout commits on `webapp`.
 - [ ] A real external LLM-provider manual session was not run in this environment. Automated fake-client/service tests cover the state machine and error contracts; external-provider certification remains an optional operational check, not a repository-release blocker.
 - [ ] A fresh targeted model-corpus evaluation was not run locally because `kicad-cli` was unavailable in the closeout environment. The CI KiCad integration job remains the required external-tool gate.
 
@@ -147,39 +147,39 @@ The final affected modules and contracts were inspected for the following failur
 | CLI contract reconciliation | `8bf4f4410738eafc53b8b1ad4b28b08c85374267` | Document direct main-schematic output |
 | Generated-tree guard | `e6fdddec7b0bad7f60395e3d6bbe9202429279b6` | Reject tracked canonical generated output |
 | README reconciliation | `fe2328661d4e48e7b992fabc8e4f35f958ed3f52` | Correct architecture, packaging, cleanup, and CI documentation |
+| Initial closeout record | `b174c54addfaf97cfe33be9ca3e8a5e0a9dcfc75` | Reconcile implementation evidence and final readiness gate |
 
 ## 6. Verification evidence
 
 | Gate | Result/evidence |
 |---|---|
-| Ruff lint | Required CI step; user reported current implementation jobs passing |
-| Ruff format | Required CI step; earlier format defect corrected and the implementation jobs subsequently passed |
-| Mypy | Required CI step; user reported current implementation jobs passing |
-| Python unit/web tests with coverage | Required CI step; user reported current implementation jobs passing |
-| Frontend lint/unit/build | Required CI job; user reported current implementation jobs passing |
-| Committed SPA diff | Required CI step; implementation job passed after bundle synchronization |
-| Wheel/sdist build and extracted-wheel probe | Required CI job after commits `20422725...` and `a33e1a56...`; user reported jobs passing |
-| Playwright smoke | Required CI job after commit `aa55084...`; user reported jobs passing |
-| KiCad 9 integration | Required CI job; the last connector-inspected pre-closeout run already showed this job passing |
-| Generated-tree guard | Required Python-quality step; canonical path added in `e6fdddec...` |
+| Ruff lint | Passed in the final user-confirmed `webapp` CI workflow |
+| Ruff format | Passed in the final user-confirmed `webapp` CI workflow |
+| Mypy | Passed in the final user-confirmed `webapp` CI workflow |
+| Python unit/web tests with coverage | Passed in the final user-confirmed `webapp` CI workflow |
+| Frontend lint/unit/build | Passed in the final user-confirmed `webapp` CI workflow |
+| Committed SPA diff | Passed in the final user-confirmed `webapp` CI workflow |
+| Wheel/sdist build and extracted-wheel probe | Passed in the final user-confirmed `webapp` CI workflow |
+| Playwright smoke | Passed in the final user-confirmed `webapp` CI workflow |
+| KiCad 9 integration | Passed in the final user-confirmed `webapp` CI workflow |
+| Generated-tree guard | Passed in the final user-confirmed `webapp` CI workflow |
 | Cleanup script | `bash -n` passed; dry-run preserved a test entry; `--apply` removed only the listed entry |
 | CLI closeout syntax | `python -m py_compile src/kicad_pcb/_cli_subcommands_netlist.py` passed locally |
 | Shell closeout syntax | `bash -n` passed for cleanup, validation, and generated-tree scripts |
-| Latest final-head CI | Pending confirmation after the closeout commits |
+| Latest final-head CI | Passed; user confirmed the final `webapp` workflow was green on 2026-07-24 |
 
-The GitHub connector used during closeout could inspect known run IDs but could not list push-triggered runs for an arbitrary commit or read combined status because the integration returned HTTP 403. Therefore the latest green implementation result is recorded as user-observed, and final-head CI remains an explicit gate rather than an inferred pass.
+The GitHub connector used during closeout could inspect known run IDs but could not list push-triggered runs for an arbitrary commit or read combined status because the integration returned HTTP 403. The final workflow result is therefore recorded as user-confirmed. No workflow run URL or run ID was supplied with the confirmation.
 
 ## 7. Remaining risks and optional checks
 
 - The original baseline shell transcript is unavailable.
-- Final CI must pass on the closeout head containing this document.
 - A real OpenAI/Ollama/llama-server session may be run as an operational provider certification; it is not required to validate the repository's deterministic core or tested wizard state machine.
 - A fresh full corpus evaluation may be run on a machine with compatible `kicad-cli`; generated output must remain under `code_review/generated/` and untracked.
 - The application remains local/internal. Public exposure requires authentication, request isolation, and additional sandboxing.
 
 ## 8. Final readiness decision
 
-- [ ] **RESTART1 complete:** select only after the final `webapp` CI run for the closeout head passes.
-- [x] **RESTART1 implementation complete, closeout pending:** all known implementation defects in scope are repaired and no known high-severity issue remains, but final CI confirmation for the closeout commits has not yet been observed.
+- [x] **RESTART1 complete:** all required implementation work and CI gates pass, no known high-severity issue remains, and unavailable optional checks are documented honestly.
+- [ ] **RESTART1 implementation complete, closeout pending:** superseded by the completed readiness decision above.
 
-When the final workflow is green, change only the two checkboxes above and append the final workflow run URL/ID. Do not rewrite the evidence or erase the documented unavailable checks.
+Final workflow evidence: user-confirmed green on 2026-07-24 for the final `webapp` closeout state. A workflow run URL/ID was not supplied.
