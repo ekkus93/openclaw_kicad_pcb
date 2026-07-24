@@ -1,0 +1,84 @@
+name: RESTART1 Deterministic Autofix
+
+on:
+  push:
+    branches: [webapp]
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+
+jobs:
+  autofix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked Python dependencies
+        run: uv sync --frozen --extra dev --extra web --extra llm
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Apply deterministic Python fixes
+        run: |
+          set -euo pipefail
+          uv run ruff format .
+          uv run ruff check --fix . || true
+
+      - name: Rebuild committed SPA bundle
+        working-directory: frontend
+        run: npm run build
+
+      - name: Record any remaining Ruff violations
+        run: |
+          set -euo pipefail
+          mkdir -p docs
+          if uv run ruff check . > docs/RESTART1_RUFF_REMAINING.txt 2>&1; then
+            rm -f docs/RESTART1_RUFF_REMAINING.txt
+          else
+            printf '\nRuff still reports non-autofixable violations.\n' >> docs/RESTART1_RUFF_REMAINING.txt
+          fi
+
+      - name: Commit non-workflow corrections
+        run: |
+          set -euo pipefail
+          git restore --source=HEAD -- .github/workflows
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git restore --staged .github/workflows
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No deterministic corrections were needed.'
+            exit 0
+          fi
+          git diff --cached --stat
+          git commit -m 'Apply RESTART1 deterministic autofixes'
+          git push origin HEAD:refs/heads/webapp
