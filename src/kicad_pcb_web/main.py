@@ -16,8 +16,8 @@ from .errors import (
     handle_kicad_error,
     handle_request_validation_error,
     handle_unexpected_error,
-    handle_web_service_error,
     handle_user_error,
+    handle_web_service_error,
 )
 from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_ui, api_wizard, ui
 

@@ -243,14 +243,10 @@ def test_zone_positions_no_shared_refs_score_zero_not_full() -> None:
 
 def test_zone_positions_power_only_is_not_applicable() -> None:
     source = LayoutFeatures.model_validate(
-        _matching_payload(
-            symbols={"#PWR01": _sym("#PWR01", 15.0, 15.0, is_power_symbol=True)}
-        )
+        _matching_payload(symbols={"#PWR01": _sym("#PWR01", 15.0, 15.0, is_power_symbol=True)})
     )
     generated = LayoutFeatures.model_validate(
-        _matching_payload(
-            symbols={"#PWR01": _sym("#PWR01", 95.0, 95.0, is_power_symbol=True)}
-        )
+        _matching_payload(symbols={"#PWR01": _sym("#PWR01", 95.0, 95.0, is_power_symbol=True)})
     )
 
     report = compare_layout_similarity(source, generated)
@@ -331,20 +327,12 @@ def test_orientation_match_no_shared_refs_score_zero_not_full() -> None:
 def test_orientation_match_power_only_is_not_applicable() -> None:
     source = LayoutFeatures.model_validate(
         _matching_payload(
-            symbols={
-                "#PWR01": _sym(
-                    "#PWR01", 50.0, 50.0, rotation=0.0, is_power_symbol=True
-                )
-            }
+            symbols={"#PWR01": _sym("#PWR01", 50.0, 50.0, rotation=0.0, is_power_symbol=True)}
         )
     )
     generated = LayoutFeatures.model_validate(
         _matching_payload(
-            symbols={
-                "#PWR01": _sym(
-                    "#PWR01", 50.0, 50.0, rotation=90.0, is_power_symbol=True
-                )
-            }
+            symbols={"#PWR01": _sym("#PWR01", 50.0, 50.0, rotation=90.0, is_power_symbol=True)}
         )
     )
 

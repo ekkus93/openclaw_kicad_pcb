@@ -84,22 +84,17 @@ def _not_applicable(max_score: float, reason: str) -> SubScoreDetail:
     return SubScoreDetail(score=0.0, max_score=max_score, applicable=False, reason=reason)
 
 
-def _score_role_counts(
-    source: LayoutFeatures, generated: LayoutFeatures
-) -> SubScoreDetail:
+def _score_role_counts(source: LayoutFeatures, generated: LayoutFeatures) -> SubScoreDetail:
     if not source.role_counts:
         return _not_applicable(20.0, "the source fixture has no symbol-role counts.")
     roles = set(source.role_counts) | set(generated.role_counts)
     total_delta = sum(
-        abs(source.role_counts.get(role, 0) - generated.role_counts.get(role, 0))
-        for role in roles
+        abs(source.role_counts.get(role, 0) - generated.role_counts.get(role, 0)) for role in roles
     )
     return SubScoreDetail(score=max(20.0 - total_delta * 3.0, 0.0), max_score=20.0)
 
 
-def _score_relative_positions(
-    source: LayoutFeatures, generated: LayoutFeatures
-) -> SubScoreDetail:
+def _score_relative_positions(source: LayoutFeatures, generated: LayoutFeatures) -> SubScoreDetail:
     source_relations = {(item.a, item.b, item.relation) for item in source.relative_positions}
     if not source_relations:
         return _not_applicable(10.0, "the source fixture has no relative-position relations.")
@@ -112,9 +107,7 @@ def _has_source_symbols(source: LayoutFeatures) -> bool:
     return bool(source.symbols or source.role_counts or int(source.counts.get("symbols", 0)))
 
 
-def _score_label_strategy(
-    source: LayoutFeatures, generated: LayoutFeatures
-) -> SubScoreDetail:
+def _score_label_strategy(source: LayoutFeatures, generated: LayoutFeatures) -> SubScoreDetail:
     keys = {"local_label_count", "global_label_count", "power_symbol_count"}
     if not _has_source_symbols(source) and not any(
         int(source.net_label_strategy.get(key, 0)) for key in keys
@@ -127,9 +120,7 @@ def _score_label_strategy(
     return SubScoreDetail(score=max(15.0 - delta * 2.5, 0.0), max_score=15.0)
 
 
-def _score_geometry_spread(
-    source: LayoutFeatures, generated: LayoutFeatures
-) -> SubScoreDetail:
+def _score_geometry_spread(source: LayoutFeatures, generated: LayoutFeatures) -> SubScoreDetail:
     if not _has_source_symbols(source):
         return _not_applicable(10.0, "the source fixture has no symbols to measure spread.")
     source_columns = int(source.geometry.get("distinct_x_columns", 0))
@@ -141,9 +132,7 @@ def _score_geometry_spread(
     return SubScoreDetail(score=score, max_score=10.0)
 
 
-def _score_wire_strategy(
-    source: LayoutFeatures, generated: LayoutFeatures
-) -> SubScoreDetail:
+def _score_wire_strategy(source: LayoutFeatures, generated: LayoutFeatures) -> SubScoreDetail:
     if int(source.counts.get("wires", 0)) <= 0:
         return _not_applicable(10.0, "the source fixture has no wires to compare.")
     source_stub_ratio = float(source.geometry.get("wire_stub_ratio", 1.0))

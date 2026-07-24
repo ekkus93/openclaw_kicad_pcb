@@ -415,9 +415,7 @@ def generate_wizard_ir(
                 update={
                     "status": "ir_needs_repair",
                     "ir_json": prior_ir_json,
-                    "ir_validation": WizardIrValidation(
-                        valid=False, error_message=last_error
-                    ),
+                    "ir_validation": WizardIrValidation(valid=False, error_message=last_error),
                     "updated_at": _utc_now(),
                 }
             )

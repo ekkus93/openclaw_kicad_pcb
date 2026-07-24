@@ -6,7 +6,6 @@ from __future__ import annotations
 import os
 import re
 import subprocess
-import sys
 import tarfile
 import tempfile
 import venv
@@ -72,7 +71,7 @@ def _install_and_probe(wheel: Path) -> None:
             check=True,
             cwd=temp_path,
         )
-        probe = r'''
+        probe = r"""
 from fastapi.testclient import TestClient
 from kicad_pcb_web.main import app
 
@@ -102,7 +101,7 @@ for asset in sorted(asset_paths):
         continue
     response = client.get(asset)
     assert response.status_code == 200, (asset, response.text)
-'''
+"""
         subprocess.run([str(python), "-c", probe], check=True, cwd=temp_path)
 
 

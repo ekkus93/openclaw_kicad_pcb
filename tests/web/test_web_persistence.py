@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
 from kicad_pcb_web.errors import (
     PersistedStateError,
     PersistenceError,
@@ -206,9 +207,7 @@ def test_wizard_route_returns_409_while_session_is_locked(
     monkeypatch.setenv("KICAD_PCB_WEB_MUTATION_LOCK_TIMEOUT_S", "0.01")
 
     with resource_lock(settings, kind="wizard", resource_id=session.id):
-        response = TestClient(app).post(
-            f"/api/wizard/sessions/{session.id}/clear-ir"
-        )
+        response = TestClient(app).post(f"/api/wizard/sessions/{session.id}/clear-ir")
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "RESOURCE_BUSY"

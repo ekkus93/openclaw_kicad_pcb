@@ -132,9 +132,7 @@ def kicad_error_to_payload(exc: KiCadError) -> dict[str, object]:
 
 
 def web_service_error_to_payload(exc: WebServiceError) -> dict[str, object]:
-    details = {
-        str(key): _sanitize_detail_value(value) for key, value in exc.details.items()
-    }
+    details = {str(key): _sanitize_detail_value(value) for key, value in exc.details.items()}
     if exc.error_id is not None:
         details["error_id"] = exc.error_id
     return {
