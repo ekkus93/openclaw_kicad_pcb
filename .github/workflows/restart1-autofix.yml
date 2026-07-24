@@ -13,7 +13,6 @@ env:
 
 jobs:
   autofix:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -69,16 +68,15 @@ jobs:
       - name: Commit non-workflow corrections
         run: |
           set -euo pipefail
-          git restore --source=HEAD -- .github/workflows
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git restore --staged .github/workflows
           git diff --cached --check
           if git diff --cached --quiet; then
             echo 'No deterministic corrections were needed.'
             exit 0
           fi
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
           git diff --cached --stat
           git commit -m 'Apply RESTART1 deterministic autofixes'
           git push origin HEAD:refs/heads/webapp
