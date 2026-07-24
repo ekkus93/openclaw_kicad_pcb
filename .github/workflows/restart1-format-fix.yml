@@ -1,0 +1,55 @@
+name: RESTART1 Format Fix
+
+on:
+  push:
+    branches: [webapp]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Format repaired integration test
+        run: |
+          set -euo pipefail
+          uv run ruff format tests/integration/test_phase0_smoke.py
+          uv run ruff format --check .
+          uv run ruff check .
+          python -m compileall -q tests/integration/test_phase0_smoke.py
+
+      - name: Commit formatting correction
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/integration/test_phase0_smoke.py
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No formatting correction was required.'
+            exit 0
+          fi
+          test "$(git diff --cached --name-only)" = 'tests/integration/test_phase0_smoke.py'
+          git commit -m 'style: format repaired KiCad integration test'
+          git push origin HEAD:refs/heads/webapp
