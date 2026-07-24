@@ -10,12 +10,12 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from kicad_pcb_web.main import app
 from kicad_pcb_web.errors import (
     PersistedStateError,
     PersistenceError,
     ResourceBusyError,
 )
+from kicad_pcb_web.main import app
 from kicad_pcb_web.services._wizard_session_io import (
     _persist_session,
     read_wizard_session,
