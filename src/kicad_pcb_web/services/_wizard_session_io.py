@@ -1,4 +1,4 @@
-"""Wizard session file I/O: persistence, reads, state helpers."""
+"""Wizard session file I/O: persistence, reads, and state helpers."""
 
 from __future__ import annotations
 
@@ -10,14 +10,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from kicad_pcb.errors import UserError
 
-from ..errors import kicad_error_to_payload
+from ..errors import PersistedStateError, PersistenceError
 from ..settings import WebSettings
 from ..wizard_models import WizardMessage, WizardMessageRole, WizardSessionDetail
+from .atomic_io import atomic_write_json
 
 LOGGER = logging.getLogger("uvicorn.error")
-
 _SAFE_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
@@ -46,19 +48,49 @@ def _session_json_path(settings: WebSettings, session_id: str) -> Path:
     return _session_dir(settings, session_id) / "wizard.json"
 
 
-def _write_json(path: Path, payload: object) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+def _unlink_derived(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise PersistenceError(
+            "Failed to remove stale derived wizard state.",
+            details={"filename": path.name, "error_type": type(exc).__name__},
+        ) from exc
 
 
 def _persist_session(settings: WebSettings, session: WizardSessionDetail) -> WizardSessionDetail:
+    """Commit authoritative wizard state and refresh derived convenience exports.
+
+    ``wizard.json`` is authoritative. ``spec.json`` and ``circuit_ir.json`` are
+    derived exports only; ``derived_state.json`` identifies the authoritative
+    revision that produced them.
+    """
+
     session_dir = _session_dir(settings, session.id)
     session_dir.mkdir(parents=True, exist_ok=True)
-    _write_json(_session_json_path(settings, session.id), session.model_dump(mode="json"))
-    if session.spec is not None:
-        _write_json(session_dir / "spec.json", session.spec.model_dump(mode="json"))
-    if session.ir_json is not None:
-        _write_json(session_dir / "circuit_ir.json", session.ir_json)
+    atomic_write_json(_session_json_path(settings, session.id), session.model_dump(mode="json"))
+
+    spec_path = session_dir / "spec.json"
+    ir_path = session_dir / "circuit_ir.json"
+    if session.spec is None:
+        _unlink_derived(spec_path)
+    else:
+        atomic_write_json(spec_path, session.spec.model_dump(mode="json"))
+
+    if session.ir_json is None:
+        _unlink_derived(ir_path)
+    else:
+        atomic_write_json(ir_path, session.ir_json)
+
+    atomic_write_json(
+        session_dir / "derived_state.json",
+        {
+            "authoritative_file": "wizard.json",
+            "wizard_updated_at": session.updated_at,
+            "spec_present": session.spec is not None,
+            "ir_present": session.ir_json is not None,
+        },
+    )
     return session
 
 
@@ -79,8 +111,9 @@ def _make_debug_artifact_writer(
 
     def writer(payload: dict[str, object]) -> None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
-        index = len(list(artifact_dir.glob(f"{stage}_*.json"))) + 1
-        _write_json(artifact_dir / f"{stage}_{index:02d}.json", payload)
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
+        suffix = uuid4().hex[:8]
+        atomic_write_json(artifact_dir / f"{stage}_{stamp}_{suffix}.json", payload)
 
     return writer
 
@@ -89,7 +122,22 @@ def read_wizard_session(settings: WebSettings, session_id: str) -> WizardSession
     path = _session_json_path(settings, session_id)
     if not path.is_file():
         raise FileNotFoundError(path)
-    return WizardSessionDetail.model_validate_json(path.read_text(encoding="utf-8"))
+    try:
+        return WizardSessionDetail.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, ValidationError, ValueError) as exc:
+        LOGGER.error(
+            "invalid persisted wizard state",
+            extra={
+                "session_id": session_id,
+                "state_file": path.name,
+                "error_type": type(exc).__name__,
+            },
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+        raise PersistedStateError(
+            "Persisted wizard state is unreadable or invalid.",
+            details={"session_id": session_id, "filename": path.name},
+        ) from exc
 
 
 def update_wizard_session_metadata(
@@ -99,6 +147,8 @@ def update_wizard_session_metadata(
     project_name: str | None,
     symbols_dir: str | None,
 ) -> WizardSessionDetail:
+    """Compatibility helper; callers should prefer one locked mutation transaction."""
+
     session = read_wizard_session(settings, session_id)
     updated = session.model_copy(
         update={
@@ -124,16 +174,10 @@ def _append_message(
     )
 
 
-def _set_error(session: WizardSessionDetail, exc: Exception) -> WizardSessionDetail:
-    if isinstance(exc, UserError):
-        error_payload = kicad_error_to_payload(exc)["error"]
-    else:
-        error_payload = {
-            "type": "internal_error",
-            "code": "INTERNAL_SERVER_ERROR",
-            "message": str(exc),
-            "details": {},
-        }
+def _set_error(
+    session: WizardSessionDetail,
+    error_payload: dict[str, object],
+) -> WizardSessionDetail:
     return session.model_copy(
         update={"status": "failed", "error": error_payload, "updated_at": _utc_now()}
     )

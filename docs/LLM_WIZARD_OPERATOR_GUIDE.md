@@ -149,9 +149,17 @@ data/wizard_sessions/<session_id>/
 
 Typical files:
 
-- `wizard.json`
-- `spec.json`
-- `circuit_ir.json`
+- `wizard.json` — authoritative private session state
+- `spec.json` — derived convenience export
+- `circuit_ir.json` — derived convenience export
+- `derived_state.json` — export revision/presence metadata
+
+Do not reconstruct a session from `spec.json` or `circuit_ir.json`; they may be
+absent after an upstream revision. Inspect `wizard.json` when diagnosing state.
+Canonical files are atomically replaced and protected by per-session
+cross-process locks. A 409 `RESOURCE_BUSY` response means another mutation is
+still active; retry manually after it completes rather than starting parallel
+provider requests.
 
 ## Troubleshooting
 
@@ -204,3 +212,12 @@ the target route is the blocking or canonical step for that session.
 - Keep the app bound to `127.0.0.1` unless you add authentication and request isolation.
 - Keep provider credentials in the server-side config/env layer only.
 - The wizard is an assistive design front-end, not the source of truth for KiCad output.
+### A wizard mutation returns an error
+
+Use the HTTP status and structured error code first. A 409 indicates an illegal
+state transition or an active session lock, 502/503 indicates provider/tooling
+availability, and 500 indicates an internal failure. Internal failures include a
+non-secret `error_id`; use it to correlate the browser response with the server
+traceback. The UI refetches the session after a failed mutation, so inspect the
+persisted failed state before retrying. Never copy provider API keys or raw debug
+artifacts into issue reports.

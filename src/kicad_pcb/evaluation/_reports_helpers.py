@@ -57,7 +57,13 @@ def _reason_failures(reasons: tuple[str, ...]) -> list[ActionableFailure]:
         suggested_files = _suggested_files(rule)
         if rule in {"validity", "electrical_equivalence"}:
             severity = "high"
-        elif rule in {"spread", "geometry_spread", "relative_positions", "zone_positions"}:
+        elif rule in {
+            "spread",
+            "geometry_spread",
+            "relative_positions",
+            "zone_positions",
+            "orientation_match",
+        }:
             severity = "medium"
         else:
             severity = "low"
@@ -144,6 +150,10 @@ def _report_payload(report: EvaluationReport) -> dict[str, object]:
             "validity": report.intrinsic_quality.sub_scores.get("validity", 0.0),
             "intrinsic_sub_scores": report.intrinsic_quality.sub_scores,
             "similarity_sub_scores": report.source_similarity.sub_scores,
+            "similarity_sub_score_details": {
+                name: asdict(detail)
+                for name, detail in report.source_similarity.sub_score_details.items()
+            },
         },
         "generated_artifacts": report.generated_artifacts,
         "actionable_failures": [asdict(item) for item in report.actionable_failures],
@@ -165,7 +175,11 @@ def _render_actionable_failures(report: EvaluationReport) -> str:
     for name, value in report.intrinsic_quality.sub_scores.items():
         lines.append(f"- intrinsic `{name}` = {value:.2f}")
     for name, value in report.source_similarity.sub_scores.items():
-        lines.append(f"- similarity `{name}` = {value:.2f}")
+        detail = report.source_similarity.sub_score_details.get(name)
+        if detail is not None and not detail.applicable:
+            lines.append(f"- similarity `{name}` = N/A ({detail.reason})")
+        else:
+            lines.append(f"- similarity `{name}` = {value:.2f}")
     lines.extend(
         [
             "",

@@ -59,6 +59,12 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 kicad_pcb = ["resources/symbols/*.kicad_sym"]
+kicad_pcb_web = [
+    "static/spa/index.html",
+    "static/spa/favicon.svg",
+    "static/spa/icons.svg",
+    "static/spa/assets/*",
+]
 
 [tool.coverage.report]
 show_missing = true

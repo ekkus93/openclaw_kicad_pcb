@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -10,11 +11,17 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from kicad_pcb.errors import ErrorCode, UserError
 
+from ..errors import PersistedStateError
 from ..schemas import JobDetail, JobStatus, JobSummary
 from ..settings import WebSettings
+from .atomic_io import atomic_write_json
+from .resource_locks import resource_lock
 
+LOGGER = logging.getLogger("uvicorn.error")
 _UNSAFE_JOB_ID_PARTS = ("..", "/", "\\")
 _SAFE_JOB_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _UNSAFE_PROJECT_CHARS_RE = re.compile(r"[^A-Za-z0-9_.-]+")
@@ -22,14 +29,10 @@ _MULTI_UNDERSCORE_RE = re.compile(r"_+")
 
 
 def _utc_now() -> str:
-    """Return the current UTC timestamp as an ISO 8601 string."""
-
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 def sanitize_project_name(name: str) -> str:
-    """Normalize a project name to a filesystem-safe directory slug."""
-
     normalized = _UNSAFE_PROJECT_CHARS_RE.sub("_", name.strip().replace(" ", "_"))
     normalized = _MULTI_UNDERSCORE_RE.sub("_", normalized).strip("._-")
     if not normalized:
@@ -41,15 +44,11 @@ def sanitize_project_name(name: str) -> str:
 
 
 def new_job_id() -> str:
-    """Return a new server-generated job id."""
-
     stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     return f"{stamp}_{uuid4().hex[:8]}"
 
 
 def validate_job_id(job_id: str) -> str:
-    """Reject empty and path-like job ids."""
-
     if not job_id or any(part in job_id for part in _UNSAFE_JOB_ID_PARTS):
         raise UserError(
             f"Unsafe job id: {job_id!r}",
@@ -66,8 +65,6 @@ def validate_job_id(job_id: str) -> str:
 
 
 def job_dir_for_id(settings: WebSettings, job_id: str) -> Path:
-    """Return the resolved job directory for a validated job id."""
-
     return settings.jobs_dir / validate_job_id(job_id)
 
 
@@ -90,13 +87,9 @@ class JobRecord:
 
     @property
     def job_json_path(self) -> Path:
-        """Return the canonical job-state file path."""
-
         return self.work_dir / "job.json"
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable record."""
-
         return {
             "id": self.id,
             "status": self.status,
@@ -114,8 +107,6 @@ class JobRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> JobRecord:
-        """Build a record from persisted JSON data."""
-
         return cls(
             id=str(data["id"]),
             status=cast(JobStatus, data["status"]),
@@ -132,8 +123,6 @@ class JobRecord:
         )
 
     def to_summary(self) -> JobSummary:
-        """Return the summary API model for this record."""
-
         return JobSummary(
             id=self.id,
             status=self.status,
@@ -143,8 +132,6 @@ class JobRecord:
         )
 
     def to_detail(self, *, artifacts: list[str] | None = None) -> JobDetail:
-        """Return the detail API model for this record."""
-
         return JobDetail(
             id=self.id,
             status=self.status,
@@ -158,11 +145,15 @@ class JobRecord:
         )
 
 
-def write_job(record: JobRecord) -> None:
-    """Persist the canonical private job-state file."""
+def _write_job_unlocked(record: JobRecord) -> None:
+    atomic_write_json(record.job_json_path, record.to_dict())
 
-    payload = json.dumps(record.to_dict(), indent=2, sort_keys=True)
-    record.job_json_path.write_text(payload, encoding="utf-8")
+
+def write_job(settings: WebSettings, record: JobRecord) -> None:
+    """Persist the canonical private job-state file under a bounded lock."""
+
+    with resource_lock(settings, kind="jobs", resource_id=record.id):
+        _write_job_unlocked(record)
 
 
 def create_job_workspace(
@@ -170,8 +161,6 @@ def create_job_workspace(
     project_name: str,
     request: dict[str, Any],
 ) -> JobRecord:
-    """Create and persist a new isolated job workspace."""
-
     job_id = new_job_id()
     safe_project_name = sanitize_project_name(project_name)
     work_dir = settings.jobs_dir / job_id
@@ -196,47 +185,84 @@ def create_job_workspace(
         artifacts_dir=artifacts_dir,
         request=request,
     )
-    write_job(record)
+    write_job(settings, record)
+    return record
+
+
+def _decode_job_record(job_json_path: Path, *, expected_id: str) -> JobRecord:
+    try:
+        payload = json.loads(job_json_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise TypeError("job state must be a JSON object")
+        record = JobRecord.from_dict(payload)
+        # Validate the public API shape as well as the storage dataclass.
+        record.to_detail()
+    except (
+        OSError,
+        UnicodeError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+        ValidationError,
+    ) as exc:
+        LOGGER.error(
+            "invalid persisted job state",
+            extra={
+                "job_id": expected_id,
+                "state_file": job_json_path.name,
+                "error_type": type(exc).__name__,
+            },
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+        raise PersistedStateError(
+            "Persisted job state is unreadable or invalid.",
+            details={"job_id": expected_id, "filename": job_json_path.name},
+        ) from exc
+    if record.id != expected_id:
+        raise PersistedStateError(
+            "Persisted job state has a mismatched identifier.",
+            details={"job_id": expected_id, "stored_job_id": record.id},
+        )
     return record
 
 
 def read_job(settings: WebSettings, job_id: str) -> JobRecord:
-    """Load one job record by id."""
-
-    job_dir = job_dir_for_id(settings, job_id)
-    job_json_path = job_dir / "job.json"
+    safe_id = validate_job_id(job_id)
+    job_json_path = job_dir_for_id(settings, safe_id) / "job.json"
     if not job_json_path.is_file():
         raise FileNotFoundError(job_json_path)
-    return JobRecord.from_dict(json.loads(job_json_path.read_text(encoding="utf-8")))
+    return _decode_job_record(job_json_path, expected_id=safe_id)
 
 
 def list_jobs(settings: WebSettings) -> list[JobRecord]:
-    """Return persisted jobs sorted newest first."""
-
     records: list[JobRecord] = []
     if not settings.jobs_dir.exists():
         return records
 
-    for child in settings.jobs_dir.iterdir():
+    for child in sorted(settings.jobs_dir.iterdir(), key=lambda path: path.name):
         if not child.is_dir():
             continue
+        safe_id = validate_job_id(child.name)
         job_json_path = child / "job.json"
         if not job_json_path.is_file():
-            continue
-        records.append(JobRecord.from_dict(json.loads(job_json_path.read_text(encoding="utf-8"))))
+            raise PersistedStateError(
+                "A job workspace is missing its canonical state file.",
+                details={"job_id": safe_id, "filename": "job.json"},
+            )
+        records.append(_decode_job_record(job_json_path, expected_id=safe_id))
 
     return sorted(records, key=lambda record: (record.created_at, record.id), reverse=True)
 
 
 def update_job_status(
+    settings: WebSettings,
     record: JobRecord,
     *,
     status: JobStatus,
     result: dict[str, Any] | None = None,
     error: dict[str, Any] | None = None,
 ) -> JobRecord:
-    """Update and persist a job status transition."""
-
     updated = replace(
         record,
         status=status,
@@ -244,5 +270,5 @@ def update_job_status(
         result=result if result is not None else record.result,
         error=error if error is not None else record.error,
     )
-    write_job(updated)
+    write_job(settings, updated)
     return updated

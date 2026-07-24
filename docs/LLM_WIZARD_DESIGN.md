@@ -77,9 +77,16 @@ Wizard session state is persisted under:
 
 Persisted artifacts:
 
-- `wizard.json`
-- `spec.json` when available
-- `circuit_ir.json` when available
+- `wizard.json` — the sole authoritative session record
+- `spec.json` — a derived convenience export when a spec is current
+- `circuit_ir.json` — a derived convenience export when Circuit IR is current
+- `derived_state.json` — identifies the authoritative revision represented by the exports
+
+All canonical writes use temp-file flush, `fsync`, and atomic replacement. Every
+mutation holds a bounded cross-process session lock from the initial read through
+the final commit. Lock contention returns HTTP 409; the server never proceeds
+without the lock. Reads and API responses trust `wizard.json`, never the derived
+exports.
 
 Session states:
 
@@ -215,3 +222,15 @@ Current wizard logs record lifecycle events only:
 
 Prompt bodies, provider secrets, and raw auth headers are intentionally not
 logged.
+## Failure semantics and observability
+
+Wizard mutations use non-success HTTP status codes when the requested operation
+does not complete. Expected state conflicts and lock contention return 409, an
+unavailable configured provider returns 503, unusable provider output returns
+502, and unexpected internal failures return a sanitized 500 response. When a
+session already exists, the server persists its failed state before returning the
+error whenever canonical persistence remains available. Unexpected failures keep
+a server-side traceback and correlation ID; provider credentials and raw internal
+exception text are not returned to the browser. The frontend invalidates and
+refetches the session after failed mutations so the persisted state remains the
+source of truth.

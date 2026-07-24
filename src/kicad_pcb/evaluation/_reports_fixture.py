@@ -42,7 +42,7 @@ from .electrical import (
     compare_circuit_ir_equivalence,
 )
 from .scoring import IntrinsicQualityReport, score_intrinsic_quality
-from .similarity import LayoutSimilarityReport, compare_layout_similarity
+from .similarity import LayoutSimilarityReport, SubScoreDetail, compare_layout_similarity
 
 
 def _prepare_fixture_symbol_dir(*, fixture_dir: Path, out_dir: Path) -> Path | None:
@@ -243,6 +243,23 @@ def _runtime_failure_report(
         reasons=(
             "relative_positions: evaluation runtime failed before source comparison could run.",
         ),
+        sub_score_details={
+            name: SubScoreDetail(
+                score=0.0,
+                max_score=max_score,
+                applicable=False,
+                reason="evaluation runtime failed before source comparison could run.",
+            )
+            for name, max_score in {
+                "role_counts": 20.0,
+                "relative_positions": 10.0,
+                "label_strategy": 15.0,
+                "geometry_spread": 10.0,
+                "wire_stub_ratio": 10.0,
+                "zone_positions": 20.0,
+                "orientation_match": 15.0,
+            }.items()
+        },
     )
     actionable_failures = (
         ActionableFailure(

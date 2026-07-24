@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+recursive-include src/kicad_pcb/resources/symbols *.kicad_sym
+recursive-include src/kicad_pcb_web/static/spa *
+prune frontend/node_modules
+prune frontend/coverage
+prune frontend/test-results
+prune frontend/playwright-report
+prune data
+exclude kicad_pcb_web.toml

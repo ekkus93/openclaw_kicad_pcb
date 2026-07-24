@@ -127,3 +127,25 @@ describe('requestJson — request headers', () => {
     expect(capturedHeaders().get('content-type')).toBe('text/plain')
   })
 })
+
+describe('ApiError — structured metadata', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  it('exposes backend code and correlation id', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse(500, {
+        error: {
+          message: 'An unexpected internal error occurred.',
+          code: 'INTERNAL_SERVER_ERROR',
+          details: { error_id: 'err_1234' },
+        },
+      }),
+    )
+    const err = await requestJson('/test').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).code).toBe('INTERNAL_SERVER_ERROR')
+    expect((err as ApiError).errorId).toBe('err_1234')
+  })
+})

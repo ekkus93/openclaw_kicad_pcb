@@ -29,6 +29,7 @@ def test_load_settings_reads_toml_config_file(monkeypatch, tmp_path: Path) -> No
 data_dir = "./runtime-data"
 default_host = "0.0.0.0"
 default_port = 9001
+mutation_lock_timeout_s = 4.5
 
 [llm]
 provider = "ollama"
@@ -54,6 +55,7 @@ debug_artifact_capture = true
     assert settings.data_dir == (tmp_path / "runtime-data").resolve()
     assert settings.default_host == "0.0.0.0"
     assert settings.default_port == 9001
+    assert settings.mutation_lock_timeout_s == 4.5
     assert settings.llm.provider == "ollama"
     assert settings.llm.model == "llama3.1"
     assert settings.llm.base_url == "http://127.0.0.1:11434"
@@ -151,4 +153,23 @@ def test_load_settings_rejects_invalid_llm_config(
     monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
 
     with pytest.raises(ValueError, match=error_text):
+        load_settings()
+
+
+def test_env_overrides_mutation_lock_timeout(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("KICAD_PCB_WEB_MUTATION_LOCK_TIMEOUT_S", "0.25")
+
+    settings = load_settings()
+
+    assert settings.mutation_lock_timeout_s == 0.25
+
+
+def test_load_settings_rejects_nonpositive_mutation_lock_timeout(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("KICAD_PCB_WEB_MUTATION_LOCK_TIMEOUT_S", "0")
+
+    with pytest.raises(ValueError, match="mutation_lock_timeout_s must be greater than zero"):
         load_settings()

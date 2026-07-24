@@ -54,6 +54,7 @@ class WebSettings:
     jobs_dir: Path
     default_host: str = "127.0.0.1"
     default_port: int = 8000
+    mutation_lock_timeout_s: float = 2.0
     llm: LlmSettings = LlmSettings()
 
 
@@ -328,14 +329,25 @@ def load_settings() -> WebSettings:
         config_value=web_config.get("default_port"),
         default=8000,
     )
+    mutation_lock_timeout_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_MUTATION_LOCK_TIMEOUT_S",
+        config_value=web_config.get("mutation_lock_timeout_s"),
+        default=2.0,
+    )
 
     data_dir = _resolve_config_path(data_dir_raw, config_file=config_file)
     jobs_dir = data_dir / "jobs"
     jobs_dir.mkdir(parents=True, exist_ok=True)
+    lock_timeout = _coerce_float(
+        mutation_lock_timeout_raw, field_name="web.mutation_lock_timeout_s"
+    )
+    if lock_timeout <= 0:
+        raise ValueError("web.mutation_lock_timeout_s must be greater than zero")
     return WebSettings(
         data_dir=data_dir,
         jobs_dir=jobs_dir,
         default_host=str(default_host),
         default_port=_coerce_int(default_port_raw, field_name="web.default_port"),
+        mutation_lock_timeout_s=lock_timeout,
         llm=_load_llm_settings(config),
     )

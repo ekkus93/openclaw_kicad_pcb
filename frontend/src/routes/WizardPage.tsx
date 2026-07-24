@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { joinClasses, statusBannerToneClass } from '../utils'
+import { getPersistedErrorMessage, joinClasses, statusBannerToneClass } from '../utils'
 import {
   bannerBaseClass,
   buttonPrimaryClass,
@@ -133,9 +133,9 @@ export function WizardPage() {
           ) : null}
         </div>
       ) : null}
-      {session.error?.message ? (
+      {getPersistedErrorMessage(session.error) ? (
         <div role="alert" className={joinClasses(bannerBaseClass, statusBannerToneClass('error'))}>
-          <strong>{session.error.message}</strong>
+          <strong>{getPersistedErrorMessage(session.error)}</strong>
         </div>
       ) : null}
 

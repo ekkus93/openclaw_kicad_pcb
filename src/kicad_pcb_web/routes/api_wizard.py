@@ -16,7 +16,6 @@ from ..services.wizard import (
     generate_wizard_project,
     post_wizard_message,
     read_wizard_session,
-    update_wizard_session_metadata,
 )
 from ..settings import WebSettings
 from ..wizard_models import (
@@ -70,13 +69,6 @@ def add_message(
     settings: WebSettings = Depends(get_settings),
     llm_client: LlmClient | None = Depends(get_llm_client),
 ) -> WizardSessionDetail:
-    _read_session_or_404(settings, session_id)
-    update_wizard_session_metadata(
-        settings=settings,
-        session_id=session_id,
-        project_name=request.project_name,
-        symbols_dir=request.symbols_dir,
-    )
     return post_wizard_message(
         settings=settings,
         session_id=session_id,
@@ -90,7 +82,6 @@ def approve_spec(
     session_id: str,
     settings: WebSettings = Depends(get_settings),
 ) -> WizardSessionDetail:
-    _read_session_or_404(settings, session_id)
     return approve_wizard_spec(settings=settings, session_id=session_id)
 
 
@@ -99,7 +90,6 @@ def clear_ir(
     session_id: str,
     settings: WebSettings = Depends(get_settings),
 ) -> WizardSessionDetail:
-    _read_session_or_404(settings, session_id)
     return clear_wizard_ir(settings=settings, session_id=session_id)
 
 
@@ -109,7 +99,6 @@ def generate_ir(
     settings: WebSettings = Depends(get_settings),
     llm_client: LlmClient | None = Depends(get_llm_client),
 ) -> WizardSessionDetail:
-    _read_session_or_404(settings, session_id)
     return generate_wizard_ir(settings=settings, session_id=session_id, llm_client=llm_client)
 
 
@@ -121,5 +110,4 @@ def generate_project(
     session_id: str,
     settings: WebSettings = Depends(get_settings),
 ) -> WizardGenerateProjectResponse:
-    _read_session_or_404(settings, session_id)
     return generate_wizard_project(settings=settings, session_id=session_id)

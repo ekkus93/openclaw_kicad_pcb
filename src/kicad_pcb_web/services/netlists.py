@@ -32,7 +32,7 @@ from ..schemas import (
 )
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
-from .jobs import JobRecord, create_job_workspace, update_job_status, write_job
+from .jobs import JobRecord, create_job_workspace, update_job_status
 
 LOGGER = logging.getLogger(__name__)
 
@@ -281,7 +281,7 @@ def generate_project_from_netlist_job(
 
     record = create_job_workspace(settings, request.project_name, request.model_dump(mode="json"))
     _write_json(record.input_path, request.netlist_json)
-    record = update_job_status(record, status="running")
+    record = update_job_status(settings, record, status="running")
 
     symbols_dir = _parse_symbols_dir(request.symbols_dir)
 
@@ -374,15 +374,20 @@ def generate_project_from_netlist_job(
             "fixes_applied": fixes_applied,
             "auto_fixed": bool(fixes_applied),
         }
-        record = update_job_status(record, status="succeeded", result=result_payload, error=None)
+        record = update_job_status(
+            settings, record, status="succeeded", result=result_payload, error=None
+        )
         return record.to_detail(artifacts=list_artifacts(record.work_dir))
     except KiCadError as exc:
         error_payload = cast(dict[str, Any], kicad_error_to_payload(exc)["error"])
-        record = update_job_status(record, status="failed", error=error_payload, result=None)
+        record = update_job_status(
+            settings, record, status="failed", error=error_payload, result=None
+        )
         return record.to_detail(artifacts=list_artifacts(record.work_dir))
     except Exception:
         LOGGER.exception("Unexpected web job failure for %s", record.id)
         error_payload = cast(dict[str, Any], unexpected_error_to_payload()["error"])
-        record = update_job_status(record, status="failed", error=error_payload, result=None)
-        write_job(record)
+        record = update_job_status(
+            settings, record, status="failed", error=error_payload, result=None
+        )
         return record.to_detail(artifacts=list_artifacts(record.work_dir))

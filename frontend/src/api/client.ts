@@ -1,20 +1,37 @@
 export class ApiError extends Error {
   status: number
   details: unknown
+  code: string | null
+  errorId: string | null
 
-  constructor(message: string, status: number, details: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    details: unknown,
+    code: string | null = null,
+    errorId: string | null = null,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.details = details
+    this.code = code
+    this.errorId = errorId
   }
 }
 
 function _buildApiError(status: number, payload: unknown): ApiError {
   let message: string = `Request failed with status ${status}`
+  let code: string | null = null
+  let errorId: string | null = null
   if (payload && typeof payload === 'object') {
     const p = payload as Record<string, unknown>
-    const structuredMessage = (p['error'] as Record<string, unknown> | undefined)?.['message']
+    const structuredError = p['error'] as Record<string, unknown> | undefined
+    const structuredMessage = structuredError?.['message']
+    const structuredCode = structuredError?.['code']
+    const structuredDetails = structuredError?.['details'] as Record<string, unknown> | undefined
+    if (typeof structuredCode === 'string' && structuredCode) code = structuredCode
+    if (typeof structuredDetails?.['error_id'] === 'string') errorId = structuredDetails['error_id']
     if (typeof structuredMessage === 'string' && structuredMessage) {
       message = structuredMessage
     } else {
@@ -33,7 +50,7 @@ function _buildApiError(status: number, payload: unknown): ApiError {
       }
     }
   }
-  return new ApiError(message, status, payload)
+  return new ApiError(message, status, payload, code, errorId)
 }
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {

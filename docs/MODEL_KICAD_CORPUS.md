@@ -20,7 +20,7 @@ This workflow is a deterministic regression harness for the schematic generator.
    ```bash
    uv run python -m kicad_pcb.cli model-corpus evaluate \
      --corpus-dir tests/fixtures/model_corpus \
-     --out-dir data/model_eval
+     --out-dir code_review/generated/model_eval
    ```
 
 5. Read `summary.md` plus each fixture's `actionable_failures.md`.
@@ -51,7 +51,7 @@ If repo-compatible KiCad CLI is unavailable, ingestion still writes partial fixt
 
 - **Electrical equivalence**: compares exported/generated `CircuitIR` connectivity against the source fixture's `CircuitIR`.
 - **Intrinsic quality**: scores the generated schematic on validity, spread, power-symbol usage, routing simplicity, and layout-lint pressure.
-- **Source similarity**: compares layout style signals such as role counts, relative positions, label strategy, and geometry spread without comparing exact coordinates.
+- **Source similarity**: compares layout style signals such as role counts, relative positions, label strategy, geometry spread, normalized 3×3 placement zones, and explicit 90-degree orientation matches without comparing exact coordinates. Missing expected generated references count as mismatches; metrics with no applicable source symbols are reported as not applicable rather than receiving free credit.
 
 Electrical equivalence is the hard gate. Layout quality and source similarity explain *how* the generator diverged.
 
@@ -62,3 +62,19 @@ The corpus/export workflow now targets `kicad-cli >= 9.0.0`. On the current `kic
 - ingest now succeeds for the current imported source schematics by exporting from `source_normalized.kicad_sch`, and the committed corpus fixtures now include `source_netlist.kicadxml` plus `circuit_ir.json`
 - evaluate is no longer blocked on missing source electrical artifacts, but the current full-corpus run now fails later in generation on at least one fixture because symbol resolution cannot find `SamacSys_Parts:ULQ2003AQDRQ1`
 - the default `uv run pytest` suite stays green, and the KiCad-marked suite now expects KiCad 9 specifically
+
+## Fixture and generated-output policy
+
+`tests/fixtures/model_corpus/` contains curated, reviewable inputs and expected
+source artifacts. Raw `source.kicad_sch` files are immutable; loader normalization
+is written separately as `source_normalized.kicad_sch`. Rejected inputs remain in
+ingestion reports rather than becoming empty fixture directories.
+
+`code_review/generated/model_eval/` is the canonical regenerable output directory.
+Full generated projects, copied symbol libraries, evaluation reports, feature JSON,
+and preview images from that directory are ignored and must not be committed. CI
+runs `scripts/check-generated-tree.sh` to prevent generated output from reappearing
+under current or archived review directories. Keep human-authored review conclusions
+and provenance/license records; do not commit artifacts that can be recreated from
+the curated fixtures. RESTART1 removes current-tree generated copies only and does
+not rewrite Git history.

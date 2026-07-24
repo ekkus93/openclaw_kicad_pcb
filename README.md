@@ -93,6 +93,7 @@ to another file with `KICAD_PCB_WEB_CONFIG_FILE`:
 data_dir = "./data"
 default_host = "127.0.0.1"
 default_port = 8000
+mutation_lock_timeout_s = 2.0
 
 [llm]
 provider = "disabled" # or: openai, ollama, llama_server
@@ -130,8 +131,10 @@ data/jobs/<job_id>/
 ```
 
 Each job keeps its input, generated project, private canonical job metadata, and
-downloadable artifacts inside that directory. The web UI and API expose curated
-artifact downloads from the job's `artifacts/` directory.
+downloadable artifacts inside that directory. `job.json` is authoritative private
+server state and is written with atomic replacement under a bounded cross-process
+lock. The web UI and API expose only curated downloads from the job's `artifacts/`
+directory.
 
 The web app defaults to `internal` validation for job generation. Optional KiCad
 CLI validation is available only when `kicad-cli` is installed and a request
@@ -185,13 +188,22 @@ Security boundary notes:
 - If the app is ever exposed remotely, add authentication and request isolation
   at the API boundary before exposing `/api/wizard/*` routes.
 
-The wizard stores file-backed sessions under the web data directory and persists:
+The wizard stores file-backed sessions under the web data directory. Each session's
+`wizard.json` is the sole authoritative record and is committed with atomic
+replacement under a bounded cross-process mutation lock. `spec.json` and
+`circuit_ir.json` are derived convenience exports; readers must not use them to
+reconstruct session state. The authoritative record persists:
 
 - conversation transcript
 - current spec draft
 - approved spec state
 - current Circuit IR draft
 - latest generation job link
+
+Concurrent mutations of the same session fail explicitly with HTTP 409 after the
+configured `mutation_lock_timeout_s`; they are never applied without the lock.
+Unexpected server failures are logged with a correlation ID and exposed through a
+sanitized API error rather than raw exception text.
 
 Invalidation rules for backward changes:
 
@@ -426,34 +438,72 @@ Graphviz is an independent open-source tool licensed under the
 This package does **not** bundle or redistribute any Graphviz binary.
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full details.
 
+## Packaging and frontend builds
+
+The production React bundle under `src/kicad_pcb_web/static/spa/` is committed and
+included in both wheels and source distributions. A normal wheel installation does
+not invoke Node or download frontend packages.
+
+After changing `frontend/src/`, rebuild and commit the bundle:
+
+```bash
+cd frontend
+npm ci
+npm run build
+cd ..
+git diff -- src/kicad_pcb_web/static/spa
+```
+
+CI rebuilds the SPA and fails when the committed bundle is stale. Node is required
+for frontend development, not for running an already built wheel.
+
+```bash
+uv build
+python scripts/package_smoke_test.py
+```
+
+The package smoke test installs the wheel into a clean virtual environment outside
+the source tree and verifies the API, SPA shell, deep routes, JavaScript, CSS, and
+favicon are served from installed package data.
+
 ## Development
 
 ```bash
-# Install dev dependencies
-uv sync --extra dev --extra web
+# Install locked Python dependencies
+uv sync --frozen --extra dev --extra web
 
-# Run unit tests
-uv run pytest tests/unit/
+# Install locked frontend dependencies
+npm --prefix frontend ci
 
-# Run unit tests with coverage
-uv run pytest tests/unit/ --cov --cov-report=term-missing
-
-# Static checks
+# Python static checks and tests
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src/kicad_pcb src/kicad_pcb_web
+uv run pytest tests/unit tests/web --cov --cov-report=term-missing
 
-# Integration tests (requires kicad-cli)
-uv run pytest tests/integration/ -m requires_kicad
+# Frontend checks
+npm --prefix frontend run lint
+npm --prefix frontend run test:run
+npm --prefix frontend run build
+git diff --exit-code -- src/kicad_pcb_web/static/spa
 
-# Run all local quality gates at once (lint + type check + unit tests)
-uv run bash scripts/validate.sh
+# Ordinary local gates; add --python-only for a Python-only loop
+bash scripts/validate.sh
+
+# Full gates including wheel smoke and Playwright
+bash scripts/validate-all.sh
+
+# KiCad integration tests (requires kicad-cli >= 9 and system libraries)
+uv run pytest tests/integration -m requires_kicad
 ```
 
 ## CI
 
-- **[CI workflow](.github/workflows/ci.yml)** — runs on every PR: lint, format check, type check, unit tests with coverage
-- **[Integration workflow](.github/workflows/integration.yml)** — runs nightly with a full KiCad install
+The single **[CI workflow](.github/workflows/ci.yml)** runs on `webapp` pushes and
+pull requests. It contains separate jobs for Python quality and coverage, frontend
+lint/tests/build, installed-wheel smoke testing, Playwright browser smoke tests,
+and KiCad 9 integration tests. Missing external tools fail the relevant job rather
+than being reported as successful validation.
 
 ## Design notes
 

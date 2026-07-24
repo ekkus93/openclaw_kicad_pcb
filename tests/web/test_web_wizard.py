@@ -159,7 +159,7 @@ def test_wizard_generate_ir_requires_approved_spec(tmp_path, monkeypatch) -> Non
     session_id = create_response.json()["id"]
 
     ir_response = client.post(f"/api/wizard/sessions/{session_id}/generate-ir")
-    assert ir_response.status_code == 400
+    assert ir_response.status_code == 409
     assert "Approve the circuit spec" in ir_response.json()["error"]["message"]
 
     app.dependency_overrides.clear()
@@ -833,7 +833,95 @@ def test_wizard_regression_cases_for_ambiguous_or_contradictory_specs(
 
     if case["unsupported_reasons"]:
         approve_response = client.post(f"/api/wizard/sessions/{session['id']}/approve-spec")
-        assert approve_response.status_code == 400
+        assert approve_response.status_code == 409
         assert "unsupported" in approve_response.json()["error"]["message"].lower()
+
+    app.dependency_overrides.clear()
+
+
+def test_wizard_create_rejects_disabled_provider_with_503(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KICAD_PCB_WEB_LLM_PROVIDER", "disabled")
+    app.dependency_overrides.clear()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 503
+    payload = response.json()["error"]
+    assert payload["code"] == "LLM_PROVIDER_UNAVAILABLE"
+    assert "wizard is disabled" in payload["message"].lower()
+
+
+class ExplodingLlmClient:
+    def complete(self, request: LlmRequest) -> LlmCompletion:
+        del request
+        raise RuntimeError("secret upstream body /tmp/private-provider-response.json")
+
+
+def test_wizard_unexpected_provider_error_is_sanitized_and_persisted(
+    tmp_path,
+    monkeypatch,
+    caplog,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    app.dependency_overrides[get_llm_client] = lambda: ExplodingLlmClient()
+    client = TestClient(app)
+
+    with caplog.at_level("ERROR"):
+        response = client.post(
+            "/api/wizard/sessions",
+            json={"message": "Design a resistor divider."},
+        )
+
+    assert response.status_code == 500
+    payload = response.json()["error"]
+    assert payload["code"] == "INTERNAL_SERVER_ERROR"
+    assert payload["message"] == "An unexpected internal error occurred."
+    assert "secret upstream" not in json.dumps(payload)
+    error_id = payload["details"]["error_id"]
+    session_id = payload["details"]["session_id"]
+    assert error_id.startswith("err_")
+    assert error_id in caplog.text
+    assert "unexpected wizard operation failure" in caplog.text
+
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["error"]["code"] == "INTERNAL_SERVER_ERROR"
+    assert session["error"]["details"]["error_id"] == error_id
+    assert "secret upstream" not in json.dumps(session["error"])
+
+    app.dependency_overrides.clear()
+
+
+def test_wizard_invalid_structured_output_returns_502_and_persists_failure(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KICAD_PCB_WEB_LLM_SPEC_MAX_REPAIR_ROUNDS", "0")
+    scripted = ScriptedLlmClient(responses=["not-json"])
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()["error"]
+    assert payload["code"] == "LLM_PROVIDER_FAILED"
+    session_id = payload["details"]["session_id"]
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["error"]["code"] == "LLM_PROVIDER_FAILED"
 
     app.dependency_overrides.clear()

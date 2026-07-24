@@ -1,9 +1,11 @@
-"""Web-facing error helpers."""
+"""Web-facing error helpers and typed web-service failures."""
 
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -11,33 +13,83 @@ from fastapi.responses import JSONResponse
 
 from kicad_pcb.errors import KiCadError, ToolError, UserError
 
+LOGGER = logging.getLogger("uvicorn.error")
 _CAMEL_CASE_BOUNDARY_RE = re.compile(r"(?<!^)(?=[A-Z])")
-
-# Matches private absolute path substrings embedded anywhere in a string.
 _PRIVATE_PATH_RE = re.compile(r"/(?:tmp|var/folders|private/var|home/[^/\s]+|Users/[^/\s]+)/\S*")
 
 
-def _error_type_name(exc: KiCadError) -> str:
-    """Return a stable public error-type name for one KiCad error."""
+def new_error_id() -> str:
+    """Return a non-secret correlation identifier for one failed operation."""
 
+    return f"err_{uuid4().hex[:16]}"
+
+
+class WebServiceError(RuntimeError):
+    """Typed safe failure raised by the web orchestration layer."""
+
+    status_code = 500
+    code = "WEB_SERVICE_ERROR"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        status_code: int | None = None,
+        details: dict[str, object] | None = None,
+        error_id: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code or self.code
+        self.status_code = status_code or self.status_code
+        self.details = details or {}
+        self.error_id = error_id
+
+
+class ResourceNotFoundError(WebServiceError):
+    status_code = 404
+    code = "RESOURCE_NOT_FOUND"
+
+
+class ConflictError(WebServiceError):
+    status_code = 409
+    code = "WIZARD_STATE_CONFLICT"
+
+
+class ResourceBusyError(ConflictError):
+    code = "RESOURCE_BUSY"
+
+
+class ProviderUnavailableError(WebServiceError):
+    status_code = 503
+    code = "LLM_PROVIDER_UNAVAILABLE"
+
+
+class UpstreamProviderError(WebServiceError):
+    status_code = 502
+    code = "LLM_PROVIDER_FAILED"
+
+
+class PersistenceError(WebServiceError):
+    status_code = 500
+    code = "PERSISTENCE_FAILED"
+
+
+class PersistedStateError(PersistenceError):
+    code = "PERSISTED_STATE_INVALID"
+
+
+def _error_type_name(exc: KiCadError) -> str:
     return _CAMEL_CASE_BOUNDARY_RE.sub("_", exc.__class__.__name__).lower()
 
 
 def _sanitize_path_text(value: str) -> str:
-    """Redact private filesystem paths from public error text.
-
-    Standalone absolute paths are replaced entirely. Embedded private path
-    substrings (under /tmp, /home, /Users, /var/folders, /private/var) are
-    replaced with a stable placeholder wherever they appear in longer strings.
-    """
     if Path(value.strip()).is_absolute():
         return "<redacted-path>"
     return _PRIVATE_PATH_RE.sub("<redacted-path>", value)
 
 
 def _sanitize_detail_value(value: object) -> object:
-    """Make one public error-detail value safe for API responses."""
-
     if isinstance(value, Path):
         return _sanitize_path_text(str(value))
     if isinstance(value, str):
@@ -52,8 +104,6 @@ def _sanitize_detail_value(value: object) -> object:
 
 
 def _public_error_details(exc: KiCadError) -> dict[str, object]:
-    """Build the sanitized public details payload for one KiCad error."""
-
     details: dict[str, object] = {}
     for key, value in exc.details.items():
         details[str(key)] = _sanitize_detail_value(value)
@@ -71,8 +121,6 @@ def _public_error_details(exc: KiCadError) -> dict[str, object]:
 
 
 def kicad_error_to_payload(exc: KiCadError) -> dict[str, object]:
-    """Convert a KiCad domain error to the public API payload."""
-
     return {
         "error": {
             "type": _error_type_name(exc),
@@ -83,15 +131,27 @@ def kicad_error_to_payload(exc: KiCadError) -> dict[str, object]:
     }
 
 
-def user_error_to_payload(exc: UserError) -> dict[str, object]:
-    """Convert a domain user error to the public API payload."""
+def web_service_error_to_payload(exc: WebServiceError) -> dict[str, object]:
+    details = {
+        str(key): _sanitize_detail_value(value) for key, value in exc.details.items()
+    }
+    if exc.error_id is not None:
+        details["error_id"] = exc.error_id
+    return {
+        "error": {
+            "type": "web_service_error",
+            "code": exc.code,
+            "message": _sanitize_path_text(str(exc)),
+            "details": details,
+        }
+    }
 
+
+def user_error_to_payload(exc: UserError) -> dict[str, object]:
     return kicad_error_to_payload(exc)
 
 
 def validation_error_to_payload(exc: RequestValidationError) -> dict[str, object]:
-    """Convert FastAPI validation errors to a stable payload."""
-
     return {
         "error": {
             "type": "request_validation_error",
@@ -102,48 +162,53 @@ def validation_error_to_payload(exc: RequestValidationError) -> dict[str, object
     }
 
 
-def unexpected_error_to_payload() -> dict[str, object]:
-    """Return a generic 500 payload without leaking internal paths."""
-
+def unexpected_error_to_payload(*, error_id: str | None = None) -> dict[str, object]:
+    details: dict[str, object] = {}
+    if error_id is not None:
+        details["error_id"] = error_id
     return {
         "error": {
             "type": "internal_error",
             "code": "INTERNAL_SERVER_ERROR",
-            "message": "An unexpected server error occurred.",
-            "details": {},
+            "message": "An unexpected internal error occurred.",
+            "details": details,
         }
     }
 
 
-async def handle_user_error(_: Request, exc: Exception) -> JSONResponse:
-    """FastAPI exception handler for domain user errors."""
+async def handle_web_service_error(_: Request, exc: Exception) -> JSONResponse:
+    if not isinstance(exc, WebServiceError):
+        return JSONResponse(status_code=500, content=unexpected_error_to_payload())
+    return JSONResponse(status_code=exc.status_code, content=web_service_error_to_payload(exc))
 
+
+async def handle_user_error(_: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, UserError):
         return JSONResponse(status_code=500, content=unexpected_error_to_payload())
     return JSONResponse(status_code=400, content=user_error_to_payload(exc))
 
 
 async def handle_kicad_error(_: Request, exc: Exception) -> JSONResponse:
-    """FastAPI exception handler for KiCad domain errors."""
-
     if not isinstance(exc, KiCadError):
         return JSONResponse(status_code=500, content=unexpected_error_to_payload())
 
     status_code = 400
-    if isinstance(exc, ToolError) and exc.code == "TOOL_ERROR":
-        status_code = 503
+    if isinstance(exc, ToolError):
+        status_code = 503 if exc.code in {"TOOL_ERROR", "KICAD_CLI_MISSING"} else 400
     return JSONResponse(status_code=status_code, content=kicad_error_to_payload(exc))
 
 
 async def handle_request_validation_error(_: Request, exc: Exception) -> JSONResponse:
-    """FastAPI exception handler for request validation failures."""
-
     if not isinstance(exc, RequestValidationError):
         return JSONResponse(status_code=500, content=unexpected_error_to_payload())
     return JSONResponse(status_code=422, content=validation_error_to_payload(exc))
 
 
 async def handle_unexpected_error(_: Request, exc: Exception) -> JSONResponse:
-    """FastAPI exception handler for uncaught exceptions."""
-
-    return JSONResponse(status_code=500, content=unexpected_error_to_payload())
+    error_id = new_error_id()
+    LOGGER.error(
+        "uncaught web request failure",
+        extra={"error_id": error_id, "error_type": type(exc).__name__},
+        exc_info=(type(exc), exc, exc.__traceback__),
+    )
+    return JSONResponse(status_code=500, content=unexpected_error_to_payload(error_id=error_id))

@@ -12,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 from kicad_pcb.errors import UserError
 
+from ..errors import ProviderUnavailableError, UpstreamProviderError
 from ..settings import WebSettings
 from ..wizard_models import WizardSessionDetail
 from .llm import LlmClient, LlmMessage, LlmRequest
@@ -328,8 +329,14 @@ def _call_llm_for_json(
                     }
                 )
             if attempt >= max_repairs:
-                raise UserError(
-                    f"LLM returned invalid structured JSON after {attempt + 1} attempt(s): {exc}"
+                raise UpstreamProviderError(
+                    "The configured LLM returned invalid structured output "
+                    "after all repair attempts.",
+                    details={
+                        "response_model": response_model.__name__,
+                        "attempts": attempt + 1,
+                        "error_type": type(exc).__name__,
+                    },
                 ) from exc
             current_messages.extend(
                 [
@@ -343,10 +350,15 @@ def _call_llm_for_json(
                     ),
                 ]
             )
-    raise UserError("Failed to obtain structured JSON from the configured LLM.")
+    raise UpstreamProviderError(
+        "The configured LLM did not produce structured output.",
+        details={"response_model": response_model.__name__},
+    )
 
 
 def _require_llm_client(llm_client: LlmClient | None) -> LlmClient:
     if llm_client is None:
-        raise UserError("The LLM wizard is disabled in the current web-app configuration.")
+        raise ProviderUnavailableError(
+            "The LLM wizard is disabled in the current web-app configuration."
+        )
     return llm_client

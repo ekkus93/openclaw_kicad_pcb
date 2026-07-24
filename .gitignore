@@ -218,3 +218,12 @@ frontend/playwright-report/
 
 run_copilot.sh
 run_claude.sh*
+
+# Frontend local/generated state
+frontend/node_modules/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+
+# Regenerable evaluation output, including historical review workspaces
+code_review/archive/**/generated/

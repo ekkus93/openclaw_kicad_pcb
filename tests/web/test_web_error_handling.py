@@ -72,7 +72,7 @@ def test_route_level_kicad_error_uses_structured_payload(tmp_path, monkeypatch) 
     client = TestClient(app)
     response = client.post("/api/netlists/validate", json={"netlist_json": _VALID_NETLIST})
 
-    assert response.status_code == 400
+    assert response.status_code == 503
     payload = response.json()
     assert payload["error"]["type"] == "tool_error"
     assert payload["error"]["code"] == "KICAD_CLI_MISSING"

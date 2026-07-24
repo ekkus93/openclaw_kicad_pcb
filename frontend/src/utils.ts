@@ -22,10 +22,23 @@ export function formatDate(isoString: string): string {
 }
 
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError || error instanceof Error) {
+  if (error instanceof ApiError) {
+    return error.errorId ? `${error.message} Reference: ${error.errorId}.` : error.message
+  }
+  if (error instanceof Error) {
     return error.message
   }
   return 'Unexpected error.'
+}
+
+export function getPersistedErrorMessage(
+  error: { message: string; details?: Record<string, unknown> } | null | undefined,
+): string | null {
+  if (!error?.message) return null
+  const errorId = error.details?.error_id
+  return typeof errorId === 'string'
+    ? `${error.message} Reference: ${errorId}.`
+    : error.message
 }
 
 export function statusBannerToneClass(tone: StatusTone): string {

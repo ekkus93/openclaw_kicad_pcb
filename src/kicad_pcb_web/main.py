@@ -12,9 +12,11 @@ from kicad_pcb.errors import KiCadError, UserError
 
 from .deps import STATIC_DIR
 from .errors import (
+    WebServiceError,
     handle_kicad_error,
     handle_request_validation_error,
     handle_unexpected_error,
+    handle_web_service_error,
     handle_user_error,
 )
 from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_ui, api_wizard, ui
@@ -36,6 +38,7 @@ _configure_app_logging()
 
 app = FastAPI(title="KiCad PCB Web App")
 
+app.add_exception_handler(WebServiceError, handle_web_service_error)
 app.add_exception_handler(UserError, handle_user_error)
 app.add_exception_handler(KiCadError, handle_kicad_error)
 app.add_exception_handler(RequestValidationError, handle_request_validation_error)

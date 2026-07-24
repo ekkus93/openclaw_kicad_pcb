@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from kicad_pcb.errors import UserError
+from kicad_pcb_web.errors import ConflictError, ResourceNotFoundError
 from kicad_pcb_web.services.wizard import (
     _persist_session,
     clear_wizard_ir,
@@ -192,13 +192,13 @@ def test_clear_ir_raises_when_spec_not_approved(tmp_path: Path) -> None:
         spec_approved=False,
     )
     _persist_session(settings, session)
-    with pytest.raises(UserError):
+    with pytest.raises(ConflictError):
         clear_wizard_ir(settings=settings, session_id="wiz_test_abc12345")
 
 
 def test_clear_ir_raises_for_missing_session(tmp_path: Path) -> None:
     settings = _make_settings(tmp_path)
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ResourceNotFoundError):
         clear_wizard_ir(settings=settings, session_id="wiz_nonexistent_abc12345")
 
 
