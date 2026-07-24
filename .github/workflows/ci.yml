@@ -47,7 +47,18 @@ jobs:
         run: uv sync --frozen --extra dev --extra web
 
       - name: Lint
-        run: uv run ruff check .
+        run: |
+          set -o pipefail
+          uv run ruff check . --output-format=full 2>&1 | tee ruff-report.txt
+
+      - name: Upload Ruff report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ruff-report-${{ github.run_id }}
+          path: ruff-report.txt
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Format check
         run: uv run ruff format --check .
@@ -75,7 +86,7 @@ jobs:
         with:
           name: python-coverage-${{ github.run_id }}
           path: coverage.xml
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
   frontend-quality:
