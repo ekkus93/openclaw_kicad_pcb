@@ -7,7 +7,7 @@ bash scripts/validate.sh "$@"
 echo "==> package build"
 rm -rf dist
 uv build
-python scripts/package_smoke_test.py
+uv run --frozen --extra web python scripts/package_smoke_test.py
 
 if [[ " ${*:-} " != *" --python-only "* ]]; then
     echo "==> Playwright smoke tests"
