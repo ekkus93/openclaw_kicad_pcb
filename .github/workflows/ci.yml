@@ -155,13 +155,16 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Sync locked runtime dependencies
+        run: uv sync --frozen --extra web
+
       - name: Build distributions
         run: uv build
 
       - name: Inspect and smoke-test installed wheel
         run: |
           set -o pipefail
-          python scripts/package_smoke_test.py 2>&1 | tee package-smoke.log
+          uv run --frozen --extra web python scripts/package_smoke_test.py 2>&1 | tee package-smoke.log
 
       - name: Upload package diagnostics and distributions
         if: always()
