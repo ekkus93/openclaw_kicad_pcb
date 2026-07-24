@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 import errno
+import importlib
 import os
 import re
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 from ..errors import ResourceBusyError
 from ..settings import WebSettings
 
 _SAFE_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _LOCK_POLL_INTERVAL_S = 0.025
+_FCNTL: Any = importlib.import_module("fcntl") if os.name == "posix" else None
+_MSVCRT: Any = importlib.import_module("msvcrt") if os.name == "nt" else None
 
 
 def _validated_resource_id(resource_id: str) -> str:
@@ -35,24 +38,24 @@ def resource_lock_path(settings: WebSettings, kind: str, resource_id: str) -> Pa
 
 def _try_lock(handle: BinaryIO) -> bool:
     if os.name == "posix":
-        import fcntl
-
+        if _FCNTL is None:
+            raise RuntimeError("POSIX locking backend is unavailable")
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_EX | _FCNTL.LOCK_NB)
         except BlockingIOError:
             return False
         return True
 
     if os.name == "nt":
-        import msvcrt
-
+        if _MSVCRT is None:
+            raise RuntimeError("Windows locking backend is unavailable")
         handle.seek(0, os.SEEK_END)
         if handle.tell() == 0:
             handle.write(b"\0")
             handle.flush()
         handle.seek(0)
         try:
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            _MSVCRT.locking(handle.fileno(), _MSVCRT.LK_NBLCK, 1)
         except OSError as exc:
             if exc.errno in {errno.EACCES, errno.EAGAIN, errno.EDEADLK}:
                 return False
@@ -64,16 +67,16 @@ def _try_lock(handle: BinaryIO) -> bool:
 
 def _unlock(handle: BinaryIO) -> None:
     if os.name == "posix":
-        import fcntl
-
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        if _FCNTL is None:
+            raise RuntimeError("POSIX locking backend is unavailable")
+        _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_UN)
         return
 
     if os.name == "nt":
-        import msvcrt
-
+        if _MSVCRT is None:
+            raise RuntimeError("Windows locking backend is unavailable")
         handle.seek(0)
-        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        _MSVCRT.locking(handle.fileno(), _MSVCRT.LK_UNLCK, 1)
         return
 
     raise RuntimeError(f"Cross-process file locking is unsupported on os.name={os.name!r}")

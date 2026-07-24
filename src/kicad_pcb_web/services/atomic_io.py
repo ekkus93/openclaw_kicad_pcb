@@ -37,7 +37,7 @@ def atomic_write_bytes(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
 
-        os.replace(temp_path, path)
+        temp_path.replace(path)
         temp_path = None
         _fsync_directory(path.parent)
     except PersistenceError:

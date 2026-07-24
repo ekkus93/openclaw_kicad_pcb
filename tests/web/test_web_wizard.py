@@ -868,7 +868,7 @@ def test_wizard_unexpected_provider_error_is_sanitized_and_persisted(
     caplog,
 ) -> None:
     monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
-    app.dependency_overrides[get_llm_client] = lambda: ExplodingLlmClient()
+    app.dependency_overrides[get_llm_client] = ExplodingLlmClient
     client = TestClient(app)
 
     with caplog.at_level("ERROR"):

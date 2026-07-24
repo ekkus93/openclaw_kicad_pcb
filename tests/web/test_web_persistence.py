@@ -8,7 +8,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
 
+from kicad_pcb_web.main import app
 from kicad_pcb_web.errors import (
     PersistedStateError,
     PersistenceError,
@@ -66,7 +68,7 @@ def test_atomic_write_replace_failure_preserves_old_file(tmp_path: Path) -> None
     path.write_text('{"old": true}\n', encoding="utf-8")
 
     with (
-        patch("kicad_pcb_web.services.atomic_io.os.replace", side_effect=OSError("nope")),
+        patch("pathlib.Path.replace", side_effect=OSError("nope")),
         pytest.raises(PersistenceError, match="commit"),
     ):
         atomic_write_json(path, {"new": True})
@@ -147,20 +149,18 @@ def test_missing_canonical_job_state_is_not_silently_omitted(tmp_path: Path) -> 
 
 def test_lock_contention_fails_explicitly_and_is_bounded(tmp_path: Path) -> None:
     settings = _settings(tmp_path, lock_timeout=0.01)
-    with resource_lock(settings, kind="wizard", resource_id="wiz_test"):
-        with pytest.raises(ResourceBusyError) as exc_info:
-            with resource_lock(settings, kind="wizard", resource_id="wiz_test"):
-                raise AssertionError("contended mutation must not run")
+    with (
+        resource_lock(settings, kind="wizard", resource_id="wiz_test"),
+        pytest.raises(ResourceBusyError) as exc_info,
+        resource_lock(settings, kind="wizard", resource_id="wiz_test"),
+    ):
+        raise AssertionError("contended mutation must not run")
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.code == "RESOURCE_BUSY"
 
 
 def test_jobs_endpoint_surfaces_malformed_state(tmp_path: Path, monkeypatch) -> None:
-    from fastapi.testclient import TestClient
-
-    from kicad_pcb_web.main import app
-
     data_dir = tmp_path / "data"
     path = data_dir / "jobs" / "job_bad" / "job.json"
     path.parent.mkdir(parents=True)
@@ -175,10 +175,6 @@ def test_jobs_endpoint_surfaces_malformed_state(tmp_path: Path, monkeypatch) -> 
 
 
 def test_wizard_endpoint_surfaces_malformed_state(tmp_path: Path, monkeypatch) -> None:
-    from fastapi.testclient import TestClient
-
-    from kicad_pcb_web.main import app
-
     data_dir = tmp_path / "data"
     path = data_dir / "wizard_sessions" / "wiz_bad" / "wizard.json"
     path.parent.mkdir(parents=True)
@@ -196,10 +192,6 @@ def test_wizard_route_returns_409_while_session_is_locked(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    from fastapi.testclient import TestClient
-
-    from kicad_pcb_web.main import app
-
     settings = _settings(tmp_path, lock_timeout=0.01)
     session = _session().model_copy(update={"status": "spec_approved"})
     _persist_session(settings, session)
