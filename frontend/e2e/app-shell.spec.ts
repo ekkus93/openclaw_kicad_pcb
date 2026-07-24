@@ -1,18 +1,34 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-function failOnPageErrors(page: Page) {
+interface AllowedHttpFailure {
+  path: string
+  status: number
+}
+
+function failOnPageErrors(page: Page, allowedHttpFailures: AllowedHttpFailure[] = []) {
   const failures: string[] = []
-  page.on('pageerror', (error: Error) => failures.push(error.message))
+  page.on('pageerror', (error: Error) => failures.push(`pageerror: ${error.message}`))
   page.on('console', (message) => {
-    if (message.type() === 'error') failures.push(message.text())
+    if (message.type() !== 'error') return
+    const text = message.text()
+    if (text.startsWith('Failed to load resource: the server responded with a status of ')) return
+    failures.push(`console: ${text}`)
+  })
+  page.on('response', (response) => {
+    if (response.status() < 400) return
+    const path = new URL(response.url()).pathname
+    const allowed = allowedHttpFailures.some(
+      (failure) => failure.path === path && failure.status === response.status(),
+    )
+    if (!allowed) failures.push(`HTTP ${response.status()} ${path}`)
   })
   return failures
 }
 
 test.describe('installed app shell and local-only workflows', () => {
   test('navigates primary routes and survives deep-route refresh', async ({ page }) => {
-    const browserErrors = failOnPageErrors(page)
+    const browserErrors = failOnPageErrors(page, [{ path: '/api/jobs/job_smoke', status: 404 }])
     await page.goto('/')
     await expect(page.getByRole('link', { name: 'KiCad PCB Web App' })).toBeVisible()
 
