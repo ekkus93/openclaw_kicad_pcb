@@ -1,4 +1,4 @@
-name: RESTART1 Remaining Lint Fixes
+name: RESTART1 Commit Remaining Lint Fixes
 
 on:
   push:
@@ -7,11 +7,8 @@ on:
 permissions:
   contents: write
 
-env:
-  PYTHON_VERSION: "3.11"
-
 jobs:
-  fix:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -20,143 +17,140 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen --extra dev --extra web
-
-      - name: Apply remaining lint fixes
+      - name: Apply verified source fixes
         run: |
+          set -euo pipefail
           python - <<'PY'
           from pathlib import Path
 
           path = Path("src/kicad_pcb_web/services/atomic_io.py")
           text = path.read_text()
-          text = text.replace("os.replace(temp_path, path)", "temp_path.replace(path)")
-          path.write_text(text)
+          old = "os.replace(temp_path, path)"
+          new = "temp_path.replace(path)"
+          if old not in text:
+              raise SystemExit(f"expected atomic replacement not found in {path}")
+          path.write_text(text.replace(old, new, 1))
 
           path = Path("src/kicad_pcb_web/services/resource_locks.py")
           text = path.read_text()
-          text = text.replace("import errno\nimport os\n", "import errno\nimport importlib\nimport os\n")
-          text = text.replace("from typing import BinaryIO\n", "from typing import Any, BinaryIO\n")
-          text = text.replace(
-              "_LOCK_POLL_INTERVAL_S = 0.025\n",
-              "_LOCK_POLL_INTERVAL_S = 0.025\n"
-              "_FCNTL: Any = importlib.import_module(\"fcntl\") if os.name == \"posix\" else None\n"
-              "_MSVCRT: Any = importlib.import_module(\"msvcrt\") if os.name == \"nt\" else None\n",
-          )
-          text = text.replace(
-              "    if os.name == \"posix\":\n"
-              "        import fcntl\n\n"
-              "        try:\n"
-              "            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n",
-              "    if os.name == \"posix\":\n"
-              "        if _FCNTL is None:\n"
-              "            raise RuntimeError(\"POSIX locking backend is unavailable\")\n"
-              "        try:\n"
-              "            _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_EX | _FCNTL.LOCK_NB)\n",
-          )
-          text = text.replace(
-              "    if os.name == \"nt\":\n"
-              "        import msvcrt\n\n"
-              "        handle.seek(0, os.SEEK_END)\n",
-              "    if os.name == \"nt\":\n"
-              "        if _MSVCRT is None:\n"
-              "            raise RuntimeError(\"Windows locking backend is unavailable\")\n"
-              "        handle.seek(0, os.SEEK_END)\n",
-          )
-          text = text.replace(
-              "msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)",
-              "_MSVCRT.locking(handle.fileno(), _MSVCRT.LK_NBLCK, 1)",
-          )
-          text = text.replace(
-              "    if os.name == \"posix\":\n"
-              "        import fcntl\n\n"
-              "        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)\n",
-              "    if os.name == \"posix\":\n"
-              "        if _FCNTL is None:\n"
-              "            raise RuntimeError(\"POSIX locking backend is unavailable\")\n"
-              "        _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_UN)\n",
-          )
-          text = text.replace(
-              "    if os.name == \"nt\":\n"
-              "        import msvcrt\n\n"
-              "        handle.seek(0)\n"
-              "        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)\n",
-              "    if os.name == \"nt\":\n"
-              "        if _MSVCRT is None:\n"
-              "            raise RuntimeError(\"Windows locking backend is unavailable\")\n"
-              "        handle.seek(0)\n"
-              "        _MSVCRT.locking(handle.fileno(), _MSVCRT.LK_UNLCK, 1)\n",
-          )
+          replacements = [
+              ("import errno\nimport os\n", "import errno\nimport importlib\nimport os\n"),
+              ("from typing import BinaryIO\n", "from typing import Any, BinaryIO\n"),
+              (
+                  "_LOCK_POLL_INTERVAL_S = 0.025\n",
+                  "_LOCK_POLL_INTERVAL_S = 0.025\n"
+                  "_FCNTL: Any = importlib.import_module(\"fcntl\") if os.name == \"posix\" else None\n"
+                  "_MSVCRT: Any = importlib.import_module(\"msvcrt\") if os.name == \"nt\" else None\n",
+              ),
+              (
+                  "    if os.name == \"posix\":\n"
+                  "        import fcntl\n\n"
+                  "        try:\n"
+                  "            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n",
+                  "    if os.name == \"posix\":\n"
+                  "        if _FCNTL is None:\n"
+                  "            raise RuntimeError(\"POSIX locking backend is unavailable\")\n"
+                  "        try:\n"
+                  "            _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_EX | _FCNTL.LOCK_NB)\n",
+              ),
+              (
+                  "    if os.name == \"nt\":\n"
+                  "        import msvcrt\n\n"
+                  "        handle.seek(0, os.SEEK_END)\n",
+                  "    if os.name == \"nt\":\n"
+                  "        if _MSVCRT is None:\n"
+                  "            raise RuntimeError(\"Windows locking backend is unavailable\")\n"
+                  "        handle.seek(0, os.SEEK_END)\n",
+              ),
+              (
+                  "msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)",
+                  "_MSVCRT.locking(handle.fileno(), _MSVCRT.LK_NBLCK, 1)",
+              ),
+              (
+                  "    if os.name == \"posix\":\n"
+                  "        import fcntl\n\n"
+                  "        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)\n",
+                  "    if os.name == \"posix\":\n"
+                  "        if _FCNTL is None:\n"
+                  "            raise RuntimeError(\"POSIX locking backend is unavailable\")\n"
+                  "        _FCNTL.flock(handle.fileno(), _FCNTL.LOCK_UN)\n",
+              ),
+              (
+                  "    if os.name == \"nt\":\n"
+                  "        import msvcrt\n\n"
+                  "        handle.seek(0)\n"
+                  "        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)\n",
+                  "    if os.name == \"nt\":\n"
+                  "        if _MSVCRT is None:\n"
+                  "            raise RuntimeError(\"Windows locking backend is unavailable\")\n"
+                  "        handle.seek(0)\n"
+                  "        _MSVCRT.locking(handle.fileno(), _MSVCRT.LK_UNLCK, 1)\n",
+              ),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"expected resource-lock replacement not found: {old!r}")
+              text = text.replace(old, new, 1)
           path.write_text(text)
 
           path = Path("tests/web/test_web_persistence.py")
           text = path.read_text()
-          text = text.replace(
-              "import pytest\n\n",
-              "import pytest\nfrom fastapi.testclient import TestClient\n\n"
-              "from kicad_pcb_web.main import app\n",
-              1,
-          )
-          text = text.replace(
-              "patch(\"kicad_pcb_web.services.atomic_io.os.replace\", side_effect=OSError(\"nope\"))",
-              "patch(\"pathlib.Path.replace\", side_effect=OSError(\"nope\"))",
-          )
-          text = text.replace(
-              "    with resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"):\n"
-              "        with pytest.raises(ResourceBusyError) as exc_info:\n"
-              "            with resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"):\n"
-              "                raise AssertionError(\"contended mutation must not run\")\n",
-              "    with (\n"
-              "        resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"),\n"
-              "        pytest.raises(ResourceBusyError) as exc_info,\n"
-              "        resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"),\n"
-              "    ):\n"
-              "        raise AssertionError(\"contended mutation must not run\")\n",
-          )
-          text = text.replace(
+          replacements = [
+              (
+                  "import pytest\n\n",
+                  "import pytest\nfrom fastapi.testclient import TestClient\n\n"
+                  "from kicad_pcb_web.main import app\n",
+              ),
+              (
+                  "patch(\"kicad_pcb_web.services.atomic_io.os.replace\", side_effect=OSError(\"nope\"))",
+                  "patch(\"pathlib.Path.replace\", side_effect=OSError(\"nope\"))",
+              ),
+              (
+                  "    with resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"):\n"
+                  "        with pytest.raises(ResourceBusyError) as exc_info:\n"
+                  "            with resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"):\n"
+                  "                raise AssertionError(\"contended mutation must not run\")\n",
+                  "    with (\n"
+                  "        resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"),\n"
+                  "        pytest.raises(ResourceBusyError) as exc_info,\n"
+                  "        resource_lock(settings, kind=\"wizard\", resource_id=\"wiz_test\"),\n"
+                  "    ):\n"
+                  "        raise AssertionError(\"contended mutation must not run\")\n",
+              ),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"expected persistence-test replacement not found: {old!r}")
+              text = text.replace(old, new, 1)
+          local_imports = (
               "    from fastapi.testclient import TestClient\n\n"
-              "    from kicad_pcb_web.main import app\n\n",
-              "",
+              "    from kicad_pcb_web.main import app\n\n"
           )
+          if text.count(local_imports) != 3:
+              raise SystemExit("expected exactly three local TestClient/app import blocks")
+          text = text.replace(local_imports, "")
           path.write_text(text)
 
           path = Path("tests/web/test_web_wizard.py")
-          text = path.read_text().replace(
-              "app.dependency_overrides[get_llm_client] = lambda: ExplodingLlmClient()",
-              "app.dependency_overrides[get_llm_client] = ExplodingLlmClient",
-          )
-          path.write_text(text)
+          text = path.read_text()
+          old = "app.dependency_overrides[get_llm_client] = lambda: ExplodingLlmClient()"
+          new = "app.dependency_overrides[get_llm_client] = ExplodingLlmClient"
+          if old not in text:
+              raise SystemExit(f"expected wizard-test replacement not found in {path}")
+          path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Format and lint
-        run: |
-          set -euo pipefail
-          uv run ruff format .
-          uv run ruff check .
-          rm -f docs/RESTART1_RUFF_REMAINING.txt
-
-      - name: Run affected tests
-        run: uv run pytest -q tests/web/test_web_persistence.py tests/web/test_web_wizard.py
-
-      - name: Commit non-workflow fixes
+      - name: Commit verified non-workflow changes
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git restore --staged .github/workflows
+          git add \
+            src/kicad_pcb_web/services/atomic_io.py \
+            src/kicad_pcb_web/services/resource_locks.py \
+            tests/web/test_web_persistence.py \
+            tests/web/test_web_wizard.py
           git diff --cached --check
-          test -z "$(git diff --cached --name-only -- .github/workflows)"
           git diff --cached --stat
-          git commit -m 'Fix remaining RESTART1 lint violations'
+          git commit -m 'Apply remaining RESTART1 lint fixes'
           git push origin HEAD:refs/heads/webapp
