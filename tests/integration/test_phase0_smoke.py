@@ -23,7 +23,6 @@ from pathlib import Path
 
 import pytest
 
-from kicad_pcb.commands.netlist import MANAGED_SHEET_FILE
 from kicad_pcb.sch_doc import SchematicDoc
 from tests.conftest import requires_kicad
 
@@ -354,7 +353,7 @@ _MINIMAL_IR: dict = {
 
 
 def _extract_bindings_from_sch(path: Path) -> list[dict[str, str]]:
-    """Parse OpenClaw:bind= markers from a managed schematic file.
+    """Parse OpenClaw:bind= markers from a generated schematic file.
 
     Returns a sorted list of dicts so two runs can be compared for equality.
     """
@@ -375,7 +374,7 @@ class TestNewFromNetlistKicadMode:
     - new-from-netlist --mode kicad completes successfully
     - kicad-cli can load the generated main schematic
     - compile-netlist (alias) is wired to the same function and also succeeds
-    - Both commands produce identical pin→net binding markers in the managed
+    - Both commands produce identical pin→net binding markers in the main
       schematic, confirming deterministic output
     """
 
@@ -414,7 +413,6 @@ class TestNewFromNetlistKicadMode:
         )
         project_dir = self.projects_dir / "TestNetlist"
         assert (project_dir / "TestNetlist.kicad_sch").exists(), "Main schematic not created"
-        assert (project_dir / MANAGED_SHEET_FILE).exists(), "Managed schematic not created"
 
     # ------------------------------------------------------------------
     # Test 2: kicad-cli must be able to load the generated main schematic
@@ -481,7 +479,6 @@ class TestNewFromNetlistKicadMode:
         )
         project_dir = self.projects_dir / "TestCompile"
         assert (project_dir / "TestCompile.kicad_sch").exists(), "Main schematic not created"
-        assert (project_dir / MANAGED_SHEET_FILE).exists(), "Managed schematic not created"
 
     # ------------------------------------------------------------------
     # Test 4: both commands produce identical pin→net binding markers
@@ -491,7 +488,7 @@ class TestNewFromNetlistKicadMode:
         """new-from-netlist and compile-netlist must write identical pin→net bindings.
 
         This confirms the alias shares the same underlying function and that
-        generation is deterministic at the managed-schematic level.
+        generation is deterministic at the main-schematic level.
         """
         for cmd, name in (("new-from-netlist", "ProjA"), ("compile-netlist", "ProjB")):
             res = self._run(
@@ -507,8 +504,12 @@ class TestNewFromNetlistKicadMode:
             )
             assert res.returncode == 0, f"{cmd} failed (exit {res.returncode}):\n{res.stderr}"
 
-        bindings_a = _extract_bindings_from_sch(self.projects_dir / "ProjA" / MANAGED_SHEET_FILE)
-        bindings_b = _extract_bindings_from_sch(self.projects_dir / "ProjB" / MANAGED_SHEET_FILE)
+        bindings_a = _extract_bindings_from_sch(
+            self.projects_dir / "ProjA" / "ProjA.kicad_sch"
+        )
+        bindings_b = _extract_bindings_from_sch(
+            self.projects_dir / "ProjB" / "ProjB.kicad_sch"
+        )
         assert bindings_a == bindings_b, (
             f"Binding mismatch between new-from-netlist and compile-netlist:\n"
             f"  ProjA: {bindings_a}\n  ProjB: {bindings_b}"
