@@ -1,4 +1,4 @@
-name: RESTART1 Deterministic Autofix
+name: RESTART1 Lint Diagnostics
 
 on:
   push:
@@ -9,10 +9,9 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.11"
-  NODE_VERSION: "22"
 
 jobs:
-  autofix:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -31,52 +30,28 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Sync locked Python dependencies
+      - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web --extra llm
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install locked frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Apply deterministic Python fixes
+      - name: Capture exact Ruff diagnostics
         run: |
-          set -euo pipefail
-          uv run ruff format .
-          uv run ruff check --fix . || true
-
-      - name: Rebuild committed SPA bundle
-        working-directory: frontend
-        run: npm run build
-
-      - name: Record any remaining Ruff violations
-        run: |
-          set -euo pipefail
+          set -uo pipefail
           mkdir -p docs
-          if uv run ruff check . > docs/RESTART1_RUFF_REMAINING.txt 2>&1; then
-            rm -f docs/RESTART1_RUFF_REMAINING.txt
-          else
-            printf '\nRuff still reports non-autofixable violations.\n' >> docs/RESTART1_RUFF_REMAINING.txt
-          fi
+          set +e
+          uv run ruff check . --output-format=full > docs/RESTART1_RUFF_REMAINING.txt 2>&1
+          status=$?
+          set -e
+          {
+            printf '\nRuff exit status: %s\n' "$status"
+            printf 'Source commit: %s\n' "${GITHUB_SHA}"
+          } >> docs/RESTART1_RUFF_REMAINING.txt
 
-      - name: Commit non-workflow corrections
+      - name: Commit diagnostics
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add docs/RESTART1_RUFF_REMAINING.txt
           git diff --cached --check
-          if git diff --cached --quiet; then
-            echo 'No deterministic corrections were needed.'
-            exit 0
-          fi
-          test -z "$(git diff --cached --name-only -- .github/workflows)"
-          git diff --cached --stat
-          git commit -m 'Apply RESTART1 deterministic autofixes'
+          git commit -m 'Record RESTART1 Ruff diagnostics'
           git push origin HEAD:refs/heads/webapp
