@@ -2,77 +2,227 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [webapp]
   pull_request:
-    branches: [main, master]
+    branches: [webapp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
 
 jobs:
-  unit-tests:
-    name: Unit tests, lint & type check
+  python-quality:
+    name: Python lint, types, unit and web tests
     runs-on: ubuntu-latest
-    env:
-      KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
-
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install unit-test system dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y graphviz kicad-symbols
-
-      - name: Verify external toolchain
-        run: |
           command -v dot
           test -d "$KICAD_SYMBOLS_DIR"
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
-          cache: pip
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
-      # ── Static checks ────────────────────────────────────────────────────────
-      - name: Lint (ruff)
-        run: ruff check .
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
 
-      - name: Format check (ruff)
-        run: ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
 
-      - name: Type check (mypy)
-        run: mypy kicad-pcb/src
+      - name: Format check
+        run: uv run ruff format --check .
 
-      # ── Unit tests with coverage ─────────────────────────────────────────────
-      - name: Run unit tests
+      - name: Type check
+        run: uv run mypy src/kicad_pcb src/kicad_pcb_web
+
+      - name: Verify workflow configuration
+        run: uv run python scripts/check_ci_config.py
+
+      - name: Guard generated tree
+        run: bash scripts/check-generated-tree.sh
+
+      - name: Run Python tests with coverage
         run: |
-          pytest tests/unit/ \
+          uv run pytest tests/unit tests/web \
             --cov \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \
             -v
 
-      # ── Artifacts ────────────────────────────────────────────────────────────
-      - name: Upload coverage report
+      - name: Upload Python coverage
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: coverage-report
+          name: python-coverage-${{ github.run_id }}
           path: coverage.xml
+          if-no-files-found: error
           retention-days: 14
 
-  integration-tests:
-    name: Integration tests (KiCad required)
+  frontend-quality:
+    name: Frontend lint, unit tests and production build
     runs-on: ubuntu-latest
-    needs: unit-tests
-
     steps:
       - uses: actions/checkout@v6
 
-      # ── Install KiCad ────────────────────────────────────────────────────────
-      - name: Add KiCad PPA and install
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: frontend
+        run: npm run test:run -- --coverage
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload built SPA bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: built-spa-${{ github.run_id }}
+          path: src/kicad_pcb_web/static/spa
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Verify committed SPA bundle
+        run: git diff --exit-code -- src/kicad_pcb_web/static/spa
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-coverage-${{ github.run_id }}
+          path: frontend/coverage
+          if-no-files-found: warn
+          retention-days: 14
+
+  package-smoke:
+    name: Build and install wheel/sdist
+    runs-on: ubuntu-latest
+    needs: [python-quality, frontend-quality]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Inspect and smoke-test installed wheel
+        run: python scripts/package_smoke_test.py
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v6
+        with:
+          name: distributions-${{ github.run_id }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  browser-smoke:
+    name: Browser smoke tests
+    runs-on: ubuntu-latest
+    needs: [python-quality, frontend-quality]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad-symbols
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked Python dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        working-directory: frontend
+        env:
+          KICAD_PCB_WEB_DATA_DIR: ${{ runner.temp }}/kicad-pcb-web-data
+        run: npm run test:e2e
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-failures-${{ github.run_id }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 7
+
+  integration-tests:
+    name: KiCad integration tests
+    runs-on: ubuntu-latest
+    needs: python-quality
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install KiCad 9 and Graphviz
         run: |
           sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
           sudo apt-get update -q
@@ -82,31 +232,34 @@ jobs:
           "$DOT_BIN" -V
           kicad-cli version
 
-      # ── Python setup ─────────────────────────────────────────────────────────
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
-          cache: pip
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
-      # ── Integration tests ────────────────────────────────────────────────────
-      - name: Run integration tests
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Run KiCad integration tests
         run: |
-          pytest tests/integration/ \
+          uv run pytest tests/integration \
+            -m requires_kicad \
             -v \
             --tb=long \
             --junit-xml=integration-results.xml
 
-      # ── Artifacts ────────────────────────────────────────────────────────────
-      - name: Upload test results and logs
+      - name: Upload integration failure artifacts
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: integration-test-artifacts-${{ github.run_id }}
+          name: integration-failures-${{ github.run_id }}
           path: |
             integration-results.xml
             /tmp/pytest-*/
+          if-no-files-found: warn
           retention-days: 7
