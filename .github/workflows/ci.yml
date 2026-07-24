@@ -159,14 +159,19 @@ jobs:
         run: uv build
 
       - name: Inspect and smoke-test installed wheel
-        run: python scripts/package_smoke_test.py
+        run: |
+          set -o pipefail
+          python scripts/package_smoke_test.py 2>&1 | tee package-smoke.log
 
-      - name: Upload distributions
+      - name: Upload package diagnostics and distributions
+        if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: distributions-${{ github.run_id }}
-          path: dist/*
-          if-no-files-found: error
+          name: package-smoke-${{ github.run_id }}
+          path: |
+            package-smoke.log
+            dist/*
+          if-no-files-found: warn
           retention-days: 14
 
   browser-smoke:
