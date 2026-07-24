@@ -1,24 +1,37 @@
-name: RESTART1 Validate Remaining Fixes
+name: CI
 
 on:
   push:
     branches: [webapp]
+  pull_request:
+    branches: [webapp]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
 
 jobs:
-  validate:
+  python-quality:
+    name: Python lint, types, unit and web tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: webapp
-          fetch-depth: 0
-          persist-credentials: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad-symbols
+          command -v dot
+          test -d "$KICAD_SYMBOLS_DIR"
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -33,31 +46,220 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
 
-      - name: Format and lint
-        run: |
-          set -euo pipefail
-          uv run ruff format .
-          uv run ruff check --fix .
-          uv run ruff check .
-          uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
 
-      - name: Run affected tests
-        run: uv run pytest -q tests/web/test_web_persistence.py tests/web/test_web_wizard.py
+      - name: Format check
+        run: uv run ruff format --check .
 
-      - name: Commit deterministic formatting
+      - name: Type check
+        run: uv run mypy src/kicad_pcb src/kicad_pcb_web
+
+      - name: Verify workflow configuration
+        run: uv run python scripts/check_ci_config.py
+
+      - name: Guard generated tree
+        run: bash scripts/check-generated-tree.sh
+
+      - name: Run Python tests with coverage
         run: |
-          set -euo pipefail
-          rm -f docs/RESTART1_RUFF_REMAINING.txt
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git restore --staged .github/workflows
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo 'No formatting changes were needed.'
-            exit 0
-          fi
-          test -z "$(git diff --cached --name-only -- .github/workflows)"
-          git diff --cached --stat
-          git commit -m 'Format and validate RESTART1 lint fixes'
-          git push origin HEAD:refs/heads/webapp
+          uv run pytest tests/unit tests/web \
+            --cov \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -v
+
+      - name: Upload Python coverage
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: python-coverage-${{ github.run_id }}
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  frontend-quality:
+    name: Frontend lint, unit tests and production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: frontend
+        run: npm run test:run -- --coverage
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload built SPA bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: built-spa-${{ github.run_id }}
+          path: src/kicad_pcb_web/static/spa
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Verify committed SPA bundle
+        run: git diff --exit-code -- src/kicad_pcb_web/static/spa
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-coverage-${{ github.run_id }}
+          path: frontend/coverage
+          if-no-files-found: warn
+          retention-days: 14
+
+  package-smoke:
+    name: Build and install wheel/sdist
+    runs-on: ubuntu-latest
+    needs: [python-quality, frontend-quality]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Inspect and smoke-test installed wheel
+        run: python scripts/package_smoke_test.py
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v6
+        with:
+          name: distributions-${{ github.run_id }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  browser-smoke:
+    name: Browser smoke tests
+    runs-on: ubuntu-latest
+    needs: [python-quality, frontend-quality]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad-symbols
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked Python dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        working-directory: frontend
+        env:
+          KICAD_PCB_WEB_DATA_DIR: ${{ runner.temp }}/kicad-pcb-web-data
+        run: npm run test:e2e
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-failures-${{ github.run_id }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 7
+
+  integration-tests:
+    name: KiCad integration tests
+    runs-on: ubuntu-latest
+    needs: python-quality
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install KiCad 9 and Graphviz
+        run: |
+          sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad
+          DOT_BIN="$(command -v dot)"
+          echo "GRAPHVIZ_DOT=$DOT_BIN" >> "$GITHUB_ENV"
+          "$DOT_BIN" -V
+          kicad-cli version
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Run KiCad integration tests
+        run: |
+          uv run pytest tests/integration \
+            -m requires_kicad \
+            -v \
+            --tb=long \
+            --junit-xml=integration-results.xml
+
+      - name: Upload integration failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: integration-failures-${{ github.run_id }}
+          path: |
+            integration-results.xml
+            /tmp/pytest-*/
+          if-no-files-found: warn
+          retention-days: 7
