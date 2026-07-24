@@ -9,6 +9,7 @@ fi
 
 mapfile -t forbidden < <(
     git ls-files -- \
+        'code_review/generated/**' \
         'code_review/archive/**/generated/**' \
         'frontend/node_modules/**' \
         'frontend/coverage/**' \
