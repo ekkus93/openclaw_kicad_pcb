@@ -27,12 +27,12 @@ def _register_netlist_subcommands(  # noqa: PLR0915
     # info-sch
     p_info_sch = subparsers.add_parser(
         "info-sch",
-        help="Show schematic introspection data (root + managed sheet)",
+        help="Show schematic introspection data for the current project",
         description=(
-            "Introspect the current project schematic. "
-            "The root schematic (<name>.kicad_sch) is intentionally thin and contains "
-            "only a sheet reference; all generated symbols, wires, and net labels live "
-            "in OpenClaw_Managed.kicad_sch. Both paths and their AST counts are returned."
+            "Introspect the current project schematic. New generation writes symbols, "
+            "wires, and net labels directly to the main <name>.kicad_sch file. "
+            "Legacy OpenClaw_Managed.kicad_sch information is reported only when an "
+            "older project still contains that compatibility sheet."
         ),
     )
     p_info_sch.set_defaults(func=cmd_info_sch)
@@ -56,12 +56,12 @@ def _register_netlist_subcommands(  # noqa: PLR0915
     # apply-netlist
     p_apply = subparsers.add_parser(
         "apply-netlist",
-        help="Apply Circuit IR JSON to OpenClaw managed schematic",
+        help="Apply Circuit IR JSON to the project schematic",
         description=(
-            "Apply a Circuit IR JSON netlist to the current project. "
-            "Generated content is written to OpenClaw_Managed.kicad_sch (the managed sheet); "
-            "the root schematic (<name>.kicad_sch) stays thin and references the managed sheet. "
-            "Use --dry-run to validate without writing."
+            "Apply a Circuit IR JSON netlist to the current project. Generated content is "
+            "written directly to the main <name>.kicad_sch file. Compatibility support for "
+            "older projects may recognize a legacy managed sheet, but new output does not "
+            "create OpenClaw_Managed.kicad_sch. Use --dry-run to validate without writing."
         ),
     )
     p_apply.add_argument("--netlist", required=True, help="Path to Circuit IR JSON file")
@@ -118,9 +118,8 @@ def _register_netlist_subcommands(  # noqa: PLR0915
         help="Create a project and compile Circuit IR deterministically",
         description=(
             "Create a new KiCad project and compile a Circuit IR JSON netlist into it. "
-            "The root schematic (<name>.kicad_sch) is thin and contains a sheet reference; "
-            "all generated symbols, wires, and net labels are written to "
-            "OpenClaw_Managed.kicad_sch (the managed sheet)."
+            "Generated symbols, wires, and net labels are written directly to the main "
+            "<name>.kicad_sch file."
         ),
     )
     p_new_netlist.add_argument("--name", required=True, help="Project name")
@@ -292,11 +291,9 @@ def _register_netlist_subcommands(  # noqa: PLR0915
         "compile-netlist",
         help="Alias for new-from-netlist: create project from Circuit IR (same args)",
         description=(
-            "Alias for new-from-netlist. "
-            "Creates a new KiCad project and compiles a Circuit IR JSON netlist into it. "
-            "The root schematic (<name>.kicad_sch) is thin and contains a sheet reference; "
-            "all generated symbols, wires, and net labels are written to "
-            "OpenClaw_Managed.kicad_sch (the managed sheet)."
+            "Alias for new-from-netlist. Creates a new KiCad project and compiles a Circuit "
+            "IR JSON netlist into it. Generated symbols, wires, and net labels are written "
+            "directly to the main <name>.kicad_sch file."
         ),
     )
     p_compile.add_argument("--name", required=True, help="Project name")
