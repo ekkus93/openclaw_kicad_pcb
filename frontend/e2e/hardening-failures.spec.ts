@@ -163,7 +163,9 @@ test('wizard failed IR regeneration cannot unlock Generate and retry can recover
 
   await page.getByRole('button', { name: 'Try again' }).click()
 
-  await expect(page.getByRole('link', { name: /Continue to Generate/ })).toBeVisible()
+  await expect(page).toHaveURL(/\/wizard\/wiz_browser_hardening\/generate$/)
+  await expect(page.getByRole('heading', { name: 'Generate Project' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Generate Project' })).toBeEnabled()
   await expect(page.getByText('The configured LLM provider request failed.')).toHaveCount(0)
   expect(generateIrAttempts).toBe(2)
 })
