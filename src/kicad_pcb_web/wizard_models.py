@@ -141,6 +141,7 @@ class WizardSessionDetail(BaseModel):
     project_name: str | None = None
     symbols_dir: str | None = None
     llm_provider: str | None = None
+    llm_model: str | None = None
     prompt_version: str | None = None
     messages: list[WizardMessage] = Field(default_factory=list)
     spec: CircuitSpec | None = None

@@ -173,6 +173,50 @@ def _llm_provenance(settings: WebSettings) -> WizardLlmProvenance:
     )
 
 
+def _assert_llm_provenance_matches(
+    settings: WebSettings,
+    session: WizardSessionDetail,
+    *,
+    operation: str,
+    revision_provenance: WizardLlmProvenance | None,
+) -> None:
+    """Fail closed before LLM-backed continuation under changed provenance."""
+
+    current = _llm_provenance(settings)
+    mismatches: list[str] = []
+
+    if revision_provenance is not None:
+        if revision_provenance.provider != current.provider:
+            mismatches.append("provider")
+        if revision_provenance.model != current.model:
+            mismatches.append("model")
+        if revision_provenance.prompt_version != current.prompt_version:
+            mismatches.append("prompt_version")
+        if (
+            revision_provenance.endpoint_identity is not None
+            and revision_provenance.endpoint_identity != current.endpoint_identity
+        ):
+            mismatches.append("endpoint_identity")
+    else:
+        if session.llm_provider != current.provider:
+            mismatches.append("provider")
+        if session.llm_model != current.model:
+            mismatches.append("model")
+        if session.prompt_version != current.prompt_version:
+            mismatches.append("prompt_version")
+
+    if mismatches:
+        raise ConflictError(
+            "Wizard session LLM provenance does not match the current runtime configuration.",
+            code="WIZARD_LLM_PROVENANCE_MISMATCH",
+            details={
+                "session_id": session.id,
+                "operation": operation,
+                "mismatch_fields": mismatches,
+            },
+        )
+
+
 def _persist_and_raise_failure(
     settings: WebSettings,
     session: WizardSessionDetail,
@@ -214,6 +258,7 @@ def create_wizard_session(
         project_name=request.project_name,
         symbols_dir=request.symbols_dir,
         llm_provider=settings.llm.provider,
+        llm_model=settings.llm.model,
         prompt_version=settings.llm.system_prompt_version,
         messages=[WizardMessage(role="user", content=request.message)],
     )
@@ -225,6 +270,7 @@ def create_wizard_session(
             extra={
                 "session_id": session.id,
                 "provider": settings.llm.provider,
+                "model": settings.llm.model,
                 "prompt_version": settings.llm.system_prompt_version,
                 "message_count": len(session.messages),
             },
@@ -258,6 +304,7 @@ def create_wizard_session(
                     "session_id": session.id,
                     "status": session.status,
                     "provider": session.llm_provider,
+                    "model": session.llm_model,
                     "prompt_version": session.prompt_version,
                     "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
                 },
@@ -274,9 +321,15 @@ def post_wizard_message(
     request: WizardMessageRequest,
     llm_client: LlmClient | None,
 ) -> WizardSessionDetail:
-    client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
+        _assert_llm_provenance_matches(
+            settings,
+            session,
+            operation="revise_spec",
+            revision_provenance=session.spec_provenance,
+        )
+        client = _require_llm_client(llm_client)
         session = session.model_copy(
             update={
                 "project_name": request.project_name,
@@ -400,7 +453,6 @@ def generate_wizard_ir(
     session_id: str,
     llm_client: LlmClient | None,
 ) -> WizardSessionDetail:
-    client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
         retry_failed_ir = (
@@ -422,6 +474,13 @@ def generate_wizard_ir(
                 "Circuit IR generation is not allowed from the current wizard state.",
                 details={"session_id": session_id, "status": session.status},
             )
+        _assert_llm_provenance_matches(
+            settings,
+            session,
+            operation="generate_ir",
+            revision_provenance=session.spec_provenance,
+        )
+        client = _require_llm_client(llm_client)
 
         session = session.model_copy(
             update={"status": "drafting_ir", "error": None, "updated_at": _utc_now()}
@@ -520,11 +579,21 @@ def _project_failure_error(
         status_code = 503
     elif error_type in {"user_error", "validation_error"}:
         status_code = 422
+
+    error_id: str | None = None
+    if isinstance(error, dict):
+        error_details = error.get("details")
+        if isinstance(error_details, dict):
+            candidate_error_id = error_details.get("error_id")
+            if isinstance(candidate_error_id, str) and candidate_error_id.startswith("err_"):
+                error_id = candidate_error_id
+
     return WebServiceError(
         "KiCad project generation failed.",
         code="WIZARD_PROJECT_GENERATION_FAILED",
         status_code=status_code,
         details={"session_id": session_id, "job_id": job_id, "operation": "generate_project"},
+        error_id=error_id,
     )
 
 
