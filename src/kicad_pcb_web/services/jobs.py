@@ -189,13 +189,28 @@ def create_job_workspace(
     return record
 
 
+def _canonicalize_job_paths(record: JobRecord, *, job_json_path: Path) -> JobRecord:
+    """Derive workspace paths from the canonical state location instead of trusting JSON paths."""
+
+    work_dir = job_json_path.parent.resolve()
+    return replace(
+        record,
+        work_dir=work_dir,
+        input_path=work_dir / "input" / "circuit_ir.json",
+        project_dir=work_dir / "project" / record.project_name,
+        artifacts_dir=work_dir / "artifacts",
+    )
+
+
 def _decode_job_record(job_json_path: Path, *, expected_id: str) -> JobRecord:
     try:
         payload = json.loads(job_json_path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise TypeError("job state must be a JSON object")
         record = JobRecord.from_dict(payload)
-        # Validate the public API shape as well as the storage dataclass.
+        if sanitize_project_name(record.project_name) != record.project_name:
+            raise ValueError("persisted project name is not canonical")
+        record = _canonicalize_job_paths(record, job_json_path=job_json_path)
         record.to_detail()
     except (
         OSError,
@@ -205,6 +220,7 @@ def _decode_job_record(job_json_path: Path, *, expected_id: str) -> JobRecord:
         TypeError,
         ValueError,
         ValidationError,
+        UserError,
     ) as exc:
         LOGGER.error(
             "invalid persisted job state",
@@ -272,3 +288,27 @@ def update_job_status(
     )
     write_job(settings, updated)
     return updated
+
+
+def reconcile_interrupted_jobs(settings: WebSettings) -> list[str]:
+    """Fail synchronous jobs left nonterminal by a previous process."""
+
+    reconciled: list[str] = []
+    for record in list_jobs(settings):
+        if record.status not in {"queued", "running"}:
+            continue
+        update_job_status(
+            settings,
+            record,
+            status="failed",
+            result=record.result,
+            error={
+                "type": "interrupted_error",
+                "code": "JOB_INTERRUPTED_BY_RESTART",
+                "message": "Job execution was interrupted by a service restart.",
+                "details": {"job_id": record.id},
+            },
+        )
+        reconciled.append(record.id)
+        LOGGER.warning("reconciled interrupted job", extra={"job_id": record.id})
+    return reconciled

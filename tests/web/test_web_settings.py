@@ -21,6 +21,21 @@ def test_load_settings_defaults_when_no_config(monkeypatch, tmp_path: Path) -> N
     assert settings.llm.model is None
 
 
+def test_explicit_missing_config_file_fails_loudly(monkeypatch, tmp_path: Path) -> None:
+    missing = tmp_path / "missing.toml"
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(missing))
+
+    with pytest.raises(ValueError, match="does not exist or is not a regular file"):
+        load_settings()
+
+
+def test_explicit_empty_config_path_fails_loudly(monkeypatch) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", "")
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        load_settings()
+
+
 def test_load_settings_reads_toml_config_file(monkeypatch, tmp_path: Path) -> None:
     config_path = tmp_path / "kicad_pcb_web.toml"
     config_path.write_text(
@@ -41,7 +56,7 @@ max_tokens = 4096
 system_prompt_version = "v1"
 spec_max_repair_rounds = 3
 ir_max_repair_rounds = 4
-enable_streaming = true
+enable_streaming = false
 request_log_redaction = true
 network_probe_enabled = false
 debug_artifact_capture = true
@@ -66,7 +81,7 @@ debug_artifact_capture = true
     assert settings.llm.system_prompt_version == "v1"
     assert settings.llm.spec_max_repair_rounds == 3
     assert settings.llm.ir_max_repair_rounds == 4
-    assert settings.llm.enable_streaming is True
+    assert settings.llm.enable_streaming is False
     assert settings.llm.request_log_redaction is True
     assert settings.llm.network_probe_enabled is False
     assert settings.llm.debug_artifact_capture is True
@@ -140,9 +155,30 @@ timeout_s = 0
 """.strip(),
             "llm.timeout_s must be greater than zero",
         ),
+        (
+            """
+[llm]
+enable_streaming = true
+""".strip(),
+            "enable_streaming=true is unsupported",
+        ),
+        (
+            """
+[llm]
+network_probe_enabled = true
+""".strip(),
+            "network_probe_enabled=true is unsupported",
+        ),
+        (
+            """
+[web]
+default_port = 70000
+""".strip(),
+            "default_port must be between 1 and 65535",
+        ),
     ],
 )
-def test_load_settings_rejects_invalid_llm_config(
+def test_load_settings_rejects_invalid_config(
     monkeypatch,
     tmp_path: Path,
     config_text: str,

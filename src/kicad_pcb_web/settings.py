@@ -16,7 +16,7 @@ _VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama"
 
 @dataclass(frozen=True)
 class LlmSettings:
-    """Runtime LLM provider settings for the future wizard workflow."""
+    """Runtime LLM provider settings for the wizard workflow."""
 
     provider: LlmProvider = "disabled"
     model: str | None = None
@@ -41,7 +41,7 @@ class LlmSettings:
 
     @property
     def network_probe_supported(self) -> bool:
-        """Return whether the configured provider supports a health probe."""
+        """Return whether the configured provider could support a health probe."""
 
         return self.provider in {"openai", "ollama", "llama_server"}
 
@@ -67,18 +67,31 @@ class _ConfigFile:
 
 
 def _load_config_file() -> _ConfigFile:
-    """Load an optional TOML config file for the web app."""
+    """Load the optional TOML config file, failing if an explicit path is unusable."""
 
     config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
+    explicit_path = config_path_env is not None
+    if explicit_path and not config_path_env.strip():
+        raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
+
     config_path = (
         Path(config_path_env).expanduser().resolve()
-        if config_path_env
+        if explicit_path
         else Path("kicad_pcb_web.toml").resolve()
     )
     if not config_path.is_file():
+        if explicit_path:
+            raise ValueError(
+                "Configured KICAD_PCB_WEB_CONFIG_FILE does not exist or is not a regular file: "
+                f"{config_path}"
+            )
         return _ConfigFile(path=None, payload={})
-    with config_path.open("rb") as handle:
-        payload = tomllib.load(handle)
+
+    try:
+        with config_path.open("rb") as handle:
+            payload = tomllib.load(handle)
+    except OSError as exc:
+        raise ValueError(f"Unable to read configured web config file: {config_path}") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"Web config file must contain TOML tables: {config_path}")
     return _ConfigFile(path=config_path, payload=payload)
@@ -109,12 +122,7 @@ def _coerce_bool(value: Any, *, field_name: str) -> bool:
     raise ValueError(f"Invalid boolean for {field_name}: {value!r}")
 
 
-def _read_setting(
-    *,
-    env_name: str,
-    config_value: Any,
-    default: Any,
-) -> Any:
+def _read_setting(*, env_name: str, config_value: Any, default: Any) -> Any:
     """Read one setting with env override over config file and fallback default."""
 
     env_value = os.environ.get(env_name)
@@ -223,28 +231,20 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
             )
         ),
         spec_max_repair_rounds=_coerce_int(
-            spec_max_repair_rounds_raw,
-            field_name="llm.spec_max_repair_rounds",
+            spec_max_repair_rounds_raw, field_name="llm.spec_max_repair_rounds"
         ),
         ir_max_repair_rounds=_coerce_int(
-            ir_max_repair_rounds_raw,
-            field_name="llm.ir_max_repair_rounds",
+            ir_max_repair_rounds_raw, field_name="llm.ir_max_repair_rounds"
         ),
-        enable_streaming=_coerce_bool(
-            enable_streaming_raw,
-            field_name="llm.enable_streaming",
-        ),
+        enable_streaming=_coerce_bool(enable_streaming_raw, field_name="llm.enable_streaming"),
         request_log_redaction=_coerce_bool(
-            request_log_redaction_raw,
-            field_name="llm.request_log_redaction",
+            request_log_redaction_raw, field_name="llm.request_log_redaction"
         ),
         network_probe_enabled=_coerce_bool(
-            network_probe_enabled_raw,
-            field_name="llm.network_probe_enabled",
+            network_probe_enabled_raw, field_name="llm.network_probe_enabled"
         ),
         debug_artifact_capture=_coerce_bool(
-            debug_artifact_capture_raw,
-            field_name="llm.debug_artifact_capture",
+            debug_artifact_capture_raw, field_name="llm.debug_artifact_capture"
         ),
     )
     _validate_llm_settings(settings)
@@ -275,6 +275,12 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.ir_max_repair_rounds must be zero or greater")
     if not settings.system_prompt_version.strip():
         raise ValueError("llm.system_prompt_version must not be empty")
+    if settings.enable_streaming:
+        raise ValueError("llm.enable_streaming=true is unsupported; streaming is not implemented")
+    if settings.network_probe_enabled:
+        raise ValueError(
+            "llm.network_probe_enabled=true is unsupported; active network probing is not implemented"
+        )
 
     if settings.base_url is not None:
         _validate_http_url(settings.base_url, field_name="llm.base_url")
@@ -293,7 +299,6 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
 
     if settings.provider in {"ollama", "llama_server"}:
         _require_non_empty(settings.base_url, field_name="llm.base_url")
-        return
 
 
 def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
@@ -304,7 +309,7 @@ def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
 
 
 def load_settings() -> WebSettings:
-    """Load filesystem-backed settings from the environment."""
+    """Load and validate filesystem-backed settings from env/config."""
 
     config_file = _load_config_file()
     config = config_file.payload
@@ -343,11 +348,15 @@ def load_settings() -> WebSettings:
     )
     if lock_timeout <= 0:
         raise ValueError("web.mutation_lock_timeout_s must be greater than zero")
+    default_port = _coerce_int(default_port_raw, field_name="web.default_port")
+    if not 1 <= default_port <= 65535:
+        raise ValueError("web.default_port must be between 1 and 65535")
+
     return WebSettings(
         data_dir=data_dir,
         jobs_dir=jobs_dir,
         default_host=str(default_host),
-        default_port=_coerce_int(default_port_raw, field_name="web.default_port"),
+        default_port=default_port,
         mutation_lock_timeout_s=lock_timeout,
         llm=_load_llm_settings(config),
     )

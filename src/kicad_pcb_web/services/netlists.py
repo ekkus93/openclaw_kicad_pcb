@@ -13,7 +13,7 @@ from typing import Any, cast
 
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.commands._project import create_project_files
-from kicad_pcb.commands._sch_apply import _apply_netlist_to_project, _ApplyNetlistRequest
+from kicad_pcb.commands._sch_apply import _ApplyNetlistRequest, _apply_netlist_to_project
 from kicad_pcb.commands._validate import (
     advisory_warnings,
     full_validate,
@@ -23,7 +23,12 @@ from kicad_pcb.errors import ErrorCode, KiCadError, UserError
 from kicad_pcb.ir.autofix import autofix_circuit_ir
 from kicad_pcb.symbol_index import SymbolIndex
 
-from ..errors import kicad_error_to_payload, unexpected_error_to_payload
+from ..errors import (
+    PersistenceError,
+    kicad_error_to_payload,
+    new_error_id,
+    unexpected_error_to_payload,
+)
 from ..schemas import (
     CreateJobFromNetlistRequest,
     JobDetail,
@@ -66,14 +71,18 @@ def _parse_symbols_dir(symbols_dir: str | None) -> Path | None:
 
 
 def _job_relative_path(job: JobRecord, path: Path | None) -> str | None:
-    """Return a path string relative to the job workspace when possible."""
+    """Return a generated path relative to its job workspace or fail closed."""
 
     if path is None:
         return None
     try:
         return str(path.resolve().relative_to(job.work_dir.resolve()))
-    except ValueError:
-        return str(path)
+    except ValueError as exc:
+        raise PersistenceError(
+            "Generated output escaped the job workspace.",
+            code="JOB_PATH_CONTAINMENT_VIOLATION",
+            details={"job_id": job.id},
+        ) from exc
 
 
 def _validate_path(
@@ -213,6 +222,7 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
     Raises ``RuntimeError`` if any step fails — missing tools, failed SVG
     export, or failed PNG conversion.
     """
+
     kicad_cli_bin = shutil.which("kicad-cli")
     if not kicad_cli_bin:
         raise RuntimeError(
@@ -230,9 +240,6 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
         raise RuntimeError(f"Schematic file not found: {schematic_path}")
 
     png_path = artifacts_dir / "schematic_preview.png"
-
-    # kicad-cli sch export svg --output takes a *directory*; it writes a file
-    # named after the schematic inside that directory.
     svg_dir = artifacts_dir / "_svg_tmp"
     svg_dir.mkdir(exist_ok=True)
     try:
@@ -337,8 +344,7 @@ def generate_project_from_netlist_job(
             "project_zip": _job_relative_path(record, project_zip_path),
             "schematic_path": _job_relative_path(record, apply_result.schematic_path),
             "managed_schematic_path": _job_relative_path(
-                record,
-                apply_result.managed_schematic_path,
+                record, apply_result.managed_schematic_path
             ),
             "warning_report_path": (
                 _job_relative_path(record, warnings_artifact_path)
@@ -384,9 +390,16 @@ def generate_project_from_netlist_job(
             settings, record, status="failed", error=error_payload, result=None
         )
         return record.to_detail(artifacts=list_artifacts(record.work_dir))
-    except Exception:
-        LOGGER.exception("Unexpected web job failure for %s", record.id)
-        error_payload = cast(dict[str, Any], unexpected_error_to_payload()["error"])
+    except Exception as exc:
+        error_id = new_error_id()
+        LOGGER.error(
+            "unexpected web job failure",
+            extra={"job_id": record.id, "error_id": error_id, "error_type": type(exc).__name__},
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+        error_payload = cast(
+            dict[str, Any], unexpected_error_to_payload(error_id=error_id)["error"]
+        )
         record = update_job_status(
             settings, record, status="failed", error=error_payload, result=None
         )

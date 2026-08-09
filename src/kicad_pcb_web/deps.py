@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import Depends
@@ -14,8 +15,9 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = PACKAGE_DIR / "static"
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> WebSettings:
-    """Return current app settings."""
+    """Return the validated immutable process settings."""
 
     return load_settings()
 

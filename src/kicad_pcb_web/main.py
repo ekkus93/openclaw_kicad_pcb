@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -10,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from kicad_pcb.errors import KiCadError, UserError
 
-from .deps import STATIC_DIR
+from .deps import STATIC_DIR, get_settings
 from .errors import (
     WebServiceError,
     handle_kicad_error,
@@ -20,6 +22,7 @@ from .errors import (
     handle_web_service_error,
 )
 from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_ui, api_wizard, ui
+from .services.jobs import reconcile_interrupted_jobs
 
 
 def _configure_app_logging() -> None:
@@ -34,9 +37,18 @@ def _configure_app_logging() -> None:
     app_logger.propagate = False
 
 
+@asynccontextmanager
+async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Validate immutable settings and reconcile interrupted synchronous jobs."""
+
+    settings = get_settings()
+    reconcile_interrupted_jobs(settings)
+    yield
+
+
 _configure_app_logging()
 
-app = FastAPI(title="KiCad PCB Web App")
+app = FastAPI(title="KiCad PCB Web App", lifespan=_lifespan)
 
 app.add_exception_handler(WebServiceError, handle_web_service_error)
 app.add_exception_handler(UserError, handle_user_error)

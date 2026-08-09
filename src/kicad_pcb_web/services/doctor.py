@@ -38,7 +38,13 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
     )
     dot_result = find_dot_source()
     kicad_cli_path = shutil.which("kicad-cli")
-    preview_tool = shutil.which("rsvg-convert") or shutil.which("convert") or kicad_cli_path
+    rsvg_convert_path = shutil.which("rsvg-convert")
+    preview_ready = kicad_cli_path is not None and rsvg_convert_path is not None
+    missing_preview_tools = [
+        name
+        for name, path in (("kicad-cli", kicad_cli_path), ("rsvg-convert", rsvg_convert_path))
+        if path is None
+    ]
 
     checks = [
         DoctorCheck(
@@ -73,9 +79,18 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
             detail=kicad_cli_path or "kicad-cli not found; internal validation still works.",
         ),
         DoctorCheck(
+            name="rsvg_convert",
+            ok=rsvg_convert_path is not None,
+            detail=rsvg_convert_path or "rsvg-convert not found; schematic PNG previews are unavailable.",
+        ),
+        DoctorCheck(
             name="preview_tooling",
-            ok=preview_tool is not None,
-            detail=preview_tool or "No optional preview tooling found.",
+            ok=preview_ready,
+            detail=(
+                f"Ready: kicad-cli={kicad_cli_path}; rsvg-convert={rsvg_convert_path}"
+                if preview_ready
+                else "Preview unavailable; missing: " + ", ".join(missing_preview_tools)
+            ),
         ),
         DoctorCheck(
             name="llm_provider",
@@ -103,15 +118,8 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
         ),
         DoctorCheck(
             name="llm_network_probe",
-            ok=not settings.llm.enabled or not settings.llm.network_probe_enabled,
-            detail=(
-                "Probe disabled."
-                if not settings.llm.enabled or not settings.llm.network_probe_enabled
-                else (
-                    f"Probe enabled for {settings.llm.provider}, "
-                    "but active probing is not implemented yet."
-                )
-            ),
+            ok=True,
+            detail="Active LLM network probing is not supported; the enable setting is rejected at startup.",
         ),
     ]
     required_checks = {"python", "jobs_dir", "symbols_dir", "graphviz_dot"}

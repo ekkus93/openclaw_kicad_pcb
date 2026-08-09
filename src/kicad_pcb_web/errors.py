@@ -16,6 +16,7 @@ from kicad_pcb.errors import KiCadError, ToolError, UserError
 LOGGER = logging.getLogger("uvicorn.error")
 _CAMEL_CASE_BOUNDARY_RE = re.compile(r"(?<!^)(?=[A-Z])")
 _PRIVATE_PATH_RE = re.compile(r"/(?:tmp|var/folders|private/var|home/[^/\s]+|Users/[^/\s]+)/\S*")
+_WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"(?i)(?:[A-Z]:[\\/]|\\\\)[^\s,;\"']*")
 
 
 def new_error_id() -> str:
@@ -84,9 +85,11 @@ def _error_type_name(exc: KiCadError) -> str:
 
 
 def _sanitize_path_text(value: str) -> str:
-    if Path(value.strip()).is_absolute():
+    stripped = value.strip()
+    if Path(stripped).is_absolute() or _WINDOWS_ABSOLUTE_PATH_RE.fullmatch(stripped):
         return "<redacted-path>"
-    return _PRIVATE_PATH_RE.sub("<redacted-path>", value)
+    sanitized = _PRIVATE_PATH_RE.sub("<redacted-path>", value)
+    return _WINDOWS_ABSOLUTE_PATH_RE.sub("<redacted-path>", sanitized)
 
 
 def _sanitize_detail_value(value: object) -> object:
@@ -149,13 +152,30 @@ def user_error_to_payload(exc: UserError) -> dict[str, object]:
     return kicad_error_to_payload(exc)
 
 
+def _safe_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
+    """Return allowlisted request-validation metadata without rejected input values."""
+
+    errors: list[dict[str, object]] = []
+    for item in exc.errors():
+        safe: dict[str, object] = {
+            "loc": [str(part) if not isinstance(part, int) else part for part in item.get("loc", ())],
+            "type": str(item.get("type") or "validation_error"),
+            "msg": _sanitize_path_text(str(item.get("msg") or "Invalid value.")),
+        }
+        ctx = item.get("ctx")
+        if isinstance(ctx, dict):
+            safe["ctx"] = _sanitize_detail_value(ctx)
+        errors.append(safe)
+    return errors
+
+
 def validation_error_to_payload(exc: RequestValidationError) -> dict[str, object]:
     return {
         "error": {
             "type": "request_validation_error",
             "code": "REQUEST_VALIDATION_ERROR",
             "message": "Request validation failed.",
-            "details": {"errors": exc.errors()},
+            "details": {"errors": _safe_validation_errors(exc)},
         }
     }
 
