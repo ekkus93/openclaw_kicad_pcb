@@ -1,0 +1,61 @@
+name: Final Hardening Cleanup Once
+
+on:
+  push:
+    branches:
+      - webapp
+    paths:
+      - '.github/workflows/final-hardening-cleanup-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+      - name: Apply final hardening cleanup
+        run: python .github/scripts/final_hardening_cleanup_once.py
+      - name: Normalize and validate touched Python
+        run: |
+          uv run ruff check --fix \
+            src/kicad_pcb_web/services/wizard.py \
+            src/kicad_pcb_web/services/llm/base.py \
+            src/kicad_pcb_web/services/netlists.py \
+            tests/web/test_web_wizard_provenance.py \
+            tests/web/test_web_llm_retry_hardening.py
+          uv run ruff format \
+            src/kicad_pcb_web/services/wizard.py \
+            src/kicad_pcb_web/services/llm/base.py \
+            src/kicad_pcb_web/services/netlists.py \
+            tests/web/test_web_wizard_provenance.py \
+            tests/web/test_web_llm_retry_hardening.py
+          uv run mypy src/kicad_pcb_web
+          uv run pytest -q \
+            tests/web/test_web_wizard_provenance.py \
+            tests/web/test_web_llm_retry_hardening.py \
+            tests/unit/test_preview_nonfatal.py
+      - name: Commit cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            src/kicad_pcb_web/services/wizard.py \
+            src/kicad_pcb_web/services/llm/base.py \
+            src/kicad_pcb_web/services/netlists.py \
+            tests/web/test_web_wizard_provenance.py \
+            tests/web/test_web_llm_retry_hardening.py
+          git diff --cached --check
+          git commit -m 'fix: close final hardening audit gaps'
+          git push origin HEAD:webapp
