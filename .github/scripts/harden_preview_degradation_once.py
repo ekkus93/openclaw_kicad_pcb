@@ -95,6 +95,28 @@ netlists_path.write_text(text, encoding="utf-8")
 
 test_path = Path("tests/unit/test_preview_nonfatal.py")
 test_text = test_path.read_text(encoding="utf-8")
+
+old_import = '''from kicad_pcb_web.services.netlists import (
+    _generate_schematic_preview,
+    generate_project_from_netlist_job,
+)
+'''
+new_import = '''from kicad_pcb_web.services.netlists import (
+    PreviewGenerationError,
+    _generate_schematic_preview,
+    generate_project_from_netlist_job,
+)
+'''
+if old_import not in test_text:
+    raise SystemExit("Expected preview test import block not found")
+test_text = test_text.replace(old_import, new_import, 1)
+
+old_mock = '            side_effect=RuntimeError("preview dependency missing"),\n'
+new_mock = '            side_effect=PreviewGenerationError("preview dependency missing"),\n'
+if old_mock not in test_text:
+    raise SystemExit("Expected preview degradation mock not found")
+test_text = test_text.replace(old_mock, new_mock, 1)
+
 marker = '\n\ndef test_non_preview_generation_failure_still_fails_job(tmp_path: Path) -> None:\n'
 if marker not in test_text:
     raise SystemExit("Expected preview test insertion marker not found")
