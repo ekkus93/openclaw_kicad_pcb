@@ -1,0 +1,396 @@
+name: Publish Webapp CI Status
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - requested
+      - in_progress
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: publish-ci-status-ci-webapp
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish latest webapp CI status
+    if: ${{ github.event.workflow_run.head_branch == 'webapp' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: "2"
+      MONITORED_BRANCH: webapp
+      PUBLISHER_FILE: .github/workflows/publish-webapp-ci-status.yml
+      ISSUE_MARKER: "<!-- maintained by .github/workflows/publish-webapp-ci-status.yml -->"
+      GITHUB_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Publish latest status snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          repository = os.environ["REPOSITORY"]
+          issue_number = int(os.environ["ISSUE_NUMBER"])
+          monitored_branch = os.environ["MONITORED_BRANCH"]
+          publisher_file = os.environ["PUBLISHER_FILE"]
+          issue_marker = os.environ["ISSUE_MARKER"]
+          token = os.environ["GITHUB_TOKEN"]
+
+          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
+              event = json.load(handle)
+
+          run = event.get("workflow_run")
+          if not isinstance(run, dict):
+              raise RuntimeError("workflow_run payload is missing or malformed")
+
+          head_branch = run.get("head_branch")
+          if head_branch != monitored_branch:
+              print(
+                  f"Ignoring workflow run for branch {head_branch!r}; "
+                  f"publisher monitors {monitored_branch!r}."
+              )
+              sys.exit(0)
+
+          run_id = run.get("id")
+          workflow_id = run.get("workflow_id")
+          if not isinstance(run_id, int) or not isinstance(workflow_id, int):
+              raise RuntimeError("workflow_run id/workflow_id is missing or malformed")
+
+          api_root = f"https://api.github.com/repos/{repository}"
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "openclaw-kicad-pcb-ci-status-publisher",
+          }
+
+          def api_json(path, method="GET", payload=None):
+              url = f"{api_root}/{path.lstrip('/')}"
+              data = None
+              request_headers = dict(headers)
+              if payload is not None:
+                  data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+                  request_headers["Content-Type"] = "application/json"
+              request = urllib.request.Request(
+                  url,
+                  data=data,
+                  headers=request_headers,
+                  method=method,
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      raw = response.read()
+              except urllib.error.HTTPError as exc:
+                  raise RuntimeError(
+                      f"GitHub API {method} {path} failed with HTTP {exc.code}"
+                  ) from exc
+              except urllib.error.URLError as exc:
+                  raise RuntimeError(
+                      f"GitHub API {method} {path} transport failure"
+                  ) from exc
+
+              if not raw:
+                  return None
+              try:
+                  return json.loads(raw)
+              except json.JSONDecodeError as exc:
+                  raise RuntimeError(
+                      f"GitHub API {method} {path} returned invalid JSON"
+                  ) from exc
+
+          def collect_pages(path, key):
+              items = []
+              page = 1
+              while True:
+                  separator = "&" if "?" in path else "?"
+                  payload = api_json(
+                      f"{path}{separator}per_page=100&page={page}"
+                  )
+                  if not isinstance(payload, dict):
+                      raise RuntimeError(f"GitHub API page for {key} is malformed")
+                  current = payload.get(key)
+                  if not isinstance(current, list):
+                      raise RuntimeError(f"GitHub API payload has no {key!r} list")
+                  items.extend(current)
+                  if len(current) < 100:
+                      return items
+                  page += 1
+                  if page > 100:
+                      raise RuntimeError(f"Refusing to paginate more than 100 pages for {key}")
+
+          latest = api_json(
+              "actions/workflows/"
+              f"{workflow_id}/runs?branch={urllib.parse.quote(monitored_branch)}&per_page=1"
+          )
+          if not isinstance(latest, dict):
+              raise RuntimeError("Latest-run lookup returned malformed data")
+          workflow_runs = latest.get("workflow_runs")
+          if not isinstance(workflow_runs, list) or not workflow_runs:
+              raise RuntimeError("Latest-run lookup returned no applicable workflow run")
+          latest_run_id = workflow_runs[0].get("id")
+          if latest_run_id != run_id:
+              print(
+                  f"Skipping stale run {run_id}; latest applicable run is "
+                  f"{latest_run_id}."
+              )
+              sys.exit(0)
+
+          issue = api_json(f"issues/{issue_number}")
+          if not isinstance(issue, dict):
+              raise RuntimeError("Status issue lookup returned malformed data")
+          if issue.get("state") != "open":
+              raise RuntimeError(f"Status issue #{issue_number} is not open")
+          existing_body = issue.get("body") or ""
+          if not isinstance(existing_body, str) or not existing_body.startswith(issue_marker):
+              raise RuntimeError(
+                  f"Status issue #{issue_number} is missing the publisher ownership marker"
+              )
+
+          raw_jobs = collect_pages(f"actions/runs/{run_id}/jobs?filter=latest", "jobs")
+          run_status = run.get("status")
+          run_conclusion = run.get("conclusion")
+
+          abnormal_conclusions = {
+              "failure",
+              "cancelled",
+              "timed_out",
+              "action_required",
+              "startup_failure",
+              "stale",
+          }
+
+          jobs = []
+          problem_steps = []
+          problem_jobs = []
+
+          for raw_job in raw_jobs:
+              if not isinstance(raw_job, dict):
+                  raise RuntimeError("Workflow jobs response contains a malformed job")
+              raw_steps = raw_job.get("steps", [])
+              if not isinstance(raw_steps, list):
+                  raise RuntimeError("Workflow job contains a malformed steps field")
+
+              steps = []
+              for raw_step in raw_steps:
+                  if not isinstance(raw_step, dict):
+                      raise RuntimeError("Workflow job contains a malformed step")
+                  step = {
+                      "number": raw_step.get("number"),
+                      "name": raw_step.get("name"),
+                      "status": raw_step.get("status"),
+                      "conclusion": raw_step.get("conclusion"),
+                      "started_at": raw_step.get("started_at"),
+                      "completed_at": raw_step.get("completed_at"),
+                  }
+                  steps.append(step)
+                  if step["conclusion"] in abnormal_conclusions:
+                      problem_steps.append(
+                          {
+                              "job_id": raw_job.get("id"),
+                              "job": raw_job.get("name"),
+                              "step_number": step["number"],
+                              "step": step["name"],
+                              "conclusion": step["conclusion"],
+                          }
+                      )
+
+              job = {
+                  "id": raw_job.get("id"),
+                  "name": raw_job.get("name"),
+                  "status": raw_job.get("status"),
+                  "conclusion": raw_job.get("conclusion"),
+                  "started_at": raw_job.get("started_at"),
+                  "completed_at": raw_job.get("completed_at"),
+                  "runner_name": raw_job.get("runner_name"),
+                  "runner_group_name": raw_job.get("runner_group_name"),
+                  "steps": steps,
+              }
+              jobs.append(job)
+              if job["conclusion"] in abnormal_conclusions:
+                  problem_jobs.append(
+                      {
+                          "id": job["id"],
+                          "name": job["name"],
+                          "conclusion": job["conclusion"],
+                      }
+                  )
+
+          if raw_jobs:
+              jobs_availability = "available"
+          elif run_status == "completed":
+              jobs_availability = "unavailable"
+          else:
+              jobs_availability = "pending"
+
+          artifacts = []
+          if run_status == "completed":
+              raw_artifacts = collect_pages(f"actions/runs/{run_id}/artifacts", "artifacts")
+              for raw_artifact in raw_artifacts:
+                  if not isinstance(raw_artifact, dict):
+                      raise RuntimeError("Workflow artifact response contains malformed data")
+                  artifacts.append(
+                      {
+                          "id": raw_artifact.get("id"),
+                          "name": raw_artifact.get("name"),
+                          "size_in_bytes": raw_artifact.get("size_in_bytes"),
+                          "expired": raw_artifact.get("expired"),
+                          "created_at": raw_artifact.get("created_at"),
+                          "expires_at": raw_artifact.get("expires_at"),
+                      }
+                  )
+              artifacts_availability = "available" if artifacts else "available_empty"
+          else:
+              artifacts_availability = "pending"
+
+          observed_at = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+
+          payload = {
+              "schema_version": 1,
+              "publisher": {
+                  "workflow_file": publisher_file,
+                  "issue_number": issue_number,
+                  "monitored_branch": monitored_branch,
+                  "observed_at": observed_at,
+              },
+              "workflow": {
+                  "name": run.get("name"),
+                  "workflow_id": workflow_id,
+                  "run_id": run_id,
+                  "run_attempt": run.get("run_attempt"),
+                  "run_url": run.get("html_url"),
+                  "event": run.get("event"),
+                  "status": run_status,
+                  "conclusion": run_conclusion,
+                  "head_branch": head_branch,
+                  "head_sha": run.get("head_sha"),
+                  "created_at": run.get("created_at"),
+                  "updated_at": run.get("updated_at"),
+              },
+              "data_availability": {
+                  "jobs": jobs_availability,
+                  "artifacts": artifacts_availability,
+              },
+              "problem_jobs": problem_jobs,
+              "problem_steps": problem_steps,
+              "jobs": jobs,
+              "artifacts": artifacts,
+              "details_compacted": False,
+              "compaction_reason": None,
+          }
+
+          def code_text(value):
+              if value is None or value == "":
+                  return "—"
+              return str(value).replace("`", "'").replace("\r", " ").replace("\n", " ")
+
+          def render_body(data):
+              workflow = data["workflow"]
+              completed = sum(job.get("status") == "completed" for job in data["jobs"])
+              failed = len(data["problem_jobs"])
+              running = sum(
+                  job.get("status") in {"queued", "in_progress", "waiting", "pending", "requested"}
+                  for job in data["jobs"]
+              )
+
+              lines = [
+                  issue_marker,
+                  "# Latest Web App CI",
+                  "",
+                  f"- **Status:** `{code_text(workflow.get('status'))}`",
+                  f"- **Conclusion:** `{code_text(workflow.get('conclusion'))}`",
+                  f"- **Run:** [`{code_text(workflow.get('run_id'))}`]({workflow.get('run_url')})",
+                  f"- **Attempt:** `{code_text(workflow.get('run_attempt'))}`",
+                  f"- **Commit:** `{code_text(workflow.get('head_sha'))}`",
+                  f"- **Branch/event:** `{code_text(workflow.get('head_branch'))}` / `{code_text(workflow.get('event'))}`",
+                  f"- **Jobs:** `{completed} completed, {failed} abnormal, {running} running/pending`",
+                  f"- **Job metadata:** `{code_text(data['data_availability']['jobs'])}`",
+                  f"- **Artifacts:** `{len(data['artifacts'])}` (`{code_text(data['data_availability']['artifacts'])}`)",
+                  f"- **Observed:** `{code_text(data['publisher']['observed_at'])}`",
+                  "",
+                  "## Problem steps",
+              ]
+
+              if data["problem_steps"]:
+                  for problem in data["problem_steps"]:
+                      lines.append(
+                          "- `"
+                          f"{code_text(problem.get('job'))}` / "
+                          f"`{code_text(problem.get('step'))}` — "
+                          f"`{code_text(problem.get('conclusion'))}` "
+                          f"(job `{code_text(problem.get('job_id'))}`)"
+                      )
+              elif data["problem_jobs"]:
+                  for problem in data["problem_jobs"]:
+                      lines.append(
+                          f"- Job `{code_text(problem.get('name'))}` — "
+                          f"`{code_text(problem.get('conclusion'))}` "
+                          f"(job `{code_text(problem.get('id'))}`; no abnormal step was available)"
+                      )
+              else:
+                  lines.append("None.")
+
+              lines.extend(
+                  [
+                      "",
+                      "## Machine-readable status",
+                      "",
+                      "```json",
+                      json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False),
+                      "```",
+                      "",
+                      "This issue is overwritten whenever the latest applicable run changes state. It is not a historical log.",
+                  ]
+              )
+              return "\n".join(lines)
+
+          body = render_body(payload)
+          if len(body) > 60000:
+              payload["details_compacted"] = True
+              payload["compaction_reason"] = "issue_body_size_limit"
+              for job in payload["jobs"]:
+                  if job.get("conclusion") == "success":
+                      job["steps"] = []
+                      job["steps_compacted"] = True
+              body = render_body(payload)
+
+          if len(body) > 60000:
+              for job in payload["jobs"]:
+                  job["steps"] = []
+                  job["steps_compacted"] = True
+              body = render_body(payload)
+
+          if len(body) > 64000:
+              raise RuntimeError(
+                  "Status issue body remains too large after deterministic compaction"
+              )
+
+          result = api_json(
+              f"issues/{issue_number}",
+              method="PATCH",
+              payload={"body": body},
+          )
+          if not isinstance(result, dict) or result.get("number") != issue_number:
+              raise RuntimeError("Status issue update returned malformed data")
+
+          print(
+              f"Published workflow run {run_id} ({run_status}/{run_conclusion}) "
+              f"to issue #{issue_number}."
+          )
+          PY
