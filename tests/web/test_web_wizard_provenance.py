@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -176,27 +177,46 @@ def test_same_provenance_allows_spec_continuation(tmp_path: Path) -> None:
     assert updated.spec_provenance == _llm_provenance(settings)
 
 
-def test_legacy_session_remains_readable_but_missing_model_provenance_blocks_mutation(
+def test_legacy_session_remains_readable_but_missing_revision_provenance_blocks_mutation(
     tmp_path: Path,
 ) -> None:
-    original_settings = _settings(tmp_path)
-    legacy = _session(original_settings, session_id="wiz_legacy_provenance").model_copy(
-        update={"llm_model": None, "spec_provenance": None}
+    settings = _settings(tmp_path)
+    legacy = _session(settings, session_id="wiz_legacy_provenance").model_copy(
+        update={"spec_provenance": None}
     )
-    _persist_session(original_settings, legacy)
+    _persist_session(settings, legacy)
 
-    restarted_settings = _settings(tmp_path, model="model-b")
-    readable = read_wizard_session(restarted_settings, legacy.id)
+    readable = read_wizard_session(settings, legacy.id)
     assert readable.spec is not None
     assert readable.spec.project_name == "Divider"
 
     with pytest.raises(ConflictError) as caught:
         post_wizard_message(
-            settings=restarted_settings,
+            settings=settings,
             session_id=legacy.id,
             request=WizardMessageRequest(message="Continue this session."),
             llm_client=FailIfCalledClient(),
         )
 
     assert caught.value.code == "WIZARD_LLM_PROVENANCE_MISMATCH"
-    assert "model" in caught.value.details["mismatch_fields"]
+    assert "revision_provenance" in caught.value.details["mismatch_fields"]
+
+
+def test_spec_revision_rejects_changed_config_revision(tmp_path: Path) -> None:
+    original_settings = _settings(tmp_path)
+    original = _persist_session(original_settings, _session(original_settings))
+    changed_settings = replace(
+        original_settings,
+        llm=replace(original_settings.llm, temperature=0.7),
+    )
+
+    with pytest.raises(ConflictError) as caught:
+        post_wizard_message(
+            settings=changed_settings,
+            session_id=original.id,
+            request=WizardMessageRequest(message="Continue under changed sampling."),
+            llm_client=FailIfCalledClient(),
+        )
+
+    assert caught.value.code == "WIZARD_LLM_PROVENANCE_MISMATCH"
+    assert "config_revision" in caught.value.details["mismatch_fields"]

@@ -9,6 +9,7 @@ import pytest
 
 from kicad_pcb.errors import ToolError
 from kicad_pcb_web.services.llm import LlmMessage, LlmRequest, build_llm_client
+from kicad_pcb_web.services.llm.base import _safe_base_url_for_log
 from kicad_pcb_web.settings import LlmSettings, WebSettings
 
 
@@ -115,3 +116,15 @@ def test_transport_failure_is_not_automatically_replayed(tmp_path: Path) -> None
     assert attempts["count"] == 1
     assert caught.value.details["ambiguous_delivery"] is True
     assert caught.value.details["automatic_retry"] is False
+
+
+def test_provider_base_url_logging_strips_credentials_path_query_and_fragment() -> None:
+    safe = _safe_base_url_for_log(
+        "https://operator:TOP-SECRET@example.invalid:8443/v1/chat?api_key=SECRET#fragment"
+    )
+
+    assert safe == "https://example.invalid:8443"
+    assert "operator" not in safe
+    assert "TOP-SECRET" not in safe
+    assert "api_key" not in safe
+    assert "/v1" not in safe

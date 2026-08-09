@@ -185,25 +185,19 @@ def _assert_llm_provenance_matches(
     current = _llm_provenance(settings)
     mismatches: list[str] = []
 
-    if revision_provenance is not None:
+    if revision_provenance is None:
+        mismatches.append("revision_provenance")
+    else:
         if revision_provenance.provider != current.provider:
             mismatches.append("provider")
         if revision_provenance.model != current.model:
             mismatches.append("model")
         if revision_provenance.prompt_version != current.prompt_version:
             mismatches.append("prompt_version")
-        if (
-            revision_provenance.endpoint_identity is not None
-            and revision_provenance.endpoint_identity != current.endpoint_identity
-        ):
+        if revision_provenance.endpoint_identity != current.endpoint_identity:
             mismatches.append("endpoint_identity")
-    else:
-        if session.llm_provider != current.provider:
-            mismatches.append("provider")
-        if session.llm_model != current.model:
-            mismatches.append("model")
-        if session.prompt_version != current.prompt_version:
-            mismatches.append("prompt_version")
+        if revision_provenance.config_revision != current.config_revision:
+            mismatches.append("config_revision")
 
     if mismatches:
         raise ConflictError(

@@ -223,8 +223,8 @@ def validate_netlist_dict(
 def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Path:
     """Export a PNG preview of the schematic into *artifacts_dir*.
 
-    Raises ``RuntimeError`` if any step fails — missing tools, failed SVG
-    export, or failed PNG conversion.
+    Raises ``PreviewGenerationError`` for optional preview-only failures. A missing
+    primary schematic remains a fatal persistence error and is never degraded.
     """
 
     kicad_cli_bin = shutil.which("kicad-cli")

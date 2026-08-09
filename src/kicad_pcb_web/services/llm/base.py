@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any, Literal, Protocol
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -23,6 +24,14 @@ LlmResponseFormat = Literal["text", "json"]
 _RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
 
 LOGGER = logging.getLogger("uvicorn.error")
+
+
+def _safe_base_url_for_log(value: str) -> str:
+    """Return origin-only provider metadata without credentials, path, query, or fragment."""
+
+    parsed = urlsplit(value)
+    safe_netloc = parsed.netloc.rsplit("@", 1)[-1]
+    return f"{parsed.scheme}://{safe_netloc}"
 
 
 @dataclass(frozen=True)
@@ -192,7 +201,7 @@ class BaseHttpLlmClient(ABC):
                 extra={
                     "provider": self.provider_name,
                     "endpoint": endpoint,
-                    "base_url": self.base_url,
+                    "base_url": _safe_base_url_for_log(self.base_url),
                     "attempt": attempt,
                     "timeout_s": self.timeout_s,
                     "payload_bytes": payload_bytes,
