@@ -270,15 +270,9 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         debug_artifact_capture=_coerce_bool(
             debug_artifact_capture_raw, field_name="llm.debug_artifact_capture"
         ),
-        retry_max_attempts=_coerce_int(
-            retry_max_attempts_raw, field_name="llm.retry_max_attempts"
-        ),
-        retry_base_delay_s=_coerce_float(
-            retry_base_delay_raw, field_name="llm.retry_base_delay_s"
-        ),
-        retry_max_delay_s=_coerce_float(
-            retry_max_delay_raw, field_name="llm.retry_max_delay_s"
-        ),
+        retry_max_attempts=_coerce_int(retry_max_attempts_raw, field_name="llm.retry_max_attempts"),
+        retry_base_delay_s=_coerce_float(retry_base_delay_raw, field_name="llm.retry_base_delay_s"),
+        retry_max_delay_s=_coerce_float(retry_max_delay_raw, field_name="llm.retry_max_delay_s"),
         retry_jitter_s=_coerce_float(retry_jitter_raw, field_name="llm.retry_jitter_s"),
     )
     _validate_llm_settings(settings)
