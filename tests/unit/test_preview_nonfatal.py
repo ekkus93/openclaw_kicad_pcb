@@ -11,6 +11,7 @@ import pytest
 from kicad_pcb.results import ApplyNetlistResult
 from kicad_pcb_web.schemas import CreateJobFromNetlistRequest
 from kicad_pcb_web.services.netlists import (
+    PreviewGenerationError,
     _generate_schematic_preview,
     generate_project_from_netlist_job,
 )
@@ -81,7 +82,7 @@ def test_preview_failure_keeps_valid_project_job_successful(tmp_path: Path) -> N
     with (
         patch(
             "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
-            return_value=(tmp_path / "effective.json", symbol_index, ir, []),
+            side_effect=lambda **kwargs: (kwargs["netlist_path"], symbol_index, ir, []),
         ),
         patch(
             "kicad_pcb_web.services.netlists._apply_netlist_to_project",
@@ -89,7 +90,7 @@ def test_preview_failure_keeps_valid_project_job_successful(tmp_path: Path) -> N
         ),
         patch(
             "kicad_pcb_web.services.netlists._generate_schematic_preview",
-            side_effect=RuntimeError("preview dependency missing"),
+            side_effect=PreviewGenerationError("preview dependency missing"),
         ),
     ):
         job = generate_project_from_netlist_job(
@@ -110,6 +111,53 @@ def test_preview_failure_keeps_valid_project_job_successful(tmp_path: Path) -> N
     assert "preview dependency missing" in warnings[0]["message"]
 
 
+def test_missing_generated_schematic_is_fatal_not_preview_degradation(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    symbol_index = SimpleNamespace(directories=())
+    ir = SimpleNamespace(components=[object()], nets=[object()])
+
+    def fake_apply(project, _request) -> ApplyNetlistResult:
+        managed = project.path / "OpenClaw_Managed.kicad_sch"
+        managed.write_text("(kicad_sch)", encoding="utf-8")
+        missing = project.path / "missing-primary.kicad_sch"
+        return ApplyNetlistResult(
+            schematic_path=missing,
+            managed_schematic_path=managed,
+            symbols_added=1,
+            symbols_updated=0,
+            managed_items_written=1,
+            nets_applied=1,
+            kicad_cli_used=False,
+            heuristic_profile_name="generic_digital",
+            label_mode_name="auto",
+        )
+
+    with (
+        patch(
+            "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
+            side_effect=lambda **kwargs: (kwargs["netlist_path"], symbol_index, ir, []),
+        ),
+        patch(
+            "kicad_pcb_web.services.netlists._apply_netlist_to_project",
+            side_effect=fake_apply,
+        ),
+        patch("kicad_pcb_web.services.netlists.shutil.which", return_value="/usr/bin/tool"),
+    ):
+        job = generate_project_from_netlist_job(
+            settings=settings,
+            request=CreateJobFromNetlistRequest(
+                project_name="MissingPrimarySchematic",
+                netlist_json=_VALID_NETLIST,
+                validation="internal",
+            ),
+        )
+
+    assert job.status == "failed"
+    assert "project.zip" not in job.artifacts
+    assert job.error is not None
+    assert job.error["code"] == "INTERNAL_SERVER_ERROR"
+
+
 def test_non_preview_generation_failure_still_fails_job(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     symbol_index = SimpleNamespace(directories=())
@@ -118,7 +166,7 @@ def test_non_preview_generation_failure_still_fails_job(tmp_path: Path) -> None:
     with (
         patch(
             "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
-            return_value=(tmp_path / "effective.json", symbol_index, ir, []),
+            side_effect=lambda **kwargs: (kwargs["netlist_path"], symbol_index, ir, []),
         ),
         patch(
             "kicad_pcb_web.services.netlists._apply_netlist_to_project",

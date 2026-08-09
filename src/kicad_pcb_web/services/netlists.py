@@ -42,6 +42,10 @@ from .jobs import JobRecord, create_job_workspace, update_job_status
 LOGGER = logging.getLogger(__name__)
 
 
+class PreviewGenerationError(RuntimeError):
+    """Optional preview export/conversion failure safe for degraded-mode reporting."""
+
+
 @dataclass(frozen=True)
 class PreparedNetlist:
     """Validated raw netlist payload plus deterministic repair metadata."""
@@ -225,19 +229,22 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
 
     kicad_cli_bin = shutil.which("kicad-cli")
     if not kicad_cli_bin:
-        raise RuntimeError(
+        raise PreviewGenerationError(
             "kicad-cli is not installed or not on PATH. "
             "Install KiCad (version 9+) to enable schematic preview generation."
         )
     rsvg_bin = shutil.which("rsvg-convert")
     if not rsvg_bin:
-        raise RuntimeError(
+        raise PreviewGenerationError(
             "rsvg-convert is not installed or not on PATH. "
             "Install librsvg2-bin (Debian/Ubuntu) or librsvg (macOS) to enable "
             "schematic preview generation."
         )
     if not schematic_path.is_file():
-        raise RuntimeError(f"Schematic file not found: {schematic_path}")
+        raise PersistenceError(
+            "Generated schematic is missing before preview generation.",
+            code="GENERATED_SCHEMATIC_MISSING",
+        )
 
     png_path = artifacts_dir / "schematic_preview.png"
     svg_dir = artifacts_dir / "_svg_tmp"
@@ -247,15 +254,18 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
         result = cli.export_svg_sch(schematic_path, svg_dir)
         if result.returncode != 0:
             stderr = getattr(result, "stderr", b"") or b""
-            raise RuntimeError(
-                f"kicad-cli SVG export failed (exit {result.returncode}): "
-                f"{stderr.decode(errors='replace').strip() or '(no output)'}"
+            LOGGER.warning(
+                "kicad-cli preview SVG export failed",
+                extra={"returncode": result.returncode, "stderr": stderr.decode(errors="replace")},
+            )
+            raise PreviewGenerationError(
+                f"kicad-cli SVG preview export failed with exit {result.returncode}."
             )
 
         svgs = list(svg_dir.glob("*.svg"))
         if not svgs:
-            raise RuntimeError(
-                f"kicad-cli reported success but produced no SVG file. Expected an SVG in {svg_dir}"
+            raise PreviewGenerationError(
+                "kicad-cli reported success but produced no SVG preview file."
             )
 
         conv = subprocess.run(
@@ -265,12 +275,18 @@ def _generate_schematic_preview(schematic_path: Path, artifacts_dir: Path) -> Pa
             check=False,
         )
         if conv.returncode != 0:
-            raise RuntimeError(
-                f"rsvg-convert PNG conversion failed (exit {conv.returncode}): "
-                f"{conv.stderr.decode(errors='replace').strip() or '(no output)'}"
+            LOGGER.warning(
+                "rsvg-convert preview PNG conversion failed",
+                extra={
+                    "returncode": conv.returncode,
+                    "stderr": conv.stderr.decode(errors="replace"),
+                },
+            )
+            raise PreviewGenerationError(
+                f"rsvg-convert PNG preview conversion failed with exit {conv.returncode}."
             )
         if not png_path.exists():
-            raise RuntimeError(
+            raise PreviewGenerationError(
                 f"rsvg-convert reported success but {png_path.name} was not created."
             )
     finally:
@@ -332,7 +348,7 @@ def generate_project_from_netlist_job(
         preview_warning: str | None = None
         try:
             _generate_schematic_preview(apply_result.schematic_path, record.artifacts_dir)
-        except RuntimeError as exc:
+        except PreviewGenerationError as exc:
             LOGGER.warning("Schematic preview generation skipped (non-fatal): %s", exc)
             preview_warning = str(exc)
 
