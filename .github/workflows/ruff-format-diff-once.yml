@@ -1,0 +1,30 @@
+name: Ruff Format Diff Once
+
+on:
+  push:
+    branches:
+      - webapp
+    paths:
+      - '.github/workflows/ruff-format-diff-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+      - name: Show Ruff canonical diff
+        run: |
+          uv run ruff format --diff \
+            src/kicad_pcb_web/settings.py \
+            tests/web/test_web_wizard_persistence_hardening.py
