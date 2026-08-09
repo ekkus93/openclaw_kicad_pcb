@@ -49,12 +49,20 @@ def test_explicit_kicad_validation_returns_structured_tool_error(
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 503
     payload = response.json()
-    assert payload["status"] == "failed"
-    assert payload["error"]["type"] == "tool_error"
-    assert payload["error"]["code"] == "KICAD_CLI_MISSING"
-    assert payload["error"]["code"] != "INTERNAL_SERVER_ERROR"
+    assert payload["error"]["code"] == "PROJECT_GENERATION_FAILED"
+    assert payload["error"]["details"]["job_status"] == "failed"
+    assert payload["error"]["details"]["job_error_code"] == "KICAD_CLI_MISSING"
+
+    job_id = payload["error"]["details"]["job_id"]
+    persisted_response = client.get(f"/api/jobs/{job_id}")
+    assert persisted_response.status_code == 200
+    persisted = persisted_response.json()
+    assert persisted["status"] == "failed"
+    assert persisted["error"]["type"] == "tool_error"
+    assert persisted["error"]["code"] == "KICAD_CLI_MISSING"
+    assert persisted["error"]["code"] != "INTERNAL_SERVER_ERROR"
 
 
 def test_route_level_kicad_error_uses_structured_payload(tmp_path, monkeypatch) -> None:
