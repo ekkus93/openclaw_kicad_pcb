@@ -352,7 +352,9 @@ def generate_wizard_ir(
     client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
-        retry_failed_ir = session.status == "failed" and _failure_operation(session) == "generate_ir"
+        retry_failed_ir = (
+            session.status == "failed" and _failure_operation(session) == "generate_ir"
+        )
         allowed_status = session.status in {
             "spec_approved",
             "ir_needs_repair",
