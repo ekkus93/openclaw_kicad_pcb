@@ -139,9 +139,30 @@ describe('canonicalWizardStep', () => {
     expect(canonicalWizardStep(makeSession({ status: 'completed' }))).toBe('generate')
   })
 
-  it('returns generate on failure when IR/validation exists', () => {
+  it('does not route an unclassified failure to generate merely because IR exists', () => {
     expect(
       canonicalWizardStep(makeSession({ status: 'failed', ir_json: { components: [] } })),
+    ).toBe('spec')
+  })
+
+  it('routes a project-generation failure back to generate when current IR is valid', () => {
+    expect(
+      canonicalWizardStep(
+        makeSession({
+          status: 'failed',
+          ir_json: { components: [] },
+          ir_validation: {
+            valid: true,
+            auto_fixed: false,
+            component_count: 0,
+            net_count: 0,
+            warnings: [],
+            fixes_applied: [],
+            symbols_dirs_used: [],
+          },
+          error: { message: 'generation failed', details: { operation: 'generate_project' } },
+        }),
+      ),
     ).toBe('generate')
   })
 
