@@ -1,0 +1,121 @@
+name: Apply Runtime Lint Fixes Once
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - .github/workflows/apply-runtime-lint-fixes-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Apply exact logged lint repairs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path('src/kicad_pcb_web/errors.py'): [
+                  (
+                      '            "loc": [str(part) if not isinstance(part, int) else part for part in item.get("loc", ())],\n',
+                      '            "loc": [\n                str(part) if not isinstance(part, int) else part\n                for part in item.get("loc", ())\n            ],\n',
+                  ),
+              ],
+              Path('src/kicad_pcb_web/services/doctor.py'): [
+                  (
+                      '            detail=rsvg_convert_path or "rsvg-convert not found; schematic PNG previews are unavailable.",\n',
+                      '            detail=(\n                rsvg_convert_path\n                or "rsvg-convert not found; schematic PNG previews are unavailable."\n            ),\n',
+                  ),
+                  (
+                      '            detail="Active LLM network probing is not supported; the enable setting is rejected at startup.",\n',
+                      '            detail=(\n                "Active LLM network probing is not supported; "\n                "the enable setting is rejected at startup."\n            ),\n',
+                  ),
+              ],
+              Path('src/kicad_pcb_web/settings.py'): [
+                  (
+                      '            "llm.network_probe_enabled=true is unsupported; active network probing is not implemented"\n',
+                      '            "llm.network_probe_enabled=true is unsupported; "\n            "active network probing is not implemented"\n',
+                  ),
+              ],
+              Path('tests/web/test_web_runtime_hardening.py'): [
+                  (
+                      'from kicad_pcb_web.errors import (\n    PersistenceError,\n    validation_error_to_payload,\n    web_service_error_to_payload,\n)\n',
+                      'from kicad_pcb_web.errors import (\n    PersistenceError,\n    WebServiceError,\n    validation_error_to_payload,\n    web_service_error_to_payload,\n)\n',
+                  ),
+                  (
+                      '    with pytest.raises(ValueError, match="does not exist or is not a regular file"):\n        with TestClient(app):\n            pass\n',
+                      '    with (\n        pytest.raises(ValueError, match="does not exist or is not a regular file"),\n        TestClient(app),\n    ):\n        pass\n',
+                  ),
+                  (
+                      '    from kicad_pcb_web.errors import WebServiceError\n\n',
+                      '',
+                  ),
+                  (
+                      '    monkeypatch.setattr(\n        "kicad_pcb_web.services.doctor.shutil.which", lambda name: paths.get(name)\n    )\n',
+                      '    monkeypatch.setattr("kicad_pcb_web.services.doctor.shutil.which", paths.get)\n',
+                  ),
+              ],
+          }
+
+          for path, edits in replacements.items():
+              text = path.read_text(encoding='utf-8')
+              for old, new in edits:
+                  if old not in text:
+                      raise SystemExit(f'expected lint target not found in {path}: {old!r}')
+                  text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Normalize imports and formatting
+        run: |
+          uv sync --frozen --extra dev --extra web
+          uv run ruff check --fix \
+            src/kicad_pcb_web/errors.py \
+            src/kicad_pcb_web/services/doctor.py \
+            src/kicad_pcb_web/services/netlists.py \
+            src/kicad_pcb_web/settings.py \
+            tests/web/test_web_runtime_hardening.py
+          uv run ruff format \
+            src/kicad_pcb_web/errors.py \
+            src/kicad_pcb_web/services/doctor.py \
+            src/kicad_pcb_web/services/netlists.py \
+            src/kicad_pcb_web/settings.py \
+            tests/web/test_web_runtime_hardening.py
+          uv run ruff check \
+            src/kicad_pcb_web/errors.py \
+            src/kicad_pcb_web/services/doctor.py \
+            src/kicad_pcb_web/services/netlists.py \
+            src/kicad_pcb_web/settings.py \
+            tests/web/test_web_runtime_hardening.py
+
+      - name: Commit normalized files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            src/kicad_pcb_web/errors.py \
+            src/kicad_pcb_web/services/doctor.py \
+            src/kicad_pcb_web/services/netlists.py \
+            src/kicad_pcb_web/settings.py \
+            tests/web/test_web_runtime_hardening.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'style: normalize runtime hardening code'
+          git push origin HEAD:webapp
