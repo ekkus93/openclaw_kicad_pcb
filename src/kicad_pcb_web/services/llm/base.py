@@ -227,24 +227,26 @@ class BaseHttpLlmClient(ABC):
                 ) from exc
 
             elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
-            if response.status_code in _RETRYABLE_STATUS_CODES:
-                if attempt < self.retry_max_attempts:
-                    delay_s = self._retry_delay(response, attempt=attempt)
-                    LOGGER.warning(
-                        "llm request received retryable status",
-                        extra={
-                            "provider": self.provider_name,
-                            "endpoint": endpoint,
-                            "attempt": attempt,
-                            "status_code": response.status_code,
-                            "elapsed_ms": elapsed_ms,
-                            "retry_delay_s": round(delay_s, 3),
-                            "payload_bytes": payload_bytes,
-                            "prompt_fingerprint": prompt_fingerprint,
-                        },
-                    )
-                    time.sleep(delay_s)
-                    continue
+            if (
+                response.status_code in _RETRYABLE_STATUS_CODES
+                and attempt < self.retry_max_attempts
+            ):
+                delay_s = self._retry_delay(response, attempt=attempt)
+                LOGGER.warning(
+                    "llm request received retryable status",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt,
+                        "status_code": response.status_code,
+                        "elapsed_ms": elapsed_ms,
+                        "retry_delay_s": round(delay_s, 3),
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                    },
+                )
+                time.sleep(delay_s)
+                continue
 
             try:
                 response.raise_for_status()

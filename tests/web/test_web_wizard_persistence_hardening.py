@@ -74,7 +74,12 @@ def test_debug_artifacts_use_private_directory_and_preserve_raw_capture_contract
     assert writer is not None
     writer({"messages": [{"role": "user", "content": "sensitive raw prompt"}]})
 
-    artifact_dir = settings.data_dir / "wizard_sessions" / "wiz_debug_permissions" / "debug_artifacts"
+    artifact_dir = (
+        settings.data_dir
+        / "wizard_sessions"
+        / "wiz_debug_permissions"
+        / "debug_artifacts"
+    )
     artifacts = list(artifact_dir.glob("*.json"))
     assert len(artifacts) == 1
     assert "sensitive raw prompt" in artifacts[0].read_text(encoding="utf-8")

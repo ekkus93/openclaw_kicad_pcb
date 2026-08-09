@@ -313,7 +313,8 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.enable_streaming=true is unsupported; streaming is not implemented")
     if not settings.request_log_redaction:
         raise ValueError(
-            "llm.request_log_redaction=false is unsupported; provider request logs are always redacted"
+            "llm.request_log_redaction=false is unsupported; "
+            "provider request logs are always redacted"
         )
     if settings.network_probe_enabled:
         raise ValueError(
