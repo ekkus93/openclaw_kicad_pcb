@@ -79,6 +79,31 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return {}
 }
 
+export function wizardFailureOperation(session: WizardSessionDetail): string | null {
+  if (session.status !== 'failed') return null
+  const operation = session.error?.details?.operation
+  return typeof operation === 'string' ? operation : null
+}
+
+export function wizardCanGenerateIr(session: WizardSessionDetail): boolean {
+  if (!session.spec || !session.spec_approved) return false
+  if (
+    session.status === 'spec_approved' ||
+    session.status === 'ir_needs_repair' ||
+    session.status === 'ir_ready_for_generation' ||
+    session.status === 'completed'
+  ) {
+    return true
+  }
+  return session.status === 'failed' && wizardFailureOperation(session) === 'generate_ir'
+}
+
+export function wizardCanGenerateProject(session: WizardSessionDetail): boolean {
+  if (!session.ir_json || !session.ir_validation?.valid) return false
+  if (session.status === 'ir_ready_for_generation' || session.status === 'completed') return true
+  return session.status === 'failed' && wizardFailureOperation(session) === 'generate_project'
+}
+
 export function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
   if (session.status === 'spec_ready_for_review') return 'spec'
   if (
@@ -92,7 +117,9 @@ export function canonicalWizardStep(session: WizardSessionDetail): WizardStep {
     session.status === 'completed'
   ) return 'generate'
   if (session.status === 'failed') {
-    if (session.ir_json || session.ir_validation) return 'generate'
+    const failedOperation = wizardFailureOperation(session)
+    if (failedOperation === 'generate_project' && wizardCanGenerateProject(session)) return 'generate'
+    if (failedOperation === 'generate_ir' && session.spec_approved) return 'ir'
     if (session.spec) return 'spec'
   }
   return 'describe'
@@ -138,15 +165,19 @@ export function wizardCurrentCheckpoint(
   if (step === 'ir') {
     return {
       title: 'Generate and validate the circuit plan before handing off to project generation.',
-      detail: session.ir_validation?.valid
-        ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
-        : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',
+      detail: session.status === 'failed' && wizardFailureOperation(session) === 'generate_ir'
+        ? 'The last IR regeneration failed. The previous validated plan is retained only as a checkpoint; retry Circuit Plan generation before continuing.'
+        : session.ir_validation?.valid
+          ? 'The current IR validates cleanly. Review counts and warnings, then move to project generation.'
+          : 'Run IR generation, inspect validation, and repair any warnings or invalid output before continuing.',
     }
   }
   return {
     title: 'Use the validated IR as the deterministic handoff into project generation.',
-    detail: session.latest_job_id
-      ? 'A job already exists for this session. Review the latest artifacts or rerun generation if needed.'
-      : 'Once the IR is valid, generate the project and review artifacts and diagnostics on the linked job.',
+    detail: session.status === 'failed' && wizardFailureOperation(session) === 'generate_project'
+      ? 'Project generation failed without invalidating the current IR. Review the failed job, then retry generation explicitly.'
+      : session.latest_job_id
+        ? 'A job already exists for this session. Review the latest artifacts or rerun generation if needed.'
+        : 'Once the IR is valid, generate the project and review artifacts and diagnostics on the linked job.',
   }
 }

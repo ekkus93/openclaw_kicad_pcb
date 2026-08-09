@@ -112,6 +112,18 @@ def _public_error_payload(error: WebServiceError) -> dict[str, object]:
     return cast(dict[str, object], web_service_error_to_payload(error)["error"])
 
 
+def _failure_operation(session: WizardSessionDetail) -> str | None:
+    """Return the operation that placed a session in ``failed`` state, if known."""
+
+    if session.status != "failed" or not isinstance(session.error, dict):
+        return None
+    details = session.error.get("details")
+    if not isinstance(details, dict):
+        return None
+    operation = details.get("operation")
+    return operation if isinstance(operation, str) else None
+
+
 def _persist_and_raise_failure(
     settings: WebSettings,
     session: WizardSessionDetail,
@@ -213,18 +225,16 @@ def post_wizard_message(
     client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
+
+        # Preserve the last known-good spec/approval/IR/job checkpoint while the
+        # replacement spec is pending. The transient status makes that checkpoint
+        # non-actionable. Only a successful replacement invalidates it.
         session = session.model_copy(
             update={
                 "project_name": request.project_name,
                 "symbols_dir": request.symbols_dir,
                 "status": "drafting_spec",
-                "spec_approved": False,
-                "spec_approved_at": None,
-                "ir_json": None,
-                "ir_validation": None,
-                "latest_job_id": None,
                 "error": None,
-                "unsupported_reasons": [],
                 "updated_at": _utc_now(),
             }
         )
@@ -254,9 +264,15 @@ def post_wizard_message(
                 update={
                     "status": output.next_state,
                     "spec": output.spec,
+                    "spec_approved": False,
+                    "spec_approved_at": None,
+                    "ir_json": None,
+                    "ir_validation": None,
+                    "latest_job_id": None,
                     "assumptions": output.assumptions,
                     "open_questions": output.open_questions,
                     "unsupported_reasons": output.unsupported_reasons,
+                    "error": None,
                     "updated_at": _utc_now(),
                 }
             )
@@ -285,6 +301,11 @@ def approve_wizard_spec(*, settings: WebSettings, session_id: str) -> WizardSess
             raise ConflictError(
                 "Cannot approve a spec that the wizard marked as unsupported.",
                 details={"session_id": session_id},
+            )
+        if session.status != "spec_ready_for_review":
+            raise ConflictError(
+                "Only the current reviewable spec can be approved.",
+                details={"session_id": session_id, "status": session.status},
             )
         approved_at = _utc_now()
         session = session.model_copy(
@@ -331,16 +352,31 @@ def generate_wizard_ir(
     client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
+        retry_failed_ir = session.status == "failed" and _failure_operation(session) == "generate_ir"
+        allowed_status = session.status in {
+            "spec_approved",
+            "ir_needs_repair",
+            "ir_ready_for_generation",
+            "completed",
+        }
         if session.spec is None or not session.spec_approved:
             raise ConflictError(
                 "Approve the circuit spec before generating Circuit IR.",
                 details={"session_id": session_id},
             )
+        if not allowed_status and not retry_failed_ir:
+            raise ConflictError(
+                "Circuit IR generation is not allowed from the current wizard state.",
+                details={"session_id": session_id, "status": session.status},
+            )
 
+        # Keep the prior IR and job checkpoint while regeneration is pending so
+        # a transient provider failure does not destroy known-good evidence.
+        # The drafting/failed status prevents that preserved checkpoint from
+        # being treated as current generation input.
         session = session.model_copy(
             update={
                 "status": "drafting_ir",
-                "latest_job_id": None,
                 "error": None,
                 "updated_at": _utc_now(),
             }
@@ -390,6 +426,7 @@ def generate_wizard_ir(
                                 fixes_applied=prepared.fixes_applied,
                                 symbols_dirs_used=prepared.symbols_dirs_used,
                             ),
+                            "latest_job_id": None,
                             "assumptions": sorted(
                                 {*(session.assumptions or []), *(output.assumptions or [])}
                             ),
@@ -416,6 +453,8 @@ def generate_wizard_ir(
                     "status": "ir_needs_repair",
                     "ir_json": prior_ir_json,
                     "ir_validation": WizardIrValidation(valid=False, error_message=last_error),
+                    "latest_job_id": None,
+                    "error": None,
                     "updated_at": _utc_now(),
                 }
             )
@@ -438,7 +477,7 @@ def _project_failure_error(
         "KiCad project generation failed.",
         code="WIZARD_PROJECT_GENERATION_FAILED",
         status_code=status_code,
-        details={"session_id": session_id, "job_id": job_id},
+        details={"session_id": session_id, "job_id": job_id, "operation": "generate_project"},
     )
 
 
@@ -449,14 +488,19 @@ def generate_wizard_project(
 ) -> WizardGenerateProjectResponse:
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
+        retry_failed_project = (
+            session.status == "failed" and _failure_operation(session) == "generate_project"
+        )
+        active_status = session.status in {"ir_ready_for_generation", "completed"}
         if (
-            session.ir_json is None
+            (not active_status and not retry_failed_project)
+            or session.ir_json is None
             or session.ir_validation is None
             or not session.ir_validation.valid
         ):
             raise ConflictError(
-                "Generate valid Circuit IR before starting project generation.",
-                details={"session_id": session_id},
+                "Generate current valid Circuit IR before starting project generation.",
+                details={"session_id": session_id, "status": session.status},
             )
 
         session = session.model_copy(
@@ -485,11 +529,30 @@ def generate_wizard_project(
         except Exception as exc:
             _persist_and_raise_failure(settings, session, exc, operation="generate_project")
 
+        if job.status != "succeeded":
+            project_error = _project_failure_error(
+                job.model_dump(mode="json"), session_id=session.id, job_id=job.id
+            )
+            session = session.model_copy(
+                update={
+                    "status": "failed",
+                    "latest_job_id": job.id,
+                    "error": _public_error_payload(project_error),
+                    "updated_at": _utc_now(),
+                }
+            )
+            LOGGER.info(
+                "wizard project generation finished",
+                extra={"session_id": session.id, "job_id": job.id, "job_status": job.status},
+            )
+            _persist_session(settings, session)
+            raise project_error
+
         session = session.model_copy(
             update={
-                "status": "completed" if job.status == "succeeded" else "failed",
+                "status": "completed",
                 "latest_job_id": job.id,
-                "error": job.error if job.status != "succeeded" else None,
+                "error": None,
                 "updated_at": _utc_now(),
             }
         )
@@ -498,8 +561,4 @@ def generate_wizard_project(
             extra={"session_id": session.id, "job_id": job.id, "job_status": job.status},
         )
         session = _persist_session(settings, session)
-        if job.status != "succeeded":
-            raise _project_failure_error(
-                job.model_dump(mode="json"), session_id=session.id, job_id=job.id
-            )
         return WizardGenerateProjectResponse(session=session, job=job.model_dump(mode="json"))

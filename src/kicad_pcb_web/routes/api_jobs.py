@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from ..deps import get_settings
+from ..errors import WebServiceError
 from ..schemas import (
     ArtifactListResponse,
     CreateJobFromNetlistRequest,
@@ -29,6 +30,30 @@ def _read_job_or_404(settings: WebSettings, job_id: str):
         raise HTTPException(status_code=404, detail="Job not found.") from exc
 
 
+def _synchronous_generation_error(job: JobDetail) -> WebServiceError:
+    """Map a persisted failed synchronous job to truthful HTTP semantics."""
+
+    error_type = job.error.get("type") if isinstance(job.error, dict) else None
+    status_code = 500
+    if error_type == "tool_error":
+        status_code = 503
+    elif error_type in {"user_error", "validation_error"}:
+        status_code = 422
+
+    details: dict[str, object] = {"job_id": job.id, "job_status": job.status}
+    if isinstance(job.error, dict):
+        error_code = job.error.get("code")
+        if isinstance(error_code, str):
+            details["job_error_code"] = error_code
+
+    return WebServiceError(
+        "KiCad project generation failed.",
+        code="PROJECT_GENERATION_FAILED",
+        status_code=status_code,
+        details=details,
+    )
+
+
 @router.post("/jobs/from-netlist", response_model=JobDetail)
 def create_job_from_netlist(
     request: CreateJobFromNetlistRequest,
@@ -36,7 +61,10 @@ def create_job_from_netlist(
 ) -> JobDetail:
     """Synchronously generate a job from a Circuit IR payload."""
 
-    return generate_project_from_netlist_job(settings=settings, request=request)
+    job = generate_project_from_netlist_job(settings=settings, request=request)
+    if job.status != "succeeded":
+        raise _synchronous_generation_error(job)
+    return job
 
 
 @router.get("/jobs", response_model=list[JobSummary])

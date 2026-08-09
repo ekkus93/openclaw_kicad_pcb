@@ -18,6 +18,8 @@ import { writeLastSession } from '../../utils/session'
 import type { WizardStep } from '../../types'
 import {
   canonicalWizardStep,
+  wizardCanGenerateIr,
+  wizardCanGenerateProject,
   wizardCurrentCheckpoint,
   wizardStepUnlocked,
 } from './wizardStepLogic'
@@ -122,15 +124,16 @@ export function useWizardController(
     : false
 
   const canApproveSpec = session
-    ? Boolean(session.spec) &&
+    ? session.status === 'spec_ready_for_review' &&
+      Boolean(session.spec) &&
       !session.spec_approved &&
       !session.open_questions.length &&
       !session.unsupported_reasons.length &&
       !hasUnspecifiedCustomBlocks
     : false
 
-  const canGenerateIr = session ? Boolean(session.spec) && session.spec_approved : false
-  const canGenerateProject = session ? Boolean(session.ir_validation?.valid) : false
+  const canGenerateIr = session ? wizardCanGenerateIr(session) : false
+  const canGenerateProject = session ? wizardCanGenerateProject(session) : false
   const visibleLatestJob = session?.latest_job_id ? (latestJob ?? null) : null
   const checkpoint = session
     ? wizardCurrentCheckpoint(session, currentStep)
