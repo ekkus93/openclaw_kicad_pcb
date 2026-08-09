@@ -117,6 +117,14 @@ if old_mock not in test_text:
     raise SystemExit("Expected preview degradation mock not found")
 test_text = test_text.replace(old_mock, new_mock, 1)
 
+outside_fixture = '            return_value=(tmp_path / "effective.json", symbol_index, ir, []),\n'
+inside_fixture = (
+    '            side_effect=lambda **kwargs: (kwargs["netlist_path"], symbol_index, ir, []),\n'
+)
+if test_text.count(outside_fixture) != 2:
+    raise SystemExit("Expected exactly two legacy out-of-workspace validation fixtures")
+test_text = test_text.replace(outside_fixture, inside_fixture)
+
 marker = '\n\ndef test_non_preview_generation_failure_still_fails_job(tmp_path: Path) -> None:\n'
 if marker not in test_text:
     raise SystemExit("Expected preview test insertion marker not found")
@@ -146,7 +154,7 @@ def test_missing_generated_schematic_is_fatal_not_preview_degradation(tmp_path: 
     with (
         patch(
             "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
-            return_value=(tmp_path / "effective.json", symbol_index, ir, []),
+            side_effect=lambda **kwargs: (kwargs["netlist_path"], symbol_index, ir, []),
         ),
         patch(
             "kicad_pcb_web.services.netlists._apply_netlist_to_project",
