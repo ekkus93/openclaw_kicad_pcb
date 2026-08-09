@@ -108,8 +108,11 @@ spec_max_repair_rounds = 2
 ir_max_repair_rounds = 2
 enable_streaming = false
 request_log_redaction = true
-network_probe_enabled = false
 debug_artifact_capture = false
+retry_max_attempts = 3
+retry_base_delay_s = 0.5
+retry_max_delay_s = 8.0
+retry_jitter_s = 0.25
 ```
 
 Environment variables still override config-file values when both are set.
@@ -122,7 +125,7 @@ Provider expectations:
 - `ollama`: requires `model` and `base_url`.
 - `llama_server`: requires `model` and `base_url`.
 
-Invalid provider configuration now fails fast when the app loads settings.
+Runtime configuration is validated during application startup before the server accepts requests. An explicitly configured `KICAD_PCB_WEB_CONFIG_FILE` must exist and be readable; unknown TOML keys and unsupported settings fail closed instead of silently reverting to defaults. Settings are cached as one process snapshot, so restart the server after changing provider/model configuration. The old `network_probe_enabled` option was removed because active network probing is not implemented.
 
 Generated web jobs are stored under:
 
@@ -138,7 +141,7 @@ directory.
 
 The web app defaults to `internal` validation for job generation. Optional KiCad
 CLI validation is available only when `kicad-cli` is installed and a request
-explicitly asks for `validation="kicad"`.
+explicitly asks for `validation="kicad"`. Synchronous direct generation returns a non-2xx response when generation fails even though the failed job remains persisted; unexpected failures expose the same non-secret correlation ID in the response, job record, and server log. Schematic PNG preview generation requires both `kicad-cli` and `rsvg-convert`. Preview-only failure is an intentional visible degraded mode: the job may succeed with `project.zip` plus `PREVIEW_GENERATION_SKIPPED`.
 
 ## LLM Wizard
 
@@ -203,16 +206,14 @@ reconstruct session state. The authoritative record persists:
 Concurrent mutations of the same session fail explicitly with HTTP 409 after the
 configured `mutation_lock_timeout_s`; they are never applied without the lock.
 Unexpected server failures are logged with a correlation ID and exposed through a
-sanitized API error rather than raw exception text.
+sanitized API error rather than raw exception text. LLM-produced spec/IR revisions persist non-secret provider/model/prompt/config provenance so a restart cannot silently continue a session under a different model. `debug_artifact_capture` remains opt-in and may store full prompts, completions, parsed output, and repair context; normal request-log redaction does not redact those files, so treat them as sensitive local data.
 
 Invalidation rules for backward changes:
 
-- Sending another conversation message clears spec approval, active Circuit IR,
-  and the active generation result link.
-- Sending a revision note from the spec step clears active Circuit IR and the
-  active generation result link.
-- Regenerating Circuit IR clears the active generation result link before the
-  new IR becomes current.
+- A successful conversation/spec revision invalidates approval, Circuit IR, and the active job link.
+- A failed replacement preserves the last-known-good checkpoint for inspection but does not make it the result of the failed operation.
+- Failed IR regeneration never unlocks Generate from stale preserved IR; retry is explicit and operation-aware.
+- LLM-backed continuation fails with `WIZARD_LLM_PROVENANCE_MISMATCH` if provider, model, prompt version, or endpoint identity changed after the persisted revision. Historical sessions remain readable.
 
 The routed wizard keeps the current session summary and checkpoint guidance in a
 dedicated side panel on larger screens, while smaller screens stack that panel

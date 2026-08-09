@@ -89,9 +89,7 @@ class _ConfigFile:
     payload: dict[str, Any]
 
 
-def _reject_unknown_keys(
-    payload: dict[str, Any], *, allowed: frozenset[str], section: str
-) -> None:
+def _reject_unknown_keys(payload: dict[str, Any], *, allowed: frozenset[str], section: str) -> None:
     unknown = sorted(set(payload) - allowed)
     if unknown:
         raise ValueError(f"Unsupported {section} config setting(s): {', '.join(unknown)}")
@@ -170,7 +168,8 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
 
     if _REMOVED_NETWORK_PROBE_ENV in os.environ:
         raise ValueError(
-            f"{_REMOVED_NETWORK_PROBE_ENV} has been removed; active network probing is not implemented"
+            f"{_REMOVED_NETWORK_PROBE_ENV} has been removed; "
+            "active network probing is not implemented"
         )
 
     llm_config = config.get("llm")
