@@ -1,0 +1,71 @@
+name: Apply Mypy and SPA Sync Once
+
+on:
+  push:
+    branches:
+      - webapp
+    paths:
+      - '.github/workflows/apply-mypy-spa-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Fix explicit config type narrowing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/kicad_pcb_web/settings.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
+    explicit_path = config_path_env is not None
+    if explicit_path and not config_path_env.strip():
+        raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
+
+    config_path = (
+        Path(config_path_env).expanduser().resolve()
+        if explicit_path
+        else Path("kicad_pcb_web.toml").resolve()
+    )
+'''
+          new = '''    config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
+    if config_path_env is not None:
+        if not config_path_env.strip():
+            raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
+        config_path = Path(config_path_env).expanduser().resolve()
+        explicit_path = True
+    else:
+        config_path = Path("kicad_pcb_web.toml").resolve()
+        explicit_path = False
+'''
+          if old not in text:
+              raise SystemExit('Expected config-path block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Rebuild committed SPA
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Commit exact generated outputs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/kicad_pcb_web/settings.py src/kicad_pcb_web/static/spa
+          git diff --cached --check
+          git commit -m 'fix: normalize config path and SPA bundle'
+          git push origin HEAD:webapp
