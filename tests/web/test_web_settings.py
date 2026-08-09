@@ -11,6 +11,8 @@ def test_load_settings_defaults_when_no_config(monkeypatch, tmp_path: Path) -> N
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("KICAD_PCB_WEB_CONFIG_FILE", raising=False)
     monkeypatch.delenv("KICAD_PCB_WEB_DATA_DIR", raising=False)
+    monkeypatch.delenv("KICAD_PCB_WEB_HOST", raising=False)
+    monkeypatch.delenv("KICAD_PCB_WEB_PORT", raising=False)
     monkeypatch.delenv("KICAD_PCB_WEB_LLM_PROVIDER", raising=False)
     monkeypatch.delenv("KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED", raising=False)
 
@@ -43,8 +45,6 @@ def test_load_settings_reads_toml_config_file(monkeypatch, tmp_path: Path) -> No
         """
 [web]
 data_dir = "./runtime-data"
-default_host = "0.0.0.0"
-default_port = 9001
 mutation_lock_timeout_s = 4.5
 
 [llm]
@@ -68,8 +68,6 @@ debug_artifact_capture = true
     settings = load_settings()
 
     assert settings.data_dir == (tmp_path / "runtime-data").resolve()
-    assert settings.default_host == "0.0.0.0"
-    assert settings.default_port == 9001
     assert settings.mutation_lock_timeout_s == 4.5
     assert settings.llm.provider == "ollama"
     assert settings.llm.model == "llama3.1"
@@ -161,13 +159,6 @@ enable_streaming = true
 """.strip(),
             "enable_streaming=true is unsupported",
         ),
-        (
-            """
-[web]
-default_port = 70000
-""".strip(),
-            "default_port must be between 1 and 65535",
-        ),
     ],
 )
 def test_load_settings_rejects_invalid_config(
@@ -181,6 +172,30 @@ def test_load_settings_rejects_invalid_config(
     monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
 
     with pytest.raises(ValueError, match=error_text):
+        load_settings()
+
+
+@pytest.mark.parametrize("key", ["default_host", "default_port"])
+def test_removed_web_bind_toml_settings_fail_loudly(
+    monkeypatch, tmp_path: Path, key: str
+) -> None:
+    config_path = tmp_path / "kicad_pcb_web.toml"
+    value = '"0.0.0.0"' if key == "default_host" else "9001"
+    config_path.write_text(f"[web]\n{key} = {value}\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match=key):
+        load_settings()
+
+
+@pytest.mark.parametrize("env_name", ["KICAD_PCB_WEB_HOST", "KICAD_PCB_WEB_PORT"])
+def test_removed_web_bind_env_settings_fail_loudly(
+    monkeypatch, tmp_path: Path, env_name: str
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(env_name, "9001")
+
+    with pytest.raises(ValueError, match="has been removed"):
         load_settings()
 
 
