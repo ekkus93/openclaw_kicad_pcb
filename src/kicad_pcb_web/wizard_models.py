@@ -121,6 +121,16 @@ class WizardIrValidation(BaseModel):
     error_message: str | None = None
 
 
+class WizardLlmProvenance(BaseModel):
+    """Non-secret provider identity for one persisted LLM-produced revision."""
+
+    provider: str
+    model: str | None = None
+    prompt_version: str
+    endpoint_identity: str | None = None
+    config_revision: str
+
+
 class WizardSessionDetail(BaseModel):
     """Persisted wizard session state exposed by the API."""
 
@@ -134,10 +144,12 @@ class WizardSessionDetail(BaseModel):
     prompt_version: str | None = None
     messages: list[WizardMessage] = Field(default_factory=list)
     spec: CircuitSpec | None = None
+    spec_provenance: WizardLlmProvenance | None = None
     spec_approved: bool = False
     spec_approved_at: str | None = None
     ir_json: dict[str, Any] | None = None
     ir_validation: WizardIrValidation | None = None
+    ir_provenance: WizardLlmProvenance | None = None
     assumptions: list[str] = Field(default_factory=list)
     open_questions: list[str] = Field(default_factory=list)
     unsupported_reasons: list[str] = Field(default_factory=list)

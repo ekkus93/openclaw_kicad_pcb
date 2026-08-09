@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import time
 from pathlib import Path
 from typing import Any, NoReturn, cast
+from urllib.parse import urlparse
 
 from kicad_pcb.errors import ToolError, UserError
 
 from ..errors import (
     ConflictError,
+    PersistenceError,
     ResourceNotFoundError,
     UpstreamProviderError,
     WebServiceError,
@@ -25,6 +29,7 @@ from ..wizard_models import (
     SpecConversationOutput,
     WizardGenerateProjectResponse,
     WizardIrValidation,
+    WizardLlmProvenance,
     WizardMessage,
     WizardMessageRequest,
     WizardSessionDetail,
@@ -124,6 +129,50 @@ def _failure_operation(session: WizardSessionDetail) -> str | None:
     return operation if isinstance(operation, str) else None
 
 
+def _endpoint_fingerprint(settings: WebSettings) -> str | None:
+    raw = settings.llm.base_url
+    if raw is None and settings.llm.provider == "openai":
+        raw = "https://api.openai.com/v1"
+    if raw is None:
+        return None
+    parsed = urlparse(raw)
+    host = parsed.hostname or ""
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+    identity = f"{parsed.scheme}://{host}"
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+
+
+def _llm_provenance(settings: WebSettings) -> WizardLlmProvenance:
+    """Return a non-secret reproducibility identity for the current LLM configuration."""
+
+    llm = settings.llm
+    endpoint_identity = _endpoint_fingerprint(settings)
+    config_payload = {
+        "provider": llm.provider,
+        "model": llm.model,
+        "endpoint_identity": endpoint_identity,
+        "timeout_s": llm.timeout_s,
+        "temperature": llm.temperature,
+        "max_tokens": llm.max_tokens,
+        "prompt_version": llm.system_prompt_version,
+        "spec_max_repair_rounds": llm.spec_max_repair_rounds,
+        "ir_max_repair_rounds": llm.ir_max_repair_rounds,
+        "retry_max_attempts": llm.retry_max_attempts,
+        "retry_base_delay_s": llm.retry_base_delay_s,
+        "retry_max_delay_s": llm.retry_max_delay_s,
+        "retry_jitter_s": llm.retry_jitter_s,
+    }
+    canonical = json.dumps(config_payload, sort_keys=True, separators=(",", ":"))
+    return WizardLlmProvenance(
+        provider=llm.provider,
+        model=llm.model,
+        prompt_version=llm.system_prompt_version,
+        endpoint_identity=endpoint_identity,
+        config_revision=hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16],
+    )
+
+
 def _persist_and_raise_failure(
     settings: WebSettings,
     session: WizardSessionDetail,
@@ -131,6 +180,8 @@ def _persist_and_raise_failure(
     *,
     operation: str,
 ) -> NoReturn:
+    if isinstance(exc, PersistenceError) and exc.details.get("authoritative_committed") is True:
+        raise exc
     error = _operation_error(exc, session_id=session.id, operation=operation)
     if not isinstance(exc, WebServiceError):
         LOGGER.warning(
@@ -193,6 +244,7 @@ def create_wizard_session(
                 update={
                     "status": output.next_state,
                     "spec": output.spec,
+                    "spec_provenance": _llm_provenance(settings),
                     "assumptions": output.assumptions,
                     "open_questions": output.open_questions,
                     "unsupported_reasons": output.unsupported_reasons,
@@ -225,10 +277,6 @@ def post_wizard_message(
     client = _require_llm_client(llm_client)
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
-
-        # Preserve the last known-good spec/approval/IR/job checkpoint while the
-        # replacement spec is pending. The transient status makes that checkpoint
-        # non-actionable. Only a successful replacement invalidates it.
         session = session.model_copy(
             update={
                 "project_name": request.project_name,
@@ -264,10 +312,12 @@ def post_wizard_message(
                 update={
                     "status": output.next_state,
                     "spec": output.spec,
+                    "spec_provenance": _llm_provenance(settings),
                     "spec_approved": False,
                     "spec_approved_at": None,
                     "ir_json": None,
                     "ir_validation": None,
+                    "ir_provenance": None,
                     "latest_job_id": None,
                     "assumptions": output.assumptions,
                     "open_questions": output.open_questions,
@@ -334,6 +384,7 @@ def clear_wizard_ir(*, settings: WebSettings, session_id: str) -> WizardSessionD
                 "status": "spec_approved",
                 "ir_json": None,
                 "ir_validation": None,
+                "ir_provenance": None,
                 "latest_job_id": None,
                 "error": None,
                 "updated_at": _utc_now(),
@@ -372,16 +423,8 @@ def generate_wizard_ir(
                 details={"session_id": session_id, "status": session.status},
             )
 
-        # Keep the prior IR and job checkpoint while regeneration is pending so
-        # a transient provider failure does not destroy known-good evidence.
-        # The drafting/failed status prevents that preserved checkpoint from
-        # being treated as current generation input.
         session = session.model_copy(
-            update={
-                "status": "drafting_ir",
-                "error": None,
-                "updated_at": _utc_now(),
-            }
+            update={"status": "drafting_ir", "error": None, "updated_at": _utc_now()}
         )
         _persist_session(settings, session)
         last_error: str | None = None
@@ -428,6 +471,7 @@ def generate_wizard_ir(
                                 fixes_applied=prepared.fixes_applied,
                                 symbols_dirs_used=prepared.symbols_dirs_used,
                             ),
+                            "ir_provenance": _llm_provenance(settings),
                             "latest_job_id": None,
                             "assumptions": sorted(
                                 {*(session.assumptions or []), *(output.assumptions or [])}
@@ -455,6 +499,7 @@ def generate_wizard_ir(
                     "status": "ir_needs_repair",
                     "ir_json": prior_ir_json,
                     "ir_validation": WizardIrValidation(valid=False, error_message=last_error),
+                    "ir_provenance": _llm_provenance(settings),
                     "latest_job_id": None,
                     "error": None,
                     "updated_at": _utc_now(),
