@@ -1,5 +1,6 @@
 name: Final Hardening Cleanup Once
 
+# One-shot migration helper. Remove after the source commit is pushed. Rerun 2.
 on:
   push:
     branches:
