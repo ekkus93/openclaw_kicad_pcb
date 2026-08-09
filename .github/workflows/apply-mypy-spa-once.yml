@@ -25,37 +25,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Fix explicit config type narrowing
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('src/kicad_pcb_web/settings.py')
-          text = path.read_text(encoding='utf-8')
-          old = '''    config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
-    explicit_path = config_path_env is not None
-    if explicit_path and not config_path_env.strip():
-        raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
-
-    config_path = (
-        Path(config_path_env).expanduser().resolve()
-        if explicit_path
-        else Path("kicad_pcb_web.toml").resolve()
-    )
-'''
-          new = '''    config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
-    if config_path_env is not None:
-        if not config_path_env.strip():
-            raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
-        config_path = Path(config_path_env).expanduser().resolve()
-        explicit_path = True
-    else:
-        config_path = Path("kicad_pcb_web.toml").resolve()
-        explicit_path = False
-'''
-          if old not in text:
-              raise SystemExit('Expected config-path block not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
+        run: >-
+          python -c 'from pathlib import Path; p=Path("src/kicad_pcb_web/settings.py"); s=p.read_text(encoding="utf-8"); old="    config_path_env = os.environ.get(\"KICAD_PCB_WEB_CONFIG_FILE\")\n    explicit_path = config_path_env is not None\n    if explicit_path and not config_path_env.strip():\n        raise ValueError(\"KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set\")\n\n    config_path = (\n        Path(config_path_env).expanduser().resolve()\n        if explicit_path\n        else Path(\"kicad_pcb_web.toml\").resolve()\n    )\n"; new="    config_path_env = os.environ.get(\"KICAD_PCB_WEB_CONFIG_FILE\")\n    if config_path_env is not None:\n        if not config_path_env.strip():\n            raise ValueError(\"KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set\")\n        config_path = Path(config_path_env).expanduser().resolve()\n        explicit_path = True\n    else:\n        config_path = Path(\"kicad_pcb_web.toml\").resolve()\n        explicit_path = False\n"; assert old in s, "Expected config-path block not found"; p.write_text(s.replace(old,new,1), encoding="utf-8")'
       - name: Rebuild committed SPA
         working-directory: frontend
         run: |
