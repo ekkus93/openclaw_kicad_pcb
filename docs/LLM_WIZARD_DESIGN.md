@@ -2,93 +2,70 @@
 
 ## Overview
 
-The LLM wizard adds a guided circuit-design workflow to the local web app.
-
-Supported pipeline:
+The LLM wizard is a guided, local-first front end for producing validated Circuit IR.
+It never writes KiCad files directly.
 
 ```text
 conversation
   -> circuit spec draft
   -> explicit spec approval
   -> Circuit IR draft
-  -> deterministic validation + auto-fix
-  -> project generation job
+  -> deterministic validation/auto-fix
+  -> deterministic project generation job
 ```
 
-The LLM never writes KiCad project files directly.
+The direct JSON flow and the wizard converge on the same deterministic generation path.
 
-## System Boundaries
+## Human and machine artifacts
 
-### Human-facing artifact
+`CircuitSpec` is the human-review checkpoint. It captures project intent, rails, ports,
+functional blocks, component/package preferences, assumptions, open questions,
+unsupported constraints, and acceptance criteria.
 
-The user reviews and approves a `CircuitSpec` model first.
+Circuit IR JSON is the machine-facing checkpoint. Only a current, valid IR revision can
+be used to generate a project.
 
-This captures:
+## Provider abstraction
 
-- project name
-- purpose
-- rails
-- inputs and outputs
-- functional blocks
-- packaging preferences
-- assumptions
-- open questions
-- unsupported reasons
-
-### Machine-facing artifact
-
-After approval, the wizard converts the spec into canonical Circuit IR JSON.
-
-That IR is then passed through the existing deterministic path in
-`src/kicad_pcb_web/services/netlists.py`.
-
-## Provider Abstraction
-
-Provider clients live under:
-
-```text
-src/kicad_pcb_web/services/llm/
-```
-
-Supported modes:
+Provider clients live under `src/kicad_pcb_web/services/llm/` and support:
 
 - `openai`
 - `ollama`
 - `llama_server`
 - `disabled`
 
-Implementation rules:
+Provider requests use normalized request/response objects and direct `httpx` clients.
+Retryable HTTP responses use bounded exponential backoff with jitter and honor a valid
+`Retry-After` within the configured maximum delay. Ambiguous transport failure after a
+POST is not blindly replayed because the provider may already be processing billable
+work.
 
-- direct `httpx` clients only
-- no LiteLLM
-- provider requests normalized into shared request/response objects
-- bounded retry for transient transport and retryable HTTP failures only
+## Authoritative session state
 
-`llama_server` currently assumes an OpenAI-compatible `/chat/completions`
-contract.
-
-## Wizard Session Model
-
-Wizard session state is persisted under:
+Wizard sessions live under:
 
 ```text
 <data_dir>/wizard_sessions/<session_id>/
 ```
 
-Persisted artifacts:
+Files:
 
-- `wizard.json` — the sole authoritative session record
-- `spec.json` — a derived convenience export when a spec is current
-- `circuit_ir.json` — a derived convenience export when Circuit IR is current
-- `derived_state.json` — identifies the authoritative revision represented by the exports
+- `wizard.json` — sole authoritative session record
+- `spec.json` — derived convenience export
+- `circuit_ir.json` — derived convenience export
+- `derived_state.json` — identifies which authoritative revision the exports reflect
 
-All canonical writes use temp-file flush, `fsync`, and atomic replacement. Every
-mutation holds a bounded cross-process session lock from the initial read through
-the final commit. Lock contention returns HTTP 409; the server never proceeds
-without the lock. Reads and API responses trust `wizard.json`, never the derived
-exports.
+Canonical writes use temp-file flush, `fsync`, atomic replacement, and a bounded
+cross-process session lock. Lock contention returns HTTP 409; there is no unlocked
+fallback. API reads trust `wizard.json`, never the sidecars.
 
-Session states:
+A sidecar refresh failure does not roll canonical state backward. It returns an explicit
+persistence error that states the authoritative commit already occurred, so callers do
+not mistake a derived-export problem for a canonical rollback.
+
+## Session states and actionability
+
+Persisted states are:
 
 - `drafting_spec`
 - `awaiting_user_clarification`
@@ -101,7 +78,23 @@ Session states:
 - `completed`
 - `failed`
 
-Canonical UI route mapping:
+State, not mere presence of old fields, controls which operation is legal.
+
+Important invariants:
+
+- spec approval is allowed only from `spec_ready_for_review`;
+- IR generation requires an approved current spec and an allowed IR-generation state;
+- project generation requires current valid IR and a generation-ready/completed state,
+  or an explicitly classified retry of a failed project-generation operation;
+- a failed spec revision cannot use an older approved spec/IR as though it were current;
+- a failed IR replacement can preserve the previous checkpoint for inspection, but that
+  preserved IR is not actionable as the newly requested revision;
+- failed IR generation and failed project generation have operation-aware retry paths.
+
+This deliberately separates **checkpoint preservation** from **current actionability**.
+Keeping the last known-good data visible is not a fallback to using it silently.
+
+## Canonical UI routes
 
 - `drafting_spec` -> `/wizard/{session_id}/describe`
 - `awaiting_user_clarification` -> `/wizard/{session_id}/describe`
@@ -109,18 +102,52 @@ Canonical UI route mapping:
 - `spec_approved` -> `/wizard/{session_id}/ir`
 - `drafting_ir` -> `/wizard/{session_id}/ir`
 - `ir_needs_repair` -> `/wizard/{session_id}/ir`
-- `ir_ready_for_generation` -> `/wizard/{session_id}/generate`
+- `ir_ready_for_generation` -> generation is unlocked
 - `generation_started` -> `/wizard/{session_id}/generate`
 - `completed` -> `/wizard/{session_id}/generate`
-- `failed` -> nearest step with persisted state available
+- `failed` -> an operation-aware recovery route; preserved fields alone do not unlock a
+  future step
 
-## Prompt Contracts
+The frontend mirrors the backend readiness rules and redirects illegal future-step deep
+links to the canonical blocking step.
 
-The wizard uses two structured JSON contracts.
+## Revision and failure semantics
 
-### Spec contract
+A replacement operation does not destructively discard the last-known-good checkpoint
+before the replacement succeeds. During a spec or IR request, the session records the
+in-progress/failed operation while preserving prior data where useful for diagnosis.
+Only a successful replacement becomes the current actionable revision.
 
-LLM output keys:
+Consequences:
+
+- provider failure during spec revision does not masquerade as successful revision;
+- provider failure during IR regeneration does not enable project generation from stale
+  IR;
+- retries are explicit and operation-specific;
+- deterministic project generation can be rerun from the same current valid IR after a
+  completed job without invoking the LLM again.
+
+## LLM provenance
+
+Each LLM-produced revision records non-secret provenance including provider, model,
+prompt version, endpoint identity fingerprint, and a configuration revision fingerprint.
+The session also records the provider/model/prompt identity used to create it.
+
+Before an LLM-backed spec revision or IR generation/retry, the server compares persisted
+revision provenance with the immutable startup configuration. Provider, model, prompt,
+or endpoint drift produces a typed `WIZARD_LLM_PROVENANCE_MISMATCH` conflict before the
+LLM request and before session mutation.
+
+Historical sessions remain readable after configuration changes. Deterministic project
+generation from an already current, valid IR does not require the LLM configuration to
+remain available.
+
+No API key or raw credential is persisted in provenance. Endpoint identity is stored as
+a non-secret fingerprint rather than a credential-bearing URL.
+
+## Prompt contracts and repair
+
+Spec output contains:
 
 - `assistant_message`
 - `next_state`
@@ -129,31 +156,21 @@ LLM output keys:
 - `open_questions`
 - `unsupported_reasons`
 
-### IR contract
-
-LLM output keys:
+IR output contains:
 
 - `assistant_message`
 - `netlist_json`
 - `assumptions`
 
-If the provider returns malformed JSON, the wizard performs bounded structured
-repair attempts using the configured prompt version and repair limits.
+Malformed provider JSON gets bounded structured repair attempts. IR validation uses:
 
-## Repair Order
+1. LLM draft.
+2. Deterministic validation.
+3. Deterministic auto-fix.
+4. Bounded LLM repair with the validator error if still invalid.
+5. Deterministic project generation only after IR is valid/current.
 
-IR generation uses this order:
-
-1. LLM drafts Circuit IR JSON.
-2. Deterministic validation runs.
-3. Deterministic auto-fix runs before any LLM repair loop.
-4. If validation still fails, the exact validator error is fed back into a
-   bounded IR repair loop.
-5. Once IR validates, only the deterministic job generator runs.
-
-## API Surface
-
-Wizard API routes:
+## API surface
 
 ```text
 /api/wizard/sessions
@@ -161,76 +178,38 @@ Wizard API routes:
 /api/wizard/sessions/{id}/messages
 /api/wizard/sessions/{id}/approve-spec
 /api/wizard/sessions/{id}/generate-ir
+/api/wizard/sessions/{id}/clear-ir
 /api/wizard/sessions/{id}/generate-project
 ```
 
-## UI Surface
+Mutations return non-success HTTP status when the requested operation does not complete.
+Expected state/provenance conflicts and lock contention return 409. Provider/tooling
+failures use typed 502/503 responses. Unexpected internal failures return sanitized 500
+responses with non-secret correlation IDs and retain server-side tracebacks.
 
-The routed wizard UI uses:
+## Debug artifacts and logging
 
-- `/wizard` as the start page for creating sessions
-- `/wizard/{session_id}` as the canonical-step redirector
-- dedicated describe, spec, IR, and generate pages for the active session
+Normal request logs contain lifecycle metadata, timing, status, payload size, and prompt
+fingerprints; they do not contain prompt bodies, provider credentials, or raw auth
+headers.
 
-Shared layout surfaces:
+`debug_artifact_capture` is **false by default**. When explicitly enabled, wizard debug
+files may contain full user messages/prompts, full model completions, parsed structured
+results, and parse/repair context. Request-log redaction does **not** redact these files.
+Treat the debug-artifact directory as sensitive local data. On POSIX, the implementation
+uses restrictive directory permissions; normal job artifact routes do not expose wizard
+debug captures.
 
-- step tracker
-- session metadata rail
-- route-safe notice region
-- explicit back/continue navigation
+## Security/exposure boundary
 
-Step-local surfaces:
+The current application is local-first and has no public multi-user security boundary.
+Provider credentials remain server-side. User-supplied local filesystem paths are a
+trusted-local-user capability, not a public-server feature. If remote exposure is added,
+authentication, authorization, request isolation, and filesystem sandboxing must be
+specified at the API boundary first.
 
-- `describe`: project inputs, message composer, transcript
-- `spec`: human-readable circuit spec plus revision/approval controls
-- `ir`: validation-first IR summary, repair action, raw JSON disclosure
-- `generate`: readiness summary, project-generation action, latest job result
+## Explicit non-goal of this hardening pass
 
-Route guard rules:
-
-- future-step URLs redirect to the blocking canonical step
-- earlier completed steps remain viewable
-- backward edits invalidate later derived artifacts deterministically
-
-Invalidation rules:
-
-- conversation changes clear spec approval, IR, and active job link
-- spec revision changes clear IR and active job link
-- IR regeneration clears the active job link before a new IR becomes current
-
-## Security and Exposure Boundary
-
-Current posture:
-
-- local-first web app
-- no browser-side provider credentials
-- no public-exposure support
-
-If remote exposure is ever enabled, authentication and authorization should be
-added at the API boundary around `/api/wizard/*` and `/api/jobs/*` before
-exposure, not inside provider-specific code.
-
-## Logging
-
-Current wizard logs record lifecycle events only:
-
-- session created
-- session updated
-- spec approved
-- IR ready
-- project generation finished
-
-Prompt bodies, provider secrets, and raw auth headers are intentionally not
-logged.
-## Failure semantics and observability
-
-Wizard mutations use non-success HTTP status codes when the requested operation
-does not complete. Expected state conflicts and lock contention return 409, an
-unavailable configured provider returns 503, unusable provider output returns
-502, and unexpected internal failures return a sanitized 500 response. When a
-session already exists, the server persists its failed state before returning the
-error whenever canonical persistence remains available. Unexpected failures keep
-a server-side traceback and correlation ID; provider credentials and raw internal
-exception text are not returned to the browser. The frontend invalidates and
-refetches the session after failed mutations so the persisted state remains the
-source of truth.
+This hardening work does **not** redesign schematic component placement, topology,
+wire-routing, orthogonal routing, crossing minimization, grouping, or layout aesthetics.
+Those concerns remain a separate design effort.

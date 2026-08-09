@@ -126,6 +126,14 @@ export interface WizardIrValidation {
   error_message?: string | null
 }
 
+export interface WizardLlmProvenance {
+  provider: string
+  model?: string | null
+  prompt_version: string
+  endpoint_identity?: string | null
+  config_revision: string
+}
+
 export interface WizardSessionDetail {
   id: string
   status: WizardStatus
@@ -134,13 +142,16 @@ export interface WizardSessionDetail {
   project_name?: string | null
   symbols_dir?: string | null
   llm_provider?: string | null
+  llm_model?: string | null
   prompt_version?: string | null
   messages: WizardMessage[]
   spec?: CircuitSpec | null
+  spec_provenance?: WizardLlmProvenance | null
   spec_approved: boolean
   spec_approved_at?: string | null
   ir_json?: Record<string, unknown> | null
   ir_validation?: WizardIrValidation | null
+  ir_provenance?: WizardLlmProvenance | null
   assumptions: string[]
   open_questions: string[]
   unsupported_reasons: string[]
