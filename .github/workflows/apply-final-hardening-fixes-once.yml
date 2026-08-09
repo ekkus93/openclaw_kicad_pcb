@@ -1,0 +1,194 @@
+name: Apply Final Hardening Fixes Once
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - .github/workflows/apply-final-hardening-fixes-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+          fetch-depth: 1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Apply guarded hardening edits
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path_s: str, old: str, new: str) -> None:
+              path = Path(path_s)
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'expected edit target not found in {path}: {old[:100]!r}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace(
+              'src/kicad_pcb_web/services/llm/base.py',
+              '''            if response.status_code in _RETRYABLE_STATUS_CODES:\n                if attempt < self.retry_max_attempts:\n                    delay_s = self._retry_delay(response, attempt=attempt)\n                    LOGGER.warning(\n                        "llm request received retryable status",\n                        extra={\n                            "provider": self.provider_name,\n                            "endpoint": endpoint,\n                            "attempt": attempt,\n                            "status_code": response.status_code,\n                            "elapsed_ms": elapsed_ms,\n                            "retry_delay_s": round(delay_s, 3),\n                            "payload_bytes": payload_bytes,\n                            "prompt_fingerprint": prompt_fingerprint,\n                        },\n                    )\n                    time.sleep(delay_s)\n                    continue\n''',
+              '''            if (\n                response.status_code in _RETRYABLE_STATUS_CODES\n                and attempt < self.retry_max_attempts\n            ):\n                delay_s = self._retry_delay(response, attempt=attempt)\n                LOGGER.warning(\n                    "llm request received retryable status",\n                    extra={\n                        "provider": self.provider_name,\n                        "endpoint": endpoint,\n                        "attempt": attempt,\n                        "status_code": response.status_code,\n                        "elapsed_ms": elapsed_ms,\n                        "retry_delay_s": round(delay_s, 3),\n                        "payload_bytes": payload_bytes,\n                        "prompt_fingerprint": prompt_fingerprint,\n                    },\n                )\n                time.sleep(delay_s)\n                continue\n''',
+          )
+
+          settings = Path('src/kicad_pcb_web/settings.py')
+          text = settings.read_text(encoding='utf-8')
+          text = text.replace(
+              '''_VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})\n''',
+              '''_VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})\n_WEB_CONFIG_KEYS = frozenset({"data_dir", "mutation_lock_timeout_s"})\n_LLM_CONFIG_KEYS = frozenset(\n    {\n        "provider",\n        "model",\n        "base_url",\n        "api_key",\n        "timeout_s",\n        "temperature",\n        "max_tokens",\n        "system_prompt_version",\n        "spec_max_repair_rounds",\n        "ir_max_repair_rounds",\n        "enable_streaming",\n        "request_log_redaction",\n        "network_probe_enabled",\n        "debug_artifact_capture",\n        "retry_max_attempts",\n        "retry_base_delay_s",\n        "retry_max_delay_s",\n        "retry_jitter_s",\n    }\n)\n''',
+              1,
+          )
+          text = text.replace('''    default_host: str = "127.0.0.1"\n    default_port: int = 8000\n''', '', 1)
+          marker = '''def _read_setting(*, env_name: str, config_value: Any, default: Any) -> Any:\n'''
+          helper = '''def _reject_unknown_keys(table: dict[str, Any], *, allowed: frozenset[str], name: str) -> None:\n    unknown = sorted(set(table) - allowed)\n    if unknown:\n        raise ValueError(f"Unknown {name} config key(s): {', '.join(unknown)}")\n\n\n'''
+          if marker not in text:
+              raise SystemExit('settings helper insertion marker missing')
+          text = text.replace(marker, helper + marker, 1)
+          text = text.replace(
+              '''    if not isinstance(llm_config, dict):\n        raise ValueError("[llm] config must be a TOML table")\n\n''',
+              '''    if not isinstance(llm_config, dict):\n        raise ValueError("[llm] config must be a TOML table")\n    _reject_unknown_keys(llm_config, allowed=_LLM_CONFIG_KEYS, name="[llm]")\n\n''',
+              1,
+          )
+          text = text.replace(
+              '''    if not isinstance(web_config, dict):\n        raise ValueError("[web] config must be a TOML table")\n\n''',
+              '''    if not isinstance(web_config, dict):\n        raise ValueError("[web] config must be a TOML table")\n    _reject_unknown_keys(web_config, allowed=_WEB_CONFIG_KEYS, name="[web]")\n\n''',
+              1,
+          )
+          start = '''    default_host = _read_setting(\n        env_name="KICAD_PCB_WEB_HOST",\n        config_value=web_config.get("default_host"),\n        default="127.0.0.1",\n    )\n    default_port_raw = _read_setting(\n        env_name="KICAD_PCB_WEB_PORT",\n        config_value=web_config.get("default_port"),\n        default=8000,\n    )\n'''
+          if start not in text:
+              raise SystemExit('default host/port load block missing')
+          text = text.replace(start, '', 1)
+          port_block = '''    default_port = _coerce_int(default_port_raw, field_name="web.default_port")\n    if not 1 <= default_port <= 65535:\n        raise ValueError("web.default_port must be between 1 and 65535")\n\n'''
+          if port_block not in text:
+              raise SystemExit('default port validation block missing')
+          text = text.replace(port_block, '', 1)
+          text = text.replace(
+              '''        default_host=str(default_host),\n        default_port=default_port,\n''',
+              '',
+              1,
+          )
+          text = text.replace(
+              '''            "llm.request_log_redaction=false is unsupported; provider request logs are always redacted"\n''',
+              '''            "llm.request_log_redaction=false is unsupported; "\n            "provider request logs are always redacted"\n''',
+              1,
+          )
+          settings.write_text(text, encoding='utf-8')
+
+          replace(
+              'tests/web/test_web_wizard_persistence_hardening.py',
+              '''    artifact_dir = settings.data_dir / "wizard_sessions" / "wiz_debug_permissions" / "debug_artifacts"\n''',
+              '''    artifact_dir = (\n        settings.data_dir / "wizard_sessions" / "wiz_debug_permissions" / "debug_artifacts"\n    )\n''',
+          )
+
+          jobs = Path('src/kicad_pcb_web/routes/api_jobs.py')
+          text = jobs.read_text(encoding='utf-8')
+          old = '''    details: dict[str, object] = {"job_id": job.id, "job_status": job.status}\n    if isinstance(job.error, dict):\n        error_code = job.error.get("code")\n        if isinstance(error_code, str):\n            details["job_error_code"] = error_code\n\n    return WebServiceError(\n        "KiCad project generation failed.",\n        code="PROJECT_GENERATION_FAILED",\n        status_code=status_code,\n        details=details,\n    )\n'''
+          new = '''    details: dict[str, object] = {"job_id": job.id, "job_status": job.status}\n    error_id: str | None = None\n    if isinstance(job.error, dict):\n        error_code = job.error.get("code")\n        if isinstance(error_code, str):\n            details["job_error_code"] = error_code\n        error_details = job.error.get("details")\n        if isinstance(error_details, dict):\n            persisted_error_id = error_details.get("error_id")\n            if isinstance(persisted_error_id, str):\n                error_id = persisted_error_id\n\n    return WebServiceError(\n        "KiCad project generation failed.",\n        code="PROJECT_GENERATION_FAILED",\n        status_code=status_code,\n        details=details,\n        error_id=error_id,\n    )\n'''
+          if old not in text:
+              raise SystemExit('api_jobs correlation target missing')
+          jobs.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          tests = Path('tests/web/test_web_settings.py')
+          text = tests.read_text(encoding='utf-8')
+          text = text.replace('''default_host = "0.0.0.0"\ndefault_port = 9001\n''', '', 1)
+          text = text.replace('''    assert settings.default_host == "0.0.0.0"\n    assert settings.default_port == 9001\n''', '', 1)
+          invalid_case = '''        (\n            """\n[web]\ndefault_port = 70000\n""".strip(),\n            "default_port must be between 1 and 65535",\n        ),\n'''
+          if invalid_case in text:
+              text = text.replace(invalid_case, '', 1)
+          tests.write_text(text, encoding='utf-8')
+          PY
+      - name: Add config contract and correlation regressions
+        shell: bash
+        run: |
+          cat >> tests/web/test_web_settings.py <<'PY'
+
+
+def test_load_settings_rejects_unknown_web_config_key(monkeypatch, tmp_path: Path) -> None:
+    config_path = tmp_path / "kicad_pcb_web.toml"
+    config_path.write_text("[web]\ndefault_port = 9001\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match=r"Unknown \[web\] config key.*default_port"):
+        load_settings()
+
+
+def test_load_settings_rejects_unknown_llm_config_key(monkeypatch, tmp_path: Path) -> None:
+    config_path = tmp_path / "kicad_pcb_web.toml"
+    config_path.write_text("[llm]\nmade_up_fallback = true\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match=r"Unknown \[llm\] config key.*made_up_fallback"):
+        load_settings()
+PY
+          cat >> tests/web/test_web_runtime_hardening.py <<'PY'
+
+
+def test_direct_unexpected_failure_returns_same_correlation_id_as_job(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    get_settings.cache_clear()
+
+    def explode(**_kwargs):
+        raise RuntimeError("unexpected failure at /tmp/private-diagnostic.txt")
+
+    monkeypatch.setattr(
+        "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
+        explode,
+    )
+    client = TestClient(app)
+    response = client.post(
+        "/api/jobs/from-netlist",
+        json={"project_name": "CorrelationRoute", "netlist_json": {}},
+    )
+    assert response.status_code == 500
+    error = response.json()["error"]
+    response_error_id = error["details"]["error_id"]
+    assert str(response_error_id).startswith("err_")
+
+    job_id = error["details"]["job_id"]
+    persisted = client.get(f"/api/jobs/{job_id}")
+    assert persisted.status_code == 200
+    persisted_error_id = persisted.json()["error"]["details"]["error_id"]
+    assert persisted_error_id == response_error_id
+PY
+      - name: Normalize and validate Python
+        run: |
+          uv sync --frozen --extra dev --extra web
+          uv run ruff check --fix \
+            src/kicad_pcb_web/services/llm/base.py \
+            src/kicad_pcb_web/settings.py \
+            src/kicad_pcb_web/routes/api_jobs.py \
+            tests/web/test_web_settings.py \
+            tests/web/test_web_runtime_hardening.py \
+            tests/web/test_web_wizard_persistence_hardening.py
+          uv run ruff format \
+            src/kicad_pcb_web/services/llm/base.py \
+            src/kicad_pcb_web/settings.py \
+            src/kicad_pcb_web/routes/api_jobs.py \
+            tests/web/test_web_settings.py \
+            tests/web/test_web_runtime_hardening.py \
+            tests/web/test_web_wizard_persistence_hardening.py
+          uv run ruff check .
+          uv run mypy src/kicad_pcb_web
+      - name: Commit fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/kicad_pcb_web tests/web
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: close final webapp hardening gaps'
+          git push origin HEAD:webapp
