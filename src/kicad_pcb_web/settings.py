@@ -99,15 +99,14 @@ def _load_config_file() -> _ConfigFile:
     """Load the optional TOML config file, failing if an explicit path is unusable."""
 
     config_path_env = os.environ.get("KICAD_PCB_WEB_CONFIG_FILE")
-    explicit_path = config_path_env is not None
-    if explicit_path and not config_path_env.strip():
-        raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
-
-    config_path = (
-        Path(config_path_env).expanduser().resolve()
-        if explicit_path
-        else Path("kicad_pcb_web.toml").resolve()
-    )
+    if config_path_env is not None:
+        if not config_path_env.strip():
+            raise ValueError("KICAD_PCB_WEB_CONFIG_FILE must not be empty when explicitly set")
+        config_path = Path(config_path_env).expanduser().resolve()
+        explicit_path = True
+    else:
+        config_path = Path("kicad_pcb_web.toml").resolve()
+        explicit_path = False
     if not config_path.is_file():
         if explicit_path:
             raise ValueError(
