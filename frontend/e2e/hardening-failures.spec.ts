@@ -90,7 +90,7 @@ test('direct JSON generation failure remains visible and does not navigate as su
     })
   })
 
-  await page.goto('/generate/json')
+  await page.goto('/generate-json')
   await page.getByLabel('JSON').fill(JSON.stringify(VALID_IR))
   await page.getByRole('button', { name: 'Validate' }).click()
   await expect(page.getByRole('heading', { name: 'Validation Passed' })).toBeVisible()
@@ -98,7 +98,7 @@ test('direct JSON generation failure remains visible and does not navigate as su
   await page.getByRole('button', { name: 'Generate KiCad Project' }).click()
 
   await expect(page.getByText('KiCad project generation failed.')).toBeVisible()
-  await expect(page).toHaveURL(/\/generate\/json$/)
+  await expect(page).toHaveURL(/\/generate-json$/)
   await expect(page.getByRole('heading', { name: 'Validation Passed' })).toBeVisible()
 })
 
@@ -106,7 +106,7 @@ test('wizard failed IR regeneration cannot unlock Generate and retry can recover
   let currentSession = wizardSession()
   let generateIrAttempts = 0
 
-  await page.route('**/api/bootstrap', async (route) => {
+  await page.route('**/api/ui/bootstrap', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
