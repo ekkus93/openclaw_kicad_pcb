@@ -1,6 +1,6 @@
 name: Harden Preview Degradation Once
 
-# One-shot migration helper. Remove after the source commit is pushed.
+# One-shot migration helper. Remove after the source commit is pushed. Rerun 3.
 on:
   push:
     branches:
