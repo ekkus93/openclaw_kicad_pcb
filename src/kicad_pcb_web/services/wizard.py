@@ -394,10 +394,31 @@ def approve_wizard_spec(*, settings: WebSettings, session_id: str) -> WizardSess
                 "Cannot approve a wizard session before a spec draft exists.",
                 details={"session_id": session_id},
             )
-        if session.unsupported_reasons:
+        if session.open_questions or session.spec.open_questions:
+            raise ConflictError(
+                "Cannot approve a spec while open questions remain unresolved.",
+                code="WIZARD_SPEC_HAS_OPEN_QUESTIONS",
+                details={"session_id": session_id},
+            )
+        if session.unsupported_reasons or session.spec.unsupported_reasons:
             raise ConflictError(
                 "Cannot approve a spec that the wizard marked as unsupported.",
+                code="WIZARD_SPEC_UNSUPPORTED",
                 details={"session_id": session_id},
+            )
+        underspecified_custom_blocks = [
+            block.name
+            for block in session.spec.blocks
+            if block.block_type == "custom" and not block.required_components
+        ]
+        if underspecified_custom_blocks:
+            raise ConflictError(
+                "Cannot approve a spec with underspecified custom blocks.",
+                code="WIZARD_SPEC_UNDERSPECIFIED_CUSTOM_BLOCKS",
+                details={
+                    "session_id": session_id,
+                    "block_names": underspecified_custom_blocks,
+                },
             )
         if session.status != "spec_ready_for_review":
             raise ConflictError(
@@ -604,6 +625,7 @@ def generate_wizard_project(
         active_status = session.status in {"ir_ready_for_generation", "completed"}
         if (
             (not active_status and not retry_failed_project)
+            or not session.spec_approved
             or session.ir_json is None
             or session.ir_validation is None
             or not session.ir_validation.valid
