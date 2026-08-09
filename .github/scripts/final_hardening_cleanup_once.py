@@ -95,27 +95,9 @@ replace_once(
 provenance_tests = Path("tests/web/test_web_wizard_provenance.py")
 replace_once(
     provenance_tests,
-    '''    prompt_version: str = "v1",
-    base_url: str = "https://provider-a.example/v1",
-) -> WebSettings:
-''',
-    '''    prompt_version: str = "v1",
-    base_url: str = "https://provider-a.example/v1",
-    temperature: float = 0.2,
-) -> WebSettings:
-''',
-    "provenance settings signature",
-)
-replace_once(
-    provenance_tests,
-    '''            api_key="TOP-SECRET-PROVIDER-KEY",
-            system_prompt_version=prompt_version,
-''',
-    '''            api_key="TOP-SECRET-PROVIDER-KEY",
-            system_prompt_version=prompt_version,
-            temperature=temperature,
-''',
-    "provenance temperature setting",
+    'import json\nfrom pathlib import Path\n',
+    'import json\nfrom dataclasses import replace\nfrom pathlib import Path\n',
+    "dataclasses replace import",
 )
 replace_once(
     provenance_tests,
@@ -172,7 +154,10 @@ replace_once(
 def test_spec_revision_rejects_changed_config_revision(tmp_path: Path) -> None:
     original_settings = _settings(tmp_path)
     original = _persist_session(original_settings, _session(original_settings))
-    changed_settings = _settings(tmp_path, temperature=0.7)
+    changed_settings = replace(
+        original_settings,
+        llm=replace(original_settings.llm, temperature=0.7),
+    )
 
     with pytest.raises(ConflictError) as caught:
         post_wizard_message(
