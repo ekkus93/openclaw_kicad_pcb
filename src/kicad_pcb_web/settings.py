@@ -279,7 +279,8 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.enable_streaming=true is unsupported; streaming is not implemented")
     if settings.network_probe_enabled:
         raise ValueError(
-            "llm.network_probe_enabled=true is unsupported; active network probing is not implemented"
+            "llm.network_probe_enabled=true is unsupported; "
+            "active network probing is not implemented"
         )
 
     if settings.base_url is not None:

@@ -158,7 +158,9 @@ def _safe_validation_errors(exc: RequestValidationError) -> list[dict[str, objec
     errors: list[dict[str, object]] = []
     for item in exc.errors():
         safe: dict[str, object] = {
-            "loc": [str(part) if not isinstance(part, int) else part for part in item.get("loc", ())],
+            "loc": [
+                str(part) if not isinstance(part, int) else part for part in item.get("loc", ())
+            ],
             "type": str(item.get("type") or "validation_error"),
             "msg": _sanitize_path_text(str(item.get("msg") or "Invalid value.")),
         }

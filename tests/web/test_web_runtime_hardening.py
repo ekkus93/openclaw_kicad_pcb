@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from kicad_pcb_web.deps import get_settings
 from kicad_pcb_web.errors import (
     PersistenceError,
+    WebServiceError,
     validation_error_to_payload,
     web_service_error_to_payload,
 )
@@ -61,9 +62,11 @@ def test_app_lifespan_fails_before_serving_when_explicit_config_is_missing(
     monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(tmp_path / "missing.toml"))
     get_settings.cache_clear()
 
-    with pytest.raises(ValueError, match="does not exist or is not a regular file"):
-        with TestClient(app):
-            pass
+    with (
+        pytest.raises(ValueError, match="does not exist or is not a regular file"),
+        TestClient(app),
+    ):
+        pass
 
 
 def test_reconcile_interrupted_jobs_marks_running_job_failed(tmp_path: Path) -> None:
@@ -153,8 +156,6 @@ def test_validation_payload_omits_rejected_input_values() -> None:
 
 
 def test_web_service_error_redacts_windows_absolute_paths() -> None:
-    from kicad_pcb_web.errors import WebServiceError
-
     payload = web_service_error_to_payload(
         WebServiceError(
             "failed at C:\\Users\\private\\secret.txt",
@@ -184,9 +185,7 @@ def test_doctor_requires_exact_preview_dependencies(tmp_path: Path, monkeypatch)
 def test_doctor_preview_ready_only_when_both_tools_exist(tmp_path: Path, monkeypatch) -> None:
     settings = _settings(tmp_path)
     paths = {"kicad-cli": "/usr/bin/kicad-cli", "rsvg-convert": "/usr/bin/rsvg-convert"}
-    monkeypatch.setattr(
-        "kicad_pcb_web.services.doctor.shutil.which", lambda name: paths.get(name)
-    )
+    monkeypatch.setattr("kicad_pcb_web.services.doctor.shutil.which", paths.get)
 
     checks = {check.name: check for check in run_doctor(settings).checks}
     assert checks["preview_tooling"].ok is True
