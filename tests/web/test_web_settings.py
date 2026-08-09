@@ -176,9 +176,7 @@ def test_load_settings_rejects_invalid_config(
 
 
 @pytest.mark.parametrize("key", ["default_host", "default_port"])
-def test_removed_web_bind_toml_settings_fail_loudly(
-    monkeypatch, tmp_path: Path, key: str
-) -> None:
+def test_removed_web_bind_toml_settings_fail_loudly(monkeypatch, tmp_path: Path, key: str) -> None:
     config_path = tmp_path / "kicad_pcb_web.toml"
     value = '"0.0.0.0"' if key == "default_host" else "9001"
     config_path.write_text(f"[web]\n{key} = {value}\n", encoding="utf-8")

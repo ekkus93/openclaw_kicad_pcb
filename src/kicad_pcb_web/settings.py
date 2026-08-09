@@ -13,9 +13,7 @@ LlmProvider = Literal["disabled", "openai", "ollama", "llama_server"]
 
 _VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})
 _TOP_LEVEL_CONFIG_KEYS: frozenset[str] = frozenset({"web", "llm"})
-_WEB_CONFIG_KEYS: frozenset[str] = frozenset(
-    {"data_dir", "default_host", "default_port", "mutation_lock_timeout_s"}
-)
+_WEB_CONFIG_KEYS: frozenset[str] = frozenset({"data_dir", "mutation_lock_timeout_s"})
 _LLM_CONFIG_KEYS: frozenset[str] = frozenset(
     {
         "provider",
@@ -38,6 +36,7 @@ _LLM_CONFIG_KEYS: frozenset[str] = frozenset(
     }
 )
 _REMOVED_NETWORK_PROBE_ENV = "KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED"
+_REMOVED_WEB_BIND_ENVS: frozenset[str] = frozenset({"KICAD_PCB_WEB_HOST", "KICAD_PCB_WEB_PORT"})
 
 
 @dataclass(frozen=True)
@@ -75,8 +74,6 @@ class WebSettings:
 
     data_dir: Path
     jobs_dir: Path
-    default_host: str = "127.0.0.1"
-    default_port: int = 8000
     mutation_lock_timeout_s: float = 2.0
     llm: LlmSettings = LlmSettings()
 
@@ -374,6 +371,10 @@ def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
 def load_settings() -> WebSettings:
     """Load and validate filesystem-backed settings from env/config."""
 
+    for removed_env in _REMOVED_WEB_BIND_ENVS:
+        if removed_env in os.environ:
+            raise ValueError(f"{removed_env} has been removed; pass host/port to the ASGI server")
+
     config_file = _load_config_file()
     config = config_file.payload
     web_config = config.get("web")
@@ -387,16 +388,6 @@ def load_settings() -> WebSettings:
         env_name="KICAD_PCB_WEB_DATA_DIR",
         config_value=web_config.get("data_dir"),
         default="data",
-    )
-    default_host = _read_setting(
-        env_name="KICAD_PCB_WEB_HOST",
-        config_value=web_config.get("default_host"),
-        default="127.0.0.1",
-    )
-    default_port_raw = _read_setting(
-        env_name="KICAD_PCB_WEB_PORT",
-        config_value=web_config.get("default_port"),
-        default=8000,
     )
     mutation_lock_timeout_raw = _read_setting(
         env_name="KICAD_PCB_WEB_MUTATION_LOCK_TIMEOUT_S",
@@ -412,15 +403,9 @@ def load_settings() -> WebSettings:
     )
     if lock_timeout <= 0:
         raise ValueError("web.mutation_lock_timeout_s must be greater than zero")
-    default_port = _coerce_int(default_port_raw, field_name="web.default_port")
-    if not 1 <= default_port <= 65535:
-        raise ValueError("web.default_port must be between 1 and 65535")
-
     return WebSettings(
         data_dir=data_dir,
         jobs_dir=jobs_dir,
-        default_host=str(default_host),
-        default_port=default_port,
         mutation_lock_timeout_s=lock_timeout,
         llm=_load_llm_settings(config),
     )
