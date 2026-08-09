@@ -9,6 +9,8 @@ import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any, Literal, Protocol
 
 import httpx
@@ -63,6 +65,10 @@ class HttpLlmClientConfig:
     default_temperature: float
     default_max_tokens: int | None
     api_key: str | None = None
+    retry_max_attempts: int = 3
+    retry_base_delay_s: float = 0.5
+    retry_max_delay_s: float = 8.0
+    retry_jitter_s: float = 0.25
 
 
 class LlmClient(Protocol):
@@ -73,7 +79,7 @@ class LlmClient(Protocol):
 
 
 class BaseHttpLlmClient(ABC):
-    """HTTP-backed base class with retry and response normalization hooks."""
+    """HTTP-backed base class with bounded response-aware retries."""
 
     def __init__(
         self,
@@ -89,6 +95,10 @@ class BaseHttpLlmClient(ABC):
         self.default_temperature = config.default_temperature
         self.default_max_tokens = config.default_max_tokens
         self.api_key = config.api_key
+        self.retry_max_attempts = config.retry_max_attempts
+        self.retry_base_delay_s = config.retry_base_delay_s
+        self.retry_max_delay_s = config.retry_max_delay_s
+        self.retry_jitter_s = config.retry_jitter_s
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=self.timeout_s,
@@ -145,9 +155,36 @@ class BaseHttpLlmClient(ABC):
 
         self._client.close()
 
+    def _retry_after_seconds(self, response: httpx.Response) -> float | None:
+        raw = response.headers.get("Retry-After")
+        if raw is None:
+            return None
+        stripped = raw.strip()
+        try:
+            return max(0.0, float(stripped))
+        except ValueError:
+            pass
+        try:
+            retry_at = parsedate_to_datetime(stripped)
+            if retry_at.tzinfo is None:
+                retry_at = retry_at.replace(tzinfo=UTC)
+            return max(0.0, (retry_at - datetime.now(UTC)).total_seconds())
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+    def _retry_delay(self, response: httpx.Response, *, attempt: int) -> float:
+        retry_after = self._retry_after_seconds(response)
+        if retry_after is not None:
+            return min(retry_after, self.retry_max_delay_s)
+        backoff = min(
+            self.retry_base_delay_s * (2 ** max(0, attempt - 1)),
+            self.retry_max_delay_s,
+        )
+        jitter = random.random() * self.retry_jitter_s
+        return min(backoff + jitter, self.retry_max_delay_s)
+
     def _post_json(self, *, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
-        last_error: Exception | None = None
-        for attempt in range(3):
+        for attempt in range(1, self.retry_max_attempts + 1):
             started_at = time.perf_counter()
             payload_bytes, prompt_fingerprint = self._payload_metrics(payload)
             LOGGER.info(
@@ -156,7 +193,7 @@ class BaseHttpLlmClient(ABC):
                     "provider": self.provider_name,
                     "endpoint": endpoint,
                     "base_url": self.base_url,
-                    "attempt": attempt + 1,
+                    "attempt": attempt,
                     "timeout_s": self.timeout_s,
                     "payload_bytes": payload_bytes,
                     "prompt_fingerprint": prompt_fingerprint,
@@ -164,98 +201,84 @@ class BaseHttpLlmClient(ABC):
             )
             try:
                 response = self._client.post(endpoint, json=payload)
+            except httpx.TransportError as exc:
                 elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
-                if response.status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
+                LOGGER.warning(
+                    "llm request failed before response; automatic replay suppressed",
+                    extra={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "attempt": attempt,
+                        "elapsed_ms": elapsed_ms,
+                        "error_type": type(exc).__name__,
+                        "payload_bytes": payload_bytes,
+                        "prompt_fingerprint": prompt_fingerprint,
+                        "ambiguous_delivery": True,
+                    },
+                )
+                raise ToolError(
+                    f"{self.provider_name} request failed before a response was received.",
+                    details={
+                        "provider": self.provider_name,
+                        "endpoint": endpoint,
+                        "ambiguous_delivery": True,
+                        "automatic_retry": False,
+                    },
+                ) from exc
+
+            elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+            if response.status_code in _RETRYABLE_STATUS_CODES:
+                if attempt < self.retry_max_attempts:
+                    delay_s = self._retry_delay(response, attempt=attempt)
                     LOGGER.warning(
                         "llm request received retryable status",
                         extra={
                             "provider": self.provider_name,
                             "endpoint": endpoint,
-                            "attempt": attempt + 1,
+                            "attempt": attempt,
                             "status_code": response.status_code,
                             "elapsed_ms": elapsed_ms,
+                            "retry_delay_s": round(delay_s, 3),
                             "payload_bytes": payload_bytes,
                             "prompt_fingerprint": prompt_fingerprint,
                         },
                     )
-                    time.sleep(0.05 + random.random() * 0.05)
+                    time.sleep(delay_s)
                     continue
+
+            try:
                 response.raise_for_status()
-                parsed = response.json()
-                if not isinstance(parsed, dict):
-                    raise ToolError(
-                        f"{self.provider_name} returned a non-object JSON payload.",
-                        details={"provider": self.provider_name},
-                    )
-                LOGGER.info(
-                    "llm request succeeded",
+            except httpx.HTTPStatusError as exc:
+                LOGGER.warning(
+                    "llm request failed with http status",
                     extra={
                         "provider": self.provider_name,
                         "endpoint": endpoint,
-                        "attempt": attempt + 1,
-                        "status_code": response.status_code,
+                        "attempt": attempt,
+                        "status_code": exc.response.status_code,
                         "elapsed_ms": elapsed_ms,
                         "payload_bytes": payload_bytes,
                         "prompt_fingerprint": prompt_fingerprint,
                     },
                 )
-                return parsed
-            except httpx.HTTPStatusError as exc:
-                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
-                last_error = ToolError(
+                raise ToolError(
                     f"{self.provider_name} request failed with HTTP {exc.response.status_code}.",
                     details={
                         "provider": self.provider_name,
                         "status_code": exc.response.status_code,
                         "endpoint": endpoint,
                     },
-                )
-                LOGGER.warning(
-                    "llm request failed with http status",
-                    extra={
-                        "provider": self.provider_name,
-                        "endpoint": endpoint,
-                        "attempt": attempt + 1,
-                        "status_code": exc.response.status_code,
-                        "elapsed_ms": elapsed_ms,
-                        "payload_bytes": payload_bytes,
-                        "prompt_fingerprint": prompt_fingerprint,
-                    },
-                )
-                if exc.response.status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
-                    time.sleep(0.05 + random.random() * 0.05)
-                    continue
-                raise last_error from exc
-            except httpx.TransportError as exc:
-                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
-                last_error = ToolError(
-                    f"{self.provider_name} request failed before a response was received.",
-                    details={"provider": self.provider_name, "endpoint": endpoint},
-                )
-                LOGGER.warning(
-                    "llm request failed before response",
-                    extra={
-                        "provider": self.provider_name,
-                        "endpoint": endpoint,
-                        "attempt": attempt + 1,
-                        "elapsed_ms": elapsed_ms,
-                        "error_type": type(exc).__name__,
-                        "payload_bytes": payload_bytes,
-                        "prompt_fingerprint": prompt_fingerprint,
-                    },
-                )
-                if attempt < 2:
-                    time.sleep(0.05 + random.random() * 0.05)
-                    continue
-                raise last_error from exc
+                ) from exc
+
+            try:
+                parsed = response.json()
             except ValueError as exc:
-                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 LOGGER.warning(
                     "llm request returned invalid json",
                     extra={
                         "provider": self.provider_name,
                         "endpoint": endpoint,
-                        "attempt": attempt + 1,
+                        "attempt": attempt,
                         "elapsed_ms": elapsed_ms,
                         "payload_bytes": payload_bytes,
                         "prompt_fingerprint": prompt_fingerprint,
@@ -266,8 +289,25 @@ class BaseHttpLlmClient(ABC):
                     details={"provider": self.provider_name, "endpoint": endpoint},
                 ) from exc
 
-        if last_error is not None:
-            raise last_error
+            if not isinstance(parsed, dict):
+                raise ToolError(
+                    f"{self.provider_name} returned a non-object JSON payload.",
+                    details={"provider": self.provider_name},
+                )
+            LOGGER.info(
+                "llm request succeeded",
+                extra={
+                    "provider": self.provider_name,
+                    "endpoint": endpoint,
+                    "attempt": attempt,
+                    "status_code": response.status_code,
+                    "elapsed_ms": elapsed_ms,
+                    "payload_bytes": payload_bytes,
+                    "prompt_fingerprint": prompt_fingerprint,
+                },
+            )
+            return parsed
+
         raise ToolError(f"{self.provider_name} request failed unexpectedly.")
 
     def _coerce_text_content(self, value: Any) -> str:
