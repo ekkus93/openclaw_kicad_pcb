@@ -32,6 +32,10 @@ class LlmSettings:
     request_log_redaction: bool = True
     network_probe_enabled: bool = False
     debug_artifact_capture: bool = False
+    retry_max_attempts: int = 3
+    retry_base_delay_s: float = 0.5
+    retry_max_delay_s: float = 8.0
+    retry_jitter_s: float = 0.25
 
     @property
     def enabled(self) -> bool:
@@ -198,6 +202,26 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         config_value=llm_config.get("debug_artifact_capture"),
         default=False,
     )
+    retry_max_attempts_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_LLM_RETRY_MAX_ATTEMPTS",
+        config_value=llm_config.get("retry_max_attempts"),
+        default=3,
+    )
+    retry_base_delay_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_LLM_RETRY_BASE_DELAY_S",
+        config_value=llm_config.get("retry_base_delay_s"),
+        default=0.5,
+    )
+    retry_max_delay_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_LLM_RETRY_MAX_DELAY_S",
+        config_value=llm_config.get("retry_max_delay_s"),
+        default=8.0,
+    )
+    retry_jitter_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_LLM_RETRY_JITTER_S",
+        config_value=llm_config.get("retry_jitter_s"),
+        default=0.25,
+    )
 
     settings = LlmSettings(
         provider=provider,
@@ -246,6 +270,16 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         debug_artifact_capture=_coerce_bool(
             debug_artifact_capture_raw, field_name="llm.debug_artifact_capture"
         ),
+        retry_max_attempts=_coerce_int(
+            retry_max_attempts_raw, field_name="llm.retry_max_attempts"
+        ),
+        retry_base_delay_s=_coerce_float(
+            retry_base_delay_raw, field_name="llm.retry_base_delay_s"
+        ),
+        retry_max_delay_s=_coerce_float(
+            retry_max_delay_raw, field_name="llm.retry_max_delay_s"
+        ),
+        retry_jitter_s=_coerce_float(retry_jitter_raw, field_name="llm.retry_jitter_s"),
     )
     _validate_llm_settings(settings)
     return settings
@@ -277,11 +311,25 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.system_prompt_version must not be empty")
     if settings.enable_streaming:
         raise ValueError("llm.enable_streaming=true is unsupported; streaming is not implemented")
+    if not settings.request_log_redaction:
+        raise ValueError(
+            "llm.request_log_redaction=false is unsupported; provider request logs are always redacted"
+        )
     if settings.network_probe_enabled:
         raise ValueError(
             "llm.network_probe_enabled=true is unsupported; "
             "active network probing is not implemented"
         )
+    if not 1 <= settings.retry_max_attempts <= 10:
+        raise ValueError("llm.retry_max_attempts must be between 1 and 10")
+    if settings.retry_base_delay_s < 0:
+        raise ValueError("llm.retry_base_delay_s must be zero or greater")
+    if settings.retry_max_delay_s < settings.retry_base_delay_s:
+        raise ValueError("llm.retry_max_delay_s must be at least llm.retry_base_delay_s")
+    if settings.retry_jitter_s < 0:
+        raise ValueError("llm.retry_jitter_s must be zero or greater")
+    if settings.retry_jitter_s > settings.retry_max_delay_s:
+        raise ValueError("llm.retry_jitter_s must not exceed llm.retry_max_delay_s")
 
     if settings.base_url is not None:
         _validate_http_url(settings.base_url, field_name="llm.base_url")
