@@ -12,6 +12,32 @@ from urllib.parse import urlparse
 LlmProvider = Literal["disabled", "openai", "ollama", "llama_server"]
 
 _VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})
+_TOP_LEVEL_CONFIG_KEYS: frozenset[str] = frozenset({"web", "llm"})
+_WEB_CONFIG_KEYS: frozenset[str] = frozenset(
+    {"data_dir", "default_host", "default_port", "mutation_lock_timeout_s"}
+)
+_LLM_CONFIG_KEYS: frozenset[str] = frozenset(
+    {
+        "provider",
+        "model",
+        "base_url",
+        "api_key",
+        "timeout_s",
+        "temperature",
+        "max_tokens",
+        "system_prompt_version",
+        "spec_max_repair_rounds",
+        "ir_max_repair_rounds",
+        "enable_streaming",
+        "request_log_redaction",
+        "debug_artifact_capture",
+        "retry_max_attempts",
+        "retry_base_delay_s",
+        "retry_max_delay_s",
+        "retry_jitter_s",
+    }
+)
+_REMOVED_NETWORK_PROBE_ENV = "KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED"
 
 
 @dataclass(frozen=True)
@@ -30,7 +56,6 @@ class LlmSettings:
     ir_max_repair_rounds: int = 2
     enable_streaming: bool = False
     request_log_redaction: bool = True
-    network_probe_enabled: bool = False
     debug_artifact_capture: bool = False
     retry_max_attempts: int = 3
     retry_base_delay_s: float = 0.5
@@ -42,12 +67,6 @@ class LlmSettings:
         """Return whether an LLM provider is enabled."""
 
         return self.provider != "disabled"
-
-    @property
-    def network_probe_supported(self) -> bool:
-        """Return whether the configured provider could support a health probe."""
-
-        return self.provider in {"openai", "ollama", "llama_server"}
 
 
 @dataclass(frozen=True)
@@ -68,6 +87,14 @@ class _ConfigFile:
 
     path: Path | None
     payload: dict[str, Any]
+
+
+def _reject_unknown_keys(
+    payload: dict[str, Any], *, allowed: frozenset[str], section: str
+) -> None:
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        raise ValueError(f"Unsupported {section} config setting(s): {', '.join(unknown)}")
 
 
 def _load_config_file() -> _ConfigFile:
@@ -98,6 +125,7 @@ def _load_config_file() -> _ConfigFile:
         raise ValueError(f"Unable to read configured web config file: {config_path}") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"Web config file must contain TOML tables: {config_path}")
+    _reject_unknown_keys(payload, allowed=_TOP_LEVEL_CONFIG_KEYS, section="top-level")
     return _ConfigFile(path=config_path, payload=payload)
 
 
@@ -140,11 +168,17 @@ def _read_setting(*, env_name: str, config_value: Any, default: Any) -> Any:
 def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
     """Load LLM provider settings from env/config."""
 
+    if _REMOVED_NETWORK_PROBE_ENV in os.environ:
+        raise ValueError(
+            f"{_REMOVED_NETWORK_PROBE_ENV} has been removed; active network probing is not implemented"
+        )
+
     llm_config = config.get("llm")
     if llm_config is None:
         llm_config = {}
     if not isinstance(llm_config, dict):
         raise ValueError("[llm] config must be a TOML table")
+    _reject_unknown_keys(llm_config, allowed=_LLM_CONFIG_KEYS, section="[llm]")
 
     provider = _read_setting(
         env_name="KICAD_PCB_WEB_LLM_PROVIDER",
@@ -191,11 +225,6 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         env_name="KICAD_PCB_WEB_LLM_REQUEST_LOG_REDACTION",
         config_value=llm_config.get("request_log_redaction"),
         default=True,
-    )
-    network_probe_enabled_raw = _read_setting(
-        env_name="KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED",
-        config_value=llm_config.get("network_probe_enabled"),
-        default=False,
     )
     debug_artifact_capture_raw = _read_setting(
         env_name="KICAD_PCB_WEB_LLM_DEBUG_ARTIFACT_CAPTURE",
@@ -264,9 +293,6 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         request_log_redaction=_coerce_bool(
             request_log_redaction_raw, field_name="llm.request_log_redaction"
         ),
-        network_probe_enabled=_coerce_bool(
-            network_probe_enabled_raw, field_name="llm.network_probe_enabled"
-        ),
         debug_artifact_capture=_coerce_bool(
             debug_artifact_capture_raw, field_name="llm.debug_artifact_capture"
         ),
@@ -309,11 +335,6 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError(
             "llm.request_log_redaction=false is unsupported; "
             "provider request logs are always redacted"
-        )
-    if settings.network_probe_enabled:
-        raise ValueError(
-            "llm.network_probe_enabled=true is unsupported; "
-            "active network probing is not implemented"
         )
     if not 1 <= settings.retry_max_attempts <= 10:
         raise ValueError("llm.retry_max_attempts must be between 1 and 10")
@@ -362,6 +383,7 @@ def load_settings() -> WebSettings:
         web_config = {}
     if not isinstance(web_config, dict):
         raise ValueError("[web] config must be a TOML table")
+    _reject_unknown_keys(web_config, allowed=_WEB_CONFIG_KEYS, section="[web]")
 
     data_dir_raw = _read_setting(
         env_name="KICAD_PCB_WEB_DATA_DIR",

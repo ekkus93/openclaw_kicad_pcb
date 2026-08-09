@@ -40,17 +40,24 @@ def _synchronous_generation_error(job: JobDetail) -> WebServiceError:
     elif error_type in {"user_error", "validation_error"}:
         status_code = 422
 
+    error_id: str | None = None
     details: dict[str, object] = {"job_id": job.id, "job_status": job.status}
     if isinstance(job.error, dict):
         error_code = job.error.get("code")
         if isinstance(error_code, str):
             details["job_error_code"] = error_code
+        job_error_details = job.error.get("details")
+        if isinstance(job_error_details, dict):
+            candidate_error_id = job_error_details.get("error_id")
+            if isinstance(candidate_error_id, str) and candidate_error_id.startswith("err_"):
+                error_id = candidate_error_id
 
     return WebServiceError(
         "KiCad project generation failed.",
         code="PROJECT_GENERATION_FAILED",
         status_code=status_code,
         details=details,
+        error_id=error_id,
     )
 
 

@@ -29,7 +29,7 @@ from kicad_pcb_web.services.netlists import (
     _job_relative_path,
     generate_project_from_netlist_job,
 )
-from kicad_pcb_web.settings import LlmSettings, WebSettings
+from kicad_pcb_web.settings import WebSettings
 
 
 def _settings(tmp_path: Path) -> WebSettings:
@@ -134,6 +134,42 @@ def test_unexpected_job_failure_persists_correlation_id(tmp_path: Path, monkeypa
     assert str(job.error["details"]["error_id"]).startswith("err_")
 
 
+def test_unexpected_job_failure_api_returns_same_correlation_id(
+    tmp_path: Path, monkeypatch
+) -> None:
+    private_message = "unexpected failure at /tmp/private-api-diagnostic.txt"
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "api-data"))
+    get_settings.cache_clear()
+
+    def explode(**_kwargs):
+        raise RuntimeError(private_message)
+
+    monkeypatch.setattr(
+        "kicad_pcb_web.services.netlists._validate_with_optional_autofix",
+        explode,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/jobs/from-netlist",
+            json={"project_name": "CorrelationApi", "netlist_json": {}},
+        )
+        assert response.status_code == 500
+        payload = response.json()
+        details = payload["error"]["details"]
+        job_id = details["job_id"]
+        error_id = details["error_id"]
+        assert str(error_id).startswith("err_")
+
+        persisted = client.get(f"/api/jobs/{job_id}")
+        assert persisted.status_code == 200
+        persisted_error_id = persisted.json()["error"]["details"]["error_id"]
+
+    assert persisted_error_id == error_id
+    assert private_message not in json.dumps(payload)
+    assert "/tmp/private-api-diagnostic.txt" not in json.dumps(payload)
+
+
 def test_validation_payload_omits_rejected_input_values() -> None:
     exc = RequestValidationError(
         [
@@ -189,8 +225,4 @@ def test_doctor_preview_ready_only_when_both_tools_exist(tmp_path: Path, monkeyp
 
     checks = {check.name: check for check in run_doctor(settings).checks}
     assert checks["preview_tooling"].ok is True
-
-
-def test_network_probe_setting_cannot_exist_as_inert_runtime_state() -> None:
-    settings = LlmSettings(network_probe_enabled=False)
-    assert settings.network_probe_enabled is False
+    assert "llm_network_probe" not in checks

@@ -12,6 +12,7 @@ def test_load_settings_defaults_when_no_config(monkeypatch, tmp_path: Path) -> N
     monkeypatch.delenv("KICAD_PCB_WEB_CONFIG_FILE", raising=False)
     monkeypatch.delenv("KICAD_PCB_WEB_DATA_DIR", raising=False)
     monkeypatch.delenv("KICAD_PCB_WEB_LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED", raising=False)
 
     settings = load_settings()
 
@@ -58,7 +59,6 @@ spec_max_repair_rounds = 3
 ir_max_repair_rounds = 4
 enable_streaming = false
 request_log_redaction = true
-network_probe_enabled = false
 debug_artifact_capture = true
 """.strip(),
         encoding="utf-8",
@@ -83,7 +83,6 @@ debug_artifact_capture = true
     assert settings.llm.ir_max_repair_rounds == 4
     assert settings.llm.enable_streaming is False
     assert settings.llm.request_log_redaction is True
-    assert settings.llm.network_probe_enabled is False
     assert settings.llm.debug_artifact_capture is True
 
 
@@ -164,13 +163,6 @@ enable_streaming = true
         ),
         (
             """
-[llm]
-network_probe_enabled = true
-""".strip(),
-            "network_probe_enabled=true is unsupported",
-        ),
-        (
-            """
 [web]
 default_port = 70000
 """.strip(),
@@ -189,6 +181,32 @@ def test_load_settings_rejects_invalid_config(
     monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
 
     with pytest.raises(ValueError, match=error_text):
+        load_settings()
+
+
+def test_removed_network_probe_toml_setting_fails_loudly(monkeypatch, tmp_path: Path) -> None:
+    config_path = tmp_path / "kicad_pcb_web.toml"
+    config_path.write_text("[llm]\nnetwork_probe_enabled = false\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="network_probe_enabled"):
+        load_settings()
+
+
+def test_removed_network_probe_env_setting_fails_loudly(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED", "false")
+
+    with pytest.raises(ValueError, match="has been removed"):
+        load_settings()
+
+
+def test_unknown_config_key_fails_instead_of_being_ignored(monkeypatch, tmp_path: Path) -> None:
+    config_path = tmp_path / "kicad_pcb_web.toml"
+    config_path.write_text("[llm]\nsilent_future_toggle = true\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="silent_future_toggle"):
         load_settings()
 
 

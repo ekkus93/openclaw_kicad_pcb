@@ -119,14 +119,6 @@ def run_doctor(settings: WebSettings) -> DoctorResponse:
                 )
             ),
         ),
-        DoctorCheck(
-            name="llm_network_probe",
-            ok=True,
-            detail=(
-                "Active LLM network probing is not supported; "
-                "the enable setting is rejected at startup."
-            ),
-        ),
     ]
     required_checks = {"python", "jobs_dir", "symbols_dir", "graphviz_dot"}
     overall_ok = all(check.ok for check in checks if check.name in required_checks)
