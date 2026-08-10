@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import tomllib
 from dataclasses import dataclass
@@ -128,29 +129,50 @@ def _load_config_file() -> _ConfigFile:
     return _ConfigFile(path=config_path, payload=payload)
 
 
+def _coerce_string(value: Any, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _coerce_optional_string(value: Any, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _coerce_string(value, field_name=field_name)
+
+
 def _coerce_float(value: Any, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"Invalid float for {field_name}")
     try:
-        return float(value)
+        result = float(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Invalid float for {field_name}: {value!r}") from exc
+        raise ValueError(f"Invalid float for {field_name}") from exc
+    if not math.isfinite(result):
+        raise ValueError(f"{field_name} must be a finite number")
+    return result
 
 
 def _coerce_int(value: Any, *, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError(f"Invalid integer for {field_name}")
     try:
         return int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"Invalid integer for {field_name}: {value!r}") from exc
+    except ValueError as exc:
+        raise ValueError(f"Invalid integer for {field_name}") from exc
 
 
 def _coerce_bool(value: Any, *, field_name: str) -> bool:
     if isinstance(value, bool):
         return value
-    normalized = str(value).strip().lower()
+    if not isinstance(value, str):
+        raise ValueError(f"Invalid boolean for {field_name}")
+    normalized = value.strip().lower()
     if normalized in {"1", "true", "yes", "on"}:
         return True
     if normalized in {"0", "false", "no", "off"}:
         return False
-    raise ValueError(f"Invalid boolean for {field_name}: {value!r}")
+    raise ValueError(f"Invalid boolean for {field_name}")
 
 
 def _read_setting(*, env_name: str, config_value: Any, default: Any) -> Any:
@@ -180,11 +202,12 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         raise ValueError("[llm] config must be a TOML table")
     _reject_unknown_keys(llm_config, allowed=_LLM_CONFIG_KEYS, section="[llm]")
 
-    provider = _read_setting(
+    provider_raw = _read_setting(
         env_name="KICAD_PCB_WEB_LLM_PROVIDER",
         config_value=llm_config.get("provider"),
         default="disabled",
     )
+    provider = _coerce_string(provider_raw, field_name="llm.provider")
     if provider not in _VALID_LLM_PROVIDERS:
         raise ValueError(
             "Invalid KICAD_PCB_WEB_LLM_PROVIDER; expected one of: "
@@ -201,12 +224,13 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         config_value=llm_config.get("temperature"),
         default=0.2,
     )
-    temperature_mode_raw = str(
+    temperature_mode_raw = _coerce_string(
         _read_setting(
             env_name="KICAD_PCB_WEB_LLM_TEMPERATURE_MODE",
             config_value=llm_config.get("temperature_mode"),
             default="send",
-        )
+        ),
+        field_name="llm.temperature_mode",
     )
     if temperature_mode_raw not in _VALID_TEMPERATURE_MODES:
         raise ValueError("llm.temperature_mode must be one of: omit, send")
@@ -262,21 +286,30 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
     )
 
     settings = LlmSettings(
-        provider=provider,
-        model=_read_setting(
-            env_name="KICAD_PCB_WEB_LLM_MODEL",
-            config_value=llm_config.get("model"),
-            default=None,
+        provider=cast(LlmProvider, provider),
+        model=_coerce_optional_string(
+            _read_setting(
+                env_name="KICAD_PCB_WEB_LLM_MODEL",
+                config_value=llm_config.get("model"),
+                default=None,
+            ),
+            field_name="llm.model",
         ),
-        base_url=_read_setting(
-            env_name="KICAD_PCB_WEB_LLM_BASE_URL",
-            config_value=llm_config.get("base_url"),
-            default=None,
+        base_url=_coerce_optional_string(
+            _read_setting(
+                env_name="KICAD_PCB_WEB_LLM_BASE_URL",
+                config_value=llm_config.get("base_url"),
+                default=None,
+            ),
+            field_name="llm.base_url",
         ),
-        api_key=_read_setting(
-            env_name="KICAD_PCB_WEB_LLM_API_KEY",
-            config_value=llm_config.get("api_key"),
-            default=None,
+        api_key=_coerce_optional_string(
+            _read_setting(
+                env_name="KICAD_PCB_WEB_LLM_API_KEY",
+                config_value=llm_config.get("api_key"),
+                default=None,
+            ),
+            field_name="llm.api_key",
         ),
         timeout_s=_coerce_float(timeout_raw, field_name="llm.timeout_s"),
         temperature=_coerce_float(temperature_raw, field_name="llm.temperature"),
@@ -286,12 +319,13 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
             if max_tokens_raw in (None, "")
             else _coerce_int(max_tokens_raw, field_name="llm.max_tokens")
         ),
-        system_prompt_version=str(
+        system_prompt_version=_coerce_string(
             _read_setting(
                 env_name="KICAD_PCB_WEB_LLM_SYSTEM_PROMPT_VERSION",
                 config_value=llm_config.get("system_prompt_version"),
                 default="v1",
-            )
+            ),
+            field_name="llm.system_prompt_version",
         ),
         spec_max_repair_rounds=_coerce_int(
             spec_max_repair_rounds_raw, field_name="llm.spec_max_repair_rounds"
@@ -316,9 +350,22 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
 
 
 def _validate_http_url(value: str, *, field_name: str) -> None:
-    parsed = urlparse(value)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError(f"Invalid URL for {field_name}: {value!r}")
+    try:
+        parsed = urlparse(value)
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError(f"Invalid URL for {field_name}") from exc
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.hostname is None
+        or any(character.isspace() for character in parsed.netloc)
+        or parsed.username is not None
+        or parsed.password is not None
+        or bool(parsed.query)
+        or bool(parsed.fragment)
+    ):
+        raise ValueError(f"Invalid URL for {field_name}")
 
 
 def _require_non_empty(value: str | None, *, field_name: str) -> None:
