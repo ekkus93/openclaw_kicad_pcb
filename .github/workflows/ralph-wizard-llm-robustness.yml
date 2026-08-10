@@ -44,6 +44,20 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
 
+      - name: Harden transformation helper indentation semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/scripts/apply_wizard_llm_robustness.py')
+          text = path.read_text(encoding='utf-8')
+          old_replace = '''def replace_once(path: str, old: str, new: str) -> None:\n    text = read(path)\n    if text.count(old) != 1:\n        raise RuntimeError(\n            f"expected exactly one match in {path}: {old[:100]!r}; got {text.count(old)}"\n        )\n    write(path, text.replace(old, new, 1))\n\n\ndef regex_replace_once(path: str, pattern: str, new: str) -> None:\n    text = read(path)\n    updated, count = re.subn(pattern, new, text, count=1, flags=re.S)\n    if count != 1:\n        raise RuntimeError(f"expected exactly one regex match in {path}: {pattern!r}; got {count}")\n    write(path, updated)\n'''
+          new_replace = '''def _indent_nonblank(value: str, prefix: str) -> str:\n    return "\\n".join(prefix + line if line else line for line in value.split("\\n"))\n\n\ndef replace_once(path: str, old: str, new: str) -> None:\n    text = read(path)\n    if text.count(old) == 0:\n        indented_old = _indent_nonblank(old, "    ")\n        if text.count(indented_old) == 1:\n            old = indented_old\n            new = _indent_nonblank(new, "    ")\n    if text.count(old) != 1:\n        raise RuntimeError(\n            f"expected exactly one match in {path}: {old[:100]!r}; got {text.count(old)}"\n        )\n    write(path, text.replace(old, new, 1))\n\n\ndef regex_replace_once(path: str, pattern: str, new: str) -> None:\n    text = read(path)\n    match = re.search(pattern, text, flags=re.S)\n    if match is None:\n        raise RuntimeError(f"expected exactly one regex match in {path}: {pattern!r}; got 0")\n    if re.search(pattern, text[match.end():], flags=re.S) is not None:\n        raise RuntimeError(f"expected exactly one regex match in {path}: {pattern!r}; got >1")\n    leading = re.match(r"[ \\t]*", match.group(0)).group(0)\n    if leading and new and not new.startswith(leading):\n        new = _indent_nonblank(new, leading)\n    write(path, text[:match.start()] + new + text[match.end():])\n'''
+          if text.count(old_replace) != 1:
+              raise SystemExit('helper replacement functions no longer match expected source')
+          path.write_text(text.replace(old_replace, new_replace, 1), encoding='utf-8')
+          PY
+
       - name: Apply D1-D7 and run targeted/full gates
         run: uv run python .github/scripts/apply_wizard_llm_robustness.py
 
