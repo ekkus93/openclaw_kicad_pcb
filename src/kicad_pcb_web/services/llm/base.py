@@ -199,10 +199,40 @@ class BaseHttpLlmClient(ABC):
         prompt_fingerprint = hashlib.sha256(canonical_prompt).hexdigest()[:16]
         return payload_bytes, prompt_fingerprint
 
+    def _log_completion_outcome(
+        self,
+        *,
+        outcome: LlmCompletionOutcome,
+        finish_reason: str | None,
+        request_id: str | None = None,
+        response_chars: int | None = None,
+    ) -> None:
+        extra: dict[str, object] = {
+            "provider": self.provider_name,
+            "model": self.model,
+            "completion_outcome": outcome.value,
+            "finish_reason": finish_reason,
+        }
+        if request_id is not None:
+            extra["provider_request_id"] = request_id
+        if response_chars is not None:
+            extra["response_chars"] = response_chars
+        if outcome is LlmCompletionOutcome.COMPLETED:
+            LOGGER.info("llm completion normalized", extra=extra)
+        else:
+            LOGGER.warning("llm completion normalized", extra=extra)
+
     def complete(self, request: LlmRequest) -> LlmCompletion:
         endpoint, payload = self._build_payload(request)
         response_payload = self._post_json(endpoint=endpoint, payload=payload)
-        return self._parse_completion(response_payload)
+        completion = self._parse_completion(response_payload)
+        self._log_completion_outcome(
+            outcome=completion.outcome,
+            finish_reason=completion.finish_reason,
+            request_id=completion.request_id,
+            response_chars=len(completion.content),
+        )
+        return completion
 
     def close(self) -> None:
         """Release the underlying HTTP client resources."""
@@ -420,6 +450,7 @@ class BaseHttpLlmClient(ABC):
         }
         if outcome is LlmCompletionOutcome.COMPLETED:
             return
+        self._log_completion_outcome(outcome=outcome, finish_reason=finish_reason)
         if outcome is LlmCompletionOutcome.TRUNCATED:
             raise LlmCompletionTruncatedError(
                 "The configured LLM response was truncated; increase llm.max_tokens.",
@@ -456,6 +487,10 @@ class BaseHttpLlmClient(ABC):
             ]
             content = "".join(part for part in text_parts if part)
         elif value is None:
+            self._log_completion_outcome(
+                outcome=LlmCompletionOutcome.NO_USABLE_CONTENT,
+                finish_reason=None,
+            )
             raise LlmNoUsableContentError(
                 "The configured LLM provider returned no usable content.",
                 details={
@@ -470,6 +505,10 @@ class BaseHttpLlmClient(ABC):
             )
 
         if not content.strip():
+            self._log_completion_outcome(
+                outcome=LlmCompletionOutcome.NO_USABLE_CONTENT,
+                finish_reason=None,
+            )
             raise LlmNoUsableContentError(
                 "The configured LLM provider returned no usable content.",
                 details={
