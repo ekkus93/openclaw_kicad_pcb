@@ -62,7 +62,7 @@ def test_derived_export_failure_reports_committed_canonical_state(
     assert persisted.updated_at == session.updated_at
 
 
-def test_debug_artifacts_use_private_directory_and_preserve_raw_capture_contract(
+def test_debug_artifacts_use_private_directory_and_persist_metadata_only(
     tmp_path: Path,
 ) -> None:
     settings = _settings(tmp_path, debug=True)
@@ -72,16 +72,72 @@ def test_debug_artifacts_use_private_directory_and_preserve_raw_capture_contract
         stage="spec",
     )
     assert writer is not None
-    writer({"messages": [{"role": "user", "content": "sensitive raw prompt"}]})
+    sensitive_prompt = "sensitive raw prompt /home/alice/private-design.kicad_sch"
+    writer(
+        {
+            "attempt": 1,
+            "response_model": "SpecConversationOutput",
+            "messages": [{"role": "user", "content": sensitive_prompt}],
+            "completion": {
+                "provider": "openai",
+                "model": "gpt-4.1-mini",
+                "content": "sensitive raw provider body",
+                "finish_reason": "stop",
+                "request_id": "req_safe_identifier",
+            },
+            "parse_error": "failure while reading /home/alice/private-design.kicad_sch",
+            "parsed": {"purpose": "private user design text"},
+        }
+    )
 
     artifact_dir = (
         settings.data_dir / "wizard_sessions" / "wiz_debug_permissions" / "debug_artifacts"
     )
     artifacts = list(artifact_dir.glob("*.json"))
     assert len(artifacts) == 1
-    assert "sensitive raw prompt" in artifacts[0].read_text(encoding="utf-8")
+    artifact_text = artifacts[0].read_text(encoding="utf-8")
+    artifact = json.loads(artifact_text)
+
+    assert sensitive_prompt not in artifact_text
+    assert "sensitive raw provider body" not in artifact_text
+    assert "private user design text" not in artifact_text
+    assert "/home/alice" not in artifact_text
+    assert "TOP-SECRET-KEY" not in artifact_text
+    assert artifact["attempt"] == 1
+    assert artifact["response_model"] == "SpecConversationOutput"
+    assert artifact["prompt_message_count"] == 1
+    assert artifact["prompt_chars"] == len(sensitive_prompt)
+    assert len(artifact["prompt_fingerprint"]) == 16
+    assert artifact["provider"] == "openai"
+    assert artifact["model"] == "gpt-4.1-mini"
+    assert artifact["response_chars"] == len("sensitive raw provider body")
+    assert len(artifact["response_fingerprint"]) == 16
+    assert artifact["parse_error_present"] is True
+    assert artifact["parsed_type"] == "dict"
+    assert artifact["parsed_top_level_key_count"] == 1
     if os.name == "posix":
         assert artifact_dir.stat().st_mode & 0o777 == 0o700
+
+
+def test_debug_artifact_writer_rejects_header_capture_without_writing(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = _settings(tmp_path, debug=True)
+    writer = _wizard_session_io._make_debug_artifact_writer(
+        settings,
+        "wiz_debug_headers",
+        stage="spec",
+    )
+    assert writer is not None
+
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        writer({"headers": {"Authorization": "Bearer TOP-SECRET-KEY"}})
+
+    artifact_dir = settings.data_dir / "wizard_sessions" / "wiz_debug_headers" / "debug_artifacts"
+    assert not list(artifact_dir.glob("*.json"))
+    assert "wizard debug artifact rejected unsafe capture payload" in caplog.text
+    assert "TOP-SECRET-KEY" not in caplog.text
 
 
 def test_llm_provenance_is_non_secret_and_stable(tmp_path: Path) -> None:

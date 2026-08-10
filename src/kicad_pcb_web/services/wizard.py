@@ -78,6 +78,7 @@ def _operation_error(exc: Exception, *, session_id: str, operation: str) -> WebS
         exc.details.setdefault("operation", operation)
         return exc
     if isinstance(exc, ToolError):
+        retryable = exc.details.get("retryable")
         return UpstreamProviderError(
             "The configured LLM provider request failed.",
             details={
@@ -85,6 +86,7 @@ def _operation_error(exc: Exception, *, session_id: str, operation: str) -> WebS
                 "operation": operation,
                 "provider_error_code": exc.code,
             },
+            retryable=retryable if isinstance(retryable, bool) else False,
         )
     if isinstance(exc, UserError):
         return UpstreamProviderError(
@@ -248,6 +250,8 @@ def _persist_and_raise_failure(
                 "operation": operation,
                 "error_code": error.code,
                 "error_type": type(exc).__name__,
+                "failure_kind": failure_kind,
+                "retryable": error.retryable,
             },
         )
     failed = _set_error(session, _public_error_payload(error), failure_kind=failure_kind)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -29,6 +30,22 @@ LOGGER = logging.getLogger("uvicorn.error")
 _SAFE_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _DEBUG_ARTIFACT_MAX_FILES_PER_STAGE = 20
 _DEBUG_ARTIFACT_MAX_TOTAL_BYTES = 25 * 1024 * 1024
+_DEBUG_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
+    {
+        "attempt",
+        "response_model",
+        "messages",
+        "completion_error",
+        "completion",
+        "parse_error",
+        "parsed",
+    }
+)
+_DEBUG_ARTIFACT_MESSAGE_FIELDS: frozenset[str] = frozenset({"role", "content"})
+_DEBUG_ARTIFACT_COMPLETION_FIELDS: frozenset[str] = frozenset(
+    {"provider", "model", "content", "finish_reason", "request_id", "outcome"}
+)
+_DEBUG_ARTIFACT_ERROR_FIELDS: frozenset[str] = frozenset({"code", "message"})
 
 
 def _utc_now() -> str:
@@ -156,7 +173,7 @@ def _unlink_debug_artifact(path: Path) -> bool:
     except OSError as exc:
         LOGGER.warning(
             "failed to prune wizard debug artifact",
-            extra={"path": str(path), "error_type": type(exc).__name__},
+            extra={"artifact_name": path.name, "error_type": type(exc).__name__},
         )
         return False
     return True
@@ -178,7 +195,7 @@ def _prune_debug_artifacts(artifact_dir: Path, *, stage: str, newest: Path) -> N
         except OSError as exc:
             LOGGER.warning(
                 "failed to inspect wizard debug artifact during pruning",
-                extra={"path": str(path), "error_type": type(exc).__name__},
+                extra={"artifact_name": path.name, "error_type": type(exc).__name__},
             )
             continue
         sizes[path] = size
@@ -196,16 +213,120 @@ def _prune_debug_artifacts(artifact_dir: Path, *, stage: str, newest: Path) -> N
             total_bytes -= size_to_remove
 
 
+def _require_debug_string_or_none(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"unsafe debug artifact type for {field_name}")
+    return value
+
+
+def _redact_debug_artifact_payload(payload: dict[str, object]) -> dict[str, object]:
+    """Convert the legacy diagnostic structure into metadata-only persisted content."""
+
+    unknown = set(payload) - _DEBUG_ARTIFACT_ALLOWED_FIELDS
+    if unknown:
+        raise ValueError("unsafe debug artifact top-level field")
+
+    safe: dict[str, object] = {}
+    if "attempt" in payload:
+        attempt = payload["attempt"]
+        if isinstance(attempt, bool) or not isinstance(attempt, int):
+            raise ValueError("unsafe debug artifact type for attempt")
+        safe["attempt"] = attempt
+
+    if "response_model" in payload:
+        response_model = payload["response_model"]
+        if not isinstance(response_model, str):
+            raise ValueError("unsafe debug artifact type for response_model")
+        safe["response_model"] = response_model
+
+    if "messages" in payload:
+        messages = payload["messages"]
+        if not isinstance(messages, list):
+            raise ValueError("unsafe debug artifact type for messages")
+        canonical_messages: list[dict[str, str]] = []
+        prompt_chars = 0
+        for message in messages:
+            if not isinstance(message, dict) or set(message) - _DEBUG_ARTIFACT_MESSAGE_FIELDS:
+                raise ValueError("unsafe debug artifact message shape")
+            role = message.get("role")
+            content = message.get("content")
+            if not isinstance(role, str) or not isinstance(content, str):
+                raise ValueError("unsafe debug artifact message value")
+            canonical_messages.append({"role": role, "content": content})
+            prompt_chars += len(content)
+        canonical_prompt = json.dumps(
+            canonical_messages,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        safe["prompt_message_count"] = len(canonical_messages)
+        safe["prompt_chars"] = prompt_chars
+        safe["prompt_fingerprint"] = hashlib.sha256(canonical_prompt).hexdigest()[:16]
+
+    if "completion" in payload:
+        completion = payload["completion"]
+        if not isinstance(completion, dict) or set(completion) - _DEBUG_ARTIFACT_COMPLETION_FIELDS:
+            raise ValueError("unsafe debug artifact completion shape")
+        for field_name in ("provider", "model", "finish_reason", "request_id", "outcome"):
+            if field_name not in completion:
+                continue
+            value = _require_debug_string_or_none(completion[field_name], field_name=field_name)
+            if value is not None:
+                safe[field_name] = value
+        content = completion.get("content")
+        if content is not None:
+            if not isinstance(content, str):
+                raise ValueError("unsafe debug artifact type for completion content")
+            safe["response_chars"] = len(content)
+            safe["response_fingerprint"] = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+
+    if "completion_error" in payload:
+        completion_error = payload["completion_error"]
+        if (
+            not isinstance(completion_error, dict)
+            or set(completion_error) - _DEBUG_ARTIFACT_ERROR_FIELDS
+        ):
+            raise ValueError("unsafe debug artifact completion error shape")
+        code = completion_error.get("code")
+        if code is not None:
+            if not isinstance(code, str):
+                raise ValueError("unsafe debug artifact type for completion error code")
+            safe["error_code"] = code
+        if completion_error.get("message") is not None:
+            if not isinstance(completion_error["message"], str):
+                raise ValueError("unsafe debug artifact type for completion error message")
+            safe["error_message_present"] = True
+
+    if "parse_error" in payload:
+        parse_error = payload["parse_error"]
+        if not isinstance(parse_error, str):
+            raise ValueError("unsafe debug artifact type for parse_error")
+        safe["parse_error_present"] = True
+
+    if "parsed" in payload:
+        parsed = payload["parsed"]
+        safe["parsed_type"] = type(parsed).__name__
+        if isinstance(parsed, dict):
+            safe["parsed_top_level_key_count"] = len(parsed)
+
+    return safe
+
+
 def _make_debug_artifact_writer(
     settings: WebSettings,
     session_id: str,
     *,
     stage: str,
 ) -> Callable[[dict[str, object]], None] | None:
-    """Return an opt-in writer for raw prompts/completions.
+    """Return an opt-in metadata-only writer for redacted LLM diagnostics.
 
-    Raw debug artifacts are intentionally separate from request-log redaction.
-    Their directory is restricted to the owning user on POSIX systems.
+    Raw prompts, user content, provider bodies, authorization headers, and raw error
+    strings are never persisted. The writer performs this policy at the storage
+    boundary so future callers cannot accidentally restore the former raw-capture
+    behavior merely by passing sensitive diagnostic structures.
     """
 
     if not settings.llm.debug_artifact_capture:
@@ -214,18 +335,27 @@ def _make_debug_artifact_writer(
     artifact_dir = _debug_artifact_dir(settings, session_id)
 
     def writer(payload: dict[str, object]) -> None:
+        try:
+            safe_payload = _redact_debug_artifact_payload(payload)
+        except ValueError as exc:
+            LOGGER.warning(
+                "wizard debug artifact rejected unsafe capture payload",
+                extra={"stage": stage, "error_type": type(exc).__name__},
+            )
+            return
+
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
         suffix = uuid4().hex[:8]
         artifact_path = artifact_dir / f"{stage}_{stamp}_{suffix}.json"
         try:
             _ensure_private_directory(artifact_dir)
-            atomic_write_json(artifact_path, payload)
+            atomic_write_json(artifact_path, safe_payload)
             _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
         except (OSError, PersistenceError) as exc:
             LOGGER.warning(
                 "wizard debug artifact capture failed",
                 extra={
-                    "path": str(artifact_path),
+                    "artifact_name": artifact_path.name,
                     "stage": stage,
                     "error_type": type(exc).__name__,
                 },

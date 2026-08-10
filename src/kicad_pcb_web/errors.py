@@ -30,6 +30,7 @@ class WebServiceError(RuntimeError):
 
     status_code = 500
     code = "WEB_SERVICE_ERROR"
+    retryable = False
 
     def __init__(
         self,
@@ -39,12 +40,14 @@ class WebServiceError(RuntimeError):
         status_code: int | None = None,
         details: dict[str, object] | None = None,
         error_id: str | None = None,
+        retryable: bool | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code or self.code
         self.status_code = status_code or self.status_code
         self.details = details or {}
         self.error_id = error_id
+        self.retryable = self.retryable if retryable is None else retryable
 
 
 class ResourceNotFoundError(WebServiceError):
@@ -59,6 +62,7 @@ class ConflictError(WebServiceError):
 
 class ResourceBusyError(ConflictError):
     code = "RESOURCE_BUSY"
+    retryable = True
 
 
 class ProviderUnavailableError(WebServiceError):
@@ -73,10 +77,12 @@ class UpstreamProviderError(WebServiceError):
 
 class LlmInvalidStructuredOutputError(UpstreamProviderError):
     code = "LLM_INVALID_STRUCTURED_OUTPUT"
+    retryable = True
 
 
 class LlmNoUsableContentError(UpstreamProviderError):
     code = "LLM_NO_USABLE_CONTENT"
+    retryable = True
 
 
 class LlmCompletionTruncatedError(UpstreamProviderError):
@@ -159,6 +165,7 @@ def web_service_error_to_payload(exc: WebServiceError) -> dict[str, object]:
             "type": "web_service_error",
             "code": exc.code,
             "message": _sanitize_path_text(str(exc)),
+            "retryable": exc.retryable,
             "details": details,
         }
     }
