@@ -413,7 +413,7 @@ class BaseHttpLlmClient(ABC):
     ) -> None:
         """Raise typed fail-closed errors for every non-success terminal outcome."""
 
-        details = {
+        details: dict[str, object] = {
             "provider": self.provider_name,
             "finish_reason": finish_reason,
             "completion_outcome": outcome.value,
