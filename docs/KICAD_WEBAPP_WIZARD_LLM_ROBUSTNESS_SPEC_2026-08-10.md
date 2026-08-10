@@ -12,15 +12,27 @@ failures, plus lower-severity robustness and hygiene gaps. This spec closes thos
 defects. It does **not** reopen schematic placement, orientation, wire routing, PCB
 layout, or Circuit IR semantics.
 
-## Starting point
+This revision (2026-08-10) incorporates the review in
+`docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_QUESTIONS_2026-08-10.md`. Every open
+decision that review raised is resolved into an exact contract below so implementation
+does not make architecture/failure-semantics decisions opportunistically. Point-by-point
+answers are in `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_ANSWERS_2026-08-10.md`.
 
-- Branch: `webapp`
-- Starting SHA: `479465102f25f7dd85153477442c1c01b6dfbbe3`
-- Review basis: static review of `src/kicad_pcb_web/services/llm/*`,
-  `services/wizard.py`, `services/_wizard_llm.py`, `services/_wizard_session_io.py`,
-  and `settings.py`.
-- All existing quality gates were green at the starting SHA (ruff, ruff format, mypy,
-  `pytest tests/unit`).
+## Starting point and SHA discipline
+
+Three SHAs are tracked distinctly:
+
+- **Code-review baseline SHA** (where the defects were observed):
+  `479465102f25f7dd85153477442c1c01b6dfbbe3`
+- **Planning/documentation head** (spec/TODO/answers commits): recorded in the completion
+  doc; not a code baseline.
+- **Implementation starting SHA**: whatever `webapp` points to immediately before the
+  first product-code change. The completion evidence records this true implementation head,
+  **not** the older review baseline.
+
+All existing quality gates were green at the code-review baseline (ruff, ruff format, mypy,
+`pytest tests/unit`). The implementer must re-confirm green at the implementation starting
+SHA before changing code.
 
 ## Confirmed defects
 
@@ -36,7 +48,7 @@ netlist validation. A malformed-JSON or schema-invalid IR completion raises
 `UpstreamProviderError` (`_wizard_llm.py:331`) that escapes the loop and hard-fails the
 session. So `ir_max_repair_rounds` protects against semantic netlist errors but **not**
 transient bad JSON, even though the identically-named `spec_max_repair_rounds` gives spec
-drafting exactly that protection. A single flaky JSON completion aborts the session.
+drafting exactly that protection.
 
 ### D2 — Null / non-string completion content bypasses the repair loop (Med)
 
@@ -46,31 +58,31 @@ string or content-part list (`base.py:334`) — which is exactly what OpenAI ret
 (`openai_client.py:52`). The structured-JSON repair loop only catches
 `(json.JSONDecodeError, ValidationError)` (`_wizard_llm.py:299`), so `ToolError` escapes
 with no repair attempt and hard-fails. Related: a *truncated* JSON string does retry, but
-re-requests with the identical `max_tokens`, so it typically re-truncates and burns every
-repair round.
+re-requests with the identical `max_tokens`, so it typically re-truncates.
 
 ### D3 — `temperature` is always sent to OpenAI / llama-server (Med/Low)
 
-`openai_client.py:21` and `llama_server_client.py:23` unconditionally send
-`temperature`. Current OpenAI reasoning-class models reject any `temperature != 1` with a
-400, which becomes a non-retryable `ToolError` (400 ∉ the retryable status set) and a hard
-failure. The code already special-cased `max_tokens` → `max_completion_tokens` for this
-exact compatibility reason (`openai_client.py:25`); temperature is the remaining exposure.
+`openai_client.py:21` and `llama_server_client.py:23` unconditionally send `temperature`.
+Current OpenAI reasoning-class models reject any `temperature != 1` with a 400, which
+becomes a non-retryable `ToolError` (400 ∉ the retryable status set) and a hard failure.
+There is currently **no way to express "do not send temperature"**: `LlmSettings.temperature`
+is a required float defaulting `0.2`, the factory always propagates it, and both clients
+always put it in the payload.
 
 ### D4 — Blocking retry sleep holds the mutation lock and a threadpool worker (Low/Med)
 
 `base.py:257` calls `time.sleep(delay_s)` synchronously inside a wizard call dispatched to
 FastAPI's bounded threadpool, while the per-session mutation lock is held. With
-`retry_max_attempts` up to 10 and `retry_max_delay_s` up to 8s (both operator-configurable),
-a provider outage can pin workers for tens of seconds and stall unrelated endpoints.
+`retry_max_attempts` up to 10 and `retry_max_delay_s` up to 8s, a provider outage can pin
+workers for tens of seconds. Note: `mutation_lock_timeout_s` bounds only how long a *second*
+caller waits to acquire the lock — it does **not** bound how long the current operation
+holds it. `timeout_s` and `retry_max_delay_s` currently have no useful hard upper bound.
 
 ### D5 — `debug_artifact_capture` artifacts accumulate unbounded (Low)
 
 `_wizard_session_io.py:157-161` writes a new uuid-suffixed file on every attempt with no
 cap or pruning. Only relevant when the default-off flag is enabled, but an enabled session
-grows `debug_artifacts/` indefinitely. These files are intentionally un-redacted (they hold
-circuit specs/IR + model output, not the API key), so unbounded growth compounds a
-confidentiality surface.
+grows `debug_artifacts/` indefinitely. These files are intentionally un-redacted.
 
 ### D6 — Soft `failed` state is ambiguous with operational failure (Low)
 
@@ -82,111 +94,152 @@ silently treat it as non-retryable.
 
 ### D7 — `settings.py` minor correctness/consistency issues (Low)
 
-- Redundant `base_url` validation: validated for all providers at `settings.py:345-346`,
-  then re-validated in the openai branch at `355-357` (dead code).
-- `jobs_dir.mkdir(...)` runs at settings-load time (`settings.py:400`); a read-only-FS
-  failure raises a bare `OSError`, inconsistent with the `ValueError` contract used
-  everywhere else in the loader.
-- Empty-string env values are treated as real values: `_read_setting` only checks
-  `is not None`, so `KICAD_PCB_WEB_DATA_DIR=""` silently resolves to CWD instead of
-  erroring. (Critical string fields are caught by `_require_non_empty`; `data_dir` is the
-  one silent case.)
+- Redundant `base_url` validation at `settings.py:345-346` then again at `355-357`.
+- `jobs_dir.mkdir(...)` at load time (`settings.py:400`) can raise a bare `OSError`,
+  inconsistent with the loader's `ValueError` contract.
+- Empty-string env values treated as real: `KICAD_PCB_WEB_DATA_DIR=""` silently resolves to
+  CWD (`_read_setting` only checks `is not None`).
 
-## Scope
+---
 
-### 1. IR structural-JSON repair (D1)
+## Resolved contracts (scope)
 
-Give IR generation the same structural-JSON repair budget as spec drafting.
+### 1. IR structural-JSON repair — single shared budget (D1)
 
-Requirements:
+**Decision: one shared total repair budget, non-multiplicative.**
 
-- IR JSON generation must retry malformed/schema-invalid completions up to a bounded
-  number of rounds derived from `ir_max_repair_rounds`, feeding the parse/validation error
-  back into the next prompt — the same mechanism spec drafting already uses.
-- Semantic netlist repair (the existing `prepare_netlist_dict` → `UserError` outer loop)
-  must be preserved; structural-JSON repair is additive, not a replacement.
-- The combined loop must remain strictly bounded (no unbounded retry) and must terminate in
-  a well-defined terminal state (`ir_needs_repair` / `failed`) when the budget is exhausted.
-- Exhausting structural-JSON repair must not be reported as a semantic netlist failure and
-  vice versa; the terminal state/error must reflect the actual cause.
+- The maximum number of LLM invocations for one `generate_ir` operation is exactly
+  `ir_max_repair_rounds + 1`, **regardless** of whether each failed attempt was malformed
+  JSON, schema-invalid structured output, empty/unusable content, or semantically invalid
+  netlist. Structural and semantic failures draw from the **same** counter — they must not
+  multiply.
+- Implementation must restructure the IR loop so a single attempt counter governs all
+  failure classes (do **not** simply change `max_repairs=0` to
+  `max_repairs=ir_max_repair_rounds`, which would make the loops multiplicative — up to 9
+  calls at the default of 2).
+- On each repairable failure, feed the specific error (parse error, schema error,
+  no-content, or netlist `UserError` message) back into the next prompt.
 
-### 2. Non-string / truncated completion handling (D2)
+**Terminal-state mapping (exact):**
 
-Treat an unusable completion shape as a repairable structured-output failure, not a hard
-error.
+- **Parseable IR that repeatedly fails semantic netlist validation** → `ir_needs_repair`,
+  preserving the last parsed IR (`prior_ir_json`) for inspection/repair.
+- **Malformed / schema-invalid / no-usable-content exhaustion** (no usable IR draft ever
+  produced) → operational `failed` for `generate_ir`, with a typed error describing the
+  structural cause.
+- The terminal state/error must reflect the actual final cause; a structural exhaustion must
+  not be reported as `ir_needs_repair`, and a semantic exhaustion must not be reported as an
+  operational structural failure.
 
-Requirements:
+### 2. Completion-shape classification — narrow, typed, not blanket-retry (D2)
 
-- A `null` / non-string / empty content completion during structured-JSON generation must
-  be handled inside the repair loop (retry within budget), not escape as an uncaught
-  `ToolError`.
-- The behavior must be identical for spec and IR generation.
-- When the budget is exhausted, the failure must surface as a typed, user-meaningful error
-  identifying "provider returned no usable content", distinct from "invalid JSON".
-- Optional (document decision if not implemented): on a `finish_reason="length"` truncation,
-  do not silently re-request with the same `max_tokens` and expect a different result — at
-  minimum surface the truncation cause distinctly.
+**Decision: introduce an explicit outcome classification; do not catch generic `ToolError`
+in the repair loop.** `ToolError` also covers genuine provider/transport/protocol errors,
+so the repair path must key off narrower typed conditions.
 
-### 3. Provider parameter compatibility (D3)
+Classify provider completion outcomes into these distinct conditions:
 
-Do not send request parameters that a configured provider is known to reject as a
-non-retryable 400.
-
-Requirements:
-
-- `temperature` must only be sent when it is meaningful for the configured model/provider;
-  a way to omit it (mirroring the existing `max_completion_tokens` handling) must exist.
-- The chosen approach must be explicit and validated, not a silent fallback: either omit
-  `temperature` when unset/not-applicable, or document the exact condition under which it is
-  sent.
-- No behavior change for providers/models that accept `temperature` today.
-
-### 4. Retry sleep must not monopolize shared resources (D4)
-
-Reduce the blast radius of a provider outage.
+| Condition | Repairable within budget? | Terminal disposition on exhaustion / immediately |
+|-----------|---------------------------|---------------------------------------------------|
+| Structured JSON parse failure | Yes | typed "invalid structured output" |
+| Schema-invalid structured output | Yes | typed "invalid structured output" |
+| Provider returned no usable content (`null`/empty, no stronger reason) | Yes | typed "provider returned no usable content" |
+| Response truncated (`finish_reason="length"`) | **No** — terminal typed condition | typed "response truncated; raise max_tokens" (do **not** blindly re-request with the same `max_tokens`) |
+| Provider refusal / content-filter stop | **No** — terminal typed provider outcome | typed "provider refused / content-filtered" |
+| Provider / transport / protocol failure (generic `ToolError`) | No — not handled by repair loop | propagates; subject only to the existing HTTP-layer retry |
 
 Requirements:
 
-- The retry backoff wait must not hold the per-session mutation lock across the full sleep,
-  **or** the interaction between `retry_max_attempts`, `retry_max_delay_s`, `timeout_s`, and
-  `mutation_lock_timeout_s` must be documented as a bounded, understood worst case.
-- Any change must preserve the existing idempotency guarantee (POSTs are not replayed on
-  ambiguous delivery) and the existing retryable-status set.
-- Prefer the smallest safe change; do not convert the synchronous client to async as part
-  of this batch.
+- The base client must expose enough information (finish reason and a distinct exception or
+  return type for "no usable content") that the repair loop can classify without catching
+  generic `ToolError`.
+- Repairable conditions (parse/schema/no-content) retry within the same shared budget
+  defined for that operation (spec: `spec_max_repair_rounds + 1`; IR: the D1 shared budget).
+- Truncation and refusal/content-filter are **terminal typed** outcomes, surfaced with
+  distinct, user-meaningful messages — not retried as if transient.
+- Behavior is identical for spec and IR generation.
 
-### 5. Debug-artifact retention (D5)
+### 3. Temperature capability contract (D3)
 
-Bound `debug_artifact_capture` output.
+**Decision: explicit config-driven policy, no model-name heuristic.**
 
-Requirements:
+- Add an `[llm]` setting `temperature_mode` with values `send | omit`.
+  - `send` (**default**) — include `temperature` in the payload (current behavior; no silent
+    change for models that accept it).
+  - `omit` — never include `temperature` in the payload (for reasoning-class models that
+    reject non-default temperature).
+- `temperature_mode` is validated like other enum settings (reject unknown values) and is
+  recorded in LLM provenance / config revision so a session created under one policy is not
+  silently reinterpreted under another.
+- Both `openai_client` and `llama_server_client` payload builders honor the mode. When
+  `omit`, `temperature` is absent from the dict entirely (not sent as `null`).
+- An `auto` capability-registry mode is explicitly **out of scope** for this batch and noted
+  as a possible future extension; we avoid an ad-hoc name heuristic.
 
-- When enabled, artifact writing must enforce a retention bound (per-session count and/or
-  total size cap) so a long/repeatedly-repaired session cannot grow the directory without
-  limit.
-- Default-off behavior and the existing `0o700` private-directory guard must be preserved.
-- Un-redacted content remains by design; this item only bounds accumulation.
+### 4. Retry wall-clock bound — keep lock, bound the worst case (D4)
 
-### 6. Failure-state clarity (D6)
+**Decision: keep the synchronous transport and the per-session lock. Do not release the
+lock around retry sleeps** (that would create a lost-update race without revision/CAS
+protection, which is out of scope). Instead, make the operational worst case actually
+bounded and documented.
 
-Make the two `failed` meanings distinguishable without inspecting `error`.
+- Add cross-field / range validation so the retry sequence has a hard wall-clock ceiling:
+  - `timeout_s`: `0 < timeout_s <= 300`.
+  - `retry_max_delay_s`: `retry_base_delay_s <= retry_max_delay_s <= 60`.
+  - Existing `1 <= retry_max_attempts <= 10` retained.
+- Document (and assert in tests) the worst-case bound for one operation:
+  `retry_max_attempts * timeout_s + sum(clamped backoff delays)`, which with the caps above
+  is finite and knowable.
+- Introducing revision/CAS semantics and out-of-lock provider execution is explicitly
+  **deferred** to a future concurrency design.
 
-Requirements:
+### 5. Debug-artifact retention policy (D5)
 
-- Either introduce a distinct terminal state / explicit discriminator for
-  "model-declared unsupported design" vs "operational failure", or document the invariant
-  (`error is None` ⇒ soft/unsupported; `error is dict` ⇒ operational) as a deliberate,
-  tested contract.
-- Retry-gate behavior must follow from that contract explicitly, not incidentally.
-- No change to the wire status enum values consumed by the frontend unless the frontend is
-  updated in the same change and rebuilt.
+**Decision: deterministic per-session, per-stage retention with oldest-first pruning.**
 
-### 7. Settings hygiene (D7)
+- Retention is applied **separately by stage** (the `spec_*` and `ir_*` filename prefixes),
+  so a burst in one stage cannot evict the other's artifacts.
+- Per-session, per-stage **file-count cap: 20** (proposed default; single constant, easily
+  tunable). When writing the 21st, delete oldest-first until at most 20 remain.
+- Additional per-session **total-byte cap: 25 MiB** across all stages; after the count prune,
+  delete oldest-first (across stages) until under the byte cap.
+- **Oversize single artifact**: the newest artifact is always retained even if it alone
+  exceeds the byte cap; pruning never deletes the just-written newest file.
+- **Pruning/deletion failure** is logged at WARNING with the path and does not raise — debug
+  capture is best-effort and must never fail the wizard operation — but it is never silently
+  swallowed (no bare `except: pass`).
+- Default-off behavior and the `0o700` private-directory guard are preserved.
 
-- Remove the redundant `base_url` re-validation in the openai branch.
-- Wrap the load-time `jobs_dir.mkdir` failure as a typed `ValueError` (or the loader's
-  established error type) rather than a bare `OSError`.
-- Reject empty-string `data_dir` (and any other silently-CWD-resolving field) explicitly.
+### 6. Failure-kind discriminator (D6)
+
+**Decision: add an explicit persisted discriminator field; do not add a new
+frontend-visible `WizardStatus` enum value, and do not rely on inspecting `error` shape.**
+
+- Add an optional field `failure_kind` to the wizard session model, set whenever
+  `status == "failed"`. Values:
+  - `unsupported_design` — model-declared unsupported design (the current soft-failed case);
+  - `operational` — provider/transport/validation operational failure;
+  - `generation` — project-generation failure.
+- The wire `status` remains `failed`; the frontend may ignore the new field.
+- **Legacy sessions** persisted before this field: `failure_kind` is `Optional` with default
+  `None` so old JSON still deserializes. A read helper interprets a legacy `failed` session
+  with `failure_kind is None` using the historical rule (`error is None` ⇒
+  `unsupported_design`; `error is dict` ⇒ `operational`) **for reads only**; all new writes
+  set `failure_kind` explicitly. This legacy interpretation is tested, not guessed.
+- Retry gates (`_failure_operation` and callers) key off `failure_kind` directly rather than
+  inferring meaning from the shape of `error`.
+
+### 7. Settings hygiene — exact loader contract (D7)
+
+- Remove the redundant `base_url` re-validation in the openai branch (`settings.py:355-357`).
+- Wrap the load-time `jobs_dir.mkdir` failure specifically as **`ValueError`** (not "an
+  established error type" — `ValueError` exactly) with a clear message including the path.
+- Reject empty-string `data_dir` explicitly (raise `ValueError`), for both the
+  `KICAD_PCB_WEB_DATA_DIR=""` env form and the TOML `data_dir = ""` form.
+- Audit every other path/string setting for the same empty-string-silently-accepted issue
+  and record each field's disposition in the completion evidence.
+
+---
 
 ## Explicit non-goals
 
@@ -197,38 +250,55 @@ Do not modify:
 - PCB placement/routing;
 - unrelated Circuit IR semantics;
 - the deterministic engine (`kicad_pcb`) except where a wizard fix genuinely requires it;
-- the synchronous→async transport model of the LLM client;
+- the synchronous→async transport model of the LLM client (D4 keeps it synchronous);
+- revision/CAS session concurrency (explicitly deferred by D4);
+- an `auto` temperature capability registry (explicitly deferred by D3);
 - unrelated UI design.
 
-If a fix requires one of these areas, document the dependency instead of folding it into
-this batch.
+If a fix requires one of these areas, document the dependency instead of folding it in.
 
 ## Failure semantics
 
-- A transient provider condition (malformed JSON, null content, truncation) must be
+- A repairable transient condition (malformed JSON, schema-invalid, no usable content) is
   retried within its configured budget before the session hard-fails.
-- Budgets must remain strictly bounded; no fix may introduce an unbounded loop.
-- Provider-parameter incompatibility must not be a silent no-op; either the parameter is
-  omitted deliberately or the rejection is surfaced as a typed error.
-- Idempotency is not weakened: POSTs are still not replayed on ambiguous delivery.
-- Fail-closed configuration posture is preserved (unknown/removed keys still reject).
+- Truncation and refusal/content-filter are terminal typed outcomes, not retried as
+  transient.
+- Budgets are strictly bounded and non-multiplicative; no fix introduces an unbounded loop.
+- Provider-parameter incompatibility is handled deliberately (`temperature_mode`), never a
+  silent no-op.
+- Idempotency is not weakened: POSTs are still not replayed on ambiguous delivery, and the
+  session lock is retained (no lock-release race introduced).
+- Fail-closed configuration posture is preserved (unknown/removed keys still reject;
+  `temperature_mode` rejects unknown values).
 
 ## Testing requirements
 
-Per project policy, every fixed defect gets a targeted regression test that would have
-caught it (`tests/unit/`, real fakes over mocks):
+Every fixed defect gets targeted regression tests (`tests/unit/`, real fakes over mocks).
+Assertions must be explicit enough that the checklist cannot pass while hidden bad behavior
+remains:
 
-- D1: fake LLM client returning malformed then valid IR JSON → session recovers within
-  `ir_max_repair_rounds`; malformed on every round → deterministic terminal state.
-- D2: fake client returning `content=None` → handled as repairable, not an uncaught
-  `ToolError`; budget-exhaustion yields the typed "no usable content" error.
-- D3: payload builder omits/includes `temperature` per the chosen contract (assert on the
-  built payload dict).
-- D4: assert the worst-case bound, or that the lock is released across the retry wait.
-- D5: enabling capture over N attempts respects the retention bound.
-- D6: soft-failed vs operational-failed are distinguishable and drive the retry gate as
-  specified.
-- D7: empty `data_dir` rejects; redundant validation removed without behavior change.
+- **D1**: fake client failing every IR round asserts the **exact** maximum LLM call count
+  (`ir_max_repair_rounds + 1`, i.e. 3 at default); malformed-then-valid recovers; semantic
+  repeated-failure lands in `ir_needs_repair` with preserved IR; structural exhaustion lands
+  in operational `failed`.
+- **D2**: separate tests for malformed→valid recovery, empty-content→valid recovery,
+  repeated no-content exhaustion (typed error), `finish_reason="length"` truncation
+  (terminal, distinct), content-filter/refusal (terminal, distinct), and a proof that a
+  generic provider/transport `ToolError` is **not** absorbed by the structured-output repair
+  loop.
+- **D3**: assert exact built-payload dicts for `temperature_mode=send` (temperature present)
+  and `temperature_mode=omit` (temperature absent) for both openai and llama-server clients;
+  assert `temperature_mode` provenance is recorded; assert unknown mode rejects.
+- **D4**: assert the cross-field validation rejects out-of-range `timeout_s`/`retry_max_delay_s`
+  and that the documented total wall-clock bound holds — not merely one backoff calculation.
+- **D5**: assert deterministic oldest-first pruning at the per-stage count boundary and the
+  byte-cap boundary, newest-always-retained on oversize, and that a simulated deletion
+  failure logs without raising.
+- **D6**: unsupported/model-declared vs operational vs generation outcomes each set the
+  right `failure_kind` and drive the retry gate correctly; a legacy `failed` session with no
+  `failure_kind` is interpreted per the documented rule.
+- **D7**: reject `KICAD_PCB_WEB_DATA_DIR=""` and TOML `data_dir=""` separately; redundant
+  validation removed with existing settings tests still green.
 
 No existing test may be weakened to pass.
 
@@ -236,15 +306,20 @@ No existing test may be weakened to pass.
 
 Closure is complete when:
 
-- D1–D7 are each implemented or explicitly dispositioned with a documented decision;
-- IR generation recovers from transient malformed/empty completions within its bounded
-  budget and no longer hard-fails on a single flaky JSON/null response;
-- provider-parameter compatibility is handled deliberately (no silent non-retryable 400);
-- debug-artifact output is bounded when enabled;
-- the two `failed` meanings are unambiguous by contract and tested;
-- settings hygiene items are resolved;
-- each fix has a targeted regression test; no test was weakened;
+- D1–D7 are each implemented per the exact contracts above (or a deviation is explicitly
+  documented with rationale in the completion evidence);
+- IR generation recovers from transient malformed/empty completions within a single shared
+  bounded budget and never hard-fails on one flaky JSON/null response;
+- completion-shape outcomes are classified into distinct typed conditions with the specified
+  repairable/terminal semantics, and generic `ToolError` is never blanket-retried;
+- `temperature_mode` gives deliberate control with recorded provenance and no behavior change
+  at its `send` default;
+- the retry worst case is bounded by validated caps and documented;
+- debug-artifact output obeys the deterministic retention policy when enabled;
+- `failure_kind` makes the terminal meanings unambiguous, with tested legacy behavior;
+- settings hygiene items are resolved with the exact `ValueError` loader contract;
+- each fix has targeted regression tests with the explicit assertions above; no test weakened;
 - ruff, ruff format, mypy, and `pytest tests/unit tests/web` all pass;
 - no schematic/PCB placement, routing, or layout code was modified;
-- an accepting SHA passes permanent CI 5/5 green and the result is recorded in a completion
-  evidence document.
+- the implementation starting SHA (not the review baseline) and an accepting SHA that passes
+  permanent CI 5/5 green are recorded in the completion evidence document.
