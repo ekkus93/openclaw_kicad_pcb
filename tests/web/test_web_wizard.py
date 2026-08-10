@@ -616,7 +616,7 @@ def test_wizard_generate_ir_accepts_simple_555_blinker_without_pwm_only_lints(
                                 "name": "NET_TRIG_THRESH",
                                 "nodes": ["U1.2", "U1.6", "C1.1", "R2.2"],
                             },
-                            {"name": "NET_DISCH", "nodes": ["U1.7", "R1.1", "R2.1"]},
+                            {"name": "NET_DISCH", "nodes": ["U1.7", "R1.2", "R2.1"]},
                             {"name": "NET_OUT", "nodes": ["U1.3", "R3.1"]},
                             {"name": "NET_LED_ANODE", "nodes": ["R3.2", "D1.1"]},
                             {"name": "NET_CTRL", "nodes": ["U1.5", "C3.1"]},
