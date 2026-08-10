@@ -193,45 +193,59 @@ capability model would repeat the same "ad-hoc heuristic" pattern D3 explicitly 
   refusal/finish-reason semantics per F2 are also unresolved) and is noted as a possible
   future extension alongside D3's deferred `auto` capability registry.
 
-### 2. Provider-owned classification is authoritative; wizard-layer branch removal is an explicit behavior change (F2)
+### 2. Retain the generic wizard-layer classifier as documented interim protection for unclassified providers (F2)
 
-**Decision: Option A — provider-specific finish semantics belong with the provider
-adapter. Remove the generic wizard-layer branch. This is an explicit, disclosed behavior
-change for Ollama and for any client that returns a raw, unclassified `LlmCompletion` —
-not a dead-code-only deletion, and it requires updating the D2 tests that currently depend
-on the branch being present.**
+**Decision: Option B, per the second review round — do NOT remove the generic
+`finish_reason` classifier in `_wizard_llm.py`.** A second review round (
+`KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_SECOND_REVIEW_QUESTIONS_2026-08-10.md`)
+correctly identified that removing it, as the first revision of this contract proposed,
+would create a new silent-acceptance regression: `ollama_client.py` copies Ollama's raw
+`done_reason` into `LlmCompletion.finish_reason` with no classification of its own
+(confirmed by direct source read — `ollama_client.py` has no `finish_reason`/`done_reason`
+branching at all), so the generic wizard-layer branch is currently the **only** thing that
+prevents a syntactically/schema-valid-but-truncated-or-refused Ollama response from being
+silently accepted as a successful result. Removing it before Ollama has its own
+provider-owned classifier would weaken fail-closed behavior, not just delete dead code.
 
-- Delete the `finish_reason == "length"` / `finish_reason in {"content_filter",
-  "refusal"}` re-checks in `_wizard_llm.py` (`_wizard_llm.py:326-337`) — for
-  `openai`/`llama_server` these are unreachable because `_parse_completion` already
-  raised before a completion object exists.
-- Retain the `if not completion.content.strip(): raise _RepairableStructuredOutputError`
-  check (empty-content-without-a-typed-exception is still a legitimate condition for
-  clients that don't self-classify).
-- For `ollama_client.py`, this batch does **not** implement Ollama-side truncation/refusal
-  classification (Ollama's `done_reason` values do not cleanly map to OpenAI's
-  `finish_reason` semantics, and designing that mapping is a larger provider-parity
-  change). Document explicitly (code comment at the removal site, plus this spec) that
-  **this is a behavior change, not a preserved status quo**: before this fix, an Ollama
-  completion whose `done_reason` happened to equal `"length"`/`"content_filter"`/
-  `"refusal"` was classified as a terminal truncation/refusal by the generic branch: after
-  this fix, it is not — it falls through to ordinary structured-output parsing (repairable
-  `invalid_structured_output`, eventually exhausting to `LLM_INVALID_STRUCTURED_OUTPUT`).
-  This is a known, disclosed limitation, adopted deliberately because provider-specific
-  finish semantics belong in the provider adapter, not because the old behavior was
-  reproduced.
-- **Test consequence (not optional):** `test_d2_terminal_finish_reasons_do_not_repair` and
-  any other D2 test that constructs `ScriptedClient` with a raw `LlmCompletion(...,
-  finish_reason=reason)` and expects `_call_llm_for_json` to translate it into a typed
-  error must be rewritten to construct `ScriptedClient` with the typed exception directly
-  (e.g. `ScriptedClient([LlmCompletionTruncatedError(...)])` /
-  `ScriptedClient([LlmCompletionRefusedError(...)])`), modeling a client whose provider
-  layer has already classified — consistent with Option A's ownership split. These tests
-  are **expected to change**, not remain green unmodified; the change itself is the proof
-  that classification now happens at the provider boundary.
-- Spec and IR paths continue to share the same (now single-copy) classification contract.
-- No claim anywhere in the spec/TODO/completion evidence may state that this removal is
-  behaviorally inert for Ollama or that all existing D2 tests pass unmodified.
+- Make **no code change** to the `finish_reason == "length"` / `finish_reason in
+  {"content_filter", "refusal"}` branch in `_wizard_llm.py` (`_wizard_llm.py:326-337`). It
+  remains in place, unmodified.
+- Add a code comment at that branch explaining precisely why it still exists: it is
+  unreachable dead code for `openai`/`llama_server` (their typed errors already fire
+  earlier, inside `_parse_completion`, before a completion object is returned) but it is
+  the **sole fail-closed protection** for `ollama_client.py` and for any client (real or
+  fake) that returns a raw, self-unclassified `LlmCompletion`. This two-layer state is
+  **documented, intentional, temporary technical debt** — not an oversight — pending a
+  future batch that designs and tests an Ollama-owned `done_reason` classifier (Ollama's
+  `done_reason` vocabulary is not well-defined/documented enough to map confidently in
+  this batch; see the deferred item below).
+- **Add a new regression test proving the real Ollama code path is still protected**:
+  drive `OllamaLlmClient.complete()` via `httpx.MockTransport` with a raw `/api/chat`
+  response containing `"done_reason": "length"` (and separately a value representing
+  refusal/content-filter if Ollama's API documents one; otherwise this sub-case is
+  explicitly marked not applicable rather than fabricated), through
+  `_call_llm_for_json`/`_call_llm_for_json_once`, and assert the generic classifier still
+  raises the correct typed terminal error end-to-end. This is new coverage — no existing
+  test exercises the real `OllamaLlmClient` through the generic classifier today; the
+  existing `test_d2_terminal_finish_reasons_do_not_repair` only exercises it via the
+  provider-agnostic `ScriptedClient` fake.
+- No existing D2 test changes as a result of this contract — F2 is now a documentation
+  and test-addition change only, not a removal. This supersedes the first revision's
+  "test consequence (not optional)" requirement to rewrite
+  `test_d2_terminal_finish_reasons_do_not_repair`; that test is unaffected because the
+  branch it exercises is not being removed.
+- Revising the "classification exists in exactly one place per provider family" framing
+  (see Failure semantics and Definition of Done below) to state accurately that
+  `openai`/`llama_server` have provider-owned classification while Ollama and any other
+  self-unclassified client rely on the retained generic classifier as their sole
+  classifier — i.e. every provider has exactly one *effective* classifier governing it,
+  just not always in the same location.
+- Spec and IR paths continue to share the same classification contract (unchanged by this
+  revision).
+- Extending Ollama-side provider-owned classification, and removing the generic
+  classifier once that exists, remain explicitly **deferred** to a future batch (Option A
+  from the second review, not adopted now) — recorded as a deliberately deferred item in
+  the completion evidence.
 
 ### 3. Add real-provider-client classification tests (F3)
 
@@ -346,8 +360,10 @@ Do not modify:
 - any D1–D7 contract already confirmed correct by this review (D1, D3's `send`/`omit`
   behavior for `openai`/`llama_server`, D4, D5's pruning logic, D6's failure-kind field
   and legacy fallback rule, D7's `data_dir=""`/`jobs_dir.mkdir` fixes);
-- adding Ollama-side `temperature_mode=omit` support or Ollama-side finish-reason
-  classification (both explicitly deferred by contract 1 and 2 above);
+- adding Ollama-side `temperature_mode=omit` support or an Ollama-owned finish-reason
+  classifier (both explicitly deferred by contract 1 and 2 above; the generic wizard-layer
+  classifier is retained in the interim per contract 2 — it is not being removed in this
+  batch);
 - an `auto` temperature capability registry (already out of scope per the original spec);
 - revision/CAS session concurrency or an absolute LLM operation deadline (already
   deferred by D4);
@@ -360,8 +376,12 @@ If a fix requires one of these areas, document the dependency instead of folding
 - `temperature_mode=omit` is rejected at settings load for providers that do not honor it
   (currently `ollama`), rather than silently doing nothing — extending the same
   "no silent no-op" principle D3 established to a provider D3 didn't originally cover.
-- Classification logic exists in exactly one place per provider family; no dead/duplicate
-  branch is left for future edits to drift out of sync with.
+- Every provider has exactly one *effective* classifier governing its terminal finish
+  outcomes: `openai`/`llama_server` are governed by their own provider-owned classifier
+  (the generic wizard-layer branch is unreachable dead code for them); Ollama and any
+  other client without provider-owned classification are governed by the retained generic
+  wizard-layer classifier, documented as intentional interim technical debt. No provider
+  is left with zero classification, and no removal introduces a silent-acceptance gap.
 - Debug-artifact capture (writes, prunes, and deletions alike) is best-effort end-to-end:
   no failure in that subsystem raises out of a wizard operation.
 - The retry gate's operation-identity + failure-kind behavior is proven by an actual
@@ -377,13 +397,12 @@ and `httpx.MockTransport` over mocks, matching existing project style):
 - **F1**: `provider=ollama, temperature_mode=omit` rejects at settings load with a clear
   message; `provider=ollama, temperature_mode=send` (default) continues to pass and the
   Ollama payload is unchanged.
-- **F2**: `test_d2_terminal_finish_reasons_do_not_repair` (and any other D2 test that
-  relies on `ScriptedClient` returning a raw `LlmCompletion(finish_reason=...)` for the
-  wizard layer to translate) is rewritten to have `ScriptedClient` raise the typed
-  provider exception directly, and continues to assert the same terminal/no-repair
-  behavior under that new shape. This test **is expected to change**, not remain
-  unmodified — the diff itself is the proof that classification moved to the provider
-  boundary. All other, unrelated D2 tests continue to pass unmodified.
+- **F2**: no existing D2 test changes (the generic classifier is retained, not removed).
+  A new test drives the real `OllamaLlmClient.complete()` via `httpx.MockTransport` with
+  a raw `/api/chat` response carrying `"done_reason": "length"`, through
+  `_call_llm_for_json`/`_call_llm_for_json_once`, and asserts the generic wizard-layer
+  classifier still raises `LlmCompletionTruncatedError` end-to-end through the real
+  Ollama parsing path (not just via `ScriptedClient`).
 - **F3**: four new `httpx.MockTransport`-backed tests (length, content_filter,
   message.refusal, content:null+length) asserting the exact typed error raised by
   `OpenAiLlmClient.complete()` / `LlamaServerLlmClient.complete()` directly.
@@ -419,8 +438,11 @@ Closure is complete when:
   **enabled** provider — never a silent no-op. `provider="disabled"` generates no LLM
   request and is exempt; this batch does not add a new rejection for
   `provider=disabled, temperature_mode=omit` solely to satisfy this bullet's wording;
-- finish-reason/refusal classification exists in exactly one place per client family, with
-  the Ollama limitation explicitly documented rather than silently unhandled;
+- every client family has exactly one *effective* finish-reason/refusal classifier
+  governing it — provider-owned for `openai`/`llama_server`, the retained generic
+  wizard-layer classifier for Ollama and other self-unclassified clients — with the
+  two-layer interim state explicitly documented as intentional technical debt, not
+  silently left inconsistent, and with no removal that creates a silent-acceptance gap;
 - the real OpenAI/llama-server classification code path (not just the wizard-layer fake)
   has direct regression coverage for truncation, refusal, and message-level refusal;
 - the three newer typed completion errors (`LLM_NO_USABLE_CONTENT`,

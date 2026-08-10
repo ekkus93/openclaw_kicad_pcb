@@ -86,9 +86,48 @@ F1's core decision (reject rather than silently accept `ollama + temperature_mod
 F3, F4, F5, F7's `NoReturn` correction, F8's non-string-`data_dir` fix, and all existing
 non-goals were confirmed acceptable as originally written and required no changes.
 
-## Resolution applied
+## Resolution applied (first round)
 
-All corrections above are reflected directly in the current revisions of
+All corrections above are reflected directly in the (then-current) revisions of
 `KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_SPEC_2026-08-10.md` and
-`KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_TODO_2026-08-10.md`. No open questions remain
-from this review round; the batch is ready for implementation.
+`KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_TODO_2026-08-10.md`.
+
+---
+
+## Second round — response to `KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_SECOND_REVIEW_QUESTIONS_2026-08-10.md`
+
+A second review round found that F2's *corrected* Option A plan (remove the generic
+classifier, rely on provider-owned classification) was itself flawed: `ollama_client.py`
+has no classification of its own — confirmed by direct source read, it copies raw
+`done_reason` into `LlmCompletion.finish_reason` with no branching at all. Removing the
+generic wizard-layer classifier before Ollama has a provider-owned replacement would let a
+syntactically/schema-valid-but-truncated-or-refused Ollama response be silently accepted,
+which is strictly weaker fail-closed behavior than today — a real regression the first
+correction round missed.
+
+**Answers to the five numbered questions:**
+
+1. No — Ollama `done_reason` was never intended to become unclassified/advisory metadata;
+   that was an unintended consequence of the first correction's removal plan.
+2. No — silent acceptance of schema-valid-but-terminal-`done_reason` output is not
+   acceptable; it weakens the fail-closed posture the rest of this work preserves.
+3. N/A given (2).
+4. **Adopted Option B**: keep the existing generic wizard-layer classifier in place,
+   unmodified, as documented interim protection for Ollama and any other
+   self-unclassified client, explicitly labeled as temporary technical debt pending a
+   future Ollama-owned classifier (Option A, deferred).
+5. Yes — the "exactly one place per provider family" wording is corrected to "every
+   provider has exactly one *effective* classifier governing it" (provider-owned for
+   `openai`/`llama_server`; the retained generic classifier for Ollama), reflecting the
+   actual interim state rather than a false uniformity claim.
+
+**Resolution applied:** F2's contract (spec section, TODO Phase 2, Explicit non-goals,
+Failure semantics, Testing requirements, and both Definitions of Done) was rewritten to:
+make no code change to the generic classifier; document why it is intentionally retained;
+add a new `httpx.MockTransport`-backed regression test driving the real
+`OllamaLlmClient.complete()` with `"done_reason": "length"` to prove the real Ollama code
+path (not just `ScriptedClient`) is still protected end-to-end; and drop the now-obsolete
+requirement to rewrite `test_d2_terminal_finish_reasons_do_not_repair`, since that test's
+underlying branch is no longer being removed.
+
+No open questions remain from either review round; the batch is ready for implementation.

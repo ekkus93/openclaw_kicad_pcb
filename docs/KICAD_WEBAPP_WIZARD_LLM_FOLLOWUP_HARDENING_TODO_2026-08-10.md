@@ -19,13 +19,19 @@ Review resolved by:
 ```text
 docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_ANSWERS_2026-08-10.md
 docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_REVIEW_QUESTIONS_2026-08-10.md
+docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_SECOND_REVIEW_QUESTIONS_2026-08-10.md
 ```
 
-F2 and F6 below were revised from their initial versions: the review found F2's original
-"remove the dead branch, all D2 tests stay unmodified" claim was internally contradictory
-(the branch is not dead for Ollama or for `ScriptedClient`-based fakes), and F6's original
+F2 and F6 below were revised across two review rounds. First round: F2's original "remove
+the dead branch, all D2 tests stay unmodified" claim was internally contradictory (the
+branch is not dead for Ollama or for `ScriptedClient`-based fakes), and F6's original
 "catch `OSError`" fix would not have caught the actual `PersistenceError` shape the code
-raises. Both are corrected in the contracts below.
+raises. Second round: F2's *corrected* removal plan (Option A) was itself found to
+introduce a new silent-acceptance regression for Ollama — removing the branch without a
+provider-owned Ollama replacement would let a truncated/refused-but-schema-valid Ollama
+response be silently accepted. F2 now adopts Option B: retain the generic classifier as
+documented interim technical debt rather than remove it. All corrections are reflected in
+the contracts below.
 
 SHA discipline:
 
@@ -74,7 +80,7 @@ Acceptance:
 
 ---
 
-# Phase 2 — F2: provider-owned classification; remove wizard-layer branch (Option A)
+# Phase 2 — F2: retain the generic classifier as documented interim protection (Option B)
 
 Files: `src/kicad_pcb_web/services/_wizard_llm.py`,
 `tests/unit/test_wizard_llm_robustness.py`.
@@ -82,33 +88,34 @@ Files: `src/kicad_pcb_web/services/_wizard_llm.py`,
 - [ ] Confirm the `finish_reason == "length"` / `finish_reason in {"content_filter",
       "refusal"}` branch in `_call_llm_for_json_once` is unreachable for
       `openai`/`llama_server` clients (the exception already fires inside
-      `OpenAiLlmClient._parse_completion` before a completion object is returned), but
-      is live for `ollama_client.py` and for any `ScriptedClient`-style fake returning a
-      raw `LlmCompletion` with `finish_reason` set.
-- [ ] Remove that branch; keep the `if not completion.content.strip():` empty-content
-      check (still reachable for clients that don't self-classify).
-- [ ] Add a code comment at the removal site (or in `ollama_client.py`) documenting —
-      as a **behavior change**, not a preserved status quo — that Ollama
-      truncation/refusal is no longer distinguished: it now surfaces as ordinary content
-      that fails structured-output parsing (repairable `invalid_structured_output`,
-      eventually `LLM_INVALID_STRUCTURED_OUTPUT` on exhaustion) instead of the terminal
-      classification it previously received by coincidence via the removed branch.
+      `OpenAiLlmClient._parse_completion` before a completion object is returned), and
+      confirm `ollama_client.py` has no `finish_reason`/`done_reason` classification of
+      its own — the generic branch is currently the **only** protection against a
+      truncated/refused-but-schema-valid Ollama response being silently accepted.
+- [ ] Make **no code change** to the branch itself — do not remove it.
+- [ ] Add a code comment at the branch explaining why it is intentionally retained: dead
+      code for `openai`/`llama_server`, but the sole fail-closed protection for
+      `ollama_client.py` and any other self-unclassified client, pending a future
+      Ollama-owned classifier. Label this as documented, intentional, temporary technical
+      debt — not an oversight.
 - [ ] Do not implement Ollama-side finish-reason/refusal classification in this batch
-      (explicitly out of scope per spec contract 2).
-- [ ] Rewrite `test_d2_terminal_finish_reasons_do_not_repair` (and any other D2 test
-      relying on `ScriptedClient` + raw `finish_reason` translation) so `ScriptedClient`
-      is constructed with the typed exception directly
-      (`ScriptedClient([LlmCompletionTruncatedError(...)])` /
-      `ScriptedClient([LlmCompletionRefusedError(...)])`) instead of a raw completion
-      carrying `finish_reason`.
+      (explicitly out of scope per spec contract 2; recorded as a deliberately deferred
+      item in the completion evidence).
+- [ ] Add a new test driving the real `OllamaLlmClient.complete()` via
+      `httpx.MockTransport` with a raw `/api/chat` response carrying `"done_reason":
+      "length"`, through `_call_llm_for_json`/`_call_llm_for_json_once`, asserting the
+      generic classifier still raises `LlmCompletionTruncatedError` end-to-end through
+      the real Ollama parsing path.
 
 Acceptance:
 
-- [ ] The rewritten `test_d2_terminal_finish_reasons_do_not_repair` passes, asserting the
-      same terminal/no-repair/single-call behavior under the new fake-client shape.
-- [ ] All other, unrelated `test_d2_*` tests continue to pass unmodified.
-- [ ] No claim in code comments, this TODO, or the completion evidence states the removal
-      is behaviorally inert for Ollama, or that all D2 tests remained unmodified.
+- [ ] No existing D2 test changes; `test_d2_terminal_finish_reasons_do_not_repair` and
+      all other `test_d2_*` tests pass completely unmodified.
+- [ ] The new Ollama-specific `MockTransport` test passes, proving the real (not just
+      `ScriptedClient`-faked) Ollama code path is still protected end-to-end.
+- [ ] No claim in code comments, this TODO, or the completion evidence states that
+      Ollama has its own provider-owned classifier, or that the two-layer classification
+      state is anything other than documented interim technical debt.
 
 ---
 
@@ -294,11 +301,11 @@ Acceptance:
 
 - [ ] F1 — `temperature_mode=omit` never a silent no-op for any **enabled** provider;
       rejected at load for `ollama`. `provider=disabled` is exempt (no LLM request).
-- [ ] F2 — finish-reason/refusal classification is provider-owned (Option A); the
-      wizard-layer branch is removed as an explicit, documented behavior change for
-      Ollama and for raw-completion fakes — not claimed as dead-code-only or
-      test-unmodified. `test_d2_terminal_finish_reasons_do_not_repair` is updated to
-      construct `ScriptedClient` with the typed exception directly.
+- [ ] F2 — the generic wizard-layer classifier is retained unmodified (Option B) as
+      documented interim protection for Ollama and other self-unclassified clients; no
+      silent-acceptance regression is introduced; a new `MockTransport`-backed test
+      proves the real `OllamaLlmClient` path is still protected end-to-end; no existing
+      D2 test changes.
 - [ ] F3 — real OpenAI/llama-server classification code has direct `MockTransport`
       regression coverage for truncation, content-filter, and message-level refusal.
 - [ ] F4 — `LLM_NO_USABLE_CONTENT`, `LLM_COMPLETION_TRUNCATED`, `LLM_COMPLETION_REFUSED`
