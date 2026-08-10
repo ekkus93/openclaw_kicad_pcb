@@ -40,9 +40,11 @@ def test_held_wizard_session_lock_blocks_same_session_but_not_different_session(
         with resource_lock(settings, kind="wizard", resource_id="wiz_other"):
             pass
 
-        with pytest.raises(ResourceBusyError) as exc_info:
-            with resource_lock(settings, kind="wizard", resource_id="wiz_held"):
-                pytest.fail("same-session mutation unexpectedly acquired a second lock")
+        with (
+            pytest.raises(ResourceBusyError) as exc_info,
+            resource_lock(settings, kind="wizard", resource_id="wiz_held"),
+        ):
+            pytest.fail("same-session mutation unexpectedly acquired a second lock")
 
     assert exc_info.value.code == "RESOURCE_BUSY"
     assert exc_info.value.retryable is True
