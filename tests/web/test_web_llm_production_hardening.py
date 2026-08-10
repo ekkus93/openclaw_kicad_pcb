@@ -148,9 +148,7 @@ def test_p3_exact_provider_payloads(
             json={
                 "id": "request-1",
                 "model": "model-under-test",
-                "choices": [
-                    {"message": {"content": '{"ok":true}'}, "finish_reason": "stop"}
-                ],
+                "choices": [{"message": {"content": '{"ok":true}'}, "finish_reason": "stop"}],
             },
         )
 
