@@ -308,14 +308,14 @@ def test_d5_debug_artifact_count_prunes_oldest(
     monkeypatch.setattr(session_io, "_DEBUG_ARTIFACT_MAX_FILES_PER_STAGE", 2)
     writer = _make_debug_artifact_writer(settings, "wiz_debug_count", stage="spec")
     assert writer is not None
-    writer({"n": 1})
-    writer({"n": 2})
-    writer({"n": 3})
+    writer({"attempt": 1})
+    writer({"attempt": 2})
+    writer({"attempt": 3})
     artifacts = sorted(
         (settings.data_dir / "wizard_sessions/wiz_debug_count/debug_artifacts").glob("spec_*.json")
     )
     assert len(artifacts) == 2
-    payloads = [json.loads(path.read_text(encoding="utf-8"))["n"] for path in artifacts]
+    payloads = [json.loads(path.read_text(encoding="utf-8"))["attempt"] for path in artifacts]
     assert payloads == [2, 3]
 
 
@@ -323,16 +323,16 @@ def test_d5_byte_cap_keeps_newest_even_when_oversize(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     settings = _settings(tmp_path, debug_artifact_capture=True)
-    monkeypatch.setattr(session_io, "_DEBUG_ARTIFACT_MAX_TOTAL_BYTES", 100)
+    monkeypatch.setattr(session_io, "_DEBUG_ARTIFACT_MAX_TOTAL_BYTES", 10)
     writer = _make_debug_artifact_writer(settings, "wiz_debug_bytes", stage="ir")
     assert writer is not None
-    writer({"small": "x"})
-    writer({"huge": "x" * 500})
+    writer({"attempt": 1})
+    writer({"attempt": 2})
     artifacts = list(
         (settings.data_dir / "wizard_sessions/wiz_debug_bytes/debug_artifacts").glob("*.json")
     )
     assert len(artifacts) == 1
-    assert json.loads(artifacts[0].read_text(encoding="utf-8"))["huge"] == "x" * 500
+    assert json.loads(artifacts[0].read_text(encoding="utf-8"))["attempt"] == 2
 
 
 def test_d5_prune_delete_failure_warns_without_raising(
@@ -353,8 +353,8 @@ def test_d5_prune_delete_failure_warns_without_raising(
     writer = _make_debug_artifact_writer(settings, "wiz_debug_failure", stage="spec")
     assert writer is not None
     with caplog.at_level(logging.WARNING):
-        writer({"n": 1})
-        writer({"n": 2})
+        writer({"attempt": 1})
+        writer({"attempt": 2})
     assert "failed to prune wizard debug artifact" in caplog.text
 
 
