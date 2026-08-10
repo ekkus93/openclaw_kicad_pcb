@@ -19,6 +19,7 @@ WizardStatus = Literal[
     "failed",
 ]
 
+WizardFailureKind = Literal["unsupported_design", "operational", "generation"]
 WizardMessageRole = Literal["user", "assistant"]
 CircuitBlockType = Literal[
     "gain_stage",
@@ -128,6 +129,7 @@ class WizardLlmProvenance(BaseModel):
     model: str | None = None
     prompt_version: str
     endpoint_identity: str | None = None
+    temperature_mode: Literal["send", "omit"] | None = None
     config_revision: str
 
 
@@ -155,6 +157,7 @@ class WizardSessionDetail(BaseModel):
     open_questions: list[str] = Field(default_factory=list)
     unsupported_reasons: list[str] = Field(default_factory=list)
     latest_job_id: str | None = None
+    failure_kind: WizardFailureKind | None = None
     error: dict[str, Any] | None = None
 
 

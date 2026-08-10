@@ -12,7 +12,13 @@ from pydantic import BaseModel, ValidationError
 
 from kicad_pcb.errors import UserError
 
-from ..errors import ProviderUnavailableError, UpstreamProviderError
+from ..errors import (
+    LlmCompletionRefusedError,
+    LlmCompletionTruncatedError,
+    LlmInvalidStructuredOutputError,
+    LlmNoUsableContentError,
+    ProviderUnavailableError,
+)
 from ..settings import WebSettings
 from ..wizard_models import WizardSessionDetail
 from .llm import LlmClient, LlmMessage, LlmRequest
@@ -20,6 +26,22 @@ from .llm import LlmClient, LlmMessage, LlmRequest
 LOGGER = logging.getLogger("uvicorn.error")
 
 _MODEL_T = TypeVar("_MODEL_T", bound=BaseModel)
+
+
+class _RepairableStructuredOutputError(Exception):
+    def __init__(
+        self,
+        *,
+        kind: str,
+        repair_message: str,
+        error_type: str,
+        assistant_content: str | None = None,
+    ) -> None:
+        super().__init__(repair_message)
+        self.kind = kind
+        self.repair_message = repair_message
+        self.error_type = error_type
+        self.assistant_content = assistant_content
 
 
 def _ir_contract_text() -> str:
@@ -217,20 +239,185 @@ def _build_ir_messages(
             ),
         )
     )
-    if prior_ir_json is not None and repair_error is not None:
-        messages.append(
-            LlmMessage(
-                role="user",
-                content=(
-                    "The previous Circuit IR draft failed validation. "
-                    f"Repair it using this exact error context:\n{repair_error}\n\n"
-                    + _ir_contract_text()
-                    + "\n\n"
-                    "Previous netlist JSON:\n" + json.dumps(prior_ir_json, indent=2)
-                ),
-            )
+    if repair_error is not None:
+        repair_content = (
+            "The previous Circuit IR attempt failed validation. "
+            f"Repair it using this exact error context:\n{repair_error}\n\n" + _ir_contract_text()
         )
+        if prior_ir_json is not None:
+            repair_content += "\n\nPrevious netlist JSON:\n" + json.dumps(prior_ir_json, indent=2)
+        messages.append(LlmMessage(role="user", content=repair_content))
     return messages
+
+
+def _raise_structured_output_exhausted(
+    error: _RepairableStructuredOutputError,
+    *,
+    response_model: type[BaseModel],
+    attempts: int,
+) -> None:
+    details: dict[str, object] = {
+        "response_model": response_model.__name__,
+        "attempts": attempts,
+        "error_type": error.error_type,
+    }
+    if error.kind == "no_usable_content":
+        raise LlmNoUsableContentError(
+            "The configured LLM returned no usable content after all repair attempts.",
+            details=details,
+        ) from error
+    raise LlmInvalidStructuredOutputError(
+        "The configured LLM returned invalid structured output after all repair attempts.",
+        details=details,
+    ) from error
+
+
+def _call_llm_for_json_once(
+    *,
+    llm_client: LlmClient,
+    messages: list[LlmMessage],
+    response_model: type[_MODEL_T],
+    attempt: int,
+    debug_artifact_writer: Callable[[dict[str, object]], None] | None = None,
+) -> _MODEL_T:
+    request = LlmRequest(messages=list(messages), response_format="json")
+    prompt_chars = sum(len(message.content) for message in request.messages)
+    serialized_messages = [
+        {"role": message.role, "content": message.content} for message in request.messages
+    ]
+    started_at = time.perf_counter()
+    LOGGER.info(
+        "wizard structured json attempt started",
+        extra={
+            "response_model": response_model.__name__,
+            "attempt": attempt,
+            "prompt_message_count": len(request.messages),
+            "prompt_chars": prompt_chars,
+        },
+    )
+    try:
+        completion = llm_client.complete(request)
+    except LlmNoUsableContentError as exc:
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+        LOGGER.warning(
+            "wizard structured json attempt returned no usable content",
+            extra={
+                "response_model": response_model.__name__,
+                "attempt": attempt,
+                "elapsed_ms": elapsed_ms,
+                "error_type": type(exc).__name__,
+            },
+        )
+        if debug_artifact_writer is not None:
+            debug_artifact_writer(
+                {
+                    "attempt": attempt,
+                    "response_model": response_model.__name__,
+                    "messages": serialized_messages,
+                    "completion_error": {"code": exc.code, "message": str(exc)},
+                }
+            )
+        raise _RepairableStructuredOutputError(
+            kind="no_usable_content",
+            repair_message=str(exc),
+            error_type=type(exc).__name__,
+        ) from exc
+
+    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    normalized_reason = (completion.finish_reason or "").strip().lower()
+    if normalized_reason == "length":
+        raise LlmCompletionTruncatedError(
+            "The configured LLM response was truncated; increase llm.max_tokens.",
+            details={"provider": completion.provider, "finish_reason": completion.finish_reason},
+        )
+    if normalized_reason in {"content_filter", "refusal"}:
+        raise LlmCompletionRefusedError(
+            "The configured LLM refused or content-filtered the response.",
+            details={"provider": completion.provider, "finish_reason": completion.finish_reason},
+        )
+    if not completion.content.strip():
+        raise _RepairableStructuredOutputError(
+            kind="no_usable_content",
+            repair_message="The configured LLM provider returned no usable content.",
+            error_type="EmptyCompletionContent",
+        )
+
+    response_chars = len(completion.content)
+    try:
+        parsed = json.loads(completion.content)
+        validated = response_model.model_validate(parsed)
+    except (json.JSONDecodeError, ValidationError) as exc:
+        LOGGER.warning(
+            "wizard structured json attempt failed",
+            extra={
+                "response_model": response_model.__name__,
+                "attempt": attempt,
+                "prompt_message_count": len(request.messages),
+                "prompt_chars": prompt_chars,
+                "response_chars": response_chars,
+                "elapsed_ms": elapsed_ms,
+                "provider": completion.provider,
+                "finish_reason": completion.finish_reason,
+                "request_id": completion.request_id,
+                "error_type": type(exc).__name__,
+            },
+        )
+        if debug_artifact_writer is not None:
+            debug_artifact_writer(
+                {
+                    "attempt": attempt,
+                    "response_model": response_model.__name__,
+                    "messages": serialized_messages,
+                    "completion": {
+                        "provider": completion.provider,
+                        "model": completion.model,
+                        "content": completion.content,
+                        "finish_reason": completion.finish_reason,
+                        "request_id": completion.request_id,
+                    },
+                    "parse_error": str(exc),
+                }
+            )
+        raise _RepairableStructuredOutputError(
+            kind="invalid_structured_output",
+            repair_message=(
+                f"The previous response did not match the required JSON contract. Error: {exc}"
+            ),
+            error_type=type(exc).__name__,
+            assistant_content=completion.content,
+        ) from exc
+
+    LOGGER.info(
+        "wizard structured json attempt completed",
+        extra={
+            "response_model": response_model.__name__,
+            "attempt": attempt,
+            "prompt_message_count": len(request.messages),
+            "prompt_chars": prompt_chars,
+            "response_chars": response_chars,
+            "elapsed_ms": elapsed_ms,
+            "provider": completion.provider,
+            "finish_reason": completion.finish_reason,
+            "request_id": completion.request_id,
+        },
+    )
+    if debug_artifact_writer is not None:
+        debug_artifact_writer(
+            {
+                "attempt": attempt,
+                "response_model": response_model.__name__,
+                "messages": serialized_messages,
+                "completion": {
+                    "provider": completion.provider,
+                    "model": completion.model,
+                    "content": completion.content,
+                    "finish_reason": completion.finish_reason,
+                    "request_id": completion.request_id,
+                },
+                "parsed": parsed,
+            }
+        )
+    return validated
 
 
 def _call_llm_for_json(
@@ -243,117 +430,33 @@ def _call_llm_for_json(
 ) -> _MODEL_T:
     schema_json = json.dumps(response_model.model_json_schema(), indent=2)
     current_messages = list(messages)
-    for attempt in range(max_repairs + 1):
-        request = LlmRequest(messages=current_messages, response_format="json")
-        prompt_chars = sum(len(message.content) for message in request.messages)
-        started_at = time.perf_counter()
-        LOGGER.info(
-            "wizard structured json attempt started",
-            extra={
-                "response_model": response_model.__name__,
-                "attempt": attempt + 1,
-                "max_attempts": max_repairs + 1,
-                "prompt_message_count": len(request.messages),
-                "prompt_chars": prompt_chars,
-            },
-        )
-        completion = llm_client.complete(request)
-        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
-        response_chars = len(completion.content)
-        serialized_messages = [
-            {"role": message.role, "content": message.content} for message in request.messages
-        ]
+    max_attempts = max_repairs + 1
+    for attempt in range(1, max_attempts + 1):
         try:
-            parsed = json.loads(completion.content)
-            LOGGER.info(
-                "wizard structured json attempt completed",
-                extra={
-                    "response_model": response_model.__name__,
-                    "attempt": attempt + 1,
-                    "prompt_message_count": len(request.messages),
-                    "prompt_chars": prompt_chars,
-                    "response_chars": response_chars,
-                    "elapsed_ms": elapsed_ms,
-                    "provider": completion.provider,
-                    "finish_reason": completion.finish_reason,
-                    "request_id": completion.request_id,
-                },
+            return _call_llm_for_json_once(
+                llm_client=llm_client,
+                messages=current_messages,
+                response_model=response_model,
+                attempt=attempt,
+                debug_artifact_writer=debug_artifact_writer,
             )
-            if debug_artifact_writer is not None:
-                debug_artifact_writer(
-                    {
-                        "attempt": attempt + 1,
-                        "response_model": response_model.__name__,
-                        "messages": serialized_messages,
-                        "completion": {
-                            "provider": completion.provider,
-                            "model": completion.model,
-                            "content": completion.content,
-                            "finish_reason": completion.finish_reason,
-                            "request_id": completion.request_id,
-                        },
-                        "parsed": parsed,
-                    }
+        except _RepairableStructuredOutputError as exc:
+            if attempt >= max_attempts:
+                _raise_structured_output_exhausted(
+                    exc, response_model=response_model, attempts=attempt
                 )
-            return response_model.model_validate(parsed)
-        except (json.JSONDecodeError, ValidationError) as exc:
-            LOGGER.warning(
-                "wizard structured json attempt failed",
-                extra={
-                    "response_model": response_model.__name__,
-                    "attempt": attempt + 1,
-                    "prompt_message_count": len(request.messages),
-                    "prompt_chars": prompt_chars,
-                    "response_chars": response_chars,
-                    "elapsed_ms": elapsed_ms,
-                    "provider": completion.provider,
-                    "finish_reason": completion.finish_reason,
-                    "request_id": completion.request_id,
-                    "error_type": type(exc).__name__,
-                },
-            )
-            if debug_artifact_writer is not None:
-                debug_artifact_writer(
-                    {
-                        "attempt": attempt + 1,
-                        "response_model": response_model.__name__,
-                        "messages": serialized_messages,
-                        "completion": {
-                            "provider": completion.provider,
-                            "model": completion.model,
-                            "content": completion.content,
-                            "finish_reason": completion.finish_reason,
-                            "request_id": completion.request_id,
-                        },
-                        "parse_error": str(exc),
-                    }
-                )
-            if attempt >= max_repairs:
-                raise UpstreamProviderError(
-                    "The configured LLM returned invalid structured output "
-                    "after all repair attempts.",
-                    details={
-                        "response_model": response_model.__name__,
-                        "attempts": attempt + 1,
-                        "error_type": type(exc).__name__,
-                    },
-                ) from exc
-            current_messages.extend(
-                [
-                    LlmMessage(role="assistant", content=completion.content),
-                    LlmMessage(
-                        role="user",
-                        content=(
-                            "The previous response did not match the required JSON contract. "
-                            f"Return corrected JSON only. Error: {exc}\nJSON schema:\n{schema_json}"
-                        ),
+            if exc.assistant_content:
+                current_messages.append(LlmMessage(role="assistant", content=exc.assistant_content))
+            current_messages.append(
+                LlmMessage(
+                    role="user",
+                    content=(
+                        f"{exc.repair_message} Return corrected JSON only.\n"
+                        f"JSON schema:\n{schema_json}"
                     ),
-                ]
+                )
             )
-    raise UpstreamProviderError(
-        "The configured LLM did not produce structured output.",
-        details={"response_model": response_model.__name__},
-    )
+    raise AssertionError("structured-output attempt loop exhausted unexpectedly")
 
 
 def _require_llm_client(llm_client: LlmClient | None) -> LlmClient:

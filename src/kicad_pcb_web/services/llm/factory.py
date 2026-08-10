@@ -23,6 +23,7 @@ def _http_config(settings: WebSettings, *, base_url: str) -> HttpLlmClientConfig
         timeout_s=llm.timeout_s,
         default_temperature=llm.temperature,
         default_max_tokens=llm.max_tokens,
+        temperature_mode=llm.temperature_mode,
         retry_max_attempts=llm.retry_max_attempts,
         retry_base_delay_s=llm.retry_base_delay_s,
         retry_max_delay_s=llm.retry_max_delay_s,

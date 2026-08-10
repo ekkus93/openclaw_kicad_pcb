@@ -916,12 +916,13 @@ def test_wizard_invalid_structured_output_returns_502_and_persists_failure(
 
     assert response.status_code == 502
     payload = response.json()["error"]
-    assert payload["code"] == "LLM_PROVIDER_FAILED"
+    assert payload["code"] == "LLM_INVALID_STRUCTURED_OUTPUT"
     session_id = payload["details"]["session_id"]
     persisted = client.get(f"/api/wizard/sessions/{session_id}")
     assert persisted.status_code == 200
     session = persisted.json()
     assert session["status"] == "failed"
-    assert session["error"]["code"] == "LLM_PROVIDER_FAILED"
+    assert session["failure_kind"] == "operational"
+    assert session["error"]["code"] == "LLM_INVALID_STRUCTURED_OUTPUT"
 
     app.dependency_overrides.clear()

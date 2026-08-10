@@ -71,6 +71,22 @@ class UpstreamProviderError(WebServiceError):
     code = "LLM_PROVIDER_FAILED"
 
 
+class LlmInvalidStructuredOutputError(UpstreamProviderError):
+    code = "LLM_INVALID_STRUCTURED_OUTPUT"
+
+
+class LlmNoUsableContentError(UpstreamProviderError):
+    code = "LLM_NO_USABLE_CONTENT"
+
+
+class LlmCompletionTruncatedError(UpstreamProviderError):
+    code = "LLM_COMPLETION_TRUNCATED"
+
+
+class LlmCompletionRefusedError(UpstreamProviderError):
+    code = "LLM_COMPLETION_REFUSED"
+
+
 class PersistenceError(WebServiceError):
     status_code = 500
     code = "PERSISTENCE_FAILED"

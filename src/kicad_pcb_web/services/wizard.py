@@ -27,6 +27,7 @@ from ..wizard_models import (
     CreateWizardSessionRequest,
     IrGenerationOutput,
     SpecConversationOutput,
+    WizardFailureKind,
     WizardGenerateProjectResponse,
     WizardIrValidation,
     WizardLlmProvenance,
@@ -38,7 +39,10 @@ from ._wizard_llm import (
     _build_ir_messages,
     _build_spec_messages,
     _call_llm_for_json,
+    _call_llm_for_json_once,
     _format_ir_repair_error,
+    _raise_structured_output_exhausted,
+    _RepairableStructuredOutputError,
     _require_llm_client,
 )
 from ._wizard_session_io import (
@@ -117,10 +121,22 @@ def _public_error_payload(error: WebServiceError) -> dict[str, object]:
     return cast(dict[str, object], web_service_error_to_payload(error)["error"])
 
 
-def _failure_operation(session: WizardSessionDetail) -> str | None:
-    """Return the operation that placed a session in ``failed`` state, if known."""
+def _effective_failure_kind(session: WizardSessionDetail) -> WizardFailureKind | None:
+    """Return explicit failure kind, with the documented legacy read fallback."""
 
-    if session.status != "failed" or not isinstance(session.error, dict):
+    if session.status != "failed":
+        return None
+    if session.failure_kind is not None:
+        return session.failure_kind
+    return "unsupported_design" if session.error is None else "operational"
+
+
+def _failure_operation(session: WizardSessionDetail) -> str | None:
+    """Return the operation that placed an operational/generation failure."""
+
+    if _effective_failure_kind(session) == "unsupported_design":
+        return None
+    if not isinstance(session.error, dict):
         return None
     details = session.error.get("details")
     if not isinstance(details, dict):
@@ -154,6 +170,7 @@ def _llm_provenance(settings: WebSettings) -> WizardLlmProvenance:
         "endpoint_identity": endpoint_identity,
         "timeout_s": llm.timeout_s,
         "temperature": llm.temperature,
+        "temperature_mode": llm.temperature_mode,
         "max_tokens": llm.max_tokens,
         "prompt_version": llm.system_prompt_version,
         "spec_max_repair_rounds": llm.spec_max_repair_rounds,
@@ -169,6 +186,7 @@ def _llm_provenance(settings: WebSettings) -> WizardLlmProvenance:
         model=llm.model,
         prompt_version=llm.system_prompt_version,
         endpoint_identity=endpoint_identity,
+        temperature_mode=llm.temperature_mode,
         config_revision=hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16],
     )
 
@@ -217,6 +235,7 @@ def _persist_and_raise_failure(
     exc: Exception,
     *,
     operation: str,
+    failure_kind: WizardFailureKind = "operational",
 ) -> NoReturn:
     if isinstance(exc, PersistenceError) and exc.details.get("authoritative_committed") is True:
         raise exc
@@ -231,7 +250,7 @@ def _persist_and_raise_failure(
                 "error_type": type(exc).__name__,
             },
         )
-    failed = _set_error(session, _public_error_payload(error))
+    failed = _set_error(session, _public_error_payload(error), failure_kind=failure_kind)
     _persist_session(settings, failed)
     raise error from exc
 
@@ -288,6 +307,9 @@ def create_wizard_session(
                     "assumptions": output.assumptions,
                     "open_questions": output.open_questions,
                     "unsupported_reasons": output.unsupported_reasons,
+                    "failure_kind": (
+                        "unsupported_design" if output.next_state == "failed" else None
+                    ),
                     "error": None,
                     "updated_at": _utc_now(),
                 }
@@ -369,6 +391,9 @@ def post_wizard_message(
                     "assumptions": output.assumptions,
                     "open_questions": output.open_questions,
                     "unsupported_reasons": output.unsupported_reasons,
+                    "failure_kind": (
+                        "unsupported_design" if output.next_state == "failed" else None
+                    ),
                     "error": None,
                     "updated_at": _utc_now(),
                 }
@@ -432,6 +457,7 @@ def approve_wizard_spec(*, settings: WebSettings, session_id: str) -> WizardSess
                 "spec_approved": True,
                 "spec_approved_at": approved_at,
                 "updated_at": approved_at,
+                "failure_kind": None,
                 "error": None,
             }
         )
@@ -454,6 +480,7 @@ def clear_wizard_ir(*, settings: WebSettings, session_id: str) -> WizardSessionD
                 "ir_validation": None,
                 "ir_provenance": None,
                 "latest_job_id": None,
+                "failure_kind": None,
                 "error": None,
                 "updated_at": _utc_now(),
             }
@@ -471,7 +498,8 @@ def generate_wizard_ir(
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
         retry_failed_ir = (
-            session.status == "failed" and _failure_operation(session) == "generate_ir"
+            _effective_failure_kind(session) == "operational"
+            and _failure_operation(session) == "generate_ir"
         )
         allowed_status = session.status in {
             "spec_approved",
@@ -498,27 +526,42 @@ def generate_wizard_ir(
         client = _require_llm_client(llm_client)
 
         session = session.model_copy(
-            update={"status": "drafting_ir", "error": None, "updated_at": _utc_now()}
+            update={
+                "status": "drafting_ir",
+                "failure_kind": None,
+                "error": None,
+                "updated_at": _utc_now(),
+            }
         )
         _persist_session(settings, session)
         last_error: str | None = None
         prior_ir_json: dict[str, object] | None = None
+        max_attempts = settings.llm.ir_max_repair_rounds + 1
         try:
-            for _ in range(settings.llm.ir_max_repair_rounds + 1):
-                output = _call_llm_for_json(
-                    llm_client=client,
-                    messages=_build_ir_messages(
-                        settings,
-                        session,
-                        prior_ir_json=prior_ir_json,
-                        repair_error=last_error,
-                    ),
-                    response_model=IrGenerationOutput,
-                    max_repairs=0,
-                    debug_artifact_writer=_make_debug_artifact_writer(
-                        settings, session.id, stage="ir"
-                    ),
-                )
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    output = _call_llm_for_json_once(
+                        llm_client=client,
+                        messages=_build_ir_messages(
+                            settings,
+                            session,
+                            prior_ir_json=prior_ir_json,
+                            repair_error=last_error,
+                        ),
+                        response_model=IrGenerationOutput,
+                        attempt=attempt,
+                        debug_artifact_writer=_make_debug_artifact_writer(
+                            settings, session.id, stage="ir"
+                        ),
+                    )
+                except _RepairableStructuredOutputError as exc:
+                    last_error = exc.repair_message
+                    if attempt >= max_attempts:
+                        _raise_structured_output_exhausted(
+                            exc, response_model=IrGenerationOutput, attempts=attempt
+                        )
+                    continue
+
                 try:
                     prepared = prepare_netlist_dict(
                         netlist_json=output.netlist_json,
@@ -529,57 +572,64 @@ def generate_wizard_ir(
                         ),
                         auto_fix=True,
                     )
-                    session = _append_message(
-                        session, role="assistant", content=output.assistant_message
-                    )
+                except UserError as exc:
+                    last_error = _format_ir_repair_error(exc)
+                    prior_ir_json = output.netlist_json
+                    if attempt < max_attempts:
+                        continue
                     session = session.model_copy(
                         update={
-                            "status": "ir_ready_for_generation",
-                            "ir_json": prepared.netlist_json,
+                            "status": "ir_needs_repair",
+                            "ir_json": prior_ir_json,
                             "ir_validation": WizardIrValidation(
-                                valid=True,
-                                auto_fixed=prepared.auto_fixed,
-                                component_count=prepared.component_count,
-                                net_count=prepared.net_count,
-                                warnings=prepared.warnings,
-                                fixes_applied=prepared.fixes_applied,
-                                symbols_dirs_used=prepared.symbols_dirs_used,
+                                valid=False, error_message=last_error
                             ),
                             "ir_provenance": _llm_provenance(settings),
                             "latest_job_id": None,
-                            "assumptions": sorted(
-                                {*(session.assumptions or []), *(output.assumptions or [])}
-                            ),
+                            "failure_kind": None,
                             "error": None,
                             "updated_at": _utc_now(),
                         }
                     )
-                    LOGGER.info(
-                        "wizard ir ready",
-                        extra={
-                            "session_id": session.id,
-                            "component_count": prepared.component_count,
-                            "net_count": prepared.net_count,
-                            "auto_fixed": prepared.auto_fixed,
-                        },
-                    )
                     return _persist_session(settings, session)
-                except UserError as exc:
-                    last_error = _format_ir_repair_error(exc)
-                    prior_ir_json = output.netlist_json
 
-            session = session.model_copy(
-                update={
-                    "status": "ir_needs_repair",
-                    "ir_json": prior_ir_json,
-                    "ir_validation": WizardIrValidation(valid=False, error_message=last_error),
-                    "ir_provenance": _llm_provenance(settings),
-                    "latest_job_id": None,
-                    "error": None,
-                    "updated_at": _utc_now(),
-                }
-            )
-            return _persist_session(settings, session)
+                session = _append_message(
+                    session, role="assistant", content=output.assistant_message
+                )
+                session = session.model_copy(
+                    update={
+                        "status": "ir_ready_for_generation",
+                        "ir_json": prepared.netlist_json,
+                        "ir_validation": WizardIrValidation(
+                            valid=True,
+                            auto_fixed=prepared.auto_fixed,
+                            component_count=prepared.component_count,
+                            net_count=prepared.net_count,
+                            warnings=prepared.warnings,
+                            fixes_applied=prepared.fixes_applied,
+                            symbols_dirs_used=prepared.symbols_dirs_used,
+                        ),
+                        "ir_provenance": _llm_provenance(settings),
+                        "latest_job_id": None,
+                        "assumptions": sorted(
+                            {*(session.assumptions or []), *(output.assumptions or [])}
+                        ),
+                        "failure_kind": None,
+                        "error": None,
+                        "updated_at": _utc_now(),
+                    }
+                )
+                LOGGER.info(
+                    "wizard ir ready",
+                    extra={
+                        "session_id": session.id,
+                        "component_count": prepared.component_count,
+                        "net_count": prepared.net_count,
+                        "auto_fixed": prepared.auto_fixed,
+                    },
+                )
+                return _persist_session(settings, session)
+            raise AssertionError("IR generation attempt loop exhausted unexpectedly")
         except Exception as exc:
             _persist_and_raise_failure(settings, session, exc, operation="generate_ir")
 
@@ -620,7 +670,8 @@ def generate_wizard_project(
     with resource_lock(settings, kind="wizard", resource_id=session_id):
         session = _read_session_for_mutation(settings, session_id)
         retry_failed_project = (
-            session.status == "failed" and _failure_operation(session) == "generate_project"
+            _effective_failure_kind(session) in {"generation", "operational"}
+            and _failure_operation(session) == "generate_project"
         )
         active_status = session.status in {"ir_ready_for_generation", "completed"}
         if (
@@ -636,7 +687,12 @@ def generate_wizard_project(
             )
 
         session = session.model_copy(
-            update={"status": "generation_started", "updated_at": _utc_now(), "error": None}
+            update={
+                "status": "generation_started",
+                "failure_kind": None,
+                "updated_at": _utc_now(),
+                "error": None,
+            }
         )
         session = _persist_session(settings, session)
 
@@ -659,7 +715,13 @@ def generate_wizard_project(
                 ),
             )
         except Exception as exc:
-            _persist_and_raise_failure(settings, session, exc, operation="generate_project")
+            _persist_and_raise_failure(
+                settings,
+                session,
+                exc,
+                operation="generate_project",
+                failure_kind="generation",
+            )
 
         if job.status != "succeeded":
             project_error = _project_failure_error(
@@ -668,6 +730,7 @@ def generate_wizard_project(
             session = session.model_copy(
                 update={
                     "status": "failed",
+                    "failure_kind": "generation",
                     "latest_job_id": job.id,
                     "error": _public_error_payload(project_error),
                     "updated_at": _utc_now(),
@@ -683,6 +746,7 @@ def generate_wizard_project(
         session = session.model_copy(
             update={
                 "status": "completed",
+                "failure_kind": None,
                 "latest_job_id": job.id,
                 "error": None,
                 "updated_at": _utc_now(),

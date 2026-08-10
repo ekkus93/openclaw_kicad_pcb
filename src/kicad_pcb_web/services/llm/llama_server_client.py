@@ -20,8 +20,9 @@ class LlamaServerLlmClient(OpenAiLlmClient):
             "messages": [
                 {"role": message.role, "content": message.content} for message in request.messages
             ],
-            "temperature": self._effective_temperature(request),
         }
+        if self.temperature_mode == "send":
+            payload["temperature"] = self._effective_temperature(request)
         max_tokens = self._effective_max_tokens(request)
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens

@@ -6,12 +6,14 @@ import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 LlmProvider = Literal["disabled", "openai", "ollama", "llama_server"]
+LlmTemperatureMode = Literal["send", "omit"]
 
 _VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"disabled", "openai", "ollama", "llama_server"})
+_VALID_TEMPERATURE_MODES: frozenset[str] = frozenset({"send", "omit"})
 _TOP_LEVEL_CONFIG_KEYS: frozenset[str] = frozenset({"web", "llm"})
 _WEB_CONFIG_KEYS: frozenset[str] = frozenset({"data_dir", "mutation_lock_timeout_s"})
 _LLM_CONFIG_KEYS: frozenset[str] = frozenset(
@@ -22,6 +24,7 @@ _LLM_CONFIG_KEYS: frozenset[str] = frozenset(
         "api_key",
         "timeout_s",
         "temperature",
+        "temperature_mode",
         "max_tokens",
         "system_prompt_version",
         "spec_max_repair_rounds",
@@ -49,6 +52,7 @@ class LlmSettings:
     api_key: str | None = None
     timeout_s: float = 60.0
     temperature: float = 0.2
+    temperature_mode: LlmTemperatureMode = "send"
     max_tokens: int | None = None
     system_prompt_version: str = "v1"
     spec_max_repair_rounds: int = 2
@@ -196,6 +200,15 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         config_value=llm_config.get("temperature"),
         default=0.2,
     )
+    temperature_mode_raw = str(
+        _read_setting(
+            env_name="KICAD_PCB_WEB_LLM_TEMPERATURE_MODE",
+            config_value=llm_config.get("temperature_mode"),
+            default="send",
+        )
+    )
+    if temperature_mode_raw not in _VALID_TEMPERATURE_MODES:
+        raise ValueError("llm.temperature_mode must be one of: omit, send")
     max_tokens_raw = _read_setting(
         env_name="KICAD_PCB_WEB_LLM_MAX_TOKENS",
         config_value=llm_config.get("max_tokens"),
@@ -266,6 +279,7 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         ),
         timeout_s=_coerce_float(timeout_raw, field_name="llm.timeout_s"),
         temperature=_coerce_float(temperature_raw, field_name="llm.temperature"),
+        temperature_mode=cast(LlmTemperatureMode, temperature_mode_raw),
         max_tokens=(
             None
             if max_tokens_raw in (None, "")
@@ -314,6 +328,10 @@ def _require_non_empty(value: str | None, *, field_name: str) -> None:
 def _validate_llm_settings(settings: LlmSettings) -> None:
     if settings.timeout_s <= 0:
         raise ValueError("llm.timeout_s must be greater than zero")
+    if settings.timeout_s > 300:
+        raise ValueError("llm.timeout_s must be 300 seconds or less")
+    if settings.temperature_mode not in _VALID_TEMPERATURE_MODES:
+        raise ValueError("llm.temperature_mode must be one of: omit, send")
     if settings.temperature < 0 or settings.temperature > 2:
         raise ValueError("llm.temperature must be between 0 and 2")
     if settings.max_tokens is not None and settings.max_tokens <= 0:
@@ -337,6 +355,8 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.retry_base_delay_s must be zero or greater")
     if settings.retry_max_delay_s < settings.retry_base_delay_s:
         raise ValueError("llm.retry_max_delay_s must be at least llm.retry_base_delay_s")
+    if settings.retry_max_delay_s > 60:
+        raise ValueError("llm.retry_max_delay_s must be 60 seconds or less")
     if settings.retry_jitter_s < 0:
         raise ValueError("llm.retry_jitter_s must be zero or greater")
     if settings.retry_jitter_s > settings.retry_max_delay_s:
@@ -352,9 +372,6 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
 
     if settings.provider == "openai":
         _require_non_empty(settings.api_key, field_name="llm.api_key")
-        if settings.base_url is None:
-            return
-        _validate_http_url(settings.base_url, field_name="llm.base_url")
         return
 
     if settings.provider in {"ollama", "llama_server"}:
@@ -395,9 +412,14 @@ def load_settings() -> WebSettings:
         default=2.0,
     )
 
+    if isinstance(data_dir_raw, str) and not data_dir_raw.strip():
+        raise ValueError("web.data_dir must not be empty")
     data_dir = _resolve_config_path(data_dir_raw, config_file=config_file)
     jobs_dir = data_dir / "jobs"
-    jobs_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        jobs_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ValueError(f"Unable to create jobs directory: {jobs_dir}") from exc
     lock_timeout = _coerce_float(
         mutation_lock_timeout_raw, field_name="web.mutation_lock_timeout_s"
     )

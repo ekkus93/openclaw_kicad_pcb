@@ -18,6 +18,8 @@ import httpx
 
 from kicad_pcb.errors import ToolError
 
+from ...errors import LlmNoUsableContentError
+
 LlmMessageRole = Literal["system", "user", "assistant"]
 LlmResponseFormat = Literal["text", "json"]
 
@@ -73,6 +75,7 @@ class HttpLlmClientConfig:
     timeout_s: float
     default_temperature: float
     default_max_tokens: int | None
+    temperature_mode: Literal["send", "omit"] = "send"
     api_key: str | None = None
     retry_max_attempts: int = 3
     retry_base_delay_s: float = 0.5
@@ -103,6 +106,7 @@ class BaseHttpLlmClient(ABC):
         self.timeout_s = config.timeout_s
         self.default_temperature = config.default_temperature
         self.default_max_tokens = config.default_max_tokens
+        self.temperature_mode = config.temperature_mode
         self.api_key = config.api_key
         self.retry_max_attempts = config.retry_max_attempts
         self.retry_base_delay_s = config.retry_base_delay_s
@@ -130,6 +134,16 @@ class BaseHttpLlmClient(ABC):
         if request.max_tokens is not None:
             return request.max_tokens
         return self.default_max_tokens
+
+    @property
+    def max_scheduled_retry_sleep_s(self) -> float:
+        """Return the maximum total sleep scheduled between HTTP retries.
+
+        This is a bound on this client's own backoff sleeps only. It is not an
+        end-to-end HTTP request deadline; HTTPX uses per-phase inactivity timeouts.
+        """
+
+        return max(0, self.retry_max_attempts - 1) * self.retry_max_delay_s
 
     def _payload_metrics(self, payload: dict[str, Any]) -> tuple[int, str]:
         canonical_payload = json.dumps(
@@ -323,18 +337,31 @@ class BaseHttpLlmClient(ABC):
 
     def _coerce_text_content(self, value: Any) -> str:
         if isinstance(value, str):
-            return value
-        if isinstance(value, list):
+            content = value
+        elif isinstance(value, list):
             text_parts = [
                 item.get("text", "")
                 for item in value
                 if isinstance(item, dict) and item.get("type") == "text"
             ]
-            return "".join(part for part in text_parts if part)
-        raise ToolError(
-            f"{self.provider_name} returned an unsupported content shape.",
-            details={"provider": self.provider_name},
-        )
+            content = "".join(part for part in text_parts if part)
+        elif value is None:
+            raise LlmNoUsableContentError(
+                "The configured LLM provider returned no usable content.",
+                details={"provider": self.provider_name},
+            )
+        else:
+            raise ToolError(
+                f"{self.provider_name} returned an unsupported content shape.",
+                details={"provider": self.provider_name},
+            )
+
+        if not content.strip():
+            raise LlmNoUsableContentError(
+                "The configured LLM provider returned no usable content.",
+                details={"provider": self.provider_name},
+            )
+        return content
 
     @abstractmethod
     def _build_payload(self, request: LlmRequest) -> tuple[str, dict[str, Any]]:

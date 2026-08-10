@@ -103,6 +103,7 @@ base_url = "https://api.openai.com/v1"
 api_key = "replace-me"
 timeout_s = 60
 temperature = 0.2
+temperature_mode = "send" # send (default) or omit for models that reject temperature
 max_tokens = 4096
 system_prompt_version = "v1"
 spec_max_repair_rounds = 2
@@ -126,7 +127,7 @@ Provider expectations:
 - `ollama`: requires `model` and `base_url`.
 - `llama_server`: requires `model` and `base_url`.
 
-Runtime configuration is validated during application startup before the server accepts requests. An explicitly configured `KICAD_PCB_WEB_CONFIG_FILE` must exist and be readable; unknown TOML keys and unsupported settings fail closed instead of silently reverting to defaults. Settings are cached as one process snapshot, so restart the server after changing provider/model configuration. The old `network_probe_enabled` option was removed because active network probing is not implemented.
+Runtime configuration is validated during application startup before the server accepts requests. An explicitly configured `KICAD_PCB_WEB_CONFIG_FILE` must exist and be readable; unknown TOML keys and unsupported settings fail closed instead of silently reverting to defaults. Settings are cached as one process snapshot, so restart the server after changing provider/model configuration. `temperature_mode=send` preserves the existing payload behavior; set `temperature_mode=omit` for providers/models that reject the temperature parameter. LLM timeout/retry settings are range-bounded, but HTTPX timeouts retain connect/read/write/pool inactivity semantics and are not an absolute end-to-end request deadline. The old `network_probe_enabled` option was removed because active network probing is not implemented.
 
 Generated web jobs are stored under:
 

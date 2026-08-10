@@ -17,11 +17,18 @@ from kicad_pcb.errors import UserError
 
 from ..errors import PersistedStateError, PersistenceError
 from ..settings import WebSettings
-from ..wizard_models import WizardMessage, WizardMessageRole, WizardSessionDetail
+from ..wizard_models import (
+    WizardFailureKind,
+    WizardMessage,
+    WizardMessageRole,
+    WizardSessionDetail,
+)
 from .atomic_io import atomic_write_json
 
 LOGGER = logging.getLogger("uvicorn.error")
 _SAFE_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+_DEBUG_ARTIFACT_MAX_FILES_PER_STAGE = 20
+_DEBUG_ARTIFACT_MAX_TOTAL_BYTES = 25 * 1024 * 1024
 
 
 def _utc_now() -> str:
@@ -137,6 +144,58 @@ def _ensure_private_directory(path: Path) -> None:
         ) from exc
 
 
+def _debug_artifact_order_key(path: Path) -> tuple[str, str]:
+    parts = path.name.split("_", 2)
+    timestamp = parts[1] if len(parts) > 2 else path.name
+    return timestamp, path.name
+
+
+def _unlink_debug_artifact(path: Path) -> bool:
+    try:
+        path.unlink()
+    except OSError as exc:
+        LOGGER.warning(
+            "failed to prune wizard debug artifact",
+            extra={"path": str(path), "error_type": type(exc).__name__},
+        )
+        return False
+    return True
+
+
+def _prune_debug_artifacts(artifact_dir: Path, *, stage: str, newest: Path) -> None:
+    stage_files = sorted(artifact_dir.glob(f"{stage}_*.json"), key=_debug_artifact_order_key)
+    candidates = [path for path in stage_files if path != newest]
+    excess = max(0, len(stage_files) - _DEBUG_ARTIFACT_MAX_FILES_PER_STAGE)
+    for path in candidates[:excess]:
+        _unlink_debug_artifact(path)
+
+    all_files = sorted(artifact_dir.glob("*.json"), key=_debug_artifact_order_key)
+    sizes: dict[Path, int] = {}
+    total_bytes = 0
+    for path in all_files:
+        try:
+            size = path.stat().st_size
+        except OSError as exc:
+            LOGGER.warning(
+                "failed to inspect wizard debug artifact during pruning",
+                extra={"path": str(path), "error_type": type(exc).__name__},
+            )
+            continue
+        sizes[path] = size
+        total_bytes += size
+
+    if total_bytes <= _DEBUG_ARTIFACT_MAX_TOTAL_BYTES:
+        return
+    for path in all_files:
+        if path == newest or total_bytes <= _DEBUG_ARTIFACT_MAX_TOTAL_BYTES:
+            continue
+        size_to_remove = sizes.get(path)
+        if size_to_remove is None:
+            continue
+        if _unlink_debug_artifact(path):
+            total_bytes -= size_to_remove
+
+
 def _make_debug_artifact_writer(
     settings: WebSettings,
     session_id: str,
@@ -158,7 +217,9 @@ def _make_debug_artifact_writer(
         _ensure_private_directory(artifact_dir)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
         suffix = uuid4().hex[:8]
-        atomic_write_json(artifact_dir / f"{stage}_{stamp}_{suffix}.json", payload)
+        artifact_path = artifact_dir / f"{stage}_{stamp}_{suffix}.json"
+        atomic_write_json(artifact_path, payload)
+        _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
 
     return writer
 
@@ -202,7 +263,14 @@ def _append_message(
 def _set_error(
     session: WizardSessionDetail,
     error_payload: dict[str, object],
+    *,
+    failure_kind: WizardFailureKind = "operational",
 ) -> WizardSessionDetail:
     return session.model_copy(
-        update={"status": "failed", "error": error_payload, "updated_at": _utc_now()}
+        update={
+            "status": "failed",
+            "failure_kind": failure_kind,
+            "error": error_payload,
+            "updated_at": _utc_now(),
+        }
     )
