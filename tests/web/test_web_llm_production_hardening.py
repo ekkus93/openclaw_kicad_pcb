@@ -60,8 +60,7 @@ def test_p3_capabilities_are_explicit_by_provider_not_model_name() -> None:
     weird_model = "ollama-looking-model-name"
     settings = _settings("openai", model=weird_model)
     client = build_llm_client(
-        settings,
-        transport=httpx.MockTransport(lambda _: httpx.Response(500)),
+        settings, transport=httpx.MockTransport(lambda _: httpx.Response(500))
     )
     assert client is not None
     assert client.model == weird_model  # type: ignore[attr-defined]
