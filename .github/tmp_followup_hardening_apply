@@ -1,0 +1,693 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def replace_once(path_str: str, old: str, new: str) -> None:
+    path = ROOT / path_str
+    text = path.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != 1:
+        raise RuntimeError(f"{path_str}: expected exactly one match, found {count}")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def append_once(path_str: str, sentinel: str, addition: str) -> None:
+    path = ROOT / path_str
+    text = path.read_text(encoding="utf-8")
+    if sentinel in text:
+        raise RuntimeError(f"{path_str}: sentinel already present: {sentinel}")
+    path.write_text(text.rstrip() + "\n\n\n" + addition.strip() + "\n", encoding="utf-8")
+
+
+replace_once(
+    "src/kicad_pcb_web/settings.py",
+    """    temperature: float = 0.2
+    temperature_mode: LlmTemperatureMode = "send"
+    max_tokens: int | None = None
+""",
+    """    temperature: float = 0.2
+    # ``omit`` is supported by OpenAI and llama-server; Ollama currently requires ``send``.
+    temperature_mode: LlmTemperatureMode = "send"
+    max_tokens: int | None = None
+""",
+)
+replace_once(
+    "src/kicad_pcb_web/settings.py",
+    """    if settings.temperature_mode not in _VALID_TEMPERATURE_MODES:
+        raise ValueError("llm.temperature_mode must be one of: omit, send")
+    if settings.temperature < 0 or settings.temperature > 2:
+""",
+    """    if settings.temperature_mode not in _VALID_TEMPERATURE_MODES:
+        raise ValueError("llm.temperature_mode must be one of: omit, send")
+    if settings.provider == "ollama" and settings.temperature_mode == "omit":
+        raise ValueError(
+            "llm.temperature_mode=omit is not implemented for llm.provider=ollama"
+        )
+    if settings.temperature < 0 or settings.temperature > 2:
+""",
+)
+replace_once(
+    "src/kicad_pcb_web/settings.py",
+    """def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
+    path = Path(str(raw_value)).expanduser()
+    if path.is_absolute() or config_file.path is None:
+        return path.resolve()
+    return (config_file.path.parent / path).resolve()
+""",
+    """def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
+    if not isinstance(raw_value, str):
+        raise ValueError(f"web.data_dir must be a string, got {type(raw_value).__name__}")
+    path = Path(raw_value).expanduser()
+    if path.is_absolute() or config_file.path is None:
+        return path.resolve()
+    return (config_file.path.parent / path).resolve()
+""",
+)
+
+replace_once(
+    "src/kicad_pcb_web/services/_wizard_llm.py",
+    "from typing import Any, TypeVar\n",
+    "from typing import Any, NoReturn, TypeVar\n",
+)
+replace_once(
+    "src/kicad_pcb_web/services/_wizard_llm.py",
+    """def _raise_structured_output_exhausted(
+    error: _RepairableStructuredOutputError,
+    *,
+    response_model: type[BaseModel],
+    attempts: int,
+) -> None:
+""",
+    """def _raise_structured_output_exhausted(
+    error: _RepairableStructuredOutputError,
+    *,
+    response_model: type[BaseModel],
+    attempts: int,
+) -> NoReturn:
+""",
+)
+replace_once(
+    "src/kicad_pcb_web/services/_wizard_llm.py",
+    """    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    normalized_reason = (completion.finish_reason or "").strip().lower()
+""",
+    """    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    # OpenAI-compatible clients classify these terminal reasons before returning.
+    # Keep this fallback as intentional interim fail-closed protection for Ollama
+    # and any other self-unclassified client until provider-owned semantics exist.
+    normalized_reason = (completion.finish_reason or "").strip().lower()
+""",
+)
+
+replace_once(
+    "src/kicad_pcb_web/services/_wizard_session_io.py",
+    """    def writer(payload: dict[str, object]) -> None:
+        _ensure_private_directory(artifact_dir)
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
+        suffix = uuid4().hex[:8]
+        artifact_path = artifact_dir / f"{stage}_{stamp}_{suffix}.json"
+        atomic_write_json(artifact_path, payload)
+        _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
+""",
+    """    def writer(payload: dict[str, object]) -> None:
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
+        suffix = uuid4().hex[:8]
+        artifact_path = artifact_dir / f"{stage}_{stamp}_{suffix}.json"
+        try:
+            _ensure_private_directory(artifact_dir)
+            atomic_write_json(artifact_path, payload)
+            _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
+        except (OSError, PersistenceError) as exc:
+            LOGGER.warning(
+                "wizard debug artifact capture failed",
+                extra={
+                    "path": str(artifact_path),
+                    "stage": stage,
+                    "error_type": type(exc).__name__,
+                },
+            )
+""",
+)
+
+replace_once(
+    "src/kicad_pcb_web/wizard_models.py",
+    "from pydantic import BaseModel, Field, field_validator\n",
+    """from pydantic import BaseModel, Field, field_validator
+
+from .settings import LlmTemperatureMode
+""",
+)
+replace_once(
+    "src/kicad_pcb_web/wizard_models.py",
+    '    temperature_mode: Literal["send", "omit"] | None = None\n',
+    "    temperature_mode: LlmTemperatureMode | None = None\n",
+)
+replace_once(
+    "src/kicad_pcb_web/services/wizard.py",
+    """            session = session.model_copy(
+                update={
+                    "status": "failed",
+                    "failure_kind": "generation",
+                    "latest_job_id": job.id,
+                    "error": _public_error_payload(project_error),
+                    "updated_at": _utc_now(),
+                }
+            )
+""",
+    """            session = _set_error(
+                session,
+                _public_error_payload(project_error),
+                failure_kind="generation",
+            ).model_copy(update={"latest_job_id": job.id})
+""",
+)
+
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    "from pydantic import BaseModel\n",
+    "from pydantic import BaseModel, ValidationError\n",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    "from kicad_pcb_web.services import _wizard_session_io as session_io\n",
+    """from kicad_pcb_web.services import _wizard_session_io as session_io
+from kicad_pcb_web.services import wizard as wizard_service
+""",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    """from kicad_pcb_web.errors import (
+    LlmCompletionRefusedError,
+""",
+    """from kicad_pcb_web.errors import (
+    ConflictError,
+    LlmCompletionRefusedError,
+""",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    """    LlmInvalidStructuredOutputError,
+    LlmNoUsableContentError,
+)
+""",
+    """    LlmInvalidStructuredOutputError,
+    LlmNoUsableContentError,
+    PersistenceError,
+    WebServiceError,
+)
+""",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    "from kicad_pcb_web.services.llm import LlmCompletion, LlmMessage, LlmRequest, build_llm_client\n",
+    """from kicad_pcb_web.schemas import JobDetail
+from kicad_pcb_web.services.llm import LlmCompletion, LlmMessage, LlmRequest, build_llm_client
+""",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    """    _llm_provenance,
+    generate_wizard_ir,
+)
+""",
+    """    _llm_provenance,
+    generate_wizard_ir,
+    generate_wizard_project,
+)
+""",
+)
+replace_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    "from kicad_pcb_web.wizard_models import CircuitSpec, WizardSessionDetail\n",
+    """from kicad_pcb_web.wizard_models import (
+    CircuitSpec,
+    WizardIrValidation,
+    WizardLlmProvenance,
+    WizardSessionDetail,
+)
+""",
+)
+
+append_once(
+    "tests/unit/test_wizard_llm_robustness.py",
+    "def test_followup_f2_real_ollama_length_is_terminal_before_valid_json_acceptance",
+    r"""def test_followup_f2_real_ollama_length_is_terminal_before_valid_json_acceptance(
+    tmp_path: Path,
+) -> None:
+    attempts = {"count": 0}
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        attempts["count"] += 1
+        return httpx.Response(
+            200,
+            json={
+                "model": "llama3.1",
+                "message": {"content": '{"value":"schema-valid"}'},
+                "done_reason": "length",
+            },
+        )
+
+    settings = _settings(
+        tmp_path,
+        provider="ollama",
+        model="llama3.1",
+        base_url="http://127.0.0.1:11434",
+    )
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        with pytest.raises(LlmCompletionTruncatedError):
+            _call_llm_for_json(
+                llm_client=client,
+                messages=[LlmMessage(role="user", content="json")],
+                response_model=_Envelope,
+                max_repairs=2,
+            )
+    finally:
+        client.close()  # type: ignore[attr-defined]
+    assert attempts["count"] == 1
+
+
+def test_followup_f5_operational_ir_failure_allows_actual_retry(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_retry_ir")
+
+    failing_client = ScriptedClient([LlmCompletionTruncatedError("simulated truncation")])
+    with pytest.raises(LlmCompletionTruncatedError):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_retry_ir",
+            llm_client=failing_client,
+        )
+
+    failed = read_wizard_session(settings, "wiz_retry_ir")
+    assert failed.status == "failed"
+    assert failed.failure_kind == "operational"
+    assert _failure_operation(failed) == "generate_ir"
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    retried = generate_wizard_ir(
+        settings=settings,
+        session_id="wiz_retry_ir",
+        llm_client=retry_client,
+    )
+    assert retried.status == "ir_ready_for_generation"
+    assert len(retry_client.requests) == 1
+
+
+def test_followup_f5_generation_failure_blocks_generate_ir_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_generation_gate")
+    ready = read_wizard_session(settings, "wiz_generation_gate").model_copy(
+        update={
+            "status": "ir_ready_for_generation",
+            "ir_json": _VALID_NETLIST,
+            "ir_validation": WizardIrValidation(
+                valid=True,
+                component_count=2,
+                net_count=2,
+            ),
+        }
+    )
+    _persist_session(settings, ready)
+
+    failed_job = JobDetail(
+        id="job_followup_failed",
+        status="failed",
+        project_name="Robustness",
+        created_at="2026-08-10T00:00:00Z",
+        updated_at="2026-08-10T00:00:01Z",
+        request={},
+        error={"type": "tool_error", "message": "simulated generation failure"},
+    )
+    monkeypatch.setattr(
+        wizard_service,
+        "generate_project_from_netlist_job",
+        lambda **_: failed_job,
+    )
+
+    with pytest.raises(WebServiceError) as caught:
+        generate_wizard_project(settings=settings, session_id="wiz_generation_gate")
+    assert caught.value.code == "WIZARD_PROJECT_GENERATION_FAILED"
+
+    failed = read_wizard_session(settings, "wiz_generation_gate")
+    assert failed.status == "failed"
+    assert failed.failure_kind == "generation"
+    assert failed.latest_job_id == failed_job.id
+    assert _failure_operation(failed) == "generate_project"
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with pytest.raises(ConflictError, match="not allowed"):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_generation_gate",
+            llm_client=retry_client,
+        )
+    assert retry_client.requests == []
+
+
+def test_followup_f5_legacy_unsupported_failure_is_not_operationally_retryable(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_legacy_gate")
+    legacy = read_wizard_session(settings, "wiz_legacy_gate").model_copy(
+        update={"status": "failed", "failure_kind": None, "error": None}
+    )
+    _persist_session(settings, legacy)
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with pytest.raises(ConflictError, match="not allowed"):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_legacy_gate",
+            llm_client=retry_client,
+        )
+    assert retry_client.requests == []
+
+
+def test_followup_f6_debug_write_persistence_error_is_best_effort(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = _settings(tmp_path, debug_artifact_capture=True)
+    _approved_session(settings, "wiz_debug_write_failure")
+    original_atomic_write_json = session_io.atomic_write_json
+
+    def fail_debug_write(
+        path: Path,
+        payload: object,
+        *,
+        sort_keys: bool = True,
+    ) -> None:
+        if "debug_artifacts" in path.parts:
+            raise PersistenceError("simulated debug artifact persistence failure")
+        original_atomic_write_json(path, payload, sort_keys=sort_keys)
+
+    monkeypatch.setattr(session_io, "atomic_write_json", fail_debug_write)
+    client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with caplog.at_level(logging.WARNING):
+        result = generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_debug_write_failure",
+            llm_client=client,
+        )
+
+    assert result.status == "ir_ready_for_generation"
+    assert "wizard debug artifact capture failed" in caplog.text
+
+
+@pytest.mark.parametrize("error_type", [OSError, PersistenceError])
+def test_followup_f6_debug_directory_failure_is_best_effort(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    error_type: type[Exception],
+) -> None:
+    settings = _settings(tmp_path, debug_artifact_capture=True)
+    _approved_session(settings, "wiz_debug_dir_failure")
+
+    def fail_private_directory(_: Path) -> None:
+        raise error_type("simulated debug directory failure")
+
+    monkeypatch.setattr(session_io, "_ensure_private_directory", fail_private_directory)
+    client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with caplog.at_level(logging.WARNING):
+        result = generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_debug_dir_failure",
+            llm_client=client,
+        )
+
+    assert result.status == "ir_ready_for_generation"
+    assert "wizard debug artifact capture failed" in caplog.text
+
+
+def test_followup_f7_provenance_temperature_mode_alias_remains_narrow() -> None:
+    common = {
+        "provider": "openai",
+        "model": "test-model",
+        "prompt_version": "v1",
+        "endpoint_identity": None,
+        "config_revision": "0123456789abcdef",
+    }
+    for mode in ("send", "omit", None):
+        provenance = WizardLlmProvenance(temperature_mode=mode, **common)
+        assert provenance.temperature_mode == mode
+
+    with pytest.raises(ValidationError):
+        WizardLlmProvenance(temperature_mode="auto", **common)
+""",
+)
+
+replace_once(
+    "tests/web/test_web_llm_clients.py",
+    "from kicad_pcb.errors import ToolError\n",
+    """from kicad_pcb.errors import ToolError
+from kicad_pcb_web.errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
+""",
+)
+append_once(
+    "tests/web/test_web_llm_clients.py",
+    "def test_followup_ollama_send_mode_preserves_temperature_payload",
+    r"""def test_followup_ollama_send_mode_preserves_temperature_payload() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(
+            200,
+            json={
+                "model": "llama3.1",
+                "message": {"content": "ok"},
+                "done_reason": "stop",
+            },
+        )
+
+    settings = _make_settings(
+        provider="ollama",
+        model="llama3.1",
+        base_url="http://127.0.0.1:11434",
+    )
+    assert settings.llm.temperature_mode == "send"
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
+    finally:
+        client.close()  # type: ignore[attr-defined]
+
+    options = captured["options"]
+    assert isinstance(options, dict)
+    assert options["temperature"] == 0.3
+
+
+@pytest.mark.parametrize("provider", ["openai", "llama_server"])
+@pytest.mark.parametrize(
+    ("finish_reason", "message", "error_type"),
+    [
+        ("length", {"content": '{"ok":true}'}, LlmCompletionTruncatedError),
+        ("content_filter", {"content": '{"ok":true}'}, LlmCompletionRefusedError),
+        ("stop", {"content": '{"ok":true}', "refusal": True}, LlmCompletionRefusedError),
+        ("length", {"content": None}, LlmCompletionTruncatedError),
+    ],
+)
+def test_followup_openai_compatible_real_parser_classifies_terminal_outcomes(
+    provider: str,
+    finish_reason: str,
+    message: dict[str, object],
+    error_type: type[Exception],
+) -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "followup-terminal",
+                "model": "test-model",
+                "choices": [{"message": message, "finish_reason": finish_reason}],
+            },
+        )
+
+    base_url = None if provider == "openai" else "http://127.0.0.1:8080"
+    settings = _make_settings(provider=provider, model="test-model", base_url=base_url)
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        with pytest.raises(error_type):
+            client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
+    finally:
+        client.close()  # type: ignore[attr-defined]
+""",
+)
+
+replace_once(
+    "tests/web/test_web_wizard.py",
+    "from kicad_pcb_web.deps import get_llm_client, get_settings\n",
+    """from kicad_pcb_web.deps import get_llm_client, get_settings
+from kicad_pcb_web.errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
+""",
+)
+replace_once(
+    "tests/web/test_web_wizard.py",
+    """class ScriptedLlmClient:
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = list(responses)
+        self.requests: list[LlmRequest] = []
+
+    def complete(self, request: LlmRequest) -> LlmCompletion:
+        self.requests.append(request)
+        response = self._responses.pop(0)
+        return LlmCompletion(
+            provider="test",
+            model="test-model",
+            content=response,
+            finish_reason="stop",
+        )
+""",
+    """class ScriptedLlmClient:
+    def __init__(self, responses: list[str | Exception]) -> None:
+        self._responses = list(responses)
+        self.requests: list[LlmRequest] = []
+
+    def complete(self, request: LlmRequest) -> LlmCompletion:
+        self.requests.append(request)
+        response = self._responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return LlmCompletion(
+            provider="test",
+            model="test-model",
+            content=response,
+            finish_reason="stop",
+        )
+""",
+)
+append_once(
+    "tests/web/test_web_wizard.py",
+    "def test_followup_wizard_no_usable_content_returns_502_and_persists_operational_failure",
+    r"""def test_followup_wizard_no_usable_content_returns_502_and_persists_operational_failure(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KICAD_PCB_WEB_LLM_SPEC_MAX_REPAIR_ROUNDS", "0")
+    scripted = ScriptedLlmClient(responses=[""])
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()["error"]
+    assert payload["code"] == "LLM_NO_USABLE_CONTENT"
+    assert len(scripted.requests) == 1
+    session_id = payload["details"]["session_id"]
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["failure_kind"] == "operational"
+    assert session["error"]["code"] == "LLM_NO_USABLE_CONTENT"
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "expected_code"),
+    [
+        (LlmCompletionTruncatedError("simulated truncation"), "LLM_COMPLETION_TRUNCATED"),
+        (LlmCompletionRefusedError("simulated refusal"), "LLM_COMPLETION_REFUSED"),
+    ],
+)
+def test_followup_wizard_terminal_completion_errors_return_502_without_retry(
+    tmp_path,
+    monkeypatch,
+    provider_error: Exception,
+    expected_code: str,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(responses=[provider_error])
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()["error"]
+    assert payload["code"] == expected_code
+    assert len(scripted.requests) == 1
+    session_id = payload["details"]["session_id"]
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["failure_kind"] == "operational"
+    assert session["error"]["code"] == expected_code
+
+    app.dependency_overrides.clear()
+""",
+)
+
+append_once(
+    "tests/web/test_web_settings.py",
+    "def test_followup_ollama_omit_temperature_mode_rejects_at_load",
+    r"""def test_followup_ollama_omit_temperature_mode_rejects_at_load(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "ollama-omit.toml"
+    config_path.write_text(
+        '[llm]\nprovider = "ollama"\nmodel = "llama3.1"\n'
+        'base_url = "http://127.0.0.1:11434"\ntemperature_mode = "omit"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(
+        ValueError,
+        match="temperature_mode=omit is not implemented for llm.provider=ollama",
+    ):
+        load_settings()
+
+
+def test_followup_non_string_toml_data_dir_rejects(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "bad-data-dir.toml"
+    config_path.write_text("[web]\ndata_dir = 123\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="web.data_dir must be a string, got int"):
+        load_settings()
+
+
+def test_followup_disabled_provider_invalid_base_url_remains_fail_closed(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "disabled-invalid-url.toml"
+    config_path.write_text(
+        '[llm]\nprovider = "disabled"\nbase_url = "not-a-url"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="Invalid URL for llm.base_url"):
+        load_settings()
+""",
+)
