@@ -78,6 +78,9 @@ Default runtime settings:
 - Jobs dir: `./data/jobs`
 - Default validation mode for web job generation: `internal`
 
+The bind host and port above are ASGI server launch arguments (`uvicorn --host/--port`),
+not `[web]` application configuration keys.
+
 Override the data directory with:
 
 ```bash
@@ -91,8 +94,6 @@ to another file with `KICAD_PCB_WEB_CONFIG_FILE`:
 ```toml
 [web]
 data_dir = "./data"
-default_host = "127.0.0.1"
-default_port = 8000
 mutation_lock_timeout_s = 2.0
 
 [llm]
@@ -266,9 +267,10 @@ connections. The deterministic engine compiles that IR into a KiCad schematic.
 ```bash
 uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name MyProject \
+    --out-dir . \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
-  --validate kicad      # default; requires kicad-cli
+    --validate kicad      # default; requires kicad-cli
   # --validate internal # internal syntax+lint only; no kicad-cli required
 ```
 
