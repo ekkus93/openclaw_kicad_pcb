@@ -1,4 +1,4 @@
-"""Direct OpenAI chat-completions client."""
+"""Direct OpenAI-compatible chat-completions client."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from typing import Any
 
 from kicad_pcb.errors import ToolError
 
-from ...errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
 from .base import BaseHttpLlmClient, LlmCompletion, LlmRequest
+from .capabilities import LlmJsonMode, LlmTokenLimitMode
 
 
 class OpenAiLlmClient(BaseHttpLlmClient):
-    """OpenAI chat-completions client using direct HTTP calls."""
+    """OpenAI-compatible chat-completions client using direct HTTP calls."""
 
     def _build_payload(self, request: LlmRequest) -> tuple[str, dict[str, Any]]:
         payload: dict[str, Any] = {
@@ -22,10 +22,31 @@ class OpenAiLlmClient(BaseHttpLlmClient):
         }
         if self.temperature_mode == "send":
             payload["temperature"] = self._effective_temperature(request)
+
         max_tokens = self._effective_max_tokens(request)
         if max_tokens is not None:
-            payload["max_completion_tokens"] = max_tokens
+            if self.capabilities.token_limit_mode is LlmTokenLimitMode.MAX_COMPLETION_TOKENS:
+                payload["max_completion_tokens"] = max_tokens
+            elif self.capabilities.token_limit_mode is LlmTokenLimitMode.MAX_TOKENS:
+                payload["max_tokens"] = max_tokens
+            else:
+                raise ToolError(
+                    f"{self.provider_name} has an unsupported token-limit capability.",
+                    details={
+                        "provider": self.provider_name,
+                        "token_limit_mode": self.capabilities.token_limit_mode.value,
+                    },
+                )
+
         if request.response_format == "json":
+            if self.capabilities.json_mode is not LlmJsonMode.OPENAI_JSON_OBJECT:
+                raise ToolError(
+                    f"{self.provider_name} has an unsupported structured-JSON capability.",
+                    details={
+                        "provider": self.provider_name,
+                        "json_mode": self.capabilities.json_mode.value,
+                    },
+                )
             payload["response_format"] = {"type": "json_object"}
         return "/chat/completions", payload
 
@@ -54,23 +75,22 @@ class OpenAiLlmClient(BaseHttpLlmClient):
             if first_choice.get("finish_reason") is not None
             else None
         )
-        normalized_reason = (finish_reason or "").strip().lower()
-        if normalized_reason == "length":
-            raise LlmCompletionTruncatedError(
-                "The configured LLM response was truncated; increase llm.max_tokens.",
-                details={"provider": self.provider_name, "finish_reason": finish_reason},
-            )
-        if normalized_reason in {"content_filter", "refusal"} or message.get("refusal"):
-            raise LlmCompletionRefusedError(
-                "The configured LLM refused or content-filtered the response.",
-                details={"provider": self.provider_name, "finish_reason": finish_reason},
-            )
+        outcome = self._classify_terminal_outcome(
+            finish_reason,
+            message_refusal=bool(message.get("refusal")),
+        )
+        self._raise_for_terminal_outcome(outcome, finish_reason=finish_reason)
 
         return LlmCompletion(
             provider=self.provider_name,
             model=str(payload.get("model") or self.model),
             content=self._coerce_text_content(message.get("content")),
             finish_reason=finish_reason,
-            request_id=str(payload["id"]) if payload.get("id") is not None else None,
+            request_id=(
+                str(payload["id"])
+                if self.capabilities.request_id_available and payload.get("id") is not None
+                else None
+            ),
+            outcome=outcome,
             raw_response=payload,
         )

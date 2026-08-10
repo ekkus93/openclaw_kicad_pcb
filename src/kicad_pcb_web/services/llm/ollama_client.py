@@ -7,6 +7,7 @@ from typing import Any
 from kicad_pcb.errors import ToolError
 
 from .base import BaseHttpLlmClient, LlmCompletion, LlmRequest
+from .capabilities import LlmJsonMode, LlmTokenLimitMode
 
 
 class OllamaLlmClient(BaseHttpLlmClient):
@@ -19,12 +20,32 @@ class OllamaLlmClient(BaseHttpLlmClient):
                 {"role": message.role, "content": message.content} for message in request.messages
             ],
             "stream": False,
-            "options": {"temperature": self._effective_temperature(request)},
+            "options": {},
         }
+        if self.temperature_mode == "send":
+            payload["options"]["temperature"] = self._effective_temperature(request)
+
         max_tokens = self._effective_max_tokens(request)
         if max_tokens is not None:
+            if self.capabilities.token_limit_mode is not LlmTokenLimitMode.OLLAMA_NUM_PREDICT:
+                raise ToolError(
+                    "ollama has an unsupported token-limit capability.",
+                    details={
+                        "provider": self.provider_name,
+                        "token_limit_mode": self.capabilities.token_limit_mode.value,
+                    },
+                )
             payload["options"]["num_predict"] = max_tokens
+
         if request.response_format == "json":
+            if self.capabilities.json_mode is not LlmJsonMode.OLLAMA_JSON:
+                raise ToolError(
+                    "ollama has an unsupported structured-JSON capability.",
+                    details={
+                        "provider": self.provider_name,
+                        "json_mode": self.capabilities.json_mode.value,
+                    },
+                )
             payload["format"] = "json"
         return "/api/chat", payload
 
@@ -32,13 +53,19 @@ class OllamaLlmClient(BaseHttpLlmClient):
         message = payload.get("message")
         if not isinstance(message, dict):
             raise ToolError("ollama returned no message body.", details={"provider": "ollama"})
+
+        finish_reason = (
+            str(payload["done_reason"]) if payload.get("done_reason") is not None else None
+        )
+        outcome = self._classify_terminal_outcome(finish_reason)
+        self._raise_for_terminal_outcome(outcome, finish_reason=finish_reason)
+
         return LlmCompletion(
             provider="ollama",
             model=str(payload.get("model") or self.model),
             content=self._coerce_text_content(message.get("content")),
-            finish_reason=(
-                str(payload["done_reason"]) if payload.get("done_reason") is not None else None
-            ),
+            finish_reason=finish_reason,
             request_id=None,
+            outcome=outcome,
             raw_response=payload,
         )

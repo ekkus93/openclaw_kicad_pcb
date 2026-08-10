@@ -8,6 +8,7 @@ from kicad_pcb.errors import UserError
 
 from ...settings import WebSettings
 from .base import HttpLlmClientConfig, LlmClient
+from .capabilities import get_llm_provider_capabilities
 from .llama_server_client import LlamaServerLlmClient
 from .ollama_client import OllamaLlmClient
 from .openai_client import OpenAiLlmClient
@@ -16,6 +17,7 @@ from .openai_client import OpenAiLlmClient
 def _http_config(settings: WebSettings, *, base_url: str) -> HttpLlmClientConfig:
     llm = settings.llm
     assert llm.model is not None
+    capabilities = get_llm_provider_capabilities(llm.provider)
     return HttpLlmClientConfig(
         model=llm.model,
         base_url=base_url,
@@ -24,6 +26,7 @@ def _http_config(settings: WebSettings, *, base_url: str) -> HttpLlmClientConfig
         default_temperature=llm.temperature,
         default_max_tokens=llm.max_tokens,
         temperature_mode=llm.temperature_mode,
+        capabilities=capabilities,
         retry_max_attempts=llm.retry_max_attempts,
         retry_base_delay_s=llm.retry_base_delay_s,
         retry_max_delay_s=llm.retry_max_delay_s,

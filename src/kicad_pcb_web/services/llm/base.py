@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from enum import StrEnum
 from typing import Any, Literal, Protocol
 from urllib.parse import urlsplit
 
@@ -18,12 +19,17 @@ import httpx
 
 from kicad_pcb.errors import ToolError
 
-from ...errors import LlmNoUsableContentError
+from ...errors import (
+    LlmCompletionRefusedError,
+    LlmCompletionTruncatedError,
+    LlmNoUsableContentError,
+)
+from .capabilities import LlmProviderCapabilities, LlmTerminalProtocol
 
 LlmMessageRole = Literal["system", "user", "assistant"]
 LlmResponseFormat = Literal["text", "json"]
 
-_RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
+RETRYABLE_HTTP_STATUS_CODES: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
 
 LOGGER = logging.getLogger("uvicorn.error")
 
@@ -34,6 +40,17 @@ def _safe_base_url_for_log(value: str) -> str:
     parsed = urlsplit(value)
     safe_netloc = parsed.netloc.rsplit("@", 1)[-1]
     return f"{parsed.scheme}://{safe_netloc}"
+
+
+class LlmCompletionOutcome(StrEnum):
+    """Normalized terminal outcome vocabulary shared by provider clients."""
+
+    COMPLETED = "completed"
+    TRUNCATED = "truncated"
+    REFUSED = "refused"
+    FILTERED = "filtered"
+    NO_USABLE_CONTENT = "no_usable_content"
+    UNKNOWN_TERMINAL_REASON = "unknown_terminal_reason"
 
 
 @dataclass(frozen=True)
@@ -63,6 +80,7 @@ class LlmCompletion:
     content: str
     finish_reason: str | None = None
     request_id: str | None = None
+    outcome: LlmCompletionOutcome = LlmCompletionOutcome.COMPLETED
     raw_response: dict[str, Any] | None = None
 
 
@@ -75,6 +93,7 @@ class HttpLlmClientConfig:
     timeout_s: float
     default_temperature: float
     default_max_tokens: int | None
+    capabilities: LlmProviderCapabilities
     temperature_mode: Literal["send", "omit"] = "send"
     api_key: str | None = None
     retry_max_attempts: int = 3
@@ -100,6 +119,17 @@ class BaseHttpLlmClient(ABC):
         config: HttpLlmClientConfig,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
+        if config.capabilities.provider != provider_name:
+            raise ValueError(
+                "LLM provider capability contract does not match configured provider: "
+                f"provider={provider_name!r}, capabilities={config.capabilities.provider!r}"
+            )
+        if config.temperature_mode == "omit" and not config.capabilities.supports_temperature_omit:
+            raise ValueError(
+                "LLM provider capability contract does not support temperature omission: "
+                f"provider={provider_name!r}"
+            )
+
         self.provider_name = provider_name
         self.model = config.model
         self.base_url = config.base_url.rstrip("/")
@@ -107,6 +137,7 @@ class BaseHttpLlmClient(ABC):
         self.default_temperature = config.default_temperature
         self.default_max_tokens = config.default_max_tokens
         self.temperature_mode = config.temperature_mode
+        self.capabilities = config.capabilities
         self.api_key = config.api_key
         self.retry_max_attempts = config.retry_max_attempts
         self.retry_base_delay_s = config.retry_base_delay_s
@@ -237,6 +268,7 @@ class BaseHttpLlmClient(ABC):
                         "payload_bytes": payload_bytes,
                         "prompt_fingerprint": prompt_fingerprint,
                         "ambiguous_delivery": True,
+                        "retryable": False,
                     },
                 )
                 raise ToolError(
@@ -246,12 +278,13 @@ class BaseHttpLlmClient(ABC):
                         "endpoint": endpoint,
                         "ambiguous_delivery": True,
                         "automatic_retry": False,
+                        "retryable": False,
                     },
                 ) from exc
 
             elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
             if (
-                response.status_code in _RETRYABLE_STATUS_CODES
+                response.status_code in RETRYABLE_HTTP_STATUS_CODES
                 and attempt < self.retry_max_attempts
             ):
                 delay_s = self._retry_delay(response, attempt=attempt)
@@ -266,6 +299,7 @@ class BaseHttpLlmClient(ABC):
                         "retry_delay_s": round(delay_s, 3),
                         "payload_bytes": payload_bytes,
                         "prompt_fingerprint": prompt_fingerprint,
+                        "retryable": True,
                     },
                 )
                 time.sleep(delay_s)
@@ -274,6 +308,7 @@ class BaseHttpLlmClient(ABC):
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
+                retryable = exc.response.status_code in RETRYABLE_HTTP_STATUS_CODES
                 LOGGER.warning(
                     "llm request failed with http status",
                     extra={
@@ -284,6 +319,7 @@ class BaseHttpLlmClient(ABC):
                         "elapsed_ms": elapsed_ms,
                         "payload_bytes": payload_bytes,
                         "prompt_fingerprint": prompt_fingerprint,
+                        "retryable": retryable,
                     },
                 )
                 raise ToolError(
@@ -292,6 +328,7 @@ class BaseHttpLlmClient(ABC):
                         "provider": self.provider_name,
                         "status_code": exc.response.status_code,
                         "endpoint": endpoint,
+                        "retryable": retryable,
                     },
                 ) from exc
 
@@ -335,6 +372,79 @@ class BaseHttpLlmClient(ABC):
 
         raise ToolError(f"{self.provider_name} request failed unexpectedly.")
 
+    def _classify_terminal_outcome(
+        self,
+        finish_reason: str | None,
+        *,
+        message_refusal: bool = False,
+    ) -> LlmCompletionOutcome:
+        """Normalize provider terminal metadata without inspecting model names."""
+
+        normalized_reason = (finish_reason or "").strip().lower()
+        protocol = self.capabilities.terminal_protocol
+
+        if message_refusal:
+            return LlmCompletionOutcome.REFUSED
+        if not normalized_reason or normalized_reason == "stop":
+            return LlmCompletionOutcome.COMPLETED
+        if normalized_reason == "length":
+            return LlmCompletionOutcome.TRUNCATED
+        if normalized_reason == "content_filter":
+            return LlmCompletionOutcome.FILTERED
+        if normalized_reason == "refusal":
+            return LlmCompletionOutcome.REFUSED
+
+        if protocol in {LlmTerminalProtocol.OPENAI_CHAT, LlmTerminalProtocol.OLLAMA_CHAT}:
+            return LlmCompletionOutcome.UNKNOWN_TERMINAL_REASON
+
+        raise ToolError(
+            f"{self.provider_name} has an unsupported terminal-reason protocol.",
+            details={
+                "provider": self.provider_name,
+                "terminal_protocol": str(protocol),
+            },
+        )
+
+    def _raise_for_terminal_outcome(
+        self,
+        outcome: LlmCompletionOutcome,
+        *,
+        finish_reason: str | None,
+    ) -> None:
+        """Raise typed fail-closed errors for every non-success terminal outcome."""
+
+        details = {
+            "provider": self.provider_name,
+            "finish_reason": finish_reason,
+            "completion_outcome": outcome.value,
+        }
+        if outcome is LlmCompletionOutcome.COMPLETED:
+            return
+        if outcome is LlmCompletionOutcome.TRUNCATED:
+            raise LlmCompletionTruncatedError(
+                "The configured LLM response was truncated; increase llm.max_tokens.",
+                details=details,
+            )
+        if outcome in {LlmCompletionOutcome.REFUSED, LlmCompletionOutcome.FILTERED}:
+            raise LlmCompletionRefusedError(
+                "The configured LLM refused or content-filtered the response.",
+                details=details,
+            )
+        if outcome is LlmCompletionOutcome.UNKNOWN_TERMINAL_REASON:
+            raise ToolError(
+                f"{self.provider_name} returned an unknown terminal reason; refusing content.",
+                details=details,
+            )
+        if outcome is LlmCompletionOutcome.NO_USABLE_CONTENT:
+            raise LlmNoUsableContentError(
+                "The configured LLM provider returned no usable content.",
+                details=details,
+            )
+        raise ToolError(
+            f"{self.provider_name} returned an unsupported completion outcome.",
+            details=details,
+        )
+
     def _coerce_text_content(self, value: Any) -> str:
         if isinstance(value, str):
             content = value
@@ -348,7 +458,10 @@ class BaseHttpLlmClient(ABC):
         elif value is None:
             raise LlmNoUsableContentError(
                 "The configured LLM provider returned no usable content.",
-                details={"provider": self.provider_name},
+                details={
+                    "provider": self.provider_name,
+                    "completion_outcome": LlmCompletionOutcome.NO_USABLE_CONTENT.value,
+                },
             )
         else:
             raise ToolError(
@@ -359,7 +472,10 @@ class BaseHttpLlmClient(ABC):
         if not content.strip():
             raise LlmNoUsableContentError(
                 "The configured LLM provider returned no usable content.",
-                details={"provider": self.provider_name},
+                details={
+                    "provider": self.provider_name,
+                    "completion_outcome": LlmCompletionOutcome.NO_USABLE_CONTENT.value,
+                },
             )
         return content
 
