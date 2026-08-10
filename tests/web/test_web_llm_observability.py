@@ -52,9 +52,7 @@ def test_successful_completion_logs_structured_metadata_without_raw_content(
             json={
                 "id": "request-safe-id",
                 "model": "model-under-test",
-                "choices": [
-                    {"message": {"content": response_secret}, "finish_reason": "stop"}
-                ],
+                "choices": [{"message": {"content": response_secret}, "finish_reason": "stop"}],
             },
         )
 
@@ -96,9 +94,7 @@ def test_terminal_completion_logs_normalized_outcome_without_provider_body(
             json={
                 "id": "request-truncated",
                 "model": "model-under-test",
-                "choices": [
-                    {"message": {"content": response_secret}, "finish_reason": "length"}
-                ],
+                "choices": [{"message": {"content": response_secret}, "finish_reason": "length"}],
             },
         )
 
