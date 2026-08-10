@@ -1,0 +1,37 @@
+name: Post-hardening closure patch (one-shot)
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - .github/workflows/post-hardening-closure-patch-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: webapp
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Apply exact closure documentation patch
+        run: python .github/scripts/post_hardening_closure_patch_once.py
+      - name: Remove one-shot helper and commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/scripts/post_hardening_closure_patch_once.py
+          git rm .github/workflows/post-hardening-closure-patch-once.yml
+          git add README.md docs/KICAD_WEBAPP_POST_REVIEW_HARDENING_TODO_2026-08-09.md
+          if git diff --cached --quiet; then
+            echo "No changes produced"
+            exit 1
+          fi
+          git commit -m "docs: close webapp hardening documentation drift"
+          git push origin HEAD:webapp
