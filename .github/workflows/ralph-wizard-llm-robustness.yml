@@ -79,6 +79,33 @@ jobs:
           if text.count(anchor) != 1:
               raise SystemExit('focused regression anchor no longer matches expected helper source')
           text = text.replace(anchor, test_update + anchor, 1)
+
+          # The one-attempt helper needs only five arguments; max_attempts was logging-only.
+          one_arg = '        max_attempts: int,\n'
+          one_log = '                "max_attempts": max_attempts,\n'
+          caller_a = '                    max_attempts=max_attempts,\n'
+          caller_b = '                            max_attempts=max_attempts,\n'
+          for needle in (one_arg, one_log, caller_a, caller_b):
+              if text.count(needle) != 1:
+                  raise SystemExit(f'expected exactly one helper simplification match: {needle!r}')
+              text = text.replace(needle, '', 1)
+
+          # Lint/format permanent Python sources/tests, not the temporary self-deleting helper.
+          old_format = 'subprocess.run(["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "format", "."], check=True)\n'
+          new_format = '''subprocess.run(\n    ["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "format", "src", "tests"],\n    check=True,\n)\nsubprocess.run(\n    [\n        "uv", "run", "--extra", "dev", "--extra", "web", "ruff", "check", "--fix",\n        "--select", "I", "src/kicad_pcb_web/services/wizard.py",\n    ],\n    check=True,\n)\n'''
+          old_check = 'subprocess.run(["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "check", "."], check=True)\n'
+          new_check = 'subprocess.run(["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "check", "src", "tests"], check=True)\n'
+          old_format_check = 'subprocess.run(["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "format", "--check", "."], check=True)\n'
+          new_format_check = 'subprocess.run(["uv", "run", "--extra", "dev", "--extra", "web", "ruff", "format", "--check", "src", "tests"], check=True)\n'
+          for old, new in (
+              (old_format, new_format),
+              (old_check, new_check),
+              (old_format_check, new_format_check),
+          ):
+              if text.count(old) != 1:
+                  raise SystemExit(f'permanent-source gate template no longer matches: {old!r}')
+              text = text.replace(old, new, 1)
+
           path.write_text(text, encoding='utf-8')
           PY
 
