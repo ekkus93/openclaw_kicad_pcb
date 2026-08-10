@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from .settings import LlmTemperatureMode
+
 WizardStatus = Literal[
     "drafting_spec",
     "awaiting_user_clarification",
@@ -129,7 +131,7 @@ class WizardLlmProvenance(BaseModel):
     model: str | None = None
     prompt_version: str
     endpoint_identity: str | None = None
-    temperature_mode: Literal["send", "omit"] | None = None
+    temperature_mode: LlmTemperatureMode | None = None
     config_revision: str
 
 

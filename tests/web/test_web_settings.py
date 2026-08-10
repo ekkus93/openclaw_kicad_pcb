@@ -240,3 +240,49 @@ def test_load_settings_rejects_nonpositive_mutation_lock_timeout(
 
     with pytest.raises(ValueError, match="mutation_lock_timeout_s must be greater than zero"):
         load_settings()
+
+
+def test_followup_ollama_omit_temperature_mode_rejects_at_load(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "ollama-omit.toml"
+    config_path.write_text(
+        '[llm]\nprovider = "ollama"\nmodel = "llama3.1"\n'
+        'base_url = "http://127.0.0.1:11434"\ntemperature_mode = "omit"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(
+        ValueError,
+        match="temperature_mode=omit is not implemented for llm.provider=ollama",
+    ):
+        load_settings()
+
+
+def test_followup_non_string_toml_data_dir_rejects(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "bad-data-dir.toml"
+    config_path.write_text("[web]\ndata_dir = 123\n", encoding="utf-8")
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="web.data_dir must be a string, got int"):
+        load_settings()
+
+
+def test_followup_disabled_provider_invalid_base_url_remains_fail_closed(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "disabled-invalid-url.toml"
+    config_path.write_text(
+        '[llm]\nprovider = "disabled"\nbase_url = "not-a-url"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("KICAD_PCB_WEB_CONFIG_FILE", str(config_path))
+
+    with pytest.raises(ValueError, match="Invalid URL for llm.base_url"):
+        load_settings()

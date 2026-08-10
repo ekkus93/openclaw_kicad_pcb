@@ -214,12 +214,22 @@ def _make_debug_artifact_writer(
     artifact_dir = _debug_artifact_dir(settings, session_id)
 
     def writer(payload: dict[str, object]) -> None:
-        _ensure_private_directory(artifact_dir)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
         suffix = uuid4().hex[:8]
         artifact_path = artifact_dir / f"{stage}_{stamp}_{suffix}.json"
-        atomic_write_json(artifact_path, payload)
-        _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
+        try:
+            _ensure_private_directory(artifact_dir)
+            atomic_write_json(artifact_path, payload)
+            _prune_debug_artifacts(artifact_dir, stage=stage, newest=artifact_path)
+        except (OSError, PersistenceError) as exc:
+            LOGGER.warning(
+                "wizard debug artifact capture failed",
+                extra={
+                    "path": str(artifact_path),
+                    "stage": stage,
+                    "error_type": type(exc).__name__,
+                },
+            )
 
     return writer
 

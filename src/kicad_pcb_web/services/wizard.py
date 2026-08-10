@@ -727,15 +727,11 @@ def generate_wizard_project(
             project_error = _project_failure_error(
                 job.model_dump(mode="json"), session_id=session.id, job_id=job.id
             )
-            session = session.model_copy(
-                update={
-                    "status": "failed",
-                    "failure_kind": "generation",
-                    "latest_job_id": job.id,
-                    "error": _public_error_payload(project_error),
-                    "updated_at": _utc_now(),
-                }
-            )
+            session = _set_error(
+                session,
+                _public_error_payload(project_error),
+                failure_kind="generation",
+            ).model_copy(update={"latest_job_id": job.id})
             LOGGER.info(
                 "wizard project generation finished",
                 extra={"session_id": session.id, "job_id": job.id, "job_status": job.status},

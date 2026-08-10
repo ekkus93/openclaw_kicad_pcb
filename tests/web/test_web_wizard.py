@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web.deps import get_llm_client, get_settings
+from kicad_pcb_web.errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
 from kicad_pcb_web.main import app
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
 from kicad_pcb_web.settings import load_settings
@@ -35,13 +36,15 @@ _WIZARD_GOLDEN_CASES = json.loads(_GOLDEN_CASES_PATH.read_text(encoding="utf-8")
 
 
 class ScriptedLlmClient:
-    def __init__(self, responses: list[str]) -> None:
+    def __init__(self, responses: list[str | Exception]) -> None:
         self._responses = list(responses)
         self.requests: list[LlmRequest] = []
 
     def complete(self, request: LlmRequest) -> LlmCompletion:
         self.requests.append(request)
         response = self._responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
         return LlmCompletion(
             provider="test",
             model="test-model",
@@ -924,5 +927,73 @@ def test_wizard_invalid_structured_output_returns_502_and_persists_failure(
     assert session["status"] == "failed"
     assert session["failure_kind"] == "operational"
     assert session["error"]["code"] == "LLM_INVALID_STRUCTURED_OUTPUT"
+
+    app.dependency_overrides.clear()
+
+
+def test_followup_wizard_no_usable_content_returns_502_and_persists_operational_failure(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("KICAD_PCB_WEB_LLM_SPEC_MAX_REPAIR_ROUNDS", "0")
+    scripted = ScriptedLlmClient(responses=[""])
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()["error"]
+    assert payload["code"] == "LLM_NO_USABLE_CONTENT"
+    assert len(scripted.requests) == 1
+    session_id = payload["details"]["session_id"]
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["failure_kind"] == "operational"
+    assert session["error"]["code"] == "LLM_NO_USABLE_CONTENT"
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "expected_code"),
+    [
+        (LlmCompletionTruncatedError("simulated truncation"), "LLM_COMPLETION_TRUNCATED"),
+        (LlmCompletionRefusedError("simulated refusal"), "LLM_COMPLETION_REFUSED"),
+    ],
+)
+def test_followup_wizard_terminal_completion_errors_return_502_without_retry(
+    tmp_path,
+    monkeypatch,
+    provider_error: Exception,
+    expected_code: str,
+) -> None:
+    monkeypatch.setenv("KICAD_PCB_WEB_DATA_DIR", str(tmp_path / "data"))
+    scripted = ScriptedLlmClient(responses=[provider_error])
+    app.dependency_overrides[get_llm_client] = lambda: scripted
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/wizard/sessions",
+        json={"message": "Design a resistor divider."},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()["error"]
+    assert payload["code"] == expected_code
+    assert len(scripted.requests) == 1
+    session_id = payload["details"]["session_id"]
+    persisted = client.get(f"/api/wizard/sessions/{session_id}")
+    assert persisted.status_code == 200
+    session = persisted.json()
+    assert session["status"] == "failed"
+    assert session["failure_kind"] == "operational"
+    assert session["error"]["code"] == expected_code
 
     app.dependency_overrides.clear()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import time
 from pathlib import Path
@@ -10,6 +11,7 @@ import pytest
 
 from kicad_pcb.errors import ToolError
 from kicad_pcb_web.deps import get_llm_client
+from kicad_pcb_web.errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
 from kicad_pcb_web.services.llm import LlmMessage, LlmRequest, build_llm_client
 from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json
 from kicad_pcb_web.settings import LlmSettings, WebSettings, load_settings
@@ -394,3 +396,72 @@ def test_dep_non_closable_client_does_not_crash(
     next(gen)
     with contextlib.suppress(StopIteration):
         next(gen)  # finalizer must not raise
+
+
+def test_followup_ollama_send_mode_preserves_temperature_payload() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(
+            200,
+            json={
+                "model": "llama3.1",
+                "message": {"content": "ok"},
+                "done_reason": "stop",
+            },
+        )
+
+    settings = _make_settings(
+        provider="ollama",
+        model="llama3.1",
+        base_url="http://127.0.0.1:11434",
+    )
+    assert settings.llm.temperature_mode == "send"
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
+    finally:
+        client.close()  # type: ignore[attr-defined]
+
+    options = captured["options"]
+    assert isinstance(options, dict)
+    assert options["temperature"] == 0.3
+
+
+@pytest.mark.parametrize("provider", ["openai", "llama_server"])
+@pytest.mark.parametrize(
+    ("finish_reason", "message", "error_type"),
+    [
+        ("length", {"content": '{"ok":true}'}, LlmCompletionTruncatedError),
+        ("content_filter", {"content": '{"ok":true}'}, LlmCompletionRefusedError),
+        ("stop", {"content": '{"ok":true}', "refusal": True}, LlmCompletionRefusedError),
+        ("length", {"content": None}, LlmCompletionTruncatedError),
+    ],
+)
+def test_followup_openai_compatible_real_parser_classifies_terminal_outcomes(
+    provider: str,
+    finish_reason: str,
+    message: dict[str, object],
+    error_type: type[Exception],
+) -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "followup-terminal",
+                "model": "test-model",
+                "choices": [{"message": message, "finish_reason": finish_reason}],
+            },
+        )
+
+    base_url = None if provider == "openai" else "http://127.0.0.1:8080"
+    settings = _make_settings(provider=provider, model="test-model", base_url=base_url)
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        with pytest.raises(error_type):
+            client.complete(LlmRequest(messages=[LlmMessage(role="user", content="Hi")]))
+    finally:
+        client.close()  # type: ignore[attr-defined]

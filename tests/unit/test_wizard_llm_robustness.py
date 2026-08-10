@@ -8,16 +8,21 @@ from pathlib import Path
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from kicad_pcb.errors import ToolError
 from kicad_pcb_web.errors import (
+    ConflictError,
     LlmCompletionRefusedError,
     LlmCompletionTruncatedError,
     LlmInvalidStructuredOutputError,
     LlmNoUsableContentError,
+    PersistenceError,
+    WebServiceError,
 )
+from kicad_pcb_web.schemas import JobDetail
 from kicad_pcb_web.services import _wizard_session_io as session_io
+from kicad_pcb_web.services import wizard as wizard_service
 from kicad_pcb_web.services._wizard_llm import _call_llm_for_json
 from kicad_pcb_web.services._wizard_session_io import (
     _make_debug_artifact_writer,
@@ -31,9 +36,15 @@ from kicad_pcb_web.services.wizard import (
     _failure_operation,
     _llm_provenance,
     generate_wizard_ir,
+    generate_wizard_project,
 )
 from kicad_pcb_web.settings import LlmSettings, WebSettings, _validate_llm_settings, load_settings
-from kicad_pcb_web.wizard_models import CircuitSpec, WizardSessionDetail
+from kicad_pcb_web.wizard_models import (
+    CircuitSpec,
+    WizardIrValidation,
+    WizardLlmProvenance,
+    WizardSessionDetail,
+)
 
 _VALID_NETLIST = {
     "version": "1",
@@ -402,3 +413,215 @@ def test_d7_jobs_dir_mkdir_oserror_is_wrapped_as_valueerror(
     with pytest.raises(ValueError, match="Unable to create jobs directory") as caught:
         load_settings()
     assert str(data_file / "jobs") in str(caught.value)
+
+
+def test_followup_f2_real_ollama_length_is_terminal_before_valid_json_acceptance(
+    tmp_path: Path,
+) -> None:
+    attempts = {"count": 0}
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        attempts["count"] += 1
+        return httpx.Response(
+            200,
+            json={
+                "model": "llama3.1",
+                "message": {"content": '{"value":"schema-valid"}'},
+                "done_reason": "length",
+            },
+        )
+
+    settings = _settings(
+        tmp_path,
+        provider="ollama",
+        model="llama3.1",
+        base_url="http://127.0.0.1:11434",
+    )
+    client = build_llm_client(settings, transport=httpx.MockTransport(handler))
+    assert client is not None
+    try:
+        with pytest.raises(LlmCompletionTruncatedError):
+            _call_llm_for_json(
+                llm_client=client,
+                messages=[LlmMessage(role="user", content="json")],
+                response_model=_Envelope,
+                max_repairs=2,
+            )
+    finally:
+        client.close()  # type: ignore[attr-defined]
+    assert attempts["count"] == 1
+
+
+def test_followup_f5_operational_ir_failure_allows_actual_retry(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_retry_ir")
+
+    failing_client = ScriptedClient([LlmCompletionTruncatedError("simulated truncation")])
+    with pytest.raises(LlmCompletionTruncatedError):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_retry_ir",
+            llm_client=failing_client,
+        )
+
+    failed = read_wizard_session(settings, "wiz_retry_ir")
+    assert failed.status == "failed"
+    assert failed.failure_kind == "operational"
+    assert _failure_operation(failed) == "generate_ir"
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    retried = generate_wizard_ir(
+        settings=settings,
+        session_id="wiz_retry_ir",
+        llm_client=retry_client,
+    )
+    assert retried.status == "ir_ready_for_generation"
+    assert len(retry_client.requests) == 1
+
+
+def test_followup_f5_generation_failure_blocks_generate_ir_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_generation_gate")
+    ready = read_wizard_session(settings, "wiz_generation_gate").model_copy(
+        update={
+            "status": "ir_ready_for_generation",
+            "ir_json": _VALID_NETLIST,
+            "ir_validation": WizardIrValidation(
+                valid=True,
+                component_count=2,
+                net_count=2,
+            ),
+        }
+    )
+    _persist_session(settings, ready)
+
+    failed_job = JobDetail(
+        id="job_followup_failed",
+        status="failed",
+        project_name="Robustness",
+        created_at="2026-08-10T00:00:00Z",
+        updated_at="2026-08-10T00:00:01Z",
+        request={},
+        error={"type": "tool_error", "message": "simulated generation failure"},
+    )
+    monkeypatch.setattr(
+        wizard_service,
+        "generate_project_from_netlist_job",
+        lambda **_: failed_job,
+    )
+
+    with pytest.raises(WebServiceError) as caught:
+        generate_wizard_project(settings=settings, session_id="wiz_generation_gate")
+    assert caught.value.code == "WIZARD_PROJECT_GENERATION_FAILED"
+
+    failed = read_wizard_session(settings, "wiz_generation_gate")
+    assert failed.status == "failed"
+    assert failed.failure_kind == "generation"
+    assert failed.latest_job_id == failed_job.id
+    assert _failure_operation(failed) == "generate_project"
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with pytest.raises(ConflictError, match="not allowed"):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_generation_gate",
+            llm_client=retry_client,
+        )
+    assert retry_client.requests == []
+
+
+def test_followup_f5_legacy_unsupported_failure_is_not_operationally_retryable(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    _approved_session(settings, "wiz_legacy_gate")
+    legacy = read_wizard_session(settings, "wiz_legacy_gate").model_copy(
+        update={"status": "failed", "failure_kind": None, "error": None}
+    )
+    _persist_session(settings, legacy)
+
+    retry_client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with pytest.raises(ConflictError, match="not allowed"):
+        generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_legacy_gate",
+            llm_client=retry_client,
+        )
+    assert retry_client.requests == []
+
+
+def test_followup_f6_debug_write_persistence_error_is_best_effort(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = _settings(tmp_path, debug_artifact_capture=True)
+    _approved_session(settings, "wiz_debug_write_failure")
+    original_atomic_write_json = session_io.atomic_write_json
+
+    def fail_debug_write(
+        path: Path,
+        payload: object,
+        *,
+        sort_keys: bool = True,
+    ) -> None:
+        if "debug_artifacts" in path.parts:
+            raise PersistenceError("simulated debug artifact persistence failure")
+        original_atomic_write_json(path, payload, sort_keys=sort_keys)
+
+    monkeypatch.setattr(session_io, "atomic_write_json", fail_debug_write)
+    client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with caplog.at_level(logging.WARNING):
+        result = generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_debug_write_failure",
+            llm_client=client,
+        )
+
+    assert result.status == "ir_ready_for_generation"
+    assert "wizard debug artifact capture failed" in caplog.text
+
+
+@pytest.mark.parametrize("error_type", [OSError, PersistenceError])
+def test_followup_f6_debug_directory_failure_is_best_effort(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    error_type: type[Exception],
+) -> None:
+    settings = _settings(tmp_path, debug_artifact_capture=True)
+    _approved_session(settings, "wiz_debug_dir_failure")
+
+    def fail_private_directory(_: Path) -> None:
+        raise error_type("simulated debug directory failure")
+
+    monkeypatch.setattr(session_io, "_ensure_private_directory", fail_private_directory)
+    client = ScriptedClient([_completion(_ir_output(_VALID_NETLIST))])
+    with caplog.at_level(logging.WARNING):
+        result = generate_wizard_ir(
+            settings=settings,
+            session_id="wiz_debug_dir_failure",
+            llm_client=client,
+        )
+
+    assert result.status == "ir_ready_for_generation"
+    assert "wizard debug artifact capture failed" in caplog.text
+
+
+def test_followup_f7_provenance_temperature_mode_alias_remains_narrow() -> None:
+    common = {
+        "provider": "openai",
+        "model": "test-model",
+        "prompt_version": "v1",
+        "endpoint_identity": None,
+        "config_revision": "0123456789abcdef",
+    }
+    for mode in ("send", "omit", None):
+        provenance = WizardLlmProvenance(temperature_mode=mode, **common)
+        assert provenance.temperature_mode == mode
+
+    with pytest.raises(ValidationError):
+        WizardLlmProvenance(temperature_mode="auto", **common)

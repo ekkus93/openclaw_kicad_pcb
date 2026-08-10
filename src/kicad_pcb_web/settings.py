@@ -52,6 +52,7 @@ class LlmSettings:
     api_key: str | None = None
     timeout_s: float = 60.0
     temperature: float = 0.2
+    # ``omit`` is supported by OpenAI and llama-server; Ollama currently requires ``send``.
     temperature_mode: LlmTemperatureMode = "send"
     max_tokens: int | None = None
     system_prompt_version: str = "v1"
@@ -332,6 +333,8 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
         raise ValueError("llm.timeout_s must be 300 seconds or less")
     if settings.temperature_mode not in _VALID_TEMPERATURE_MODES:
         raise ValueError("llm.temperature_mode must be one of: omit, send")
+    if settings.provider == "ollama" and settings.temperature_mode == "omit":
+        raise ValueError("llm.temperature_mode=omit is not implemented for llm.provider=ollama")
     if settings.temperature < 0 or settings.temperature > 2:
         raise ValueError("llm.temperature must be between 0 and 2")
     if settings.max_tokens is not None and settings.max_tokens <= 0:
@@ -379,7 +382,9 @@ def _validate_llm_settings(settings: LlmSettings) -> None:
 
 
 def _resolve_config_path(raw_value: Any, *, config_file: _ConfigFile) -> Path:
-    path = Path(str(raw_value)).expanduser()
+    if not isinstance(raw_value, str):
+        raise ValueError(f"web.data_dir must be a string, got {type(raw_value).__name__}")
+    path = Path(raw_value).expanduser()
     if path.is_absolute() or config_file.path is None:
         return path.resolve()
     return (config_file.path.parent / path).resolve()

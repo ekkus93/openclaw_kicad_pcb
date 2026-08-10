@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, NoReturn, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -255,7 +255,7 @@ def _raise_structured_output_exhausted(
     *,
     response_model: type[BaseModel],
     attempts: int,
-) -> None:
+) -> NoReturn:
     details: dict[str, object] = {
         "response_model": response_model.__name__,
         "attempts": attempts,
@@ -324,6 +324,9 @@ def _call_llm_for_json_once(
         ) from exc
 
     elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    # OpenAI-compatible clients classify these terminal reasons before returning.
+    # Keep this fallback as intentional interim fail-closed protection for Ollama
+    # and any other self-unclassified client until provider-owned semantics exist.
     normalized_reason = (completion.finish_reason or "").strip().lower()
     if normalized_reason == "length":
         raise LlmCompletionTruncatedError(
