@@ -1,5 +1,13 @@
 # KiCad PCB Web App Post-Review Hardening TODO — 2026-08-09
 
+## Completion status
+
+**COMPLETED.** The authoritative implementation and validation disposition is recorded in [`KICAD_WEBAPP_POST_REVIEW_HARDENING_COMPLETION_2026-08-09.md`](KICAD_WEBAPP_POST_REVIEW_HARDENING_COMPLETION_2026-08-09.md).
+
+This checklist is preserved as planning history. Unchecked boxes are not evidence that the hardening implementation is incomplete: the document contains mutually exclusive alternatives, conditional/manual steps, and items explicitly dispositioned as `NOT PERFORMED`. Do not mechanically convert every planning checkbox to `[x]`; use the completion evidence document as the authoritative closure record.
+
+---
+
 Implementation checklist for:
 
 ```text

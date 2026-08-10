@@ -267,10 +267,9 @@ connections. The deterministic engine compiles that IR into a KiCad schematic.
 ```bash
 uv run python legacy/openclaw-skill/scripts/kicad_pcb.py new-from-netlist \
     --name MyProject \
-    --out-dir . \
     --netlist circuit.json \
     --symbols-dir /path/to/symbols \
-    --validate kicad      # default; requires kicad-cli
+  --validate kicad      # default; requires kicad-cli
   # --validate internal # internal syntax+lint only; no kicad-cli required
 ```
 
