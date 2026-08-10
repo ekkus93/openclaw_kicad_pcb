@@ -14,6 +14,19 @@ found by a five-agent post-implementation review of that batch. **No schematic p
 orientation, wire routing, PCB layout, or unrelated Circuit IR semantics may be modified.
 No already-confirmed D1–D7 contract may be altered.**
 
+Review resolved by:
+
+```text
+docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_ANSWERS_2026-08-10.md
+docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_REVIEW_QUESTIONS_2026-08-10.md
+```
+
+F2 and F6 below were revised from their initial versions: the review found F2's original
+"remove the dead branch, all D2 tests stay unmodified" claim was internally contradictory
+(the branch is not dead for Ollama or for `ScriptedClient`-based fakes), and F6's original
+"catch `OSError`" fix would not have caught the actual `PersistenceError` shape the code
+raises. Both are corrected in the contracts below.
+
 SHA discipline:
 
 ```text
@@ -61,31 +74,41 @@ Acceptance:
 
 ---
 
-# Phase 2 — F2: remove dead duplicate finish-reason/refusal classification
+# Phase 2 — F2: provider-owned classification; remove wizard-layer branch (Option A)
 
-Files: `src/kicad_pcb_web/services/_wizard_llm.py`.
+Files: `src/kicad_pcb_web/services/_wizard_llm.py`,
+`tests/unit/test_wizard_llm_robustness.py`.
 
 - [ ] Confirm the `finish_reason == "length"` / `finish_reason in {"content_filter",
       "refusal"}` branch in `_call_llm_for_json_once` is unreachable for
       `openai`/`llama_server` clients (the exception already fires inside
-      `OpenAiLlmClient._parse_completion` before a completion object is returned).
-- [ ] Remove that dead branch; keep the `if not completion.content.strip():` empty-content
-      check (still reachable for clients that don't self-classify, e.g. `ollama`).
-- [ ] Add a code comment at the removal site (or in `ollama_client.py`) documenting that
-      Ollama truncation/refusal is **not** currently distinguished — it surfaces as
-      ordinary content that fails structured-output parsing (repairable
-      `invalid_structured_output`, eventually `LLM_INVALID_STRUCTURED_OUTPUT` on
-      exhaustion) — a disclosed limitation, not a silent gap.
+      `OpenAiLlmClient._parse_completion` before a completion object is returned), but
+      is live for `ollama_client.py` and for any `ScriptedClient`-style fake returning a
+      raw `LlmCompletion` with `finish_reason` set.
+- [ ] Remove that branch; keep the `if not completion.content.strip():` empty-content
+      check (still reachable for clients that don't self-classify).
+- [ ] Add a code comment at the removal site (or in `ollama_client.py`) documenting —
+      as a **behavior change**, not a preserved status quo — that Ollama
+      truncation/refusal is no longer distinguished: it now surfaces as ordinary content
+      that fails structured-output parsing (repairable `invalid_structured_output`,
+      eventually `LLM_INVALID_STRUCTURED_OUTPUT` on exhaustion) instead of the terminal
+      classification it previously received by coincidence via the removed branch.
 - [ ] Do not implement Ollama-side finish-reason/refusal classification in this batch
       (explicitly out of scope per spec contract 2).
+- [ ] Rewrite `test_d2_terminal_finish_reasons_do_not_repair` (and any other D2 test
+      relying on `ScriptedClient` + raw `finish_reason` translation) so `ScriptedClient`
+      is constructed with the typed exception directly
+      (`ScriptedClient([LlmCompletionTruncatedError(...)])` /
+      `ScriptedClient([LlmCompletionRefusedError(...)])`) instead of a raw completion
+      carrying `finish_reason`.
 
 Acceptance:
 
-- [ ] All existing `test_d2_*` tests in `tests/unit/test_wizard_llm_robustness.py` pass
-      unmodified after the removal (proves it was genuinely dead code for the covered
-      providers).
-- [ ] No behavior change for `openai`/`llama_server`/`ollama` completion handling other
-      than the removed dead branch.
+- [ ] The rewritten `test_d2_terminal_finish_reasons_do_not_repair` passes, asserting the
+      same terminal/no-repair/single-call behavior under the new fake-client shape.
+- [ ] All other, unrelated `test_d2_*` tests continue to pass unmodified.
+- [ ] No claim in code comments, this TODO, or the completion evidence states the removal
+      is behaviorally inert for Ollama, or that all D2 tests remained unmodified.
 
 ---
 
@@ -158,21 +181,30 @@ Acceptance:
 
 ---
 
-# Phase 6 — F6: bound the initial debug-artifact write within the best-effort contract
+# Phase 6 — F6: bound the debug-artifact write path with the exception types it actually raises
 
 File: `src/kicad_pcb_web/services/_wizard_session_io.py`.
 
-- [ ] Wrap the `atomic_write_json(artifact_path, payload)` call inside `writer()` in a
-      `try/except OSError`, logging at WARNING with the artifact path and error type,
-      matching the existing `_unlink_debug_artifact` logging pattern.
-- [ ] On write failure, skip the subsequent `_prune_debug_artifacts` call for that write.
-- [ ] Confirm the wizard operation completes/returns normally when the simulated write
-      failure occurs (does not propagate as a hard failure).
+- [ ] Wrap the full body of `writer()` — `_ensure_private_directory(artifact_dir)`,
+      `atomic_write_json(artifact_path, payload)`, and the subsequent
+      `_prune_debug_artifacts` call — in a single `try/except (OSError,
+      PersistenceError)`, logging at WARNING with the artifact path, stage, and error
+      type, matching the existing `_unlink_debug_artifact` logging pattern in style.
+- [ ] Confirm this also covers `_ensure_private_directory`'s own unwrapped
+      `path.mkdir(..., mode=0o700)` call, which raises a bare `OSError` directly (in
+      addition to its existing `chmod`-originated `PersistenceError`).
+- [ ] Do not use a bare `except Exception`.
+- [ ] Confirm the wizard operation completes/returns normally when a simulated failure
+      occurs at any of the three stages (does not propagate as a hard failure).
 
 Acceptance:
 
-- [ ] A simulated initial-write failure (e.g. monkeypatched `atomic_write_json` raising
-      `OSError`) logs a WARNING and the wizard operation still completes normally.
+- [ ] A simulated `atomic_write_json` failure raising `PersistenceError` (its real
+      translated exception shape) logs a WARNING and the wizard operation still
+      completes normally.
+- [ ] A simulated `_ensure_private_directory` failure — both the raw `mkdir` `OSError`
+      case and the `chmod`-originated `PersistenceError` case — logs a WARNING and the
+      wizard operation still completes normally.
 - [ ] All existing D5 pruning/retention tests remain green, unmodified.
 
 ---
@@ -188,8 +220,9 @@ Files: `src/kicad_pcb_web/services/_wizard_llm.py`, `src/kicad_pcb_web/wizard_mo
       `temperature_mode` with `Optional[LlmTemperatureMode]` imported from `settings.py`;
       confirm no import cycle is introduced.
 - [ ] Route `generate_wizard_project`'s failed-job branch through the existing
-      `_set_error` helper instead of constructing the session update inline; preserve the
-      `latest_job_id` field it currently sets.
+      `_set_error` helper using this exact mechanism: call `_set_error(...)` first, then
+      apply `.model_copy(update={"latest_job_id": job.id})` to its result. Do not expand
+      `_set_error`'s signature with a generic extra-updates parameter for this one caller.
 
 Acceptance:
 
@@ -214,13 +247,17 @@ File: `src/kicad_pcb_web/settings.py`.
       so; record the disposition in the completion evidence.
 - [ ] Add a targeted regression test for `provider="disabled"` combined with an invalid
       `base_url` value, asserting the current (correct, fail-closed) `ValueError`
-      behavior at load.
+      behavior at load. This sub-item documents and locks down an existing fail-closed
+      policy — it is not a defect repair; do not describe it as one in the completion
+      evidence.
 
 Acceptance:
 
-- [ ] `data_dir = 123` (or any non-string TOML value) rejects with a clear `ValueError`.
+- [ ] `data_dir = 123` (or any non-string TOML value) rejects with a clear `ValueError`
+      (this sub-item is a genuine defect repair).
 - [ ] `provider="disabled"` with an invalid `base_url` rejects at load; behavior is now
-      documented and tested rather than an untested side effect.
+      documented and tested rather than an untested side effect (this sub-item locks down
+      existing behavior — no functional change).
 - [ ] Existing settings tests remain green.
 
 ---
@@ -255,20 +292,27 @@ Acceptance:
 
 # Definition of Done
 
-- [ ] F1 — `temperature_mode=omit` never a silent no-op; rejected at load for `ollama`.
-- [ ] F2 — finish-reason/refusal classification exists in exactly one place per client
-      family; Ollama's limitation is documented, not silent.
+- [ ] F1 — `temperature_mode=omit` never a silent no-op for any **enabled** provider;
+      rejected at load for `ollama`. `provider=disabled` is exempt (no LLM request).
+- [ ] F2 — finish-reason/refusal classification is provider-owned (Option A); the
+      wizard-layer branch is removed as an explicit, documented behavior change for
+      Ollama and for raw-completion fakes — not claimed as dead-code-only or
+      test-unmodified. `test_d2_terminal_finish_reasons_do_not_repair` is updated to
+      construct `ScriptedClient` with the typed exception directly.
 - [ ] F3 — real OpenAI/llama-server classification code has direct `MockTransport`
       regression coverage for truncation, content-filter, and message-level refusal.
 - [ ] F4 — `LLM_NO_USABLE_CONTENT`, `LLM_COMPLETION_TRUNCATED`, `LLM_COMPLETION_REFUSED`
       each have an end-to-end web-layer regression test.
 - [ ] F5 — the D6 retry gate has real positive-and-negative end-to-end retry regressions.
 - [ ] F6 — debug-artifact capture cannot hard-fail a wizard operation at any stage
-      (write, prune, stat, or delete).
+      (secure directory, write, prune, stat, or delete), catching both `OSError` and
+      `PersistenceError` — the exception shapes the code actually raises.
 - [ ] F7 — `NoReturn` typing, single-source `temperature_mode` literal, and
-      `_set_error`-routed failure writes are all in place.
-- [ ] F8 — non-string `data_dir` and `disabled`+invalid-`base_url` are both resolved and
-      tested.
+      `_set_error`-routed failure writes (via `_set_error` + `model_copy` for
+      `latest_job_id`) are all in place.
+- [ ] F8 — non-string `data_dir` is fixed and tested (genuine defect repair);
+      `disabled`+invalid-`base_url` is documented and tested as existing fail-closed
+      policy (not described as a defect repair).
 - [ ] Every fix has targeted regression evidence; no failure was hidden by weakening
       tests.
 - [ ] Ruff / format / mypy / `tests/unit tests/web` pass.

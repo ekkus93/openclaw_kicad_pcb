@@ -16,6 +16,14 @@ spec closes those. It does **not** reopen schematic placement, orientation, wire
 PCB layout, or unrelated Circuit IR semantics, and it does **not** revisit any D1–D7
 contract that was confirmed correct.
 
+This revision (2026-08-10, second pass) incorporates one round of review:
+`docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_REVIEW_QUESTIONS_2026-08-10.md`, which
+identified two contracts (F2, F6) that were internally contradictory with the current
+implementation and would have broken existing tests or left real failure paths uncaught.
+Both are corrected below; the remaining review points were smaller wording/mechanism
+clarifications, also applied. Point-by-point answers are in
+`docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_ANSWERS_2026-08-10.md`.
+
 ## Starting point and SHA discipline
 
 - **Code-review baseline SHA** (where these follow-up defects were observed):
@@ -57,12 +65,19 @@ D2's truncation/refusal classification is implemented twice. The authoritative c
 identical copy exists in `_wizard_llm.py:326-337`, re-normalizing
 `completion.finish_reason` after `.complete()` returns. For `openai`/`llama_server`
 (which subclasses `OpenAiLlmClient`) the second copy is unreachable dead code — the
-exception already fired upstream. It is only live for `ollama_client.py`, which forwards
-`done_reason` verbatim and was never given its own classification logic, so an Ollama
-refusal or truncation is not actually distinguished — it just looks like ordinary content
-and falls through to normal JSON parsing. Two copies of the same logic that can silently
-drift out of sync, with no test exercising the divergence, is exactly the kind of
-half-applied duplication automated patch passes leave behind.
+exception already fired upstream. It is **not**, however, dead everywhere: it is live for
+`ollama_client.py`, which forwards `done_reason` verbatim and was never given its own
+classification logic, and — importantly — it is also live for any client (real or fake)
+that returns a raw `LlmCompletion` with `finish_reason` set without itself raising, which
+includes the existing `ScriptedClient` test double used by
+`test_d2_terminal_finish_reasons_do_not_repair`. So an Ollama refusal or truncation is not
+actually distinguished by a provider-owned check today — it currently only gets classified
+by coincidence, via this generic branch, if Ollama's `done_reason` happens to match one of
+the checked strings. Two copies of the same logic that can silently drift out of sync,
+with no test exercising the divergence, is exactly the kind of half-applied duplication
+automated patch passes leave behind — and removing the branch outright is a real behavior
+change for Ollama and for any raw-`LlmCompletion`-returning test double, not a no-op dead
+code deletion.
 
 ### F3 — The real provider-client classification code has no test coverage (Med)
 
@@ -103,13 +118,19 @@ a `"generation"` failure blocking a subsequent `generate_wizard_ir` call).
 D5's contract states debug capture "is best-effort and must never fail the wizard
 operation." The pruning/stat/deletion paths correctly honor this
 (`_wizard_session_io.py:153-201`, WARNING-logged, non-raising). The *initial* artifact
-write inside `writer()` (`_wizard_session_io.py:216-222`,
-`atomic_write_json(artifact_path, payload)`) is unguarded: if it raises (disk full,
-permission error, etc.), the exception propagates up through `_call_llm_for_json`/
-`_call_llm_for_json_once` into the wizard operation's outer exception handling and **does**
-hard-fail the operation — for an opt-in, default-off debugging feature. This contradicts
-the stated rationale even though it is outside the literal D5 checklist wording (which
-named only "pruning/stat/deletion failure").
+write inside `writer()` (`_wizard_session_io.py:216-222`) is unguarded on two fronts:
+`_ensure_private_directory(artifact_dir)` (line 217) can raise a bare `OSError` from its
+own `path.mkdir(..., mode=0o700)` call (line 135) or a `PersistenceError` from its
+`chmod`-failure path (lines 140-144); `atomic_write_json(artifact_path, payload)`
+(line 221) does not raise raw `OSError` for realistic failures at all — the shared
+`atomic_io.py` layer deliberately catches filesystem and serialization failures (disk
+full, permission failure, failed fsync, failed rename, JSON-serialization failure) and
+re-raises them as `PersistenceError` (`atomic_io.py`, `except Exception as exc: raise
+PersistenceError(...) from exc`). Either failure propagates up through
+`_call_llm_for_json`/`_call_llm_for_json_once` into the wizard operation's outer exception
+handling and **does** hard-fail the operation — for an opt-in, default-off debugging
+feature. This contradicts the stated rationale even though it is outside the literal D5
+checklist wording (which named only "pruning/stat/deletion failure").
 
 ### F7 — Minor type-safety and consistency gaps left by the D1–D7 implementation (Low)
 
@@ -172,11 +193,13 @@ capability model would repeat the same "ad-hoc heuristic" pattern D3 explicitly 
   refusal/finish-reason semantics per F2 are also unresolved) and is noted as a possible
   future extension alongside D3's deferred `auto` capability registry.
 
-### 2. Consolidate finish-reason/refusal classification into one layer (F2)
+### 2. Provider-owned classification is authoritative; wizard-layer branch removal is an explicit behavior change (F2)
 
-**Decision: keep the provider-side classification in `openai_client.py` /
-`llama_server_client.py` as authoritative; remove the now-fully-dead duplicate branch in
-`_wizard_llm.py` rather than maintaining two copies.**
+**Decision: Option A — provider-specific finish semantics belong with the provider
+adapter. Remove the generic wizard-layer branch. This is an explicit, disclosed behavior
+change for Ollama and for any client that returns a raw, unclassified `LlmCompletion` —
+not a dead-code-only deletion, and it requires updating the D2 tests that currently depend
+on the branch being present.**
 
 - Delete the `finish_reason == "length"` / `finish_reason in {"content_filter",
   "refusal"}` re-checks in `_wizard_llm.py` (`_wizard_llm.py:326-337`) — for
@@ -188,12 +211,27 @@ capability model would repeat the same "ad-hoc heuristic" pattern D3 explicitly 
 - For `ollama_client.py`, this batch does **not** implement Ollama-side truncation/refusal
   classification (Ollama's `done_reason` values do not cleanly map to OpenAI's
   `finish_reason` semantics, and designing that mapping is a larger provider-parity
-  change). Instead: document explicitly (code comment + this spec) that an Ollama
-  truncation/refusal currently surfaces as ordinary content that fails structured-output
-  parsing (i.e. `invalid_structured_output`, repairable, eventually exhausting to
-  `LLM_INVALID_STRUCTURED_OUTPUT`) rather than as a distinct terminal
-  truncation/refusal outcome. This is a known, disclosed limitation, not a silent gap.
+  change). Document explicitly (code comment at the removal site, plus this spec) that
+  **this is a behavior change, not a preserved status quo**: before this fix, an Ollama
+  completion whose `done_reason` happened to equal `"length"`/`"content_filter"`/
+  `"refusal"` was classified as a terminal truncation/refusal by the generic branch: after
+  this fix, it is not — it falls through to ordinary structured-output parsing (repairable
+  `invalid_structured_output`, eventually exhausting to `LLM_INVALID_STRUCTURED_OUTPUT`).
+  This is a known, disclosed limitation, adopted deliberately because provider-specific
+  finish semantics belong in the provider adapter, not because the old behavior was
+  reproduced.
+- **Test consequence (not optional):** `test_d2_terminal_finish_reasons_do_not_repair` and
+  any other D2 test that constructs `ScriptedClient` with a raw `LlmCompletion(...,
+  finish_reason=reason)` and expects `_call_llm_for_json` to translate it into a typed
+  error must be rewritten to construct `ScriptedClient` with the typed exception directly
+  (e.g. `ScriptedClient([LlmCompletionTruncatedError(...)])` /
+  `ScriptedClient([LlmCompletionRefusedError(...)])`), modeling a client whose provider
+  layer has already classified — consistent with Option A's ownership split. These tests
+  are **expected to change**, not remain green unmodified; the change itself is the proof
+  that classification now happens at the provider boundary.
 - Spec and IR paths continue to share the same (now single-copy) classification contract.
+- No claim anywhere in the spec/TODO/completion evidence may state that this removal is
+  behaviorally inert for Ollama or that all existing D2 tests pass unmodified.
 
 ### 3. Add real-provider-client classification tests (F3)
 
@@ -240,20 +278,29 @@ not just an assertion on the persisted `failure_kind`/`_failure_operation` value
   as `unsupported_design` per the D6 legacy rule) is **not** treated as retryable by the
   operational retry gate.
 
-### 6. Bound the initial debug-artifact write within the same best-effort contract (F6)
+### 6. Best-effort debug-artifact capture must catch the exception types the code actually raises (F6)
 
-**Decision: catch and WARNING-log a failure of the initial artifact write itself,
-consistent with the existing prune/stat/delete handling — do not let an opt-in debugging
-feature hard-fail a wizard operation.**
+**Decision: treat the entire filesystem/persistence portion of the debug writer — secure
+directory, write artifact, prune/stat/delete — as one best-effort unit, catching both
+`OSError` and `PersistenceError`, because the shared `atomic_io.py` layer and
+`_ensure_private_directory`'s `chmod` path translate realistic failures (disk full,
+permission failure, failed fsync/rename, JSON-serialization failure) into
+`PersistenceError`, not raw `OSError`. A handler that only catches `OSError` does not
+satisfy the best-effort guarantee for the failure modes that actually occur.**
 
-- Wrap the `atomic_write_json(artifact_path, payload)` call inside `writer()`
-  (`_wizard_session_io.py:216-222`) in a `try/except OSError`, logging at WARNING with the
-  path and error type, matching the existing `_unlink_debug_artifact` pattern
-  (`_wizard_session_io.py:153-162`) exactly in style.
-- On write failure, skip the subsequent `_prune_debug_artifacts` call for that write
-  (nothing to prune around) rather than raising.
-- This must not change behavior for the success path or for any existing D5 pruning
-  test.
+- Wrap the full body of `writer()` — `_ensure_private_directory(artifact_dir)`,
+  `atomic_write_json(artifact_path, payload)`, and the subsequent
+  `_prune_debug_artifacts` call — in a single `try/except (OSError, PersistenceError)`,
+  WARNING-logging the failure (artifact path, stage, error type) and returning without
+  raising.
+- Explicitly cover `_ensure_private_directory`'s own unwrapped `path.mkdir(...,
+  mode=0o700)` call (`_wizard_session_io.py:135`), which currently raises a bare
+  `OSError` directly, in addition to its already-caught `chmod`-originated
+  `PersistenceError` (lines 140-144) — both must be caught by the new wrapper around
+  `writer()`, since `_ensure_private_directory` itself is called from inside `writer()`.
+- Do **not** use a bare `except Exception` — only the two expected filesystem/persistence
+  error classes are caught; unrelated programming bugs still propagate normally.
+- This must not change behavior for the success path or for any existing D5 pruning test.
 
 ### 7. Type-safety and consistency cleanup (F7)
 
@@ -262,10 +309,17 @@ feature hard-fail a wizard operation.**
 - Replace `wizard_models.py`'s inline `Literal["send", "omit"] | None` for
   `temperature_mode` with an import of `LlmTemperatureMode` from `settings.py` (verify no
   import cycle — `settings.py` does not import `wizard_models`), keeping the field
-  `Optional[LlmTemperatureMode]`.
+  `Optional[LlmTemperatureMode]`. This makes a persisted/wire model depend on the runtime
+  settings module solely to share a type alias — accepted as intentional for this small
+  batch; if more cross-layer LLM type aliases accumulate, a future cleanup may move them
+  to a neutral shared module. No separate refactor is required now.
 - Route `generate_wizard_project`'s failed-job branch (`wizard.py:730-738`) through the
-  existing `_set_error` helper instead of constructing the session update inline, keeping
-  behavior (including the `latest_job_id` field it currently sets) identical.
+  existing `_set_error` helper instead of constructing the session update inline, using
+  this exact mechanism: call `_set_error(...)` first, then apply
+  `.model_copy(update={"latest_job_id": job.id})` to its result. Do **not** expand
+  `_set_error`'s signature with a generic extra-updates parameter for this one caller —
+  keep the helper's API small unless another concrete caller needs it. Behavior (status,
+  failure_kind, error payload, updated_at, and latest_job_id) must be identical to today.
 
 ### 8. Close the two residual settings-hygiene gaps (F8)
 
@@ -323,9 +377,13 @@ and `httpx.MockTransport` over mocks, matching existing project style):
 - **F1**: `provider=ollama, temperature_mode=omit` rejects at settings load with a clear
   message; `provider=ollama, temperature_mode=send` (default) continues to pass and the
   Ollama payload is unchanged.
-- **F2**: after removing the dead duplicate branch, all existing D2 tests
-  (`test_d2_*` in `tests/unit/test_wizard_llm_robustness.py`) still pass unmodified —
-  proving the removal was genuinely dead code, not a behavior change.
+- **F2**: `test_d2_terminal_finish_reasons_do_not_repair` (and any other D2 test that
+  relies on `ScriptedClient` returning a raw `LlmCompletion(finish_reason=...)` for the
+  wizard layer to translate) is rewritten to have `ScriptedClient` raise the typed
+  provider exception directly, and continues to assert the same terminal/no-repair
+  behavior under that new shape. This test **is expected to change**, not remain
+  unmodified — the diff itself is the proof that classification moved to the provider
+  boundary. All other, unrelated D2 tests continue to pass unmodified.
 - **F3**: four new `httpx.MockTransport`-backed tests (length, content_filter,
   message.refusal, content:null+length) asserting the exact typed error raised by
   `OpenAiLlmClient.complete()` / `LlamaServerLlmClient.complete()` directly.
@@ -334,10 +392,13 @@ and `httpx.MockTransport` over mocks, matching existing project style):
   asserting the response code and `failure_kind=operational`.
 - **F5**: one positive end-to-end retry test and two negative gating tests as specified in
   contract 5 above — actual second calls, not just field inspection.
-- **F6**: a simulated initial-write failure (e.g. monkeypatched `atomic_write_json` raising
-  `OSError`) asserts a WARNING log and that the wizard operation still completes/returns
-  normally, matching the existing `test_d5_prune_delete_failure_warns_without_raising`
-  style.
+- **F6**: three new tests using the real exception shapes the code actually produces —
+  (1) `atomic_write_json` raising `PersistenceError` (not a monkeypatched raw `OSError`)
+  asserts a WARNING log and that the wizard operation still completes/returns normally;
+  (2) `_ensure_private_directory` failing, covering both its unwrapped `mkdir` `OSError`
+  and its `chmod`-originated `PersistenceError`, asserts the same; (3) existing
+  prune/stat/delete failure tests (`test_d5_prune_delete_failure_warns_without_raising`)
+  remain green, unmodified.
 - **F7**: no new test required beyond existing D1–D7 tests continuing to pass and mypy
   passing with the `NoReturn` annotation in place; add one assertion that
   `WizardLlmProvenance.temperature_mode` still accepts only `"send"`/`"omit"`/`None` after
@@ -355,7 +416,9 @@ Closure is complete when:
 - F1–F8 are each implemented per the exact contracts above (or a deviation is explicitly
   documented with rationale in the completion evidence);
 - `temperature_mode=omit` is either honored or explicitly rejected at load for every
-  provider — never a silent no-op;
+  **enabled** provider — never a silent no-op. `provider="disabled"` generates no LLM
+  request and is exempt; this batch does not add a new rejection for
+  `provider=disabled, temperature_mode=omit` solely to satisfy this bullet's wording;
 - finish-reason/refusal classification exists in exactly one place per client family, with
   the Ollama limitation explicitly documented rather than silently unhandled;
 - the real OpenAI/llama-server classification code path (not just the wizard-layer fake)
@@ -367,8 +430,10 @@ Closure is complete when:
   a post-failure field assertion;
 - debug-artifact capture cannot hard-fail a wizard operation at any stage (write, prune,
   stat, or delete);
-- the two residual settings-hygiene gaps (non-string `data_dir`, `disabled`+invalid
-  `base_url`) are resolved and tested;
+- the non-string `data_dir` gap is fixed and tested (a genuine defect repair), and the
+  `disabled`+invalid-`base_url` behavior is documented and locked down with a regression
+  test (an existing fail-closed policy made explicit and tested, not a defect repair —
+  the distinction is preserved in the completion evidence);
 - each fix has targeted regression tests with the explicit assertions above; no test
   weakened;
 - ruff, ruff format, mypy, and `pytest tests/unit tests/web` all pass;
