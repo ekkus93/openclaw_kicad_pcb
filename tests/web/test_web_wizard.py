@@ -204,10 +204,20 @@ def test_wizard_debug_artifacts_are_persisted_only_when_enabled(
     artifact_dir = tmp_path / "data" / "wizard_sessions" / session_id / "debug_artifacts"
     artifacts = sorted(artifact_dir.glob("spec_*.json"))
     assert len(artifacts) == 1
-    artifact_payload = json.loads(artifacts[0].read_text(encoding="utf-8"))
+    artifact_text = artifacts[0].read_text(encoding="utf-8")
+    artifact_payload = json.loads(artifact_text)
     assert artifact_payload["response_model"] == "SpecConversationOutput"
-    assert artifact_payload["messages"][-1]["content"] == "I want a simple passive attenuator."
-    assert artifact_payload["completion"]["provider"] == "test"
+    assert artifact_payload["provider"] == "test"
+    assert artifact_payload["model"] == "test-model"
+    assert artifact_payload["prompt_message_count"] >= 2
+    assert artifact_payload["prompt_chars"] > len("I want a simple passive attenuator.")
+    assert len(artifact_payload["prompt_fingerprint"]) == 16
+    assert artifact_payload["response_chars"] > 0
+    assert len(artifact_payload["response_fingerprint"]) == 16
+    assert "messages" not in artifact_payload
+    assert "completion" not in artifact_payload
+    assert "I want a simple passive attenuator." not in artifact_text
+    assert "Drafted a reviewable specification." not in artifact_text
 
     app.dependency_overrides.clear()
 
@@ -606,7 +616,7 @@ def test_wizard_generate_ir_accepts_simple_555_blinker_without_pwm_only_lints(
                                 "name": "NET_TRIG_THRESH",
                                 "nodes": ["U1.2", "U1.6", "C1.1", "R2.2"],
                             },
-                            {"name": "NET_DISCH", "nodes": ["U1.7", "R1.2", "R2.1"]},
+                            {"name": "NET_DISCH", "nodes": ["U1.7", "R1.1", "R2.1"]},
                             {"name": "NET_OUT", "nodes": ["U1.3", "R3.1"]},
                             {"name": "NET_LED_ANODE", "nodes": ["R3.2", "D1.1"]},
                             {"name": "NET_CTRL", "nodes": ["U1.5", "C3.1"]},
