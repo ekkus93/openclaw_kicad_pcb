@@ -3,10 +3,11 @@
 ## Status
 
 Implementation of
-`docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_TODO_2026-08-10.md` is complete and has
-passed the bounded pre-publication validation described below. Permanent-CI acceptance is
-performed on the normal documentation/evidence successor SHA so GitHub Actions evaluates
-the cleaned implementation tree after the temporary bounded helper has removed itself.
+`docs/KICAD_WEBAPP_WIZARD_LLM_FOLLOWUP_HARDENING_TODO_2026-08-10.md` is complete.
+The cleaned implementation and this evidence passed permanent CI 5/5 green on accepted
+predecessor SHA `6e9b07a7db58fc2c9644756778b06f89262c24a3` in run `31387498004`.
+This finalized evidence/TODO successor is validated separately as the final exact
+repository head so the documentation closeout itself does not rely on its predecessor.
 
 ## SHA discipline
 
@@ -19,7 +20,9 @@ the cleaned implementation tree after the temporary bounded helper has removed i
   `a680403e4df3b3feff70b398c063bde65beb81bc`
   (`fix: harden wizard LLM follow-up reliability`).
 - Bounded implementation/validation run: `31386619457`, job `93448364333`, success.
-- Permanent-CI accepting SHA/run: pending this evidence commit and its permanent run.
+- Accepted predecessor SHA:
+  `6e9b07a7db58fc2c9644756778b06f89262c24a3`.
+- Permanent acceptance run: `31387498004` — completed / success, 5/5 jobs green.
 
 The temporary helper/workflow files were deleted in the implementation commit. Comparing
 `179f8d2b3552e9b022fe63bcb003f2479f30e0d9` to
@@ -174,6 +177,58 @@ omitted a `json` import in a newly added test. That orchestration-only error was
 no product commit was published from the failed attempt. The successful bounded run above
 repeated the full baseline and final validation rather than reusing a prior runner state.
 
+## Permanent acceptance evidence
+
+Permanent CI run `31387498004` on accepted predecessor SHA
+`6e9b07a7db58fc2c9644756778b06f89262c24a3` completed successfully with all five required
+jobs green:
+
+- Frontend lint, unit tests and production build — job `93451234446` — success.
+- Python lint, types, unit and web tests — job `93451234570` — success.
+- Build and install wheel/sdist — job `93455222046` — success.
+- Browser smoke tests — job `93455222069` — success.
+- KiCad integration tests — job `93455222073` — success.
+
+Authoritative permanent-run Python evidence:
+
+- Ruff: clean.
+- Ruff format: 461 files already formatted.
+- mypy: success, no issues in 213 source files.
+- `pytest` unit/web: 2776 collected; **2769 passed, 7 skipped**.
+- total coverage: **90.95%**.
+- The seven skips are environment/opt-in dependent tests; the permanent output records
+  skips in `test_lib_symbol.py`, artifact/privacy/jobs coverage, one LLM-client case, and
+  one wizard case rather than treating a hard-coded count as a product invariant.
+
+Browser evidence:
+
+- 12 Playwright tests total: **11 passed, 1 skipped**.
+- The skipped case is the opt-in live-LLM wizard flow.
+
+KiCad integration evidence:
+
+- KiCad CLI version: 9.0.9.
+- 38 integration tests collected; 15 deselected by the `requires_kicad` selection;
+  **23 selected tests passed**.
+
+Permanent artifacts:
+
+- `package-smoke-31387498004` — artifact `9062768629`.
+- `python-coverage-31387498004` — artifact `9062757725`.
+- `frontend-coverage-31387498004` — artifact `9062299312`.
+- `built-spa-31387498004` — artifact `9062298590`.
+- `ruff-report-31387498004` — artifact `9062293244`.
+
+The repository's independent CI-status bridge (issue #2) observed the same exact SHA and
+run as `completed / success`, with **5 completed, 0 abnormal, 0 running/pending**, five
+artifacts available, and no problem steps.
+
+The browser dependency install still reports the pre-existing npm audit state of
+**8 vulnerabilities (1 low, 1 moderate, 6 high)**. This batch did not modify frontend
+source or dependencies, and the current permanent workflow does not gate on `npm audit`.
+That remains visible as separate dependency-security hygiene rather than being silently
+folded into this wizard/LLM batch.
+
 ## Scope audit
 
 Net implementation changes relative to the final planning head are limited to:
@@ -193,8 +248,9 @@ crossing-minimization, spacing/layout, PCB placement/routing, deterministic `kic
 engine, frontend source/SPA bundle, or unrelated Circuit IR semantic code was modified.
 No already-confirmed D1-D7 contract was intentionally altered.
 
-## Permanent acceptance
+## Final documentation-head validation
 
-Pending permanent CI on the normal evidence successor SHA. Final closure will record the
-exact accepting SHA, permanent run/job IDs, Python counts/coverage, browser result, and
-artifacts after that SHA reaches 5/5 green.
+This document and the finalized TODO are a documentation-only successor to the already
+accepted implementation/evidence predecessor. The exact final documentation head is
+validated with the same permanent five-job CI workflow after these closeout edits. No
+additional product-code change is needed or permitted for that final validation step.
