@@ -2,16 +2,18 @@
 
 ## Status
 
-Implementation of `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_TODO_2026-08-10.md` is complete at the implementation candidate below. The bounded pre-commit validation run is green. Permanent CI evidence is intentionally recorded in a successor revision after the normal `ci.yml` workflow completes on an exact repository SHA.
+Implementation of `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_TODO_2026-08-10.md` is complete. The implementation was validated first by a bounded pre-commit acceptance workflow and then by the permanent `ci.yml` workflow on a normal repository SHA containing the cleaned implementation and this evidence predecessor.
 
 ## SHA discipline
 
 - Code-review baseline SHA: `479465102f25f7dd85153477442c1c01b6dfbbe3`
 - True implementation starting SHA: `b5855cc3f0e984f3a189b17fec37ac1cf8685de1`
-- Implementation candidate SHA: `e302d1b2b6e17bc6e62ae43c8f1100201f547e66`
-- Permanent-CI accepting SHA: **PENDING**
+- Implementation commit SHA: `e302d1b2b6e17bc6e62ae43c8f1100201f547e66`
+- Permanent-CI implementation/evidence accepting SHA: `515f898b7a519cd9341eee605e18e9f1f5a9eed6`
 
 The implementation starting SHA was captured before the first product-code change. Permanent baseline CI run `31370387661` passed all five jobs on that exact SHA before implementation began.
+
+Because recording a CI run necessarily creates a successor documentation SHA, the final exact documentation head is validated externally by the final Ralph-loop report and the repository CI-status bridge rather than by recursively committing its own run ID forever.
 
 ## Bounded implementation validation
 
@@ -26,15 +28,62 @@ Before the implementation commit was created, that job completed all of the foll
 - targeted D1-D7 plus existing wizard/client regressions: `58 passed, 2 skipped` in the selected suite;
 - Ruff formatting of permanent Python sources/tests;
 - Ruff check: clean;
-- Ruff format check: clean (`456 files already formatted`);
+- Ruff format check: clean (`456 files already formatted` at that bounded runner revision);
 - mypy: `Success: no issues found in 213 source files`;
 - full `tests/unit tests/web` suite: reached 100% with no failures;
 - scope-boundary guard: clean;
 - `git diff --cached --check`: clean.
 
-The quiet full-suite runner did not emit its final pass/skip count line. The permanent Python CI job will provide the authoritative collected/pass/skip counts and they will be recorded below in the final evidence revision.
+All temporary bounded-helper files and workflows were deleted in the same implementation commit. At the cleaned implementation/evidence SHA, `.github/workflows/` contains only permanent `ci.yml`, and there is no `.github/scripts/` directory.
 
-All temporary bounded-helper files and workflows were deleted in the same implementation commit. At `e302d1b2...`, `.github/workflows/` contains only permanent `ci.yml`, and there is no `.github/scripts/` directory.
+## Permanent CI acceptance
+
+Permanent workflow run:
+
+- Run: `31375490922`
+- Head SHA: `515f898b7a519cd9341eee605e18e9f1f5a9eed6`
+- Branch: `webapp`
+- Result: **5/5 required jobs successful**
+
+Jobs:
+
+1. Python lint, types, unit and web tests — `93413662913` — success
+2. Frontend lint, unit tests and production build — `93413662944` — success
+3. Build and install wheel/sdist — `93417287256` — success
+4. KiCad integration tests — `93417287263` — success
+5. Browser smoke tests — `93417287277` — success
+
+### Python evidence
+
+The permanent Python job recorded:
+
+- Ruff: all checks passed;
+- Ruff format: `461 files already formatted`;
+- mypy: `Success: no issues found in 213 source files`;
+- workflow-config guard: pass;
+- generated-tree guard: pass;
+- pytest collected: `2753`;
+- result: **`2746 passed, 7 skipped`**;
+- coverage: **`90.85%`**, above the 70% gate.
+
+### Browser evidence
+
+Playwright ran 12 tests:
+
+- **11 passed**;
+- **1 skipped**.
+
+The skipped test is the explicitly opt-in live-LLM wizard flow. `frontend/e2e/wizard.spec.ts` skips it unless `RUN_E2E_WIZARD_TESTS=1` is supplied; permanent CI does not enable that provider-dependent test. The browser suite still exercises the deterministic wizard failure/retry hardening flow and direct JSON generation flow.
+
+### Permanent artifacts
+
+Run `31375490922` produced all five expected permanent artifacts:
+
+- `package-smoke-31375490922` — artifact `9058190026`;
+- `python-coverage-31375490922` — artifact `9058178652`;
+- `frontend-coverage-31375490922` — artifact `9057747969`;
+- `built-spa-31375490922` — artifact `9057747133`;
+- `ruff-report-31375490922` — artifact `9057740334`.
 
 ## D1 — IR structural-output repair: fixed
 
@@ -102,7 +151,7 @@ The client exposes the maximum scheduled retry-sleep total as a bound on its own
 (10 - 1) * 60 = 540 seconds
 ```
 
-This is **not** described as an absolute HTTP wall-clock deadline. HTTPX keeps its native connect/read/write/pool inactivity-timeout semantics. A true end-to-end deadline mechanism remains out of scope.
+This is **not** an absolute HTTP wall-clock deadline. HTTPX keeps its native connect/read/write/pool inactivity-timeout semantics. A true end-to-end deadline mechanism remains out of scope.
 
 The retryable HTTP status set and the no-replay rule after ambiguous POST delivery remain unchanged.
 
@@ -164,7 +213,7 @@ No additional silent-CWD path field was found.
 
 ## Scope verification
 
-The net diff from implementation start `b5855cc3...` to implementation candidate `e302d1b2...` contains only:
+The net implementation diff from `b5855cc3...` to `e302d1b2...` contains only:
 
 - `README.md`;
 - `src/kicad_pcb_web/errors.py`;
@@ -190,7 +239,8 @@ The following remain explicit non-goals rather than silent fallbacks:
 2. **Automatic/model-capability temperature policy** — deferred. Operators must explicitly choose `temperature_mode="omit"` for models that reject temperature; default `send` preserves compatibility with existing configurations.
 3. **Absolute end-to-end LLM operation deadline** — deferred. D4 bounds configuration/backoff, not total HTTP elapsed time.
 4. **Raw debug-artifact redaction** — unchanged by design; raw capture stays default-off/private and is now retention-bounded.
+5. **Frontend dependency audit** — `npm ci` continues to report 8 vulnerabilities (1 low, 1 moderate, 6 high). This batch does not change frontend dependencies and permanent CI does not currently gate on `npm audit`; no claim is made that these advisories are fixed or product-exploitable without separate dependency/advisory analysis.
 
-## Permanent CI acceptance — pending
+## Final exact-head gate
 
-A normal repository documentation commit containing this evidence is used to trigger permanent `ci.yml` on the cleaned implementation tree. The exact run, five job IDs, Python pass/skip counts/coverage, browser counts, and final accepting SHA will be filled in after that run completes.
+The permanent implementation/evidence predecessor `515f898b...` is accepted 5/5 green. This finalized evidence document and the finalized TODO form a documentation-only successor. Permanent CI for that **final exact documentation head** is intentionally closed by the final Ralph-loop report and the repository CI-status bridge, avoiding an infinite self-referential commit/run cycle.
