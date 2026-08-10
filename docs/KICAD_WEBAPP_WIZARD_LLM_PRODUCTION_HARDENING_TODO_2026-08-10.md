@@ -960,3 +960,91 @@ A task may be marked deferred only when:
 4. no test or documentation falsely claims the deferred behavior exists.
 
 Do not mark a safety requirement complete by replacing it with prose alone when the selected architecture requires code and tests.
+
+---
+
+# Ralph-loop closure disposition — 2026-08-10
+
+This section is the authoritative disposition of the planning checklist above. The original checkboxes are retained verbatim as historical planning detail, including mutually exclusive alternatives and conditional tasks that cannot all truthfully be checked. Completion status is determined by this disposition plus `docs/KICAD_WEBAPP_WIZARD_LLM_PRODUCTION_HARDENING_COMPLETION_2026-08-10.md`.
+
+## Exact accepted product state
+
+- Implementation-starting SHA: `bdfaf93e4f955ba5dafc34e26ab2cae34a280725`.
+- Baseline permanent CI: run `31419168095`, 5/5 green.
+- Product-accepting SHA: `b2ee1f64ceeb735e14b1ecd4b6b861bf3cc8ea41`.
+- Product-accepting permanent CI: run `31430879076`, 5/5 green.
+- Product acceptance jobs:
+  - Python: `93593786514` — success.
+  - Frontend: `93593786559` — success.
+  - Browser: `93597157519` — success.
+  - KiCad integration: `93597157553` — success.
+  - Wheel/sdist package smoke: `93597157574` — success.
+
+## Phase disposition matrix
+
+| Phase / concern | Disposition |
+|---|---|
+| Global rules | **Complete.** Work stayed on `webapp`; no PR; prior fail-closed protections preserved; deterministic schematic/PCB engine scope excluded. |
+| Phase 0 | **Complete.** Exact baseline recorded and validated; P1-B and P2-A selected before product implementation; implementation notes committed before product code. |
+| P1 / Phase 4 | **P1-B complete by explicit deferral.** No aggregate wall-clock guarantee is claimed. HTTPX timeout plus bounded retry-envelope semantics remain truthful. P1-A-only implementation/fake-clock tasks are N/A for this batch. |
+| P2 / Phase 5 | **P2-A complete.** Per-session lock remains held across provider I/O/retries/repairs; same-session serialization and different-session lock independence are regression-tested. P2-B/CAS tasks are N/A for this batch. |
+| P3 / Phase 1 | **Complete.** Typed provider capability contract implemented for OpenAI, llama-server, and Ollama; no model-name capability heuristics. |
+| P4 / Phase 2 | **Complete.** Normalized terminal outcomes implemented; truncation/refusal/filter fail closed; Ollama length termination covered. Generic classifier intentionally retained as defense in depth, so deletion-gate tasks are intentionally not selected. |
+| P5 / Phase 3 | **Complete.** HTTP/status retries, structured/semantic repair, and user retry remain distinct. Retryable statuses are explicit; ambiguous transport delivery is never automatically replayed; no fake idempotency support. |
+| P6 / Phase 6 | **Deferred under P2-A.** Active cancellation/supersession was not invented without durable operation identity/revision. Current safety is session serialization. Follow-up requires P2-B-style durable operation semantics. |
+| P7 / Phase 7 | **Audit/document path complete.** Transition mutation sites were inventoried and retained; broad transition-framework centralization is deliberately deferred to a dedicated refactor. |
+| P8 / Phase 8 | **Explicit limitation/deferred.** No durable in-flight crash-recovery protocol exists or is claimed; ambiguous provider work is never auto-replayed after restart. Follow-up requires durable operation identity/revision. |
+| P9 / Phase 9 | **Complete.** Safe structured request/retry/completion observability implemented; raw prompt/body/secret/private-path logging prohibited by contract. |
+| P10 / Phase 10 | **Complete.** Debug capture remains default-off and now stores metadata/fingerprints rather than raw prompts/provider bodies; unsafe structures are WARNING-visible and dropped; lifecycle/retention and canonical fail-closed persistence preserved. |
+| P11 / Phase 11 | **Complete.** Full settings table is in completion evidence; strict typing/ranges/cross-field validation added; TOML float-to-int truncation and non-finite float bypasses closed. |
+| P12 / Phase 12 | **Complete.** Provider URL trust boundary hardened; credentials/query/fragment rejected; malformed URLs fail closed; redirects are not enabled; secret/provider-body leakage regressions covered. |
+| P13 / Phase 13 | **Complete.** Stable explicit API retryability contract added and preserved through wizard wrapping without leaking provider internals. |
+| P14 / Phase 14 | **Complete for selected architecture.** Provider, orchestration, persistence, HTTP, observability, config/security, and P2-A concurrency regressions are present. P1-A/P2-B/P6/P8 conditional tests are N/A because those architectures/features were not selected. |
+| P15 / Phase 15 | **Disposition complete.** Accepting CI reports 1 low, 1 moderate, 6 high npm findings. No broad `npm audit fix` or frontend lockfile/dependency change was mixed into this LLM batch; remediation is a separate hardening concern. |
+| Phase 16 | **Satisfied by authoritative exact-SHA permanent CI.** Connected execution had no separate networked local clone, so no false claim of an independent local run is made. Exact CI ran Ruff, format, mypy, unit/web tests, frontend tests/build, browser, KiCad integration, and package smoke. |
+| Phase 17 | **Complete.** Exact diff from implementation start to product acceptance contains 20 files confined to wizard/LLM/settings/errors/tests/docs; no placement/orientation/routing/PCB-layout/frontend-source/unrelated Circuit-IR product changes; temporary format-probe workflow removed. |
+| Phase 18 | **Complete.** Completion evidence records SHA chain, decisions, settings/security tables, tests/coverage, CI jobs, artifacts, scope, dangerous-fallback audit, and deferrals. |
+| Phase 19.1–19.2 | **Complete.** Exact product SHA passed all five permanent jobs and authoritative evidence was captured. |
+| Phase 19.3 | **Documentation commit created by this closure sequence.** The exact final documentation SHA must now pass permanent CI 5/5. Per the self-referential rule, that result is reported externally without another checkbox-only commit. |
+
+## Authoritative acceptance metrics
+
+- Python: 2,817 passed, 7 skipped, 2,824 collected; 90.85% coverage.
+- Ruff: all checks passed.
+- Ruff format: 467 files already formatted.
+- mypy: no issues in 214 source files.
+- Frontend: 143 tests passed in 15 files; production build and committed-bundle verification succeeded.
+- Browser: 11 passed, 1 live-LLM test skipped because no provider is enabled in CI.
+- KiCad integration: success.
+- Wheel/sdist package smoke: success.
+
+## Dangerous-fallback and silent-failure closure
+
+The final implementation does not introduce any of the prohibited quiet degradations that motivated this batch:
+
+- no model-name capability guessing;
+- no invalid-explicit-config fallback to defaults;
+- no ambiguous transport POST replay;
+- no schema-valid acceptance of recognized truncated/refused/filtered completions;
+- no opportunistic per-session lock release without stale-write protection;
+- no raw prompt/provider-body debug persistence;
+- no warning-free unsafe debug sanitization fallback;
+- no canonical persistence downgrade from fatal to best-effort;
+- no broad frontend dependency mutation hidden inside the LLM hardening work.
+
+## Remaining deliberate deferrals
+
+The following remain explicitly deferred and must not be described as implemented:
+
+1. P1-A aggregate monotonic operation deadline.
+2. P2-B out-of-lock provider execution with revision/CAS protection.
+3. P6 active cancellation/supersession tied to durable operation identity.
+4. P8 durable in-flight crash/restart recovery.
+5. P7 full transition-framework centralization.
+6. Frontend npm vulnerability remediation (current posture: 1 low, 1 moderate, 6 high).
+
+These deferrals satisfy the checklist's deferred-work discipline: each is architecture-permitted, current behavior remains safe/truthful, the limitation and follow-up trigger are documented in completion evidence, and no test/documentation falsely claims the deferred behavior exists.
+
+## Final closure gate
+
+At the time this section is committed, the only remaining Ralph-loop gate is self-referential: **the exact final documentation SHA must pass permanent CI 5/5 and remain the `webapp` head**. The result is intentionally recorded in the external final Ralph-loop report rather than by creating another commit that would change the SHA being certified.
