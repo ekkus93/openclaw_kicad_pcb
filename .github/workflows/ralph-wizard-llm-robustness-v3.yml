@@ -60,7 +60,7 @@ jobs:
 
       - name: Commit validated implementation and self-delete all temporary helpers
         run: |
-          git rm .github/scripts/apply_wizard_llm_robustness.py
+          git rm -f .github/scripts/apply_wizard_llm_robustness.py
           git rm .github/scripts/patch_wizard_llm_robustness_helper.py
           git rm .github/workflows/ralph-wizard-llm-robustness.yml
           git rm .github/workflows/ralph-wizard-llm-robustness-v2.yml
