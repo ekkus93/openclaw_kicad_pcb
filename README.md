@@ -1,6 +1,6 @@
 # KiCad PCB Web App
 
-[![CI](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml/badge.svg)](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml)
+[![CI](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml/badge.svg?branch=webapp)](https://github.com/ekkus93/openclaw_kicad_pcb/actions/workflows/ci.yml?query=branch%3Awebapp)
 
 This branch provides a Python FastAPI web app for deterministic KiCad project
 generation from Circuit IR JSON, plus an optional local-first LLM wizard that
