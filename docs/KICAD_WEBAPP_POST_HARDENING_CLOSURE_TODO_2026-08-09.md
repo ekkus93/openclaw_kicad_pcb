@@ -12,17 +12,19 @@ Closure-loop starting SHA:
 3d5879ae0eaab0d496cb5c4713ac234e7dc70312
 ```
 
+Current implementation candidate is the commit containing this checklist update. Permanent exact-SHA CI remains the acceptance gate before Phase 9/10 and Definition of Done are closed.
+
 This is a closure/consistency batch. **Do not redesign schematic placement, orientation, wire routing, or PCB layout.**
 
 ---
 
 # Phase 0 — Baseline and scope
 
-- [ ] Confirm work is on `webapp`.
-- [ ] Confirm closure spec and this TODO exist.
-- [ ] Record exact starting SHA.
-- [ ] Confirm prior hardening completion evidence exists.
-- [ ] Confirm no placement/routing redesign is required for this batch.
+- [x] Confirm work is on `webapp`.
+- [x] Confirm closure spec and this TODO exist.
+- [x] Record exact starting SHA.
+- [x] Confirm prior hardening completion evidence exists.
+- [x] Confirm no placement/routing redesign is required for this batch.
 
 ---
 
@@ -30,18 +32,18 @@ This is a closure/consistency batch. **Do not redesign schematic placement, orie
 
 Inspect `README.md` and `src/kicad_pcb_web/settings.py`.
 
-- [ ] Remove `[web].default_host` from the TOML example.
-- [ ] Remove `[web].default_port` from the TOML example.
-- [ ] Keep host/port documented as ASGI/Uvicorn launch arguments.
-- [ ] Confirm every remaining `[web]` TOML key is accepted by runtime settings.
-- [ ] Confirm every remaining `[llm]` TOML key is accepted by runtime settings.
-- [ ] Confirm unsupported streaming is explicitly rejected when enabled rather than silently ignored.
-- [ ] Confirm request-log redaction cannot be silently disabled.
-- [ ] Confirm removed network-probe configuration remains rejected/removed.
+- [x] Remove `[web].default_host` from the TOML example.
+- [x] Remove `[web].default_port` from the TOML example.
+- [x] Keep host/port documented as ASGI/Uvicorn launch arguments.
+- [x] Confirm every remaining `[web]` TOML key is accepted by runtime settings.
+- [x] Confirm every remaining `[llm]` TOML key is accepted by runtime settings.
+- [x] Confirm unsupported streaming is explicitly rejected when enabled rather than silently ignored.
+- [x] Confirm request-log redaction cannot be silently disabled.
+- [x] Confirm removed network-probe configuration remains rejected/removed.
 
 Acceptance:
 
-- [ ] A user copying the documented TOML example does not fail because of an unsupported key.
+- [x] A user copying the documented TOML example does not fail because of an unsupported key.
 
 ---
 
@@ -49,9 +51,9 @@ Acceptance:
 
 Inspect the first lines of `README.md`.
 
-- [ ] Badge image URL includes `branch=webapp`.
-- [ ] Badge click target filters CI workflow runs to `webapp`.
-- [ ] Do not modify the `master` README as part of this closure unless separately required.
+- [x] Badge image URL includes `branch=webapp`.
+- [x] Badge click target filters CI workflow runs to `webapp`.
+- [x] Do not modify the `master` README as part of this closure unless separately required.
 
 ---
 
@@ -63,94 +65,86 @@ Update:
 docs/KICAD_WEBAPP_POST_REVIEW_HARDENING_TODO_2026-08-09.md
 ```
 
-- [ ] Add a prominent completion/status note near the top.
-- [ ] Link to `docs/KICAD_WEBAPP_POST_REVIEW_HARDENING_COMPLETION_2026-08-09.md`.
-- [ ] Explain that unchecked boxes are preserved planning history, mutually exclusive alternatives, conditional/manual items, or explicitly dispositioned items.
-- [ ] State that the completion evidence is authoritative for closure status.
-- [ ] Do not mechanically convert all planning checkboxes to `[x]`.
+- [x] Add a prominent completion/status note near the top.
+- [x] Link to `docs/KICAD_WEBAPP_POST_REVIEW_HARDENING_COMPLETION_2026-08-09.md`.
+- [x] Explain that unchecked boxes are preserved planning history, mutually exclusive alternatives, conditional/manual items, or explicitly dispositioned items.
+- [x] State that the completion evidence is authoritative for closure status.
+- [x] Do not mechanically convert all planning checkboxes to `[x]`.
 
 ---
 
 # Phase 4 — Active documentation consistency audit
 
-Inspect active web-app documentation and config examples.
-
-At minimum:
+Inspected active web-app documentation and config examples:
 
 ```text
 README.md
 docs/JOB_EXECUTION_MODEL.md
-docs/WIZARD_WORKFLOW_DESIGN.md
-docs/WEBAPP_LOCAL_OPERATOR_GUIDE.md
+docs/LLM_WIZARD_DESIGN.md
+docs/LLM_WIZARD_OPERATOR_GUIDE.md
 ```
 
-Use the current file name if an older referenced wizard/operator document has been superseded.
+The older planning names `WIZARD_WORKFLOW_DESIGN.md` / `WEBAPP_LOCAL_OPERATOR_GUIDE.md` are not active files; the `LLM_WIZARD_*` documents above are the current equivalents.
 
-Search for stale references to:
+Search/audit dispositions:
 
-- [ ] `default_host`
-- [ ] `default_port`
-- [ ] `KICAD_PCB_WEB_HOST`
-- [ ] `KICAD_PCB_WEB_PORT`
-- [ ] `network_probe_enabled`
-- [ ] `KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED`
-- [ ] dynamic/per-request config reload claims
-- [ ] incorrect preview dependency claims
-- [ ] HTTP 2xx on failed synchronous generation
-- [ ] stale-IR-as-current recovery semantics
-- [ ] missing wizard provenance restrictions
-- [ ] claims that request-log redaction also sanitizes raw debug artifact files
+- [x] `default_host` — stale active README example fixed; historical planning references left intact.
+- [x] `default_port` — stale active README example fixed; historical planning references left intact.
+- [x] `KICAD_PCB_WEB_HOST` — removed runtime env remains fail-closed; no active doc advertises it as supported.
+- [x] `KICAD_PCB_WEB_PORT` — removed runtime env remains fail-closed; no active doc advertises it as supported.
+- [x] `network_probe_enabled` — active docs correctly say it was removed.
+- [x] `KICAD_PCB_WEB_LLM_NETWORK_PROBE_ENABLED` — runtime rejects it; no active doc advertises it.
+- [x] dynamic/per-request config reload claims — active docs correctly describe immutable startup snapshot/restart semantics.
+- [x] incorrect preview dependency claims — active docs correctly require both `kicad-cli` and `rsvg-convert`.
+- [x] HTTP 2xx on failed synchronous generation — active docs correctly document non-2xx failure semantics.
+- [x] stale-IR-as-current recovery semantics — active docs explicitly prohibit stale preserved IR from becoming actionable.
+- [x] missing wizard provenance restrictions — active docs describe provider/model/prompt/endpoint provenance conflicts.
+- [x] claims that request-log redaction also sanitizes raw debug artifact files — active docs correctly state that it does not.
 
 For each match:
 
-- [ ] classify as active-correct, historical/reference-only, or stale-active-doc defect.
-- [ ] fix only stale active documentation.
-- [ ] do not rewrite archived historical review evidence solely to erase historical terminology.
+- [x] classify as active-correct, historical/reference-only, or stale-active-doc defect.
+- [x] fix only stale active documentation.
+- [x] do not rewrite archived historical review evidence solely to erase historical terminology.
 
 ---
 
 # Phase 5 — Configuration consumer/no-op audit
 
-Inspect:
-
-```text
-src/kicad_pcb_web/settings.py
-src/kicad_pcb_web/services/llm/
-src/kicad_pcb_web/main.py
-src/kicad_pcb_web/deps.py
-```
+Inspected `src/kicad_pcb_web/settings.py`, `src/kicad_pcb_web/services/llm/`, wizard orchestration/session I/O, and resource locking.
 
 For all surviving `WebSettings` and `LlmSettings` fields:
 
-- [ ] map field to runtime consumer or explicit validation-only restriction.
-- [ ] `data_dir` has real filesystem effect.
-- [ ] `mutation_lock_timeout_s` has real locking effect.
-- [ ] provider/model/base URL/API key and request parameters have real LLM effects.
-- [ ] structured-output repair bounds have real effects.
-- [ ] retry settings have real transport effects.
-- [ ] `debug_artifact_capture` has real effect and defaults off.
-- [ ] `enable_streaming` is not accepted as a working feature; `true` must fail validation.
-- [ ] `request_log_redaction=false` must fail validation; logging remains always redacted.
-- [ ] no surviving accepted value is silently inert.
+- [x] map field to runtime consumer or explicit validation-only restriction.
+- [x] `data_dir` has real filesystem effect (jobs, wizard sessions, locks).
+- [x] `mutation_lock_timeout_s` has real locking effect through `resource_lock()`.
+- [x] provider/model/base URL/API key and request parameters have real LLM effects.
+- [x] structured-output repair bounds have real effects in wizard JSON repair loops.
+- [x] retry settings have real transport effects in `BaseHttpLlmClient`.
+- [x] `debug_artifact_capture` has real effect and defaults off.
+- [x] `enable_streaming` is not accepted as a working feature; `true` fails validation.
+- [x] `request_log_redaction=false` fails validation; logging remains always redacted.
+- [x] no surviving accepted value is silently inert.
 
-If a silent no-op is found:
+Conditional remediation if a silent no-op were found:
 
-- [ ] remove it or implement it deliberately.
-- [ ] add/update tests.
-- [ ] update docs.
+- [x] No silent accepted no-op was found; no removal/implementation change required.
+- [x] No new code regression test required because no product-code defect was found.
+- [x] Active docs already reflect the validation-only restrictions.
 
 ---
 
 # Phase 6 — Repository hygiene
 
-Inspect final tree and workflow/script directories.
+Inspected final tree and workflow/script directories.
 
-- [ ] `.github/workflows/` contains only permanent workflow files.
-- [ ] no one-shot edit/helper workflow remains.
-- [ ] no temporary helper script remains under `.github/scripts/` or equivalent.
-- [ ] no Playwright failure screenshots/traces are committed.
-- [ ] no local debug artifacts are committed.
-- [ ] no generated package/test output is committed outside intended committed generated assets.
+- [x] `.github/workflows/` contains only permanent `ci.yml` after the bounded helper self-deleted.
+- [x] no one-shot edit/helper workflow remains.
+- [x] no temporary helper script remains under `.github/scripts/` or equivalent.
+- [x] no committed `frontend/test-results` directory / Playwright failure screenshots or traces.
+- [x] no committed `frontend/playwright-report` directory.
+- [x] no local wizard debug artifacts were added by this documentation-only batch.
+- [x] no generated package/test output was added outside intended committed generated assets.
 
 Do not delete legitimate permanent automation or curated fixtures.
 
@@ -158,12 +152,12 @@ Do not delete legitimate permanent automation or curated fixtures.
 
 # Phase 7 — Focused tests / static validation for closure edits
 
-Because this batch should be documentation-only unless the audits find code defects:
+Because this batch is documentation-only:
 
-- [ ] verify README/config snippets against runtime schema by inspection and existing settings tests.
-- [ ] run/confirm workflow config and generated-tree guards through permanent CI.
-- [ ] if code is changed, add focused regression tests for the discovered defect.
-- [ ] do not weaken tests to make closure pass.
+- [x] verify README/config snippets against runtime schema by inspection and existing settings validation.
+- [ ] confirm workflow config and generated-tree guards through permanent CI (Phase 9).
+- [x] no product code was changed, so no new focused regression test is required.
+- [x] no tests were weakened.
 
 ---
 
@@ -173,12 +167,12 @@ Previous hardening manual smoke remains distinct from automated evidence.
 
 Record for this closure batch:
 
-- Direct JSON manual smoke: `[ ] PASS  [ ] FAIL  [ ] NOT PERFORMED`
-- Wizard happy-path manual smoke: `[ ] PASS  [ ] FAIL  [ ] NOT PERFORMED`
-- Wizard failure/retry manual smoke: `[ ] PASS  [ ] FAIL  [ ] NOT PERFORMED`
+- Direct JSON manual smoke: `[ ] PASS  [ ] FAIL  [x] NOT PERFORMED`
+- Wizard happy-path manual smoke: `[ ] PASS  [ ] FAIL  [x] NOT PERFORMED`
+- Wizard failure/retry manual smoke: `[ ] PASS  [ ] FAIL  [x] NOT PERFORMED`
 
-- [ ] Never infer PASS from Playwright/API automation.
-- [ ] If not performed, record `NOT PERFORMED` explicitly in closure evidence.
+- [x] Never infer PASS from Playwright/API automation.
+- [x] Record `NOT PERFORMED` explicitly in closure evidence.
 
 ---
 
@@ -196,7 +190,7 @@ Required jobs:
 
 - [ ] Record run ID/URL.
 - [ ] Record all five job IDs and conclusions.
-- [ ] Do not use an earlier SHA's green run as final evidence.
+- [x] Do not use an earlier SHA's green run as final evidence.
 - [ ] If CI fails, fix the exact failure and repeat.
 
 ---
@@ -232,13 +226,13 @@ If the completion document itself creates a successor documentation SHA, validat
 
 Do not declare this closure loop complete until:
 
-- [ ] README config example matches the runtime schema.
-- [ ] `webapp` badge is branch-scoped.
-- [ ] prior hardening TODO visibly points to authoritative completion evidence.
-- [ ] active docs contain no confirmed hardening-era behavior/config drift.
-- [ ] no accepted-but-inert config value remains undispositioned.
-- [ ] no temporary helper/generated failure artifacts remain.
-- [ ] manual smoke is truthfully dispositioned.
-- [ ] no schematic placement/orientation/wire-routing/PCB-layout redesign is included.
+- [x] README config example matches the runtime schema.
+- [x] `webapp` badge is branch-scoped.
+- [x] prior hardening TODO visibly points to authoritative completion evidence.
+- [x] active docs contain no confirmed hardening-era behavior/config drift.
+- [x] no accepted-but-inert config value remains undispositioned.
+- [x] no temporary helper/generated failure artifacts remain.
+- [x] manual smoke is truthfully dispositioned.
+- [x] no schematic placement/orientation/wire-routing/PCB-layout redesign is included.
 - [ ] permanent CI is 5/5 green on the exact final closure SHA.
 - [ ] closure evidence records the exact accepted state.
