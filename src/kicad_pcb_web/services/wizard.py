@@ -79,15 +79,16 @@ def _operation_error(exc: Exception, *, session_id: str, operation: str) -> WebS
         return exc
     if isinstance(exc, ToolError):
         retryable = exc.details.get("retryable")
-        return UpstreamProviderError(
+        error = UpstreamProviderError(
             "The configured LLM provider request failed.",
             details={
                 "session_id": session_id,
                 "operation": operation,
                 "provider_error_code": exc.code,
             },
-            retryable=retryable if isinstance(retryable, bool) else False,
         )
+        error.retryable = retryable if isinstance(retryable, bool) else False
+        return error
     if isinstance(exc, UserError):
         return UpstreamProviderError(
             "The configured LLM provider returned an unusable response.",

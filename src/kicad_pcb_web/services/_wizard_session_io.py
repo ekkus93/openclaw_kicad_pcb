@@ -221,11 +221,96 @@ def _require_debug_string_or_none(value: object, *, field_name: str) -> str | No
     return value
 
 
+def _debug_prompt_metadata(value: object) -> dict[str, object]:
+    if not isinstance(value, list):
+        raise ValueError("unsafe debug artifact type for messages")
+
+    canonical_messages: list[dict[str, str]] = []
+    prompt_chars = 0
+    for message in value:
+        if not isinstance(message, dict) or set(message) - _DEBUG_ARTIFACT_MESSAGE_FIELDS:
+            raise ValueError("unsafe debug artifact message shape")
+        role = message.get("role")
+        content = message.get("content")
+        if not isinstance(role, str) or not isinstance(content, str):
+            raise ValueError("unsafe debug artifact message value")
+        canonical_messages.append({"role": role, "content": content})
+        prompt_chars += len(content)
+
+    canonical_prompt = json.dumps(
+        canonical_messages,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return {
+        "prompt_message_count": len(canonical_messages),
+        "prompt_chars": prompt_chars,
+        "prompt_fingerprint": hashlib.sha256(canonical_prompt).hexdigest()[:16],
+    }
+
+
+def _debug_completion_metadata(value: object) -> dict[str, object]:
+    if not isinstance(value, dict) or set(value) - _DEBUG_ARTIFACT_COMPLETION_FIELDS:
+        raise ValueError("unsafe debug artifact completion shape")
+
+    safe: dict[str, object] = {}
+    for field_name in ("provider", "model", "finish_reason", "request_id", "outcome"):
+        if field_name not in value:
+            continue
+        field_value = _require_debug_string_or_none(value[field_name], field_name=field_name)
+        if field_value is not None:
+            safe[field_name] = field_value
+
+    content = value.get("content")
+    if content is None:
+        return safe
+    if not isinstance(content, str):
+        raise ValueError("unsafe debug artifact type for completion content")
+    safe["response_chars"] = len(content)
+    safe["response_fingerprint"] = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+    return safe
+
+
+def _debug_completion_error_metadata(value: object) -> dict[str, object]:
+    if not isinstance(value, dict) or set(value) - _DEBUG_ARTIFACT_ERROR_FIELDS:
+        raise ValueError("unsafe debug artifact completion error shape")
+
+    safe: dict[str, object] = {}
+    code = value.get("code")
+    if code is not None:
+        if not isinstance(code, str):
+            raise ValueError("unsafe debug artifact type for completion error code")
+        safe["error_code"] = code
+
+    message = value.get("message")
+    if message is not None:
+        if not isinstance(message, str):
+            raise ValueError("unsafe debug artifact type for completion error message")
+        safe["error_message_present"] = True
+    return safe
+
+
+def _debug_parse_metadata(payload: dict[str, object]) -> dict[str, object]:
+    safe: dict[str, object] = {}
+    if "parse_error" in payload:
+        parse_error = payload["parse_error"]
+        if not isinstance(parse_error, str):
+            raise ValueError("unsafe debug artifact type for parse_error")
+        safe["parse_error_present"] = True
+
+    if "parsed" in payload:
+        parsed = payload["parsed"]
+        safe["parsed_type"] = type(parsed).__name__
+        if isinstance(parsed, dict):
+            safe["parsed_top_level_key_count"] = len(parsed)
+    return safe
+
+
 def _redact_debug_artifact_payload(payload: dict[str, object]) -> dict[str, object]:
     """Convert the legacy diagnostic structure into metadata-only persisted content."""
 
-    unknown = set(payload) - _DEBUG_ARTIFACT_ALLOWED_FIELDS
-    if unknown:
+    if set(payload) - _DEBUG_ARTIFACT_ALLOWED_FIELDS:
         raise ValueError("unsafe debug artifact top-level field")
 
     safe: dict[str, object] = {}
@@ -242,76 +327,12 @@ def _redact_debug_artifact_payload(payload: dict[str, object]) -> dict[str, obje
         safe["response_model"] = response_model
 
     if "messages" in payload:
-        messages = payload["messages"]
-        if not isinstance(messages, list):
-            raise ValueError("unsafe debug artifact type for messages")
-        canonical_messages: list[dict[str, str]] = []
-        prompt_chars = 0
-        for message in messages:
-            if not isinstance(message, dict) or set(message) - _DEBUG_ARTIFACT_MESSAGE_FIELDS:
-                raise ValueError("unsafe debug artifact message shape")
-            role = message.get("role")
-            content = message.get("content")
-            if not isinstance(role, str) or not isinstance(content, str):
-                raise ValueError("unsafe debug artifact message value")
-            canonical_messages.append({"role": role, "content": content})
-            prompt_chars += len(content)
-        canonical_prompt = json.dumps(
-            canonical_messages,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
-        safe["prompt_message_count"] = len(canonical_messages)
-        safe["prompt_chars"] = prompt_chars
-        safe["prompt_fingerprint"] = hashlib.sha256(canonical_prompt).hexdigest()[:16]
-
+        safe.update(_debug_prompt_metadata(payload["messages"]))
     if "completion" in payload:
-        completion = payload["completion"]
-        if not isinstance(completion, dict) or set(completion) - _DEBUG_ARTIFACT_COMPLETION_FIELDS:
-            raise ValueError("unsafe debug artifact completion shape")
-        for field_name in ("provider", "model", "finish_reason", "request_id", "outcome"):
-            if field_name not in completion:
-                continue
-            value = _require_debug_string_or_none(completion[field_name], field_name=field_name)
-            if value is not None:
-                safe[field_name] = value
-        content = completion.get("content")
-        if content is not None:
-            if not isinstance(content, str):
-                raise ValueError("unsafe debug artifact type for completion content")
-            safe["response_chars"] = len(content)
-            safe["response_fingerprint"] = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
-
+        safe.update(_debug_completion_metadata(payload["completion"]))
     if "completion_error" in payload:
-        completion_error = payload["completion_error"]
-        if (
-            not isinstance(completion_error, dict)
-            or set(completion_error) - _DEBUG_ARTIFACT_ERROR_FIELDS
-        ):
-            raise ValueError("unsafe debug artifact completion error shape")
-        code = completion_error.get("code")
-        if code is not None:
-            if not isinstance(code, str):
-                raise ValueError("unsafe debug artifact type for completion error code")
-            safe["error_code"] = code
-        if completion_error.get("message") is not None:
-            if not isinstance(completion_error["message"], str):
-                raise ValueError("unsafe debug artifact type for completion error message")
-            safe["error_message_present"] = True
-
-    if "parse_error" in payload:
-        parse_error = payload["parse_error"]
-        if not isinstance(parse_error, str):
-            raise ValueError("unsafe debug artifact type for parse_error")
-        safe["parse_error_present"] = True
-
-    if "parsed" in payload:
-        parsed = payload["parsed"]
-        safe["parsed_type"] = type(parsed).__name__
-        if isinstance(parsed, dict):
-            safe["parsed_top_level_key_count"] = len(parsed)
-
+        safe.update(_debug_completion_error_metadata(payload["completion_error"]))
+    safe.update(_debug_parse_metadata(payload))
     return safe
 
 

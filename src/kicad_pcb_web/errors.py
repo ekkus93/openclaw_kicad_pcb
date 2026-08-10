@@ -40,14 +40,12 @@ class WebServiceError(RuntimeError):
         status_code: int | None = None,
         details: dict[str, object] | None = None,
         error_id: str | None = None,
-        retryable: bool | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code or self.code
         self.status_code = status_code or self.status_code
         self.details = details or {}
         self.error_id = error_id
-        self.retryable = self.retryable if retryable is None else retryable
 
 
 class ResourceNotFoundError(WebServiceError):
