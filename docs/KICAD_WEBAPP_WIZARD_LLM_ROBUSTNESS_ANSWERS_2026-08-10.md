@@ -8,6 +8,10 @@ the revised TODO. This doc is the narrative rationale; the spec is authoritative
 Items marked **[proposed default]** are values chosen to remove ambiguity; they are safe to
 adjust before implementation without changing the architecture.
 
+A second round of review — `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_FOLLOWUP_2026-08-10.md`
+and its duplicate `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_D4_REVIEW_QUESTIONS_2026-08-10.md`
+— found one remaining issue in D4 after the first round of fixes. Section 11 below answers it.
+
 ---
 
 ## 1. Review baseline vs implementation starting SHA — accepted
@@ -205,7 +209,8 @@ All nine decision points are now resolved in the spec ("Resolved contracts") and
 2. D1 shared total budget + terminal mapping — done (Resolved contract 1).
 3. D2 classification, repairable vs terminal — done (Resolved contract 2).
 4. D3 `temperature_mode` policy + provenance — done (Resolved contract 3).
-5. D4 keep-lock + validated worst-case caps — done (Resolved contract 4).
+5. D4 keep-lock + validated configuration caps (bounded envelope, not a wall-clock
+   deadline — see section 11) — done (Resolved contract 4).
 6. D5 exact retention policy — done (Resolved contract 5).
 7. D6 `failure_kind` discriminator + legacy rule — done (Resolved contract 6).
 8. D7 exact `ValueError` loader contract — done (Resolved contract 7).
@@ -221,3 +226,69 @@ Open **preferences** (not blockers) flagged for the owner:
 
 With these resolved, the batch is deterministic enough to implement without making
 architecture or failure-semantics decisions during the Ralph loop.
+
+---
+
+## 11. D4 follow-up: "hard wall-clock ceiling" was overstated — accepted, corrected
+
+This is a valid catch. Confirmed directly against the code: `base.py:113` constructs
+`httpx.Client(..., timeout=self.timeout_s, ...)` — a scalar HTTPX timeout, which sets
+connect/read/write/pool *inactivity* timeouts. It is not an absolute end-to-end deadline for
+the whole HTTP request; a server that keeps sending data within each inactivity window can
+still exceed `timeout_s` in total elapsed time. My first-round D4 wording
+("hard wall-clock ceiling", "worst-case bound for one operation is
+`retry_max_attempts * timeout_s + sum(clamped backoff delays)`") therefore overstated what
+the current transport guarantees, and the corresponding test requirement risked asserting a
+timing property the implementation cannot actually prove.
+
+### Q1 — Is an absolute operation deadline required?
+
+**No.** This batch does not require a hard guarantee that one LLM provider operation cannot
+exceed a fixed elapsed duration. **Option A** (bounded configuration/retry envelope) is
+adopted, not Option B (a true deadline mechanism).
+
+### Q2 — Bounded configuration envelope instead?
+
+**Yes**, exactly as proposed: `timeout_s` capped at 300s, retry delay capped at 60s, retry
+attempts capped at 1..10, so scheduled retry sleeps have a deterministic maximum — while
+HTTPX retains its normal connect/read/write/pool timeout semantics and the operation is
+**not** claimed to have a strict absolute elapsed-time deadline.
+
+### Q3 — What should the D4 regression tests prove?
+
+Adopted your suggested explicit assertions exactly:
+
+1. `timeout_s <= 0` rejects;
+2. `timeout_s > 300` rejects;
+3. `retry_max_delay_s > 60` rejects;
+4. `retry_max_delay_s < retry_base_delay_s` rejects;
+5. `retry_max_attempts` stays constrained to 1..10;
+6. the maximum scheduled retry-sleep sum from the configured/clamped backoff policy is
+   deterministic and bounded as documented for a given valid configuration;
+7. existing retryable-status behavior and ambiguous-delivery no-replay behavior are
+   unchanged;
+8. no test or documentation claims this is a hard total HTTP wall-clock deadline.
+
+### Resolution applied
+
+Both the spec (Resolved contract 4, its Testing requirements bullet, and its Definition of
+Done bullet) and the TODO (Phase 4 and its Definition of Done bullet) were rewritten to:
+
+- keep the synchronous transport, the per-session lock, and no lock release during retry
+  sleeps (unchanged from round 1 — the lost-update-race concern that motivated keeping the
+  lock still stands);
+- retain the exact numeric caps (`0 < timeout_s <= 300`,
+  `retry_base_delay_s <= retry_max_delay_s <= 60`, `1 <= retry_max_attempts <= 10`);
+- rename the concept from "worst-case wall-clock bound" to **"configured retry/timeout
+  envelope"** / **"maximum scheduled retry-sleep total"** throughout;
+- add an explicit scope note in both docs quoting the exact `httpx.Client(...)` call and
+  stating HTTPX's inactivity-timeout semantics do not constitute an end-to-end request
+  deadline;
+- explicitly list an absolute total-deadline mechanism (deadline clock across connect/write/
+  read/all retries/all sleeps, remaining-time propagation, typed deadline-exhausted error,
+  lock interaction, fake-clock tests) as **out of scope**, to be its own follow-up spec if
+  ever required — not folded into this batch;
+- replace the D4 test requirement with your eight explicit assertions.
+
+No further D4 ambiguity remains: the batch keeps the smaller, truthful contract (Option A)
+rather than expanding into a deadline-mechanism implementation.

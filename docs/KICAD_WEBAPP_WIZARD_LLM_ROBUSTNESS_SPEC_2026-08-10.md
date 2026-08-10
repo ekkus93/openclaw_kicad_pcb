@@ -12,9 +12,11 @@ failures, plus lower-severity robustness and hygiene gaps. This spec closes thos
 defects. It does **not** reopen schematic placement, orientation, wire routing, PCB
 layout, or Circuit IR semantics.
 
-This revision (2026-08-10) incorporates the review in
-`docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_QUESTIONS_2026-08-10.md`. Every open
-decision that review raised is resolved into an exact contract below so implementation
+This revision (2026-08-10) incorporates two rounds of review:
+`docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_QUESTIONS_2026-08-10.md` and the D4
+follow-up in `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_FOLLOWUP_2026-08-10.md` /
+`docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_D4_REVIEW_QUESTIONS_2026-08-10.md`. Every open
+decision those reviews raised is resolved into an exact contract below so implementation
 does not make architecture/failure-semantics decisions opportunistically. Point-by-point
 answers are in `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_ANSWERS_2026-08-10.md`.
 
@@ -176,20 +178,41 @@ Requirements:
 - An `auto` capability-registry mode is explicitly **out of scope** for this batch and noted
   as a possible future extension; we avoid an ad-hoc name heuristic.
 
-### 4. Retry wall-clock bound — keep lock, bound the worst case (D4)
+### 4. Retry configuration envelope — keep lock, bound the configuration (D4)
 
 **Decision: keep the synchronous transport and the per-session lock. Do not release the
 lock around retry sleeps** (that would create a lost-update race without revision/CAS
-protection, which is out of scope). Instead, make the operational worst case actually
-bounded and documented.
+protection, which is out of scope). Instead, place hard caps on the operator-configurable
+retry/timeout values.
 
-- Add cross-field / range validation so the retry sequence has a hard wall-clock ceiling:
+**Important scope correction:** the current client constructs HTTPX with a scalar timeout
+(`base.py:113`, `httpx.Client(..., timeout=self.timeout_s, ...)`). HTTPX's timeout model
+configures connect/read/write/pool *inactivity* timeouts, not an absolute end-to-end
+deadline for the whole HTTP request — a server that keeps sending data within each
+inactivity window can still exceed `timeout_s` in total elapsed time. Therefore this batch
+does **not** claim a guaranteed total wall-clock ceiling for one LLM operation. It only
+bounds the *configuration* so operators cannot set arbitrarily large timeout/retry values.
+
+- Add cross-field / range validation on the retry/timeout **configuration**:
   - `timeout_s`: `0 < timeout_s <= 300`.
   - `retry_max_delay_s`: `retry_base_delay_s <= retry_max_delay_s <= 60`.
   - Existing `1 <= retry_max_attempts <= 10` retained.
-- Document (and assert in tests) the worst-case bound for one operation:
-  `retry_max_attempts * timeout_s + sum(clamped backoff delays)`, which with the caps above
-  is finite and knowable.
+- Document and test the maximum **scheduled retry-sleep total** produced by the configured
+  exponential/clamped backoff policy — this quantity (`sum(clamped backoff delays)` across
+  up to `retry_max_attempts - 1` sleeps) is deterministic given a valid configuration and
+  can be asserted exactly. It is a bound on the code's own sleep scheduling, not on HTTPX's
+  network-timeout behavior.
+- Do **not** describe `retry_max_attempts * timeout_s + sum(clamped backoff delays)` as a
+  guaranteed total operation deadline anywhere in the spec, TODO, code comments, or
+  completion evidence. It is, at most, the *configured retry/timeout envelope*: the caps
+  prevent pathological operator configuration, but HTTPX's per-phase inactivity timeouts do
+  not themselves guarantee the overall request finishes within that envelope.
+- Introducing a true absolute total-deadline mechanism (deadline clock spanning connect,
+  write, read, all HTTP retries, and all retry sleeps; remaining-time propagation into each
+  attempt; a typed deadline-exhausted error; interaction with the session lock; tests on a
+  controllable/fake clock) is explicitly **out of scope** for this batch — it is a
+  materially larger transport/concurrency change and, if ever required, should be its own
+  follow-up spec.
 - Introducing revision/CAS semantics and out-of-lock provider execution is explicitly
   **deferred** to a future concurrency design.
 
@@ -289,8 +312,13 @@ remains:
 - **D3**: assert exact built-payload dicts for `temperature_mode=send` (temperature present)
   and `temperature_mode=omit` (temperature absent) for both openai and llama-server clients;
   assert `temperature_mode` provenance is recorded; assert unknown mode rejects.
-- **D4**: assert the cross-field validation rejects out-of-range `timeout_s`/`retry_max_delay_s`
-  and that the documented total wall-clock bound holds — not merely one backoff calculation.
+- **D4**: assert `timeout_s <= 0` rejects; `timeout_s > 300` rejects;
+  `retry_max_delay_s > 60` rejects; `retry_max_delay_s < retry_base_delay_s` rejects;
+  `retry_max_attempts` stays constrained to 1..10; the maximum scheduled retry-sleep total
+  produced by the configured backoff policy is deterministic and bounded as documented for a
+  given valid configuration; and existing retryable-status / no-replay-on-ambiguous-delivery
+  behavior is unchanged. No test or documentation may assert this is a guaranteed total HTTP
+  wall-clock deadline — only the configured retry/timeout envelope.
 - **D5**: assert deterministic oldest-first pruning at the per-stage count boundary and the
   byte-cap boundary, newest-always-retained on oversize, and that a simulated deletion
   failure logs without raising.
@@ -314,7 +342,8 @@ Closure is complete when:
   repairable/terminal semantics, and generic `ToolError` is never blanket-retried;
 - `temperature_mode` gives deliberate control with recorded provenance and no behavior change
   at its `send` default;
-- the retry worst case is bounded by validated caps and documented;
+- the retry/timeout configuration envelope is bounded by validated caps and documented as a
+  configured envelope, not claimed as an absolute HTTP wall-clock deadline;
 - debug-artifact output obeys the deterministic retention policy when enabled;
 - `failure_kind` makes the terminal meanings unambiguous, with tested legacy behavior;
 - settings hygiene items are resolved with the exact `ValueError` loader contract;

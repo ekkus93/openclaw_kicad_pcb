@@ -11,6 +11,8 @@ Review resolved by:
 ```text
 docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_ANSWERS_2026-08-10.md
 docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_QUESTIONS_2026-08-10.md
+docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_REVIEW_FOLLOWUP_2026-08-10.md
+docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_D4_REVIEW_QUESTIONS_2026-08-10.md
 ```
 
 SHA discipline:
@@ -116,24 +118,39 @@ Acceptance:
 
 ---
 
-# Phase 4 — D4: bounded retry worst case (keep lock)
+# Phase 4 — D4: bounded retry/timeout configuration envelope (keep lock)
 
 Files: `settings.py` (validation), `services/llm/base.py`, `services/wizard.py`.
+
+**Scope note:** `base.py:113` builds `httpx.Client(..., timeout=self.timeout_s, ...)` — a
+scalar HTTPX timeout is connect/read/write/pool *inactivity* timeout semantics, not an
+absolute end-to-end request deadline. This phase bounds the operator-configurable
+*configuration values*; it does **not** implement, claim, or test a guaranteed total
+wall-clock deadline for one LLM operation. An absolute deadline mechanism is out of scope
+for this batch (see spec D4).
 
 - [ ] Keep the synchronous transport and the per-session mutation lock. Do **not** release
       the lock around retry sleeps (avoids a lost-update race without CAS — deferred).
 - [ ] Add range/cross-field validation: `0 < timeout_s <= 300`;
       `retry_base_delay_s <= retry_max_delay_s <= 60`; keep `1 <= retry_max_attempts <= 10`.
-- [ ] Document the worst-case wall-clock bound
-      (`retry_max_attempts * timeout_s + sum(clamped delays)`) in the completion evidence.
+- [ ] Document the maximum **scheduled retry-sleep total** produced by the configured
+      backoff policy (deterministic given a valid configuration) in the completion evidence,
+      explicitly labeled as the *configured retry/timeout envelope* — not a guaranteed total
+      HTTP wall-clock deadline.
 - [ ] Preserve idempotency (no POST replay on ambiguous delivery) and the retryable-status
       set.
 
 Acceptance:
 
-- [ ] Tests assert out-of-range `timeout_s` and `retry_max_delay_s` reject.
-- [ ] Test asserts the enforced total wall-clock bound / cross-field contract (not just one
-      backoff-delay calc).
+- [ ] Test: `timeout_s <= 0` rejects.
+- [ ] Test: `timeout_s > 300` rejects.
+- [ ] Test: `retry_max_delay_s > 60` rejects.
+- [ ] Test: `retry_max_delay_s < retry_base_delay_s` rejects.
+- [ ] Test: `retry_max_attempts` stays constrained to 1..10.
+- [ ] Test: the maximum scheduled retry-sleep sum from the configured/clamped backoff policy
+      is deterministic and matches the documented value for a given valid configuration.
+- [ ] Test: existing retryable-status set and ambiguous-delivery no-replay behavior unchanged.
+- [ ] No test or code comment asserts this is a guaranteed total HTTP wall-clock deadline.
 
 ---
 
@@ -224,12 +241,13 @@ Acceptance:
 - [ ] Create `docs/KICAD_WEBAPP_WIZARD_LLM_ROBUSTNESS_COMPLETION_2026-08-10.md`.
 - [ ] Record: code-review baseline SHA, true implementation starting SHA, accepting SHA,
       per-defect disposition (fixed / documented deviation), the D1 budget + terminal mapping,
-      D2 classification, D3 `temperature_mode` + provenance, D4 worst-case bound, D5 retention
-      constants, D6 discriminator + legacy rule, D7 empty-string field audit, local test
-      pass/skip counts, and permanent CI run/job IDs.
+      D2 classification, D3 `temperature_mode` + provenance, D4 configured retry/timeout
+      envelope (explicitly not a wall-clock deadline) + max scheduled retry-sleep total, D5
+      retention constants, D6 discriminator + legacy rule, D7 empty-string field audit, local
+      test pass/skip counts, and permanent CI run/job IDs.
 - [ ] Confirm no placement/routing/layout/IR-semantics code was modified.
 - [ ] Record any residual observation intentionally deferred (CAS concurrency, `auto`
-      temperature registry).
+      temperature registry, absolute total-deadline mechanism).
 
 ---
 
@@ -241,7 +259,8 @@ Acceptance:
       never blanket-retried.
 - [ ] D3 — `temperature_mode` controls payload inclusion; provenance recorded; default `send`
       unchanged.
-- [ ] D4 — retry worst case bounded by validated caps and documented; lock retained.
+- [ ] D4 — retry/timeout configuration envelope bounded by validated caps and documented as
+      a configured envelope (not an absolute HTTP wall-clock deadline); lock retained.
 - [ ] D5 — debug-artifact retention deterministic when enabled.
 - [ ] D6 — `failure_kind` disambiguates terminal meanings; legacy behavior tested.
 - [ ] D7 — settings hygiene resolved with exact `ValueError` loader contract.
