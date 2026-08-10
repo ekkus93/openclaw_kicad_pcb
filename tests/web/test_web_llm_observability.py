@@ -104,9 +104,11 @@ def test_terminal_completion_logs_normalized_outcome_without_provider_body(
 
     client = build_llm_client(_settings(tmp_path), transport=httpx.MockTransport(handler))
     assert client is not None
-    with caplog.at_level(logging.INFO, logger="uvicorn.error"):
-        with pytest.raises(LlmCompletionTruncatedError):
-            client.complete(LlmRequest(messages=[LlmMessage(role="user", content="safe")]))
+    with (
+        caplog.at_level(logging.INFO, logger="uvicorn.error"),
+        pytest.raises(LlmCompletionTruncatedError),
+    ):
+        client.complete(LlmRequest(messages=[LlmMessage(role="user", content="safe")]))
     client.close()  # type: ignore[attr-defined]
 
     completion_record = next(
