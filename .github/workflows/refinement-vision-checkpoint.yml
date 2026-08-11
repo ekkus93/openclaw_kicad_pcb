@@ -1,0 +1,98 @@
+name: Refinement Vision Checkpoint
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - '.github/workflows/refinement-vision-checkpoint.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-checkpoint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Reconstruct exact sandbox checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import tarfile
+          import urllib.request
+          from pathlib import Path, PurePosixPath
+
+          repo = 'ekkus93/openclaw_kicad_pcb'
+          blobs = [
+              '551b944e952cb9267ad825c704c88c5d871c5e55',
+              'e8a4563b11e82a72eb41794c070bf1aedef142ca',
+              'f65b7e153a5efbc6ba663dbff04705f785fe54ac',
+              '53528b0fb7dc40cedb721ff714ca710d4c77f4a1',
+              'ebce0d0180da13b873d03b10b3ed8fa6994ee2bf',
+              '981a3d5e9cd1b84e2559c51dcd7e20cfab412a90',
+          ]
+          chunks = []
+          for sha in blobs:
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={
+                      'Authorization': f'Bearer {os.environ["GH_TOKEN"]}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  },
+              )
+              with urllib.request.urlopen(req) as response:
+                  payload = json.load(response)
+              if payload.get('encoding') != 'base64':
+                  raise SystemExit(f'unexpected blob encoding for {sha}')
+              chunks.append(base64.b64decode(payload['content']))
+
+          archive = base64.b64decode(b''.join(chunks), validate=True)
+          digest = hashlib.sha256(archive).hexdigest()
+          expected = '9a2036c6a892b18fbcee5beb77c1373dfd5911acce989dd62138f69d1f767236'
+          if digest != expected:
+              raise SystemExit(f'checkpoint SHA mismatch: {digest}')
+          archive_path = Path('/tmp/refinement-vision-checkpoint.tar.gz')
+          archive_path.write_bytes(archive)
+          with tarfile.open(archive_path, 'r:gz') as tf:
+              for member in tf.getmembers():
+                  path = PurePosixPath(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+              tf.extractall('.')
+          print(f'checkpoint_sha256={digest}')
+          PY
+      - name: Sync locked toolchain
+        run: uv sync --frozen --extra dev --extra web
+      - name: Canonical format and validate
+        run: |
+          mapfile -t FILES < <(tar -tzf /tmp/refinement-vision-checkpoint.tar.gz)
+          uv run ruff format "${FILES[@]}"
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/kicad_pcb src/kicad_pcb_web
+          uv run pytest -q \
+            tests/unit/test_refinement_*.py \
+            tests/web/test_web_llm_*.py \
+            tests/web/test_web_refinement_llm.py \
+            tests/web/test_web_schematic_refinement.py \
+            tests/web/test_web_settings.py \
+            tests/unit/test_wizard_llm_robustness.py
+          git diff --check
+      - name: Commit verified vision refinement tranche
+        run: |
+          mapfile -t FILES < <(tar -tzf /tmp/refinement-vision-checkpoint.tar.gz)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${FILES[@]}"
+          git commit -m 'feat: add bounded schematic vision refinement service'
+          git push origin HEAD:webapp
