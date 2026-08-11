@@ -62,9 +62,7 @@ def test_refinement_feature_config_reuses_loop_bound_validation() -> None:
     with pytest.raises(ValueError, match="max_rounds"):
         load_refinement_feature_config({"KICAD_WEBAPP_REFINEMENT_MAX_ROUNDS": "0"})
     with pytest.raises(ValueError, match="max_planner_repairs"):
-        load_refinement_feature_config(
-            {"KICAD_WEBAPP_REFINEMENT_MAX_PLANNER_REPAIRS": "9"}
-        )
+        load_refinement_feature_config({"KICAD_WEBAPP_REFINEMENT_MAX_PLANNER_REPAIRS": "9"})
 
 
 def test_refinement_disabled_gate_is_explicit() -> None:
