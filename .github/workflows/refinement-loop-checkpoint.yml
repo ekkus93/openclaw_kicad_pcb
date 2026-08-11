@@ -76,57 +76,61 @@ jobs:
               raise SystemExit('unexpected refinement anchor-safety call count')
           operations = operations.replace(old_call, new_call)
 
-          old_signature = '''def _validate_anchor_move_safety(
-    doc: SchematicDoc,
-    component: PlacedSchematicComponent,
-    mapping: Mapping[tuple[float, float], tuple[float, float]],
-    moving_old: set[tuple[float, float]],
-    moving_new: set[tuple[float, float]],
-) -> None:
-'''
-          new_signature = '''def _validate_anchor_move_safety(
-    doc: SchematicDoc,
-    component: PlacedSchematicComponent,
-    mapping: Mapping[tuple[float, float], tuple[float, float]],
-    moving_new: set[tuple[float, float]],
-) -> None:
-'''
+          old_signature = (
+              'def _validate_anchor_move_safety(\n'
+              '    doc: SchematicDoc,\n'
+              '    component: PlacedSchematicComponent,\n'
+              '    mapping: Mapping[tuple[float, float], tuple[float, float]],\n'
+              '    moving_old: set[tuple[float, float]],\n'
+              '    moving_new: set[tuple[float, float]],\n'
+              ') -> None:\n'
+          )
+          new_signature = (
+              'def _validate_anchor_move_safety(\n'
+              '    doc: SchematicDoc,\n'
+              '    component: PlacedSchematicComponent,\n'
+              '    mapping: Mapping[tuple[float, float], tuple[float, float]],\n'
+              '    moving_new: set[tuple[float, float]],\n'
+              ') -> None:\n'
+          )
           if operations.count(old_signature) != 1:
               raise SystemExit('unexpected refinement anchor-safety signature count')
           operations = operations.replace(old_signature, new_signature)
 
-          old_wire_checks = '''    for wire in _wire_nodes(doc):
-        points = _wire_points(wire)
-        for old in moving_old:
-            if _point_on_polyline_interior(old, points):
-                raise UserError(
-                    "Moving pin touches wire interior; mutation is ambiguous.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
-                )
-        for new in moving_new:
-            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
-            if contacts_wire and new not in points:
-                raise UserError(
-                    "Moved pin would create an unintended wire contact.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
-                )
-'''
-          new_wire_checks = '''    for wire in _wire_nodes(doc):
-        points = _wire_points(wire)
-        for old in mapping:
-            if _point_on_polyline_interior(old, points):
-                raise UserError(
-                    "Moving pin touches wire interior; mutation is ambiguous.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
-                )
-        for new in mapping.values():
-            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
-            if contacts_wire and new not in points:
-                raise UserError(
-                    "Moved pin would create an unintended wire contact.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
-                )
-'''
+          old_wire_checks = (
+              '    for wire in _wire_nodes(doc):\n'
+              '        points = _wire_points(wire)\n'
+              '        for old in moving_old:\n'
+              '            if _point_on_polyline_interior(old, points):\n'
+              '                raise UserError(\n'
+              '                    "Moving pin touches wire interior; mutation is ambiguous.",\n'
+              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
+              '                )\n'
+              '        for new in moving_new:\n'
+              '            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))\n'
+              '            if contacts_wire and new not in points:\n'
+              '                raise UserError(\n'
+              '                    "Moved pin would create an unintended wire contact.",\n'
+              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
+              '                )\n'
+          )
+          new_wire_checks = (
+              '    for wire in _wire_nodes(doc):\n'
+              '        points = _wire_points(wire)\n'
+              '        for old in mapping:\n'
+              '            if _point_on_polyline_interior(old, points):\n'
+              '                raise UserError(\n'
+              '                    "Moving pin touches wire interior; mutation is ambiguous.",\n'
+              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
+              '                )\n'
+              '        for new in mapping.values():\n'
+              '            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))\n'
+              '            if contacts_wire and new not in points:\n'
+              '                raise UserError(\n'
+              '                    "Moved pin would create an unintended wire contact.",\n'
+              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
+              '                )\n'
+          )
           if operations.count(old_wire_checks) != 1:
               raise SystemExit('unexpected refinement anchor-safety wire-check count')
           operations_path.write_text(
