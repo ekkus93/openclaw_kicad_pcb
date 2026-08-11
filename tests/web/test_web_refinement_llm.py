@@ -16,6 +16,7 @@ from kicad_pcb.refinement.vision_context import (
 from kicad_pcb_web.errors import LlmInvalidStructuredOutputError
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
 from kicad_pcb_web.services.refinement_llm import (
+    RefinementModelCallBudget,
     RepairPlannerOptions,
     refinement_model_call_upper_bound,
     run_repair_planner,
@@ -112,6 +113,22 @@ def test_refinement_model_call_upper_bound_rejects_invalid_limits(
 ) -> None:
     with pytest.raises(ValueError):
         refinement_model_call_upper_bound(**kwargs)  # type: ignore[arg-type]
+
+
+def test_refinement_model_call_budget_blocks_dispatch_after_limit() -> None:
+    delegate = _FakeClient(["ok"])
+    budget = RefinementModelCallBudget(client=delegate, max_calls=1)
+    request = LlmRequest(messages=[])
+
+    completion = budget.complete(request)
+
+    assert completion.content == "ok"
+    assert budget.calls_made == 1
+    assert len(delegate.requests) == 1
+    with pytest.raises(UserError, match="budget exhausted") as exc_info:
+        budget.complete(request)
+    assert exc_info.value.code == "REFINEMENT_MODEL_CALL_BUDGET_EXCEEDED"
+    assert len(delegate.requests) == 1
 
 
 def test_repair_planner_options_reject_invalid_bounds() -> None:
