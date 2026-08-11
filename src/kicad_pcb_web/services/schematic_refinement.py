@@ -51,6 +51,13 @@ from .refinement_llm import (
     run_visual_critic,
 )
 
+_NO_MEANINGFUL_IMPROVEMENT_CODES = frozenset(
+    {
+        "REFINEMENT_NO_DETERMINISTIC_IMPROVEMENT",
+        "REFINEMENT_BEST_KNOWN_NO_IMPROVEMENT",
+    }
+)
+
 
 @dataclass(frozen=True)
 class RefinementAnalysisResult:
@@ -171,17 +178,25 @@ def plan_schematic_refinement(
         runtime=runtime,
         max_critic_repairs=limits.max_critic_repairs,
     )
-    plan = run_repair_planner(
-        llm_client=runtime.llm_client,
-        context=analysis.context,
-        critic=analysis.critic,
-        options=RepairPlannerOptions(
+    if analysis.critic.issues:
+        plan = run_repair_planner(
+            llm_client=runtime.llm_client,
+            context=analysis.context,
+            critic=analysis.critic,
+            options=RepairPlannerOptions(
+                iteration_id=iteration_id,
+                max_repairs=limits.max_planner_repairs,
+                max_operations=limits.max_operations,
+            ),
+            prior_decisions=runtime.prior_decisions,
+        )
+    else:
+        plan = ValidatedRepairPlan(
             iteration_id=iteration_id,
-            max_repairs=limits.max_planner_repairs,
-            max_operations=limits.max_operations,
-        ),
-        prior_decisions=runtime.prior_decisions,
-    )
+            source_schematic_hash=analysis.accepted_hash,
+            operation_payloads=(),
+            addressed_issue_ids=(),
+        )
     _assert_hash_unchanged(accepted_path, analysis.accepted_hash, mode="plan")
     return RefinementPlanResult(analysis=analysis, plan=plan)
 
@@ -204,9 +219,14 @@ def apply_planned_refinement(
         )
     if not plan.operation_payloads:
         _assert_hash_unchanged(accepted_path, analysis.accepted_hash, mode="apply-noop")
+        code = (
+            "REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES"
+            if not analysis.critic.issues
+            else "REFINEMENT_NO_OPERATIONS"
+        )
         return RefinementApplyResult(
             status="no_op",
-            code="REFINEMENT_NO_OPERATIONS",
+            code=code,
             accepted_hash_before=analysis.accepted_hash,
             accepted_hash_after=analysis.accepted_hash,
             candidate_hash=None,
@@ -576,13 +596,24 @@ def refine_schematic(
         actual_hash = _sha(accepted_path)
         if result.status == "no_op":
             _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
-            return _loop_result("REFINEMENT_STOP_NO_OPERATIONS", accepted_path, state)
+            stop_reason = (
+                "REFINEMENT_STOP_NO_ACTIONABLE_ISSUES"
+                if result.code == "REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES"
+                else "REFINEMENT_STOP_NO_OPERATIONS"
+            )
+            return _loop_result(stop_reason, accepted_path, state)
 
         if result.status == "rejected":
             _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
             state.rejected_rounds += 1
             if repeated_layout:
                 return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
+            if result.code in _NO_MEANINGFUL_IMPROVEMENT_CODES:
+                return _loop_result(
+                    "REFINEMENT_STOP_NO_MEANINGFUL_IMPROVEMENT",
+                    accepted_path,
+                    state,
+                )
             if state.rejected_rounds >= limits.max_candidate_rejections:
                 return _loop_result("REFINEMENT_STOP_REJECTION_LIMIT", accepted_path, state)
             continue
