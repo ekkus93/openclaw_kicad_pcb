@@ -69,8 +69,7 @@ def build_schematic_electrical_baseline(
     semantic = extract_schematic_semantics(accepted_schematic)
     footprints = _logical_footprints(authoritative_ir, semantic)
     nc = tuple(
-        (terminal.ref, terminal.pin, terminal.unit)
-        for terminal in semantic.no_connect_terminals
+        (terminal.ref, terminal.pin, terminal.unit) for terminal in semantic.no_connect_terminals
     )
     fingerprint = build_circuit_ir_fingerprint(authoritative_ir)
     return SchematicElectricalBaseline(
@@ -242,10 +241,7 @@ def _logical_footprints(
 ) -> dict[str, str]:
     source_refs = {component.ref for component in authoritative_ir.components}
     source_units = {
-        pin.ref
-        for net in authoritative_ir.nets
-        for pin in net.pins
-        if pin.unit is not None
+        pin.ref for net in authoritative_ir.nets for pin in net.pins if pin.unit is not None
     }
     candidate_components = [
         component for component in semantic.components if component.ref not in semantic.helper_refs

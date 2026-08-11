@@ -17,10 +17,7 @@ from kicad_pcb.runner import find_kicad_cli
 @pytest.mark.requires_kicad
 def test_real_kicad_export_preserves_readability_fixture_electrically(tmp_path: Path) -> None:
     fixture = (
-        Path(__file__).parents[1]
-        / "fixtures"
-        / "readability"
-        / "ne5532_headphone_amp_left_current"
+        Path(__file__).parents[1] / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
     )
     schematic = fixture / "baseline_generated.kicad_sch"
     authoritative = CircuitIR.load(fixture / "circuit_ir.json")

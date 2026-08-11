@@ -82,11 +82,7 @@ def extract_schematic_semantics(
 
 
 def _placed_symbol_nodes(doc: SchematicDoc) -> list[ListNode]:
-    return [
-        node
-        for node in doc.root.items
-        if isinstance(node, ListNode) and node.key == "symbol"
-    ]
+    return [node for node in doc.root.items if isinstance(node, ListNode) and node.key == "symbol"]
 
 
 def _placed_component(node: ListNode) -> PlacedSchematicComponent:
