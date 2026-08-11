@@ -16,7 +16,7 @@ def _dependencies(tmp_path: Path) -> RefinementRouteDependencies:
     accepted.write_bytes(b"accepted")
     return RefinementRouteDependencies(
         accepted_path=lambda: accepted,
-        runtime=lambda: object(),  # type: ignore[arg-type]
+        runtime=object,  # type: ignore[arg-type]
     )
 
 
