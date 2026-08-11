@@ -1,0 +1,51 @@
+name: Refinement Type Fix
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - '.github/workflows/refinement-type-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+      - name: Apply type fix and verify
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/kicad_pcb/refinement/operations.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'OPERATION_SCHEMA_VERSION = "1.0"'
+          new = 'OPERATION_SCHEMA_VERSION: Literal["1.0"] = "1.0"'
+          if text.count(old) != 1:
+              raise SystemExit('expected exactly one operation schema version declaration')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          uv run ruff format src/kicad_pcb/refinement/operations.py
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/kicad_pcb src/kicad_pcb_web
+          uv run pytest -q \
+            tests/unit/test_refinement_metrics.py \
+            tests/unit/test_refinement_operations.py \
+            tests/unit/test_refinement_quality.py \
+            tests/unit/test_refinement_rendering.py
+          git diff --check
+      - name: Commit verified type fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/kicad_pcb/refinement/operations.py
+          git commit -m 'fix: type refinement operation schema version'
+          git push origin HEAD:webapp
