@@ -33,7 +33,11 @@ jobs:
 
           repo = 'ekkus93/openclaw_kicad_pcb'
 
-          def fetch_archive(blobs, expected, output):
+          def decode_base64_text(data):
+              compact = b''.join(data.split())
+              return base64.b64decode(compact, validate=True)
+
+          def fetch_archive(blobs, expected, output, *, chunk_mode):
               chunks = []
               for sha in blobs:
                   req = urllib.request.Request(
@@ -50,9 +54,13 @@ jobs:
                       raise SystemExit(f'unexpected blob encoding for {sha}')
                   chunks.append(base64.b64decode(payload['content']))
 
-              encoded = b''.join(chunks)
-              compact = b''.join(encoded.split())
-              archive = base64.b64decode(compact, validate=True)
+              if chunk_mode == 'joined_base64':
+                  archive = decode_base64_text(b''.join(chunks))
+              elif chunk_mode == 'per_chunk_base64':
+                  archive = b''.join(decode_base64_text(chunk) for chunk in chunks)
+              else:
+                  raise SystemExit(f'unsupported chunk mode: {chunk_mode}')
+
               digest = hashlib.sha256(archive).hexdigest()
               if digest != expected:
                   raise SystemExit(f'archive SHA mismatch: {digest}')
@@ -76,6 +84,7 @@ jobs:
               ],
               '9a2036c6a892b18fbcee5beb77c1373dfd5911acce989dd62138f69d1f767236',
               Path('/tmp/refinement-vision-checkpoint.tar.gz'),
+              chunk_mode='joined_base64',
           )
           fetch_archive(
               [
@@ -86,6 +95,7 @@ jobs:
               ],
               'b65e55dc9e526d53526e5315c37549a934fdd7b628f10fc381df44d861ead478',
               Path('/tmp/refinement-vision-delta.tar.gz'),
+              chunk_mode='per_chunk_base64',
           )
           PY
       - name: Sync locked toolchain
