@@ -65,6 +65,16 @@ jobs:
                   tf.extractall('.')
               print(f'{output.name}_sha256={digest}')
 
+          def replace_exact(path, old, new, expected_count):
+              text = path.read_text(encoding='utf-8')
+              actual_count = text.count(old)
+              if actual_count != expected_count:
+                  raise SystemExit(
+                      f'unexpected migration match count for {path}: '
+                      f'expected={expected_count} actual={actual_count}'
+                  )
+              path.write_text(text.replace(old, new), encoding='utf-8')
+
           fetch_archive(
               [
                   '551b944e952cb9267ad825c704c88c5d871c5e55',
@@ -96,6 +106,92 @@ jobs:
               'b65e55dc9e526d53526e5315c37549a934fdd7b628f10fc381df44d861ead478',
               Path('/tmp/refinement-vision-delta.tar.gz'),
           )
+
+          evidence = Path('src/kicad_pcb/refinement/evidence.py')
+          replace_exact(evidence, 'from typing import Any\n', 'from typing import Any, cast\n', 1)
+          replace_exact(
+              evidence,
+              '    if is_dataclass(value):\n        return _jsonable(asdict(value))\n',
+              '    if is_dataclass(value) and not isinstance(value, type):\n'
+              '        return _jsonable(asdict(cast(Any, value)))\n',
+              1,
+          )
+
+          wizard = Path('src/kicad_pcb_web/services/wizard.py')
+          replace_exact(
+              wizard,
+              '    _build_spec_messages,\n    _call_llm_for_json,\n',
+              '    _build_spec_messages,\n    StructuredJsonCallOptions,\n    _call_llm_for_json,\n',
+              1,
+          )
+          replace_exact(
+              wizard,
+              '                response_model=SpecConversationOutput,\n'
+              '                max_repairs=settings.llm.spec_max_repair_rounds,\n'
+              '                debug_artifact_writer=_make_debug_artifact_writer(\n'
+              '                    settings, session.id, stage="spec"\n'
+              '                ),\n',
+              '                response_model=SpecConversationOutput,\n'
+              '                options=StructuredJsonCallOptions(\n'
+              '                    max_repairs=settings.llm.spec_max_repair_rounds,\n'
+              '                    debug_artifact_writer=_make_debug_artifact_writer(\n'
+              '                        settings, session.id, stage="spec"\n'
+              '                    ),\n'
+              '                ),\n',
+              2,
+          )
+          replace_exact(
+              wizard,
+              '                        response_model=IrGenerationOutput,\n'
+              '                        attempt=attempt,\n'
+              '                        debug_artifact_writer=_make_debug_artifact_writer(\n'
+              '                            settings, session.id, stage="ir"\n'
+              '                        ),\n',
+              '                        response_model=IrGenerationOutput,\n'
+              '                        attempt=attempt,\n'
+              '                        options=StructuredJsonCallOptions(\n'
+              '                            debug_artifact_writer=_make_debug_artifact_writer(\n'
+              '                                settings, session.id, stage="ir"\n'
+              '                            ),\n'
+              '                        ),\n',
+              1,
+          )
+
+          robustness = Path('tests/unit/test_wizard_llm_robustness.py')
+          replace_exact(
+              robustness,
+              'from kicad_pcb_web.services._wizard_llm import _call_llm_for_json\n',
+              'from kicad_pcb_web.services._wizard_llm import StructuredJsonCallOptions, _call_llm_for_json\n',
+              1,
+          )
+          replace_exact(
+              robustness,
+              'max_repairs=1,',
+              'options=StructuredJsonCallOptions(max_repairs=1),',
+              2,
+          )
+          replace_exact(
+              robustness,
+              'max_repairs=2,',
+              'options=StructuredJsonCallOptions(max_repairs=2),',
+              3,
+          )
+
+          client_tests = Path('tests/web/test_web_llm_clients.py')
+          replace_exact(
+              client_tests,
+              'from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json\n',
+              'from kicad_pcb_web.services._wizard_llm import StructuredJsonCallOptions\n'
+              'from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json\n',
+              1,
+          )
+          replace_exact(
+              client_tests,
+              'max_repairs=settings.llm.spec_max_repair_rounds,',
+              'options=StructuredJsonCallOptions(max_repairs=settings.llm.spec_max_repair_rounds),',
+              1,
+          )
+          print('checkpoint_interface_migration=applied')
           PY
       - name: Sync locked toolchain
         run: uv sync --frozen --extra dev --extra web
