@@ -10,9 +10,7 @@ from kicad_pcb_web.refinement_cli import RefinementCliContext
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
 
 
-def test_refinement_cli_does_not_print_user_error_details(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_refinement_cli_does_not_print_user_error_details(monkeypatch, tmp_path: Path) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"accepted")
 
