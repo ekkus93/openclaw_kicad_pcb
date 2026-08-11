@@ -7,7 +7,7 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TextIO
+from typing import NoReturn, TextIO
 
 from pydantic import ValidationError
 
@@ -35,7 +35,7 @@ class _CliArgumentError(ValueError):
 
 
 class _RefinementArgumentParser(argparse.ArgumentParser):
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> NoReturn:
         raise _CliArgumentError(message)
 
 
