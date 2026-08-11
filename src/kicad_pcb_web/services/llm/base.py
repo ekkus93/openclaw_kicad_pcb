@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import json
 import logging
@@ -62,6 +64,14 @@ class LlmMessage:
 
 
 @dataclass(frozen=True)
+class LlmImage:
+    """One explicit image attachment for a model request."""
+
+    media_type: Literal["image/png", "image/jpeg", "image/webp"]
+    base64_data: str
+
+
+@dataclass(frozen=True)
 class LlmRequest:
     """Normalized chat completion request."""
 
@@ -69,6 +79,7 @@ class LlmRequest:
     response_format: LlmResponseFormat = "text"
     temperature: float | None = None
     max_tokens: int | None = None
+    images: tuple[LlmImage, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -100,6 +111,7 @@ class HttpLlmClientConfig:
     retry_base_delay_s: float = 0.5
     retry_max_delay_s: float = 8.0
     retry_jitter_s: float = 0.25
+    vision_enabled: bool = False
 
 
 class LlmClient(Protocol):
@@ -143,6 +155,7 @@ class BaseHttpLlmClient(ABC):
         self.retry_base_delay_s = config.retry_base_delay_s
         self.retry_max_delay_s = config.retry_max_delay_s
         self.retry_jitter_s = config.retry_jitter_s
+        self.vision_enabled = config.vision_enabled
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=self.timeout_s,
@@ -222,7 +235,58 @@ class BaseHttpLlmClient(ABC):
         else:
             LOGGER.warning("llm completion normalized", extra=extra)
 
+    def _validate_image_request(self, request: LlmRequest) -> None:
+        if not request.images:
+            return
+        if not self.vision_enabled:
+            raise ToolError(
+                f"{self.provider_name} vision requests require explicit vision_enabled=true.",
+                details={"provider": self.provider_name},
+            )
+        if not self.capabilities.supports_image_input:
+            raise ToolError(
+                f"{self.provider_name} capability contract does not support image input.",
+                details={"provider": self.provider_name},
+            )
+        if len(request.images) > self.capabilities.max_images_per_request:
+            raise ToolError(
+                f"{self.provider_name} image count exceeds configured capability bound.",
+                details={
+                    "provider": self.provider_name,
+                    "image_count": len(request.images),
+                    "max_images": self.capabilities.max_images_per_request,
+                },
+            )
+        for image in request.images:
+            if image.media_type not in self.capabilities.accepted_image_media_types:
+                raise ToolError(
+                    f"{self.provider_name} image media type is unsupported.",
+                    details={"provider": self.provider_name, "media_type": image.media_type},
+                )
+            try:
+                decoded = base64.b64decode(image.base64_data, validate=True)
+            except (binascii.Error, ValueError) as exc:
+                raise ToolError(
+                    f"{self.provider_name} image payload is not valid base64.",
+                    details={"provider": self.provider_name},
+                ) from exc
+            if not decoded:
+                raise ToolError(
+                    f"{self.provider_name} image payload is empty.",
+                    details={"provider": self.provider_name},
+                )
+            if len(decoded) > self.capabilities.max_image_bytes:
+                raise ToolError(
+                    f"{self.provider_name} image exceeds configured capability byte bound.",
+                    details={
+                        "provider": self.provider_name,
+                        "image_bytes": len(decoded),
+                        "max_image_bytes": self.capabilities.max_image_bytes,
+                    },
+                )
+
     def complete(self, request: LlmRequest) -> LlmCompletion:
+        self._validate_image_request(request)
         endpoint, payload = self._build_payload(request)
         response_payload = self._post_json(endpoint=endpoint, payload=payload)
         completion = self._parse_completion(response_payload)

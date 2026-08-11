@@ -31,6 +31,7 @@ def _http_config(settings: WebSettings, *, base_url: str) -> HttpLlmClientConfig
         retry_base_delay_s=llm.retry_base_delay_s,
         retry_max_delay_s=llm.retry_max_delay_s,
         retry_jitter_s=llm.retry_jitter_s,
+        vision_enabled=llm.vision_enabled,
     )
 
 

@@ -14,11 +14,26 @@ class OllamaLlmClient(BaseHttpLlmClient):
     """Ollama chat client using direct HTTP calls."""
 
     def _build_payload(self, request: LlmRequest) -> tuple[str, dict[str, Any]]:
+        messages: list[dict[str, Any]] = [
+            {"role": message.role, "content": message.content} for message in request.messages
+        ]
+        if request.images:
+            if not self.vision_enabled:
+                raise ToolError(
+                    "ollama vision requests require explicit vision_enabled=true.",
+                    details={"provider": "ollama"},
+                )
+            user_indices = [i for i, message in enumerate(messages) if message["role"] == "user"]
+            if not user_indices:
+                raise ToolError("Vision request requires a user message.")
+            index = user_indices[-1]
+            messages[index] = {
+                **messages[index],
+                "images": [image.base64_data for image in request.images],
+            }
         payload: dict[str, Any] = {
             "model": self.model,
-            "messages": [
-                {"role": message.role, "content": message.content} for message in request.messages
-            ],
+            "messages": messages,
             "stream": False,
             "options": {},
         }

@@ -45,6 +45,10 @@ class LlmProviderCapabilities:
     terminal_protocol: LlmTerminalProtocol
     request_id_available: bool
     idempotency_key_supported: bool
+    supports_image_input: bool
+    accepted_image_media_types: tuple[str, ...]
+    max_images_per_request: int
+    max_image_bytes: int
 
 
 _PROVIDER_CAPABILITIES: Mapping[str, LlmProviderCapabilities] = MappingProxyType(
@@ -57,6 +61,10 @@ _PROVIDER_CAPABILITIES: Mapping[str, LlmProviderCapabilities] = MappingProxyType
             terminal_protocol=LlmTerminalProtocol.OPENAI_CHAT,
             request_id_available=True,
             idempotency_key_supported=False,
+            supports_image_input=True,
+            accepted_image_media_types=("image/png", "image/jpeg", "image/webp"),
+            max_images_per_request=4,
+            max_image_bytes=8 * 1024 * 1024,
         ),
         "llama_server": LlmProviderCapabilities(
             provider="llama_server",
@@ -66,6 +74,10 @@ _PROVIDER_CAPABILITIES: Mapping[str, LlmProviderCapabilities] = MappingProxyType
             terminal_protocol=LlmTerminalProtocol.OPENAI_CHAT,
             request_id_available=True,
             idempotency_key_supported=False,
+            supports_image_input=True,
+            accepted_image_media_types=("image/png", "image/jpeg", "image/webp"),
+            max_images_per_request=4,
+            max_image_bytes=8 * 1024 * 1024,
         ),
         "ollama": LlmProviderCapabilities(
             provider="ollama",
@@ -75,6 +87,10 @@ _PROVIDER_CAPABILITIES: Mapping[str, LlmProviderCapabilities] = MappingProxyType
             terminal_protocol=LlmTerminalProtocol.OLLAMA_CHAT,
             request_id_available=False,
             idempotency_key_supported=False,
+            supports_image_input=True,
+            accepted_image_media_types=("image/png", "image/jpeg", "image/webp"),
+            max_images_per_request=4,
+            max_image_bytes=8 * 1024 * 1024,
         ),
     }
 )

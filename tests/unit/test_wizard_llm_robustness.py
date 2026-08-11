@@ -23,7 +23,7 @@ from kicad_pcb_web.errors import (
 from kicad_pcb_web.schemas import JobDetail
 from kicad_pcb_web.services import _wizard_session_io as session_io
 from kicad_pcb_web.services import wizard as wizard_service
-from kicad_pcb_web.services._wizard_llm import _call_llm_for_json
+from kicad_pcb_web.services._wizard_llm import StructuredJsonCallOptions, _call_llm_for_json
 from kicad_pcb_web.services._wizard_session_io import (
     _make_debug_artifact_writer,
     _persist_session,
@@ -166,7 +166,7 @@ def test_d2_no_content_repairs_then_recovers() -> None:
         llm_client=client,
         messages=[LlmMessage(role="user", content="json")],
         response_model=_Envelope,
-        max_repairs=1,
+        options=StructuredJsonCallOptions(max_repairs=1),
     )
     assert result.value == "ok"
     assert len(client.requests) == 2
@@ -179,7 +179,7 @@ def test_d2_no_content_exhaustion_is_distinct() -> None:
             llm_client=client,
             messages=[LlmMessage(role="user", content="json")],
             response_model=_Envelope,
-            max_repairs=1,
+            options=StructuredJsonCallOptions(max_repairs=1),
         )
     assert len(client.requests) == 2
 
@@ -195,7 +195,7 @@ def test_d2_terminal_finish_reasons_do_not_repair(reason: str, error_type: type[
             llm_client=client,
             messages=[LlmMessage(role="user", content="json")],
             response_model=_Envelope,
-            max_repairs=2,
+            options=StructuredJsonCallOptions(max_repairs=2),
         )
     assert len(client.requests) == 1
 
@@ -207,7 +207,7 @@ def test_d2_generic_tool_error_is_not_absorbed() -> None:
             llm_client=client,
             messages=[LlmMessage(role="user", content="json")],
             response_model=_Envelope,
-            max_repairs=2,
+            options=StructuredJsonCallOptions(max_repairs=2),
         )
     assert len(client.requests) == 1
 
@@ -445,7 +445,7 @@ def test_followup_f2_real_ollama_length_is_terminal_before_valid_json_acceptance
                 llm_client=client,
                 messages=[LlmMessage(role="user", content="json")],
                 response_model=_Envelope,
-                max_repairs=2,
+                options=StructuredJsonCallOptions(max_repairs=2),
             )
     finally:
         client.close()  # type: ignore[attr-defined]

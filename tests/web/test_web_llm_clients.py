@@ -12,6 +12,7 @@ import pytest
 from kicad_pcb.errors import ToolError
 from kicad_pcb_web.deps import get_llm_client
 from kicad_pcb_web.errors import LlmCompletionRefusedError, LlmCompletionTruncatedError
+from kicad_pcb_web.services._wizard_llm import StructuredJsonCallOptions
 from kicad_pcb_web.services.llm import LlmMessage, LlmRequest, build_llm_client
 from kicad_pcb_web.services.wizard import _build_spec_messages, _call_llm_for_json
 from kicad_pcb_web.settings import LlmSettings, WebSettings, load_settings
@@ -304,7 +305,7 @@ def test_live_llama_server_handles_real_wizard_spec_prompt() -> None:
             llm_client=client,
             messages=messages,
             response_model=SpecConversationOutput,
-            max_repairs=settings.llm.spec_max_repair_rounds,
+            options=StructuredJsonCallOptions(max_repairs=settings.llm.spec_max_repair_rounds),
         )
     finally:
         close = getattr(client, "close", None)

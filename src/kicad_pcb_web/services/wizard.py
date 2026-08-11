@@ -36,6 +36,7 @@ from ..wizard_models import (
     WizardSessionDetail,
 )
 from ._wizard_llm import (
+    StructuredJsonCallOptions,
     _build_ir_messages,
     _build_spec_messages,
     _call_llm_for_json,
@@ -298,9 +299,11 @@ def create_wizard_session(
                 llm_client=client,
                 messages=_build_spec_messages(settings, session),
                 response_model=SpecConversationOutput,
-                max_repairs=settings.llm.spec_max_repair_rounds,
-                debug_artifact_writer=_make_debug_artifact_writer(
-                    settings, session.id, stage="spec"
+                options=StructuredJsonCallOptions(
+                    max_repairs=settings.llm.spec_max_repair_rounds,
+                    debug_artifact_writer=_make_debug_artifact_writer(
+                        settings, session.id, stage="spec"
+                    ),
                 ),
             )
             session = _append_message(session, role="assistant", content=output.assistant_message)
@@ -376,9 +379,11 @@ def post_wizard_message(
                 llm_client=client,
                 messages=_build_spec_messages(settings, session),
                 response_model=SpecConversationOutput,
-                max_repairs=settings.llm.spec_max_repair_rounds,
-                debug_artifact_writer=_make_debug_artifact_writer(
-                    settings, session.id, stage="spec"
+                options=StructuredJsonCallOptions(
+                    max_repairs=settings.llm.spec_max_repair_rounds,
+                    debug_artifact_writer=_make_debug_artifact_writer(
+                        settings, session.id, stage="spec"
+                    ),
                 ),
             )
             session = _append_message(session, role="assistant", content=output.assistant_message)
@@ -555,8 +560,10 @@ def generate_wizard_ir(
                         ),
                         response_model=IrGenerationOutput,
                         attempt=attempt,
-                        debug_artifact_writer=_make_debug_artifact_writer(
-                            settings, session.id, stage="ir"
+                        options=StructuredJsonCallOptions(
+                            debug_artifact_writer=_make_debug_artifact_writer(
+                                settings, session.id, stage="ir"
+                            ),
                         ),
                     )
                 except _RepairableStructuredOutputError as exc:

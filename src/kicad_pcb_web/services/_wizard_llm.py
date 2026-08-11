@@ -6,6 +6,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, NoReturn, TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -21,11 +22,18 @@ from ..errors import (
 )
 from ..settings import WebSettings
 from ..wizard_models import WizardSessionDetail
-from .llm import LlmClient, LlmMessage, LlmRequest
+from .llm import LlmClient, LlmImage, LlmMessage, LlmRequest
 
 LOGGER = logging.getLogger("uvicorn.error")
 
 _MODEL_T = TypeVar("_MODEL_T", bound=BaseModel)
+
+
+@dataclass(frozen=True)
+class StructuredJsonCallOptions:
+    max_repairs: int = 0
+    debug_artifact_writer: Callable[[dict[str, object]], None] | None = None
+    images: tuple[LlmImage, ...] = ()
 
 
 class _RepairableStructuredOutputError(Exception):
@@ -278,9 +286,13 @@ def _call_llm_for_json_once(
     messages: list[LlmMessage],
     response_model: type[_MODEL_T],
     attempt: int,
-    debug_artifact_writer: Callable[[dict[str, object]], None] | None = None,
+    options: StructuredJsonCallOptions = StructuredJsonCallOptions(),
 ) -> _MODEL_T:
-    request = LlmRequest(messages=list(messages), response_format="json")
+    request = LlmRequest(
+        messages=list(messages),
+        response_format="json",
+        images=options.images,
+    )
     prompt_chars = sum(len(message.content) for message in request.messages)
     serialized_messages = [
         {"role": message.role, "content": message.content} for message in request.messages
@@ -308,8 +320,8 @@ def _call_llm_for_json_once(
                 "error_type": type(exc).__name__,
             },
         )
-        if debug_artifact_writer is not None:
-            debug_artifact_writer(
+        if options.debug_artifact_writer is not None:
+            options.debug_artifact_writer(
                 {
                     "attempt": attempt,
                     "response_model": response_model.__name__,
@@ -365,8 +377,8 @@ def _call_llm_for_json_once(
                 "error_type": type(exc).__name__,
             },
         )
-        if debug_artifact_writer is not None:
-            debug_artifact_writer(
+        if options.debug_artifact_writer is not None:
+            options.debug_artifact_writer(
                 {
                     "attempt": attempt,
                     "response_model": response_model.__name__,
@@ -404,8 +416,8 @@ def _call_llm_for_json_once(
             "request_id": completion.request_id,
         },
     )
-    if debug_artifact_writer is not None:
-        debug_artifact_writer(
+    if options.debug_artifact_writer is not None:
+        options.debug_artifact_writer(
             {
                 "attempt": attempt,
                 "response_model": response_model.__name__,
@@ -428,12 +440,11 @@ def _call_llm_for_json(
     llm_client: LlmClient,
     messages: list[LlmMessage],
     response_model: type[_MODEL_T],
-    max_repairs: int,
-    debug_artifact_writer: Callable[[dict[str, object]], None] | None = None,
+    options: StructuredJsonCallOptions = StructuredJsonCallOptions(),
 ) -> _MODEL_T:
     schema_json = json.dumps(response_model.model_json_schema(), indent=2)
     current_messages = list(messages)
-    max_attempts = max_repairs + 1
+    max_attempts = options.max_repairs + 1
     for attempt in range(1, max_attempts + 1):
         try:
             return _call_llm_for_json_once(
@@ -441,7 +452,7 @@ def _call_llm_for_json(
                 messages=current_messages,
                 response_model=response_model,
                 attempt=attempt,
-                debug_artifact_writer=debug_artifact_writer,
+                options=options,
             )
         except _RepairableStructuredOutputError as exc:
             if attempt >= max_attempts:

@@ -14,12 +14,30 @@ class OpenAiLlmClient(BaseHttpLlmClient):
     """OpenAI-compatible chat-completions client using direct HTTP calls."""
 
     def _build_payload(self, request: LlmRequest) -> tuple[str, dict[str, Any]]:
-        payload: dict[str, Any] = {
-            "model": self.model,
-            "messages": [
-                {"role": message.role, "content": message.content} for message in request.messages
-            ],
-        }
+        messages: list[dict[str, Any]] = [
+            {"role": message.role, "content": message.content} for message in request.messages
+        ]
+        if request.images:
+            if not self.vision_enabled:
+                raise ToolError(
+                    f"{self.provider_name} vision requests require explicit vision_enabled=true.",
+                    details={"provider": self.provider_name},
+                )
+            user_indices = [i for i, message in enumerate(messages) if message["role"] == "user"]
+            if not user_indices:
+                raise ToolError("Vision request requires a user message.")
+            index = user_indices[-1]
+            text = str(messages[index]["content"])
+            content: list[dict[str, Any]] = [{"type": "text", "text": text}]
+            for image in request.images:
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{image.media_type};base64,{image.base64_data}"},
+                    }
+                )
+            messages[index] = {"role": "user", "content": content}
+        payload: dict[str, Any] = {"model": self.model, "messages": messages}
         if self.temperature_mode == "send":
             payload["temperature"] = self._effective_temperature(request)
 

@@ -33,6 +33,7 @@ _LLM_CONFIG_KEYS: frozenset[str] = frozenset(
         "enable_streaming",
         "request_log_redaction",
         "debug_artifact_capture",
+        "vision_enabled",
         "retry_max_attempts",
         "retry_base_delay_s",
         "retry_max_delay_s",
@@ -62,6 +63,8 @@ class LlmSettings:
     enable_streaming: bool = False
     request_log_redaction: bool = True
     debug_artifact_capture: bool = False
+    # Explicit runtime opt-in. Provider/model names never imply image capability.
+    vision_enabled: bool = False
     retry_max_attempts: int = 3
     retry_base_delay_s: float = 0.5
     retry_max_delay_s: float = 8.0
@@ -264,6 +267,11 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         config_value=llm_config.get("debug_artifact_capture"),
         default=False,
     )
+    vision_enabled_raw = _read_setting(
+        env_name="KICAD_PCB_WEB_LLM_VISION_ENABLED",
+        config_value=llm_config.get("vision_enabled"),
+        default=False,
+    )
     retry_max_attempts_raw = _read_setting(
         env_name="KICAD_PCB_WEB_LLM_RETRY_MAX_ATTEMPTS",
         config_value=llm_config.get("retry_max_attempts"),
@@ -340,6 +348,7 @@ def _load_llm_settings(config: dict[str, Any]) -> LlmSettings:
         debug_artifact_capture=_coerce_bool(
             debug_artifact_capture_raw, field_name="llm.debug_artifact_capture"
         ),
+        vision_enabled=_coerce_bool(vision_enabled_raw, field_name="llm.vision_enabled"),
         retry_max_attempts=_coerce_int(retry_max_attempts_raw, field_name="llm.retry_max_attempts"),
         retry_base_delay_s=_coerce_float(retry_base_delay_raw, field_name="llm.retry_base_delay_s"),
         retry_max_delay_s=_coerce_float(retry_max_delay_raw, field_name="llm.retry_max_delay_s"),
