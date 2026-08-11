@@ -19,12 +19,13 @@ from kicad_pcb.refinement.planner import (
 from kicad_pcb.refinement.vision_context import VisionObjectMap
 
 from ._wizard_llm import StructuredJsonCallOptions, _call_llm_for_json
-from .llm import LlmClient, LlmImage, LlmMessage
+from .llm import LlmClient, LlmCompletion, LlmImage, LlmMessage, LlmRequest
 
 _MAX_CONTEXT_BYTES = 2 * 1024 * 1024
 _MAX_REFINEMENT_ROUNDS = 20
 _MAX_STRUCTURED_REPAIRS = 8
 _MAX_OPERATIONS_PER_ROUND = 32
+_MAX_LOGICAL_MODEL_CALLS = _MAX_REFINEMENT_ROUNDS * (2 + 2 * _MAX_STRUCTURED_REPAIRS)
 _IMAGE_MEDIA_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -52,6 +53,39 @@ class RepairPlannerOptions:
             minimum=1,
             maximum=_MAX_OPERATIONS_PER_ROUND,
         )
+
+
+@dataclass
+class RefinementModelCallBudget:
+    """Count and enforce logical ``LlmClient.complete`` requests for one refine session."""
+
+    client: LlmClient
+    max_calls: int
+    calls_made: int = 0
+
+    def __post_init__(self) -> None:
+        _require_bounded_int(
+            "max_calls",
+            self.max_calls,
+            minimum=1,
+            maximum=_MAX_LOGICAL_MODEL_CALLS,
+        )
+        _require_bounded_int(
+            "calls_made",
+            self.calls_made,
+            minimum=0,
+            maximum=self.max_calls,
+        )
+
+    def complete(self, request: LlmRequest) -> LlmCompletion:
+        if self.calls_made >= self.max_calls:
+            raise UserError(
+                "Refinement logical model-call budget exhausted.",
+                code="REFINEMENT_MODEL_CALL_BUDGET_EXCEEDED",
+                details={"max_model_calls": self.max_calls},
+            )
+        self.calls_made += 1
+        return self.client.complete(request)
 
 
 def refinement_model_call_upper_bound(
