@@ -24,7 +24,9 @@ jobs:
         run: |
           python - <<'PY'
           import base64
+          import binascii
           import hashlib
+          import itertools
           import json
           import os
           import tarfile
@@ -36,6 +38,36 @@ jobs:
           def decode_base64_text(data):
               compact = b''.join(data.split())
               return base64.b64decode(compact, validate=True)
+
+          def resolve_mixed_chunks(chunks, expected):
+              choices = []
+              for chunk in chunks:
+                  options = [('raw', chunk)]
+                  try:
+                      decoded = decode_base64_text(chunk)
+                  except (binascii.Error, ValueError):
+                      pass
+                  else:
+                      if decoded != chunk:
+                          options.append(('base64', decoded))
+                  choices.append(options)
+
+              matches = []
+              for combination in itertools.product(*choices):
+                  modes = tuple(mode for mode, _ in combination)
+                  archive = b''.join(data for _, data in combination)
+                  digest = hashlib.sha256(archive).hexdigest()
+                  if digest == expected:
+                      matches.append((modes, archive))
+
+              if len(matches) != 1:
+                  raise SystemExit(
+                      'mixed chunk representation did not resolve uniquely: '
+                      f'matches={len(matches)}'
+                  )
+              modes, archive = matches[0]
+              print('resolved_chunk_modes=' + ','.join(modes))
+              return archive
 
           def fetch_archive(blobs, expected, output, *, chunk_mode):
               chunks = []
@@ -56,8 +88,8 @@ jobs:
 
               if chunk_mode == 'joined_base64':
                   archive = decode_base64_text(b''.join(chunks))
-              elif chunk_mode == 'raw_binary':
-                  archive = b''.join(chunks)
+              elif chunk_mode == 'mixed_sha256':
+                  archive = resolve_mixed_chunks(chunks, expected)
               else:
                   raise SystemExit(f'unsupported chunk mode: {chunk_mode}')
 
@@ -95,7 +127,7 @@ jobs:
               ],
               'b65e55dc9e526d53526e5315c37549a934fdd7b628f10fc381df44d861ead478',
               Path('/tmp/refinement-vision-delta.tar.gz'),
-              chunk_mode='raw_binary',
+              chunk_mode='mixed_sha256',
           )
           PY
       - name: Sync locked toolchain
