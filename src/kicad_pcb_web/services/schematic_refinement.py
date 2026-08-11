@@ -23,6 +23,7 @@ from kicad_pcb.refinement.evidence import (
     SESSION_EVIDENCE_SCHEMA_VERSION,
     IterationEvidenceInputs,
     SessionEvidenceInputs,
+    SessionIterationReferenceInputs,
     build_session_iteration_reference,
     write_iteration_evidence_bundle,
     write_session_evidence_bundle,
@@ -578,6 +579,32 @@ class _RefinementLoopState:
     accepted_operations: int = 0
 
 
+@dataclass(frozen=True)
+class _RefinementSessionContext:
+    accepted_path: Path
+    runtime: RefinementRuntime
+    provenance: RefinementProvenance
+    session_id: str
+    limits: RefinementLoopLimits
+    authoritative_hash: str
+
+
+@dataclass(frozen=True)
+class _SessionEvidenceDisposition:
+    status: str
+    stop_reason: str
+    failure_code: str | None
+
+
+@dataclass(frozen=True)
+class _RoundOutcome:
+    result: RefinementApplyResult
+    round_start_hash: str
+    actual_hash: str
+    remaining_operations: int
+    repeated_layout: bool
+
+
 def refine_schematic(
     *,
     accepted_path: Path,
@@ -593,7 +620,6 @@ def refine_schematic(
     provenance = _require_refinement_provenance(runtime.provenance)
     starting_hash = _sha(accepted_path)
     starting_layout_fingerprint = compute_schematic_layout_fingerprint(accepted_path).digest
-    authoritative_hash = build_circuit_ir_fingerprint(runtime.authoritative_ir).sha256()
     model_call_budget = RefinementModelCallBudget(
         client=runtime.llm_client,
         max_calls=refinement_model_call_upper_bound(
@@ -603,6 +629,14 @@ def refine_schematic(
         ),
     )
     bounded_runtime = replace(runtime, llm_client=model_call_budget)
+    context = _RefinementSessionContext(
+        accepted_path=accepted_path,
+        runtime=bounded_runtime,
+        provenance=provenance,
+        session_id=session_id,
+        limits=limits,
+        authoritative_hash=build_circuit_ir_fingerprint(runtime.authoritative_ir).sha256(),
+    )
     state = _RefinementLoopState(
         starting_hash=starting_hash,
         best_accepted_hash=starting_hash,
@@ -615,29 +649,15 @@ def refine_schematic(
     )
 
     try:
-        result = _run_refinement_loop(
-            accepted_path=accepted_path,
-            runtime=bounded_runtime,
-            session_id=session_id,
-            limits=limits,
-            state=state,
-        )
+        result = _run_refinement_loop(context, state)
     except Exception as exc:
-        failure_code = _exception_code(exc)
+        disposition = _SessionEvidenceDisposition(
+            status="failed",
+            stop_reason="REFINEMENT_STOP_HARD_FAILURE",
+            failure_code=_exception_code(exc),
+        )
         try:
-            _publish_session_evidence(
-                accepted_path=accepted_path,
-                runtime=bounded_runtime,
-                provenance=provenance,
-                session_id=session_id,
-                limits=limits,
-                authoritative_hash=authoritative_hash,
-                state=state,
-                result=None,
-                status="failed",
-                stop_reason="REFINEMENT_STOP_HARD_FAILURE",
-                failure_code=failure_code,
-            )
+            _publish_session_evidence(context, state, None, disposition)
         except Exception as evidence_exc:
             exc.add_note(
                 "Refinement session evidence finalization also failed with code "
@@ -646,139 +666,189 @@ def refine_schematic(
             raise exc from evidence_exc
         raise
 
-    evidence_dir = _publish_session_evidence(
-        accepted_path=accepted_path,
-        runtime=bounded_runtime,
-        provenance=provenance,
-        session_id=session_id,
-        limits=limits,
-        authoritative_hash=authoritative_hash,
-        state=state,
-        result=result,
+    disposition = _SessionEvidenceDisposition(
         status="completed",
         stop_reason=result.stop_reason,
         failure_code=None,
     )
+    evidence_dir = _publish_session_evidence(context, state, result, disposition)
     return replace(result, session_evidence_dir=evidence_dir)
 
 
 def _run_refinement_loop(
-    *,
-    accepted_path: Path,
-    runtime: RefinementRuntime,
-    session_id: str,
-    limits: RefinementLoopLimits,
+    context: _RefinementSessionContext,
     state: _RefinementLoopState,
 ) -> RefinementLoopResult:
     seen_layout_fingerprints = {state.starting_layout_fingerprint}
-    for round_number in range(1, limits.max_rounds + 1):
-        remaining_operations = limits.max_total_accepted_operations - state.accepted_operations
+    for round_number in range(1, context.limits.max_rounds + 1):
+        remaining_operations = (
+            context.limits.max_total_accepted_operations - state.accepted_operations
+        )
         if remaining_operations <= 0:
-            return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
-
-        round_start_hash = _sha(accepted_path)
-        if round_start_hash != state.best_accepted_hash:
-            raise UserError(
-                "Canonical schematic no longer matches the best-known accepted state.",
-                code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
+            return _loop_result(
+                "REFINEMENT_STOP_OPERATION_BUDGET",
+                context.accepted_path,
+                state,
             )
-        iteration_id = f"{session_id}-round-{round_number:03d}"
-        round_runtime = replace(
-            runtime,
-            prior_decisions=tuple(state.decision_history),
+        outcome = _execute_refinement_round(
+            context,
+            state,
+            seen_layout_fingerprints,
+            round_number,
+            remaining_operations,
         )
-        result = apply_once_schematic_refinement(
-            accepted_path=accepted_path,
-            runtime=round_runtime,
-            iteration_id=iteration_id,
-            limits=RefinementIterationLimits(
-                max_critic_repairs=limits.max_critic_repairs,
-                max_planner_repairs=limits.max_planner_repairs,
-                max_operations=min(limits.max_operations_per_round, remaining_operations),
+        stop_reason = _round_stop_reason(context, state, outcome)
+        if stop_reason is not None:
+            return _loop_result(stop_reason, context.accepted_path, state)
+
+    return _loop_result("REFINEMENT_STOP_MAX_ROUNDS", context.accepted_path, state)
+
+
+def _execute_refinement_round(
+    context: _RefinementSessionContext,
+    state: _RefinementLoopState,
+    seen_layout_fingerprints: set[str],
+    round_number: int,
+    remaining_operations: int,
+) -> _RoundOutcome:
+    round_start_hash = _sha(context.accepted_path)
+    if round_start_hash != state.best_accepted_hash:
+        raise UserError(
+            "Canonical schematic no longer matches the best-known accepted state.",
+            code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
+        )
+    iteration_id = f"{context.session_id}-round-{round_number:03d}"
+    round_runtime = replace(
+        context.runtime,
+        prior_decisions=tuple(state.decision_history),
+    )
+    result = apply_once_schematic_refinement(
+        accepted_path=context.accepted_path,
+        runtime=round_runtime,
+        iteration_id=iteration_id,
+        limits=RefinementIterationLimits(
+            max_critic_repairs=context.limits.max_critic_repairs,
+            max_planner_repairs=context.limits.max_planner_repairs,
+            max_operations=min(
+                context.limits.max_operations_per_round,
+                remaining_operations,
             ),
-            enforce_best_known_retention=True,
+        ),
+        enforce_best_known_retention=True,
+    )
+    state.iteration_ids.append(iteration_id)
+    state.iterations.append(result)
+    if result.candidate_hash is not None:
+        state.latest_attempted_hash = result.candidate_hash
+    if result.accepted_hash_before != round_start_hash:
+        raise UserError(
+            "Refinement round result is not bound to the round-start schematic.",
+            code="REFINEMENT_STALE",
         )
-        state.iteration_ids.append(iteration_id)
-        state.iterations.append(result)
-        if result.candidate_hash is not None:
-            state.latest_attempted_hash = result.candidate_hash
-        if result.accepted_hash_before != round_start_hash:
-            raise UserError(
-                "Refinement round result is not bound to the round-start schematic.",
-                code="REFINEMENT_STALE",
-            )
-        if result.status not in {"accepted", "rejected", "no_op"}:
-            raise UserError(
-                "Refinement round returned an unknown status.",
-                code="REFINEMENT_INVALID_RESULT",
-                details={"status": result.status},
-            )
-        state.decision_history.append(_decision_history_entry(iteration_id, result))
+    if result.status not in {"accepted", "rejected", "no_op"}:
+        raise UserError(
+            "Refinement round returned an unknown status.",
+            code="REFINEMENT_INVALID_RESULT",
+            details={"status": result.status},
+        )
+    state.decision_history.append(_decision_history_entry(iteration_id, result))
 
-        repeated_layout = False
-        if result.candidate_layout_fingerprint is not None:
-            repeated_layout = result.candidate_layout_fingerprint in seen_layout_fingerprints
-            if not repeated_layout:
-                seen_layout_fingerprints.add(result.candidate_layout_fingerprint)
+    repeated_layout = False
+    if result.candidate_layout_fingerprint is not None:
+        repeated_layout = result.candidate_layout_fingerprint in seen_layout_fingerprints
+        if not repeated_layout:
+            seen_layout_fingerprints.add(result.candidate_layout_fingerprint)
 
-        actual_hash = _sha(accepted_path)
-        if result.status == "no_op":
-            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
-            stop_reason = (
-                "REFINEMENT_STOP_NO_ACTIONABLE_ISSUES"
-                if result.code == "REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES"
-                else "REFINEMENT_STOP_NO_OPERATIONS"
-            )
-            return _loop_result(stop_reason, accepted_path, state)
+    return _RoundOutcome(
+        result=result,
+        round_start_hash=round_start_hash,
+        actual_hash=_sha(context.accepted_path),
+        remaining_operations=remaining_operations,
+        repeated_layout=repeated_layout,
+    )
 
-        if result.status == "rejected":
-            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
-            state.rejected_rounds += 1
-            if repeated_layout:
-                return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
-            if result.code in _NO_MEANINGFUL_IMPROVEMENT_CODES:
-                return _loop_result(
-                    "REFINEMENT_STOP_NO_MEANINGFUL_IMPROVEMENT",
-                    accepted_path,
-                    state,
-                )
-            if state.rejected_rounds >= limits.max_candidate_rejections:
-                return _loop_result("REFINEMENT_STOP_REJECTION_LIMIT", accepted_path, state)
-            continue
 
-        if actual_hash != result.accepted_hash_after:
-            raise UserError(
-                "Accepted refinement result does not match persisted schematic bytes.",
-                code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
-            )
-        if result.operations is None or not result.operations.results:
-            raise UserError(
-                "Accepted refinement round contains no applied operations.",
-                code="REFINEMENT_INVALID_RESULT",
-            )
-        if result.candidate_layout_fingerprint is None:
-            raise UserError(
-                "Accepted refinement round is missing its layout fingerprint.",
-                code="REFINEMENT_INVALID_RESULT",
-            )
+def _round_stop_reason(
+    context: _RefinementSessionContext,
+    state: _RefinementLoopState,
+    outcome: _RoundOutcome,
+) -> str | None:
+    if outcome.result.status == "no_op":
+        _assert_nonaccepted_round_unchanged(
+            outcome.result,
+            outcome.round_start_hash,
+            outcome.actual_hash,
+        )
+        if outcome.result.code == "REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES":
+            return "REFINEMENT_STOP_NO_ACTIONABLE_ISSUES"
+        return "REFINEMENT_STOP_NO_OPERATIONS"
+    if outcome.result.status == "rejected":
+        return _handle_rejected_round(context, state, outcome)
+    return _handle_accepted_round(context, state, outcome)
 
-        applied_count = len(result.operations.results)
-        if applied_count > min(limits.max_operations_per_round, remaining_operations):
-            raise UserError(
-                "Accepted refinement round exceeded its operation budget.",
-                code="REFINEMENT_OPERATION_BUDGET_EXCEEDED",
-            )
-        state.accepted_operations += applied_count
-        state.accepted_rounds += 1
-        state.best_accepted_hash = actual_hash
-        state.best_layout_fingerprint = result.candidate_layout_fingerprint
 
-        if repeated_layout:
-            return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
-        if state.accepted_operations >= limits.max_total_accepted_operations:
-            return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
+def _handle_rejected_round(
+    context: _RefinementSessionContext,
+    state: _RefinementLoopState,
+    outcome: _RoundOutcome,
+) -> str | None:
+    _assert_nonaccepted_round_unchanged(
+        outcome.result,
+        outcome.round_start_hash,
+        outcome.actual_hash,
+    )
+    state.rejected_rounds += 1
+    if outcome.repeated_layout:
+        return "REFINEMENT_STOP_OSCILLATION"
+    if outcome.result.code in _NO_MEANINGFUL_IMPROVEMENT_CODES:
+        return "REFINEMENT_STOP_NO_MEANINGFUL_IMPROVEMENT"
+    if state.rejected_rounds >= context.limits.max_candidate_rejections:
+        return "REFINEMENT_STOP_REJECTION_LIMIT"
+    return None
 
-    return _loop_result("REFINEMENT_STOP_MAX_ROUNDS", accepted_path, state)
+
+def _handle_accepted_round(
+    context: _RefinementSessionContext,
+    state: _RefinementLoopState,
+    outcome: _RoundOutcome,
+) -> str | None:
+    result = outcome.result
+    if outcome.actual_hash != result.accepted_hash_after:
+        raise UserError(
+            "Accepted refinement result does not match persisted schematic bytes.",
+            code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
+        )
+    if result.operations is None or not result.operations.results:
+        raise UserError(
+            "Accepted refinement round contains no applied operations.",
+            code="REFINEMENT_INVALID_RESULT",
+        )
+    if result.candidate_layout_fingerprint is None:
+        raise UserError(
+            "Accepted refinement round is missing its layout fingerprint.",
+            code="REFINEMENT_INVALID_RESULT",
+        )
+
+    applied_count = len(result.operations.results)
+    allowed_operations = min(
+        context.limits.max_operations_per_round,
+        outcome.remaining_operations,
+    )
+    if applied_count > allowed_operations:
+        raise UserError(
+            "Accepted refinement round exceeded its operation budget.",
+            code="REFINEMENT_OPERATION_BUDGET_EXCEEDED",
+        )
+    state.accepted_operations += applied_count
+    state.accepted_rounds += 1
+    state.best_accepted_hash = outcome.actual_hash
+    state.best_layout_fingerprint = result.candidate_layout_fingerprint
+
+    if outcome.repeated_layout:
+        return "REFINEMENT_STOP_OSCILLATION"
+    if state.accepted_operations >= context.limits.max_total_accepted_operations:
+        return "REFINEMENT_STOP_OPERATION_BUDGET"
+    return None
 
 
 def _loop_result(
@@ -818,30 +888,24 @@ def _loop_result(
 
 
 def _publish_session_evidence(
-    *,
-    accepted_path: Path,
-    runtime: RefinementRuntime,
-    provenance: RefinementProvenance,
-    session_id: str,
-    limits: RefinementLoopLimits,
-    authoritative_hash: str,
+    context: _RefinementSessionContext,
     state: _RefinementLoopState,
     result: RefinementLoopResult | None,
-    status: str,
-    stop_reason: str,
-    failure_code: str | None,
+    disposition: _SessionEvidenceDisposition,
 ) -> Path:
     references = tuple(
         build_session_iteration_reference(
-            evidence_root=runtime.evidence_root,
-            iteration_id=iteration_id,
-            status=iteration.status,
-            code=iteration.code,
-            accepted_hash_before=iteration.accepted_hash_before,
-            accepted_hash_after=iteration.accepted_hash_after,
-            candidate_hash=iteration.candidate_hash,
-            candidate_layout_fingerprint=iteration.candidate_layout_fingerprint,
-            evidence_dir=iteration.evidence_dir,
+            context.runtime.evidence_root,
+            SessionIterationReferenceInputs(
+                iteration_id=iteration_id,
+                status=iteration.status,
+                code=iteration.code,
+                accepted_hash_before=iteration.accepted_hash_before,
+                accepted_hash_after=iteration.accepted_hash_after,
+                candidate_hash=iteration.candidate_hash,
+                candidate_layout_fingerprint=iteration.candidate_layout_fingerprint,
+                evidence_dir=iteration.evidence_dir,
+            ),
         )
         for iteration_id, iteration in zip(
             state.iteration_ids,
@@ -849,22 +913,22 @@ def _publish_session_evidence(
             strict=True,
         )
     )
-    final_hash = result.final_accepted_hash if result is not None else _sha(accepted_path)
+    final_hash = result.final_accepted_hash if result is not None else _sha(context.accepted_path)
     final_layout = (
         result.final_layout_fingerprint
         if result is not None
-        else compute_schematic_layout_fingerprint(accepted_path).digest
+        else compute_schematic_layout_fingerprint(context.accepted_path).digest
     )
     return write_session_evidence_bundle(
-        runtime.evidence_root,
+        context.runtime.evidence_root,
         SessionEvidenceInputs(
-            session_id=session_id,
-            authoritative_hash=authoritative_hash,
+            session_id=context.session_id,
+            authoritative_hash=context.authoritative_hash,
             starting_accepted_hash=state.starting_hash,
-            provider=provenance.provider,
-            model=provenance.model,
-            product_version=provenance.product_version,
-            implementation_sha=provenance.implementation_sha,
+            provider=context.provenance.provider,
+            model=context.provenance.model,
+            product_version=context.provenance.product_version,
+            implementation_sha=context.provenance.implementation_sha,
             prompt_versions={
                 "critic": CRITIC_PROMPT_VERSION,
                 "planner": PLANNER_PROMPT_VERSION,
@@ -878,11 +942,11 @@ def _publish_session_evidence(
                 "retention_policy": RETENTION_POLICY_SCHEMA_VERSION,
                 "refinement_service": REFINEMENT_SERVICE_VERSION,
             },
-            configured_bounds=asdict(limits),
+            configured_bounds=asdict(context.limits),
             iterations=references,
-            status=status,
-            stop_reason=stop_reason,
-            failure_code=failure_code,
+            status=disposition.status,
+            stop_reason=disposition.stop_reason,
+            failure_code=disposition.failure_code,
             final_accepted_hash=final_hash,
             best_accepted_hash=state.best_accepted_hash,
             starting_layout_fingerprint=state.starting_layout_fingerprint,
