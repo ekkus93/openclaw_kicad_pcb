@@ -24,9 +24,7 @@ jobs:
         run: |
           python - <<'PY'
           import base64
-          import binascii
           import hashlib
-          import itertools
           import json
           import os
           import tarfile
@@ -35,42 +33,8 @@ jobs:
 
           repo = 'ekkus93/openclaw_kicad_pcb'
 
-          def decode_base64_text(data):
-              compact = b''.join(data.split())
-              return base64.b64decode(compact, validate=True)
-
-          def resolve_mixed_chunks(chunks, expected):
-              choices = []
-              for chunk in chunks:
-                  options = [('raw', chunk)]
-                  try:
-                      decoded = decode_base64_text(chunk)
-                  except (binascii.Error, ValueError):
-                      pass
-                  else:
-                      if decoded != chunk:
-                          options.append(('base64', decoded))
-                  choices.append(options)
-
-              matches = []
-              for combination in itertools.product(*choices):
-                  modes = tuple(mode for mode, _ in combination)
-                  archive = b''.join(data for _, data in combination)
-                  digest = hashlib.sha256(archive).hexdigest()
-                  if digest == expected:
-                      matches.append((modes, archive))
-
-              if len(matches) != 1:
-                  raise SystemExit(
-                      'mixed chunk representation did not resolve uniquely: '
-                      f'matches={len(matches)}'
-                  )
-              modes, archive = matches[0]
-              print('resolved_chunk_modes=' + ','.join(modes))
-              return archive
-
-          def fetch_archive(blobs, expected, output, *, chunk_mode):
-              chunks = []
+          def fetch_archive(blobs, expected, output):
+              encoded_chunks = []
               for sha in blobs:
                   req = urllib.request.Request(
                       f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
@@ -84,15 +48,11 @@ jobs:
                       payload = json.load(response)
                   if payload.get('encoding') != 'base64':
                       raise SystemExit(f'unexpected blob encoding for {sha}')
-                  chunks.append(base64.b64decode(payload['content']))
+                  encoded_chunks.append(base64.b64decode(payload['content']))
 
-              if chunk_mode == 'joined_base64':
-                  archive = decode_base64_text(b''.join(chunks))
-              elif chunk_mode == 'mixed_sha256':
-                  archive = resolve_mixed_chunks(chunks, expected)
-              else:
-                  raise SystemExit(f'unsupported chunk mode: {chunk_mode}')
-
+              encoded = b''.join(encoded_chunks)
+              compact = b''.join(encoded.split())
+              archive = base64.b64decode(compact, validate=True)
               digest = hashlib.sha256(archive).hexdigest()
               if digest != expected:
                   raise SystemExit(f'archive SHA mismatch: {digest}')
@@ -116,18 +76,16 @@ jobs:
               ],
               '9a2036c6a892b18fbcee5beb77c1373dfd5911acce989dd62138f69d1f767236',
               Path('/tmp/refinement-vision-checkpoint.tar.gz'),
-              chunk_mode='joined_base64',
           )
           fetch_archive(
               [
-                  '36090ea8325d5c7901a9015546ca52b0804c215f',
-                  '2eb312e5c71e451aacf0c87553079f8e2a56c408',
-                  'e31366c6739cc8294bd758a5fad759b82a0b3541',
-                  '5ca8b6ca3bba494aa66da5502d89ad75daecb819',
+                  '7fdb519f9efc9b624521eefef1a2b1caa0437dd5',
+                  '129ad60bee64aa5f4e57e5035fe4be9a86939364',
+                  'e5bd0348efd771bf0f68334257b16956f282c983',
+                  '203dc979f12b3d16055df963f72fc673464a7934',
               ],
               'b65e55dc9e526d53526e5315c37549a934fdd7b628f10fc381df44d861ead478',
               Path('/tmp/refinement-vision-delta.tar.gz'),
-              chunk_mode='mixed_sha256',
           )
           PY
       - name: Sync locked toolchain
