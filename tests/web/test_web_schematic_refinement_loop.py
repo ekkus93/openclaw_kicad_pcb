@@ -61,12 +61,13 @@ def _accepted(before: str, after: str, *, count: int = 1) -> service.RefinementA
 def _rejected(
     current: str,
     *,
+    code: str = "REFINEMENT_PROTECTED_METRIC_REGRESSION",
     candidate_hash: str = "c" * 64,
     candidate_layout_fingerprint: str | None = "c" * 64,
 ) -> service.RefinementApplyResult:
     return service.RefinementApplyResult(
         "rejected",
-        "REFINEMENT_NO_DETERMINISTIC_IMPROVEMENT",
+        code,
         current,
         current,
         candidate_hash,
@@ -79,10 +80,14 @@ def _rejected(
     )
 
 
-def _no_op(current: str) -> service.RefinementApplyResult:
+def _no_op(
+    current: str,
+    *,
+    code: str = "REFINEMENT_NO_OPERATIONS",
+) -> service.RefinementApplyResult:
     return service.RefinementApplyResult(
         "no_op",
-        "REFINEMENT_NO_OPERATIONS",
+        code,
         current,
         current,
         None,
@@ -141,6 +146,30 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
     assert result.model_call_limit == 6
 
 
+def test_refine_no_actionable_issues_has_distinct_stop_reason(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+
+    monkeypatch.setattr(
+        service,
+        "apply_once_schematic_refinement",
+        lambda **kwargs: _no_op(
+            _sha(kwargs["accepted_path"]),
+            code="REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES",
+        ),
+    )
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="no-issues",
+    )
+
+    assert result.stop_reason == "REFINEMENT_STOP_NO_ACTIONABLE_ISSUES"
+    assert result.rounds_attempted == 1
+    assert result.accepted_rounds == 0
+    assert accepted.read_bytes() == b"A"
+
+
 def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: Path) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")
@@ -180,6 +209,33 @@ def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: P
     assert observed_history[1][0].candidate_layout_fingerprint == _sha(accepted)
 
 
+def test_refine_no_meaningful_improvement_stops_immediately(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+
+    def apply_once(**kwargs):
+        current = _sha(kwargs["accepted_path"])
+        return _rejected(
+            current,
+            code="REFINEMENT_NO_DETERMINISTIC_IMPROVEMENT",
+            candidate_hash="d" * 64,
+            candidate_layout_fingerprint="d" * 64,
+        )
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="no-improvement",
+        limits=service.RefinementLoopLimits(max_rounds=5, max_candidate_rejections=4),
+    )
+
+    assert result.stop_reason == "REFINEMENT_STOP_NO_MEANINGFUL_IMPROVEMENT"
+    assert result.rounds_attempted == 1
+    assert result.rejected_rounds == 1
+    assert accepted.read_bytes() == b"A"
+
+
 def test_refine_enforces_total_operation_budget(monkeypatch, tmp_path: Path) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")
@@ -207,6 +263,36 @@ def test_refine_enforces_total_operation_budget(monkeypatch, tmp_path: Path) -> 
     assert observed_max_operations == [2, 1]
     assert result.accepted_operations == 3
     assert result.stop_reason == "REFINEMENT_STOP_OPERATION_BUDGET"
+
+
+def test_refine_three_round_improvement_stops_at_max_rounds(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    history_lengths: list[int] = []
+
+    def apply_once(**kwargs):
+        path = kwargs["accepted_path"]
+        history_lengths.append(len(kwargs["runtime"].prior_decisions))
+        before = _sha(path)
+        path.write_bytes(path.read_bytes() + b"x")
+        return _accepted(before, _sha(path))
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="three-rounds",
+        limits=service.RefinementLoopLimits(max_rounds=3),
+    )
+
+    assert history_lengths == [0, 1, 2]
+    assert result.stop_reason == "REFINEMENT_STOP_MAX_ROUNDS"
+    assert result.rounds_attempted == 3
+    assert result.accepted_rounds == 3
+    assert result.accepted_operations == 3
+    assert accepted.read_bytes() == b"Axxx"
+    assert result.final_accepted_hash == _sha(accepted)
+    assert result.best_accepted_hash == result.final_accepted_hash
 
 
 def test_refine_detects_exact_state_oscillation(monkeypatch, tmp_path: Path) -> None:
