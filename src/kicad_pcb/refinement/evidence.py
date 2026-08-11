@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import shutil
 import tempfile
@@ -19,6 +20,12 @@ from .rendering import SchematicRenderArtifact
 
 ITERATION_EVIDENCE_SCHEMA_VERSION = "1.0"
 SESSION_EVIDENCE_SCHEMA_VERSION = "1.0"
+RETENTION_POLICY_SCHEMA_VERSION = "1.0"
+_ALLOWED_ITERATION_DISPOSITIONS = frozenset(
+    {"accepted", "approved_for_promotion", "rejected", "no_op"}
+)
+_ALLOWED_ITERATION_STATUSES = frozenset({"accepted", "rejected", "no_op"})
+_ALLOWED_SESSION_STATUSES = frozenset({"completed", "failed"})
 
 
 @dataclass(frozen=True)
@@ -55,6 +62,36 @@ class SessionIterationEvidenceReference:
     evidence_directory: str | None
     evidence_manifest_sha256: str | None
 
+    def __post_init__(self) -> None:
+        _validate_identifier(self.iteration_id)
+        if self.status not in _ALLOWED_ITERATION_STATUSES:
+            raise UserError(
+                "Invalid refinement iteration status.",
+                code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+            )
+        _validate_text("iteration code", self.code, maximum=128)
+        _validate_sha256("accepted_hash_before", self.accepted_hash_before)
+        _validate_sha256("accepted_hash_after", self.accepted_hash_after)
+        _validate_optional_sha256("candidate_hash", self.candidate_hash)
+        _validate_optional_sha256(
+            "candidate_layout_fingerprint",
+            self.candidate_layout_fingerprint,
+        )
+        if (self.evidence_directory is None) != (self.evidence_manifest_sha256 is None):
+            raise UserError(
+                "Iteration evidence directory and manifest hash must be present together.",
+                code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+            )
+        if self.evidence_directory is not None:
+            _validate_identifier(self.evidence_directory)
+            if self.evidence_directory != self.iteration_id:
+                raise UserError(
+                    "Iteration evidence directory does not match iteration id.",
+                    code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+                )
+            assert self.evidence_manifest_sha256 is not None
+            _validate_sha256("evidence_manifest_sha256", self.evidence_manifest_sha256)
+
 
 @dataclass(frozen=True)
 class SessionEvidenceInputs:
@@ -86,7 +123,7 @@ def write_iteration_evidence_bundle(
 ) -> Path:
     """Atomically publish one complete sanitized iteration evidence directory."""
 
-    _validate_identifier(evidence.iteration_id)
+    _validate_iteration_evidence(evidence)
     root.mkdir(parents=True, exist_ok=True)
     final_dir = root / evidence.iteration_id
     if final_dir.exists():
@@ -191,7 +228,6 @@ def build_session_iteration_reference(
 def write_session_evidence_bundle(root: Path, evidence: SessionEvidenceInputs) -> Path:
     """Atomically publish one complete sanitized session manifest and human summary."""
 
-    _validate_identifier(evidence.session_id)
     _validate_session_evidence(evidence)
     sessions_root = root / "sessions"
     sessions_root.mkdir(parents=True, exist_ok=True)
@@ -218,6 +254,7 @@ def write_session_evidence_bundle(root: Path, evidence: SessionEvidenceInputs) -
             "prompt_versions": evidence.prompt_versions,
             "schema_versions": evidence.schema_versions,
             "configured_bounds": evidence.configured_bounds,
+            "retention_policy": _retention_policy(evidence),
             "iterations": [_jsonable(item) for item in evidence.iterations],
             "status": evidence.status,
             "stop_reason": evidence.stop_reason,
@@ -230,10 +267,7 @@ def write_session_evidence_bundle(root: Path, evidence: SessionEvidenceInputs) -
             "model_call_limit": evidence.model_call_limit,
         }
         _write_json(temp_dir / "manifest.json", manifest)
-        _write_text(
-            temp_dir / "summary.md",
-            _build_session_summary(root, evidence),
-        )
+        _write_text(temp_dir / "summary.md", _build_session_summary(root, evidence))
         _fsync_directory(temp_dir)
         temp_dir.replace(final_dir)
         _fsync_directory(sessions_root)
@@ -241,6 +275,122 @@ def write_session_evidence_bundle(root: Path, evidence: SessionEvidenceInputs) -
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise
     return final_dir
+
+
+def _validate_iteration_evidence(evidence: IterationEvidenceInputs) -> None:
+    _validate_identifier(evidence.iteration_id)
+    _validate_sha256("accepted_hash_before", evidence.accepted_hash_before)
+    _validate_sha256("authoritative_hash", evidence.authoritative_hash)
+    _validate_optional_sha256("accepted_hash_after", evidence.accepted_hash_after)
+    _validate_optional_sha256("candidate_hash", evidence.candidate_hash)
+    _validate_optional_sha256(
+        "candidate_layout_fingerprint",
+        evidence.candidate_layout_fingerprint,
+    )
+    if evidence.disposition not in _ALLOWED_ITERATION_DISPOSITIONS:
+        raise UserError(
+            "Invalid refinement iteration disposition.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+    _validate_text("reason_code", evidence.reason_code, maximum=128)
+
+
+def _validate_session_evidence(evidence: SessionEvidenceInputs) -> None:
+    _validate_identifier(evidence.session_id)
+    for name, value in (
+        ("authoritative_hash", evidence.authoritative_hash),
+        ("starting_accepted_hash", evidence.starting_accepted_hash),
+        ("final_accepted_hash", evidence.final_accepted_hash),
+        ("best_accepted_hash", evidence.best_accepted_hash),
+        ("starting_layout_fingerprint", evidence.starting_layout_fingerprint),
+        ("final_layout_fingerprint", evidence.final_layout_fingerprint),
+    ):
+        _validate_sha256(name, value)
+    _validate_text("provider", evidence.provider, maximum=64)
+    _validate_text("model", evidence.model, maximum=256)
+    if evidence.product_version is not None:
+        _validate_text("product_version", evidence.product_version, maximum=128)
+    if evidence.implementation_sha is not None:
+        _validate_git_sha(evidence.implementation_sha)
+    _validate_version_mapping("prompt_versions", evidence.prompt_versions)
+    _validate_version_mapping("schema_versions", evidence.schema_versions)
+    _validate_configured_bounds(evidence.configured_bounds)
+    if evidence.status not in _ALLOWED_SESSION_STATUSES:
+        raise UserError(
+            "Invalid refinement session evidence status.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+    _validate_text("stop_reason", evidence.stop_reason, maximum=128)
+    if evidence.failure_code is not None:
+        _validate_text("failure_code", evidence.failure_code, maximum=128)
+    if (
+        type(evidence.model_calls_made) is not int
+        or type(evidence.model_call_limit) is not int
+        or evidence.model_calls_made < 0
+        or evidence.model_call_limit < 1
+        or evidence.model_call_limit < evidence.model_calls_made
+    ):
+        raise UserError(
+            "Invalid refinement session model-call accounting.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+    if len(evidence.iterations) > evidence.configured_bounds["max_rounds"]:
+        raise UserError(
+            "Refinement session contains more iterations than its configured bound.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+
+
+def _validate_version_mapping(name: str, mapping: dict[str, str]) -> None:
+    if not mapping:
+        raise UserError(
+            f"{name} must not be empty.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+    for key, value in mapping.items():
+        _validate_text(f"{name} key", key, maximum=64)
+        _validate_text(f"{name} value", value, maximum=128)
+
+
+def _validate_configured_bounds(bounds: dict[str, int]) -> None:
+    required = {
+        "max_rounds",
+        "max_operations_per_round",
+        "max_total_accepted_operations",
+        "max_candidate_rejections",
+        "max_critic_repairs",
+        "max_planner_repairs",
+    }
+    if set(bounds) != required:
+        raise UserError(
+            "Refinement session configured bounds are incomplete or unexpected.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+    for name, value in bounds.items():
+        if type(value) is not int or value < 0:
+            raise UserError(
+                "Refinement session configured bounds must be non-negative integers.",
+                code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+                details={"bound": name},
+            )
+    if bounds["max_rounds"] < 1:
+        raise UserError(
+            "Refinement max_rounds must be positive in session evidence.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+
+
+def _retention_policy(evidence: SessionEvidenceInputs) -> dict[str, object]:
+    return {
+        "schema_version": RETENTION_POLICY_SCHEMA_VERSION,
+        "maximum_iteration_bundles_per_session": evidence.configured_bounds["max_rounds"],
+        "rejected_candidate_files": "not_retained_after_iteration",
+        "post_edit_render_scratch": "not_retained_after_iteration",
+        "durable_renders": "retained_only_inside_iteration_evidence",
+        "raw_prompts": "not_retained",
+        "raw_provider_payloads": "not_retained",
+        "optional_debug_artifacts": "not_retained",
+    }
 
 
 def _copy_render(render: SchematicRenderArtifact, target: Path, *, prefix: str) -> None:
@@ -273,88 +423,133 @@ def _render_metadata(render: SchematicRenderArtifact) -> dict[str, object]:
 
 
 def _build_session_summary(root: Path, evidence: SessionEvidenceInputs) -> str:
-    lines = [
+    lines = _session_summary_header(evidence)
+    _append_starting_metrics(lines, root, evidence)
+    lines.extend(["", "## Iterations", ""])
+    for reference in evidence.iterations:
+        _append_iteration_summary(lines, root, reference)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _session_summary_header(evidence: SessionEvidenceInputs) -> list[str]:
+    return [
         "# Schematic refinement session summary",
         "",
         f"- Session: `{evidence.session_id}`",
         f"- Status: `{evidence.status}`",
         f"- Stop reason: `{evidence.stop_reason}`",
         f"- Starting accepted hash: `{evidence.starting_accepted_hash}`",
-        f"- Final/best accepted hash: `{evidence.best_accepted_hash}`",
+        f"- Final accepted hash: `{evidence.final_accepted_hash}`",
+        f"- Best accepted hash: `{evidence.best_accepted_hash}`",
         f"- Provider/model: `{evidence.provider}` / `{evidence.model}`",
         f"- Model calls: {evidence.model_calls_made}/{evidence.model_call_limit}",
         "",
         "## Starting metrics",
         "",
     ]
+
+
+def _append_starting_metrics(
+    lines: list[str],
+    root: Path,
+    evidence: SessionEvidenceInputs,
+) -> None:
     starting_metrics = _first_iteration_json(root, evidence.iterations, "metrics_before.json")
-    if isinstance(starting_metrics, dict):
-        for name, value in sorted(starting_metrics.items()):
-            if name not in {"schema_version", "schematic_hash"} and isinstance(
-                value, (int, float)
-            ):
-                lines.append(f"- {name}: {value}")
-    else:
+    if not isinstance(starting_metrics, dict):
         lines.append("- No completed iteration metrics were available.")
+        return
+    numeric_rows = [
+        (name, value)
+        for name, value in sorted(starting_metrics.items())
+        if name not in {"schema_version", "schematic_hash"}
+        and isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    ]
+    if not numeric_rows:
+        lines.append("- No numeric starting metrics were available.")
+        return
+    lines.extend(f"- {name}: {value}" for name, value in numeric_rows)
 
-    lines.extend(["", "## Iterations", ""])
-    for reference in evidence.iterations:
-        lines.append(f"### {reference.iteration_id}")
-        lines.append("")
-        lines.append(f"- Result: `{reference.status}` / `{reference.code}`")
-        if reference.candidate_hash is not None:
-            lines.append(f"- Candidate hash: `{reference.candidate_hash}`")
-        bundle = _iteration_bundle(root, reference)
-        if bundle is None:
-            lines.append("- Evidence bundle: not available")
-            lines.append("")
-            continue
 
-        critic = _read_json(bundle / "critic.json")
-        issues = critic.get("issues", []) if isinstance(critic, dict) else []
-        categories = sorted(
-            {
-                str(issue.get("category"))
-                for issue in issues
-                if isinstance(issue, dict) and issue.get("category")
-            }
-        )
-        lines.append(
-            f"- Critic issues: {len(issues)}"
-            + (f" ({', '.join(categories)})" if categories else "")
-        )
+def _append_iteration_summary(
+    lines: list[str],
+    root: Path,
+    reference: SessionIterationEvidenceReference,
+) -> None:
+    lines.extend(
+        [
+            f"### {reference.iteration_id}",
+            "",
+            f"- Result: `{reference.status}` / `{reference.code}`",
+        ]
+    )
+    if reference.candidate_hash is not None:
+        lines.append(f"- Candidate hash: `{reference.candidate_hash}`")
+    bundle = _iteration_bundle(root, reference)
+    if bundle is None:
+        lines.extend(["- Evidence bundle: not available", ""])
+        return
 
-        operations = _read_json(bundle / "operations.json")
-        operation_rows = operations.get("results", []) if isinstance(operations, dict) else []
-        applied = sum(
-            isinstance(item, dict) and item.get("status") == "applied" for item in operation_rows
+    issues = _critic_issue_summary(bundle)
+    lines.append(
+        f"- Critic issues: {issues[0]}" + (f" ({', '.join(issues[1])})" if issues[1] else "")
+    )
+    total, applied, rejected = _operation_summary(bundle)
+    lines.append(f"- Operations: {total} total, {applied} applied, {rejected} rejected")
+    lines.append(f"- Electrical status: `{_electrical_status(bundle)}`")
+    deltas = _numeric_metric_deltas(
+        _read_json(bundle / "metrics_before.json"),
+        _read_json(bundle / "metrics_after.json"),
+    )
+    lines.append(
+        "- Metric deltas: "
+        + (
+            ", ".join(f"{name}={delta:+g}" for name, delta in sorted(deltas.items()))
+            if deltas
+            else "none"
         )
-        rejected = sum(
-            isinstance(item, dict) and item.get("status") == "rejected" for item in operation_rows
-        )
-        lines.append(
-            f"- Operations: {len(operation_rows)} total, {applied} applied, {rejected} rejected"
-        )
+    )
+    lines.append("")
 
-        electrical = _read_json(bundle / "electrical.json")
-        electrical_status = (
-            str(electrical.get("status", "unknown")) if isinstance(electrical, dict) else "unknown"
+
+def _critic_issue_summary(bundle: Path) -> tuple[int, list[str]]:
+    critic = _read_json(bundle / "critic.json")
+    issues = critic.get("issues", []) if isinstance(critic, dict) else []
+    if not isinstance(issues, list):
+        raise UserError(
+            "Refinement critic evidence has invalid issue data.",
+            code="REFINEMENT_EVIDENCE_WRITE_FAILED",
         )
-        lines.append(f"- Electrical status: `{electrical_status}`")
+    categories = sorted(
+        {
+            str(issue.get("category"))
+            for issue in issues
+            if isinstance(issue, dict) and issue.get("category")
+        }
+    )
+    return len(issues), categories
 
-        before = _read_json(bundle / "metrics_before.json")
-        after = _read_json(bundle / "metrics_after.json")
-        deltas = _numeric_metric_deltas(before, after)
-        if deltas:
-            lines.append(
-                "- Metric deltas: "
-                + ", ".join(f"{name}={delta:+g}" for name, delta in sorted(deltas.items()))
-            )
-        else:
-            lines.append("- Metric deltas: none")
-        lines.append("")
 
-    return "\n".join(lines).rstrip() + "\n"
+def _operation_summary(bundle: Path) -> tuple[int, int, int]:
+    operations = _read_json(bundle / "operations.json")
+    rows = operations.get("results", []) if isinstance(operations, dict) else []
+    if not isinstance(rows, list):
+        raise UserError(
+            "Refinement operation evidence has invalid result data.",
+            code="REFINEMENT_EVIDENCE_WRITE_FAILED",
+        )
+    applied = sum(isinstance(item, dict) and item.get("status") == "applied" for item in rows)
+    rejected = sum(isinstance(item, dict) and item.get("status") == "rejected" for item in rows)
+    return len(rows), applied, rejected
+
+
+def _electrical_status(bundle: Path) -> str:
+    electrical = _read_json(bundle / "electrical.json")
+    if not isinstance(electrical, dict):
+        return "unknown"
+    value = electrical.get("status", "unknown")
+    return str(value)
 
 
 def _first_iteration_json(
@@ -375,7 +570,6 @@ def _iteration_bundle(
 ) -> Path | None:
     if reference.evidence_directory is None:
         return None
-    _validate_identifier(reference.evidence_directory)
     bundle = root / reference.evidence_directory
     if not bundle.is_dir():
         raise UserError(
@@ -383,18 +577,40 @@ def _iteration_bundle(
             code="REFINEMENT_EVIDENCE_WRITE_FAILED",
             details={"iteration_id": reference.iteration_id},
         )
-    manifest = bundle / "manifest.json"
+    manifest_path = bundle / "manifest.json"
     if (
         reference.evidence_manifest_sha256 is None
-        or not manifest.is_file()
-        or _sha256_file(manifest) != reference.evidence_manifest_sha256
+        or not manifest_path.is_file()
+        or _sha256_file(manifest_path) != reference.evidence_manifest_sha256
     ):
         raise UserError(
             "Referenced iteration evidence manifest hash does not match.",
             code="REFINEMENT_EVIDENCE_WRITE_FAILED",
             details={"iteration_id": reference.iteration_id},
         )
+    manifest = _read_json(manifest_path)
+    if not isinstance(manifest, dict) or not _iteration_manifest_matches(reference, manifest):
+        raise UserError(
+            "Referenced iteration evidence manifest does not match session reference.",
+            code="REFINEMENT_EVIDENCE_WRITE_FAILED",
+            details={"iteration_id": reference.iteration_id},
+        )
     return bundle
+
+
+def _iteration_manifest_matches(
+    reference: SessionIterationEvidenceReference,
+    manifest: dict[str, object],
+) -> bool:
+    return (
+        manifest.get("iteration_id") == reference.iteration_id
+        and manifest.get("reason_code") == reference.code
+        and manifest.get("accepted_hash_before") == reference.accepted_hash_before
+        and manifest.get("accepted_hash_after") == reference.accepted_hash_after
+        and manifest.get("candidate_hash") == reference.candidate_hash
+        and manifest.get("candidate_layout_fingerprint")
+        == reference.candidate_layout_fingerprint
+    )
 
 
 def _numeric_metric_deltas(before: object, after: object) -> dict[str, float]:
@@ -411,47 +627,15 @@ def _numeric_metric_deltas(before: object, after: object) -> dict[str, float]:
             and not isinstance(after_value, bool)
         ):
             delta = float(after_value) - float(before_value)
-            if delta != 0:
+            if math.isfinite(delta) and delta != 0:
                 result[str(name)] = delta
     return result
-
-
-def _validate_session_evidence(evidence: SessionEvidenceInputs) -> None:
-    for name, value in (
-        ("authoritative_hash", evidence.authoritative_hash),
-        ("starting_accepted_hash", evidence.starting_accepted_hash),
-        ("final_accepted_hash", evidence.final_accepted_hash),
-        ("best_accepted_hash", evidence.best_accepted_hash),
-        ("starting_layout_fingerprint", evidence.starting_layout_fingerprint),
-        ("final_layout_fingerprint", evidence.final_layout_fingerprint),
-    ):
-        _validate_sha256(name, value)
-    if not evidence.provider or len(evidence.provider) > 64:
-        raise UserError(
-            "Invalid refinement provider identity.",
-            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
-        )
-    if not evidence.model or len(evidence.model) > 256:
-        raise UserError(
-            "Invalid refinement model identity.",
-            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
-        )
-    if evidence.status not in {"completed", "failed"}:
-        raise UserError(
-            "Invalid refinement session evidence status.",
-            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
-        )
-    if evidence.model_calls_made < 0 or evidence.model_call_limit < evidence.model_calls_made:
-        raise UserError(
-            "Invalid refinement session model-call accounting.",
-            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
-        )
 
 
 def _write_json(path: Path, payload: object) -> None:
     _write_text(
         path,
-        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n",
     )
 
 
@@ -504,6 +688,11 @@ def _jsonable(value: object) -> Any:
             "Absolute or filesystem paths are forbidden in refinement JSON evidence.",
             code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
         )
+    if isinstance(value, float) and not math.isfinite(value):
+        raise UserError(
+            "Non-finite floats are forbidden in refinement JSON evidence.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     raise UserError(
@@ -523,7 +712,16 @@ def _validate_identifier(value: str) -> None:
         )
     ):
         raise UserError(
-            "Invalid refinement evidence iteration id.", code="REFINEMENT_EVIDENCE_UNSAFE_DATA"
+            "Invalid refinement evidence identifier.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+
+
+def _validate_text(name: str, value: str, *, maximum: int) -> None:
+    if not value or len(value) > maximum or any(ord(ch) < 32 for ch in value):
+        raise UserError(
+            f"Invalid refinement evidence {name}.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
         )
 
 
@@ -531,5 +729,18 @@ def _validate_sha256(name: str, value: str) -> None:
     if len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value):
         raise UserError(
             f"Invalid {name} SHA-256 digest.",
+            code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
+        )
+
+
+def _validate_optional_sha256(name: str, value: str | None) -> None:
+    if value is not None:
+        _validate_sha256(name, value)
+
+
+def _validate_git_sha(value: str) -> None:
+    if len(value) not in {40, 64} or any(ch not in "0123456789abcdef" for ch in value):
+        raise UserError(
+            "Invalid refinement implementation Git SHA.",
             code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
         )
