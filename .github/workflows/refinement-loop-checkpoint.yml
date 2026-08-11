@@ -1,4 +1,4 @@
-name: Refinement Loop Checkpoint
+name: Refinement L2 Checkpoint
 
 on:
   push:
@@ -27,114 +27,332 @@ jobs:
         with:
           python-version: '3.11'
       - uses: astral-sh/setup-uv@v6
-      - name: Add bounded iterative refinement loop
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Implement deterministic best-known retention
         run: |
           python - <<'PY'
-          import base64
-          import json
-          import os
-          import urllib.request
           from pathlib import Path
 
-          repo = 'ekkus93/openclaw_kicad_pcb'
+          def replace_once(path: str, old: str, new: str, label: str) -> None:
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'unexpected {label} match count: {text.count(old)}')
+              target.write_text(text.replace(old, new), encoding='utf-8')
 
-          def fetch_blob(sha: str) -> str:
-              request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
-                  headers={
-                      'Authorization': f'Bearer {os.environ["GH_TOKEN"]}',
-                      'Accept': 'application/vnd.github+json',
-                      'X-GitHub-Api-Version': '2022-11-28',
-                  },
-              )
-              with urllib.request.urlopen(request) as response:
-                  payload = json.load(response)
-              if payload.get('encoding') != 'base64':
-                  raise SystemExit(f'unexpected blob encoding for {sha}')
-              return base64.b64decode(payload['content']).decode('utf-8')
-
-          service_path = Path('src/kicad_pcb_web/services/schematic_refinement.py')
-          text = service_path.read_text(encoding='utf-8')
-          marker = '\ndef _reject_candidate(\n'
-          if text.count(marker) != 1:
-              raise SystemExit('unexpected schematic_refinement insertion marker count')
-          block = fetch_blob('42fdcd549f58a95e6bbcc393330d5ae61706a88b')
-          service_path.write_text(text.replace(marker, '\n' + block + marker), encoding='utf-8')
-
-          test_path = Path('tests/web/test_web_schematic_refinement_loop.py')
-          test_path.write_text(fetch_blob('93723b999b0f9f2d1c12bf65512072bd5ef6e3d7'), encoding='utf-8')
-
-          operations_path = Path('src/kicad_pcb/refinement/operations.py')
-          operations = operations_path.read_text(encoding='utf-8')
-          old_call = (
-              '    _validate_anchor_move_safety(doc, component, mapping, moving_old, moving_new)\n'
+          service = 'src/kicad_pcb_web/services/schematic_refinement.py'
+          replace_once(
+              service,
+              'from kicad_pcb.refinement.quality import CandidateQualityDecision, evaluate_candidate_quality\n',
+              'from kicad_pcb.refinement.quality import (\n'
+              '    CandidateQualityDecision,\n'
+              '    evaluate_best_known_replacement,\n'
+              '    evaluate_candidate_quality,\n'
+              ')\n',
+              'quality import',
           )
-          new_call = '    _validate_anchor_move_safety(doc, component, mapping, moving_new)\n'
-          if operations.count(old_call) != 1:
-              raise SystemExit('unexpected refinement anchor-safety call count')
-          operations = operations.replace(old_call, new_call)
+          replace_once(
+              service,
+              'def apply_planned_refinement(\n'
+              '    *,\n'
+              '    accepted_path: Path,\n'
+              '    runtime: RefinementRuntime,\n'
+              '    planned: RefinementPlanResult,\n'
+              '    iteration_id: str,\n'
+              ') -> RefinementApplyResult:\n',
+              'def apply_planned_refinement(\n'
+              '    *,\n'
+              '    accepted_path: Path,\n'
+              '    runtime: RefinementRuntime,\n'
+              '    planned: RefinementPlanResult,\n'
+              '    iteration_id: str,\n'
+              '    enforce_best_known_retention: bool = False,\n'
+              ') -> RefinementApplyResult:\n',
+              'apply_planned signature',
+          )
+          best_gate = (
+              '        if enforce_best_known_retention:\n'
+              '            best_known = evaluate_best_known_replacement(analysis.metrics, candidate_metrics)\n'
+              '            if not best_known.replaces_best:\n'
+              '                quality = CandidateQualityDecision(\n'
+              '                    accepted=False,\n'
+              '                    code=best_known.code,\n'
+              '                    reason=best_known.reason,\n'
+              '                    improved_metrics=best_known.improved_metrics,\n'
+              '                    comparison=best_known.comparison,\n'
+              '                )\n'
+              '                return _reject_candidate(\n'
+              '                    _CandidateRejectionContext(\n'
+              '                        transaction=transaction,\n'
+              '                        analysis=analysis,\n'
+              '                        plan=plan,\n'
+              '                        operations=operations,\n'
+              '                        electrical=electrical,\n'
+              '                        structural=structural,\n'
+              '                        candidate_metrics=candidate_metrics,\n'
+              '                        quality=quality,\n'
+              '                        accepted_path=accepted_path,\n'
+              '                        runtime=runtime,\n'
+              '                        iteration_id=iteration_id,\n'
+              '                    ),\n'
+              '                    quality.code,\n'
+              '                )\n\n'
+          )
+          replace_once(
+              service,
+              '        after_render = render_schematic_for_refinement(\n',
+              best_gate + '        after_render = render_schematic_for_refinement(\n',
+              'best-known gate insertion',
+          )
+          replace_once(
+              service,
+              'def apply_once_schematic_refinement(\n'
+              '    *,\n'
+              '    accepted_path: Path,\n'
+              '    runtime: RefinementRuntime,\n'
+              '    iteration_id: str,\n'
+              '    limits: RefinementIterationLimits,\n'
+              ') -> RefinementApplyResult:\n',
+              'def apply_once_schematic_refinement(\n'
+              '    *,\n'
+              '    accepted_path: Path,\n'
+              '    runtime: RefinementRuntime,\n'
+              '    iteration_id: str,\n'
+              '    limits: RefinementIterationLimits,\n'
+              '    enforce_best_known_retention: bool = False,\n'
+              ') -> RefinementApplyResult:\n',
+              'apply_once signature',
+          )
+          replace_once(
+              service,
+              '    return apply_planned_refinement(\n'
+              '        accepted_path=accepted_path,\n'
+              '        runtime=runtime,\n'
+              '        planned=planned,\n'
+              '        iteration_id=iteration_id,\n'
+              '    )\n',
+              '    return apply_planned_refinement(\n'
+              '        accepted_path=accepted_path,\n'
+              '        runtime=runtime,\n'
+              '        planned=planned,\n'
+              '        iteration_id=iteration_id,\n'
+              '        enforce_best_known_retention=enforce_best_known_retention,\n'
+              '    )\n',
+              'apply_once forwarding',
+          )
+          replace_once(
+              service,
+              '@dataclass(frozen=True)\n'
+              'class RefinementLoopResult:\n'
+              '    status: str\n'
+              '    stop_reason: str\n'
+              '    starting_hash: str\n'
+              '    final_accepted_hash: str\n'
+              '    rounds_attempted: int\n'
+              '    accepted_rounds: int\n'
+              '    rejected_rounds: int\n'
+              '    accepted_operations: int\n'
+              '    iterations: tuple[RefinementApplyResult, ...]\n',
+              '@dataclass(frozen=True)\n'
+              'class RefinementLoopResult:\n'
+              '    status: str\n'
+              '    stop_reason: str\n'
+              '    starting_hash: str\n'
+              '    final_accepted_hash: str\n'
+              '    best_accepted_hash: str\n'
+              '    latest_attempted_hash: str | None\n'
+              '    rounds_attempted: int\n'
+              '    accepted_rounds: int\n'
+              '    rejected_rounds: int\n'
+              '    accepted_operations: int\n'
+              '    iterations: tuple[RefinementApplyResult, ...]\n',
+              'loop result fields',
+          )
+          replace_once(
+              service,
+              '@dataclass\n'
+              'class _RefinementLoopState:\n'
+              '    starting_hash: str\n'
+              '    iterations: list[RefinementApplyResult]\n'
+              '    accepted_rounds: int = 0\n'
+              '    rejected_rounds: int = 0\n'
+              '    accepted_operations: int = 0\n',
+              '@dataclass\n'
+              'class _RefinementLoopState:\n'
+              '    starting_hash: str\n'
+              '    best_accepted_hash: str\n'
+              '    iterations: list[RefinementApplyResult]\n'
+              '    latest_attempted_hash: str | None = None\n'
+              '    accepted_rounds: int = 0\n'
+              '    rejected_rounds: int = 0\n'
+              '    accepted_operations: int = 0\n',
+              'loop state fields',
+          )
+          replace_once(
+              service,
+              '    state = _RefinementLoopState(starting_hash=starting_hash, iterations=[])\n',
+              '    state = _RefinementLoopState(\n'
+              '        starting_hash=starting_hash,\n'
+              '        best_accepted_hash=starting_hash,\n'
+              '        iterations=[],\n'
+              '    )\n',
+              'loop state initialization',
+          )
+          replace_once(
+              service,
+              '        round_start_hash = _sha(accepted_path)\n'
+              '        iteration_id = f"{session_id}-round-{round_number:03d}"\n',
+              '        round_start_hash = _sha(accepted_path)\n'
+              '        if round_start_hash != state.best_accepted_hash:\n'
+              '            raise UserError(\n'
+              '                "Canonical schematic no longer matches the best-known accepted state.",\n'
+              '                code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",\n'
+              '            )\n'
+              '        iteration_id = f"{session_id}-round-{round_number:03d}"\n',
+              'round best-state invariant',
+          )
+          replace_once(
+              service,
+              '            iteration_id=iteration_id,\n'
+              '            limits=RefinementIterationLimits(\n',
+              '            iteration_id=iteration_id,\n'
+              '            limits=RefinementIterationLimits(\n',
+              'loop apply marker',
+          )
+          replace_once(
+              service,
+              '                max_operations=min(limits.max_operations_per_round, remaining_operations),\n'
+              '            ),\n'
+              '        )\n'
+              '        state.iterations.append(result)\n',
+              '                max_operations=min(limits.max_operations_per_round, remaining_operations),\n'
+              '            ),\n'
+              '            enforce_best_known_retention=True,\n'
+              '        )\n'
+              '        state.iterations.append(result)\n'
+              '        if result.candidate_hash is not None:\n'
+              '            state.latest_attempted_hash = result.candidate_hash\n',
+              'loop best-known enforcement',
+          )
+          replace_once(
+              service,
+              '        state.accepted_operations += applied_count\n'
+              '        state.accepted_rounds += 1\n\n'
+              '        if actual_hash in seen_accepted_hashes:\n',
+              '        state.accepted_operations += applied_count\n'
+              '        state.accepted_rounds += 1\n'
+              '        state.best_accepted_hash = actual_hash\n\n'
+              '        if actual_hash in seen_accepted_hashes:\n',
+              'accepted best hash update',
+          )
+          replace_once(
+              service,
+              'def _loop_result(\n'
+              '    stop_reason: str,\n'
+              '    accepted_path: Path,\n'
+              '    state: _RefinementLoopState,\n'
+              ') -> RefinementLoopResult:\n'
+              '    return RefinementLoopResult(\n'
+              '        status="stopped",\n'
+              '        stop_reason=stop_reason,\n'
+              '        starting_hash=state.starting_hash,\n'
+              '        final_accepted_hash=_sha(accepted_path),\n'
+              '        rounds_attempted=len(state.iterations),\n'
+              '        accepted_rounds=state.accepted_rounds,\n'
+              '        rejected_rounds=state.rejected_rounds,\n'
+              '        accepted_operations=state.accepted_operations,\n'
+              '        iterations=tuple(state.iterations),\n'
+              '    )\n',
+              'def _loop_result(\n'
+              '    stop_reason: str,\n'
+              '    accepted_path: Path,\n'
+              '    state: _RefinementLoopState,\n'
+              ') -> RefinementLoopResult:\n'
+              '    final_hash = _sha(accepted_path)\n'
+              '    if final_hash != state.best_accepted_hash:\n'
+              '        raise UserError(\n'
+              '            "Final canonical schematic does not match the best-known accepted state.",\n'
+              '            code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",\n'
+              '        )\n'
+              '    return RefinementLoopResult(\n'
+              '        status="stopped",\n'
+              '        stop_reason=stop_reason,\n'
+              '        starting_hash=state.starting_hash,\n'
+              '        final_accepted_hash=final_hash,\n'
+              '        best_accepted_hash=state.best_accepted_hash,\n'
+              '        latest_attempted_hash=state.latest_attempted_hash,\n'
+              '        rounds_attempted=len(state.iterations),\n'
+              '        accepted_rounds=state.accepted_rounds,\n'
+              '        rejected_rounds=state.rejected_rounds,\n'
+              '        accepted_operations=state.accepted_operations,\n'
+              '        iterations=tuple(state.iterations),\n'
+              '    )\n',
+              'loop result construction',
+          )
 
-          old_signature = (
-              'def _validate_anchor_move_safety(\n'
-              '    doc: SchematicDoc,\n'
-              '    component: PlacedSchematicComponent,\n'
-              '    mapping: Mapping[tuple[float, float], tuple[float, float]],\n'
-              '    moving_old: set[tuple[float, float]],\n'
-              '    moving_new: set[tuple[float, float]],\n'
+          web_test = 'tests/web/test_web_schematic_refinement.py'
+          best_test = (
+              '\n\ndef test_best_known_floor_rejects_mixed_tradeoff_before_promotion(\n'
+              '    monkeypatch, tmp_path: Path\n'
               ') -> None:\n'
+              '    accepted, ir = _fixture(tmp_path)\n'
+              '    before = accepted.read_bytes()\n'
+              '    analysis = _analysis(tmp_path, accepted, ir)\n'
+              '    planned = _plan(analysis)\n'
+              '    _install_apply_fakes(monkeypatch, analysis)\n\n'
+              '    def mixed_metrics(path: Path):\n'
+              '        digest = hashlib.sha256(path.read_bytes()).hexdigest()\n'
+              '        return replace(\n'
+              '            analysis.metrics,\n'
+              '            schematic_hash=digest,\n'
+              '            alignment_residual_mean_mm=1.0,\n'
+              '            total_wire_manhattan_length_mm=(\n'
+              '                analysis.metrics.total_wire_manhattan_length_mm + 1.27\n'
+              '            ),\n'
+              '        )\n\n'
+              '    monkeypatch.setattr(service, "compute_refinement_metrics", mixed_metrics)\n'
+              '    result = service.apply_planned_refinement(\n'
+              '        accepted_path=accepted,\n'
+              '        runtime=_runtime(tmp_path, ir),\n'
+              '        planned=planned,\n'
+              '        iteration_id="iter-1",\n'
+              '        enforce_best_known_retention=True,\n'
+              '    )\n\n'
+              '    assert result.status == "rejected"\n'
+              '    assert result.code == "REFINEMENT_BEST_KNOWN_REGRESSION"\n'
+              '    assert result.quality is not None\n'
+              '    assert not result.quality.accepted\n'
+              '    assert accepted.read_bytes() == before\n'
           )
-          new_signature = (
-              'def _validate_anchor_move_safety(\n'
-              '    doc: SchematicDoc,\n'
-              '    component: PlacedSchematicComponent,\n'
-              '    mapping: Mapping[tuple[float, float], tuple[float, float]],\n'
-              '    moving_new: set[tuple[float, float]],\n'
-              ') -> None:\n'
+          replace_once(
+              web_test,
+              '\n\ndef test_electrical_rejection_preserves_accepted_bytes(',
+              best_test + '\n\ndef test_electrical_rejection_preserves_accepted_bytes(',
+              'best-known integration test insertion',
           )
-          if operations.count(old_signature) != 1:
-              raise SystemExit('unexpected refinement anchor-safety signature count')
-          operations = operations.replace(old_signature, new_signature)
 
-          old_wire_checks = (
-              '    for wire in _wire_nodes(doc):\n'
-              '        points = _wire_points(wire)\n'
-              '        for old in moving_old:\n'
-              '            if _point_on_polyline_interior(old, points):\n'
-              '                raise UserError(\n'
-              '                    "Moving pin touches wire interior; mutation is ambiguous.",\n'
-              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
-              '                )\n'
-              '        for new in moving_new:\n'
-              '            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))\n'
-              '            if contacts_wire and new not in points:\n'
-              '                raise UserError(\n'
-              '                    "Moved pin would create an unintended wire contact.",\n'
-              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
-              '                )\n'
+          loop_test = 'tests/web/test_web_schematic_refinement_loop.py'
+          replace_once(
+              loop_test,
+              '    def apply_once(**kwargs):\n'
+              '        nonlocal calls\n'
+              '        calls += 1\n'
+              '        return _no_op(_sha(kwargs["accepted_path"]))\n',
+              '    def apply_once(**kwargs):\n'
+              '        nonlocal calls\n'
+              '        calls += 1\n'
+              '        assert kwargs["enforce_best_known_retention"] is True\n'
+              '        return _no_op(_sha(kwargs["accepted_path"]))\n',
+              'loop enforcement assertion',
           )
-          new_wire_checks = (
-              '    for wire in _wire_nodes(doc):\n'
-              '        points = _wire_points(wire)\n'
-              '        for old in mapping:\n'
-              '            if _point_on_polyline_interior(old, points):\n'
-              '                raise UserError(\n'
-              '                    "Moving pin touches wire interior; mutation is ambiguous.",\n'
-              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
-              '                )\n'
-              '        for new in mapping.values():\n'
-              '            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))\n'
-              '            if contacts_wire and new not in points:\n'
-              '                raise UserError(\n'
-              '                    "Moved pin would create an unintended wire contact.",\n'
-              '                    code="REFINEMENT_AMBIGUOUS_TARGET",\n'
-              '                )\n'
-          )
-          if operations.count(old_wire_checks) != 1:
-              raise SystemExit('unexpected refinement anchor-safety wire-check count')
-          operations_path.write_text(
-              operations.replace(old_wire_checks, new_wire_checks), encoding='utf-8'
+          replace_once(
+              loop_test,
+              '    assert accepted.read_bytes() == b"B"\n'
+              '    assert result.final_accepted_hash == _sha(accepted)\n',
+              '    assert accepted.read_bytes() == b"B"\n'
+              '    assert result.final_accepted_hash == _sha(accepted)\n'
+              '    assert result.best_accepted_hash == result.final_accepted_hash\n'
+              '    assert result.latest_attempted_hash == "c" * 64\n',
+              'loop best/latest assertions',
           )
           PY
       - name: Sync locked toolchain
@@ -147,8 +365,10 @@ jobs:
           {
             set -e
             FILES=(
-              src/kicad_pcb/refinement/operations.py
+              src/kicad_pcb/refinement/quality.py
               src/kicad_pcb_web/services/schematic_refinement.py
+              tests/unit/test_refinement_quality.py
+              tests/web/test_web_schematic_refinement.py
               tests/web/test_web_schematic_refinement_loop.py
             )
             uv run ruff check --fix --select I "${FILES[@]}"
@@ -156,27 +376,32 @@ jobs:
             uv run ruff check .
             uv run ruff format --check .
             uv run mypy src/kicad_pcb src/kicad_pcb_web
-            uv run pytest -vv --tb=long tests/unit/test_refinement_operations.py tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
+            uv run pytest -vv --tb=long \
+              tests/unit/test_refinement_quality.py \
+              tests/web/test_web_schematic_refinement.py \
+              tests/web/test_web_schematic_refinement_loop.py
             uv run pytest -q tests/unit tests/web
             git diff --check
-          } 2>&1 | tee refinement-checkpoint.log
+          } 2>&1 | tee refinement-l2-checkpoint.log
           status=${PIPESTATUS[0]}
           exit "$status"
       - name: Upload checkpoint failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: refinement-loop-checkpoint-failure
-          path: refinement-checkpoint.log
+          name: refinement-l2-checkpoint-failure
+          path: refinement-l2-checkpoint.log
           if-no-files-found: error
           retention-days: 1
-      - name: Commit verified bounded refinement loop
+      - name: Commit verified L2 retention
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- \
-            src/kicad_pcb/refinement/operations.py \
+            src/kicad_pcb/refinement/quality.py \
             src/kicad_pcb_web/services/schematic_refinement.py \
+            tests/unit/test_refinement_quality.py \
+            tests/web/test_web_schematic_refinement.py \
             tests/web/test_web_schematic_refinement_loop.py
-          git commit -m 'feat: add bounded iterative schematic refinement loop'
+          git commit -m 'feat: retain deterministic best-known refinement state'
           git push origin HEAD:webapp
