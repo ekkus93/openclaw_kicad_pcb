@@ -554,7 +554,7 @@ def _move_component(
     moving_new = {
         _transform_component_point(component, placement, position) for position in moving_old
     }
-    _validate_anchor_move_safety(doc, component, mapping, moving_old, moving_new)
+    _validate_anchor_move_safety(doc, component, mapping, moving_new)
     _replace_top_level(doc, node, _replace_at(node, x, y, rotation))
     _retarget_anchors(doc, mapping)
 
@@ -646,7 +646,6 @@ def _validate_anchor_move_safety(
     doc: SchematicDoc,
     component: PlacedSchematicComponent,
     mapping: Mapping[tuple[float, float], tuple[float, float]],
-    moving_old: set[tuple[float, float]],
     moving_new: set[tuple[float, float]],
 ) -> None:
     semantic = extract_schematic_semantics_from_doc(doc)
@@ -663,13 +662,13 @@ def _validate_anchor_move_safety(
         )
     for wire in _wire_nodes(doc):
         points = _wire_points(wire)
-        for old in moving_old:
+        for old in mapping:
             if _point_on_polyline_interior(old, points):
                 raise UserError(
                     "Moving pin touches wire interior; mutation is ambiguous.",
                     code="REFINEMENT_AMBIGUOUS_TARGET",
                 )
-        for new in moving_new:
+        for new in mapping.values():
             contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
             if contacts_wire and new not in points:
                 raise UserError(

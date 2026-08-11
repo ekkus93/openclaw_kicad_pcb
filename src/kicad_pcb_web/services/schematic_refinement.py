@@ -385,6 +385,193 @@ def apply_once_schematic_refinement(
     )
 
 
+@dataclass(frozen=True)
+class RefinementLoopLimits:
+    max_rounds: int = 3
+    max_operations_per_round: int = 4
+    max_total_accepted_operations: int = 8
+    max_candidate_rejections: int = 2
+    max_critic_repairs: int = 0
+    max_planner_repairs: int = 0
+
+    def __post_init__(self) -> None:
+        _require_loop_int("max_rounds", self.max_rounds, minimum=1, maximum=20)
+        _require_loop_int(
+            "max_operations_per_round",
+            self.max_operations_per_round,
+            minimum=1,
+            maximum=32,
+        )
+        _require_loop_int(
+            "max_total_accepted_operations",
+            self.max_total_accepted_operations,
+            minimum=1,
+            maximum=128,
+        )
+        _require_loop_int(
+            "max_candidate_rejections",
+            self.max_candidate_rejections,
+            minimum=1,
+            maximum=20,
+        )
+        _require_loop_int("max_critic_repairs", self.max_critic_repairs, minimum=0, maximum=8)
+        _require_loop_int("max_planner_repairs", self.max_planner_repairs, minimum=0, maximum=8)
+
+
+@dataclass(frozen=True)
+class RefinementLoopResult:
+    status: str
+    stop_reason: str
+    starting_hash: str
+    final_accepted_hash: str
+    rounds_attempted: int
+    accepted_rounds: int
+    rejected_rounds: int
+    accepted_operations: int
+    iterations: tuple[RefinementApplyResult, ...]
+
+
+@dataclass
+class _RefinementLoopState:
+    starting_hash: str
+    iterations: list[RefinementApplyResult]
+    accepted_rounds: int = 0
+    rejected_rounds: int = 0
+    accepted_operations: int = 0
+
+
+def refine_schematic(
+    *,
+    accepted_path: Path,
+    runtime: RefinementRuntime,
+    session_id: str,
+    limits: RefinementLoopLimits | None = None,
+) -> RefinementLoopResult:
+    """Run bounded refinement rounds while preserving the last accepted artifact on failure."""
+
+    if limits is None:
+        limits = RefinementLoopLimits()
+    _validate_refinement_session_id(session_id)
+    starting_hash = _sha(accepted_path)
+    seen_accepted_hashes = {starting_hash}
+    state = _RefinementLoopState(starting_hash=starting_hash, iterations=[])
+
+    for round_number in range(1, limits.max_rounds + 1):
+        remaining_operations = limits.max_total_accepted_operations - state.accepted_operations
+        if remaining_operations <= 0:
+            return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
+
+        round_start_hash = _sha(accepted_path)
+        iteration_id = f"{session_id}-round-{round_number:03d}"
+        result = apply_once_schematic_refinement(
+            accepted_path=accepted_path,
+            runtime=runtime,
+            iteration_id=iteration_id,
+            limits=RefinementIterationLimits(
+                max_critic_repairs=limits.max_critic_repairs,
+                max_planner_repairs=limits.max_planner_repairs,
+                max_operations=min(limits.max_operations_per_round, remaining_operations),
+            ),
+        )
+        state.iterations.append(result)
+        if result.accepted_hash_before != round_start_hash:
+            raise UserError(
+                "Refinement round result is not bound to the round-start schematic.",
+                code="REFINEMENT_STALE",
+            )
+
+        actual_hash = _sha(accepted_path)
+        if result.status == "no_op":
+            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
+            return _loop_result("REFINEMENT_STOP_NO_OPERATIONS", accepted_path, state)
+
+        if result.status == "rejected":
+            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
+            state.rejected_rounds += 1
+            if state.rejected_rounds >= limits.max_candidate_rejections:
+                return _loop_result("REFINEMENT_STOP_REJECTION_LIMIT", accepted_path, state)
+            continue
+
+        if result.status != "accepted":
+            raise UserError(
+                "Refinement round returned an unknown status.",
+                code="REFINEMENT_INVALID_RESULT",
+                details={"status": result.status},
+            )
+        if actual_hash != result.accepted_hash_after:
+            raise UserError(
+                "Accepted refinement result does not match persisted schematic bytes.",
+                code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
+            )
+        if result.operations is None or not result.operations.results:
+            raise UserError(
+                "Accepted refinement round contains no applied operations.",
+                code="REFINEMENT_INVALID_RESULT",
+            )
+
+        applied_count = len(result.operations.results)
+        if applied_count > min(limits.max_operations_per_round, remaining_operations):
+            raise UserError(
+                "Accepted refinement round exceeded its operation budget.",
+                code="REFINEMENT_OPERATION_BUDGET_EXCEEDED",
+            )
+        state.accepted_operations += applied_count
+        state.accepted_rounds += 1
+
+        if actual_hash in seen_accepted_hashes:
+            return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
+        seen_accepted_hashes.add(actual_hash)
+
+        if state.accepted_operations >= limits.max_total_accepted_operations:
+            return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
+
+    return _loop_result("REFINEMENT_STOP_MAX_ROUNDS", accepted_path, state)
+
+
+def _loop_result(
+    stop_reason: str,
+    accepted_path: Path,
+    state: _RefinementLoopState,
+) -> RefinementLoopResult:
+    return RefinementLoopResult(
+        status="stopped",
+        stop_reason=stop_reason,
+        starting_hash=state.starting_hash,
+        final_accepted_hash=_sha(accepted_path),
+        rounds_attempted=len(state.iterations),
+        accepted_rounds=state.accepted_rounds,
+        rejected_rounds=state.rejected_rounds,
+        accepted_operations=state.accepted_operations,
+        iterations=tuple(state.iterations),
+    )
+
+
+def _assert_nonaccepted_round_unchanged(
+    result: RefinementApplyResult,
+    round_start_hash: str,
+    actual_hash: str,
+) -> None:
+    if result.accepted_hash_after != round_start_hash or actual_hash != round_start_hash:
+        raise UserError(
+            "Rejected/no-op refinement round changed accepted schematic bytes.",
+            code="REFINEMENT_READ_ONLY_VIOLATION",
+        )
+
+
+def _require_loop_int(name: str, value: int, *, minimum: int, maximum: int) -> None:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ValueError(f"{name} must be an integer in [{minimum}, {maximum}]")
+
+
+def _validate_refinement_session_id(session_id: str) -> None:
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+    if not session_id or len(session_id) > 96 or any(ch not in allowed for ch in session_id):
+        raise UserError(
+            "Invalid schematic refinement session id.",
+            code="REFINEMENT_INVALID_SESSION_ID",
+        )
+
+
 def _reject_candidate(
     context: _CandidateRejectionContext,
     code: str,
