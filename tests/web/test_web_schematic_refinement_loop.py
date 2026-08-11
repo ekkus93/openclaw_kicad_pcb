@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,6 +13,15 @@ from kicad_pcb_web.services import schematic_refinement as service
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+@pytest.fixture(autouse=True)
+def _synthetic_layout_fingerprint(monkeypatch) -> None:
+    monkeypatch.setattr(
+        service,
+        "compute_schematic_layout_fingerprint",
+        lambda path: SimpleNamespace(digest=_sha(path)),
+    )
 
 
 def _runtime(tmp_path: Path) -> service.RefinementRuntime:
@@ -44,21 +54,28 @@ def _accepted(before: str, after: str, *, count: int = 1) -> service.RefinementA
         None,
         None,
         None,
+        candidate_layout_fingerprint=after,
     )
 
 
-def _rejected(current: str) -> service.RefinementApplyResult:
+def _rejected(
+    current: str,
+    *,
+    candidate_hash: str = "c" * 64,
+    candidate_layout_fingerprint: str | None = "c" * 64,
+) -> service.RefinementApplyResult:
     return service.RefinementApplyResult(
         "rejected",
         "REFINEMENT_NO_DETERMINISTIC_IMPROVEMENT",
         current,
         current,
-        "c" * 64,
+        candidate_hash,
         None,
         None,
         None,
         None,
         None,
+        candidate_layout_fingerprint=candidate_layout_fingerprint,
     )
 
 
@@ -117,6 +134,8 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
     assert result.stop_reason == "REFINEMENT_STOP_NO_OPERATIONS"
     assert result.rounds_attempted == 1
     assert result.final_accepted_hash == _sha(accepted)
+    assert result.starting_layout_fingerprint == _sha(accepted)
+    assert result.final_layout_fingerprint == _sha(accepted)
     assert result.model_calls_made == 0
     assert result.model_call_limit == 6
 
@@ -205,6 +224,33 @@ def test_refine_detects_exact_state_oscillation(monkeypatch, tmp_path: Path) -> 
     assert result.stop_reason == "REFINEMENT_STOP_OSCILLATION"
     assert result.rounds_attempted == 2
     assert result.final_accepted_hash == starting_hash
+
+
+def test_refine_detects_rejected_inverse_layout_cycle(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    starting_layout = _sha(accepted)
+
+    def apply_once(**kwargs):
+        current = _sha(kwargs["accepted_path"])
+        return _rejected(
+            current,
+            candidate_hash="d" * 64,
+            candidate_layout_fingerprint=starting_layout,
+        )
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="inverse-cycle",
+        limits=service.RefinementLoopLimits(max_rounds=5, max_candidate_rejections=4),
+    )
+
+    assert result.stop_reason == "REFINEMENT_STOP_OSCILLATION"
+    assert result.rounds_attempted == 1
+    assert result.rejected_rounds == 1
+    assert result.final_accepted_hash == _sha(accepted)
 
 
 def test_refine_hard_failure_leaves_last_accepted_round_intact(monkeypatch, tmp_path: Path) -> None:
