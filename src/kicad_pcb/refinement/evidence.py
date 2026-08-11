@@ -612,8 +612,7 @@ def _iteration_manifest_matches(
         and manifest.get("accepted_hash_before") == reference.accepted_hash_before
         and manifest.get("accepted_hash_after") == reference.accepted_hash_after
         and manifest.get("candidate_hash") == reference.candidate_hash
-        and manifest.get("candidate_layout_fingerprint")
-        == reference.candidate_layout_fingerprint
+        and manifest.get("candidate_layout_fingerprint") == reference.candidate_layout_fingerprint
     )
 
 
