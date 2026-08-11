@@ -251,3 +251,19 @@ def _simple_schematic(
 {nc}  (sheet_instances (path "/" (page "1")))
 )
 """
+
+
+def test_readability_fixture_explicit_no_connects_resolve_to_jack_ring_pins() -> None:
+    fixture = (
+        Path(__file__).parents[1]
+        / "fixtures"
+        / "readability"
+        / "ne5532_headphone_amp_left_current"
+        / "baseline_generated.kicad_sch"
+    )
+    snapshot = extract_schematic_semantics(fixture)
+
+    assert {(item.ref, item.pin, item.unit) for item in snapshot.no_connect_terminals} == {
+        ("J1", "R", "1"),
+        ("J2", "R", "1"),
+    }
