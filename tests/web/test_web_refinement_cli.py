@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from kicad_pcb_web import refinement_cli
+from kicad_pcb_web.refinement_cli import RefinementCliContext
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
 
@@ -30,6 +31,23 @@ def _response(session_id: str) -> RefinementRunResponse:
     )
 
 
+def _context(
+    *,
+    accepted: Path,
+    runtime: object,
+    config: RefinementFeatureConfig,
+    stdout: io.StringIO,
+    stderr: io.StringIO,
+) -> RefinementCliContext:
+    return RefinementCliContext(
+        accepted_path=accepted,
+        runtime=runtime,  # type: ignore[arg-type]
+        config=config,
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+
 def test_refinement_cli_forwards_only_sanitized_request(monkeypatch, tmp_path: Path) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"accepted")
@@ -47,11 +65,13 @@ def test_refinement_cli_forwards_only_sanitized_request(monkeypatch, tmp_path: P
 
     exit_code = refinement_cli.execute_refinement_cli(
         ["--session-id", "session-001"],
-        accepted_path=accepted,
-        runtime=runtime,  # type: ignore[arg-type]
-        config=config,
-        stdout=stdout,
-        stderr=stderr,
+        _context(
+            accepted=accepted,
+            runtime=runtime,
+            config=config,
+            stdout=stdout,
+            stderr=stderr,
+        ),
     )
 
     assert exit_code == 0
@@ -74,6 +94,7 @@ def test_refinement_cli_has_no_path_provider_or_limit_flags(monkeypatch, tmp_pat
         raise AssertionError("invalid CLI arguments must not dispatch")
 
     monkeypatch.setattr(refinement_cli, "run_configured_refinement_request", unexpected_run)
+    config = RefinementFeatureConfig(enabled=True)
     for argv in (
         ["--session-id", "s1", "--accepted-path", "/tmp/other.kicad_sch"],
         ["--session-id", "s1", "--max-rounds", "99"],
@@ -86,11 +107,13 @@ def test_refinement_cli_has_no_path_provider_or_limit_flags(monkeypatch, tmp_pat
         stderr.truncate(0)
         exit_code = refinement_cli.execute_refinement_cli(
             argv,
-            accepted_path=accepted,
-            runtime=object(),  # type: ignore[arg-type]
-            config=RefinementFeatureConfig(enabled=True),
-            stdout=stdout,
-            stderr=stderr,
+            _context(
+                accepted=accepted,
+                runtime=object(),
+                config=config,
+                stdout=stdout,
+                stderr=stderr,
+            ),
         )
         payload = json.loads(stderr.getvalue())
         assert exit_code == 2
@@ -112,11 +135,13 @@ def test_refinement_cli_rejects_unsafe_session_id_before_dispatch(
     stderr = io.StringIO()
     exit_code = refinement_cli.execute_refinement_cli(
         ["--session-id", "../escape"],
-        accepted_path=accepted,
-        runtime=object(),  # type: ignore[arg-type]
-        config=RefinementFeatureConfig(enabled=True),
-        stdout=stdout,
-        stderr=stderr,
+        _context(
+            accepted=accepted,
+            runtime=object(),
+            config=RefinementFeatureConfig(enabled=True),
+            stdout=stdout,
+            stderr=stderr,
+        ),
     )
 
     assert exit_code == 2
