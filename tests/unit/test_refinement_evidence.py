@@ -252,9 +252,7 @@ def test_session_bundle_rejects_incomplete_configured_bounds(tmp_path: Path) -> 
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
     reference = _reference(root, iteration)
     session = _session(session_id="session-bounds", reference=reference)
-    invalid = SessionEvidenceInputs(
-        **{**session.__dict__, "configured_bounds": {"max_rounds": 3}}
-    )
+    invalid = SessionEvidenceInputs(**{**session.__dict__, "configured_bounds": {"max_rounds": 3}})
 
     with pytest.raises(UserError, match="configured bounds"):
         write_session_evidence_bundle(root, invalid)
