@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from kicad_pcb.adapters import KicadCliAdapter
@@ -41,7 +41,13 @@ from kicad_pcb.refinement.validation import (
 from kicad_pcb.refinement.vision_context import VisionObjectMap, build_vision_object_map
 
 from .llm import LlmClient
-from .refinement_llm import RepairPlannerOptions, run_repair_planner, run_visual_critic
+from .refinement_llm import (
+    RefinementModelCallBudget,
+    RepairPlannerOptions,
+    refinement_model_call_upper_bound,
+    run_repair_planner,
+    run_visual_critic,
+)
 
 
 @dataclass(frozen=True)
@@ -95,7 +101,7 @@ class RefinementIterationLimits:
 class _CandidateRejectionContext:
     transaction: SchematicCandidateTransaction
     analysis: RefinementAnalysisResult
-    plan: ValidatedRepairPlan
+    plan: RefinementPlanResult
     operations: LayoutOperationBatchResult
     electrical: SchematicElectricalVerificationReport | None
     structural: CandidateStructuralValidationReport | None
@@ -235,7 +241,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=plan,
+                    plan=planned,
                     operations=operations,
                     electrical=electrical,
                     structural=None,
@@ -258,7 +264,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=plan,
+                    plan=planned,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -277,7 +283,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=plan,
+                    plan=planned,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -319,7 +325,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=plan,
+                    plan=planned,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -334,7 +340,7 @@ def apply_planned_refinement(
 
         after_render = render_schematic_for_refinement(
             transaction.candidate_path,
-            runtime.evidence_root / ".candidate-renders" / iteration_id,
+            transaction.candidate_path.parent / "post-edit-render",
             adapter=runtime.adapter,
         )
         if after_render.schematic_hash != candidate_hash:
@@ -447,6 +453,8 @@ class RefinementLoopResult:
     accepted_rounds: int
     rejected_rounds: int
     accepted_operations: int
+    model_calls_made: int
+    model_call_limit: int
     iterations: tuple[RefinementApplyResult, ...]
 
 
@@ -455,6 +463,7 @@ class _RefinementLoopState:
     starting_hash: str
     best_accepted_hash: str
     iterations: list[RefinementApplyResult]
+    model_call_budget: RefinementModelCallBudget
     latest_attempted_hash: str | None = None
     accepted_rounds: int = 0
     rejected_rounds: int = 0
@@ -468,17 +477,27 @@ def refine_schematic(
     session_id: str,
     limits: RefinementLoopLimits | None = None,
 ) -> RefinementLoopResult:
-    """Run bounded refinement rounds while preserving the last accepted artifact on failure."""
+    """Run bounded refinement rounds while preserving the best accepted artifact."""
 
     if limits is None:
         limits = RefinementLoopLimits()
     _validate_refinement_session_id(session_id)
     starting_hash = _sha(accepted_path)
     seen_accepted_hashes = {starting_hash}
+    model_call_budget = RefinementModelCallBudget(
+        client=runtime.llm_client,
+        max_calls=refinement_model_call_upper_bound(
+            max_rounds=limits.max_rounds,
+            max_critic_repairs=limits.max_critic_repairs,
+            max_planner_repairs=limits.max_planner_repairs,
+        ),
+    )
+    bounded_runtime = replace(runtime, llm_client=model_call_budget)
     state = _RefinementLoopState(
         starting_hash=starting_hash,
         best_accepted_hash=starting_hash,
         iterations=[],
+        model_call_budget=model_call_budget,
     )
 
     for round_number in range(1, limits.max_rounds + 1):
@@ -495,7 +514,7 @@ def refine_schematic(
         iteration_id = f"{session_id}-round-{round_number:03d}"
         result = apply_once_schematic_refinement(
             accepted_path=accepted_path,
-            runtime=runtime,
+            runtime=bounded_runtime,
             iteration_id=iteration_id,
             limits=RefinementIterationLimits(
                 max_critic_repairs=limits.max_critic_repairs,
@@ -584,6 +603,8 @@ def _loop_result(
         accepted_rounds=state.accepted_rounds,
         rejected_rounds=state.rejected_rounds,
         accepted_operations=state.accepted_operations,
+        model_calls_made=state.model_call_budget.calls_made,
+        model_call_limit=state.model_call_budget.max_calls,
         iterations=tuple(state.iterations),
     )
 
@@ -627,7 +648,7 @@ def _reject_candidate(
             accepted_hash_before=context.analysis.accepted_hash,
             authoritative_hash=context.analysis.baseline.authoritative_hash,
             critic=context.analysis.critic,
-            plan=context.plan,
+            plan=context.plan.plan,
             operation_results=context.operations,
             electrical_report=context.electrical or {"status": "not_run"},
             structural_report=context.structural or {"status": "not_run"},
