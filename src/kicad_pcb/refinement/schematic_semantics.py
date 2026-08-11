@@ -292,10 +292,7 @@ def _external_library_pin_points(
         if unit_pin_at:
             selected = unit_pin_at.get(component.unit)
             if selected:
-                return [
-                    (pin, coords[0], coords[1])
-                    for pin, coords in sorted(selected.items())
-                ]
+                return [(pin, coords[0], coords[1]) for pin, coords in sorted(selected.items())]
             continue
 
         pin_at = read_lib_symbol_pin_at(
@@ -304,10 +301,7 @@ def _external_library_pin_points(
             symbols_dir=directory,
         )
         if pin_at:
-            return [
-                (pin, coords[0], coords[1])
-                for pin, coords in sorted(pin_at.items())
-            ]
+            return [(pin, coords[0], coords[1]) for pin, coords in sorted(pin_at.items())]
     return []
 
 
