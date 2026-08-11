@@ -5,13 +5,14 @@ from __future__ import annotations
 import hashlib
 import math
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr.builder import L, atom, fnum
@@ -22,7 +23,6 @@ from .schematic_semantics import (
     PlacedSchematicComponent,
     extract_schematic_semantics_from_doc,
     resolve_component_pin_position_candidates,
-    resolve_component_pin_positions,
 )
 
 OPERATION_SCHEMA_VERSION: Literal["1.0"] = "1.0"
@@ -548,22 +548,107 @@ def _move_component(
     x, y, rotation = placement
     _validate_point(doc, x, y, policy)
     node = _find_component_node(doc, component)
-    old_positions = resolve_component_pin_positions(doc, component)
-    moved = PlacedSchematicComponent(**{**asdict(component), "x": x, "y": y, "rotation": rotation})
-    new_positions = resolve_component_pin_positions(doc, moved)
-    mapping = {old_positions[t]: new_positions[t] for t in old_positions if t in new_positions}
-    _validate_anchor_move_safety(doc, component, mapping)
+    pin_candidates = resolve_component_pin_position_candidates(doc, component)
+    mapping = _attached_pin_mapping(doc, component, placement, pin_candidates)
+    moving_old = {position for positions in pin_candidates.values() for position in positions}
+    moving_new = {
+        _transform_component_point(component, placement, position) for position in moving_old
+    }
+    _validate_anchor_move_safety(doc, component, mapping, moving_old, moving_new)
     _replace_top_level(doc, node, _replace_at(node, x, y, rotation))
     _retarget_anchors(doc, mapping)
+
+
+def _attached_pin_mapping(
+    doc: SchematicDoc,
+    component: PlacedSchematicComponent,
+    placement: tuple[float, float, int],
+    pin_candidates: Mapping[ElectricalTerminal, tuple[tuple[float, float], ...]],
+) -> dict[tuple[float, float], tuple[float, float]]:
+    anchors = _attachment_points(doc)
+    attached: dict[tuple[float, float], set[ElectricalTerminal]] = {}
+    terminal_positions: dict[ElectricalTerminal, set[tuple[float, float]]] = {}
+    for terminal, positions in pin_candidates.items():
+        for position in positions:
+            if position in anchors:
+                attached.setdefault(position, set()).add(terminal)
+                terminal_positions.setdefault(terminal, set()).add(position)
+
+    ambiguous_points = {
+        position: terminals for position, terminals in attached.items() if len(terminals) != 1
+    }
+    ambiguous_terminals = {
+        terminal: positions
+        for terminal, positions in terminal_positions.items()
+        if len(positions) != 1
+    }
+    if ambiguous_points or ambiguous_terminals:
+        raise UserError(
+            "Attached schematic geometry does not identify one exact pin position.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+            details={
+                "ref": component.ref,
+                "unit": component.unit,
+                "ambiguous_point_count": len(ambiguous_points),
+                "ambiguous_terminal_count": len(ambiguous_terminals),
+            },
+        )
+
+    return {
+        position: _transform_component_point(component, placement, position)
+        for position in attached
+    }
+
+
+def _attachment_points(doc: SchematicDoc) -> set[tuple[float, float]]:
+    points: set[tuple[float, float]] = set()
+    for wire in _wire_nodes(doc):
+        wire_points = _wire_points(wire)
+        if wire_points:
+            points.add(wire_points[0])
+            points.add(wire_points[-1])
+    for node in doc.root.items:
+        if isinstance(node, ListNode) and node.key in {
+            "label",
+            "global_label",
+            "hierarchical_label",
+            "junction",
+            "no_connect",
+        }:
+            points.add(_node_at(node))
+    return points
+
+
+def _transform_component_point(
+    component: PlacedSchematicComponent,
+    placement: tuple[float, float, int],
+    point: tuple[float, float],
+) -> tuple[float, float]:
+    x, y, rotation = placement
+    old_theta = math.radians(component.rotation)
+    old_cos = math.cos(old_theta)
+    old_sin = math.sin(old_theta)
+    dx = point[0] - component.x
+    dy = point[1] - component.y
+    local_x = old_cos * dx - old_sin * dy
+    local_y = -old_sin * dx - old_cos * dy
+
+    new_theta = math.radians(rotation)
+    new_cos = math.cos(new_theta)
+    new_sin = math.sin(new_theta)
+    return (
+        round(x + new_cos * local_x - new_sin * local_y, 9),
+        round(y - (new_sin * local_x + new_cos * local_y), 9),
+    )
 
 
 def _validate_anchor_move_safety(
     doc: SchematicDoc,
     component: PlacedSchematicComponent,
     mapping: Mapping[tuple[float, float], tuple[float, float]],
+    moving_old: set[tuple[float, float]],
+    moving_new: set[tuple[float, float]],
 ) -> None:
-    moving_old = set(mapping)
-    moving_new = set(mapping.values())
     semantic = extract_schematic_semantics_from_doc(doc)
     stationary_positions: set[tuple[float, float]] = set()
     for other in semantic.components:

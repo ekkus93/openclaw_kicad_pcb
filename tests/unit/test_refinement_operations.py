@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import kicad_pcb.refinement.operations as refinement_operations
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.operations import execute_layout_operations, registered_operation_schemas
 
@@ -128,6 +129,48 @@ def test_move_component_carries_exact_wire_endpoint(tmp_path: Path) -> None:
     assert result.candidate_hash != source
     text = path.read_text()
     assert "26.67" in text
+
+
+def test_move_component_uses_attached_pin_when_geometry_has_alternates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _simple(tmp_path)
+    source = _hash(path)
+    original = refinement_operations.resolve_component_pin_position_candidates
+
+    def with_alternate_geometry(doc, component):
+        candidates = original(doc, component)
+        return {
+            terminal: positions + (((22.86, 25.4),) if terminal.pin == "1" else ())
+            for terminal, positions in candidates.items()
+        }
+
+    monkeypatch.setattr(
+        refinement_operations,
+        "resolve_component_pin_position_candidates",
+        with_alternate_geometry,
+    )
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "1",
+                "source_schematic_hash": source,
+                "operation_type": "move_component",
+                "arguments": {
+                    "target": {"ref": "R1", "unit": "1"},
+                    "dx_mm": 1.27,
+                    "dy_mm": 0.0,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.candidate_hash != source
+    assert "(wire (pts (xy 26.67 25.40) (xy 25.40 38.10))" in path.read_text()
 
 
 def test_move_label_rejects_unknown_uuid(tmp_path: Path) -> None:
