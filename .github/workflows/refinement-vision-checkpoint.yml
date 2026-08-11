@@ -197,7 +197,7 @@ jobs:
         run: uv sync --frozen --extra dev --extra web
       - name: Canonical format and validate
         run: |
-          mapfile -t FILES < <(tar -tzf /tmp/refinement-vision-checkpoint.tar.gz)
+          mapfile -t FILES < <({ tar -tzf /tmp/refinement-vision-checkpoint.tar.gz; tar -tzf /tmp/refinement-vision-delta.tar.gz; } | sort -u)
           uv run ruff format "${FILES[@]}"
           uv run ruff check --fix --select I "${FILES[@]}"
           uv run ruff check .
@@ -213,7 +213,7 @@ jobs:
           git diff --check
       - name: Commit verified vision refinement tranche
         run: |
-          mapfile -t FILES < <(tar -tzf /tmp/refinement-vision-checkpoint.tar.gz)
+          mapfile -t FILES < <({ tar -tzf /tmp/refinement-vision-checkpoint.tar.gz; tar -tzf /tmp/refinement-vision-delta.tar.gz; } | sort -u)
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- "${FILES[@]}"
