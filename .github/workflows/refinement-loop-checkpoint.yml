@@ -1,0 +1,533 @@
+name: Refinement Loop Checkpoint
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - '.github/workflows/refinement-loop-checkpoint.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-checkpoint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Add bounded iterative refinement loop
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          service_path = Path('src/kicad_pcb_web/services/schematic_refinement.py')
+          text = service_path.read_text(encoding='utf-8')
+          marker = '\ndef _reject_candidate(\n'
+          if text.count(marker) != 1:
+              raise SystemExit('unexpected schematic_refinement insertion marker count')
+
+          block = r'''
+@dataclass(frozen=True)
+class RefinementLoopLimits:
+    max_rounds: int = 3
+    max_operations_per_round: int = 4
+    max_total_accepted_operations: int = 8
+    max_candidate_rejections: int = 2
+    max_critic_repairs: int = 0
+    max_planner_repairs: int = 0
+
+    def __post_init__(self) -> None:
+        _require_loop_int("max_rounds", self.max_rounds, minimum=1, maximum=20)
+        _require_loop_int(
+            "max_operations_per_round",
+            self.max_operations_per_round,
+            minimum=1,
+            maximum=32,
+        )
+        _require_loop_int(
+            "max_total_accepted_operations",
+            self.max_total_accepted_operations,
+            minimum=1,
+            maximum=128,
+        )
+        _require_loop_int(
+            "max_candidate_rejections",
+            self.max_candidate_rejections,
+            minimum=1,
+            maximum=20,
+        )
+        _require_loop_int(
+            "max_critic_repairs", self.max_critic_repairs, minimum=0, maximum=8
+        )
+        _require_loop_int(
+            "max_planner_repairs", self.max_planner_repairs, minimum=0, maximum=8
+        )
+
+
+@dataclass(frozen=True)
+class RefinementLoopResult:
+    status: str
+    stop_reason: str
+    starting_hash: str
+    final_accepted_hash: str
+    rounds_attempted: int
+    accepted_rounds: int
+    rejected_rounds: int
+    accepted_operations: int
+    iterations: tuple[RefinementApplyResult, ...]
+
+
+def refine_schematic(
+    *,
+    accepted_path: Path,
+    runtime: RefinementRuntime,
+    session_id: str,
+    limits: RefinementLoopLimits = RefinementLoopLimits(),
+) -> RefinementLoopResult:
+    """Run bounded refinement rounds while preserving the last accepted artifact on failure."""
+
+    _validate_refinement_session_id(session_id)
+    starting_hash = _sha(accepted_path)
+    seen_accepted_hashes = {starting_hash}
+    iterations: list[RefinementApplyResult] = []
+    accepted_rounds = 0
+    rejected_rounds = 0
+    accepted_operations = 0
+
+    for round_number in range(1, limits.max_rounds + 1):
+        remaining_operations = limits.max_total_accepted_operations - accepted_operations
+        if remaining_operations <= 0:
+            return _loop_result(
+                "REFINEMENT_STOP_OPERATION_BUDGET",
+                starting_hash,
+                accepted_path,
+                iterations,
+                accepted_rounds,
+                rejected_rounds,
+                accepted_operations,
+            )
+
+        round_start_hash = _sha(accepted_path)
+        iteration_id = f"{session_id}-round-{round_number:03d}"
+        result = apply_once_schematic_refinement(
+            accepted_path=accepted_path,
+            runtime=runtime,
+            iteration_id=iteration_id,
+            limits=RefinementIterationLimits(
+                max_critic_repairs=limits.max_critic_repairs,
+                max_planner_repairs=limits.max_planner_repairs,
+                max_operations=min(limits.max_operations_per_round, remaining_operations),
+            ),
+        )
+        iterations.append(result)
+        if result.accepted_hash_before != round_start_hash:
+            raise UserError(
+                "Refinement round result is not bound to the round-start schematic.",
+                code="REFINEMENT_STALE",
+            )
+
+        actual_hash = _sha(accepted_path)
+        if result.status == "no_op":
+            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
+            return _loop_result(
+                "REFINEMENT_STOP_NO_OPERATIONS",
+                starting_hash,
+                accepted_path,
+                iterations,
+                accepted_rounds,
+                rejected_rounds,
+                accepted_operations,
+            )
+
+        if result.status == "rejected":
+            _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
+            rejected_rounds += 1
+            if rejected_rounds >= limits.max_candidate_rejections:
+                return _loop_result(
+                    "REFINEMENT_STOP_REJECTION_LIMIT",
+                    starting_hash,
+                    accepted_path,
+                    iterations,
+                    accepted_rounds,
+                    rejected_rounds,
+                    accepted_operations,
+                )
+            continue
+
+        if result.status != "accepted":
+            raise UserError(
+                "Refinement round returned an unknown status.",
+                code="REFINEMENT_INVALID_RESULT",
+                details={"status": result.status},
+            )
+        if actual_hash != result.accepted_hash_after:
+            raise UserError(
+                "Accepted refinement result does not match persisted schematic bytes.",
+                code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
+            )
+        if result.operations is None or not result.operations.results:
+            raise UserError(
+                "Accepted refinement round contains no applied operations.",
+                code="REFINEMENT_INVALID_RESULT",
+            )
+
+        applied_count = len(result.operations.results)
+        if applied_count > min(limits.max_operations_per_round, remaining_operations):
+            raise UserError(
+                "Accepted refinement round exceeded its operation budget.",
+                code="REFINEMENT_OPERATION_BUDGET_EXCEEDED",
+            )
+        accepted_operations += applied_count
+        accepted_rounds += 1
+
+        if actual_hash in seen_accepted_hashes:
+            return _loop_result(
+                "REFINEMENT_STOP_OSCILLATION",
+                starting_hash,
+                accepted_path,
+                iterations,
+                accepted_rounds,
+                rejected_rounds,
+                accepted_operations,
+            )
+        seen_accepted_hashes.add(actual_hash)
+
+        if accepted_operations >= limits.max_total_accepted_operations:
+            return _loop_result(
+                "REFINEMENT_STOP_OPERATION_BUDGET",
+                starting_hash,
+                accepted_path,
+                iterations,
+                accepted_rounds,
+                rejected_rounds,
+                accepted_operations,
+            )
+
+    return _loop_result(
+        "REFINEMENT_STOP_MAX_ROUNDS",
+        starting_hash,
+        accepted_path,
+        iterations,
+        accepted_rounds,
+        rejected_rounds,
+        accepted_operations,
+    )
+
+
+def _loop_result(
+    stop_reason: str,
+    starting_hash: str,
+    accepted_path: Path,
+    iterations: list[RefinementApplyResult],
+    accepted_rounds: int,
+    rejected_rounds: int,
+    accepted_operations: int,
+) -> RefinementLoopResult:
+    return RefinementLoopResult(
+        status="stopped",
+        stop_reason=stop_reason,
+        starting_hash=starting_hash,
+        final_accepted_hash=_sha(accepted_path),
+        rounds_attempted=len(iterations),
+        accepted_rounds=accepted_rounds,
+        rejected_rounds=rejected_rounds,
+        accepted_operations=accepted_operations,
+        iterations=tuple(iterations),
+    )
+
+
+def _assert_nonaccepted_round_unchanged(
+    result: RefinementApplyResult,
+    round_start_hash: str,
+    actual_hash: str,
+) -> None:
+    if result.accepted_hash_after != round_start_hash or actual_hash != round_start_hash:
+        raise UserError(
+            "Rejected/no-op refinement round changed accepted schematic bytes.",
+            code="REFINEMENT_READ_ONLY_VIOLATION",
+        )
+
+
+def _require_loop_int(name: str, value: int, *, minimum: int, maximum: int) -> None:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ValueError(f"{name} must be an integer in [{minimum}, {maximum}]")
+
+
+def _validate_refinement_session_id(session_id: str) -> None:
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+    if not session_id or len(session_id) > 96 or any(ch not in allowed for ch in session_id):
+        raise UserError(
+            "Invalid schematic refinement session id.",
+            code="REFINEMENT_INVALID_SESSION_ID",
+        )
+'''
+          service_path.write_text(text.replace(marker, '\n' + block + marker), encoding='utf-8')
+
+          test_path = Path('tests/web/test_web_schematic_refinement_loop.py')
+          test_path.write_text(r'''from __future__ import annotations
+
+import hashlib
+from pathlib import Path
+
+import pytest
+
+from kicad_pcb.errors import UserError
+from kicad_pcb.refinement.operations import LayoutOperationBatchResult, LayoutOperationResult
+from kicad_pcb_web.services import schematic_refinement as service
+
+
+def _sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _runtime(tmp_path: Path) -> service.RefinementRuntime:
+    return service.RefinementRuntime(
+        authoritative_ir=object(),  # type: ignore[arg-type]
+        adapter=object(),  # type: ignore[arg-type]
+        llm_client=object(),  # type: ignore[arg-type]
+        work_dir=tmp_path / "work",
+        evidence_root=tmp_path / "evidence",
+    )
+
+
+def _accepted(before: str, after: str, *, count: int = 1) -> service.RefinementApplyResult:
+    operations = LayoutOperationBatchResult(
+        before,
+        after,
+        tuple(
+            LayoutOperationResult(f"op-{index}", "move_component", "applied", {})
+            for index in range(count)
+        ),
+    )
+    return service.RefinementApplyResult(
+        "accepted",
+        "REFINEMENT_ACCEPTED",
+        before,
+        after,
+        after,
+        None,
+        operations,
+        None,
+        None,
+        None,
+    )
+
+
+def _rejected(current: str) -> service.RefinementApplyResult:
+    return service.RefinementApplyResult(
+        "rejected",
+        "REFINEMENT_NO_DETERMINISTIC_IMPROVEMENT",
+        current,
+        current,
+        "c" * 64,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+
+
+def _no_op(current: str) -> service.RefinementApplyResult:
+    return service.RefinementApplyResult(
+        "no_op",
+        "REFINEMENT_NO_OPERATIONS",
+        current,
+        current,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_rounds": 0},
+        {"max_rounds": True},
+        {"max_operations_per_round": 33},
+        {"max_total_accepted_operations": -1},
+        {"max_candidate_rejections": 0},
+        {"max_critic_repairs": 9},
+        {"max_planner_repairs": -1},
+    ],
+)
+def test_loop_limits_reject_invalid_values(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        service.RefinementLoopLimits(**kwargs)  # type: ignore[arg-type]
+
+
+def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    calls = 0
+
+    def apply_once(**kwargs):
+        nonlocal calls
+        calls += 1
+        return _no_op(_sha(kwargs["accepted_path"]))
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="s1",
+    )
+    assert calls == 1
+    assert result.stop_reason == "REFINEMENT_STOP_NO_OPERATIONS"
+    assert result.rounds_attempted == 1
+    assert result.final_accepted_hash == _sha(accepted)
+
+
+def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    call = 0
+
+    def apply_once(**kwargs):
+        nonlocal call
+        call += 1
+        path = kwargs["accepted_path"]
+        before = _sha(path)
+        if call == 1:
+            path.write_bytes(b"B")
+            return _accepted(before, _sha(path))
+        return _rejected(before)
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="s2",
+        limits=service.RefinementLoopLimits(max_rounds=5, max_candidate_rejections=1),
+    )
+    assert result.stop_reason == "REFINEMENT_STOP_REJECTION_LIMIT"
+    assert result.accepted_rounds == 1
+    assert result.rejected_rounds == 1
+    assert accepted.read_bytes() == b"B"
+    assert result.final_accepted_hash == _sha(accepted)
+
+
+def test_refine_enforces_total_operation_budget(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    observed_max_operations: list[int] = []
+
+    def apply_once(**kwargs):
+        path = kwargs["accepted_path"]
+        round_limits = kwargs["limits"]
+        observed_max_operations.append(round_limits.max_operations)
+        before = _sha(path)
+        path.write_bytes(path.read_bytes() + b"x")
+        return _accepted(before, _sha(path), count=round_limits.max_operations)
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="s3",
+        limits=service.RefinementLoopLimits(
+            max_rounds=5,
+            max_operations_per_round=2,
+            max_total_accepted_operations=3,
+        ),
+    )
+    assert observed_max_operations == [2, 1]
+    assert result.accepted_operations == 3
+    assert result.stop_reason == "REFINEMENT_STOP_OPERATION_BUDGET"
+
+
+def test_refine_detects_exact_state_oscillation(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    starting_hash = _sha(accepted)
+    call = 0
+
+    def apply_once(**kwargs):
+        nonlocal call
+        call += 1
+        path = kwargs["accepted_path"]
+        before = _sha(path)
+        path.write_bytes(b"B" if call == 1 else b"A")
+        return _accepted(before, _sha(path))
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="s4",
+        limits=service.RefinementLoopLimits(max_rounds=5),
+    )
+    assert result.stop_reason == "REFINEMENT_STOP_OSCILLATION"
+    assert result.rounds_attempted == 2
+    assert result.final_accepted_hash == starting_hash
+
+
+def test_refine_hard_failure_leaves_last_accepted_round_intact(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    call = 0
+
+    def apply_once(**kwargs):
+        nonlocal call
+        call += 1
+        path = kwargs["accepted_path"]
+        before = _sha(path)
+        if call == 1:
+            path.write_bytes(b"B")
+            return _accepted(before, _sha(path))
+        raise UserError("provider failed", code="LLM_PROVIDER_FAILED")
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    with pytest.raises(UserError, match="provider failed"):
+        service.refine_schematic(
+            accepted_path=accepted,
+            runtime=_runtime(tmp_path),
+            session_id="s5",
+            limits=service.RefinementLoopLimits(max_rounds=5),
+        )
+    assert accepted.read_bytes() == b"B"
+
+
+def test_refine_rejects_unsafe_session_id(tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    with pytest.raises(UserError, match="Invalid schematic refinement session id"):
+        service.refine_schematic(
+            accepted_path=accepted,
+            runtime=_runtime(tmp_path),
+            session_id="../escape",
+        )
+''', encoding='utf-8')
+          PY
+      - name: Sync locked toolchain
+        run: uv sync --frozen --extra dev --extra web
+      - name: Canonical format and validate
+        run: |
+          FILES=(
+            src/kicad_pcb_web/services/schematic_refinement.py
+            tests/web/test_web_schematic_refinement_loop.py
+          )
+          uv run ruff check --fix --select I "${FILES[@]}"
+          uv run ruff format "${FILES[@]}"
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/kicad_pcb src/kicad_pcb_web
+          uv run pytest -q tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
+          uv run pytest -q tests/unit tests/web
+          git diff --check
+      - name: Commit verified bounded refinement loop
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            src/kicad_pcb_web/services/schematic_refinement.py \
+            tests/web/test_web_schematic_refinement_loop.py
+          git commit -m 'feat: add bounded iterative schematic refinement loop'
+          git push origin HEAD:webapp
