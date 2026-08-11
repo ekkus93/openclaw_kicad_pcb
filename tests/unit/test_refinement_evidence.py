@@ -11,6 +11,7 @@ from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.evidence import (
     IterationEvidenceInputs,
     SessionEvidenceInputs,
+    SessionIterationReferenceInputs,
     build_session_iteration_reference,
     write_iteration_evidence_bundle,
     write_session_evidence_bundle,
@@ -93,6 +94,27 @@ def _inputs(tmp_path: Path) -> IterationEvidenceInputs:
     )
 
 
+def _reference(
+    root: Path,
+    iteration: Path,
+    *,
+    code: str = "REFINEMENT_ACCEPTED",
+):
+    return build_session_iteration_reference(
+        root,
+        SessionIterationReferenceInputs(
+            iteration_id="iter-001",
+            status="accepted",
+            code=code,
+            accepted_hash_before="a" * 64,
+            accepted_hash_after="d" * 64,
+            candidate_hash="d" * 64,
+            candidate_layout_fingerprint="e" * 64,
+            evidence_dir=iteration,
+        ),
+    )
+
+
 def _session(
     *,
     session_id: str,
@@ -162,17 +184,7 @@ def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
 ) -> None:
     root = tmp_path / "evidence"
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
-    reference = build_session_iteration_reference(
-        evidence_root=root,
-        iteration_id="iter-001",
-        status="accepted",
-        code="REFINEMENT_ACCEPTED",
-        accepted_hash_before="a" * 64,
-        accepted_hash_after="d" * 64,
-        candidate_hash="d" * 64,
-        candidate_layout_fingerprint="e" * 64,
-        evidence_dir=iteration,
-    )
+    reference = _reference(root, iteration)
 
     output = write_session_evidence_bundle(
         root,
@@ -207,17 +219,7 @@ def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
 def test_session_bundle_rejects_tampered_iteration_hash(tmp_path: Path) -> None:
     root = tmp_path / "evidence"
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
-    reference = build_session_iteration_reference(
-        evidence_root=root,
-        iteration_id="iter-001",
-        status="accepted",
-        code="REFINEMENT_ACCEPTED",
-        accepted_hash_before="a" * 64,
-        accepted_hash_after="d" * 64,
-        candidate_hash="d" * 64,
-        candidate_layout_fingerprint="e" * 64,
-        evidence_dir=iteration,
-    )
+    reference = _reference(root, iteration)
     (iteration / "manifest.json").write_text("{}\n", encoding="utf-8")
 
     with pytest.raises(UserError, match="manifest hash does not match"):
@@ -234,17 +236,7 @@ def test_session_bundle_rejects_semantically_mismatched_iteration_reference(
 ) -> None:
     root = tmp_path / "evidence"
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
-    reference = build_session_iteration_reference(
-        evidence_root=root,
-        iteration_id="iter-001",
-        status="accepted",
-        code="REFINEMENT_DIFFERENT_CODE",
-        accepted_hash_before="a" * 64,
-        accepted_hash_after="d" * 64,
-        candidate_hash="d" * 64,
-        candidate_layout_fingerprint="e" * 64,
-        evidence_dir=iteration,
-    )
+    reference = _reference(root, iteration, code="REFINEMENT_DIFFERENT_CODE")
 
     with pytest.raises(UserError, match="does not match session reference"):
         write_session_evidence_bundle(
@@ -258,17 +250,7 @@ def test_session_bundle_rejects_semantically_mismatched_iteration_reference(
 def test_session_bundle_rejects_incomplete_configured_bounds(tmp_path: Path) -> None:
     root = tmp_path / "evidence"
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
-    reference = build_session_iteration_reference(
-        evidence_root=root,
-        iteration_id="iter-001",
-        status="accepted",
-        code="REFINEMENT_ACCEPTED",
-        accepted_hash_before="a" * 64,
-        accepted_hash_after="d" * 64,
-        candidate_hash="d" * 64,
-        candidate_layout_fingerprint="e" * 64,
-        evidence_dir=iteration,
-    )
+    reference = _reference(root, iteration)
     session = _session(session_id="session-bounds", reference=reference)
     invalid = SessionEvidenceInputs(
         **{**session.__dict__, "configured_bounds": {"max_rounds": 3}}
