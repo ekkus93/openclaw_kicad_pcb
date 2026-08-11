@@ -102,6 +102,7 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
     def apply_once(**kwargs):
         nonlocal calls
         calls += 1
+        assert kwargs["enforce_best_known_retention"] is True
         return _no_op(_sha(kwargs["accepted_path"]))
 
     monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
@@ -143,6 +144,8 @@ def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: P
     assert result.rejected_rounds == 1
     assert accepted.read_bytes() == b"B"
     assert result.final_accepted_hash == _sha(accepted)
+    assert result.best_accepted_hash == result.final_accepted_hash
+    assert result.latest_attempted_hash == "c" * 64
 
 
 def test_refine_enforces_total_operation_budget(monkeypatch, tmp_path: Path) -> None:

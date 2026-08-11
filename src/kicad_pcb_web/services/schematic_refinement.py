@@ -27,7 +27,11 @@ from kicad_pcb.refinement.operations import (
     execute_layout_operations,
 )
 from kicad_pcb.refinement.planner import ValidatedRepairPlan
-from kicad_pcb.refinement.quality import CandidateQualityDecision, evaluate_candidate_quality
+from kicad_pcb.refinement.quality import (
+    CandidateQualityDecision,
+    evaluate_best_known_replacement,
+    evaluate_candidate_quality,
+)
 from kicad_pcb.refinement.rendering import SchematicRenderArtifact, render_schematic_for_refinement
 from kicad_pcb.refinement.transaction import SchematicCandidateTransaction
 from kicad_pcb.refinement.validation import (
@@ -175,6 +179,7 @@ def apply_planned_refinement(
     runtime: RefinementRuntime,
     planned: RefinementPlanResult,
     iteration_id: str,
+    enforce_best_known_retention: bool = False,
 ) -> RefinementApplyResult:
     """Apply one already-validated plan transactionally and fail closed at every hard gate."""
 
@@ -299,6 +304,16 @@ def apply_planned_refinement(
             candidate_metrics,
             addressed_categories=addressed_categories,
         )
+        if quality.accepted and enforce_best_known_retention:
+            best_known = evaluate_best_known_replacement(analysis.metrics, candidate_metrics)
+            if not best_known.replaces_best:
+                quality = CandidateQualityDecision(
+                    accepted=False,
+                    code=best_known.code,
+                    reason=best_known.reason,
+                    improved_metrics=best_known.improved_metrics,
+                    comparison=best_known.comparison,
+                )
         if not quality.accepted:
             return _reject_candidate(
                 _CandidateRejectionContext(
@@ -370,6 +385,7 @@ def apply_once_schematic_refinement(
     runtime: RefinementRuntime,
     iteration_id: str,
     limits: RefinementIterationLimits,
+    enforce_best_known_retention: bool = False,
 ) -> RefinementApplyResult:
     planned = plan_schematic_refinement(
         accepted_path=accepted_path,
@@ -382,6 +398,7 @@ def apply_once_schematic_refinement(
         runtime=runtime,
         planned=planned,
         iteration_id=iteration_id,
+        enforce_best_known_retention=enforce_best_known_retention,
     )
 
 
@@ -424,6 +441,8 @@ class RefinementLoopResult:
     stop_reason: str
     starting_hash: str
     final_accepted_hash: str
+    best_accepted_hash: str
+    latest_attempted_hash: str | None
     rounds_attempted: int
     accepted_rounds: int
     rejected_rounds: int
@@ -434,7 +453,9 @@ class RefinementLoopResult:
 @dataclass
 class _RefinementLoopState:
     starting_hash: str
+    best_accepted_hash: str
     iterations: list[RefinementApplyResult]
+    latest_attempted_hash: str | None = None
     accepted_rounds: int = 0
     rejected_rounds: int = 0
     accepted_operations: int = 0
@@ -454,7 +475,11 @@ def refine_schematic(
     _validate_refinement_session_id(session_id)
     starting_hash = _sha(accepted_path)
     seen_accepted_hashes = {starting_hash}
-    state = _RefinementLoopState(starting_hash=starting_hash, iterations=[])
+    state = _RefinementLoopState(
+        starting_hash=starting_hash,
+        best_accepted_hash=starting_hash,
+        iterations=[],
+    )
 
     for round_number in range(1, limits.max_rounds + 1):
         remaining_operations = limits.max_total_accepted_operations - state.accepted_operations
@@ -462,6 +487,11 @@ def refine_schematic(
             return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
 
         round_start_hash = _sha(accepted_path)
+        if round_start_hash != state.best_accepted_hash:
+            raise UserError(
+                "Canonical schematic no longer matches the best-known accepted state.",
+                code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
+            )
         iteration_id = f"{session_id}-round-{round_number:03d}"
         result = apply_once_schematic_refinement(
             accepted_path=accepted_path,
@@ -472,8 +502,11 @@ def refine_schematic(
                 max_planner_repairs=limits.max_planner_repairs,
                 max_operations=min(limits.max_operations_per_round, remaining_operations),
             ),
+            enforce_best_known_retention=True,
         )
         state.iterations.append(result)
+        if result.candidate_hash is not None:
+            state.latest_attempted_hash = result.candidate_hash
         if result.accepted_hash_before != round_start_hash:
             raise UserError(
                 "Refinement round result is not bound to the round-start schematic.",
@@ -517,6 +550,7 @@ def refine_schematic(
             )
         state.accepted_operations += applied_count
         state.accepted_rounds += 1
+        state.best_accepted_hash = actual_hash
 
         if actual_hash in seen_accepted_hashes:
             return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
@@ -533,11 +567,19 @@ def _loop_result(
     accepted_path: Path,
     state: _RefinementLoopState,
 ) -> RefinementLoopResult:
+    final_hash = _sha(accepted_path)
+    if final_hash != state.best_accepted_hash:
+        raise UserError(
+            "Final canonical schematic does not match the best-known accepted state.",
+            code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
+        )
     return RefinementLoopResult(
         status="stopped",
         stop_reason=stop_reason,
         starting_hash=state.starting_hash,
-        final_accepted_hash=_sha(accepted_path),
+        final_accepted_hash=final_hash,
+        best_accepted_hash=state.best_accepted_hash,
+        latest_attempted_hash=state.latest_attempted_hash,
         rounds_attempted=len(state.iterations),
         accepted_rounds=state.accepted_rounds,
         rejected_rounds=state.rejected_rounds,

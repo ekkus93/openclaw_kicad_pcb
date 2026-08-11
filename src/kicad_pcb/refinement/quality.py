@@ -167,8 +167,7 @@ def evaluate_best_known_replacement(
         return BestKnownQualityDecision(
             False,
             "REFINEMENT_BEST_KNOWN_REGRESSION",
-            "candidate regresses best-known deterministic metrics: "
-            + ", ".join(regressed_metrics),
+            "candidate regresses best-known deterministic metrics: " + ", ".join(regressed_metrics),
             improved_metrics,
             regressed_metrics,
             comparison,

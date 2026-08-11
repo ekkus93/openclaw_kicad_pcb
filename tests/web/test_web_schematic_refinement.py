@@ -269,6 +269,40 @@ def test_apply_promotes_only_after_all_gates_and_evidence(monkeypatch, tmp_path:
     assert (result.evidence_dir / "manifest.json").is_file()
 
 
+def test_best_known_floor_rejects_mixed_tradeoff_before_promotion(
+    monkeypatch, tmp_path: Path
+) -> None:
+    accepted, ir = _fixture(tmp_path)
+    before = accepted.read_bytes()
+    analysis = _analysis(tmp_path, accepted, ir)
+    planned = _plan(analysis)
+    _install_apply_fakes(monkeypatch, analysis)
+
+    def mixed_metrics(path: Path):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        return replace(
+            analysis.metrics,
+            schematic_hash=digest,
+            alignment_residual_mean_mm=1.0,
+            total_wire_manhattan_length_mm=(analysis.metrics.total_wire_manhattan_length_mm + 1.27),
+        )
+
+    monkeypatch.setattr(service, "compute_refinement_metrics", mixed_metrics)
+    result = service.apply_planned_refinement(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path, ir),
+        planned=planned,
+        iteration_id="iter-1",
+        enforce_best_known_retention=True,
+    )
+
+    assert result.status == "rejected"
+    assert result.code == "REFINEMENT_BEST_KNOWN_REGRESSION"
+    assert result.quality is not None
+    assert not result.quality.accepted
+    assert accepted.read_bytes() == before
+
+
 def test_electrical_rejection_preserves_accepted_bytes(monkeypatch, tmp_path: Path) -> None:
     accepted, ir = _fixture(tmp_path)
     before = accepted.read_bytes()
