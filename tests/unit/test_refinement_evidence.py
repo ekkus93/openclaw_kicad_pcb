@@ -28,6 +28,17 @@ class _Report:
     count: int
 
 
+def _bounds(*, max_rounds: int = 3) -> dict[str, int]:
+    return {
+        "max_rounds": max_rounds,
+        "max_operations_per_round": 4,
+        "max_total_accepted_operations": 8,
+        "max_candidate_rejections": 2,
+        "max_critic_repairs": 0,
+        "max_planner_repairs": 0,
+    }
+
+
 def _render(tmp_path: Path, name: str) -> SchematicRenderArtifact:
     svg = tmp_path / f"{name}.svg"
     png = tmp_path / f"{name}.png"
@@ -82,6 +93,39 @@ def _inputs(tmp_path: Path) -> IterationEvidenceInputs:
     )
 
 
+def _session(
+    *,
+    session_id: str,
+    reference,
+    max_rounds: int = 3,
+) -> SessionEvidenceInputs:
+    return SessionEvidenceInputs(
+        session_id=session_id,
+        authoritative_hash="b" * 64,
+        starting_accepted_hash="a" * 64,
+        provider="fake-provider",
+        model="fake-model",
+        product_version="0.1.0",
+        implementation_sha="f" * 40,
+        prompt_versions={"critic": "1.0", "planner": "1.0"},
+        schema_versions={
+            "critic": "1.0",
+            "planner": "1.0",
+            "session_evidence": "1.0",
+        },
+        configured_bounds=_bounds(max_rounds=max_rounds),
+        iterations=(reference,),
+        status="completed",
+        stop_reason="REFINEMENT_STOP_MAX_ROUNDS",
+        final_accepted_hash="d" * 64,
+        best_accepted_hash="d" * 64,
+        starting_layout_fingerprint="1" * 64,
+        final_layout_fingerprint="2" * 64,
+        model_calls_made=2,
+        model_call_limit=6,
+    )
+
+
 def test_evidence_bundle_is_complete_sanitized_and_atomic(tmp_path: Path) -> None:
     evidence = _inputs(tmp_path)
     output = write_iteration_evidence_bundle(tmp_path / "evidence", evidence)
@@ -129,29 +173,11 @@ def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
         candidate_layout_fingerprint="e" * 64,
         evidence_dir=iteration,
     )
-    session = SessionEvidenceInputs(
-        session_id="session-001",
-        authoritative_hash="b" * 64,
-        starting_accepted_hash="a" * 64,
-        provider="fake-provider",
-        model="fake-model",
-        product_version="0.1.0",
-        implementation_sha="f" * 40,
-        prompt_versions={"critic": "1.0", "planner": "1.0"},
-        schema_versions={"critic": "1.0", "planner": "1.0", "session_evidence": "1.0"},
-        configured_bounds={"max_rounds": 3, "max_operations_per_round": 4},
-        iterations=(reference,),
-        status="completed",
-        stop_reason="REFINEMENT_STOP_MAX_ROUNDS",
-        final_accepted_hash="d" * 64,
-        best_accepted_hash="d" * 64,
-        starting_layout_fingerprint="1" * 64,
-        final_layout_fingerprint="2" * 64,
-        model_calls_made=2,
-        model_call_limit=6,
-    )
 
-    output = write_session_evidence_bundle(root, session)
+    output = write_session_evidence_bundle(
+        root,
+        _session(session_id="session-001", reference=reference),
+    )
 
     assert {path.name for path in output.iterdir()} == {"manifest.json", "summary.md"}
     manifest = json.loads((output / "manifest.json").read_text())
@@ -159,6 +185,13 @@ def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
     assert manifest["model"] == "fake-model"
     assert manifest["iterations"][0]["evidence_directory"] == "iter-001"
     assert len(manifest["iterations"][0]["evidence_manifest_sha256"]) == 64
+    retention = manifest["retention_policy"]
+    assert retention["maximum_iteration_bundles_per_session"] == 3
+    assert retention["rejected_candidate_files"] == "not_retained_after_iteration"
+    assert retention["post_edit_render_scratch"] == "not_retained_after_iteration"
+    assert retention["raw_prompts"] == "not_retained"
+    assert retention["raw_provider_payloads"] == "not_retained"
+    assert retention["optional_debug_artifacts"] == "not_retained"
     assert "api_key" not in json.dumps(manifest)
     assert str(tmp_path) not in json.dumps(manifest)
 
@@ -168,10 +201,10 @@ def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
     assert "Operations: 1 total, 1 applied, 0 rejected" in summary
     assert "Electrical status: `passed`" in summary
     assert "bend_count=-1" in summary
-    assert "critic" not in summary.lower() or "critic issues" in summary.lower()
+    assert "A component is offset" not in summary
 
 
-def test_session_bundle_rejects_tampered_iteration_reference(tmp_path: Path) -> None:
+def test_session_bundle_rejects_tampered_iteration_hash(tmp_path: Path) -> None:
     root = tmp_path / "evidence"
     iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
     reference = build_session_iteration_reference(
@@ -186,32 +219,63 @@ def test_session_bundle_rejects_tampered_iteration_reference(tmp_path: Path) -> 
         evidence_dir=iteration,
     )
     (iteration / "manifest.json").write_text("{}\n", encoding="utf-8")
-    session = SessionEvidenceInputs(
-        session_id="session-tampered",
-        authoritative_hash="b" * 64,
-        starting_accepted_hash="a" * 64,
-        provider="fake-provider",
-        model="fake-model",
-        product_version=None,
-        implementation_sha=None,
-        prompt_versions={},
-        schema_versions={},
-        configured_bounds={"max_rounds": 1},
-        iterations=(reference,),
-        status="completed",
-        stop_reason="REFINEMENT_STOP_MAX_ROUNDS",
-        final_accepted_hash="d" * 64,
-        best_accepted_hash="d" * 64,
-        starting_layout_fingerprint="1" * 64,
-        final_layout_fingerprint="2" * 64,
-        model_calls_made=1,
-        model_call_limit=2,
-    )
 
     with pytest.raises(UserError, match="manifest hash does not match"):
-        write_session_evidence_bundle(root, session)
+        write_session_evidence_bundle(
+            root,
+            _session(session_id="session-tampered", reference=reference),
+        )
 
     assert not (root / "sessions" / "session-tampered").exists()
+
+
+def test_session_bundle_rejects_semantically_mismatched_iteration_reference(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "evidence"
+    iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
+    reference = build_session_iteration_reference(
+        evidence_root=root,
+        iteration_id="iter-001",
+        status="accepted",
+        code="REFINEMENT_DIFFERENT_CODE",
+        accepted_hash_before="a" * 64,
+        accepted_hash_after="d" * 64,
+        candidate_hash="d" * 64,
+        candidate_layout_fingerprint="e" * 64,
+        evidence_dir=iteration,
+    )
+
+    with pytest.raises(UserError, match="does not match session reference"):
+        write_session_evidence_bundle(
+            root,
+            _session(session_id="session-mismatch", reference=reference),
+        )
+
+    assert not (root / "sessions" / "session-mismatch").exists()
+
+
+def test_session_bundle_rejects_incomplete_configured_bounds(tmp_path: Path) -> None:
+    root = tmp_path / "evidence"
+    iteration = write_iteration_evidence_bundle(root, _inputs(tmp_path))
+    reference = build_session_iteration_reference(
+        evidence_root=root,
+        iteration_id="iter-001",
+        status="accepted",
+        code="REFINEMENT_ACCEPTED",
+        accepted_hash_before="a" * 64,
+        accepted_hash_after="d" * 64,
+        candidate_hash="d" * 64,
+        candidate_layout_fingerprint="e" * 64,
+        evidence_dir=iteration,
+    )
+    session = _session(session_id="session-bounds", reference=reference)
+    invalid = SessionEvidenceInputs(
+        **{**session.__dict__, "configured_bounds": {"max_rounds": 3}}
+    )
+
+    with pytest.raises(UserError, match="configured bounds"):
+        write_session_evidence_bundle(root, invalid)
 
 
 def test_evidence_write_failure_does_not_publish_partial_bundle(tmp_path: Path) -> None:
@@ -238,5 +302,5 @@ def test_evidence_rejects_path_values_and_unsafe_iteration_ids(tmp_path: Path) -
         write_iteration_evidence_bundle(tmp_path / "evidence-a", unsafe)
 
     unsafe_id = IterationEvidenceInputs(**{**evidence.__dict__, "iteration_id": "../escape"})
-    with pytest.raises(UserError, match="Invalid refinement evidence iteration id"):
+    with pytest.raises(UserError, match="Invalid refinement evidence identifier"):
         write_iteration_evidence_bundle(tmp_path / "evidence-b", unsafe_id)
