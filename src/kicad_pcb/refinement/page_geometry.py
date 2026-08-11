@@ -33,11 +33,7 @@ def schematic_page_bounds(doc: SchematicDoc) -> PageBounds:
     """Return declared paper bounds or fail closed for unsupported/missing paper."""
 
     paper = next(
-        (
-            node
-            for node in doc.root.items
-            if isinstance(node, ListNode) and node.key == "paper"
-        ),
+        (node for node in doc.root.items if isinstance(node, ListNode) and node.key == "paper"),
         None,
     )
     if paper is None or len(paper.items) < 2 or not isinstance(paper.items[1], StringNode):

@@ -101,10 +101,7 @@ def compute_refinement_metrics(path: Path) -> RefinementMetricReport:
                 overlap_area += ix * iy
 
     wire_component = sum(
-        1
-        for segment in wires
-        for bbox in bboxes
-        if _segment_crosses_bbox_interior(segment, bbox)
+        1 for segment in wires for bbox in bboxes if _segment_crosses_bbox_interior(segment, bbox)
     )
     crossings = _wire_crossings(wires, junctions)
     graph_bends, excessive = _graph_bend_metrics(wires)
@@ -144,8 +141,7 @@ def compute_refinement_metrics(path: Path) -> RefinementMetricReport:
     off_grid = sum(not _on_grid(v) for point in all_points for v in point)
     distinct_columns = len({round(c.x / _GRID_MM) for c in components})
     residuals = [
-        min(abs(c.x / _GRID_MM - round(c.x / _GRID_MM)), 0.5) * _GRID_MM
-        for c in components
+        min(abs(c.x / _GRID_MM - round(c.x / _GRID_MM)), 0.5) * _GRID_MM for c in components
     ]
     alignment = sum(residuals) / len(residuals) if residuals else 0.0
 
@@ -209,9 +205,7 @@ def _wires(doc: SchematicDoc) -> list[_WireSegment]:
                 code="REFINEMENT_METRIC_INVALID_GEOMETRY",
             )
         points = [
-            _xy(child)
-            for child in pts.items
-            if isinstance(child, ListNode) and child.key == "xy"
+            _xy(child) for child in pts.items if isinstance(child, ListNode) and child.key == "xy"
         ]
         if len(points) < 2:
             raise UserError(
@@ -232,9 +226,7 @@ def _wires(doc: SchematicDoc) -> list[_WireSegment]:
 
 def _point_nodes(doc: SchematicDoc, key: str) -> list[tuple[float, float]]:
     return [
-        _node_at(node)
-        for node in doc.root.items
-        if isinstance(node, ListNode) and node.key == key
+        _node_at(node) for node in doc.root.items if isinstance(node, ListNode) and node.key == key
     ]
 
 

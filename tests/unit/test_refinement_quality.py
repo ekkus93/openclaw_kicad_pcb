@@ -35,9 +35,7 @@ def test_protected_metric_regression_rejects_even_with_other_improvement() -> No
     after = replace(
         before,
         component_overlap_count=before.component_overlap_count + 1,
-        non_junction_wire_crossing_count=max(
-            0, before.non_junction_wire_crossing_count - 1
-        ),
+        non_junction_wire_crossing_count=max(0, before.non_junction_wire_crossing_count - 1),
         schematic_hash="f" * 64,
     )
     decision = evaluate_candidate_quality(

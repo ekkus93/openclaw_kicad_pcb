@@ -11,10 +11,10 @@ class _Result:
 
 class _Adapter:
     detected_version = KiCadVersion(9, 0, 0)
+
     def export_svg_sch(self, _sch: Path, output: Path):
         output.write_text(
-            '<svg xmlns="http://www.w3.org/2000/svg" '
-            'viewBox="0 0 297 210"></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 297 210"></svg>',
             encoding="utf-8",
         )
         return _Result()

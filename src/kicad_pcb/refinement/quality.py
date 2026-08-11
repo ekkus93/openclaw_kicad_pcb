@@ -92,9 +92,7 @@ def evaluate_candidate_quality(
     for name in sorted(targeted):
         b = getattr(before, name)
         a = getattr(after, name)
-        if (name in _LOWER_IS_BETTER and a < b) or (
-            name not in _LOWER_IS_BETTER and a > b
-        ):
+        if (name in _LOWER_IS_BETTER and a < b) or (name not in _LOWER_IS_BETTER and a > b):
             improved.append(name)
     if not improved:
         return CandidateQualityDecision(

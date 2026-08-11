@@ -36,9 +36,7 @@ def validate_candidate_structure(
     doc = SchematicDoc.load(candidate)
     lint_errors = tuple(
         sorted(
-            issue.code
-            for issue in lint_schematic(doc.root)
-            if issue.severity is LintSeverity.ERROR
+            issue.code for issue in lint_schematic(doc.root) if issue.severity is LintSeverity.ERROR
         )
     )
     if lint_errors:

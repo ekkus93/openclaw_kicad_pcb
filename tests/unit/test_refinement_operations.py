@@ -15,7 +15,8 @@ def _hash(path: Path) -> str:
 
 def _simple(tmp_path: Path) -> Path:
     path = tmp_path / "simple.kicad_sch"
-    path.write_text('''(kicad_sch
+    path.write_text(
+        """(kicad_sch
   (version 20230121)
   (generator eeschema)
   (uuid "root")
@@ -28,15 +29,24 @@ def _simple(tmp_path: Path) -> Path:
     (property "Reference" "R1") (property "Value" "10k") (property "Footprint" ""))
   (wire (pts (xy 25.4 25.4) (xy 25.4 38.1)) (uuid "w1"))
   (label "N" (at 25.4 38.1 0) (uuid "l1"))
-  (sheet_instances (path "/" (page "1"))))''', encoding="utf-8")
+  (sheet_instances (path "/" (page "1"))))""",
+        encoding="utf-8",
+    )
     return path
 
 
 def test_registry_contains_only_explicit_layout_vocabulary() -> None:
     assert set(registered_operation_schemas()) == {
-        "move_component", "rotate_component", "move_label", "move_power_symbol",
-        "align_components", "distribute_components", "move_component_group",
-        "remove_redundant_wire_bend", "shorten_wire_path", "reroute_existing_net_orthogonal",
+        "move_component",
+        "rotate_component",
+        "move_label",
+        "move_power_symbol",
+        "align_components",
+        "distribute_components",
+        "move_component_group",
+        "remove_redundant_wire_bend",
+        "shorten_wire_path",
+        "reroute_existing_net_orthogonal",
     }
 
 
@@ -45,10 +55,19 @@ def test_unsupported_semantic_operation_is_rejected_without_write(tmp_path: Path
     before = path.read_bytes()
     source = _hash(path)
     with pytest.raises(UserError, match="Unsupported layout operation"):
-        execute_layout_operations(path, [{
-            "schema_version": "1.0", "operation_id": "x", "source_schematic_hash": source,
-            "operation_type": "change_component_value", "arguments": {"ref": "R1"},
-        }], expected_source_hash=source)
+        execute_layout_operations(
+            path,
+            [
+                {
+                    "schema_version": "1.0",
+                    "operation_id": "x",
+                    "source_schematic_hash": source,
+                    "operation_type": "change_component_value",
+                    "arguments": {"ref": "R1"},
+                }
+            ],
+            expected_source_hash=source,
+        )
     assert path.read_bytes() == before
 
 

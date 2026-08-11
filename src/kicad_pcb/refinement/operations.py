@@ -365,9 +365,7 @@ def _apply_alignment_operation(
     components = _resolve_targets(doc, args.targets)
     coordinate = args.coordinate_mm
     if coordinate is None:
-        coordinate = sum(
-            c.x if args.axis == "x" else c.y for c in components
-        ) / len(components)
+        coordinate = sum(c.x if args.axis == "x" else c.y for c in components) / len(components)
     coordinate = _snap(coordinate, policy.grid_mm)
     for component in components:
         current = _resolve_component(
@@ -491,8 +489,7 @@ def _resolve_component(
     matches = [
         component
         for component in semantic.components
-        if component.ref == target.ref
-        and (target.unit is None or component.unit == target.unit)
+        if component.ref == target.ref and (target.unit is None or component.unit == target.unit)
     ]
     if power_only:
         matches = [c for c in matches if c.ref in semantic.helper_refs]
@@ -588,10 +585,7 @@ def _validate_anchor_move_safety(
                     code="REFINEMENT_AMBIGUOUS_TARGET",
                 )
         for new in moving_new:
-            contacts_wire = any(
-                _point_on_segment(new, a, b)
-                for a, b in zip(points, points[1:])
-            )
+            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
             if contacts_wire and new not in points:
                 raise UserError(
                     "Moved pin would create an unintended wire contact.",
@@ -610,9 +604,7 @@ def _retarget_anchors(
         if node.key == "wire":
             points = _wire_points(node)
             changed = [
-                mapping.get(point, point)
-                if index in {0, len(points) - 1}
-                else point
+                mapping.get(point, point) if index in {0, len(points) - 1} else point
                 for index, point in enumerate(points)
             ]
             if changed != points:
@@ -682,10 +674,11 @@ def _validate_wire_net_context(
                     evidence.update(positions)
     # Exact same-name label endpoints are also direct evidence.
     for node in doc.root.items:
-        if (
-            isinstance(node, ListNode)
-            and node.key in {"label", "global_label", "hierarchical_label"}
-        ):
+        if isinstance(node, ListNode) and node.key in {
+            "label",
+            "global_label",
+            "hierarchical_label",
+        }:
             name = _first_string(node)
             if name == net_name:
                 evidence.add(_node_at(node))
@@ -705,10 +698,14 @@ def _validate_wire_net_context(
 
 def _shorter_manhattan(points: list[tuple[float, float]]) -> list[tuple[float, float]] | None:
     start, end = points[0], points[-1]
-    candidates = [[start, end]] if start[0] == end[0] or start[1] == end[1] else [
-        [start, (start[0], end[1]), end],
-        [start, (end[0], start[1]), end],
-    ]
+    candidates = (
+        [[start, end]]
+        if start[0] == end[0] or start[1] == end[1]
+        else [
+            [start, (start[0], end[1]), end],
+            [start, (end[0], start[1]), end],
+        ]
+    )
     before = _path_length(points)
     valid = [
         _simplify_orthogonal(candidate)
@@ -843,9 +840,7 @@ def _wire_points(node: ListNode) -> list[tuple[float, float]]:
 def _replace_wire_points(node: ListNode, points: list[tuple[float, float]]) -> ListNode:
     replacement = L(atom("pts"), *(L(atom("xy"), fnum(x, 2), fnum(y, 2)) for x, y in points))
     items = [
-        replacement
-        if isinstance(child, ListNode) and child.key == "pts"
-        else child
+        replacement if isinstance(child, ListNode) and child.key == "pts" else child
         for child in node.items
     ]
     return ListNode(tuple(items), node.pos)
@@ -1020,8 +1015,7 @@ def _point_on_polyline_interior(
     points: list[tuple[float, float]],
 ) -> bool:
     return any(
-        _point_on_segment(point, a, b) and point not in {a, b}
-        for a, b in zip(points, points[1:])
+        _point_on_segment(point, a, b) and point not in {a, b} for a, b in zip(points, points[1:])
     )
 
 
@@ -1038,9 +1032,9 @@ def _orthogonal_intersection(a, b, c, d):
 
 def _segment_crosses_bbox(a, b, bbox):
     if a[0] == b[0]:
-        return bbox[0] < a[0] < bbox[2] and max(
-            min(a[1], b[1]), bbox[1]
-        ) < min(max(a[1], b[1]), bbox[3])
-    return bbox[1] < a[1] < bbox[3] and max(
-        min(a[0], b[0]), bbox[0]
-    ) < min(max(a[0], b[0]), bbox[2])
+        return bbox[0] < a[0] < bbox[2] and max(min(a[1], b[1]), bbox[1]) < min(
+            max(a[1], b[1]), bbox[3]
+        )
+    return bbox[1] < a[1] < bbox[3] and max(min(a[0], b[0]), bbox[0]) < min(
+        max(a[0], b[0]), bbox[2]
+    )
