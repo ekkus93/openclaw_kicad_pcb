@@ -32,6 +32,10 @@ jobs:
               'from dataclasses import dataclass',
           )
           text = text.replace(
+              'from kicad_pcb.circuit_ir import CircuitIR\n',
+              'from kicad_pcb.circuit_ir import CircuitIR\nfrom kicad_pcb.electrical_equivalence import ElectricalTerminal\n',
+          )
+          text = text.replace(
               '    resolve_component_pin_position_candidates,\n    resolve_component_pin_positions,\n',
               '    resolve_component_pin_position_candidates,\n',
           )
@@ -66,11 +70,11 @@ jobs:
               doc: SchematicDoc,
               component: PlacedSchematicComponent,
               placement: tuple[float, float, int],
-              pin_candidates: Mapping[object, tuple[tuple[float, float], ...]],
+              pin_candidates: Mapping[ElectricalTerminal, tuple[tuple[float, float], ...]],
           ) -> dict[tuple[float, float], tuple[float, float]]:
               anchors = _attachment_points(doc)
-              attached: dict[tuple[float, float], set[object]] = {}
-              terminal_positions: dict[object, set[tuple[float, float]]] = {}
+              attached: dict[tuple[float, float], set[ElectricalTerminal]] = {}
+              terminal_positions: dict[ElectricalTerminal, set[tuple[float, float]]] = {}
               for terminal, positions in pin_candidates.items():
                   for position in positions:
                       if position in anchors:
