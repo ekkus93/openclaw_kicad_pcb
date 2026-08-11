@@ -45,6 +45,24 @@ def test_layout_fingerprint_ignores_byte_only_formatting_change(tmp_path: Path) 
     )
 
 
+def test_layout_fingerprint_is_distinct_from_semantic_change_detection(tmp_path: Path) -> None:
+    first = _simple(tmp_path, "first.kicad_sch")
+    second = tmp_path / "second.kicad_sch"
+    second.write_text(
+        first.read_text(encoding="utf-8").replace(
+            '(property "Value" "10k")',
+            '(property "Value" "12k")',
+        ),
+        encoding="utf-8",
+    )
+
+    assert _hash(first) != _hash(second)
+    assert (
+        compute_schematic_layout_fingerprint(first).digest
+        == compute_schematic_layout_fingerprint(second).digest
+    )
+
+
 def test_layout_fingerprint_ignores_wire_point_direction(tmp_path: Path) -> None:
     first = _simple(tmp_path, "first.kicad_sch")
     second = tmp_path / "second.kicad_sch"
