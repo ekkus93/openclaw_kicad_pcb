@@ -18,7 +18,6 @@ from kicad_pcb.corpus.kicadxml import (
     schematic_symbols_by_ref,
 )
 from kicad_pcb.electrical_equivalence import (
-    ElectricalEquivalenceReport,
     ElectricalMismatch,
     SchematicElectricalFingerprint,
     build_circuit_ir_fingerprint,

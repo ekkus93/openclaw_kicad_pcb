@@ -66,7 +66,7 @@ class SchematicCandidateTransaction:
         self.state = CandidateState.CREATED
         self.validated_candidate_hash: str | None = None
 
-    def __enter__(self) -> "SchematicCandidateTransaction":
+    def __enter__(self) -> SchematicCandidateTransaction:
         return self
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
