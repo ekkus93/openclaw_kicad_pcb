@@ -25,7 +25,7 @@ from .schematic_semantics import (
     resolve_component_pin_positions,
 )
 
-OPERATION_SCHEMA_VERSION = "1.0"
+OPERATION_SCHEMA_VERSION: Literal["1.0"] = "1.0"
 DEFAULT_GRID_MM = 1.27
 DEFAULT_MAX_OPERATIONS = 32
 MAX_COORDINATE_ABS_MM = 2000.0
