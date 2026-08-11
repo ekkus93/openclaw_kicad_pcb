@@ -50,7 +50,9 @@ jobs:
                       raise SystemExit(f'unexpected blob encoding for {sha}')
                   chunks.append(base64.b64decode(payload['content']))
 
-              archive = base64.b64decode(b''.join(chunks), validate=True)
+              encoded = b''.join(chunks)
+              compact = b''.join(encoded.split())
+              archive = base64.b64decode(compact, validate=True)
               digest = hashlib.sha256(archive).hexdigest()
               if digest != expected:
                   raise SystemExit(f'archive SHA mismatch: {digest}')
