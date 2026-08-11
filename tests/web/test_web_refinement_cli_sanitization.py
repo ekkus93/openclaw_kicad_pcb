@@ -6,6 +6,7 @@ from pathlib import Path
 
 from kicad_pcb.errors import UserError
 from kicad_pcb_web import refinement_cli
+from kicad_pcb_web.refinement_cli import RefinementCliContext
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
 
 
@@ -31,11 +32,13 @@ def test_refinement_cli_does_not_print_user_error_details(
 
     exit_code = refinement_cli.execute_refinement_cli(
         ["--session-id", "session-001"],
-        accepted_path=accepted,
-        runtime=object(),  # type: ignore[arg-type]
-        config=RefinementFeatureConfig(enabled=True),
-        stdout=stdout,
-        stderr=stderr,
+        RefinementCliContext(
+            accepted_path=accepted,
+            runtime=object(),  # type: ignore[arg-type]
+            config=RefinementFeatureConfig(enabled=True),
+            stdout=stdout,
+            stderr=stderr,
+        ),
     )
 
     assert exit_code == 2
