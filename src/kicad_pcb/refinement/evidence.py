@@ -51,6 +51,18 @@ class IterationEvidenceInputs:
 
 
 @dataclass(frozen=True)
+class SessionIterationReferenceInputs:
+    iteration_id: str
+    status: str
+    code: str
+    accepted_hash_before: str
+    accepted_hash_after: str
+    candidate_hash: str | None
+    candidate_layout_fingerprint: str | None
+    evidence_dir: Path | None
+
+
+@dataclass(frozen=True)
 class SessionIterationEvidenceReference:
     iteration_id: str
     status: str
@@ -173,32 +185,24 @@ def write_iteration_evidence_bundle(
 
 
 def build_session_iteration_reference(
-    *,
     evidence_root: Path,
-    iteration_id: str,
-    status: str,
-    code: str,
-    accepted_hash_before: str,
-    accepted_hash_after: str,
-    candidate_hash: str | None,
-    candidate_layout_fingerprint: str | None,
-    evidence_dir: Path | None,
+    inputs: SessionIterationReferenceInputs,
 ) -> SessionIterationEvidenceReference:
     """Build a sanitized session reference to one already-published iteration bundle."""
 
-    _validate_identifier(iteration_id)
+    _validate_identifier(inputs.iteration_id)
     evidence_directory: str | None = None
     manifest_hash: str | None = None
-    if evidence_dir is not None:
+    if inputs.evidence_dir is not None:
         root_resolved = evidence_root.resolve()
-        evidence_resolved = evidence_dir.resolve()
+        evidence_resolved = inputs.evidence_dir.resolve()
         if evidence_resolved.parent != root_resolved:
             raise UserError(
                 "Iteration evidence is outside the configured evidence root.",
                 code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
             )
         _validate_identifier(evidence_resolved.name)
-        if evidence_resolved.name != iteration_id:
+        if evidence_resolved.name != inputs.iteration_id:
             raise UserError(
                 "Iteration evidence directory does not match iteration id.",
                 code="REFINEMENT_EVIDENCE_UNSAFE_DATA",
@@ -213,13 +217,13 @@ def build_session_iteration_reference(
         manifest_hash = _sha256_file(manifest_path)
 
     return SessionIterationEvidenceReference(
-        iteration_id=iteration_id,
-        status=status,
-        code=code,
-        accepted_hash_before=accepted_hash_before,
-        accepted_hash_after=accepted_hash_after,
-        candidate_hash=candidate_hash,
-        candidate_layout_fingerprint=candidate_layout_fingerprint,
+        iteration_id=inputs.iteration_id,
+        status=inputs.status,
+        code=inputs.code,
+        accepted_hash_before=inputs.accepted_hash_before,
+        accepted_hash_after=inputs.accepted_hash_after,
+        candidate_hash=inputs.candidate_hash,
+        candidate_layout_fingerprint=inputs.candidate_layout_fingerprint,
         evidence_directory=evidence_directory,
         evidence_manifest_sha256=manifest_hash,
     )
