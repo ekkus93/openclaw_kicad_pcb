@@ -60,19 +60,35 @@ jobs:
       - name: Sync locked toolchain
         run: uv sync --frozen --extra dev --extra web
       - name: Canonical format and validate
+        shell: bash
         run: |
-          FILES=(
-            src/kicad_pcb_web/services/schematic_refinement.py
-            tests/web/test_web_schematic_refinement_loop.py
-          )
-          uv run ruff check --fix --select I "${FILES[@]}"
-          uv run ruff format "${FILES[@]}"
-          uv run ruff check .
-          uv run ruff format --check .
-          uv run mypy src/kicad_pcb src/kicad_pcb_web
-          uv run pytest -q tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
-          uv run pytest -q tests/unit tests/web
-          git diff --check
+          set +e
+          set -o pipefail
+          {
+            set -e
+            FILES=(
+              src/kicad_pcb_web/services/schematic_refinement.py
+              tests/web/test_web_schematic_refinement_loop.py
+            )
+            uv run ruff check --fix --select I "${FILES[@]}"
+            uv run ruff format "${FILES[@]}"
+            uv run ruff check .
+            uv run ruff format --check .
+            uv run mypy src/kicad_pcb src/kicad_pcb_web
+            uv run pytest -vv --tb=long tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
+            uv run pytest -q tests/unit tests/web
+            git diff --check
+          } 2>&1 | tee refinement-checkpoint.log
+          status=${PIPESTATUS[0]}
+          exit "$status"
+      - name: Upload checkpoint failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refinement-loop-checkpoint-failure
+          path: refinement-checkpoint.log
+          if-no-files-found: error
+          retention-days: 1
       - name: Commit verified bounded refinement loop
         run: |
           git config user.name 'github-actions[bot]'
