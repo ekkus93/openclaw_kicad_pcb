@@ -103,6 +103,8 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
         nonlocal calls
         calls += 1
         assert kwargs["enforce_best_known_retention"] is True
+        assert isinstance(kwargs["runtime"].llm_client, service.RefinementModelCallBudget)
+        assert kwargs["runtime"].llm_client.max_calls == 6
         return _no_op(_sha(kwargs["accepted_path"]))
 
     monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
@@ -115,6 +117,8 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
     assert result.stop_reason == "REFINEMENT_STOP_NO_OPERATIONS"
     assert result.rounds_attempted == 1
     assert result.final_accepted_hash == _sha(accepted)
+    assert result.model_calls_made == 0
+    assert result.model_call_limit == 6
 
 
 def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: Path) -> None:
