@@ -1,0 +1,267 @@
+name: Refinement CI Fix
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - '.github/workflows/refinement-ci-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Sync toolchain
+        run: uv sync --frozen --extra dev --extra web
+      - name: Apply refinement fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/kicad_pcb/refinement/operations.py')
+          text = path.read_text()
+          text = text.replace(
+              'from dataclasses import asdict, dataclass',
+              'from dataclasses import dataclass',
+          )
+          text = text.replace(
+              '    resolve_component_pin_position_candidates,\n    resolve_component_pin_positions,\n',
+              '    resolve_component_pin_position_candidates,\n',
+          )
+          text = text.replace(
+              'OPERATION_SCHEMA_VERSION = "1.0"',
+              'OPERATION_SCHEMA_VERSION: Literal["1.0"] = "1.0"',
+          )
+          start = text.index('def _move_component(\n')
+          end = text.index('def _retarget_anchors(\n')
+          replacement = '''def _move_component(
+              doc: SchematicDoc,
+              component: PlacedSchematicComponent,
+              placement: tuple[float, float, int],
+              policy: LayoutOperationPolicy,
+          ) -> None:
+              x, y, rotation = placement
+              _validate_point(doc, x, y, policy)
+              node = _find_component_node(doc, component)
+              pin_candidates = resolve_component_pin_position_candidates(doc, component)
+              mapping = _attached_pin_mapping(doc, component, placement, pin_candidates)
+              moving_old = {position for positions in pin_candidates.values() for position in positions}
+              moving_new = {
+                  _transform_component_point(component, placement, position)
+                  for position in moving_old
+              }
+              _validate_anchor_move_safety(doc, component, mapping, moving_old, moving_new)
+              _replace_top_level(doc, node, _replace_at(node, x, y, rotation))
+              _retarget_anchors(doc, mapping)
+
+
+          def _attached_pin_mapping(
+              doc: SchematicDoc,
+              component: PlacedSchematicComponent,
+              placement: tuple[float, float, int],
+              pin_candidates: Mapping[object, tuple[tuple[float, float], ...]],
+          ) -> dict[tuple[float, float], tuple[float, float]]:
+              anchors = _attachment_points(doc)
+              attached: dict[tuple[float, float], set[object]] = {}
+              terminal_positions: dict[object, set[tuple[float, float]]] = {}
+              for terminal, positions in pin_candidates.items():
+                  for position in positions:
+                      if position in anchors:
+                          attached.setdefault(position, set()).add(terminal)
+                          terminal_positions.setdefault(terminal, set()).add(position)
+
+              ambiguous_points = {
+                  position: terminals
+                  for position, terminals in attached.items()
+                  if len(terminals) != 1
+              }
+              ambiguous_terminals = {
+                  terminal: positions
+                  for terminal, positions in terminal_positions.items()
+                  if len(positions) != 1
+              }
+              if ambiguous_points or ambiguous_terminals:
+                  raise UserError(
+                      "Attached schematic geometry does not identify one exact pin position.",
+                      code="REFINEMENT_AMBIGUOUS_TARGET",
+                      details={
+                          "ref": component.ref,
+                          "unit": component.unit,
+                          "ambiguous_point_count": len(ambiguous_points),
+                          "ambiguous_terminal_count": len(ambiguous_terminals),
+                      },
+                  )
+
+              return {
+                  position: _transform_component_point(component, placement, position)
+                  for position in attached
+              }
+
+
+          def _attachment_points(doc: SchematicDoc) -> set[tuple[float, float]]:
+              points: set[tuple[float, float]] = set()
+              for wire in _wire_nodes(doc):
+                  wire_points = _wire_points(wire)
+                  if wire_points:
+                      points.add(wire_points[0])
+                      points.add(wire_points[-1])
+              for node in doc.root.items:
+                  if isinstance(node, ListNode) and node.key in {
+                      "label",
+                      "global_label",
+                      "hierarchical_label",
+                      "junction",
+                      "no_connect",
+                  }:
+                      points.add(_node_at(node))
+              return points
+
+
+          def _transform_component_point(
+              component: PlacedSchematicComponent,
+              placement: tuple[float, float, int],
+              point: tuple[float, float],
+          ) -> tuple[float, float]:
+              x, y, rotation = placement
+              old_theta = math.radians(component.rotation)
+              old_cos = math.cos(old_theta)
+              old_sin = math.sin(old_theta)
+              dx = point[0] - component.x
+              dy = point[1] - component.y
+              local_x = old_cos * dx - old_sin * dy
+              local_y = -old_sin * dx - old_cos * dy
+
+              new_theta = math.radians(rotation)
+              new_cos = math.cos(new_theta)
+              new_sin = math.sin(new_theta)
+              return (
+                  round(x + new_cos * local_x - new_sin * local_y, 9),
+                  round(y - (new_sin * local_x + new_cos * local_y), 9),
+              )
+
+
+          def _validate_anchor_move_safety(
+              doc: SchematicDoc,
+              component: PlacedSchematicComponent,
+              mapping: Mapping[tuple[float, float], tuple[float, float]],
+              moving_old: set[tuple[float, float]],
+              moving_new: set[tuple[float, float]],
+          ) -> None:
+              semantic = extract_schematic_semantics_from_doc(doc)
+              stationary_positions: set[tuple[float, float]] = set()
+              for other in semantic.components:
+                  if (other.ref, other.unit) == (component.ref, component.unit):
+                      continue
+                  for positions in resolve_component_pin_position_candidates(doc, other).values():
+                      stationary_positions.update(positions)
+              if moving_new & stationary_positions:
+                  raise UserError(
+                      "Component move would collide with a stationary pin.",
+                      code="REFINEMENT_AMBIGUOUS_TARGET",
+                  )
+              for wire in _wire_nodes(doc):
+                  points = _wire_points(wire)
+                  for old in moving_old:
+                      if _point_on_polyline_interior(old, points):
+                          raise UserError(
+                              "Moving pin touches wire interior; mutation is ambiguous.",
+                              code="REFINEMENT_AMBIGUOUS_TARGET",
+                          )
+                  for new in moving_new:
+                      contacts_wire = any(
+                          _point_on_segment(new, a, b) for a, b in zip(points, points[1:])
+                      )
+                      if contacts_wire and new not in points:
+                          raise UserError(
+                              "Moved pin would create an unintended wire contact.",
+                              code="REFINEMENT_AMBIGUOUS_TARGET",
+                          )
+
+
+          '''
+          text = text[:start] + replacement + text[end:]
+          path.write_text(text)
+
+          test_path = Path('tests/unit/test_refinement_operations.py')
+          tests = test_path.read_text()
+          if 'import kicad_pcb.refinement.operations as refinement_operations' not in tests:
+              tests = tests.replace(
+                  'import pytest\n\nfrom kicad_pcb.errors import UserError',
+                  'import pytest\n\nimport kicad_pcb.refinement.operations as refinement_operations\nfrom kicad_pcb.errors import UserError',
+              )
+          marker = 'def test_move_label_rejects_unknown_uuid(tmp_path: Path) -> None:\n'
+          if 'test_move_component_uses_attached_pin_when_geometry_has_alternates' not in tests:
+              regression = '''def test_move_component_uses_attached_pin_when_geometry_has_alternates(
+              tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+          ) -> None:
+              path = _simple(tmp_path)
+              source = _hash(path)
+              original = refinement_operations.resolve_component_pin_position_candidates
+
+              def with_alternate_geometry(doc, component):
+                  candidates = original(doc, component)
+                  return {
+                      terminal: positions + (((22.86, 25.4),) if terminal.pin == "1" else ())
+                      for terminal, positions in candidates.items()
+                  }
+
+              monkeypatch.setattr(
+                  refinement_operations,
+                  "resolve_component_pin_position_candidates",
+                  with_alternate_geometry,
+              )
+
+              result = execute_layout_operations(
+                  path,
+                  [
+                      {
+                          "schema_version": "1.0",
+                          "operation_id": "1",
+                          "source_schematic_hash": source,
+                          "operation_type": "move_component",
+                          "arguments": {
+                              "target": {"ref": "R1", "unit": "1"},
+                              "dx_mm": 1.27,
+                              "dy_mm": 0.0,
+                          },
+                      }
+                  ],
+                  expected_source_hash=source,
+              )
+
+              assert result.candidate_hash != source
+              assert "(wire (pts (xy 26.67 25.40) (xy 25.40 38.10))" in path.read_text()
+
+
+          '''
+              tests = tests.replace(marker, regression + marker)
+          test_path.write_text(tests)
+          PY
+      - name: Format and validate
+        run: |
+          uv run ruff format src/kicad_pcb/refinement/operations.py tests/unit/test_refinement_operations.py
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/kicad_pcb src/kicad_pcb_web
+          uv run pytest -q \
+            tests/unit/test_refinement_operations.py \
+            tests/unit/test_refinement_metrics.py \
+            tests/unit/test_refinement_quality.py \
+            tests/unit/test_refinement_rendering.py \
+            tests/unit/test_refinement_electrical.py \
+            tests/unit/test_refinement_transaction.py
+          git diff --check
+      - name: Commit verified fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/kicad_pcb/refinement/operations.py tests/unit/test_refinement_operations.py
+          git commit -m 'fix: resolve refinement mutation geometry safely'
+          git push origin HEAD:webapp
