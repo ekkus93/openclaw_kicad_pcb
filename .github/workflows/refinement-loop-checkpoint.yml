@@ -9,11 +9,20 @@ on:
 permissions:
   contents: write
 
+env:
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
+
 jobs:
   verify-and-checkpoint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y graphviz kicad-symbols
+          command -v dot
+          test -d "$KICAD_SYMBOLS_DIR"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
