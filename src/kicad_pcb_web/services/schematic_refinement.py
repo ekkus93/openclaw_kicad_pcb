@@ -19,6 +19,7 @@ from kicad_pcb.refinement.electrical import (
 )
 from kicad_pcb.refinement.evidence import (
     ITERATION_EVIDENCE_SCHEMA_VERSION,
+    RETENTION_POLICY_SCHEMA_VERSION,
     SESSION_EVIDENCE_SCHEMA_VERSION,
     IterationEvidenceInputs,
     SessionEvidenceInputs,
@@ -567,6 +568,7 @@ class _RefinementLoopState:
     best_accepted_hash: str
     starting_layout_fingerprint: str
     best_layout_fingerprint: str
+    iteration_ids: list[str]
     iterations: list[RefinementApplyResult]
     model_call_budget: RefinementModelCallBudget
     decision_history: list[RefinementDecisionHistoryEntry]
@@ -606,6 +608,7 @@ def refine_schematic(
         best_accepted_hash=starting_hash,
         starting_layout_fingerprint=starting_layout_fingerprint,
         best_layout_fingerprint=starting_layout_fingerprint,
+        iteration_ids=[],
         iterations=[],
         model_call_budget=model_call_budget,
         decision_history=[],
@@ -636,11 +639,11 @@ def refine_schematic(
                 failure_code=failure_code,
             )
         except Exception as evidence_exc:
-            raise UserError(
-                "Refinement hard failure could not be finalized into session evidence.",
-                code="REFINEMENT_EVIDENCE_WRITE_FAILED",
-                details={"original_failure_code": failure_code},
-            ) from evidence_exc
+            exc.add_note(
+                "Refinement session evidence finalization also failed with code "
+                f"{_exception_code(evidence_exc)}."
+            )
+            raise exc from evidence_exc
         raise
 
     evidence_dir = _publish_session_evidence(
@@ -695,6 +698,7 @@ def _run_refinement_loop(
             ),
             enforce_best_known_retention=True,
         )
+        state.iteration_ids.append(iteration_id)
         state.iterations.append(result)
         if result.candidate_hash is not None:
             state.latest_attempted_hash = result.candidate_hash
@@ -830,7 +834,7 @@ def _publish_session_evidence(
     references = tuple(
         build_session_iteration_reference(
             evidence_root=runtime.evidence_root,
-            iteration_id=history.iteration_id,
+            iteration_id=iteration_id,
             status=iteration.status,
             code=iteration.code,
             accepted_hash_before=iteration.accepted_hash_before,
@@ -839,7 +843,11 @@ def _publish_session_evidence(
             candidate_layout_fingerprint=iteration.candidate_layout_fingerprint,
             evidence_dir=iteration.evidence_dir,
         )
-        for history, iteration in zip(state.decision_history, state.iterations, strict=True)
+        for iteration_id, iteration in zip(
+            state.iteration_ids,
+            state.iterations,
+            strict=True,
+        )
     )
     final_hash = result.final_accepted_hash if result is not None else _sha(accepted_path)
     final_layout = (
@@ -867,6 +875,7 @@ def _publish_session_evidence(
                 "layout_fingerprint": LAYOUT_FINGERPRINT_SCHEMA_VERSION,
                 "iteration_evidence": ITERATION_EVIDENCE_SCHEMA_VERSION,
                 "session_evidence": SESSION_EVIDENCE_SCHEMA_VERSION,
+                "retention_policy": RETENTION_POLICY_SCHEMA_VERSION,
                 "refinement_service": REFINEMENT_SERVICE_VERSION,
             },
             configured_bounds=asdict(limits),
@@ -975,7 +984,7 @@ def _reject_candidate(
             quality_decision=context.quality or {"accepted": False, "code": code},
             before_render=context.analysis.render,
             after_render=after_render,
-            accepted_hash_after=None,
+            accepted_hash_after=context.analysis.accepted_hash,
             disposition="rejected",
             reason_code=code,
             candidate_hash=candidate_hash,
