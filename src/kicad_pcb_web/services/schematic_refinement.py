@@ -43,6 +43,7 @@ from kicad_pcb.refinement.vision_context import VisionObjectMap, build_vision_ob
 
 from .llm import LlmClient
 from .refinement_llm import (
+    RefinementDecisionHistoryEntry,
     RefinementModelCallBudget,
     RepairPlannerOptions,
     refinement_model_call_upper_bound,
@@ -90,6 +91,7 @@ class RefinementRuntime:
     work_dir: Path
     evidence_root: Path
     operation_policy: LayoutOperationPolicy = LayoutOperationPolicy()
+    prior_decisions: tuple[RefinementDecisionHistoryEntry, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -142,6 +144,7 @@ def analyze_schematic_refinement(
         context=context,
         image_path=render.png_path,
         max_repairs=max_critic_repairs,
+        prior_decisions=runtime.prior_decisions,
     )
     _assert_hash_unchanged(accepted_path, accepted_hash, mode="analyze")
     return RefinementAnalysisResult(
@@ -177,6 +180,7 @@ def plan_schematic_refinement(
             max_repairs=limits.max_planner_repairs,
             max_operations=limits.max_operations,
         ),
+        prior_decisions=runtime.prior_decisions,
     )
     _assert_hash_unchanged(accepted_path, analysis.accepted_hash, mode="plan")
     return RefinementPlanResult(analysis=analysis, plan=plan)
@@ -479,6 +483,7 @@ class _RefinementLoopState:
     best_layout_fingerprint: str
     iterations: list[RefinementApplyResult]
     model_call_budget: RefinementModelCallBudget
+    decision_history: list[RefinementDecisionHistoryEntry]
     latest_attempted_hash: str | None = None
     accepted_rounds: int = 0
     rejected_rounds: int = 0
@@ -516,6 +521,7 @@ def refine_schematic(
         best_layout_fingerprint=starting_layout_fingerprint,
         iterations=[],
         model_call_budget=model_call_budget,
+        decision_history=[],
     )
 
     for round_number in range(1, limits.max_rounds + 1):
@@ -530,9 +536,13 @@ def refine_schematic(
                 code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
             )
         iteration_id = f"{session_id}-round-{round_number:03d}"
+        round_runtime = replace(
+            bounded_runtime,
+            prior_decisions=tuple(state.decision_history),
+        )
         result = apply_once_schematic_refinement(
             accepted_path=accepted_path,
-            runtime=bounded_runtime,
+            runtime=round_runtime,
             iteration_id=iteration_id,
             limits=RefinementIterationLimits(
                 max_critic_repairs=limits.max_critic_repairs,
@@ -549,6 +559,13 @@ def refine_schematic(
                 "Refinement round result is not bound to the round-start schematic.",
                 code="REFINEMENT_STALE",
             )
+        if result.status not in {"accepted", "rejected", "no_op"}:
+            raise UserError(
+                "Refinement round returned an unknown status.",
+                code="REFINEMENT_INVALID_RESULT",
+                details={"status": result.status},
+            )
+        state.decision_history.append(_decision_history_entry(iteration_id, result))
 
         repeated_layout = False
         if result.candidate_layout_fingerprint is not None:
@@ -570,12 +587,6 @@ def refine_schematic(
                 return _loop_result("REFINEMENT_STOP_REJECTION_LIMIT", accepted_path, state)
             continue
 
-        if result.status != "accepted":
-            raise UserError(
-                "Refinement round returned an unknown status.",
-                code="REFINEMENT_INVALID_RESULT",
-                details={"status": result.status},
-            )
         if actual_hash != result.accepted_hash_after:
             raise UserError(
                 "Accepted refinement result does not match persisted schematic bytes.",
@@ -644,6 +655,25 @@ def _loop_result(
         model_calls_made=state.model_call_budget.calls_made,
         model_call_limit=state.model_call_budget.max_calls,
         iterations=tuple(state.iterations),
+    )
+
+
+def _decision_history_entry(
+    iteration_id: str,
+    result: RefinementApplyResult,
+) -> RefinementDecisionHistoryEntry:
+    operation_types = (
+        tuple(operation.operation_type for operation in result.operations.results)
+        if result.operations is not None
+        else ()
+    )
+    return RefinementDecisionHistoryEntry(
+        iteration_id=iteration_id,
+        status=result.status,
+        code=result.code,
+        operation_types=operation_types,
+        candidate_layout_fingerprint=result.candidate_layout_fingerprint,
+        accepted_hash_after=result.accepted_hash_after,
     )
 
 
