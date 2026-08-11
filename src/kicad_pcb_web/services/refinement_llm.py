@@ -283,8 +283,8 @@ def run_repair_planner(
                 "repeating previously attempted layout patterns or failed operation patterns when "
                 "a different safe registered repair exists. Never emit KiCad S-expressions, shell "
                 "commands, file paths, source code, semantic component edits, net renames, "
-                "label-scope changes, or substitute operations for unsupported requests. If no safe "
-                "registered repair exists, return an empty operations list. Return JSON only."
+                "label-scope changes, or substitute operations for unsupported requests. "
+                "If no safe registered repair exists, return an empty operations list. Return JSON only."
             ),
         ),
         LlmMessage(
