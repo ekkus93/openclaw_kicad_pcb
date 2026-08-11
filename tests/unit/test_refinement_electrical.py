@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,6 +9,7 @@ from kicad_pcb.circuit_ir import CircuitIR, ComponentIR, NetIR, PinRefIR
 from kicad_pcb.compat import KiCadVersion
 from kicad_pcb.electrical_equivalence import compare_circuit_ir_equivalence
 from kicad_pcb.errors import UserError
+from kicad_pcb.refinement import schematic_semantics
 from kicad_pcb.refinement.electrical import (
     build_schematic_electrical_baseline,
     verify_schematic_electrical_invariance,
@@ -104,10 +106,10 @@ def test_explicit_no_connect_maps_to_exact_terminal(tmp_path: Path) -> None:
     ]
 
 
-def test_rotated_explicit_no_connect_uses_rotated_pin_geometry(tmp_path: Path) -> None:
+def test_rotated_explicit_no_connect_uses_kicad_coordinate_transform(tmp_path: Path) -> None:
     schematic = tmp_path / "nc_rotated.kicad_sch"
     schematic.write_text(
-        _simple_schematic(rotation=90, no_connect=(10.0, 27.62)),
+        _simple_schematic(rotation=90, no_connect=(10.0, 12.38)),
         encoding="utf-8",
     )
 
@@ -115,6 +117,35 @@ def test_rotated_explicit_no_connect_uses_rotated_pin_geometry(tmp_path: Path) -
 
     assert [(item.ref, item.pin, item.unit) for item in snapshot.no_connect_terminals] == [
         ("R1", "2", "1")
+    ]
+
+
+def test_resolved_library_geometry_can_match_flattened_embedded_symbol(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    schematic = tmp_path / "resolved_nc.kicad_sch"
+    schematic.write_text(_simple_schematic(no_connect=(15.08, 20.0)), encoding="utf-8")
+    fake_dir = tmp_path / "symbols"
+    fake_dir.mkdir()
+
+    monkeypatch.setattr(
+        schematic_semantics,
+        "resolve_symbol_dirs",
+        lambda: SimpleNamespace(dirs=(fake_dir,)),
+    )
+    monkeypatch.setattr(
+        schematic_semantics,
+        "read_lib_symbol_unit_pin_at",
+        lambda _lib, _symbol, *, symbols_dir: {
+            "1": {"1": (5.08, 0.0, 180.0), "2": (12.7, 0.0, 180.0)}
+        },
+    )
+
+    snapshot = extract_schematic_semantics(schematic)
+
+    assert [(item.ref, item.pin, item.unit) for item in snapshot.no_connect_terminals] == [
+        ("R1", "1", "1")
     ]
 
 

@@ -8,8 +8,13 @@ from pathlib import Path
 
 from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import ErrorCode, UserError
-from kicad_pcb.sch_doc import SchematicDoc
+from kicad_pcb.sch_doc import (
+    SchematicDoc,
+    read_lib_symbol_pin_at,
+    read_lib_symbol_unit_pin_at,
+)
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
+from kicad_pcb.symbol_index import resolve_symbol_dirs
 
 
 @dataclass(frozen=True, order=True)
@@ -139,17 +144,24 @@ def _extract_no_connect_terminals(
     for component in components:
         if _is_explicit_power_helper(component):
             continue
+
+        pin_points: list[tuple[str, float, float]] = []
         lib_symbol = library_symbols.get(component.symbol_id)
-        if lib_symbol is None:
+        if lib_symbol is not None:
+            pin_points.extend(_library_pin_points(lib_symbol, unit=component.unit))
+        pin_points.extend(_external_library_pin_points(component))
+        pin_points = sorted(set(pin_points))
+        if not pin_points:
             raise UserError(
                 (
                     f"Cannot verify no-connect state for {component.ref}: "
-                    "embedded symbol definition missing."
+                    "no usable embedded or resolved-library pin geometry."
                 ),
                 code=ErrorCode.VALIDATION_FAILED,
                 details={"ref": component.ref, "symbol_id": component.symbol_id},
             )
-        for pin, local_x, local_y in _library_pin_points(lib_symbol, unit=component.unit):
+
+        for pin, local_x, local_y in pin_points:
             global_x, global_y = _transform_point(
                 local_x,
                 local_y,
@@ -256,6 +268,49 @@ def _library_pin_points(symbol: ListNode, *, unit: str) -> list[tuple[str, float
     return [(pin, *coords) for pin, coords in sorted(by_pin.items())]
 
 
+def _external_library_pin_points(
+    component: PlacedSchematicComponent,
+) -> list[tuple[str, float, float]]:
+    """Resolve pin geometry from installed/repository symbol libraries when available.
+
+    Generated schematics can contain deliberately flattened embedded symbol
+    definitions whose pin geometry is not identical to the source-library
+    geometry used when routing and placing no-connect markers. The production
+    verifier therefore considers both sources and still requires a unique
+    logical terminal match; absence of both sources fails closed.
+    """
+
+    if ":" not in component.symbol_id:
+        return []
+    lib_name, symbol_name = component.symbol_id.split(":", 1)
+    for directory in resolve_symbol_dirs().dirs:
+        unit_pin_at = read_lib_symbol_unit_pin_at(
+            lib_name,
+            symbol_name,
+            symbols_dir=directory,
+        )
+        if unit_pin_at:
+            selected = unit_pin_at.get(component.unit)
+            if selected:
+                return [
+                    (pin, coords[0], coords[1])
+                    for pin, coords in sorted(selected.items())
+                ]
+            continue
+
+        pin_at = read_lib_symbol_pin_at(
+            lib_name,
+            symbol_name,
+            symbols_dir=directory,
+        )
+        if pin_at:
+            return [
+                (pin, coords[0], coords[1])
+                for pin, coords in sorted(pin_at.items())
+            ]
+    return []
+
+
 def _nested_symbol_unit(name: str) -> str | None:
     parts = name.rsplit("_", 2)
     if len(parts) != 3:
@@ -296,22 +351,15 @@ def _transform_point(
     origin_y: float,
     rotation: int,
 ) -> tuple[float, float]:
-    normalized = rotation % 360
-    if normalized == 0:
-        rx, ry = x, y
-    elif normalized == 90:
-        rx, ry = -y, x
-    elif normalized == 180:
-        rx, ry = -x, -y
-    elif normalized == 270:
-        rx, ry = y, -x
-    else:
-        raise UserError(
-            "Refinement no-connect verification supports only cardinal symbol rotations.",
-            code=ErrorCode.VALIDATION_FAILED,
-            details={"rotation": rotation},
-        )
-    return origin_x + rx, origin_y + ry
+    """Transform library-space pin coordinates to schematic coordinates."""
+
+    theta = math.radians(rotation)
+    cos_t = math.cos(theta)
+    sin_t = math.sin(theta)
+    return (
+        origin_x + cos_t * x - sin_t * y,
+        origin_y - (sin_t * x + cos_t * y),
+    )
 
 
 def _properties(node: ListNode) -> dict[str, str]:
