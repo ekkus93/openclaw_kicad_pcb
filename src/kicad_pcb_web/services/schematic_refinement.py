@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.electrical_equivalence import build_circuit_ir_fingerprint
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.critic import CriticResponse
 from kicad_pcb.refinement.electrical import (
@@ -17,10 +18,18 @@ from kicad_pcb.refinement.electrical import (
     verify_schematic_electrical_invariance,
 )
 from kicad_pcb.refinement.evidence import (
+    ITERATION_EVIDENCE_SCHEMA_VERSION,
+    SESSION_EVIDENCE_SCHEMA_VERSION,
     IterationEvidenceInputs,
+    SessionEvidenceInputs,
+    build_session_iteration_reference,
     write_iteration_evidence_bundle,
+    write_session_evidence_bundle,
 )
-from kicad_pcb.refinement.layout_fingerprint import compute_schematic_layout_fingerprint
+from kicad_pcb.refinement.layout_fingerprint import (
+    LAYOUT_FINGERPRINT_SCHEMA_VERSION,
+    compute_schematic_layout_fingerprint,
+)
 from kicad_pcb.refinement.metrics import RefinementMetricReport, compute_refinement_metrics
 from kicad_pcb.refinement.operations import (
     LayoutOperationBatchResult,
@@ -49,6 +58,13 @@ from .refinement_llm import (
     refinement_model_call_upper_bound,
     run_repair_planner,
     run_visual_critic,
+)
+from .refinement_versions import (
+    CRITIC_PROMPT_VERSION,
+    CRITIC_SCHEMA_VERSION,
+    PLANNER_PROMPT_VERSION,
+    PLANNER_SCHEMA_VERSION,
+    REFINEMENT_SERVICE_VERSION,
 )
 
 _NO_MEANINGFUL_IMPROVEMENT_CODES = frozenset(
@@ -91,6 +107,24 @@ class RefinementApplyResult:
 
 
 @dataclass(frozen=True)
+class RefinementProvenance:
+    provider: str
+    model: str
+    product_version: str | None = None
+    implementation_sha: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_provenance_text("provider", self.provider, maximum=64)
+        _require_provenance_text("model", self.model, maximum=256)
+        if self.product_version is not None:
+            _require_provenance_text("product_version", self.product_version, maximum=128)
+        if self.implementation_sha is not None:
+            value = self.implementation_sha
+            if len(value) not in {40, 64} or any(ch not in "0123456789abcdef" for ch in value):
+                raise ValueError("implementation_sha must be a lowercase Git SHA")
+
+
+@dataclass(frozen=True)
 class RefinementRuntime:
     authoritative_ir: CircuitIR
     adapter: KicadCliAdapter
@@ -99,6 +133,7 @@ class RefinementRuntime:
     evidence_root: Path
     operation_policy: LayoutOperationPolicy = LayoutOperationPolicy()
     prior_decisions: tuple[RefinementDecisionHistoryEntry, ...] = ()
+    provenance: RefinementProvenance | None = None
 
 
 @dataclass(frozen=True)
@@ -106,6 +141,11 @@ class RefinementIterationLimits:
     max_critic_repairs: int
     max_planner_repairs: int
     max_operations: int
+
+    def __post_init__(self) -> None:
+        _require_loop_int("max_critic_repairs", self.max_critic_repairs, minimum=0, maximum=8)
+        _require_loop_int("max_planner_repairs", self.max_planner_repairs, minimum=0, maximum=8)
+        _require_loop_int("max_operations", self.max_operations, minimum=1, maximum=32)
 
 
 @dataclass(frozen=True)
@@ -224,13 +264,36 @@ def apply_planned_refinement(
             if not analysis.critic.issues
             else "REFINEMENT_NO_OPERATIONS"
         )
+        evidence_dir = write_iteration_evidence_bundle(
+            runtime.evidence_root,
+            IterationEvidenceInputs(
+                iteration_id=iteration_id,
+                accepted_hash_before=analysis.accepted_hash,
+                authoritative_hash=analysis.baseline.authoritative_hash,
+                critic=analysis.critic,
+                plan=plan,
+                operation_results={"status": "not_run", "results": []},
+                electrical_report={"status": "not_run"},
+                structural_report={"status": "not_run"},
+                metrics_before=analysis.metrics,
+                metrics_after=analysis.metrics,
+                quality_decision={"accepted": False, "code": code},
+                before_render=analysis.render,
+                after_render=None,
+                accepted_hash_after=analysis.accepted_hash,
+                disposition="no_op",
+                reason_code=code,
+                candidate_hash=None,
+                candidate_layout_fingerprint=None,
+            ),
+        )
         return RefinementApplyResult(
             status="no_op",
             code=code,
             accepted_hash_before=analysis.accepted_hash,
             accepted_hash_after=analysis.accepted_hash,
             candidate_hash=None,
-            evidence_dir=None,
+            evidence_dir=evidence_dir,
             operations=None,
             electrical=None,
             structural=None,
@@ -401,6 +464,8 @@ def apply_planned_refinement(
                 accepted_hash_after=candidate_hash,
                 disposition="approved_for_promotion",
                 reason_code=quality.code,
+                candidate_hash=candidate_hash,
+                candidate_layout_fingerprint=candidate_layout_fingerprint,
             ),
         )
         transaction.mark_validated(candidate_hash=candidate_hash)
@@ -493,6 +558,7 @@ class RefinementLoopResult:
     model_calls_made: int
     model_call_limit: int
     iterations: tuple[RefinementApplyResult, ...]
+    session_evidence_dir: Path | None = None
 
 
 @dataclass
@@ -517,14 +583,15 @@ def refine_schematic(
     session_id: str,
     limits: RefinementLoopLimits | None = None,
 ) -> RefinementLoopResult:
-    """Run bounded refinement rounds while preserving the best accepted artifact."""
+    """Run a bounded session and publish final session evidence on success or hard failure."""
 
     if limits is None:
         limits = RefinementLoopLimits()
     _validate_refinement_session_id(session_id)
+    provenance = _require_refinement_provenance(runtime.provenance)
     starting_hash = _sha(accepted_path)
     starting_layout_fingerprint = compute_schematic_layout_fingerprint(accepted_path).digest
-    seen_layout_fingerprints = {starting_layout_fingerprint}
+    authoritative_hash = build_circuit_ir_fingerprint(runtime.authoritative_ir).sha256()
     model_call_budget = RefinementModelCallBudget(
         client=runtime.llm_client,
         max_calls=refinement_model_call_upper_bound(
@@ -544,6 +611,63 @@ def refine_schematic(
         decision_history=[],
     )
 
+    try:
+        result = _run_refinement_loop(
+            accepted_path=accepted_path,
+            runtime=bounded_runtime,
+            session_id=session_id,
+            limits=limits,
+            state=state,
+        )
+    except Exception as exc:
+        failure_code = _exception_code(exc)
+        try:
+            _publish_session_evidence(
+                accepted_path=accepted_path,
+                runtime=bounded_runtime,
+                provenance=provenance,
+                session_id=session_id,
+                limits=limits,
+                authoritative_hash=authoritative_hash,
+                state=state,
+                result=None,
+                status="failed",
+                stop_reason="REFINEMENT_STOP_HARD_FAILURE",
+                failure_code=failure_code,
+            )
+        except Exception as evidence_exc:
+            raise UserError(
+                "Refinement hard failure could not be finalized into session evidence.",
+                code="REFINEMENT_EVIDENCE_WRITE_FAILED",
+                details={"original_failure_code": failure_code},
+            ) from evidence_exc
+        raise
+
+    evidence_dir = _publish_session_evidence(
+        accepted_path=accepted_path,
+        runtime=bounded_runtime,
+        provenance=provenance,
+        session_id=session_id,
+        limits=limits,
+        authoritative_hash=authoritative_hash,
+        state=state,
+        result=result,
+        status="completed",
+        stop_reason=result.stop_reason,
+        failure_code=None,
+    )
+    return replace(result, session_evidence_dir=evidence_dir)
+
+
+def _run_refinement_loop(
+    *,
+    accepted_path: Path,
+    runtime: RefinementRuntime,
+    session_id: str,
+    limits: RefinementLoopLimits,
+    state: _RefinementLoopState,
+) -> RefinementLoopResult:
+    seen_layout_fingerprints = {state.starting_layout_fingerprint}
     for round_number in range(1, limits.max_rounds + 1):
         remaining_operations = limits.max_total_accepted_operations - state.accepted_operations
         if remaining_operations <= 0:
@@ -557,7 +681,7 @@ def refine_schematic(
             )
         iteration_id = f"{session_id}-round-{round_number:03d}"
         round_runtime = replace(
-            bounded_runtime,
+            runtime,
             prior_decisions=tuple(state.decision_history),
         )
         result = apply_once_schematic_refinement(
@@ -689,6 +813,77 @@ def _loop_result(
     )
 
 
+def _publish_session_evidence(
+    *,
+    accepted_path: Path,
+    runtime: RefinementRuntime,
+    provenance: RefinementProvenance,
+    session_id: str,
+    limits: RefinementLoopLimits,
+    authoritative_hash: str,
+    state: _RefinementLoopState,
+    result: RefinementLoopResult | None,
+    status: str,
+    stop_reason: str,
+    failure_code: str | None,
+) -> Path:
+    references = tuple(
+        build_session_iteration_reference(
+            evidence_root=runtime.evidence_root,
+            iteration_id=history.iteration_id,
+            status=iteration.status,
+            code=iteration.code,
+            accepted_hash_before=iteration.accepted_hash_before,
+            accepted_hash_after=iteration.accepted_hash_after,
+            candidate_hash=iteration.candidate_hash,
+            candidate_layout_fingerprint=iteration.candidate_layout_fingerprint,
+            evidence_dir=iteration.evidence_dir,
+        )
+        for history, iteration in zip(state.decision_history, state.iterations, strict=True)
+    )
+    final_hash = result.final_accepted_hash if result is not None else _sha(accepted_path)
+    final_layout = (
+        result.final_layout_fingerprint
+        if result is not None
+        else compute_schematic_layout_fingerprint(accepted_path).digest
+    )
+    return write_session_evidence_bundle(
+        runtime.evidence_root,
+        SessionEvidenceInputs(
+            session_id=session_id,
+            authoritative_hash=authoritative_hash,
+            starting_accepted_hash=state.starting_hash,
+            provider=provenance.provider,
+            model=provenance.model,
+            product_version=provenance.product_version,
+            implementation_sha=provenance.implementation_sha,
+            prompt_versions={
+                "critic": CRITIC_PROMPT_VERSION,
+                "planner": PLANNER_PROMPT_VERSION,
+            },
+            schema_versions={
+                "critic": CRITIC_SCHEMA_VERSION,
+                "planner": PLANNER_SCHEMA_VERSION,
+                "layout_fingerprint": LAYOUT_FINGERPRINT_SCHEMA_VERSION,
+                "iteration_evidence": ITERATION_EVIDENCE_SCHEMA_VERSION,
+                "session_evidence": SESSION_EVIDENCE_SCHEMA_VERSION,
+                "refinement_service": REFINEMENT_SERVICE_VERSION,
+            },
+            configured_bounds=asdict(limits),
+            iterations=references,
+            status=status,
+            stop_reason=stop_reason,
+            failure_code=failure_code,
+            final_accepted_hash=final_hash,
+            best_accepted_hash=state.best_accepted_hash,
+            starting_layout_fingerprint=state.starting_layout_fingerprint,
+            final_layout_fingerprint=final_layout,
+            model_calls_made=state.model_call_budget.calls_made,
+            model_call_limit=state.model_call_budget.max_calls,
+        ),
+    )
+
+
 def _decision_history_entry(
     iteration_id: str,
     result: RefinementApplyResult,
@@ -725,6 +920,30 @@ def _require_loop_int(name: str, value: int, *, minimum: int, maximum: int) -> N
         raise ValueError(f"{name} must be an integer in [{minimum}, {maximum}]")
 
 
+def _require_provenance_text(name: str, value: str, *, maximum: int) -> None:
+    if not value or len(value) > maximum or any(ord(ch) < 32 for ch in value):
+        raise ValueError(f"{name} must contain 1..{maximum} printable characters")
+
+
+def _require_refinement_provenance(
+    provenance: RefinementProvenance | None,
+) -> RefinementProvenance:
+    if provenance is None:
+        raise UserError(
+            "Iterative refinement requires explicit provider/model provenance.",
+            code="REFINEMENT_PROVENANCE_REQUIRED",
+        )
+    return provenance
+
+
+def _exception_code(exc: Exception) -> str:
+    value = getattr(exc, "code", None)
+    if value is None:
+        return type(exc).__name__
+    enum_value = getattr(value, "value", None)
+    return str(enum_value if enum_value is not None else value)
+
+
 def _validate_refinement_session_id(session_id: str) -> None:
     allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
     if not session_id or len(session_id) > 96 or any(ch not in allowed for ch in session_id):
@@ -759,6 +978,8 @@ def _reject_candidate(
             accepted_hash_after=None,
             disposition="rejected",
             reason_code=code,
+            candidate_hash=candidate_hash,
+            candidate_layout_fingerprint=context.candidate_layout_fingerprint,
         ),
     )
     context.transaction.reject()
