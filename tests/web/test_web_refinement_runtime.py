@@ -4,22 +4,34 @@ from pathlib import Path
 
 import pytest
 
-from kicad_pcb_web.services.refinement_runtime import build_refinement_runtime
+from kicad_pcb_web.services.refinement_runtime import (
+    RefinementRuntimeInputs,
+    build_refinement_runtime,
+)
+from kicad_pcb_web.services.schematic_refinement import RefinementProvenance
+
+
+def _inputs(tmp_path: Path) -> RefinementRuntimeInputs:
+    return RefinementRuntimeInputs(
+        authoritative_ir=object(),  # type: ignore[arg-type]
+        adapter=object(),  # type: ignore[arg-type]
+        llm_client=object(),  # type: ignore[arg-type]
+        work_dir=tmp_path / "work",
+        evidence_root=tmp_path / "evidence",
+    )
 
 
 def test_refinement_runtime_records_explicit_provider_model_and_implementation(
     tmp_path: Path,
 ) -> None:
     runtime = build_refinement_runtime(
-        authoritative_ir=object(),  # type: ignore[arg-type]
-        adapter=object(),  # type: ignore[arg-type]
-        llm_client=object(),  # type: ignore[arg-type]
-        work_dir=tmp_path / "work",
-        evidence_root=tmp_path / "evidence",
-        provider="openai-compatible",
-        model="vision-model",
-        product_version="0.1.0",
-        implementation_sha="a" * 40,
+        _inputs(tmp_path),
+        RefinementProvenance(
+            provider="openai-compatible",
+            model="vision-model",
+            product_version="0.1.0",
+            implementation_sha="a" * 40,
+        ),
     )
 
     assert runtime.provenance is not None
@@ -46,25 +58,18 @@ def test_refinement_runtime_rejects_invalid_provenance(
 ) -> None:
     with pytest.raises(ValueError):
         build_refinement_runtime(
-            authoritative_ir=object(),  # type: ignore[arg-type]
-            adapter=object(),  # type: ignore[arg-type]
-            llm_client=object(),  # type: ignore[arg-type]
-            work_dir=tmp_path / "work",
-            evidence_root=tmp_path / "evidence",
-            provider=provider,
-            model=model,
+            _inputs(tmp_path),
+            RefinementProvenance(provider=provider, model=model),
         )
 
 
 def test_refinement_runtime_rejects_malformed_implementation_sha(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="implementation_sha"):
         build_refinement_runtime(
-            authoritative_ir=object(),  # type: ignore[arg-type]
-            adapter=object(),  # type: ignore[arg-type]
-            llm_client=object(),  # type: ignore[arg-type]
-            work_dir=tmp_path / "work",
-            evidence_root=tmp_path / "evidence",
-            provider="provider",
-            model="vision-model",
-            implementation_sha="not-a-git-sha",
+            _inputs(tmp_path),
+            RefinementProvenance(
+                provider="provider",
+                model="vision-model",
+                implementation_sha="not-a-git-sha",
+            ),
         )
