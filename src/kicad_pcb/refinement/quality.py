@@ -54,6 +54,20 @@ _LOWER_IS_BETTER = {
     "distinct_x_columns",
 }
 
+# Session-level best-known replacement deliberately uses Pareto dominance instead of a
+# weighted aggregate. Ambiguous metrics such as average spacing and occupied bounding-box
+# area are excluded because neither monotonic direction is universally better.
+BEST_KNOWN_LOWER_IS_BETTER = frozenset(
+    {
+        *_LOWER_IS_BETTER,
+        "component_overlap_area_mm2",
+        "wire_segment_count",
+        "short_wire_segment_count",
+        "wire_stub_ratio",
+    }
+)
+BEST_KNOWN_HIGHER_IS_BETTER = frozenset({"minimum_symbol_spacing_mm"})
+
 
 @dataclass(frozen=True)
 class CandidateQualityDecision:
@@ -61,6 +75,16 @@ class CandidateQualityDecision:
     code: str
     reason: str
     improved_metrics: tuple[str, ...]
+    comparison: RefinementMetricComparison
+
+
+@dataclass(frozen=True)
+class BestKnownQualityDecision:
+    replaces_best: bool
+    code: str
+    reason: str
+    improved_metrics: tuple[str, ...]
+    regressed_metrics: tuple[str, ...]
     comparison: RefinementMetricComparison
 
 
@@ -107,5 +131,62 @@ def evaluate_candidate_quality(
         "REFINEMENT_ACCEPTED",
         "deterministic improvement with no protected regression",
         tuple(improved),
+        comparison,
+    )
+
+
+def evaluate_best_known_replacement(
+    best: RefinementMetricReport,
+    candidate: RefinementMetricReport,
+) -> BestKnownQualityDecision:
+    """Require strict Pareto improvement over the current best-known accepted state."""
+
+    comparison = compare_refinement_metrics(best, candidate)
+    improved: list[str] = []
+    regressed: list[str] = []
+
+    for name in sorted(BEST_KNOWN_LOWER_IS_BETTER):
+        best_value = getattr(best, name)
+        candidate_value = getattr(candidate, name)
+        if candidate_value < best_value:
+            improved.append(name)
+        elif candidate_value > best_value:
+            regressed.append(name)
+
+    for name in sorted(BEST_KNOWN_HIGHER_IS_BETTER):
+        best_value = getattr(best, name)
+        candidate_value = getattr(candidate, name)
+        if candidate_value > best_value:
+            improved.append(name)
+        elif candidate_value < best_value:
+            regressed.append(name)
+
+    improved_metrics = tuple(sorted(improved))
+    regressed_metrics = tuple(sorted(regressed))
+    if regressed_metrics:
+        return BestKnownQualityDecision(
+            False,
+            "REFINEMENT_BEST_KNOWN_REGRESSION",
+            "candidate regresses best-known deterministic metrics: "
+            + ", ".join(regressed_metrics),
+            improved_metrics,
+            regressed_metrics,
+            comparison,
+        )
+    if not improved_metrics:
+        return BestKnownQualityDecision(
+            False,
+            "REFINEMENT_BEST_KNOWN_NO_IMPROVEMENT",
+            "candidate does not strictly improve the best-known deterministic metrics",
+            (),
+            (),
+            comparison,
+        )
+    return BestKnownQualityDecision(
+        True,
+        "REFINEMENT_BEST_KNOWN_IMPROVED",
+        "candidate strictly improves best-known deterministic metrics without regression",
+        improved_metrics,
+        (),
         comparison,
     )
