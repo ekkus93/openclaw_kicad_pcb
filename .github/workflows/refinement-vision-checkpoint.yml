@@ -56,8 +56,8 @@ jobs:
 
               if chunk_mode == 'joined_base64':
                   archive = decode_base64_text(b''.join(chunks))
-              elif chunk_mode == 'per_chunk_base64':
-                  archive = b''.join(decode_base64_text(chunk) for chunk in chunks)
+              elif chunk_mode == 'raw_binary':
+                  archive = b''.join(chunks)
               else:
                   raise SystemExit(f'unsupported chunk mode: {chunk_mode}')
 
@@ -95,7 +95,7 @@ jobs:
               ],
               'b65e55dc9e526d53526e5315c37549a934fdd7b628f10fc381df44d861ead478',
               Path('/tmp/refinement-vision-delta.tar.gz'),
-              chunk_mode='per_chunk_base64',
+              chunk_mode='raw_binary',
           )
           PY
       - name: Sync locked toolchain
