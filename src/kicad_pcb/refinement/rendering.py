@@ -33,7 +33,12 @@ class RsvgConvertRasterizer:
         self.binary = binary
 
     def rasterize(self, svg_path: Path, png_path: Path) -> None:
-        result = subprocess.run([self.binary, "-f", "png", "-o", str(png_path), str(svg_path)], capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            [self.binary, "-f", "png", "-o", str(png_path), str(svg_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         if result.returncode != 0:
             raise ToolError("SVG rasterization failed")
 
@@ -68,7 +73,10 @@ def render_schematic_for_refinement(
     page = schematic_page_bounds(doc)
     version = adapter.detected_version
     if version is None or version < KiCadVersion(9, 0, 0):
-        raise UserError("Visual refinement requires KiCad 9 or newer.", code="REFINEMENT_RENDER_FAILED")
+        raise UserError(
+            "Visual refinement requires KiCad 9 or newer.",
+            code="REFINEMENT_RENDER_FAILED",
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     rasterizer = rasterizer or RsvgConvertRasterizer()
     temp_dir = Path(tempfile.mkdtemp(prefix="refinement-render-", dir=output_dir))
@@ -79,26 +87,54 @@ def render_schematic_for_refinement(
             raise ToolError(f"KiCad schematic SVG export failed with exit code {result.returncode}")
         candidates = sorted(temp_dir.glob("*.svg"))
         if len(candidates) != 1:
-            raise UserError("Refinement renderer requires exactly one schematic sheet.", code="REFINEMENT_RENDER_SHEET_AMBIGUOUS", details={"svg_count": len(candidates)})
+            raise UserError(
+                "Refinement renderer requires exactly one schematic sheet.",
+                code="REFINEMENT_RENDER_SHEET_AMBIGUOUS",
+                details={"svg_count": len(candidates)},
+            )
         viewbox = _svg_view_box(candidates[0])
         if abs(viewbox[2] - page.width_mm) > 0.1 or abs(viewbox[3] - page.height_mm) > 0.1:
-            raise UserError("Rendered SVG viewBox does not match schematic paper declaration.", code="REFINEMENT_RENDER_GEOMETRY_MISMATCH", details={"view_box": viewbox, "paper_mm": [page.width_mm, page.height_mm]})
+            raise UserError(
+                "Rendered SVG viewBox does not match schematic paper declaration.",
+                code="REFINEMENT_RENDER_GEOMETRY_MISMATCH",
+                details={
+                    "view_box": viewbox,
+                    "paper_mm": [page.width_mm, page.height_mm],
+                },
+            )
         svg_out = output_dir / "schematic.svg"
         png_out = output_dir / "schematic.png"
         shutil.copyfile(candidates[0], svg_out)
         rasterizer.rasterize(svg_out, png_out)
         width, height = _png_dimensions(png_out)
         if width <= 0 or height <= 0:
-            raise UserError("Rasterized refinement image is empty.", code="REFINEMENT_RENDER_FAILED")
+            raise UserError(
+                "Rasterized refinement image is empty.",
+                code="REFINEMENT_RENDER_FAILED",
+            )
         return SchematicRenderArtifact(
-            "1.0", _sha(schematic), _sha(svg_out), _sha(png_out), str(version), "1", width, height,
-            viewbox, width / viewbox[2], height / viewbox[3], svg_out, png_out,
+            "1.0",
+            _sha(schematic),
+            _sha(svg_out),
+            _sha(png_out),
+            str(version),
+            "1",
+            width,
+            height,
+            viewbox,
+            width / viewbox[2],
+            height / viewbox[3],
+            svg_out,
+            png_out,
         )
     finally:
         try:
             shutil.rmtree(temp_dir)
         except OSError as exc:
-            LOGGER.warning("failed to clean refinement render temp directory", extra={"error_type": type(exc).__name__})
+            LOGGER.warning(
+                "failed to clean refinement render temp directory",
+                extra={"error_type": type(exc).__name__},
+            )
 
 
 def _svg_view_box(path: Path) -> tuple[float, float, float, float]:
@@ -107,7 +143,10 @@ def _svg_view_box(path: Path) -> tuple[float, float, float, float]:
         raw = root.attrib.get("viewBox", "")
         values = tuple(float(value) for value in raw.replace(",", " ").split())
     except (ET.ParseError, OSError, ValueError) as exc:
-        raise UserError("Unable to parse rendered SVG viewBox.", code="REFINEMENT_RENDER_FAILED") from exc
+        raise UserError(
+            "Unable to parse rendered SVG viewBox.",
+            code="REFINEMENT_RENDER_FAILED",
+        ) from exc
     if len(values) != 4 or not all(math.isfinite(v) for v in values):
         raise UserError("Rendered SVG has invalid viewBox.", code="REFINEMENT_RENDER_FAILED")
     return values  # type: ignore[return-value]

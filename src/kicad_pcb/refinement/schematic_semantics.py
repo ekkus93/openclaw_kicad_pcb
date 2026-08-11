@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Mapping
 
 from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import ErrorCode, UserError

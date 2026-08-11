@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
 

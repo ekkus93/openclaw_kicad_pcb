@@ -4,7 +4,6 @@ import hashlib
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.operations import execute_layout_operations, registered_operation_schemas
@@ -54,6 +53,7 @@ def test_unsupported_semantic_operation_is_rejected_without_write(tmp_path: Path
 
 
 def test_duplicate_operation_id_and_stale_hash_reject() -> None:
+    # Schema validation itself is strict; no free-form executable fields exist.
     assert "raw_sexpr" not in str(registered_operation_schemas())
 
 
@@ -62,8 +62,24 @@ def test_move_unknown_ref_rejects_without_partial_write(tmp_path: Path) -> None:
     source = _hash(path)
     before = path.read_bytes()
     operations = [
-        {"schema_version":"1.0","operation_id":"1","source_schematic_hash":source,"operation_type":"move_label","arguments":{"label_uuid":"l1","x_mm":25.4,"y_mm":39.37}},
-        {"schema_version":"1.0","operation_id":"2","source_schematic_hash":source,"operation_type":"move_component","arguments":{"target":{"ref":"NOPE"},"dx_mm":1.27,"dy_mm":0.0}},
+        {
+            "schema_version": "1.0",
+            "operation_id": "1",
+            "source_schematic_hash": source,
+            "operation_type": "move_label",
+            "arguments": {"label_uuid": "l1", "x_mm": 25.4, "y_mm": 39.37},
+        },
+        {
+            "schema_version": "1.0",
+            "operation_id": "2",
+            "source_schematic_hash": source,
+            "operation_type": "move_component",
+            "arguments": {
+                "target": {"ref": "NOPE"},
+                "dx_mm": 1.27,
+                "dy_mm": 0.0,
+            },
+        },
     ]
     with pytest.raises(UserError):
         execute_layout_operations(path, operations, expected_source_hash=source)
@@ -73,10 +89,23 @@ def test_move_unknown_ref_rejects_without_partial_write(tmp_path: Path) -> None:
 def test_move_component_carries_exact_wire_endpoint(tmp_path: Path) -> None:
     path = _simple(tmp_path)
     source = _hash(path)
-    result = execute_layout_operations(path, [{
-        "schema_version":"1.0","operation_id":"1","source_schematic_hash":source,
-        "operation_type":"move_component","arguments":{"target":{"ref":"R1","unit":"1"},"dx_mm":1.27,"dy_mm":0.0},
-    }], expected_source_hash=source)
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "1",
+                "source_schematic_hash": source,
+                "operation_type": "move_component",
+                "arguments": {
+                    "target": {"ref": "R1", "unit": "1"},
+                    "dx_mm": 1.27,
+                    "dy_mm": 0.0,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
     assert result.candidate_hash != source
     text = path.read_text()
     assert "26.67" in text
@@ -86,7 +115,20 @@ def test_move_label_rejects_unknown_uuid(tmp_path: Path) -> None:
     path = _simple(tmp_path)
     source = _hash(path)
     with pytest.raises(UserError, match="UUID"):
-        execute_layout_operations(path, [{
-            "schema_version":"1.0","operation_id":"1","source_schematic_hash":source,
-            "operation_type":"move_label","arguments":{"label_uuid":"missing","x_mm":25.4,"y_mm":39.37},
-        }], expected_source_hash=source)
+        execute_layout_operations(
+            path,
+            [
+                {
+                    "schema_version": "1.0",
+                    "operation_id": "1",
+                    "source_schematic_hash": source,
+                    "operation_type": "move_label",
+                    "arguments": {
+                        "label_uuid": "missing",
+                        "x_mm": 25.4,
+                        "y_mm": 39.37,
+                    },
+                }
+            ],
+            expected_source_hash=source,
+        )

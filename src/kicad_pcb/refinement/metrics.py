@@ -7,7 +7,7 @@ import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node
 
@@ -81,7 +81,15 @@ def compute_refinement_metrics(path: Path) -> RefinementMetricReport:
     junctions = set(_point_nodes(doc, "junction"))
     labels = _label_points(doc)
 
-    bboxes = [(c.x - _SYMBOL_HALF_MM, c.y - _SYMBOL_HALF_MM, c.x + _SYMBOL_HALF_MM, c.y + _SYMBOL_HALF_MM) for c in components]
+    bboxes = [
+        (
+            c.x - _SYMBOL_HALF_MM,
+            c.y - _SYMBOL_HALF_MM,
+            c.x + _SYMBOL_HALF_MM,
+            c.y + _SYMBOL_HALF_MM,
+        )
+        for c in components
+    ]
     overlap_count = 0
     overlap_area = 0.0
     for i, first in enumerate(bboxes):
@@ -135,7 +143,10 @@ def compute_refinement_metrics(path: Path) -> RefinementMetricReport:
     )
     off_grid = sum(not _on_grid(v) for point in all_points for v in point)
     distinct_columns = len({round(c.x / _GRID_MM) for c in components})
-    residuals = [min(abs(c.x / _GRID_MM - round(c.x / _GRID_MM)), 0.5) * _GRID_MM for c in components]
+    residuals = [
+        min(abs(c.x / _GRID_MM - round(c.x / _GRID_MM)), 0.5) * _GRID_MM
+        for c in components
+    ]
     alignment = sum(residuals) / len(residuals) if residuals else 0.0
 
     component_text = sum(_point_in_bbox(label, bbox) for label in labels for bbox in bboxes)
@@ -193,35 +204,56 @@ def _wires(doc: SchematicDoc) -> list[_WireSegment]:
             continue
         pts = next((c for c in node.items if isinstance(c, ListNode) and c.key == "pts"), None)
         if pts is None:
-            raise UserError("Wire is missing required pts geometry.", code="REFINEMENT_METRIC_INVALID_GEOMETRY")
-        points = [_xy(child) for child in pts.items if isinstance(child, ListNode) and child.key == "xy"]
+            raise UserError(
+                "Wire is missing required pts geometry.",
+                code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+            )
+        points = [
+            _xy(child)
+            for child in pts.items
+            if isinstance(child, ListNode) and child.key == "xy"
+        ]
         if len(points) < 2:
-            raise UserError("Wire requires at least two points.", code="REFINEMENT_METRIC_INVALID_GEOMETRY")
+            raise UserError(
+                "Wire requires at least two points.",
+                code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+            )
         for first, second in zip(points, points[1:]):
             if first == second:
                 continue
             if first[0] != second[0] and first[1] != second[1]:
-                raise UserError("Refinement metrics require orthogonal wire geometry.", code="REFINEMENT_METRIC_INVALID_GEOMETRY")
+                raise UserError(
+                    "Refinement metrics require orthogonal wire geometry.",
+                    code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+                )
             result.append(_WireSegment(first, second))
     return result
 
 
 def _point_nodes(doc: SchematicDoc, key: str) -> list[tuple[float, float]]:
-    return [_node_at(node) for node in doc.root.items if isinstance(node, ListNode) and node.key == key]
+    return [
+        _node_at(node)
+        for node in doc.root.items
+        if isinstance(node, ListNode) and node.key == key
+    ]
 
 
 def _label_points(doc: SchematicDoc) -> list[tuple[float, float]]:
     return [
         _node_at(node)
         for node in doc.root.items
-        if isinstance(node, ListNode) and node.key in {"label", "global_label", "hierarchical_label"}
+        if isinstance(node, ListNode)
+        and node.key in {"label", "global_label", "hierarchical_label"}
     ]
 
 
 def _node_at(node: ListNode) -> tuple[float, float]:
     at = next((c for c in node.items if isinstance(c, ListNode) and c.key == "at"), None)
     if at is None or len(at.items) < 3:
-        raise UserError(f"{node.key} is missing coordinates.", code="REFINEMENT_METRIC_INVALID_GEOMETRY")
+        raise UserError(
+            f"{node.key} is missing coordinates.",
+            code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+        )
     return (_num(at.items[1]), _num(at.items[2]))
 
 
@@ -237,9 +269,15 @@ def _num(node: Node) -> float:
     try:
         value = float(node.value)
     except ValueError as exc:
-        raise UserError("Invalid numeric geometry.", code="REFINEMENT_METRIC_INVALID_GEOMETRY") from exc
+        raise UserError(
+            "Invalid numeric geometry.",
+            code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+        ) from exc
     if not math.isfinite(value):
-        raise UserError("Non-finite geometry is invalid.", code="REFINEMENT_METRIC_INVALID_GEOMETRY")
+        raise UserError(
+            "Non-finite geometry is invalid.",
+            code="REFINEMENT_METRIC_INVALID_GEOMETRY",
+        )
     return value
 
 
@@ -251,7 +289,10 @@ def _point_in_bbox(point: tuple[float, float], bbox: tuple[float, float, float, 
     return bbox[0] < point[0] < bbox[2] and bbox[1] < point[1] < bbox[3]
 
 
-def _segment_crosses_bbox_interior(seg: _WireSegment, bbox: tuple[float, float, float, float]) -> bool:
+def _segment_crosses_bbox_interior(
+    seg: _WireSegment,
+    bbox: tuple[float, float, float, float],
+) -> bool:
     if seg.a[0] == seg.b[0]:
         x = seg.a[0]
         lo, hi = sorted((seg.a[1], seg.b[1]))

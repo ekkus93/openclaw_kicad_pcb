@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Annotated, Literal, Mapping
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.electrical_equivalence import ElectricalTerminal
-from kicad_pcb.errors import ErrorCode, UserError
+from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr.builder import L, atom, fnum
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
@@ -32,7 +32,12 @@ MAX_COORDINATE_ABS_MM = 2000.0
 
 
 class _StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True, allow_inf_nan=False)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        allow_inf_nan=False,
+    )
 
 
 class ComponentTarget(_StrictModel):
@@ -82,7 +87,11 @@ class MoveLabelArgs(_StrictModel):
 class AlignComponentsArgs(_StrictModel):
     targets: tuple[ComponentTarget, ...] = Field(min_length=2, max_length=16)
     axis: Literal["x", "y"]
-    coordinate_mm: float | None = Field(default=None, ge=-MAX_COORDINATE_ABS_MM, le=MAX_COORDINATE_ABS_MM)
+    coordinate_mm: float | None = Field(
+        default=None,
+        ge=-MAX_COORDINATE_ABS_MM,
+        le=MAX_COORDINATE_ABS_MM,
+    )
 
 
 class DistributeComponentsArgs(_StrictModel):
@@ -126,7 +135,10 @@ class RerouteExistingNetOrthogonalArgs(_StrictModel):
         )
         if not all(math.isfinite(v) and abs(v) <= MAX_COORDINATE_ABS_MM for v in values):
             raise ValueError("routing region must contain finite bounded coordinates")
-        if self.region_min_x_mm >= self.region_max_x_mm or self.region_min_y_mm >= self.region_max_y_mm:
+        if (
+            self.region_min_x_mm >= self.region_max_x_mm
+            or self.region_min_y_mm >= self.region_max_y_mm
+        ):
             raise ValueError("routing region min must be smaller than max")
         return self
 
@@ -210,10 +222,16 @@ def validate_operation_envelopes(
     for raw in payloads:
         envelope = LayoutOperationEnvelope.model_validate(raw)
         if envelope.operation_id in ids:
-            raise UserError("Duplicate layout operation id.", code="REFINEMENT_DUPLICATE_OPERATION_ID")
+            raise UserError(
+                "Duplicate layout operation id.",
+                code="REFINEMENT_DUPLICATE_OPERATION_ID",
+            )
         ids.add(envelope.operation_id)
         if envelope.source_schematic_hash != expected_source_hash:
-            raise UserError("Layout operation is stale for current schematic.", code="REFINEMENT_STALE")
+            raise UserError(
+                "Layout operation is stale for current schematic.",
+                code="REFINEMENT_STALE",
+            )
         model = _OPERATION_MODELS.get(envelope.operation_type)
         if model is None:
             raise UserError(
@@ -246,7 +264,14 @@ def execute_layout_operations(
     results: list[LayoutOperationResult] = []
     for envelope, args in parsed:
         details = _apply_operation(doc, envelope.operation_type, args, authoritative_ir, policy)
-        results.append(LayoutOperationResult(envelope.operation_id, envelope.operation_type, "applied", details))
+        results.append(
+            LayoutOperationResult(
+                envelope.operation_id,
+                envelope.operation_type,
+                "applied",
+                details,
+            )
+        )
     doc.save(candidate_path)
     candidate_hash = hashlib.sha256(candidate_path.read_bytes()).hexdigest()
     return LayoutOperationBatchResult(current_hash, candidate_hash, tuple(results))
@@ -260,93 +285,222 @@ def _apply_operation(
     policy: LayoutOperationPolicy,
 ) -> dict[str, object]:
     if operation_type in {"move_component", "move_power_symbol"}:
-        assert isinstance(args, _MoveArgs)
-        component = _resolve_component(doc, args.target, power_only=operation_type == "move_power_symbol")
-        x, y = _resolve_move(component, args, policy)
-        _move_component(doc, component, x=x, y=y, rotation=component.rotation, policy=policy)
-        return {"ref": component.ref, "unit": component.unit, "x_mm": x, "y_mm": y}
-    if operation_type == "rotate_component":
-        assert isinstance(args, RotateComponentArgs)
-        component = _resolve_component(doc, args.target)
-        _move_component(doc, component, x=component.x, y=component.y, rotation=args.angle_deg, policy=policy)
-        return {"ref": component.ref, "unit": component.unit, "angle_deg": args.angle_deg}
-    if operation_type == "move_label":
-        assert isinstance(args, MoveLabelArgs)
-        _validate_point(doc, args.x_mm, args.y_mm, policy)
-        node = _find_top_level_uuid(doc, args.label_uuid, {"label", "global_label", "hierarchical_label"})
-        _replace_top_level(doc, node, _replace_at(node, args.x_mm, args.y_mm))
-        return {"label_uuid": args.label_uuid, "x_mm": args.x_mm, "y_mm": args.y_mm}
-    if operation_type == "align_components":
-        assert isinstance(args, AlignComponentsArgs)
-        components = _resolve_targets(doc, args.targets)
-        coordinate = args.coordinate_mm
-        if coordinate is None:
-            coordinate = sum(c.x if args.axis == "x" else c.y for c in components) / len(components)
-        coordinate = _snap(coordinate, policy.grid_mm)
-        for component in components:
-            x = coordinate if args.axis == "x" else component.x
-            y = coordinate if args.axis == "y" else component.y
-            _move_component(doc, _resolve_component(doc, ComponentTarget(ref=component.ref, unit=component.unit)), x=x, y=y, rotation=component.rotation, policy=policy)
-        return {"axis": args.axis, "coordinate_mm": coordinate, "refs": [c.ref for c in components]}
-    if operation_type == "distribute_components":
-        assert isinstance(args, DistributeComponentsArgs)
-        components = _resolve_targets(doc, args.targets)
-        ordered = sorted(components, key=lambda c: c.x if args.axis == "x" else c.y)
-        first = ordered[0].x if args.axis == "x" else ordered[0].y
-        last = ordered[-1].x if args.axis == "x" else ordered[-1].y
-        step = (last - first) / (len(ordered) - 1)
-        for index, original in enumerate(ordered[1:-1], 1):
-            coordinate = _snap(first + step * index, policy.grid_mm)
-            current = _resolve_component(doc, ComponentTarget(ref=original.ref, unit=original.unit))
-            x = coordinate if args.axis == "x" else current.x
-            y = coordinate if args.axis == "y" else current.y
-            _move_component(doc, current, x=x, y=y, rotation=current.rotation, policy=policy)
-        return {"axis": args.axis, "refs": [c.ref for c in ordered]}
-    if operation_type == "move_component_group":
-        assert isinstance(args, MoveComponentGroupArgs)
-        components = _resolve_targets(doc, args.targets)
-        for original in components:
-            current = _resolve_component(doc, ComponentTarget(ref=original.ref, unit=original.unit))
-            x = _snap(current.x + args.dx_mm, policy.grid_mm)
-            y = _snap(current.y + args.dy_mm, policy.grid_mm)
-            _move_component(doc, current, x=x, y=y, rotation=current.rotation, policy=policy)
-        return {"refs": [c.ref for c in components], "dx_mm": args.dx_mm, "dy_mm": args.dy_mm}
+        result = _apply_move_operation(doc, operation_type, args, policy)
+    elif operation_type == "rotate_component":
+        result = _apply_rotate_operation(doc, args, policy)
+    elif operation_type == "move_label":
+        result = _apply_label_operation(doc, args, policy)
+    elif operation_type == "align_components":
+        result = _apply_alignment_operation(doc, args, policy)
+    elif operation_type == "distribute_components":
+        result = _apply_distribution_operation(doc, args, policy)
+    elif operation_type == "move_component_group":
+        result = _apply_group_move_operation(doc, args, policy)
+    elif operation_type in {
+        "remove_redundant_wire_bend",
+        "shorten_wire_path",
+        "reroute_existing_net_orthogonal",
+    }:
+        result = _apply_wire_operation(doc, operation_type, args, authoritative_ir, policy)
+    else:
+        raise AssertionError(operation_type)
+    return result
+
+
+def _apply_move_operation(
+    doc: SchematicDoc,
+    operation_type: str,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, _MoveArgs)
+    component = _resolve_component(
+        doc,
+        args.target,
+        power_only=operation_type == "move_power_symbol",
+    )
+    x, y = _resolve_move(component, args, policy)
+    _move_component(doc, component, (x, y, component.rotation), policy)
+    return {"ref": component.ref, "unit": component.unit, "x_mm": x, "y_mm": y}
+
+
+def _apply_rotate_operation(
+    doc: SchematicDoc,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, RotateComponentArgs)
+    component = _resolve_component(doc, args.target)
+    _move_component(
+        doc,
+        component,
+        (component.x, component.y, args.angle_deg),
+        policy,
+    )
+    return {"ref": component.ref, "unit": component.unit, "angle_deg": args.angle_deg}
+
+
+def _apply_label_operation(
+    doc: SchematicDoc,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, MoveLabelArgs)
+    _validate_point(doc, args.x_mm, args.y_mm, policy)
+    node = _find_top_level_uuid(
+        doc,
+        args.label_uuid,
+        {"label", "global_label", "hierarchical_label"},
+    )
+    _replace_top_level(doc, node, _replace_at(node, args.x_mm, args.y_mm))
+    return {"label_uuid": args.label_uuid, "x_mm": args.x_mm, "y_mm": args.y_mm}
+
+
+def _apply_alignment_operation(
+    doc: SchematicDoc,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, AlignComponentsArgs)
+    components = _resolve_targets(doc, args.targets)
+    coordinate = args.coordinate_mm
+    if coordinate is None:
+        coordinate = sum(
+            c.x if args.axis == "x" else c.y for c in components
+        ) / len(components)
+    coordinate = _snap(coordinate, policy.grid_mm)
+    for component in components:
+        current = _resolve_component(
+            doc,
+            ComponentTarget(ref=component.ref, unit=component.unit),
+        )
+        x = coordinate if args.axis == "x" else current.x
+        y = coordinate if args.axis == "y" else current.y
+        _move_component(doc, current, (x, y, current.rotation), policy)
+    return {
+        "axis": args.axis,
+        "coordinate_mm": coordinate,
+        "refs": [c.ref for c in components],
+    }
+
+
+def _apply_distribution_operation(
+    doc: SchematicDoc,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, DistributeComponentsArgs)
+    components = _resolve_targets(doc, args.targets)
+    ordered = sorted(components, key=lambda c: c.x if args.axis == "x" else c.y)
+    first = ordered[0].x if args.axis == "x" else ordered[0].y
+    last = ordered[-1].x if args.axis == "x" else ordered[-1].y
+    step = (last - first) / (len(ordered) - 1)
+    for index, original in enumerate(ordered[1:-1], 1):
+        coordinate = _snap(first + step * index, policy.grid_mm)
+        current = _resolve_component(
+            doc,
+            ComponentTarget(ref=original.ref, unit=original.unit),
+        )
+        x = coordinate if args.axis == "x" else current.x
+        y = coordinate if args.axis == "y" else current.y
+        _move_component(doc, current, (x, y, current.rotation), policy)
+    return {"axis": args.axis, "refs": [c.ref for c in ordered]}
+
+
+def _apply_group_move_operation(
+    doc: SchematicDoc,
+    args: _StrictModel,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
+    assert isinstance(args, MoveComponentGroupArgs)
+    components = _resolve_targets(doc, args.targets)
+    for original in components:
+        current = _resolve_component(
+            doc,
+            ComponentTarget(ref=original.ref, unit=original.unit),
+        )
+        x = _snap(current.x + args.dx_mm, policy.grid_mm)
+        y = _snap(current.y + args.dy_mm, policy.grid_mm)
+        _move_component(doc, current, (x, y, current.rotation), policy)
+    return {
+        "refs": [c.ref for c in components],
+        "dx_mm": args.dx_mm,
+        "dy_mm": args.dy_mm,
+    }
+
+
+def _apply_wire_operation(
+    doc: SchematicDoc,
+    operation_type: str,
+    args: _StrictModel,
+    authoritative_ir: CircuitIR | None,
+    policy: LayoutOperationPolicy,
+) -> dict[str, object]:
     if operation_type == "remove_redundant_wire_bend":
         assert isinstance(args, RemoveRedundantWireBendArgs)
         node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
         simplified = _simplify_orthogonal(points)
         if len(simplified) >= len(points):
-            raise UserError("Wire has no redundant bend to remove.", code="REFINEMENT_OPERATION_NO_EFFECT")
+            raise UserError(
+                "Wire has no redundant bend to remove.",
+                code="REFINEMENT_OPERATION_NO_EFFECT",
+            )
         _replace_top_level(doc, node, _replace_wire_points(node, simplified))
-        return {"wire_uuid": args.wire_uuid, "before_points": len(points), "after_points": len(simplified)}
-    if operation_type in {"shorten_wire_path", "reroute_existing_net_orthogonal"}:
-        if authoritative_ir is None:
-            raise UserError("Wire routing operation requires authoritative Circuit IR.", code="REFINEMENT_WIRE_CONTEXT_REQUIRED")
-        if operation_type == "shorten_wire_path":
-            assert isinstance(args, ShortenWirePathArgs)
-            node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
-            _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
-            replacement = _shorter_manhattan(points)
-            if replacement is None:
-                raise UserError("No safe shorter orthogonal path exists.", code="REFINEMENT_OPERATION_NO_EFFECT")
-        else:
-            assert isinstance(args, RerouteExistingNetOrthogonalArgs)
-            node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
-            _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
-            replacement = _bounded_reroute(args, points, policy)
-        _validate_route_collision(doc, node, replacement)
-        _replace_top_level(doc, node, _replace_wire_points(node, replacement))
-        return {"wire_uuid": args.wire_uuid, "net_name": args.net_name, "points": [list(p) for p in replacement]}
-    raise AssertionError(operation_type)
+        return {
+            "wire_uuid": args.wire_uuid,
+            "before_points": len(points),
+            "after_points": len(simplified),
+        }
+
+    if authoritative_ir is None:
+        raise UserError(
+            "Wire routing operation requires authoritative Circuit IR.",
+            code="REFINEMENT_WIRE_CONTEXT_REQUIRED",
+        )
+    if operation_type == "shorten_wire_path":
+        assert isinstance(args, ShortenWirePathArgs)
+        node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
+        _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
+        replacement = _shorter_manhattan(points)
+        if replacement is None:
+            raise UserError(
+                "No safe shorter orthogonal path exists.",
+                code="REFINEMENT_OPERATION_NO_EFFECT",
+            )
+    else:
+        assert isinstance(args, RerouteExistingNetOrthogonalArgs)
+        node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
+        _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
+        replacement = _bounded_reroute(args, points, policy)
+    _validate_route_collision(doc, node, replacement)
+    _replace_top_level(doc, node, _replace_wire_points(node, replacement))
+    return {
+        "wire_uuid": args.wire_uuid,
+        "net_name": args.net_name,
+        "points": [list(point) for point in replacement],
+    }
 
 
-def _resolve_component(doc: SchematicDoc, target: ComponentTarget, *, power_only: bool = False) -> PlacedSchematicComponent:
+def _resolve_component(
+    doc: SchematicDoc,
+    target: ComponentTarget,
+    *,
+    power_only: bool = False,
+) -> PlacedSchematicComponent:
     semantic = extract_schematic_semantics_from_doc(doc)
-    matches = [c for c in semantic.components if c.ref == target.ref and (target.unit is None or c.unit == target.unit)]
+    matches = [
+        component
+        for component in semantic.components
+        if component.ref == target.ref
+        and (target.unit is None or component.unit == target.unit)
+    ]
     if power_only:
         matches = [c for c in matches if c.ref in semantic.helper_refs]
     elif any(c.ref in semantic.helper_refs for c in matches):
-        raise UserError("Power helper requires move_power_symbol.", code="REFINEMENT_AMBIGUOUS_TARGET")
+        raise UserError(
+            "Power helper requires move_power_symbol.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
     if len(matches) != 1:
         raise UserError(
             "Component target did not resolve to exactly one placed unit.",
@@ -356,26 +510,45 @@ def _resolve_component(doc: SchematicDoc, target: ComponentTarget, *, power_only
     return matches[0]
 
 
-def _resolve_targets(doc: SchematicDoc, targets: tuple[ComponentTarget, ...]) -> list[PlacedSchematicComponent]:
+def _resolve_targets(
+    doc: SchematicDoc,
+    targets: tuple[ComponentTarget, ...],
+) -> list[PlacedSchematicComponent]:
     keys = [(t.ref, t.unit) for t in targets]
     if len(keys) != len(set(keys)):
-        raise UserError("Duplicate component targets are not allowed.", code="REFINEMENT_AMBIGUOUS_TARGET")
+        raise UserError(
+            "Duplicate component targets are not allowed.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
     return [_resolve_component(doc, target) for target in targets]
 
 
-def _resolve_move(component: PlacedSchematicComponent, args: _MoveArgs, policy: LayoutOperationPolicy) -> tuple[float, float]:
+def _resolve_move(
+    component: PlacedSchematicComponent,
+    args: _MoveArgs,
+    policy: LayoutOperationPolicy,
+) -> tuple[float, float]:
     if args.x_mm is not None:
         x, y = args.x_mm, args.y_mm
         assert y is not None
     else:
         assert args.dx_mm is not None and args.dy_mm is not None
         if math.hypot(args.dx_mm, args.dy_mm) > policy.max_component_move_mm:
-            raise UserError("Component move exceeds configured distance bound.", code="REFINEMENT_OPERATION_OUT_OF_BOUNDS")
+            raise UserError(
+                "Component move exceeds configured distance bound.",
+                code="REFINEMENT_OPERATION_OUT_OF_BOUNDS",
+            )
         x, y = component.x + args.dx_mm, component.y + args.dy_mm
     return _snap(x, policy.grid_mm), _snap(y, policy.grid_mm)
 
 
-def _move_component(doc: SchematicDoc, component: PlacedSchematicComponent, *, x: float, y: float, rotation: int, policy: LayoutOperationPolicy) -> None:
+def _move_component(
+    doc: SchematicDoc,
+    component: PlacedSchematicComponent,
+    placement: tuple[float, float, int],
+    policy: LayoutOperationPolicy,
+) -> None:
+    x, y, rotation = placement
     _validate_point(doc, x, y, policy)
     node = _find_component_node(doc, component)
     old_positions = resolve_component_pin_positions(doc, component)
@@ -387,7 +560,11 @@ def _move_component(doc: SchematicDoc, component: PlacedSchematicComponent, *, x
     _retarget_anchors(doc, mapping)
 
 
-def _validate_anchor_move_safety(doc: SchematicDoc, component: PlacedSchematicComponent, mapping: Mapping[tuple[float, float], tuple[float, float]]) -> None:
+def _validate_anchor_move_safety(
+    doc: SchematicDoc,
+    component: PlacedSchematicComponent,
+    mapping: Mapping[tuple[float, float], tuple[float, float]],
+) -> None:
     moving_old = set(mapping)
     moving_new = set(mapping.values())
     semantic = extract_schematic_semantics_from_doc(doc)
@@ -398,25 +575,46 @@ def _validate_anchor_move_safety(doc: SchematicDoc, component: PlacedSchematicCo
         for positions in resolve_component_pin_position_candidates(doc, other).values():
             stationary_positions.update(positions)
     if moving_new & stationary_positions:
-        raise UserError("Component move would collide with a stationary pin.", code="REFINEMENT_AMBIGUOUS_TARGET")
+        raise UserError(
+            "Component move would collide with a stationary pin.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
     for wire in _wire_nodes(doc):
         points = _wire_points(wire)
         for old in moving_old:
             if _point_on_polyline_interior(old, points):
-                raise UserError("Moving pin touches wire interior; mutation is ambiguous.", code="REFINEMENT_AMBIGUOUS_TARGET")
+                raise UserError(
+                    "Moving pin touches wire interior; mutation is ambiguous.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
         for new in moving_new:
-            if any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:])) and new not in points:
-                raise UserError("Moved pin would create an unintended wire contact.", code="REFINEMENT_AMBIGUOUS_TARGET")
+            contacts_wire = any(
+                _point_on_segment(new, a, b)
+                for a, b in zip(points, points[1:])
+            )
+            if contacts_wire and new not in points:
+                raise UserError(
+                    "Moved pin would create an unintended wire contact.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
 
 
-def _retarget_anchors(doc: SchematicDoc, mapping: Mapping[tuple[float, float], tuple[float, float]]) -> None:
+def _retarget_anchors(
+    doc: SchematicDoc,
+    mapping: Mapping[tuple[float, float], tuple[float, float]],
+) -> None:
     items = list(doc.root.items)
     for i, node in enumerate(items):
         if not isinstance(node, ListNode):
             continue
         if node.key == "wire":
             points = _wire_points(node)
-            changed = [mapping.get(point, point) if index in {0, len(points) - 1} else point for index, point in enumerate(points)]
+            changed = [
+                mapping.get(point, point)
+                if index in {0, len(points) - 1}
+                else point
+                for index, point in enumerate(points)
+            ]
             if changed != points:
                 items[i] = _replace_wire_points(node, changed)
         elif node.key in {"label", "global_label", "hierarchical_label", "junction", "no_connect"}:
@@ -430,26 +628,47 @@ def _validate_point(doc: SchematicDoc, x: float, y: float, policy: LayoutOperati
     if not (math.isfinite(x) and math.isfinite(y)):
         raise UserError("Non-finite layout coordinate.", code="REFINEMENT_OPERATION_OUT_OF_BOUNDS")
     if not (_on_grid(x, policy.grid_mm) and _on_grid(y, policy.grid_mm)):
-        raise UserError("Layout coordinate is off the executor grid.", code="REFINEMENT_OPERATION_OFF_GRID")
+        raise UserError(
+            "Layout coordinate is off the executor grid.",
+            code="REFINEMENT_OPERATION_OFF_GRID",
+        )
     page = schematic_page_bounds(doc)
     if not (0 <= x <= page.width_mm and 0 <= y <= page.height_mm):
-        raise UserError("Layout coordinate lies outside schematic page.", code="REFINEMENT_OPERATION_OUT_OF_BOUNDS")
+        raise UserError(
+            "Layout coordinate lies outside schematic page.",
+            code="REFINEMENT_OPERATION_OUT_OF_BOUNDS",
+        )
 
 
-def _resolve_wire(doc: SchematicDoc, wire_uuid: str, expected: tuple[tuple[float, float], ...]) -> tuple[ListNode, list[tuple[float, float]]]:
+def _resolve_wire(
+    doc: SchematicDoc,
+    wire_uuid: str,
+    expected: tuple[tuple[float, float], ...],
+) -> tuple[ListNode, list[tuple[float, float]]]:
     node = _find_top_level_uuid(doc, wire_uuid, {"wire"})
     points = _wire_points(node)
     normalized_expected = [(round(x, 9), round(y, 9)) for x, y in expected]
     if points != normalized_expected:
-        raise UserError("Wire endpoints/points changed since plan creation.", code="REFINEMENT_STALE")
+        raise UserError(
+            "Wire endpoints/points changed since plan creation.",
+            code="REFINEMENT_STALE",
+        )
     _validate_orthogonal(points)
     return node, points
 
 
-def _validate_wire_net_context(doc: SchematicDoc, ir: CircuitIR, net_name: str, points: list[tuple[float, float]]) -> None:
+def _validate_wire_net_context(
+    doc: SchematicDoc,
+    ir: CircuitIR,
+    net_name: str,
+    points: list[tuple[float, float]],
+) -> None:
     net = next((net for net in ir.nets if net.name == net_name), None)
     if net is None:
-        raise UserError("Wire operation references unknown authoritative net.", code="REFINEMENT_WIRE_CONTEXT_REQUIRED")
+        raise UserError(
+            "Wire operation references unknown authoritative net.",
+            code="REFINEMENT_WIRE_CONTEXT_REQUIRED",
+        )
     endpoints = {points[0], points[-1]}
     evidence: set[tuple[float, float]] = set()
     semantic = extract_schematic_semantics_from_doc(doc)
@@ -457,11 +676,16 @@ def _validate_wire_net_context(doc: SchematicDoc, ir: CircuitIR, net_name: str, 
     for pin in net.pins:
         candidates = [c for (ref, _unit), c in components.items() if ref == pin.ref]
         for component in candidates:
-            for terminal, positions in resolve_component_pin_position_candidates(doc, component).items():
+            pin_candidates = resolve_component_pin_position_candidates(doc, component)
+            for terminal, positions in pin_candidates.items():
                 if terminal.pin == pin.pin and (pin.unit is None or terminal.unit == str(pin.unit)):
                     evidence.update(positions)
+    # Exact same-name label endpoints are also direct evidence.
     for node in doc.root.items:
-        if isinstance(node, ListNode) and node.key in {"label", "global_label", "hierarchical_label"}:
+        if (
+            isinstance(node, ListNode)
+            and node.key in {"label", "global_label", "hierarchical_label"}
+        ):
             name = _first_string(node)
             if name == net_name:
                 evidence.add(_node_at(node))
@@ -473,7 +697,10 @@ def _validate_wire_net_context(doc: SchematicDoc, ir: CircuitIR, net_name: str, 
         )
     for point in endpoints:
         if not (_on_grid(point[0], DEFAULT_GRID_MM) and _on_grid(point[1], DEFAULT_GRID_MM)):
-            raise UserError("Wire source endpoint is off grid.", code="REFINEMENT_OPERATION_OFF_GRID")
+            raise UserError(
+                "Wire source endpoint is off grid.",
+                code="REFINEMENT_OPERATION_OFF_GRID",
+            )
 
 
 def _shorter_manhattan(points: list[tuple[float, float]]) -> list[tuple[float, float]] | None:
@@ -483,29 +710,63 @@ def _shorter_manhattan(points: list[tuple[float, float]]) -> list[tuple[float, f
         [start, (end[0], start[1]), end],
     ]
     before = _path_length(points)
-    valid = [_simplify_orthogonal(candidate) for candidate in candidates if _path_length(candidate) < before - 1e-9]
+    valid = [
+        _simplify_orthogonal(candidate)
+        for candidate in candidates
+        if _path_length(candidate) < before - 1e-9
+    ]
     return min(valid, key=lambda p: (_path_length(p), p), default=None)
 
 
-def _bounded_reroute(args: RerouteExistingNetOrthogonalArgs, points: list[tuple[float, float]], policy: LayoutOperationPolicy) -> list[tuple[float, float]]:
+def _bounded_reroute(
+    args: RerouteExistingNetOrthogonalArgs,
+    points: list[tuple[float, float]],
+    policy: LayoutOperationPolicy,
+) -> list[tuple[float, float]]:
     start, end = points[0], points[-1]
     candidates: list[list[tuple[float, float]]] = []
-    for x in {_snap(args.region_min_x_mm, policy.grid_mm), _snap(args.region_max_x_mm, policy.grid_mm), start[0], end[0]}:
+    x_candidates = {
+        _snap(args.region_min_x_mm, policy.grid_mm),
+        _snap(args.region_max_x_mm, policy.grid_mm),
+        start[0],
+        end[0],
+    }
+    for x in x_candidates:
         candidate = _simplify_orthogonal([start, (x, start[1]), (x, end[1]), end])
         candidates.append(candidate)
-    for y in {_snap(args.region_min_y_mm, policy.grid_mm), _snap(args.region_max_y_mm, policy.grid_mm), start[1], end[1]}:
+    y_candidates = {
+        _snap(args.region_min_y_mm, policy.grid_mm),
+        _snap(args.region_max_y_mm, policy.grid_mm),
+        start[1],
+        end[1],
+    }
+    for y in y_candidates:
         candidate = _simplify_orthogonal([start, (start[0], y), (end[0], y), end])
         candidates.append(candidate)
+
     def inside(path: list[tuple[float, float]]) -> bool:
-        return all(args.region_min_x_mm <= x <= args.region_max_x_mm and args.region_min_y_mm <= y <= args.region_max_y_mm for x, y in path)
+        return all(
+            args.region_min_x_mm <= x <= args.region_max_x_mm
+            and args.region_min_y_mm <= y <= args.region_max_y_mm
+            for x, y in path
+        )
+
     choices = [p for p in candidates if inside(p) and p != points and len(p) == len(set(p))]
     if not choices:
-        raise UserError("No bounded reroute candidate exists.", code="REFINEMENT_OPERATION_NO_EFFECT")
+        raise UserError(
+            "No bounded reroute candidate exists.",
+            code="REFINEMENT_OPERATION_NO_EFFECT",
+        )
     return min(choices, key=lambda p: (_path_length(p), len(p), p))
 
 
-def _validate_route_collision(doc: SchematicDoc, source_node: ListNode, points: list[tuple[float, float]]) -> None:
+def _validate_route_collision(
+    doc: SchematicDoc,
+    source_node: ListNode,
+    points: list[tuple[float, float]],
+) -> None:
     _validate_orthogonal(points)
+    # Reject contacts with unrelated wire interiors/endpoints except our two endpoints.
     endpoints = {points[0], points[-1]}
     for wire in _wire_nodes(doc):
         if wire is source_node:
@@ -515,13 +776,24 @@ def _validate_route_collision(doc: SchematicDoc, source_node: ListNode, points: 
             for c, d in zip(other, other[1:]):
                 intersection = _orthogonal_intersection(a, b, c, d)
                 if intersection is not None and intersection not in endpoints:
-                    raise UserError("Reroute would collide with unrelated wire geometry.", code="REFINEMENT_ROUTE_COLLISION")
+                    raise UserError(
+                        "Reroute would collide with unrelated wire geometry.",
+                        code="REFINEMENT_ROUTE_COLLISION",
+                    )
     semantic = extract_schematic_semantics_from_doc(doc)
     for component in semantic.components:
-        bbox = (component.x - 5.08, component.y - 5.08, component.x + 5.08, component.y + 5.08)
+        bbox = (
+            component.x - 5.08,
+            component.y - 5.08,
+            component.x + 5.08,
+            component.y + 5.08,
+        )
         for a, b in zip(points, points[1:]):
             if _segment_crosses_bbox(a, b, bbox) and a not in endpoints and b not in endpoints:
-                raise UserError("Reroute would cross a component body.", code="REFINEMENT_ROUTE_COLLISION")
+                raise UserError(
+                    "Reroute would cross a component body.",
+                    code="REFINEMENT_ROUTE_COLLISION",
+                )
 
 
 def _simplify_orthogonal(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -545,7 +817,10 @@ def _validate_orthogonal(points: list[tuple[float, float]]) -> None:
         raise UserError("Wire requires at least two points.", code="REFINEMENT_AMBIGUOUS_TARGET")
     for a, b in zip(points, points[1:]):
         if a[0] != b[0] and a[1] != b[1]:
-            raise UserError("Wire operation requires orthogonal geometry.", code="REFINEMENT_AMBIGUOUS_TARGET")
+            raise UserError(
+                "Wire operation requires orthogonal geometry.",
+                code="REFINEMENT_AMBIGUOUS_TARGET",
+            )
 
 
 def _wire_nodes(doc: SchematicDoc) -> list[ListNode]:
@@ -567,7 +842,12 @@ def _wire_points(node: ListNode) -> list[tuple[float, float]]:
 
 def _replace_wire_points(node: ListNode, points: list[tuple[float, float]]) -> ListNode:
     replacement = L(atom("pts"), *(L(atom("xy"), fnum(x, 2), fnum(y, 2)) for x, y in points))
-    items = [replacement if isinstance(child, ListNode) and child.key == "pts" else child for child in node.items]
+    items = [
+        replacement
+        if isinstance(child, ListNode) and child.key == "pts"
+        else child
+        for child in node.items
+    ]
     return ListNode(tuple(items), node.pos)
 
 
@@ -575,15 +855,28 @@ def _find_component_node(doc: SchematicDoc, component: PlacedSchematicComponent)
     for node in doc.root.items:
         if not isinstance(node, ListNode) or node.key != "symbol":
             continue
-        if _property(node, "Reference") == component.ref and (_atom_child(node, "unit") or "1") == component.unit:
+        if (
+            _property(node, "Reference") == component.ref
+            and (_atom_child(node, "unit") or "1") == component.unit
+        ):
             return node
     raise UserError("Component disappeared during operation batch.", code="REFINEMENT_STALE")
 
 
 def _find_top_level_uuid(doc: SchematicDoc, uuid: str, allowed_keys: set[str]) -> ListNode:
-    matches = [node for node in doc.root.items if isinstance(node, ListNode) and node.key in allowed_keys and _string_child(node, "uuid") == uuid]
+    matches = [
+        node
+        for node in doc.root.items
+        if isinstance(node, ListNode)
+        and node.key in allowed_keys
+        and _string_child(node, "uuid") == uuid
+    ]
     if len(matches) != 1:
-        raise UserError("Exact geometry UUID did not resolve uniquely.", code="REFINEMENT_AMBIGUOUS_TARGET", details={"uuid": uuid, "match_count": len(matches)})
+        raise UserError(
+            "Exact geometry UUID did not resolve uniquely.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+            details={"uuid": uuid, "match_count": len(matches)},
+        )
     return matches[0]
 
 
@@ -591,8 +884,17 @@ def _replace_top_level(doc: SchematicDoc, original: ListNode, replacement: ListN
     items = list(doc.root.items)
     index = next((i for i, item in enumerate(items) if item is original), None)
     if index is None:
+        # Identity can be lost after previous replacement. Fall back only to exact UUID,
+        # never fuzzy matching.
         uuid = _string_child(original, "uuid")
-        candidates = [i for i, item in enumerate(items) if isinstance(item, ListNode) and item.key == original.key and uuid and _string_child(item, "uuid") == uuid]
+        candidates = [
+            i
+            for i, item in enumerate(items)
+            if isinstance(item, ListNode)
+            and item.key == original.key
+            and uuid
+            and _string_child(item, "uuid") == uuid
+        ]
         if len(candidates) != 1:
             raise UserError("Geometry target became stale during batch.", code="REFINEMENT_STALE")
         index = candidates[0]
@@ -616,7 +918,10 @@ def _replace_at(node: ListNode, x: float, y: float, rotation: int | None = None)
         else:
             items.append(child)
     if not found:
-        raise UserError(f"{node.key} target is missing at coordinates.", code="REFINEMENT_AMBIGUOUS_TARGET")
+        raise UserError(
+            f"{node.key} target is missing at coordinates.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
     return ListNode(tuple(items), node.pos)
 
 
@@ -629,27 +934,46 @@ def _node_at(node: ListNode) -> tuple[float, float]:
 
 def _property(node: ListNode, name: str) -> str:
     for child in node.items:
-        if isinstance(child, ListNode) and child.key == "property" and len(child.items) >= 3 and isinstance(child.items[1], StringNode) and child.items[1].value == name and isinstance(child.items[2], StringNode):
+        if (
+            isinstance(child, ListNode)
+            and child.key == "property"
+            and len(child.items) >= 3
+            and isinstance(child.items[1], StringNode)
+            and child.items[1].value == name
+            and isinstance(child.items[2], StringNode)
+        ):
             return child.items[2].value
     return ""
 
 
 def _string_child(node: ListNode, key: str) -> str:
     for child in node.items:
-        if isinstance(child, ListNode) and child.key == key and len(child.items) >= 2 and isinstance(child.items[1], StringNode):
+        if (
+            isinstance(child, ListNode)
+            and child.key == key
+            and len(child.items) >= 2
+            and isinstance(child.items[1], StringNode)
+        ):
             return child.items[1].value
     return ""
 
 
 def _atom_child(node: ListNode, key: str) -> str:
     for child in node.items:
-        if isinstance(child, ListNode) and child.key == key and len(child.items) >= 2 and isinstance(child.items[1], AtomNode):
+        if (
+            isinstance(child, ListNode)
+            and child.key == key
+            and len(child.items) >= 2
+            and isinstance(child.items[1], AtomNode)
+        ):
             return child.items[1].value
     return ""
 
 
 def _first_string(node: ListNode) -> str:
-    return node.items[1].value if len(node.items) >= 2 and isinstance(node.items[1], StringNode) else ""
+    if len(node.items) >= 2 and isinstance(node.items[1], StringNode):
+        return node.items[1].value
+    return ""
 
 
 def _num(node: Node) -> float:
@@ -658,7 +982,10 @@ def _num(node: Node) -> float:
     try:
         value = float(node.value)
     except ValueError as exc:
-        raise UserError("Invalid numeric atom in geometry.", code="REFINEMENT_AMBIGUOUS_TARGET") from exc
+        raise UserError(
+            "Invalid numeric atom in geometry.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        ) from exc
     if not math.isfinite(value):
         raise UserError("Non-finite geometry coordinate.", code="REFINEMENT_AMBIGUOUS_TARGET")
     return value
@@ -676,7 +1003,11 @@ def _path_length(points: list[tuple[float, float]]) -> float:
     return sum(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a, b in zip(points, points[1:]))
 
 
-def _point_on_segment(point: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> bool:
+def _point_on_segment(
+    point: tuple[float, float],
+    a: tuple[float, float],
+    b: tuple[float, float],
+) -> bool:
     if a[0] == b[0] == point[0]:
         return min(a[1], b[1]) <= point[1] <= max(a[1], b[1])
     if a[1] == b[1] == point[1]:
@@ -684,8 +1015,14 @@ def _point_on_segment(point: tuple[float, float], a: tuple[float, float], b: tup
     return False
 
 
-def _point_on_polyline_interior(point: tuple[float, float], points: list[tuple[float, float]]) -> bool:
-    return any(_point_on_segment(point, a, b) and point not in {a, b} for a, b in zip(points, points[1:]))
+def _point_on_polyline_interior(
+    point: tuple[float, float],
+    points: list[tuple[float, float]],
+) -> bool:
+    return any(
+        _point_on_segment(point, a, b) and point not in {a, b}
+        for a, b in zip(points, points[1:])
+    )
 
 
 def _orthogonal_intersection(a, b, c, d):
@@ -701,5 +1038,9 @@ def _orthogonal_intersection(a, b, c, d):
 
 def _segment_crosses_bbox(a, b, bbox):
     if a[0] == b[0]:
-        return bbox[0] < a[0] < bbox[2] and max(min(a[1], b[1]), bbox[1]) < min(max(a[1], b[1]), bbox[3])
-    return bbox[1] < a[1] < bbox[3] and max(min(a[0], b[0]), bbox[0]) < min(max(a[0], b[0]), bbox[2])
+        return bbox[0] < a[0] < bbox[2] and max(
+            min(a[1], b[1]), bbox[1]
+        ) < min(max(a[1], b[1]), bbox[3])
+    return bbox[1] < a[1] < bbox[3] and max(
+        min(a[0], b[0]), bbox[0]
+    ) < min(max(a[0], b[0]), bbox[2])
