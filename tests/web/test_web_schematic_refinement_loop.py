@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,11 +17,16 @@ def _sha(path: Path) -> str:
 
 
 @pytest.fixture(autouse=True)
-def _synthetic_layout_fingerprint(monkeypatch) -> None:
+def _synthetic_refinement_fingerprints(monkeypatch) -> None:
     monkeypatch.setattr(
         service,
         "compute_schematic_layout_fingerprint",
         lambda path: SimpleNamespace(digest=_sha(path)),
+    )
+    monkeypatch.setattr(
+        service,
+        "build_circuit_ir_fingerprint",
+        lambda ir: SimpleNamespace(sha256=lambda: "a" * 64),
     )
 
 
@@ -31,6 +37,12 @@ def _runtime(tmp_path: Path) -> service.RefinementRuntime:
         llm_client=object(),  # type: ignore[arg-type]
         work_dir=tmp_path / "work",
         evidence_root=tmp_path / "evidence",
+        provenance=service.RefinementProvenance(
+            provider="fake-provider",
+            model="fake-model",
+            product_version="0.1.0",
+            implementation_sha="f" * 40,
+        ),
     )
 
 
@@ -116,7 +128,23 @@ def test_loop_limits_reject_invalid_values(kwargs: dict[str, object]) -> None:
         service.RefinementLoopLimits(**kwargs)  # type: ignore[arg-type]
 
 
-def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_critic_repairs": -1, "max_planner_repairs": 0, "max_operations": 4},
+        {"max_critic_repairs": 0, "max_planner_repairs": 9, "max_operations": 4},
+        {"max_critic_repairs": 0, "max_planner_repairs": 0, "max_operations": 0},
+        {"max_critic_repairs": False, "max_planner_repairs": 0, "max_operations": 4},
+    ],
+)
+def test_iteration_limits_reject_invalid_values(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        service.RefinementIterationLimits(**kwargs)  # type: ignore[arg-type]
+
+
+def test_refine_no_op_stops_after_one_round_and_publishes_session(
+    monkeypatch, tmp_path: Path
+) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")
     calls = 0
@@ -144,6 +172,36 @@ def test_refine_no_op_stops_after_one_round(monkeypatch, tmp_path: Path) -> None
     assert result.final_layout_fingerprint == _sha(accepted)
     assert result.model_calls_made == 0
     assert result.model_call_limit == 6
+    assert result.session_evidence_dir is not None
+    manifest = json.loads((result.session_evidence_dir / "manifest.json").read_text())
+    assert manifest["status"] == "completed"
+    assert manifest["provider"] == "fake-provider"
+    assert manifest["model"] == "fake-model"
+    assert manifest["configured_bounds"]["max_rounds"] == 3
+    assert manifest["prompt_versions"] == {"critic": "1.0", "planner": "1.0"}
+    assert "api_key" not in json.dumps(manifest)
+
+
+def test_refine_requires_explicit_model_provenance(tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+    runtime = service.RefinementRuntime(
+        authoritative_ir=object(),  # type: ignore[arg-type]
+        adapter=object(),  # type: ignore[arg-type]
+        llm_client=object(),  # type: ignore[arg-type]
+        work_dir=tmp_path / "work",
+        evidence_root=tmp_path / "evidence",
+    )
+
+    with pytest.raises(UserError, match="provider/model provenance") as exc_info:
+        service.refine_schematic(
+            accepted_path=accepted,
+            runtime=runtime,
+            session_id="missing-provenance",
+        )
+
+    assert exc_info.value.code == "REFINEMENT_PROVENANCE_REQUIRED"
+    assert accepted.read_bytes() == b"A"
 
 
 def test_refine_no_actionable_issues_has_distinct_stop_reason(monkeypatch, tmp_path: Path) -> None:
@@ -185,7 +243,7 @@ def test_refine_rejection_limit_preserves_last_accepted(monkeypatch, tmp_path: P
         if call == 1:
             path.write_bytes(b"B")
             return _accepted(before, _sha(path))
-        return _rejected(before)
+        return _rejected(before, code="REFINEMENT_BEST_KNOWN_REGRESSION")
 
     monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
     result = service.refine_schematic(
@@ -348,7 +406,9 @@ def test_refine_detects_rejected_inverse_layout_cycle(monkeypatch, tmp_path: Pat
     assert result.final_accepted_hash == _sha(accepted)
 
 
-def test_refine_hard_failure_leaves_last_accepted_round_intact(monkeypatch, tmp_path: Path) -> None:
+def test_refine_hard_failure_leaves_last_accepted_and_records_failed_session(
+    monkeypatch, tmp_path: Path
+) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")
     call = 0
@@ -372,6 +432,12 @@ def test_refine_hard_failure_leaves_last_accepted_round_intact(monkeypatch, tmp_
             limits=service.RefinementLoopLimits(max_rounds=5),
         )
     assert accepted.read_bytes() == b"B"
+    manifest_path = tmp_path / "evidence" / "sessions" / "s5" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["status"] == "failed"
+    assert manifest["stop_reason"] == "REFINEMENT_STOP_HARD_FAILURE"
+    assert manifest["failure_code"] == "LLM_PROVIDER_FAILED"
+    assert manifest["best_accepted_hash"] == _sha(accepted)
 
 
 def test_refine_rejects_unsafe_session_id(tmp_path: Path) -> None:
