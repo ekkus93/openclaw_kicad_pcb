@@ -1,0 +1,35 @@
+name: Refinement format probe
+
+on:
+  push:
+    branches: [webapp]
+
+jobs:
+  format-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Sync development dependencies
+        run: uv sync --frozen --extra dev
+      - name: Capture Ruff formatter diff
+        shell: bash
+        run: |
+          set +e
+          uv run ruff format --diff \
+            src/kicad_pcb/electrical_equivalence.py \
+            src/kicad_pcb/evaluation/electrical.py \
+            src/kicad_pcb/refinement \
+            tests/unit/test_refinement_electrical.py \
+            tests/unit/test_refinement_transaction.py \
+            tests/integration/test_refinement_electrical_invariance.py \
+            > refinement-format.diff 2>&1
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refinement-format-diff
+          path: refinement-format.diff
+          if-no-files-found: error
