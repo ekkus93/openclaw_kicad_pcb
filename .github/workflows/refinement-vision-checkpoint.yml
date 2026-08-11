@@ -198,8 +198,14 @@ jobs:
       - name: Canonical format and validate
         run: |
           mapfile -t FILES < <({ tar -tzf /tmp/refinement-vision-checkpoint.tar.gz; tar -tzf /tmp/refinement-vision-delta.tar.gz; } | sort -u)
-          uv run ruff format "${FILES[@]}"
+          MIGRATION_FILES=(
+            src/kicad_pcb_web/services/wizard.py
+            tests/unit/test_wizard_llm_robustness.py
+            tests/web/test_web_llm_clients.py
+          )
+          FILES+=("${MIGRATION_FILES[@]}")
           uv run ruff check --fix --select I "${FILES[@]}"
+          uv run ruff format "${FILES[@]}"
           uv run ruff check .
           uv run ruff format --check .
           uv run mypy src/kicad_pcb src/kicad_pcb_web
@@ -214,6 +220,12 @@ jobs:
       - name: Commit verified vision refinement tranche
         run: |
           mapfile -t FILES < <({ tar -tzf /tmp/refinement-vision-checkpoint.tar.gz; tar -tzf /tmp/refinement-vision-delta.tar.gz; } | sort -u)
+          MIGRATION_FILES=(
+            src/kicad_pcb_web/services/wizard.py
+            tests/unit/test_wizard_llm_robustness.py
+            tests/web/test_web_llm_clients.py
+          )
+          FILES+=("${MIGRATION_FILES[@]}")
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- "${FILES[@]}"
