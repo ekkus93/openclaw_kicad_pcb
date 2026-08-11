@@ -228,6 +228,45 @@ def test_analyze_and_plan_modes_are_read_only(monkeypatch, tmp_path: Path) -> No
     assert accepted.read_bytes() == before
 
 
+def test_plan_skips_planner_when_critic_has_no_actionable_issues(
+    monkeypatch, tmp_path: Path
+) -> None:
+    accepted, ir = _fixture(tmp_path)
+    before = accepted.read_bytes()
+    analysis = _analysis(tmp_path, accepted, ir)
+    empty_critic = CriticResponse.model_validate(
+        {
+            "source_schematic_hash": analysis.context.source_schematic_hash,
+            "render_png_hash": analysis.context.render_png_hash,
+            "issues": [],
+        }
+    )
+    analysis = replace(analysis, critic=empty_critic)
+    monkeypatch.setattr(service, "analyze_schematic_refinement", lambda **kwargs: analysis)
+
+    def unexpected_planner(**kwargs):
+        raise AssertionError("planner must not run for an empty critic issue list")
+
+    monkeypatch.setattr(service, "run_repair_planner", unexpected_planner)
+    planned = service.plan_schematic_refinement(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path, ir),
+        iteration_id="iter-empty",
+        limits=_limits(),
+    )
+    result = service.apply_planned_refinement(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path, ir),
+        planned=planned,
+        iteration_id="iter-empty",
+    )
+
+    assert planned.plan.operation_payloads == ()
+    assert result.status == "no_op"
+    assert result.code == "REFINEMENT_NO_ACTIONABLE_CRITIC_ISSUES"
+    assert accepted.read_bytes() == before
+
+
 def test_analyze_detects_unexpected_write(monkeypatch, tmp_path: Path) -> None:
     accepted, ir = _fixture(tmp_path)
     monkeypatch.setattr(
