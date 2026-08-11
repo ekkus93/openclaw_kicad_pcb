@@ -13,9 +13,11 @@ from kicad_pcb.refinement.vision_context import (
     VisionNetObject,
     VisionObjectMap,
 )
+from kicad_pcb_web.errors import LlmInvalidStructuredOutputError
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
 from kicad_pcb_web.services.refinement_llm import (
     RepairPlannerOptions,
+    refinement_model_call_upper_bound,
     run_repair_planner,
     run_visual_critic,
 )
@@ -85,6 +87,44 @@ def _critic_payload(context: VisionObjectMap) -> str:
     )
 
 
+def test_refinement_model_call_upper_bound_counts_logical_requests() -> None:
+    assert (
+        refinement_model_call_upper_bound(
+            max_rounds=3,
+            max_critic_repairs=2,
+            max_planner_repairs=1,
+        )
+        == 15
+    )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_rounds": 0, "max_critic_repairs": 0, "max_planner_repairs": 0},
+        {"max_rounds": True, "max_critic_repairs": 0, "max_planner_repairs": 0},
+        {"max_rounds": 1, "max_critic_repairs": -1, "max_planner_repairs": 0},
+        {"max_rounds": 1, "max_critic_repairs": 0, "max_planner_repairs": 9},
+    ],
+)
+def test_refinement_model_call_upper_bound_rejects_invalid_limits(
+    kwargs: dict[str, object],
+) -> None:
+    with pytest.raises(ValueError):
+        refinement_model_call_upper_bound(**kwargs)  # type: ignore[arg-type]
+
+
+def test_repair_planner_options_reject_invalid_bounds() -> None:
+    with pytest.raises(ValueError):
+        RepairPlannerOptions(iteration_id="iter-1", max_repairs=-1, max_operations=4)
+    with pytest.raises(ValueError):
+        RepairPlannerOptions(iteration_id="iter-1", max_repairs=0, max_operations=0)
+    with pytest.raises(ValueError):
+        RepairPlannerOptions(iteration_id="iter-1", max_repairs=9, max_operations=4)
+    with pytest.raises(ValueError):
+        RepairPlannerOptions(iteration_id="iter-1", max_repairs=0, max_operations=33)
+
+
 def test_visual_critic_sends_exact_bound_image_and_untrusted_data_instruction(
     tmp_path: Path,
 ) -> None:
@@ -131,6 +171,36 @@ def test_visual_critic_uses_bounded_structured_output_repair(tmp_path: Path) -> 
     assert response.issues[0].issue_id == "i1"
     assert len(client.requests) == 2
     assert all(request.images for request in client.requests)
+
+
+def test_visual_critic_never_exceeds_structured_repair_call_bound(tmp_path: Path) -> None:
+    image = b"render"
+    path = tmp_path / "schematic.png"
+    path.write_bytes(image)
+    context = _context(image)
+    client = _FakeClient(["not-json", "still-not-json", "also-not-json"])
+
+    with pytest.raises(LlmInvalidStructuredOutputError):
+        run_visual_critic(llm_client=client, context=context, image_path=path, max_repairs=2)
+
+    assert len(client.requests) == 3
+
+
+def test_visual_critic_rejects_invalid_repair_bound_before_model_call(tmp_path: Path) -> None:
+    image = b"render"
+    path = tmp_path / "schematic.png"
+    path.write_bytes(image)
+    client = _FakeClient([])
+
+    with pytest.raises(ValueError):
+        run_visual_critic(
+            llm_client=client,
+            context=_context(image),
+            image_path=path,
+            max_repairs=-1,
+        )
+
+    assert client.requests == []
 
 
 def test_visual_critic_rejects_semantically_unknown_object() -> None:
