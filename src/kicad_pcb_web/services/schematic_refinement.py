@@ -20,6 +20,7 @@ from kicad_pcb.refinement.evidence import (
     IterationEvidenceInputs,
     write_iteration_evidence_bundle,
 )
+from kicad_pcb.refinement.layout_fingerprint import compute_schematic_layout_fingerprint
 from kicad_pcb.refinement.metrics import RefinementMetricReport, compute_refinement_metrics
 from kicad_pcb.refinement.operations import (
     LayoutOperationBatchResult,
@@ -78,6 +79,7 @@ class RefinementApplyResult:
     electrical: SchematicElectricalVerificationReport | None
     structural: CandidateStructuralValidationReport | None
     quality: CandidateQualityDecision | None
+    candidate_layout_fingerprint: str | None = None
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,7 @@ class _CandidateRejectionContext:
     electrical: SchematicElectricalVerificationReport | None
     structural: CandidateStructuralValidationReport | None
     candidate_metrics: RefinementMetricReport
+    candidate_layout_fingerprint: str
     quality: CandidateQualityDecision | None
     accepted_path: Path
     runtime: RefinementRuntime
@@ -228,6 +231,9 @@ def apply_planned_refinement(
                 "Candidate metrics were computed from unexpected schematic bytes.",
                 code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
             )
+        candidate_layout_fingerprint = compute_schematic_layout_fingerprint(
+            transaction.candidate_path
+        ).digest
 
         electrical = verify_schematic_electrical_invariance(
             authoritative_ir=runtime.authoritative_ir,
@@ -246,6 +252,7 @@ def apply_planned_refinement(
                     electrical=electrical,
                     structural=None,
                     candidate_metrics=candidate_metrics,
+                    candidate_layout_fingerprint=candidate_layout_fingerprint,
                     quality=None,
                     accepted_path=accepted_path,
                     runtime=runtime,
@@ -269,6 +276,7 @@ def apply_planned_refinement(
                     electrical=electrical,
                     structural=structural,
                     candidate_metrics=candidate_metrics,
+                    candidate_layout_fingerprint=candidate_layout_fingerprint,
                     quality=None,
                     accepted_path=accepted_path,
                     runtime=runtime,
@@ -288,6 +296,7 @@ def apply_planned_refinement(
                     electrical=electrical,
                     structural=structural,
                     candidate_metrics=candidate_metrics,
+                    candidate_layout_fingerprint=candidate_layout_fingerprint,
                     quality=None,
                     accepted_path=accepted_path,
                     runtime=runtime,
@@ -330,6 +339,7 @@ def apply_planned_refinement(
                     electrical=electrical,
                     structural=structural,
                     candidate_metrics=candidate_metrics,
+                    candidate_layout_fingerprint=candidate_layout_fingerprint,
                     quality=quality,
                     accepted_path=accepted_path,
                     runtime=runtime,
@@ -382,6 +392,7 @@ def apply_planned_refinement(
             electrical=electrical,
             structural=structural,
             quality=quality,
+            candidate_layout_fingerprint=candidate_layout_fingerprint,
         )
 
 
@@ -449,6 +460,8 @@ class RefinementLoopResult:
     final_accepted_hash: str
     best_accepted_hash: str
     latest_attempted_hash: str | None
+    starting_layout_fingerprint: str
+    final_layout_fingerprint: str
     rounds_attempted: int
     accepted_rounds: int
     rejected_rounds: int
@@ -462,6 +475,8 @@ class RefinementLoopResult:
 class _RefinementLoopState:
     starting_hash: str
     best_accepted_hash: str
+    starting_layout_fingerprint: str
+    best_layout_fingerprint: str
     iterations: list[RefinementApplyResult]
     model_call_budget: RefinementModelCallBudget
     latest_attempted_hash: str | None = None
@@ -483,7 +498,8 @@ def refine_schematic(
         limits = RefinementLoopLimits()
     _validate_refinement_session_id(session_id)
     starting_hash = _sha(accepted_path)
-    seen_accepted_hashes = {starting_hash}
+    starting_layout_fingerprint = compute_schematic_layout_fingerprint(accepted_path).digest
+    seen_layout_fingerprints = {starting_layout_fingerprint}
     model_call_budget = RefinementModelCallBudget(
         client=runtime.llm_client,
         max_calls=refinement_model_call_upper_bound(
@@ -496,6 +512,8 @@ def refine_schematic(
     state = _RefinementLoopState(
         starting_hash=starting_hash,
         best_accepted_hash=starting_hash,
+        starting_layout_fingerprint=starting_layout_fingerprint,
+        best_layout_fingerprint=starting_layout_fingerprint,
         iterations=[],
         model_call_budget=model_call_budget,
     )
@@ -532,6 +550,12 @@ def refine_schematic(
                 code="REFINEMENT_STALE",
             )
 
+        repeated_layout = False
+        if result.candidate_layout_fingerprint is not None:
+            repeated_layout = result.candidate_layout_fingerprint in seen_layout_fingerprints
+            if not repeated_layout:
+                seen_layout_fingerprints.add(result.candidate_layout_fingerprint)
+
         actual_hash = _sha(accepted_path)
         if result.status == "no_op":
             _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
@@ -540,6 +564,8 @@ def refine_schematic(
         if result.status == "rejected":
             _assert_nonaccepted_round_unchanged(result, round_start_hash, actual_hash)
             state.rejected_rounds += 1
+            if repeated_layout:
+                return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
             if state.rejected_rounds >= limits.max_candidate_rejections:
                 return _loop_result("REFINEMENT_STOP_REJECTION_LIMIT", accepted_path, state)
             continue
@@ -560,6 +586,11 @@ def refine_schematic(
                 "Accepted refinement round contains no applied operations.",
                 code="REFINEMENT_INVALID_RESULT",
             )
+        if result.candidate_layout_fingerprint is None:
+            raise UserError(
+                "Accepted refinement round is missing its layout fingerprint.",
+                code="REFINEMENT_INVALID_RESULT",
+            )
 
         applied_count = len(result.operations.results)
         if applied_count > min(limits.max_operations_per_round, remaining_operations):
@@ -570,11 +601,10 @@ def refine_schematic(
         state.accepted_operations += applied_count
         state.accepted_rounds += 1
         state.best_accepted_hash = actual_hash
+        state.best_layout_fingerprint = result.candidate_layout_fingerprint
 
-        if actual_hash in seen_accepted_hashes:
+        if repeated_layout:
             return _loop_result("REFINEMENT_STOP_OSCILLATION", accepted_path, state)
-        seen_accepted_hashes.add(actual_hash)
-
         if state.accepted_operations >= limits.max_total_accepted_operations:
             return _loop_result("REFINEMENT_STOP_OPERATION_BUDGET", accepted_path, state)
 
@@ -592,6 +622,12 @@ def _loop_result(
             "Final canonical schematic does not match the best-known accepted state.",
             code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
         )
+    final_layout_fingerprint = compute_schematic_layout_fingerprint(accepted_path).digest
+    if final_layout_fingerprint != state.best_layout_fingerprint:
+        raise UserError(
+            "Final canonical layout does not match the best-known accepted layout.",
+            code="REFINEMENT_BEST_KNOWN_STATE_MISMATCH",
+        )
     return RefinementLoopResult(
         status="stopped",
         stop_reason=stop_reason,
@@ -599,6 +635,8 @@ def _loop_result(
         final_accepted_hash=final_hash,
         best_accepted_hash=state.best_accepted_hash,
         latest_attempted_hash=state.latest_attempted_hash,
+        starting_layout_fingerprint=state.starting_layout_fingerprint,
+        final_layout_fingerprint=final_layout_fingerprint,
         rounds_attempted=len(state.iterations),
         accepted_rounds=state.accepted_rounds,
         rejected_rounds=state.rejected_rounds,
@@ -679,6 +717,7 @@ def _reject_candidate(
         electrical=context.electrical,
         structural=context.structural,
         quality=context.quality,
+        candidate_layout_fingerprint=context.candidate_layout_fingerprint,
     )
 
 
