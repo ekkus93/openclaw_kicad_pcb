@@ -1,0 +1,28 @@
+name: Refinement mypy probe
+
+on:
+  push:
+    branches: [webapp]
+
+jobs:
+  mypy-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Sync development dependencies
+        run: uv sync --frozen --extra dev --extra web
+      - name: Capture mypy diagnostics
+        shell: bash
+        run: |
+          set +e
+          uv run mypy src > refinement-mypy.txt 2>&1
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refinement-mypy-output
+          path: refinement-mypy.txt
+          if-no-files-found: error
