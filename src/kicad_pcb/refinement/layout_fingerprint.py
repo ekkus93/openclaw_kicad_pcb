@@ -143,7 +143,14 @@ def _first_string(node: ListNode) -> str:
 
 
 def _at(node: ListNode) -> tuple[float, float, int]:
-    at = next((child for child in node.items if isinstance(child, ListNode) and child.key == "at"), None)
+    at = next(
+        (
+            child
+            for child in node.items
+            if isinstance(child, ListNode) and child.key == "at"
+        ),
+        None,
+    )
     if at is None or len(at.items) < 3:
         raise UserError(
             "Layout object lacks required coordinates.",
@@ -156,7 +163,14 @@ def _at(node: ListNode) -> tuple[float, float, int]:
 
 
 def _wire_points(node: ListNode) -> list[tuple[float, float]]:
-    pts = next((child for child in node.items if isinstance(child, ListNode) and child.key == "pts"), None)
+    pts = next(
+        (
+            child
+            for child in node.items
+            if isinstance(child, ListNode) and child.key == "pts"
+        ),
+        None,
+    )
     if pts is None:
         raise UserError(
             "Layout wire lacks pts geometry.",
