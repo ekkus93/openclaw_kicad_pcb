@@ -1,0 +1,56 @@
+name: Refinement Format Probe
+
+on:
+  push:
+    branches: [webapp]
+    paths:
+      - '.github/workflows/refinement-format-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  format-refinement:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Sync formatting toolchain
+        run: uv sync --frozen --extra dev
+      - name: Format affected files
+        run: |
+          uv run ruff format \
+            src/kicad_pcb/refinement/metrics.py \
+            src/kicad_pcb/refinement/operations.py \
+            src/kicad_pcb/refinement/page_geometry.py \
+            src/kicad_pcb/refinement/quality.py \
+            src/kicad_pcb/refinement/validation.py \
+            tests/unit/test_refinement_operations.py \
+            tests/unit/test_refinement_quality.py \
+            tests/unit/test_refinement_rendering.py
+          uv run ruff check \
+            src/kicad_pcb/refinement/metrics.py \
+            src/kicad_pcb/refinement/operations.py \
+            src/kicad_pcb/refinement/page_geometry.py \
+            src/kicad_pcb/refinement/quality.py \
+            src/kicad_pcb/refinement/validation.py \
+            tests/unit/test_refinement_operations.py \
+            tests/unit/test_refinement_quality.py \
+            tests/unit/test_refinement_rendering.py
+      - name: Upload formatted files
+        uses: actions/upload-artifact@v6
+        with:
+          name: refinement-formatted-${{ github.run_id }}
+          path: |
+            src/kicad_pcb/refinement/metrics.py
+            src/kicad_pcb/refinement/operations.py
+            src/kicad_pcb/refinement/page_geometry.py
+            src/kicad_pcb/refinement/quality.py
+            src/kicad_pcb/refinement/validation.py
+            tests/unit/test_refinement_operations.py
+            tests/unit/test_refinement_quality.py
+            tests/unit/test_refinement_rendering.py
+          retention-days: 1
