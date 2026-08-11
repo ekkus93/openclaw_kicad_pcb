@@ -65,6 +65,73 @@ jobs:
 
           test_path = Path('tests/web/test_web_schematic_refinement_loop.py')
           test_path.write_text(fetch_blob('93723b999b0f9f2d1c12bf65512072bd5ef6e3d7'), encoding='utf-8')
+
+          operations_path = Path('src/kicad_pcb/refinement/operations.py')
+          operations = operations_path.read_text(encoding='utf-8')
+          old_call = (
+              '    _validate_anchor_move_safety(doc, component, mapping, moving_old, moving_new)\n'
+          )
+          new_call = '    _validate_anchor_move_safety(doc, component, mapping, moving_new)\n'
+          if operations.count(old_call) != 1:
+              raise SystemExit('unexpected refinement anchor-safety call count')
+          operations = operations.replace(old_call, new_call)
+
+          old_signature = '''def _validate_anchor_move_safety(
+    doc: SchematicDoc,
+    component: PlacedSchematicComponent,
+    mapping: Mapping[tuple[float, float], tuple[float, float]],
+    moving_old: set[tuple[float, float]],
+    moving_new: set[tuple[float, float]],
+) -> None:
+'''
+          new_signature = '''def _validate_anchor_move_safety(
+    doc: SchematicDoc,
+    component: PlacedSchematicComponent,
+    mapping: Mapping[tuple[float, float], tuple[float, float]],
+    moving_new: set[tuple[float, float]],
+) -> None:
+'''
+          if operations.count(old_signature) != 1:
+              raise SystemExit('unexpected refinement anchor-safety signature count')
+          operations = operations.replace(old_signature, new_signature)
+
+          old_wire_checks = '''    for wire in _wire_nodes(doc):
+        points = _wire_points(wire)
+        for old in moving_old:
+            if _point_on_polyline_interior(old, points):
+                raise UserError(
+                    "Moving pin touches wire interior; mutation is ambiguous.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+        for new in moving_new:
+            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
+            if contacts_wire and new not in points:
+                raise UserError(
+                    "Moved pin would create an unintended wire contact.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+'''
+          new_wire_checks = '''    for wire in _wire_nodes(doc):
+        points = _wire_points(wire)
+        for old in mapping:
+            if _point_on_polyline_interior(old, points):
+                raise UserError(
+                    "Moving pin touches wire interior; mutation is ambiguous.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+        for new in mapping.values():
+            contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
+            if contacts_wire and new not in points:
+                raise UserError(
+                    "Moved pin would create an unintended wire contact.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+'''
+          if operations.count(old_wire_checks) != 1:
+              raise SystemExit('unexpected refinement anchor-safety wire-check count')
+          operations_path.write_text(
+              operations.replace(old_wire_checks, new_wire_checks), encoding='utf-8'
+          )
           PY
       - name: Sync locked toolchain
         run: uv sync --frozen --extra dev --extra web
@@ -76,6 +143,7 @@ jobs:
           {
             set -e
             FILES=(
+              src/kicad_pcb/refinement/operations.py
               src/kicad_pcb_web/services/schematic_refinement.py
               tests/web/test_web_schematic_refinement_loop.py
             )
@@ -84,7 +152,7 @@ jobs:
             uv run ruff check .
             uv run ruff format --check .
             uv run mypy src/kicad_pcb src/kicad_pcb_web
-            uv run pytest -vv --tb=long tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
+            uv run pytest -vv --tb=long tests/unit/test_refinement_operations.py tests/web/test_web_schematic_refinement.py tests/web/test_web_schematic_refinement_loop.py
             uv run pytest -q tests/unit tests/web
             git diff --check
           } 2>&1 | tee refinement-checkpoint.log
@@ -103,6 +171,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- \
+            src/kicad_pcb/refinement/operations.py \
             src/kicad_pcb_web/services/schematic_refinement.py \
             tests/web/test_web_schematic_refinement_loop.py
           git commit -m 'feat: add bounded iterative schematic refinement loop'
