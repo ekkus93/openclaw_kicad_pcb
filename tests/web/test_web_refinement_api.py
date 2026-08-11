@@ -54,9 +54,7 @@ def test_refinement_request_rejects_paths_limits_and_provider_overrides() -> Non
         {"api_key": "secret"},
     ):
         with pytest.raises(ValidationError):
-            RefinementRunRequest.model_validate(
-                {"session_id": "session-001", **forbidden}
-            )
+            RefinementRunRequest.model_validate({"session_id": "session-001", **forbidden})
 
 
 def test_refinement_response_never_exposes_absolute_evidence_path(tmp_path: Path) -> None:
