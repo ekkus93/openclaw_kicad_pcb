@@ -6,7 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Request
+from pydantic import ValidationError
 
 from kicad_pcb.errors import UserError
 
@@ -36,7 +37,8 @@ def build_refinement_router(
         return router
 
     @router.post("/api/refinement/run", response_model=RefinementRunResponse)
-    def run_refinement(request: RefinementRunRequest) -> RefinementRunResponse:
+    async def run_refinement(http_request: Request) -> RefinementRunResponse:
+        request = await _validated_request(http_request)
         try:
             return run_configured_refinement_request(
                 accepted_path=dependencies.accepted_path(),
@@ -51,3 +53,33 @@ def build_refinement_router(
             ) from exc
 
     return router
+
+
+def install_refinement_routes(
+    app: FastAPI,
+    *,
+    config: RefinementFeatureConfig,
+    dependencies: RefinementRouteDependencies,
+) -> None:
+    """Install refinement routes only when the validated feature configuration enables them."""
+
+    app.include_router(
+        build_refinement_router(
+            config=config,
+            dependencies=dependencies,
+        )
+    )
+
+
+async def _validated_request(http_request: Request) -> RefinementRunRequest:
+    try:
+        payload = await http_request.json()
+        return RefinementRunRequest.model_validate(payload)
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "REFINEMENT_INVALID_REQUEST",
+                "message": "Invalid schematic refinement request.",
+            },
+        ) from exc
