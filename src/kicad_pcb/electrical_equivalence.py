@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from collections.abc import Iterable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field as dataclass_field
 
 from .circuit_ir import CircuitIR, ComponentIR, NetIR
 
@@ -88,7 +88,7 @@ class ElectricalMismatch:
     component_ref: str | None = None
     net_name: str | None = None
     pin: str | None = None
-    details: dict[str, object] = field(default_factory=dict)
+    details: dict[str, object] = dataclass_field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -96,7 +96,7 @@ class ElectricalEquivalenceReport:
     """Hard pass/fail report for electrical equivalence."""
 
     status: str
-    mismatches: tuple[ElectricalMismatch, ...] = field(default_factory=tuple)
+    mismatches: tuple[ElectricalMismatch, ...] = dataclass_field(default_factory=tuple)
 
 
 def is_generated_unnamed_net_name(name: str) -> bool:
