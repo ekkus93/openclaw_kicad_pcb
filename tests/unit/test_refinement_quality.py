@@ -51,7 +51,7 @@ def test_best_known_replacement_accepts_strict_pareto_improvement() -> None:
     best = _metrics()
     candidate = replace(
         best,
-        alignment_residual_mean_mm=max(0.0, best.alignment_residual_mean_mm - 0.1),
+        minimum_symbol_spacing_mm=best.minimum_symbol_spacing_mm + 1.27,
         schematic_hash="a" * 64,
     )
 
@@ -59,7 +59,7 @@ def test_best_known_replacement_accepts_strict_pareto_improvement() -> None:
 
     assert decision.replaces_best
     assert decision.code == "REFINEMENT_BEST_KNOWN_IMPROVED"
-    assert decision.improved_metrics == ("alignment_residual_mean_mm",)
+    assert decision.improved_metrics == ("minimum_symbol_spacing_mm",)
     assert decision.regressed_metrics == ()
 
 
@@ -67,7 +67,7 @@ def test_best_known_replacement_rejects_mixed_tradeoff() -> None:
     best = _metrics()
     candidate = replace(
         best,
-        alignment_residual_mean_mm=max(0.0, best.alignment_residual_mean_mm - 0.1),
+        minimum_symbol_spacing_mm=best.minimum_symbol_spacing_mm + 1.27,
         total_wire_manhattan_length_mm=best.total_wire_manhattan_length_mm + 1.27,
         schematic_hash="b" * 64,
     )
@@ -76,7 +76,7 @@ def test_best_known_replacement_rejects_mixed_tradeoff() -> None:
 
     assert not decision.replaces_best
     assert decision.code == "REFINEMENT_BEST_KNOWN_REGRESSION"
-    assert "alignment_residual_mean_mm" in decision.improved_metrics
+    assert decision.improved_metrics == ("minimum_symbol_spacing_mm",)
     assert decision.regressed_metrics == ("total_wire_manhattan_length_mm",)
 
 
