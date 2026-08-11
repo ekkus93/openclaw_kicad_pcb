@@ -22,6 +22,9 @@ from ._wizard_llm import StructuredJsonCallOptions, _call_llm_for_json
 from .llm import LlmClient, LlmImage, LlmMessage
 
 _MAX_CONTEXT_BYTES = 2 * 1024 * 1024
+_MAX_REFINEMENT_ROUNDS = 20
+_MAX_STRUCTURED_REPAIRS = 8
+_MAX_OPERATIONS_PER_ROUND = 32
 _IMAGE_MEDIA_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -36,6 +39,55 @@ class RepairPlannerOptions:
     max_repairs: int
     max_operations: int
 
+    def __post_init__(self) -> None:
+        _require_bounded_int(
+            "max_repairs",
+            self.max_repairs,
+            minimum=0,
+            maximum=_MAX_STRUCTURED_REPAIRS,
+        )
+        _require_bounded_int(
+            "max_operations",
+            self.max_operations,
+            minimum=1,
+            maximum=_MAX_OPERATIONS_PER_ROUND,
+        )
+
+
+def refinement_model_call_upper_bound(
+    *,
+    max_rounds: int,
+    max_critic_repairs: int,
+    max_planner_repairs: int,
+) -> int:
+    """Return the hard upper bound on logical refinement model requests.
+
+    One critic request and one planner request are allowed per round. Each structured-output
+    repair permits one additional ``LlmClient.complete`` call. Provider HTTP retries happen
+    inside a single ``complete`` call and therefore do not count as additional refinement
+    model requests here.
+    """
+
+    _require_bounded_int(
+        "max_rounds",
+        max_rounds,
+        minimum=1,
+        maximum=_MAX_REFINEMENT_ROUNDS,
+    )
+    _require_bounded_int(
+        "max_critic_repairs",
+        max_critic_repairs,
+        minimum=0,
+        maximum=_MAX_STRUCTURED_REPAIRS,
+    )
+    _require_bounded_int(
+        "max_planner_repairs",
+        max_planner_repairs,
+        minimum=0,
+        maximum=_MAX_STRUCTURED_REPAIRS,
+    )
+    return max_rounds * (2 + max_critic_repairs + max_planner_repairs)
+
 
 def run_visual_critic(
     *,
@@ -46,6 +98,12 @@ def run_visual_critic(
 ) -> CriticResponse:
     """Request and strictly bind one visual critique to an exact render/context."""
 
+    _require_bounded_int(
+        "max_repairs",
+        max_repairs,
+        minimum=0,
+        maximum=_MAX_STRUCTURED_REPAIRS,
+    )
     image = _load_bound_image(image_path, context)
     context_json = _bounded_json(context.to_dict(), label="vision object map")
     messages = [
@@ -203,3 +261,8 @@ def _bounded_json(payload: object, *, label: str) -> str:
             details={"context_bytes": size, "max_context_bytes": _MAX_CONTEXT_BYTES},
         )
     return encoded
+
+
+def _require_bounded_int(name: str, value: int, *, minimum: int, maximum: int) -> None:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ValueError(f"{name} must be an integer in [{minimum}, {maximum}]")
