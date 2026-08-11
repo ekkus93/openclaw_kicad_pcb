@@ -37,9 +37,7 @@ jobs:
             tests/unit/test_refinement_metrics.py \
             tests/unit/test_refinement_operations.py \
             tests/unit/test_refinement_quality.py \
-            tests/unit/test_refinement_rendering.py \
-            tests/unit/test_refinement_semantics.py \
-            tests/unit/test_refinement_validation.py
+            tests/unit/test_refinement_rendering.py
           git diff --check
       - name: Commit canonical Ruff formatting
         run: |
