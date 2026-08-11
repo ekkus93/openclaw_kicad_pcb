@@ -101,7 +101,7 @@ class RefinementIterationLimits:
 class _CandidateRejectionContext:
     transaction: SchematicCandidateTransaction
     analysis: RefinementAnalysisResult
-    plan: RefinementPlanResult
+    plan: ValidatedRepairPlan
     operations: LayoutOperationBatchResult
     electrical: SchematicElectricalVerificationReport | None
     structural: CandidateStructuralValidationReport | None
@@ -241,7 +241,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=planned,
+                    plan=plan,
                     operations=operations,
                     electrical=electrical,
                     structural=None,
@@ -264,7 +264,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=planned,
+                    plan=plan,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -283,7 +283,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=planned,
+                    plan=plan,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -325,7 +325,7 @@ def apply_planned_refinement(
                 _CandidateRejectionContext(
                     transaction=transaction,
                     analysis=analysis,
-                    plan=planned,
+                    plan=plan,
                     operations=operations,
                     electrical=electrical,
                     structural=structural,
@@ -648,7 +648,7 @@ def _reject_candidate(
             accepted_hash_before=context.analysis.accepted_hash,
             authoritative_hash=context.analysis.baseline.authoritative_hash,
             critic=context.analysis.critic,
-            plan=context.plan.plan,
+            plan=context.plan,
             operation_results=context.operations,
             electrical_report=context.electrical or {"status": "not_run"},
             structural_report=context.structural or {"status": "not_run"},
