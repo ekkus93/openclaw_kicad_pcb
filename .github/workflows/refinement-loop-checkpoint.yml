@@ -51,7 +51,7 @@ jobs:
           marker = '\ndef _reject_candidate(\n'
           if text.count(marker) != 1:
               raise SystemExit('unexpected schematic_refinement insertion marker count')
-          block = fetch_blob('9afb2819d8e7faeba04f688752836634d7cf9832')
+          block = fetch_blob('42fdcd549f58a95e6bbcc393330d5ae61706a88b')
           service_path.write_text(text.replace(marker, '\n' + block + marker), encoding='utf-8')
 
           test_path = Path('tests/web/test_web_schematic_refinement_loop.py')
