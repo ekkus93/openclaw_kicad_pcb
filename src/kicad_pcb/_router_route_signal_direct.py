@@ -68,9 +68,7 @@ def _append_direct_net_identity_label(
         label_angle = int((pin_angle + 180) % 360)
 
     if net_name.startswith("/"):
-        routing.global_labels.append(
-            GlobalLabelPlacement(net_name, label_x, label_y, label_angle)
-        )
+        routing.global_labels.append(GlobalLabelPlacement(net_name, label_x, label_y, label_angle))
     else:
         routing.labels.append(NetLabel(net_name, label_x, label_y, label_angle))
 
@@ -171,9 +169,7 @@ def _route_direct_net(  # noqa: PLR0913
             and manhattan <= MAX_DIRECT_WIRE_MM
         )
         can_direct = manhattan <= MAX_DIRECT_DIST_MM and (
-            tdist <= 1
-            or _is_connector_passive_edge(p0.ref, p1.ref)
-            or short_local_override
+            tdist <= 1 or _is_connector_passive_edge(p0.ref, p1.ref) or short_local_override
         )
     else:
         can_direct = manhattan <= MAX_DIRECT_DIST_MM
