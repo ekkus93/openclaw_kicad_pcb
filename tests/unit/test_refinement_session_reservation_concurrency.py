@@ -4,6 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
 
+import pytest
+
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.session_reservation import (
     RefinementSessionReservation,
@@ -41,3 +43,17 @@ def test_concurrent_session_reservation_has_exactly_one_owner(tmp_path: Path) ->
 
     release_refinement_session_reservation(reservations[0])
     assert not reservations[0].reservation_path.exists()
+
+
+def test_orphan_iteration_above_requested_round_limit_still_blocks_reuse(tmp_path: Path) -> None:
+    root = tmp_path / "evidence"
+    (root / "cross-bound-session-round-020").mkdir(parents=True)
+
+    with pytest.raises(UserError, match="iteration evidence already exists") as exc_info:
+        reserve_refinement_session_namespace(
+            root,
+            session_id="cross-bound-session",
+            max_rounds=3,
+        )
+
+    assert exc_info.value.code == "REFINEMENT_EVIDENCE_EXISTS"
