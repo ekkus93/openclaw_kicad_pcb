@@ -182,7 +182,8 @@ def test_unsafe_persisted_schematic_path_is_rejected(tmp_path: Path) -> None:
 
 
 def test_vision_disabled_refuses_before_target_lookup_or_dispatch(
-    monkeypatch, tmp_path: Path
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     settings = _settings(tmp_path, vision_enabled=False)
     calls = 0
@@ -260,7 +261,8 @@ def test_success_refreshes_project_artifacts_and_job_metadata(monkeypatch, tmp_p
 
 
 def test_archive_refresh_failure_removes_stale_zip_and_reports_committed_state(
-    monkeypatch, tmp_path: Path
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     settings, session, job, _ = _seed_completed_project(tmp_path)
     stale_zip = job.artifacts_dir / "project.zip"
