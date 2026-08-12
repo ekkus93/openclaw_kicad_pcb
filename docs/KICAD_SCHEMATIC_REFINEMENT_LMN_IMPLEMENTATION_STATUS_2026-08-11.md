@@ -44,17 +44,29 @@ Implemented:
 
 ### Session-ID reservation hardening
 
-`src/kicad_pcb/refinement/session_reservation.py` now implements an atomic ownership-token reservation for a session evidence namespace. It rejects:
+`src/kicad_pcb/refinement/session_reservation.py` implements an atomic ownership-token reservation for a session evidence namespace. It rejects:
 
 - an already-reserved session ID;
-- an existing completed session bundle;
-- an orphan/pre-existing iteration bundle for the requested session ID;
+- an existing completed or failed session bundle;
+- an orphan/pre-existing iteration bundle for the session ID across the full supported round namespace, independent of a later request's smaller `max_rounds` value;
 - unsafe session IDs or invalid round bounds;
 - release of a missing, foreign, or tampered reservation.
 
-A stale reservation is intentionally fail-closed: it blocks reuse rather than allowing a new session to overwrite or ambiguously extend old evidence.
+A stale reservation is intentionally fail-closed: it blocks reuse rather than allowing a new session to overwrite or ambiguously extend old evidence. Reservation acquisition uses exclusive creation, so concurrent same-session contenders cannot both become owners.
 
-**Current integration status:** the reservation primitive is implemented and tested, but it has not yet been wired into `refine_schematic()` before the first model call/mutation. Therefore this specific hardening item remains open until the service acquires the reservation before execution and releases it only after successful completed/failed session-evidence finalization.
+**Current integration status:** the reservation is now acquired by `refine_schematic()` before `_run_refinement_loop()`. Therefore a conflicting finalized, active, stale, or orphan-evidence session is rejected before any refinement model dispatch or candidate mutation. The service keeps the reservation through terminal evidence publication. It releases the reservation only after durable completed or failed session evidence has been published. If terminal evidence publication itself fails, the reservation is deliberately retained to block ambiguous replay.
+
+Added regression coverage proves:
+
+- completed-session reuse is rejected without entering the refinement round path;
+- active reservation conflicts are rejected without entering the refinement round path;
+- stale reservations are not stolen or rewritten;
+- failed sessions release their lock only after durable failed-session evidence exists, after which replay is blocked by that evidence;
+- terminal evidence failure retains the reservation and blocks replay;
+- two concurrent reservation attempts have exactly one owner;
+- orphan iteration evidence above a later request's configured round limit still blocks session reuse.
+
+The implementation is committed on `webapp`; full repository lint/type/test/CI validation remains pending an external run and is not claimed by this note.
 
 ## Phase N — feature/config/API/CLI integration
 
@@ -77,6 +89,8 @@ Implemented building blocks:
 - CLI service errors likewise omit internal `UserError.details`;
 - runtime configuration and retention semantics are documented in `docs/KICAD_SCHEMATIC_REFINEMENT_RUNTIME_CONFIGURATION_2026-08-11.md`.
 
+Because both configured HTTP and CLI facades delegate to the canonical `refine_schematic()` service, their eventual production composition inherits the session reservation/idempotency gate rather than introducing a separate mutation implementation.
+
 ### Production mounting status
 
 The HTTP router/installer and CLI adapter are intentionally app-neutral. They are **not yet claimed as production-mounted entry points**. The remaining integration must identify the existing webapp's canonical project/session ownership boundary and inject:
@@ -94,12 +108,12 @@ Until that composition point is verified, leaving the router unmounted is safer 
 
 ## Validation status
 
-Focused tests and static-analysis commands have been prepared/expanded for the refinement modules, but this note does not claim GitHub Actions status. CI monitoring remains outside this implementation loop unless explicitly requested.
+Focused tests and static-analysis commands have been prepared/expanded for the refinement modules, including session idempotency and atomic reservation concurrency coverage, but this note does not claim GitHub Actions status. CI monitoring remains outside this implementation loop unless explicitly requested.
 
 ## Next implementation actions
 
-1. Wire `RefinementSessionReservation` into `refine_schematic()` before any model call or candidate mutation; release only after durable session finalization.
-2. Add service-level tests proving reused/stale session IDs cannot dispatch a model call or mutate accepted bytes.
-3. Inspect and use the existing webapp project/session composition to mount the default-off router without introducing request-selected paths.
-4. Register the CLI adapter only through an existing project/runtime composition path; do not create a standalone arbitrary-path mutation command.
+1. Run/reconcile the focused and full lint/type/test gates for the session-reservation integration when validation results are available; fix any concrete failures without weakening the fail-closed contract.
+2. Inspect and use the existing webapp project/session composition to mount the default-off router without introducing request-selected paths.
+3. Register the CLI adapter only through an existing project/runtime composition path; do not create a standalone arbitrary-path mutation command.
+4. Add production-boundary tests proving both HTTP and CLI reach the same trusted reserved-session service path and cannot bypass server-owned runtime/path/provider/bound configuration.
 5. Continue the remaining validation/security/release phases and reconcile TODO checkboxes only after the implemented production path is verified.
