@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from pydantic import ValidationError
+from starlette.concurrency import run_in_threadpool
 
 from kicad_pcb.errors import UserError
 
@@ -30,7 +31,8 @@ def build_refinement_router(*, config: RefinementFeatureConfig) -> APIRouter:
     ) -> RefinementRunResponse:
         request = await _validated_request(http_request)
         try:
-            return run_wizard_refinement_request(
+            return await run_in_threadpool(
+                run_wizard_refinement_request,
                 settings=settings,
                 llm_client=llm_client,
                 request=request,
