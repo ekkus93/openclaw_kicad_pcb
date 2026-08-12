@@ -127,16 +127,16 @@ Runtime provider/model provenance comes directly from validated server settings.
 
 The generated project's `.kicad_sch` is canonical. After successful refinement execution, production composition refreshes the derived `schematic_preview.png`, `project.zip`, and sanitized job-result refinement metadata.
 
-An explicitly optional preview-generation failure removes the old preview and is warning-visible. Unexpected preview failures, archive-refresh failures, or job-metadata refresh failures raise `REFINEMENT_DERIVED_STATE_REFRESH_FAILED` with `authoritative_committed=true`, making it explicit that canonical mutation/evidence may already be durable and must not be replayed automatically.
+The refreshed preview is generated in private same-filesystem scratch and atomically replaces the public preview only after successful rendering. An explicitly optional preview-generation failure removes the old preview and is warning-visible. Unexpected preview failures, archive-refresh failures, or job-metadata refresh failures raise `REFINEMENT_DERIVED_STATE_REFRESH_FAILED` with `authoritative_committed=true`, making it explicit that canonical mutation/evidence may already be durable and must not be replayed automatically.
 
-A failed ZIP refresh removes stale `project.zip`. Project archive publication itself is now atomic: the new ZIP is written and fsynced in a same-directory temporary file and only then replaces `project.zip`, so concurrent downloads cannot observe an in-progress archive.
+A failed ZIP refresh removes stale `project.zip`. Project archive publication is atomic and private: the new ZIP is written and fsynced beneath `artifacts/.staging/`, which the flat artifact API neither lists nor addresses, and only then replaces `project.zip`. Archive generation rejects symbolic links and resolved entries outside the project root, preventing archive refresh from reading arbitrary external files through a tampered project tree.
 
 ### Production HTTP regression coverage
 
 Added/updated tests cover:
 
 - disabled router has no refinement routes;
-- enabled router uses request-scoped server dependencies;
+- enabled router uses request-scoped server dependencies and the threadpool boundary;
 - request-side path/bound override attempts fail before service dispatch;
 - malformed bodies are sanitized;
 - lower-layer path/secret-bearing errors are not reflected;
@@ -146,7 +146,9 @@ Added/updated tests cover:
 - missing vision capability refuses before dispatch;
 - successful composition supplies authoritative IR and configured provenance and refreshes derived artifacts/job metadata;
 - archive refresh failure removes stale ZIP and reports committed-state truthfully;
-- atomic project ZIP failure preserves the previous complete archive and successful publication replaces it.
+- atomic project ZIP failure preserves the previous complete archive and successful publication replaces it;
+- project ZIP staging files are not exposed by the artifact listing API;
+- symlink-based archive escape attempts fail closed without replacing the prior complete archive.
 
 ### CLI production composition — still open
 
