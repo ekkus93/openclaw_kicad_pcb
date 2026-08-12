@@ -53,34 +53,34 @@ class TestTransformPinAt:
     """_transform_pin_at(pin_at, origin_x, origin_y, rotation) -> transformed map."""
 
     def test_identity_rotation(self) -> None:
-        """rotation=0 keeps X translation, flips Y, and reflects pin direction."""
+        """rotation=0 preserves local position while translating to the symbol origin."""
         pin_at: dict[str, tuple[float, float, float]] = {
             "1": (10.0, 20.0, 90.0),
             "2": (-5.0, 3.0, 180.0),
         }
         result = _transform_pin_at(pin_at, 100.0, 200.0, rotation=0)
         assert result == {
-            "1": (approx(110.0), approx(180.0), approx(270.0)),
-            "2": (approx(95.0), approx(197.0), approx(180.0)),
+            "1": (approx(110.0), approx(220.0), approx(270.0)),
+            "2": (approx(95.0), approx(203.0), approx(180.0)),
         }
 
     def test_rotation_90(self) -> None:
-        """90° CCW rotation: library-space point rotates, then Y flips into schematic space."""
+        """90° placement applies KiCad's direct symbol transform."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 45.0)}
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=90)
         rx, ry, ra = result["1"]
         assert rx == approx(-4.0, abs=1e-9)
-        assert ry == approx(-3.0, abs=1e-9)
-        assert ra == pytest.approx((-90 - 45) % 360)
+        assert ry == approx(3.0, abs=1e-9)
+        assert ra == pytest.approx((90 - 45) % 360)
 
     def test_rotation_180(self) -> None:
-        """180° rotation flips X and preserves the library Y sign after schematic projection."""
+        """180° placement negates both local position axes."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 30.0)}
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=180)
         rx, ry, ra = result["1"]
         assert rx == approx(-3.0, abs=1e-9)
-        assert ry == approx(4.0, abs=1e-9)
-        assert ra == pytest.approx((-180 - 30) % 360)
+        assert ry == approx(-4.0, abs=1e-9)
+        assert ra == pytest.approx((180 - 30) % 360)
 
     def test_angle_wraps_below_360(self) -> None:
         """Resulting angle is always in [0, 360)."""
@@ -88,15 +88,15 @@ class TestTransformPinAt:
         result = _transform_pin_at(pin_at, 0.0, 0.0, rotation=180)
         angle = result["1"][2]
         assert 0.0 <= angle < 360.0
-        assert angle == pytest.approx((-180 - 270) % 360)  # 270°
+        assert angle == pytest.approx((180 - 270) % 360)  # 270°
 
     def test_origin_applied_correctly(self) -> None:
-        """Non-zero origin is added after rotation and library->schematic Y projection."""
+        """Non-zero origin is added after KiCad's direct symbol transform."""
         pin_at: dict[str, tuple[float, float, float]] = {"1": (3.0, 4.0, 0.0)}
         result = _transform_pin_at(pin_at, 10.0, 20.0, rotation=90)
         rx, ry, _ = result["1"]
         assert rx == approx(10.0 + (-4.0), abs=1e-9)
-        assert ry == approx(20.0 + (-3.0), abs=1e-9)
+        assert ry == approx(20.0 + 3.0, abs=1e-9)
 
     def test_vertical_power_pin_angle_uses_same_transform_as_position(self) -> None:
         """Vertical library pins keep their bodyward direction after a 90° placement."""
@@ -107,8 +107,8 @@ class TestTransformPinAt:
 
         result = _transform_pin_at(pin_at, 100.0, 50.0, rotation=90)
 
-        assert result["4"][2] == pytest.approx(0.0)
-        assert result["8"][2] == pytest.approx(180.0)
+        assert result["4"][2] == pytest.approx(180.0)
+        assert result["8"][2] == pytest.approx(0.0)
 
     def test_rotated_resistor_stubs_do_not_terminate_on_opposite_pins(self) -> None:
         """A routing stub must extend away from the resistor body, never across it."""
@@ -119,8 +119,8 @@ class TestTransformPinAt:
         r1 = _transform_pin_at(resistor_pins, 130.81, 105.41, rotation=270)
         r2 = _transform_pin_at(resistor_pins, 130.48, 120.65, rotation=90)
 
-        assert r1["2"] == pytest.approx((130.81, 110.49, 270.0))
-        assert r2["1"] == pytest.approx((130.48, 120.65, 270.0))
+        assert r1["2"] == pytest.approx((130.81, 100.33, 90.0))
+        assert r2["1"] == pytest.approx((130.48, 120.65, 90.0))
 
         r1_stub = _stub_end(*r1["2"])
         r2_stub = _stub_end(*r2["1"])
