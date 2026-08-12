@@ -37,9 +37,7 @@ def test_public_writer_emits_hidden_local_identity_label_without_visible_stats()
 
     write_routing(doc=doc, routing=routing, new_uuid=_new_uuid_factory(), stats=stats)
 
-    labels = [
-        item for item in doc.root.items if isinstance(item, ListNode) and item.key == "label"
-    ]
+    labels = [item for item in doc.root.items if isinstance(item, ListNode) and item.key == "label"]
     assert len(labels) == 1
     assert _has_hide_effect(labels[0])
     assert stats.get("labels", 0) == 0
