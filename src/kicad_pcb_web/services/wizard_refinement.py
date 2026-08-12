@@ -299,18 +299,7 @@ def _refresh_preview(target: WizardRefinementTarget) -> str | None:
     try:
         _generate_schematic_preview(target.accepted_path, target.job.artifacts_dir)
     except PreviewGenerationError as exc:
-        try:
-            preview_path.unlink(missing_ok=True)
-        except OSError as cleanup_exc:
-            raise PersistenceError(
-                "Refinement was committed, but a stale schematic preview could not be removed.",
-                code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
-                details={
-                    "session_id": target.wizard_session_id,
-                    "job_id": target.job.id,
-                    "authoritative_committed": True,
-                },
-            ) from cleanup_exc
+        _remove_stale_artifact(preview_path, target, artifact="schematic preview")
         LOGGER.warning(
             "refinement schematic preview refresh skipped",
             extra={
@@ -320,6 +309,13 @@ def _refresh_preview(target: WizardRefinementTarget) -> str | None:
             },
         )
         return str(exc)
+    except Exception as exc:
+        _remove_stale_artifact(preview_path, target, artifact="schematic preview")
+        raise PersistenceError(
+            "Refinement was committed, but schematic preview refresh failed.",
+            code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
+            details=_committed_details(target),
+        ) from exc
     return None
 
 
@@ -328,24 +324,33 @@ def _refresh_project_archive(target: WizardRefinementTarget) -> None:
     try:
         create_project_zip(target.job.project_dir, target.job.artifacts_dir)
     except Exception as exc:
-        try:
-            zip_path.unlink(missing_ok=True)
-        except OSError as cleanup_exc:
-            raise PersistenceError(
-                "Refinement was committed, but stale project archive cleanup also failed.",
-                code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
-                details={
-                    "session_id": target.wizard_session_id,
-                    "job_id": target.job.id,
-                    "authoritative_committed": True,
-                },
-            ) from cleanup_exc
+        _remove_stale_artifact(zip_path, target, artifact="project archive")
         raise PersistenceError(
             "Refinement was committed, but the downloadable project archive could not be refreshed.",
             code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
-            details={
-                "session_id": target.wizard_session_id,
-                "job_id": target.job.id,
-                "authoritative_committed": True,
-            },
+            details=_committed_details(target),
         ) from exc
+
+
+def _remove_stale_artifact(
+    path: Path,
+    target: WizardRefinementTarget,
+    *,
+    artifact: str,
+) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise PersistenceError(
+            f"Refinement was committed, but stale {artifact} cleanup also failed.",
+            code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
+            details=_committed_details(target),
+        ) from exc
+
+
+def _committed_details(target: WizardRefinementTarget) -> dict[str, object]:
+    return {
+        "session_id": target.wizard_session_id,
+        "job_id": target.job.id,
+        "authoritative_committed": True,
+    }
