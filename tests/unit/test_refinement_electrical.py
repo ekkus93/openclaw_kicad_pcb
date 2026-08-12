@@ -163,9 +163,16 @@ class _WritingAdapter:
     def __init__(self, xml: str) -> None:
         self.xml = xml
 
-    def export_netlist(self, _schematic: Path, output: Path):
-        output.write_text(self.xml, encoding="utf-8")
-        return _RunResult(), self.xml
+    def export_netlist(
+        self,
+        _schematic: Path,
+        output: Path,
+        *,
+        netlist_format: str = "kicadxml",
+    ) -> tuple[_RunResult, str]:
+        content = self.xml if netlist_format == "kicadxml" else "(export (version D) (nets))"
+        output.write_text(content, encoding="utf-8")
+        return _RunResult(), content
 
 
 class _RunResult:
