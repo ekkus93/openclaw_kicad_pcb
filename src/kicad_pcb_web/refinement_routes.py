@@ -2,54 +2,47 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
-
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from pydantic import ValidationError
 
 from kicad_pcb.errors import UserError
 
-from .services.configured_refinement import run_configured_refinement_request
+from .deps import get_llm_client, get_settings
+from .services.llm import LlmClient
 from .services.refinement_api import RefinementRunRequest, RefinementRunResponse
 from .services.refinement_config import RefinementFeatureConfig
-from .services.schematic_refinement import RefinementRuntime
+from .services.wizard_refinement import run_wizard_refinement_request
+from .settings import WebSettings
 
 
-@dataclass(frozen=True)
-class RefinementRouteDependencies:
-    """Server-owned dependencies; request payloads cannot override these values."""
-
-    accepted_path: Callable[[], Path]
-    runtime: Callable[[], RefinementRuntime]
-
-
-def build_refinement_router(
-    *,
-    config: RefinementFeatureConfig,
-    dependencies: RefinementRouteDependencies,
-) -> APIRouter:
-    """Return an empty router while disabled, otherwise mount the single safe mutation path."""
+def build_refinement_router(*, config: RefinementFeatureConfig) -> APIRouter:
+    """Return an empty router while disabled, otherwise mount the trusted wizard path."""
 
     router = APIRouter()
     if not config.enabled:
         return router
 
     @router.post("/api/refinement/run", response_model=RefinementRunResponse)
-    async def run_refinement(http_request: Request) -> RefinementRunResponse:
+    async def run_refinement(
+        http_request: Request,
+        settings: WebSettings = Depends(get_settings),
+        llm_client: LlmClient | None = Depends(get_llm_client),
+    ) -> RefinementRunResponse:
         request = await _validated_request(http_request)
         try:
-            return run_configured_refinement_request(
-                accepted_path=dependencies.accepted_path(),
-                runtime=dependencies.runtime(),
+            return run_wizard_refinement_request(
+                settings=settings,
+                llm_client=llm_client,
                 request=request,
                 config=config,
             )
         except UserError as exc:
             raise HTTPException(
                 status_code=409,
-                detail={"code": str(exc.code), "message": str(exc)},
+                detail={
+                    "code": _error_code(exc),
+                    "message": "Schematic refinement request could not be completed.",
+                },
             ) from exc
 
     return router
@@ -59,16 +52,10 @@ def install_refinement_routes(
     app: FastAPI,
     *,
     config: RefinementFeatureConfig,
-    dependencies: RefinementRouteDependencies,
 ) -> None:
     """Install refinement routes only when the validated feature configuration enables them."""
 
-    app.include_router(
-        build_refinement_router(
-            config=config,
-            dependencies=dependencies,
-        )
-    )
+    app.include_router(build_refinement_router(config=config))
 
 
 async def _validated_request(http_request: Request) -> RefinementRunRequest:
@@ -83,3 +70,9 @@ async def _validated_request(http_request: Request) -> RefinementRunRequest:
                 "message": "Invalid schematic refinement request.",
             },
         ) from exc
+
+
+def _error_code(exc: UserError) -> str:
+    value = exc.code
+    enum_value = getattr(value, "value", None)
+    return str(enum_value if enum_value is not None else value)
