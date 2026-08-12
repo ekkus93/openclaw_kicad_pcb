@@ -21,7 +21,9 @@ def _new_uuid_factory() -> Callable[[], str]:
 
 def _has_hide_effect(node: ListNode) -> bool:
     effects = next(
-        item for item in node.items if isinstance(item, ListNode) and item.key == "effects"
+        item
+        for item in node.items
+        if isinstance(item, ListNode) and item.key == "effects"
     )
     return any(
         isinstance(effect_item, AtomNode) and effect_item.value == "hide"
