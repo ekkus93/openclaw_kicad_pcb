@@ -194,11 +194,11 @@ After a refinement service result is committed:
 2. the downloadable project ZIP is regenerated from the current project tree;
 3. job result metadata is refreshed with a sanitized refinement summary.
 
-Preview generation remains an explicitly optional capability inherited from initial project generation. If it fails with the known `PreviewGenerationError`, any old preview is removed, the failure is warning-visible, and `preview_warning` is updated. A stale preview is not retained as if current.
+Preview generation remains an explicitly optional capability inherited from initial project generation. Refinement renders the new preview in a private same-filesystem scratch directory and only then atomically replaces the public `schematic_preview.png`. If generation fails with the known `PreviewGenerationError`, any old preview is removed, the failure is warning-visible, and `preview_warning` is updated. A stale or partially generated preview is not presented as current. Scratch cleanup failure is error-visible but does not change the truth of an already published preview.
 
 Unexpected preview failures, ZIP refresh failures, or job-metadata refresh failures raise `REFINEMENT_DERIVED_STATE_REFRESH_FAILED` with `authoritative_committed=true`. This explicitly states that the canonical schematic/refinement evidence may already be committed and must not be replayed as though nothing happened. If ZIP refresh fails, the stale archive is removed before returning the failure.
 
-`create_project_zip()` publishes archives atomically: a new ZIP is fully written and fsynced to a same-directory temporary file before replacing `project.zip`. Concurrent readers therefore see either the previous complete archive or the new complete archive, not a partially written replacement.
+`create_project_zip()` rejects symbolic links and any archive member whose resolved path escapes the generated project root. A new ZIP is fully written and fsynced inside a private `artifacts/.staging/` directory that the flat artifact API neither lists nor addresses; only then is it atomically moved into place as `project.zip`. Concurrent readers therefore see either the previous complete archive or the new complete archive, never the in-progress staging file or a partially written replacement.
 
 ## Stop and failure semantics
 
