@@ -49,7 +49,6 @@ def test_real_kicad_export_preserves_generated_divider_electrically(tmp_path: Pa
             symbols_dir=str(symbols_dir),
             mode="internal",
             layout="graphviz",
-            label_mode="debug",
         )
     )
 
