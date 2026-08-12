@@ -21,9 +21,7 @@ def _new_uuid_factory() -> Callable[[], str]:
 
 def _has_hide_effect(node: ListNode) -> bool:
     effects = next(
-        item
-        for item in node.items
-        if isinstance(item, ListNode) and item.key == "effects"
+        item for item in node.items if isinstance(item, ListNode) and item.key == "effects"
     )
     return any(
         isinstance(effect_item, AtomNode) and effect_item.value == "hide"
@@ -60,9 +58,7 @@ def test_public_writer_emits_hidden_global_identity_label() -> None:
     write_routing(doc=doc, routing=routing, new_uuid=_new_uuid_factory(), stats={})
 
     labels = [
-        item
-        for item in doc.root.items
-        if isinstance(item, ListNode) and item.key == "global_label"
+        item for item in doc.root.items if isinstance(item, ListNode) and item.key == "global_label"
     ]
     assert len(labels) == 1
     assert _has_hide_effect(labels[0])
