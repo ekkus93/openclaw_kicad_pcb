@@ -58,6 +58,29 @@ def test_refinement_feature_config_rejects_noncanonical_integer(value: str) -> N
         load_refinement_feature_config({"KICAD_WEBAPP_REFINEMENT_MAX_ROUNDS": value})
 
 
+def test_refinement_feature_config_rejects_unknown_prefixed_setting() -> None:
+    with pytest.raises(ValueError, match="Unsupported refinement setting") as exc_info:
+        load_refinement_feature_config(
+            {
+                "KICAD_WEBAPP_REFINEMENT_ENABLED": "true",
+                "KICAD_WEBAPP_REFINEMENT_MAX_ROUND": "5",
+            }
+        )
+
+    assert "KICAD_WEBAPP_REFINEMENT_MAX_ROUND" in str(exc_info.value)
+
+
+def test_refinement_feature_config_ignores_unrelated_environment_settings() -> None:
+    config = load_refinement_feature_config(
+        {
+            "PATH": "/usr/bin",
+            "KICAD_PCB_WEB_LLM_PROVIDER": "openai",
+        }
+    )
+
+    assert config == RefinementFeatureConfig()
+
+
 def test_refinement_feature_config_reuses_loop_bound_validation() -> None:
     with pytest.raises(ValueError, match="max_rounds"):
         load_refinement_feature_config({"KICAD_WEBAPP_REFINEMENT_MAX_ROUNDS": "0"})
