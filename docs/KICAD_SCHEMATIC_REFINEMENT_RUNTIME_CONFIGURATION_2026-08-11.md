@@ -2,7 +2,7 @@
 
 Date: 2026-08-11
 
-This document describes the runtime/configuration contract for the bounded schematic visual-refinement service. It is intentionally narrower than the implementation specification: it records the production-facing feature gate, resource bounds, provenance requirements, evidence policy, and interface constraints.
+This document describes the runtime/configuration contract for the bounded schematic visual-refinement service. It is intentionally narrower than the implementation specification: it records the production-facing feature gate, resource bounds, provenance requirements, evidence policy, project ownership boundary, and interface constraints.
 
 ## Feature gate
 
@@ -20,9 +20,13 @@ The following environment variables are recognized:
 | `KICAD_WEBAPP_REFINEMENT_MAX_CRITIC_REPAIRS` | `0` | integer `0..8` |
 | `KICAD_WEBAPP_REFINEMENT_MAX_PLANNER_REPAIRS` | `0` | integer `0..8` |
 
-Integer values must use canonical base-10 text. Whitespace, a leading `+`, leading zeroes, floating-point text, and other coercive forms are rejected. Unknown environment variables beginning with `KICAD_WEBAPP_REFINEMENT_` are also rejected so a misspelled bound cannot silently fall back to a default.
+Integer values must use canonical base-10 text. Whitespace, a leading `+`, leading zeroes, floating-point text, and other coercive forms are rejected. Unknown environment variables beginning with `KICAD_WEBAPP_REFINEMENT_` are also rejected so a misspelled enable flag or bound cannot silently fall back to a default. Unrelated process environment variables are ignored by the refinement loader.
 
-Enabling the feature flag does not create a new mutation implementation. `run_configured_refinement()` dispatches only to the canonical transactional `refine_schematic()` service.
+`src/kicad_pcb_web/main.py` loads this configuration when the application is composed. When disabled, the refinement router is empty and `/api/refinement/run` is not exposed. Invalid refinement configuration therefore fails application composition rather than silently producing an unintended runtime policy.
+
+Enabling the feature flag does not create a new mutation implementation. The production path remains:
+
+`HTTP route -> run_wizard_refinement_request() -> run_configured_refinement_request() -> run_configured_refinement() -> refine_schematic()`
 
 ## Logical model-call bound
 
@@ -45,40 +49,92 @@ Iterative `refine_schematic()` requires explicit `RefinementProvenance` containi
 
 Product version and implementation Git SHA may also be supplied when the composition layer knows them. Provider/model identity is never guessed by inspecting an `LlmClient` implementation or parsing a model-name heuristic.
 
-`build_refinement_runtime()` is the preferred server-side composition helper. It receives the authoritative `CircuitIR`, KiCad adapter, LLM client, work/evidence directories, provider/model identity, and optional implementation identity explicitly.
+`build_refinement_runtime()` receives the authoritative `CircuitIR`, KiCad adapter, LLM client, work/evidence directories, operation policy, and explicit provenance. Production HTTP composition supplies:
+
+- the request-scoped configured `LlmClient` from `get_llm_client()`;
+- provider/model identity from validated `WebSettings`;
+- a server-created `KicadCliAdapter()` using the configured process environment rather than any request-selected executable;
+- the authoritative `CircuitIR` reconstructed from trusted persisted wizard/job state;
+- server-derived work/evidence directories.
 
 API keys, authorization headers, provider payloads, and unrelated absolute paths are not provenance fields.
+
+## Production wizard/project ownership boundary
+
+The mounted HTTP path treats `RefinementRunRequest.session_id` as the **wizard session ID** whose current generated project is eligible for refinement. The request does not contain a job ID or path.
+
+Before model dispatch or candidate mutation, `resolve_wizard_refinement_target()` requires all of the following:
+
+1. the wizard session exists;
+2. the wizard is in `completed` state;
+3. the wizard has current valid `ir_json` and `ir_validation`;
+4. the wizard has a `latest_job_id`;
+5. that job exists and has `status="succeeded"` with result metadata;
+6. the job's persisted generation request `netlist_json` exactly matches the wizard's current `ir_json`;
+7. the job's canonical server-owned `input/circuit_ir.json` also exactly matches that wizard IR and validates as `CircuitIR`;
+8. the job result contains a workspace-relative `.kicad_sch` reference;
+9. resolving that reference remains inside the canonical job workspace and points to an existing regular schematic file.
+
+Any mismatch fails closed before the refinement service is dispatched. In particular, regenerating or revising Circuit IR cannot silently reuse an older generated schematic merely because the old job still exists on disk.
+
+`JobRecord` paths are canonicalized from the trusted location of `job.json`; persisted absolute path fields are not used as authority. The job's relative `schematic_path` is resolved under that canonical work directory and rechecked for containment.
+
+Production refinement work/evidence directories are derived from trusted IDs:
+
+```text
+<data_dir>/wizard_sessions/<wizard-session-id>/refinement/<latest-job-id>/work
+<data_dir>/wizard_sessions/<wizard-session-id>/refinement/<latest-job-id>/evidence
+```
+
+The job-specific namespace means a later successful regeneration can have a distinct refinement evidence root while preserving one-shot idempotency within the particular generated project.
+
+The wizard cross-process mutation lock is held across target resolution, provider/KiCad refinement work, terminal evidence publication, and derived-artifact refresh. The synchronous refinement path is executed through Starlette's threadpool from the async route so long-running provider/KiCad work does not run directly on the FastAPI event loop.
+
+## Vision capability boundary
+
+The mounted production path requires:
+
+- an enabled configured LLM provider;
+- an explicit configured model;
+- a request-scoped LLM client;
+- `vision_enabled=true` in the validated LLM runtime configuration.
+
+If any of these is absent, refinement fails with `VISION_CAPABILITY_UNAVAILABLE` before target resolution/model dispatch. Provider/model names are not used as vision heuristics and there is no text-only fallback that masquerades as visual critique.
 
 ## HTTP contract
 
 `RefinementRunRequest` accepts only:
 
 ```json
-{"session_id": "session-001"}
+{"session_id": "wiz_20260811_120000_abcd1234"}
 ```
 
 The request cannot override:
 
 - accepted schematic path;
+- wizard/job workspace;
 - work/evidence directories;
 - provider or model;
 - API key;
+- KiCad executable;
 - loop/resource limits;
 - operation policy.
 
-When the feature is disabled, `build_refinement_router()` returns an empty router, so `/api/refinement/run` is not exposed. When enabled, the route obtains the accepted path and `RefinementRuntime` from server-owned dependency providers and forwards the sanitized request through `run_configured_refinement_request()`.
+When enabled, the route obtains `WebSettings` and the configured request-scoped LLM client through normal FastAPI dependencies and forwards the sanitized request through the trusted wizard composition boundary above.
+
+Request-body validation is intentionally generic: malformed JSON, unknown fields, path attempts, credentials, and bound overrides return `REFINEMENT_INVALID_REQUEST` without reflecting rejected values. Lower-layer `UserError` responses preserve only the machine-readable code plus a generic refinement failure message; internal exception text/details are not reflected.
 
 The HTTP response exposes hashes, stop reason, counts, model-call accounting, and an `evidence_available` boolean. It does not expose the absolute session-evidence directory.
 
 ## CLI contract
 
-`execute_refinement_cli()` follows the same service path and accepts only:
+`execute_refinement_cli()` follows the canonical configured refinement service and accepts only:
 
 ```text
 --session-id <safe-session-id>
 ```
 
-Accepted schematic path, runtime, provider/model, and limits are injected by the composition layer. CLI flags that attempt to override paths, providers, credentials, or limits are invalid arguments and never dispatch refinement.
+The CLI adapter itself cannot override paths, provider/model, credentials, or bounds. Production CLI composition with the same wizard/current-job ownership resolver remains a separate integration step; a standalone arbitrary-path mutation CLI must not be introduced.
 
 ## Evidence and retention
 
@@ -113,9 +169,9 @@ Session references are hash-bound to iteration manifests and are cross-checked a
 
 ## Session idempotency and reservation
 
-A `session_id` is a one-shot evidence/mutation namespace. `refine_schematic()` atomically reserves that namespace before entering the refinement loop, which is before any refinement model dispatch or candidate mutation.
+A refinement `session_id` is a one-shot evidence/mutation namespace within its job-specific evidence root. `refine_schematic()` atomically reserves that namespace before entering the refinement loop, which is before any refinement model dispatch or candidate mutation.
 
-The reservation is created under the configured server-owned evidence root. A request fails closed before refinement execution when any of the following already exists for the same session ID:
+A request fails closed before refinement execution when any of the following already exists for the same ID in that evidence root:
 
 - a completed or failed session evidence bundle;
 - an active reservation;
@@ -128,7 +184,21 @@ The reservation remains held while the session runs and while terminal evidence 
 
 If terminal session-evidence publication fails, the reservation is deliberately retained. The service does not remove the reservation and invite an ambiguous replay after model calls or accepted-state mutation may already have occurred.
 
-The reservation mechanism is scoped to the session ID. Production composition must still provide the correct canonical accepted schematic/project ownership boundary; callers must not use alternate session IDs as a substitute for safe project-level concurrency design.
+## Derived project artifacts after refinement
+
+The job's `.kicad_sch` inside the generated project is the canonical accepted artifact. `project.zip` and `schematic_preview.png` are derived download/preview artifacts and must not silently remain stale after canonical schematic mutation.
+
+After a refinement service result is committed:
+
+1. the schematic preview is regenerated;
+2. the downloadable project ZIP is regenerated from the current project tree;
+3. job result metadata is refreshed with a sanitized refinement summary.
+
+Preview generation remains an explicitly optional capability inherited from initial project generation. If it fails with the known `PreviewGenerationError`, any old preview is removed, the failure is warning-visible, and `preview_warning` is updated. A stale preview is not retained as if current.
+
+Unexpected preview failures, ZIP refresh failures, or job-metadata refresh failures raise `REFINEMENT_DERIVED_STATE_REFRESH_FAILED` with `authoritative_committed=true`. This explicitly states that the canonical schematic/refinement evidence may already be committed and must not be replayed as though nothing happened. If ZIP refresh fails, the stale archive is removed before returning the failure.
+
+`create_project_zip()` publishes archives atomically: a new ZIP is fully written and fsynced to a same-directory temporary file before replacing `project.zip`. Concurrent readers therefore see either the previous complete archive or the new complete archive, not a partially written replacement.
 
 ## Stop and failure semantics
 
