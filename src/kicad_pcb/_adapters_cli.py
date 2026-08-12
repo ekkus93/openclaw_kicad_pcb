@@ -365,7 +365,7 @@ class KicadCliAdapter:
                 str(output_file),
                 "--layers",
                 layer,
-                str(sch_file) if False else str(pcb_file),
+                str(pcb_file),
             ]
         )
 
