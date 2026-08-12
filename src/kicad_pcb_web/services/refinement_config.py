@@ -11,6 +11,17 @@ from kicad_pcb.errors import UserError
 from .schematic_refinement import RefinementLoopLimits
 
 _REFINEMENT_ENV_PREFIX = "KICAD_WEBAPP_REFINEMENT_"
+_REFINEMENT_ENV_KEYS = frozenset(
+    {
+        f"{_REFINEMENT_ENV_PREFIX}ENABLED",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_ROUNDS",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_OPERATIONS_PER_ROUND",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_TOTAL_ACCEPTED_OPERATIONS",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_CANDIDATE_REJECTIONS",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_CRITIC_REPAIRS",
+        f"{_REFINEMENT_ENV_PREFIX}MAX_PLANNER_REPAIRS",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +61,7 @@ def load_refinement_feature_config(
     """Load the refinement feature gate from environment variables with no coercive fallback."""
 
     source = os.environ if environ is None else environ
+    _reject_unknown_refinement_settings(source)
     defaults = RefinementFeatureConfig()
     return RefinementFeatureConfig(
         enabled=_parse_bool(
@@ -96,6 +108,16 @@ def require_refinement_enabled(config: RefinementFeatureConfig) -> None:
             "Iterative schematic refinement is disabled by configuration.",
             code="REFINEMENT_DISABLED",
         )
+
+
+def _reject_unknown_refinement_settings(source: Mapping[str, str]) -> None:
+    unknown = sorted(
+        key
+        for key in source
+        if key.startswith(_REFINEMENT_ENV_PREFIX) and key not in _REFINEMENT_ENV_KEYS
+    )
+    if unknown:
+        raise ValueError(f"Unsupported refinement setting(s): {', '.join(unknown)}")
 
 
 def _parse_bool(
