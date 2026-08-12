@@ -1,7 +1,7 @@
 # Readability Baseline — NE5532 Headphone Amp (Left Channel)
 
 **Generated:** 2026-04-01  
-**Purpose:** Current readability baseline for the authoritative reviewed NE5532 left-channel headphone-amp netlist
+**Purpose:** Readability/corpus baseline derived from the reviewed NE5532 left-channel headphone-amp netlist
 
 ## Fixture Identity
 
@@ -10,14 +10,22 @@
 - Paired regressed fixture: `ne5532_headphone_amp_left_regressed`
 - Canonical lookup lives in the shared `tests` fixture registry so tests and tooling resolve this fixture by name instead of duplicating paths.
 
+## Electrical certification status
+
+This fixture is a **visual/readability corpus artifact, not a positive electrical-invariance fixture**.
+
+A real KiCad 9.0.9 netlist export performed during the electrical-invariance hardening work on 2026-08-12 showed that the checked-in `baseline_generated.kicad_sch` does not round-trip to the terminal membership in `circuit_ir.json`. In particular, the exported `VPLUS15` connectivity is incomplete. Hidden `kicad-pcb:bind=` / legacy `OpenClaw:bind=` markers describe generator intent only; they are not proof of KiCad electrical connectivity.
+
+Do not use `baseline_generated.kicad_sch` as a passing fixture for `verify_schematic_electrical_invariance(...)`. Positive electrical-invariance tests must use an artifact whose real `kicad-cli` export has been proven equivalent to its authoritative Circuit IR. The production verifier must continue to reject this fixture while its exported electrical graph differs from the reviewed IR.
+
 ## Source Of Truth
 
-- **Authoritative source netlist:** `code_review/ne5532_headphone_amp_netlist.json`
+- **Authoritative reviewed source netlist:** `code_review/ne5532_headphone_amp_netlist.json`
 - **Fixture IR copy:** `tests/fixtures/readability/ne5532_headphone_amp_left_current/circuit_ir.json`
-- **Generation path:** `cmd_new_from_netlist` with `--symbols-dir tests/fixtures/symbols --mode internal`
-- **Managed schematic baseline:** `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch`
+- **Historical generation path:** `cmd_new_from_netlist` with `--symbols-dir tests/fixtures/symbols --mode internal`
+- **Managed readability baseline:** `tests/fixtures/readability/ne5532_headphone_amp_left_current/baseline_generated.kicad_sch`
 
-This fixture now mirrors the real reviewed NE5532 circuit rather than the older passive placeholder headphone-amp IR.
+The IR mirrors the reviewed NE5532 circuit rather than the older passive placeholder headphone-amp IR. The checked-in schematic mirrors the intended visual/generated structure, but its real KiCad-exported electrical graph is not currently certified equivalent to that IR.
 
 ## Circuit Scope
 
@@ -61,7 +69,7 @@ Single-channel NE5532 signal path with:
 
 ## Baseline Readability Notes
 
-This fixture is not the intentionally bad regression snapshot. It is the current generated baseline for the real reviewed circuit. The paired `ne5532_headphone_amp_left_regressed` fixture remains the known worse comparison point for review tooling.
+This fixture is not the intentionally bad regression snapshot. It is the current readability baseline for the real reviewed circuit. The paired `ne5532_headphone_amp_left_regressed` fixture remains the known worse comparison point for review tooling.
 
 The current layout is expected to preserve:
 
@@ -69,6 +77,8 @@ The current layout is expected to preserve:
 - an identifiable op-amp core with nearby feedback/input staging
 - a compact decoupling cluster around the op-amp family
 - explicit connector-edge placement and connector-facing orientation rules
+
+These are readability expectations only; they do not override the electrical-certification warning above.
 
 ## Baseline Metrics Snapshot
 
@@ -83,4 +93,4 @@ The current layout is expected to preserve:
   - `bottom_left = 0.3333333333333333`
   - `bottom_right = 0.5416666666666666`
 
-These values describe the checked-in current baseline only. They are comparison anchors for readability regression tests and review tooling, not claims that the schematic is fully optimized.
+These values describe the checked-in readability baseline only. They are comparison anchors for readability regression tests and review tooling, not claims that the schematic is electrically certified or fully optimized.
