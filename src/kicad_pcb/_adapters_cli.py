@@ -11,6 +11,8 @@ from .compat import CliCapability, KiCadVersion, parse_version
 from .compat import require_capability as _check_capability
 from .errors import ToolError
 
+_NETLIST_FORMATS = frozenset({"kicadxml", "kicadsexpr"})
+
 
 class KicadCliAdapter:
     """Typed, injectable adapter for all ``kicad-cli`` sub-commands.
@@ -174,7 +176,7 @@ class KicadCliAdapter:
         """Export Gerber files.
 
         Returns ``(RunResult, [written_files])``.  File list is populated via
-        the injected :attr:`_fs``, enabling tests to prepopulate fake files.
+        the injected :attr:`_fs`, enabling tests to prepopulate fake files.
         """
         self._fs.mkdir(output_dir, exist_ok=True)
         result = self._run(
@@ -240,12 +242,23 @@ class KicadCliAdapter:
                 lines = content.splitlines()
         return result, lines
 
-    def export_netlist(self, sch_file: Path, output_file: Path) -> tuple[RunResult, str]:
-        """Export KiCad XML netlist.
+    def export_netlist(
+        self,
+        sch_file: Path,
+        output_file: Path,
+        *,
+        netlist_format: str = "kicadxml",
+    ) -> tuple[RunResult, str]:
+        """Export a KiCad XML or native S-expression netlist.
 
-        Returns ``(RunResult, xml_content)`` where *xml_content* is empty on
-        failure or when the file was not written.
+        Returns ``(RunResult, content)`` where *content* is empty on failure
+        or when the file was not written.
         """
+        if netlist_format not in _NETLIST_FORMATS:
+            raise ValueError(
+                f"Unsupported KiCad netlist format {netlist_format!r}; "
+                f"expected one of {sorted(_NETLIST_FORMATS)}"
+            )
         result = self._run(
             [
                 "sch",
@@ -254,7 +267,7 @@ class KicadCliAdapter:
                 "--output",
                 str(output_file),
                 "--format",
-                "kicadxml",
+                netlist_format,
                 str(sch_file),
             ]
         )
@@ -352,7 +365,7 @@ class KicadCliAdapter:
                 str(output_file),
                 "--layers",
                 layer,
-                str(pcb_file),
+                str(sch_file) if False else str(pcb_file),
             ]
         )
 
