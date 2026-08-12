@@ -160,10 +160,11 @@ def _refine_two_pin_passive_mirrors(
         if any((ref, pin_num) not in net_by_pin for pin_num in valid_pins):
             continue
 
-        def _candidate_key(rotation: int) -> tuple[int, float]:
+        def _candidate_key(rotation: int) -> tuple[int, float, float]:
             transformed = _transformed_endpoints(ref, rotation)
             collision_count = 0
             distance_score = 0.0
+            stub_distance_score = 0.0
             for pin_num in valid_pins:
                 endpoint = transformed.get(pin_num)
                 net_name = net_by_pin.get((ref, pin_num))
@@ -197,12 +198,16 @@ def _refine_two_pin_passive_mirrors(
                 if neighbors:
                     centroid_x = sum(px for px, _py in neighbors) / len(neighbors)
                     centroid_y = sum(py for _px, py in neighbors) / len(neighbors)
-                    stub_x, stub_y = _stub_end(*endpoint)
                     distance_score += math.dist(
+                        (endpoint[0], endpoint[1]),
+                        (centroid_x, centroid_y),
+                    )
+                    stub_x, stub_y = _stub_end(*endpoint)
+                    stub_distance_score += math.dist(
                         (stub_x, stub_y),
                         (centroid_x, centroid_y),
                     )
-            return collision_count, distance_score
+            return collision_count, distance_score, stub_distance_score
 
         current_rotation = refined.get(ref, 0)
         mirrored_rotation = (current_rotation + 180) % 360
