@@ -21,8 +21,10 @@ from .errors import (
     handle_user_error,
     handle_web_service_error,
 )
+from .refinement_routes import install_refinement_routes
 from .routes import api_doctor, api_jobs, api_netlists, api_symbols, api_ui, api_wizard, ui
 from .services.jobs import reconcile_interrupted_jobs
+from .services.refinement_config import load_refinement_feature_config
 
 
 def _configure_app_logging() -> None:
@@ -63,4 +65,5 @@ app.include_router(api_netlists.router, prefix="/api")
 app.include_router(api_jobs.router, prefix="/api")
 app.include_router(api_ui.router, prefix="/api")
 app.include_router(api_wizard.router, prefix="/api")
+install_refinement_routes(app, config=load_refinement_feature_config())
 app.include_router(ui.router)
