@@ -6,36 +6,25 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web import refinement_routes
-from kicad_pcb_web.refinement_routes import RefinementRouteDependencies
+from kicad_pcb_web.deps import get_llm_client, get_settings
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
+from kicad_pcb_web.settings import LlmSettings, WebSettings
 
 
-def _dependencies(tmp_path: Path) -> RefinementRouteDependencies:
-    accepted = tmp_path / "accepted.kicad_sch"
-    accepted.write_bytes(b"accepted")
-    return RefinementRouteDependencies(
-        accepted_path=lambda: accepted,
-        runtime=object,  # type: ignore[arg-type]
+def _settings(tmp_path: Path) -> WebSettings:
+    return WebSettings(
+        data_dir=tmp_path / "data",
+        jobs_dir=tmp_path / "data" / "jobs",
+        llm=LlmSettings(
+            provider="openai",
+            model="vision-model",
+            vision_enabled=True,
+        ),
     )
 
 
-def test_disabled_refinement_router_has_no_routes(tmp_path: Path) -> None:
-    router = refinement_routes.build_refinement_router(
-        config=RefinementFeatureConfig(),
-        dependencies=_dependencies(tmp_path),
-    )
-
-    assert router.routes == []
-
-
-def test_enabled_refinement_router_uses_server_owned_dependencies(
-    monkeypatch, tmp_path: Path
-) -> None:
-    dependencies = _dependencies(tmp_path)
-    accepted_path = dependencies.accepted_path()
-    observed: dict[str, object] = {}
-
+def _app(monkeypatch, tmp_path: Path, observed: dict[str, object]) -> FastAPI:
     def fake_run(**kwargs):
         observed.update(kwargs)
         request = kwargs["request"]
@@ -58,36 +47,43 @@ def test_enabled_refinement_router_uses_server_owned_dependencies(
             evidence_available=True,
         )
 
-    monkeypatch.setattr(refinement_routes, "run_configured_refinement_request", fake_run)
+    monkeypatch.setattr(refinement_routes, "run_wizard_refinement_request", fake_run)
     app = FastAPI()
+    app.dependency_overrides[get_settings] = lambda: _settings(tmp_path)
+    app.dependency_overrides[get_llm_client] = object
     app.include_router(
-        refinement_routes.build_refinement_router(
-            config=RefinementFeatureConfig(enabled=True),
-            dependencies=dependencies,
-        )
+        refinement_routes.build_refinement_router(config=RefinementFeatureConfig(enabled=True))
     )
-    client = TestClient(app)
+    return app
+
+
+def test_disabled_refinement_router_has_no_routes() -> None:
+    router = refinement_routes.build_refinement_router(config=RefinementFeatureConfig())
+
+    assert router.routes == []
+
+
+def test_enabled_refinement_router_uses_request_scoped_server_dependencies(
+    monkeypatch, tmp_path: Path
+) -> None:
+    observed: dict[str, object] = {}
+    client = TestClient(_app(monkeypatch, tmp_path, observed))
 
     response = client.post("/api/refinement/run", json={"session_id": "session-001"})
 
     assert response.status_code == 200
     assert response.json()["session_id"] == "session-001"
-    assert observed["accepted_path"] == accepted_path
-    assert observed["runtime"] is not None
+    assert observed["settings"] == _settings(tmp_path)
+    assert observed["llm_client"] is not None
+    assert observed["request"].session_id == "session-001"  # type: ignore[attr-defined]
     assert observed["config"].enabled is True  # type: ignore[attr-defined]
 
 
 def test_enabled_refinement_router_rejects_request_side_path_and_limit_overrides(
-    tmp_path: Path,
+    monkeypatch, tmp_path: Path
 ) -> None:
-    app = FastAPI()
-    app.include_router(
-        refinement_routes.build_refinement_router(
-            config=RefinementFeatureConfig(enabled=True),
-            dependencies=_dependencies(tmp_path),
-        )
-    )
-    client = TestClient(app)
+    observed: dict[str, object] = {}
+    client = TestClient(_app(monkeypatch, tmp_path, observed))
 
     response = client.post(
         "/api/refinement/run",
@@ -99,3 +95,4 @@ def test_enabled_refinement_router_rejects_request_side_path_and_limit_overrides
     )
 
     assert response.status_code == 422
+    assert observed == {}
