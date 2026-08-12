@@ -77,6 +77,8 @@ def create_project_zip(project_dir: Path, artifacts_dir: Path) -> Path:
                         archive.write(path, arcname=path.relative_to(project_dir.parent))
             handle.flush()
             os.fsync(handle.fileno())
+        if temp_path is None:
+            raise RuntimeError("project archive temporary path was not initialized")
         temp_path.replace(zip_path)
         temp_path = None
         return zip_path
