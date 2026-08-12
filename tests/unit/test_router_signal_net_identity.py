@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from kicad_pcb._router_identity_labels import _hide_label_text, identity_labels
 from kicad_pcb._router_route_signal_direct import _route_direct_net
 from kicad_pcb._router_route_signal_hub import _route_hub_net
 from kicad_pcb._router_types import (
+    DEBUG_LABEL_POLICY,
     DEFAULT_ROUTING_HEURISTIC_POLICY,
     MINIMAL_LABEL_POLICY,
     NetRouting,
 )
 from kicad_pcb.circuit_ir import NetIR, PinRefIR
+from kicad_pcb.sch_doc.nodes import make_label_node
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode
 
 
-def test_minimal_direct_route_preserves_authored_signal_net_name() -> None:
+def _direct_signal_route(*, policy=MINIMAL_LABEL_POLICY) -> NetRouting:
     pins = [PinRefIR(ref="R1", pin="2"), PinRefIR(ref="R2", pin="1")]
     net = NetIR(name="VMID", pins=pins)
     known = [
@@ -24,7 +28,7 @@ def test_minimal_direct_route_preserves_authored_signal_net_name() -> None:
         net,
         known,
         use_bus=False,
-        policy=MINIMAL_LABEL_POLICY,
+        policy=policy,
         block_layout=None,
         tiers=None,
         net_classification="generic_signal",
@@ -38,10 +42,17 @@ def test_minimal_direct_route_preserves_authored_signal_net_name() -> None:
     )
 
     assert handled is True
-    assert [label.name for label in routing.labels] == ["VMID"]
+    return routing
 
 
-def test_minimal_hub_route_preserves_authored_signal_net_name() -> None:
+def test_minimal_direct_route_preserves_identity_without_visible_label() -> None:
+    routing = _direct_signal_route()
+
+    assert routing.labels == []
+    assert [label.name for label in identity_labels(routing)] == ["VMID"]
+
+
+def test_minimal_hub_route_preserves_identity_without_visible_label() -> None:
     pins = [
         PinRefIR(ref="R1", pin="2"),
         PinRefIR(ref="R2", pin="1"),
@@ -76,4 +87,24 @@ def test_minimal_hub_route_preserves_authored_signal_net_name() -> None:
     )
 
     assert handled is True
-    assert [label.name for label in routing.labels] == ["SUM_NODE"]
+    assert routing.labels == []
+    assert [label.name for label in identity_labels(routing)] == ["SUM_NODE"]
+
+
+def test_debug_route_uses_visible_label_without_hidden_duplicate() -> None:
+    routing = _direct_signal_route(policy=DEBUG_LABEL_POLICY)
+
+    assert [label.name for label in routing.labels] == ["VMID"]
+    assert identity_labels(routing) == ()
+
+
+def test_hidden_identity_label_uses_kicad_hide_text_effect() -> None:
+    node = _hide_label_text(make_label_node("VMID", 10.0, 10.0, "label-uuid"))
+    effects = next(
+        item for item in node.items if isinstance(item, ListNode) and item.key == "effects"
+    )
+
+    assert any(
+        isinstance(effect_item, AtomNode) and effect_item.value == "hide"
+        for effect_item in effects.items
+    )
