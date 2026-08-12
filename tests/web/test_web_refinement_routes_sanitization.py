@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from kicad_pcb.errors import UserError
 from kicad_pcb_web import refinement_routes
 from kicad_pcb_web.deps import get_llm_client, get_settings
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
@@ -104,6 +105,42 @@ def test_refinement_malformed_json_is_generic(monkeypatch, tmp_path: Path) -> No
         }
     }
     assert "session_id" not in response.text
+
+
+def test_refinement_service_error_is_generic_and_does_not_echo_internal_data(
+    monkeypatch, tmp_path: Path
+) -> None:
+    private_path = "/tmp/private/design.kicad_sch"
+    secret = "super-secret-api-key"
+
+    def fail_run(**kwargs):
+        raise UserError(
+            f"provider failed for {private_path} using {secret}",
+            code="REFINEMENT_PROVIDER_FAILED",
+            details={"path": private_path, "api_key": secret},
+        )
+
+    monkeypatch.setattr(refinement_routes, "run_wizard_refinement_request", fail_run)
+    app = FastAPI()
+    app.dependency_overrides[get_settings] = lambda: _settings(tmp_path)
+    app.dependency_overrides[get_llm_client] = object
+    refinement_routes.install_refinement_routes(
+        app,
+        config=RefinementFeatureConfig(enabled=True),
+    )
+    client = TestClient(app)
+
+    response = client.post("/api/refinement/run", json={"session_id": "session-001"})
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": {
+            "code": "REFINEMENT_PROVIDER_FAILED",
+            "message": "Schematic refinement request could not be completed.",
+        }
+    }
+    assert private_path not in response.text
+    assert secret not in response.text
 
 
 def test_refinement_safe_request_still_dispatches(monkeypatch, tmp_path: Path) -> None:
