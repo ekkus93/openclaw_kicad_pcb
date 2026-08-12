@@ -44,7 +44,7 @@ def identity_labels(routing: NetRouting) -> tuple[ElectricalIdentityLabel, ...]:
     return tuple(cast(list[ElectricalIdentityLabel], stored))
 
 
-def append_identity_label(
+def append_identity_label(  # noqa: PLR0913
     routing: NetRouting,
     *,
     name: str,
