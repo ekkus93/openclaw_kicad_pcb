@@ -40,7 +40,7 @@ def reserve_refinement_session_namespace(
     reservations_root = sessions_root / ".reservations"
     reservations_root.mkdir(parents=True, exist_ok=True)
 
-    _reject_existing_evidence(evidence_root, session_id=session_id, max_rounds=max_rounds)
+    _reject_existing_evidence(evidence_root, session_id=session_id)
 
     token = secrets.token_hex(16)
     reservation_path = reservations_root / f"{session_id}.lock"
@@ -64,11 +64,7 @@ def reserve_refinement_session_namespace(
             os.fsync(handle.fileno())
         _fsync_directory(reservations_root)
         try:
-            _reject_existing_evidence(
-                evidence_root,
-                session_id=session_id,
-                max_rounds=max_rounds,
-            )
+            _reject_existing_evidence(evidence_root, session_id=session_id)
         except Exception:
             _remove_owned_reservation(reservation_path, token)
             raise
@@ -99,7 +95,6 @@ def _reject_existing_evidence(
     evidence_root: Path,
     *,
     session_id: str,
-    max_rounds: int,
 ) -> None:
     if (evidence_root / "sessions" / session_id).exists():
         raise UserError(
@@ -107,7 +102,7 @@ def _reject_existing_evidence(
             code="REFINEMENT_EVIDENCE_EXISTS",
             details={"session_id": session_id},
         )
-    for round_number in range(1, max_rounds + 1):
+    for round_number in range(1, _MAX_ROUNDS + 1):
         iteration_id = f"{session_id}-round-{round_number:03d}"
         if (evidence_root / iteration_id).exists():
             raise UserError(
