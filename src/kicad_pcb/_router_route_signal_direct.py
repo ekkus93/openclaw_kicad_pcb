@@ -8,9 +8,11 @@ if TYPE_CHECKING:
     from .circuit_ir import NetIR, PinRefIR
 
 from ._router_classify import (
+    _append_promoted_visible_label,
     _classification_prefers_short_local_direct_route,
     _prioritize_label_candidates,
     _tier_distance,
+    _VisibleLabelPromotion,
 )
 from ._router_geometry import (
     _append_pin_endpoint_labels,
@@ -46,11 +48,16 @@ def _append_direct_net_identity_label(
 ) -> None:
     """Attach one KiCad net-name object to an already-physical direct route.
 
-    KiCad wires carry connectivity but not the authoritative net name.  One
+    KiCad wires carry connectivity but not the authoritative net name. One
     label on the connected route preserves that identity without using labels
     to bridge the two endpoints: if the physical wire is broken, electrical
     verification still observes different terminal partitions.
     """
+    if any(label.name == net_name for label in routing.labels) or any(
+        label.name == net_name for label in routing.global_labels
+    ):
+        return
+
     if direct_route:
         anchor_segment = direct_route[0]
         label_x = anchor_segment.x2
@@ -61,14 +68,11 @@ def _append_direct_net_identity_label(
         label_angle = int((pin_angle + 180) % 360)
 
     if net_name.startswith("/"):
-        identity_label = GlobalLabelPlacement(net_name, label_x, label_y, label_angle)
-        if identity_label not in routing.global_labels:
-            routing.global_labels.append(identity_label)
-        return
-
-    identity_label = NetLabel(net_name, label_x, label_y, label_angle)
-    if identity_label not in routing.labels:
-        routing.labels.append(identity_label)
+        routing.global_labels.append(
+            GlobalLabelPlacement(net_name, label_x, label_y, label_angle)
+        )
+    else:
+        routing.labels.append(NetLabel(net_name, label_x, label_y, label_angle))
 
 
 def _route_direct_net(  # noqa: PLR0913
@@ -90,8 +94,6 @@ def _route_direct_net(  # noqa: PLR0913
     dynamic_protected_points: set[tuple[float, float]],
 ) -> bool:
     """Route a 2-pin signal net; returns True if handled, False to fall through."""
-    del policy, net_refs, foreign_attachment_points
-
     strategy = "local_labels"
     heuristic_override: str | None = None
     routed_directly = False
@@ -119,7 +121,7 @@ def _route_direct_net(  # noqa: PLR0913
                 classification=net_classification,
             ),
             protected=_ProtectedPointContext(
-                set(),
+                foreign_attachment_points,
                 shared_protected_stub_points,
             ),
         )
@@ -189,6 +191,38 @@ def _route_direct_net(  # noqa: PLR0913
     routing.wires.extend(direct_route)
     routing.bind_markers.append(BindMarker(p0.ref, p0.pin, net.name))
     routing.bind_markers.append(BindMarker(p1.ref, p1.pin, net.name))
+    if policy.force_all_signal_labels and direct_route:
+        anchor_segment = direct_route[0]
+        label_x = anchor_segment.x2
+        label_y = anchor_segment.y2
+        label_angle = _segment_label_angle(anchor_segment)
+        if net.name.startswith("/"):
+            routing.global_labels.append(
+                GlobalLabelPlacement(net.name, label_x, label_y, label_angle)
+            )
+        else:
+            routing.labels.append(
+                NetLabel(
+                    net.name,
+                    label_x,
+                    label_y,
+                    label_angle,
+                )
+            )
+    else:
+        _append_promoted_visible_label(
+            routing,
+            promotion=_VisibleLabelPromotion(
+                net_name=net.name,
+                refs=net_refs,
+                block_layout=block_layout,
+                classification=net_classification,
+                label_candidates=known,
+            ),
+            policy=policy,
+            protected_points=foreign_attachment_points,
+            shared_protected_points=shared_protected_stub_points,
+        )
     _append_direct_net_identity_label(
         routing,
         net_name=net.name,
