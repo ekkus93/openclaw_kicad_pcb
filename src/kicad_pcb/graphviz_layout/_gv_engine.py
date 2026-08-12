@@ -72,8 +72,7 @@ def _snap_final_symbol_positions(
     regular = {ref: pos for ref, pos in positions.items() if not ref.startswith("#")}
     snapped_regular = snap_positions(regular)
     return {
-        ref: positions[ref] if ref.startswith("#") else snapped_regular[ref]
-        for ref in positions
+        ref: positions[ref] if ref.startswith("#") else snapped_regular[ref] for ref in positions
     }
 
 
