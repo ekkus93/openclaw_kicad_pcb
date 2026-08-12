@@ -171,7 +171,9 @@ def _route_direct_net(  # noqa: PLR0913
             and manhattan <= MAX_DIRECT_WIRE_MM
         )
         can_direct = manhattan <= MAX_DIRECT_DIST_MM and (
-            tdist <= 1 or _is_connector_passive_edge(p0.ref, p1.ref) or short_local_override
+            tdist <= 1
+            or _is_connector_passive_edge(p0.ref, p1.ref)
+            or short_local_override
         )
     else:
         can_direct = manhattan <= MAX_DIRECT_DIST_MM
