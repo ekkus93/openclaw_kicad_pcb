@@ -27,7 +27,7 @@ def _ir_json(*, value: str = "1k") -> dict[str, Any]:
                 "ref": "R1",
                 "symbol": "Device:R",
                 "value": value,
-            }
+            },
         ],
         "nets": [
             {
@@ -35,7 +35,7 @@ def _ir_json(*, value: str = "1k") -> dict[str, Any]:
                 "pins": [
                     {"ref": "R1", "pin": "1"},
                 ],
-            }
+            },
         ],
     }
 
