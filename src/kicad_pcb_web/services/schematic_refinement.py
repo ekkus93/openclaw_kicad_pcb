@@ -45,6 +45,10 @@ from kicad_pcb.refinement.quality import (
     evaluate_candidate_quality,
 )
 from kicad_pcb.refinement.rendering import SchematicRenderArtifact, render_schematic_for_refinement
+from kicad_pcb.refinement.session_reservation import (
+    release_refinement_session_reservation,
+    reserve_refinement_session_namespace,
+)
 from kicad_pcb.refinement.transaction import SchematicCandidateTransaction
 from kicad_pcb.refinement.validation import (
     CandidateStructuralValidationReport,
@@ -612,7 +616,7 @@ def refine_schematic(
     session_id: str,
     limits: RefinementLoopLimits | None = None,
 ) -> RefinementLoopResult:
-    """Run a bounded session and publish final session evidence on success or hard failure."""
+    """Run a bounded, idempotent session with durable terminal evidence."""
 
     if limits is None:
         limits = RefinementLoopLimits()
@@ -647,6 +651,11 @@ def refine_schematic(
         model_call_budget=model_call_budget,
         decision_history=[],
     )
+    reservation = reserve_refinement_session_namespace(
+        runtime.evidence_root,
+        session_id=session_id,
+        max_rounds=limits.max_rounds,
+    )
 
     try:
         result = _run_refinement_loop(context, state)
@@ -661,9 +670,17 @@ def refine_schematic(
         except Exception as evidence_exc:
             exc.add_note(
                 "Refinement session evidence finalization also failed with code "
-                f"{_exception_code(evidence_exc)}."
+                f"{_exception_code(evidence_exc)}; reservation retained to block replay."
             )
             raise exc from evidence_exc
+        try:
+            release_refinement_session_reservation(reservation)
+        except Exception as reservation_exc:
+            exc.add_note(
+                "Refinement session reservation release failed after durable failure evidence "
+                f"with code {_exception_code(reservation_exc)}."
+            )
+            raise exc from reservation_exc
         raise
 
     disposition = _SessionEvidenceDisposition(
@@ -672,6 +689,7 @@ def refine_schematic(
         failure_code=None,
     )
     evidence_dir = _publish_session_evidence(context, state, result, disposition)
+    release_refinement_session_reservation(reservation)
     return replace(result, session_evidence_dir=evidence_dir)
 
 
