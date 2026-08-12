@@ -41,7 +41,7 @@ def identity_labels(routing: NetRouting) -> tuple[ElectricalIdentityLabel, ...]:
     stored = getattr(routing, _IDENTITY_LABELS_ATTRIBUTE, None)
     if stored is None:
         return ()
-    return tuple(cast("list[ElectricalIdentityLabel]", stored))
+    return tuple(cast(list[ElectricalIdentityLabel], stored))
 
 
 def append_identity_label(
@@ -59,7 +59,7 @@ def append_identity_label(
     if stored is None:
         stored = []
         setattr(routing, _IDENTITY_LABELS_ATTRIBUTE, stored)
-    labels = cast("list[ElectricalIdentityLabel]", stored)
+    labels = cast(list[ElectricalIdentityLabel], stored)
     if label not in labels:
         labels.append(label)
 
