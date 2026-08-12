@@ -226,23 +226,29 @@ def test_wires_connect_at_pin_endpoints(tmp_path: Path) -> None:  # noqa: PLR091
     )
 
 
+def _point_on_wire_segment(
+    point: tuple[float, float],
+    segment: tuple[float, float, float, float],
+    *,
+    tolerance: float = 0.01,
+) -> bool:
+    """Return whether *point* lies on an orthogonal schematic wire segment."""
+    x, y = point
+    x1, y1, x2, y2 = segment
+    if abs(x1 - x2) <= tolerance:
+        return abs(x - x1) <= tolerance and min(y1, y2) - tolerance <= y <= max(y1, y2) + tolerance
+    if abs(y1 - y2) <= tolerance:
+        return abs(y - y1) <= tolerance and min(x1, x2) - tolerance <= x <= max(x1, x2) + tolerance
+    return False
+
+
 def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
-    """Router: a 2-pin net within routing range must be wired directly, not via label.
+    """Router: an in-range 2-pin net must be physically wired, not label-only.
 
-    A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets:
-     - VCC  (power)  → gets a power:VCC symbol (Phase 3 strategy)
-     - MID  (2-pin)  → R1-pin2 and R2-pin1 are adjacent-tier (tier distance=1)
-                       and within the 200 mm manhattan cap; router must emit
-                       an L-shaped wire, NOT a net label
-     - GND  (power)  → gets a power:GND symbol (Phase 3 strategy)
-
-    Assertions
-    ----------
-    1. No ``(label "MID" …)`` node exists in the managed schematic.
-    2. At least 5 wire segments are present (4 pin stubs + ≥1 L-route bridge) —
-       a direct-wire bridge was actually generated between R1 and R2.
-    3. ``power:VCC`` and ``power:GND`` symbol instances exist (Phase 3) —
-       power net routing uses symbols, not global labels.
+    A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets. The
+    final grid snap may align the two MID pins onto one x-coordinate, allowing
+    simplification to collapse the old stub + L-bridge sequence into one
+    straight wire. The contract is physical continuity, not segment count.
     """
     ir_path = tmp_path / "divider.json"
     ir_path.write_text(
@@ -293,17 +299,12 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
         ):
             label_names.add(node.items[1].value)
 
-    # Assertion 1: MID must NOT appear as a label — it must be directly wired.
+    # MID must NOT appear as a label — it must be directly wired.
     assert "MID" not in label_names, (
         f"Net 'MID' found as a schematic label; expected direct wire routing. "
         f"All labels present: {sorted(label_names)}"
     )
 
-    # Assertion 2: a direct-wire bridge between R1 and R2 must have been emitted.
-    # For direct routing the router adds 2 stubs per MID pin + 1–2 L-route bridge
-    # segments.  For only stub fallback it would have added a local net label for
-    # MID (caught by assertion 1).  We verify that at least one bridge wire
-    # exists in addition to the 4 pin-stub wires (VCC, GND, R1-pin2, R2-pin1).
     all_wire_segments: list[tuple[float, float, float, float]] = []
     for node in walk(managed_doc.root):
         if not (isinstance(node, ListNode) and node.key == "wire"):
@@ -322,15 +323,34 @@ def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
             except (ValueError, AttributeError, IndexError):
                 pass
 
-    # 4 stub wires (VCC stub, GND stub, R1-pin2 stub, R2-pin1 stub) + at least
-    # one L-route bridge = minimum 5 wire segments for a direct-wire routing.
-    assert len(all_wire_segments) >= 5, (  # noqa: PLR2004
-        f"Expected ≥5 wire segments for direct-wire routing; found {len(all_wire_segments)}. "
-        "The router may not have emitted an L-route bridge between R1 and R2."
+    # Verify electrical continuity between the two MID pins directly. This is
+    # robust to collinear wire simplification and catches disconnected stubs.
+    pin_at = read_lib_symbol_pin_at("TestLib", "R", symbols_dir=fixtures_dir)
+    assert pin_at, "TestLib:R pin positions not found in fixture library"
+    midpoint_pins: dict[tuple[str, str], tuple[float, float]] = {}
+    for sym in managed_doc.list_symbols():
+        ref = str(sym["ref"])
+        if ref not in {"R1", "R2"}:
+            continue
+        sx, sy = cast(float, sym["x"]), cast(float, sym["y"])
+        rotation = int(cast(float, sym.get("rotation", 0.0)))
+        transformed = _transform_pin_at(pin_at, sx, sy, rotation)
+        for pin_num, (x, y, _angle) in transformed.items():
+            midpoint_pins[(ref, pin_num)] = (x, y)
+
+    r1_mid = midpoint_pins[("R1", "2")]
+    r2_mid = midpoint_pins[("R2", "1")]
+    connecting_segments = [
+        segment
+        for segment in all_wire_segments
+        if _point_on_wire_segment(r1_mid, segment) and _point_on_wire_segment(r2_mid, segment)
+    ]
+    assert connecting_segments, (
+        "Expected direct physical continuity from R1.2 to R2.1; "
+        f"R1.2={r1_mid}, R2.1={r2_mid}, wires={all_wire_segments}"
     )
 
-    # Assertion 3 (Phase 3): Single-pin power nets must get power symbol nodes
-    # (power:VCC / power:GND), not local labels or global labels.
+    # Single-pin power nets must get power symbol nodes, not labels.
     power_lib_ids: set[str] = set()
     for node in walk(managed_doc.root):
         if not (isinstance(node, ListNode) and node.key == "symbol"):
