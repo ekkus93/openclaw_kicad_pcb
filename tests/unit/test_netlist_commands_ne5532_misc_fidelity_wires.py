@@ -242,7 +242,7 @@ def _point_on_wire_segment(
     return False
 
 
-def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:
+def test_direct_wiring_not_all_label_only(tmp_path: Path) -> None:  # noqa: PLR0915
     """Router: an in-range 2-pin net must be physically wired, not label-only.
 
     A two-resistor voltage-divider (VCC→R1→MID→R2→GND) has three nets. The
