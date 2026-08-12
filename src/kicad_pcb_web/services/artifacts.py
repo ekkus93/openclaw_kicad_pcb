@@ -63,13 +63,15 @@ def create_project_zip(project_dir: Path, artifacts_dir: Path) -> Path:
 
     archive_members = _project_archive_members(project_dir)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+    staging_dir = artifacts_dir / ".staging"
+    staging_dir.mkdir(parents=True, exist_ok=True)
     zip_path = artifacts_dir / "project.zip"
     temp_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
             mode="w+b",
-            dir=artifacts_dir,
-            prefix=".project.",
+            dir=staging_dir,
+            prefix="project.",
             suffix=".zip.tmp",
             delete=False,
         ) as handle:
