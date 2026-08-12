@@ -7,6 +7,7 @@ from kicad_pcb._router_types import (
     DEBUG_LABEL_POLICY,
     DEFAULT_ROUTING_HEURISTIC_POLICY,
     MINIMAL_LABEL_POLICY,
+    LabelPolicy,
     NetRouting,
 )
 from kicad_pcb.circuit_ir import NetIR, PinRefIR
@@ -14,7 +15,7 @@ from kicad_pcb.sch_doc.nodes import make_label_node
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode
 
 
-def _direct_signal_route(*, policy=MINIMAL_LABEL_POLICY) -> NetRouting:
+def _direct_signal_route(*, policy: LabelPolicy = MINIMAL_LABEL_POLICY) -> NetRouting:
     pins = [PinRefIR(ref="R1", pin="2"), PinRefIR(ref="R2", pin="1")]
     net = NetIR(name="VMID", pins=pins)
     known = [
