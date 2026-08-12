@@ -47,19 +47,19 @@ def _transform_pin_at(
     KiCad symbol-library coordinates use a positive-up Y axis, while schematic
     placement coordinates use a positive-down Y axis. KiCad pin angles point
     from the connection point back toward the symbol body in library space, so
-    the library-to-schematic Y-axis flip reflects the pin direction before the
-    schematic rotation is applied. The router's stub helper then expands wires
-    in the opposite, outward-facing direction.
+    the bodyward direction vector must undergo the same rotation and Y-axis
+    reflection as the pin coordinate. The router's stub helper then expands
+    wires in the opposite, outward-facing direction.
 
     When *rotation* is 0 this reduces to:
       ``schematic_x = origin_x + px``
       ``schematic_y = origin_y - py``
 
-    For non-zero *rotation* θ (degrees), the library-space point is rotated
-    counter-clockwise and then projected into schematic coordinates:
+    For non-zero *rotation* θ (degrees), the library-space point and bodyward
+    direction are rotated and then projected into schematic coordinates:
       ``schematic_x = origin_x + cos(θ)·px − sin(θ)·py``
       ``schematic_y = origin_y − (sin(θ)·px + cos(θ)·py)``
-      ``schematic_angle = (θ − pa) % 360``
+      ``schematic_angle = (-θ − pa) % 360``
     """
     if rotation == 0:
         return {
@@ -73,7 +73,7 @@ def _transform_pin_at(
         pin_num: (
             origin_x + cos_t * px - sin_t * py,
             origin_y - (sin_t * px + cos_t * py),
-            (rotation - pa) % 360,
+            (-rotation - pa) % 360,
         )
         for pin_num, (px, py, pa) in pin_at.items()
     }
