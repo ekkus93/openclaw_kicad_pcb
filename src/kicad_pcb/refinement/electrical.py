@@ -396,9 +396,7 @@ def _supplement_xml_omitted_unnamed_nets(
 
     helper_set = set(helper_refs)
     candidate_names = {net.name for net in candidate_ir.nets}
-    assigned_terminals = {
-        (pin.ref, pin.pin) for net in candidate_ir.nets for pin in net.pins
-    }
+    assigned_terminals = {(pin.ref, pin.pin) for net in candidate_ir.nets for pin in net.pins}
     additions: list[NetIR] = []
 
     for expected_net in expected_ir.nets:
