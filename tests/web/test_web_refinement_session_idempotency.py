@@ -134,9 +134,7 @@ def test_stale_reservation_is_not_stolen_or_replaced(monkeypatch, tmp_path: Path
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")
     runtime = _runtime(tmp_path)
-    reservation_path = (
-        runtime.evidence_root / "sessions" / ".reservations" / "stale-session.lock"
-    )
+    reservation_path = runtime.evidence_root / "sessions" / ".reservations" / "stale-session.lock"
     reservation_path.parent.mkdir(parents=True)
     reservation_path.write_text("orphaned-owner\n", encoding="ascii")
     calls = 0
@@ -224,12 +222,7 @@ def test_terminal_evidence_failure_retains_reservation_and_blocks_replay(
             session_id="evidence-failed-session",
         )
 
-    reservation = (
-        runtime.evidence_root
-        / "sessions"
-        / ".reservations"
-        / "evidence-failed-session.lock"
-    )
+    reservation = runtime.evidence_root / "sessions" / ".reservations" / "evidence-failed-session.lock"
     assert reservation.is_file()
     assert calls == 1
     assert accepted.read_bytes() == b"A"
