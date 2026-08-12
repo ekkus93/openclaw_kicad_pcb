@@ -54,66 +54,112 @@ Implemented:
 
 A stale reservation is intentionally fail-closed: it blocks reuse rather than allowing a new session to overwrite or ambiguously extend old evidence. Reservation acquisition uses exclusive creation, so concurrent same-session contenders cannot both become owners.
 
-**Current integration status:** the reservation is now acquired by `refine_schematic()` before `_run_refinement_loop()`. Therefore a conflicting finalized, active, stale, or orphan-evidence session is rejected before any refinement model dispatch or candidate mutation. The service keeps the reservation through terminal evidence publication. It releases the reservation only after durable completed or failed session evidence has been published. If terminal evidence publication itself fails, the reservation is deliberately retained to block ambiguous replay.
+The reservation is acquired by `refine_schematic()` before `_run_refinement_loop()`. Therefore a conflicting finalized, active, stale, or orphan-evidence session is rejected before any refinement model dispatch or candidate mutation. The service keeps the reservation through terminal evidence publication. It releases the reservation only after durable completed or failed session evidence has been published. If terminal evidence publication itself fails, the reservation is deliberately retained to block ambiguous replay.
 
-Added regression coverage proves:
-
-- completed-session reuse is rejected without entering the refinement round path;
-- active reservation conflicts are rejected without entering the refinement round path;
-- stale reservations are not stolen or rewritten;
-- failed sessions release their lock only after durable failed-session evidence exists, after which replay is blocked by that evidence;
-- terminal evidence failure retains the reservation and blocks replay;
-- two concurrent reservation attempts have exactly one owner;
-- orphan iteration evidence above a later request's configured round limit still blocks session reuse.
-
-The implementation is committed on `webapp`; full repository lint/type/test/CI validation remains pending an external run and is not claimed by this note.
+Regression coverage proves completed-session reuse, active conflicts, stale reservations, failed-session finalization, terminal-evidence failure retention, concurrent single ownership, and orphan iteration evidence across the full supported round namespace.
 
 ## Phase N — feature/config/API/CLI integration
 
-Implemented building blocks:
+Implemented:
 
 - dedicated `RefinementFeatureConfig`, disabled by default;
-- strict environment parsing with no coercive fallback;
-- unknown `KICAD_WEBAPP_REFINEMENT_*` variables fail instead of being silently ignored;
+- strict canonical boolean/integer environment parsing;
+- unknown `KICAD_WEBAPP_REFINEMENT_*` variables are rejected instead of silently falling back;
 - configured loop limits reuse the same `RefinementLoopLimits` validation as the service;
-- one configured facade delegates only to the canonical transactional `refine_schematic()` implementation;
 - external request accepts only a safe session ID;
-- request cannot override accepted path, work/evidence paths, provider/model, API key, operation policy, or resource bounds;
+- request cannot override accepted path, wizard/job workspace, work/evidence paths, provider/model, API key, KiCad executable, operation policy, or resource bounds;
 - external response omits absolute evidence paths;
-- explicit server-side runtime builder requires provider/model provenance;
-- default-off FastAPI router factory returns no refinement endpoint when disabled;
-- FastAPI route obtains accepted path/runtime only from server-owned dependency providers;
-- route-side request validation returns a generic sanitized 422 rather than FastAPI validation details that could reflect a submitted path or credential;
-- route-side service errors omit internal `UserError.details`;
+- explicit runtime builder requires provider/model provenance;
+- route-side malformed/invalid request handling is generic and does not reflect rejected paths/credentials;
+- lower-layer refinement `UserError` responses preserve the machine code but not exception text/details;
 - CLI adapter accepts only `--session-id` and cannot override paths/providers/credentials/limits;
 - CLI service errors likewise omit internal `UserError.details`;
 - runtime configuration and retention semantics are documented in `docs/KICAD_SCHEMATIC_REFINEMENT_RUNTIME_CONFIGURATION_2026-08-11.md`.
 
-Because both configured HTTP and CLI facades delegate to the canonical `refine_schematic()` service, their eventual production composition inherits the session reservation/idempotency gate rather than introducing a separate mutation implementation.
+### Production HTTP mounting — implemented
 
-### Production mounting status
+The refinement route is now installed from the real FastAPI composition point in `src/kicad_pcb_web/main.py` through `install_refinement_routes(app, config=load_refinement_feature_config())`.
 
-The HTTP router/installer and CLI adapter are intentionally app-neutral. They are **not yet claimed as production-mounted entry points**. The remaining integration must identify the existing webapp's canonical project/session ownership boundary and inject:
+The feature remains default-off. With the default configuration the installed router is empty and `/api/refinement/run` is absent. Invalid or unknown refinement environment configuration fails application composition instead of silently selecting defaults.
 
-1. the currently accepted schematic path;
-2. the matching authoritative `CircuitIR`;
-3. the existing KiCad adapter;
-4. the existing configured LLM client;
-5. explicit provider/model provenance from server configuration;
-6. server-owned work/evidence directories.
+When enabled, production HTTP composition is:
 
-The request must never select those values. The final mounting change must preserve a single mutation path through `run_configured_refinement_request()` → `run_configured_refinement()` → `refine_schematic()`.
+`/api/refinement/run` → `run_wizard_refinement_request()` → `run_configured_refinement_request()` → `run_configured_refinement()` → `refine_schematic()`
 
-Until that composition point is verified, leaving the router unmounted is safer than inventing a second project-selection or writable path.
+No second layout-mutation implementation was added.
+
+The route receives validated `WebSettings` and the request-scoped configured `LlmClient` through normal FastAPI dependencies. The synchronous LLM/KiCad/refinement operation is dispatched through Starlette's threadpool so it does not run directly on the FastAPI event loop.
+
+### Trusted wizard/current-job target binding — implemented
+
+`src/kicad_pcb_web/services/wizard_refinement.py` resolves the production mutation target from existing authoritative file-backed state. The submitted `session_id` identifies the wizard session, not a request-selected filesystem location.
+
+Before dispatch, the composition layer requires:
+
+- wizard exists and has `status="completed"`;
+- current `ir_json` exists and has valid `ir_validation`;
+- current `latest_job_id` exists;
+- referenced job is successful and has result metadata;
+- job generation request IR exactly equals current wizard IR;
+- canonical job `input/circuit_ir.json` exactly equals current wizard IR and validates as `CircuitIR`;
+- persisted job `schematic_path` is relative, resolves beneath the canonical job workspace, has `.kicad_sch` suffix, and exists.
+
+`JobRecord` canonicalization derives workspace paths from the trusted `job.json` location rather than accepting persisted absolute path authority. A stale wizard IR/current-job mismatch or escaped schematic reference fails before refinement/model dispatch.
+
+Work/evidence roots are server-derived beneath:
+
+```text
+<data_dir>/wizard_sessions/<wizard-session-id>/refinement/<latest-job-id>/work
+<data_dir>/wizard_sessions/<wizard-session-id>/refinement/<latest-job-id>/evidence
+```
+
+The job-specific evidence root preserves one-shot session reservation within a particular generated project without allowing an older generated job to become the target of a later wizard revision.
+
+The wizard cross-process mutation lock remains held across target resolution, refinement, terminal evidence publication, and derived-artifact refresh.
+
+### Vision/provenance gate — implemented
+
+Production HTTP refinement requires an enabled configured LLM provider, explicit model, request-scoped client, and `vision_enabled=true`. Missing image capability fails with `VISION_CAPABILITY_UNAVAILABLE`; provider/model names do not imply vision and no text-only fallback is used.
+
+Runtime provider/model provenance comes directly from validated server settings. `KicadCliAdapter()` is server-created; the request cannot select a KiCad executable.
+
+### Derived project-artifact synchronization — implemented
+
+The generated project's `.kicad_sch` is canonical. After successful refinement execution, production composition refreshes the derived `schematic_preview.png`, `project.zip`, and sanitized job-result refinement metadata.
+
+An explicitly optional preview-generation failure removes the old preview and is warning-visible. Unexpected preview failures, archive-refresh failures, or job-metadata refresh failures raise `REFINEMENT_DERIVED_STATE_REFRESH_FAILED` with `authoritative_committed=true`, making it explicit that canonical mutation/evidence may already be durable and must not be replayed automatically.
+
+A failed ZIP refresh removes stale `project.zip`. Project archive publication itself is now atomic: the new ZIP is written and fsynced in a same-directory temporary file and only then replaces `project.zip`, so concurrent downloads cannot observe an in-progress archive.
+
+### Production HTTP regression coverage
+
+Added/updated tests cover:
+
+- disabled router has no refinement routes;
+- enabled router uses request-scoped server dependencies;
+- request-side path/bound override attempts fail before service dispatch;
+- malformed bodies are sanitized;
+- lower-layer path/secret-bearing errors are not reflected;
+- wizard/current-job/IR/schematic binding succeeds only for current trusted state;
+- stale wizard IR cannot dispatch or mutate;
+- traversal-style persisted schematic references are rejected;
+- missing vision capability refuses before dispatch;
+- successful composition supplies authoritative IR and configured provenance and refreshes derived artifacts/job metadata;
+- archive refresh failure removes stale ZIP and reports committed-state truthfully;
+- atomic project ZIP failure preserves the previous complete archive and successful publication replaces it.
+
+### CLI production composition — still open
+
+The CLI parser/service boundary is hardened, but the CLI is not yet production-composed through the wizard/current-job resolver. That remains the next integration task. It must reuse the same trusted ownership rules rather than adding an arbitrary-path command.
 
 ## Validation status
 
-Focused tests and static-analysis commands have been prepared/expanded for the refinement modules, including session idempotency and atomic reservation concurrency coverage, but this note does not claim GitHub Actions status. CI monitoring remains outside this implementation loop unless explicitly requested.
+The production mounting changes and focused regression tests are committed on `webapp`. Local checkout/verification from this ChatGPT sandbox remains unavailable because the environment cannot resolve `github.com`, and Ruff is not installed/cached locally. This note therefore does **not** claim a green Ruff/mypy/pytest or GitHub Actions result. CI monitoring remains outside this implementation loop unless explicitly requested.
 
 ## Next implementation actions
 
-1. Run/reconcile the focused and full lint/type/test gates for the session-reservation integration when validation results are available; fix any concrete failures without weakening the fail-closed contract.
-2. Inspect and use the existing webapp project/session composition to mount the default-off router without introducing request-selected paths.
-3. Register the CLI adapter only through an existing project/runtime composition path; do not create a standalone arbitrary-path mutation command.
-4. Add production-boundary tests proving both HTTP and CLI reach the same trusted reserved-session service path and cannot bypass server-owned runtime/path/provider/bound configuration.
-5. Continue the remaining validation/security/release phases and reconcile TODO checkboxes only after the implemented production path is verified.
+1. Reconcile any concrete Ruff/format/type/test failures reported for the mounted HTTP production path without weakening its fail-closed contracts.
+2. Compose the CLI through the same wizard/current-job ownership resolver; do not create a standalone arbitrary-path mutation command.
+3. Run the final HTTP/CLI adversarial production-boundary pass: no arbitrary filesystem access, provider/model/credential/bound selection, reservation bypass, stale-project mutation, or secret reflection.
+4. Reconcile the main refinement TODO/status checkboxes against actual implementation evidence.
+5. Complete the final full validation/release closure after the exact accepting SHA is green.
