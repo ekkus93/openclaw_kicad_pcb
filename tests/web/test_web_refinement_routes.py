@@ -47,7 +47,12 @@ def _app(monkeypatch, tmp_path: Path, observed: dict[str, object]) -> FastAPI:
             evidence_available=True,
         )
 
+    async def fake_threadpool(func, *args, **kwargs):
+        observed["threadpool_func"] = func
+        return func(*args, **kwargs)
+
     monkeypatch.setattr(refinement_routes, "run_wizard_refinement_request", fake_run)
+    monkeypatch.setattr(refinement_routes, "run_in_threadpool", fake_threadpool)
     app = FastAPI()
     app.dependency_overrides[get_settings] = lambda: _settings(tmp_path)
     app.dependency_overrides[get_llm_client] = object
@@ -73,6 +78,7 @@ def test_enabled_refinement_router_uses_request_scoped_server_dependencies(
 
     assert response.status_code == 200
     assert response.json()["session_id"] == "session-001"
+    assert observed["threadpool_func"] is refinement_routes.run_wizard_refinement_request
     assert observed["settings"] == _settings(tmp_path)
     assert observed["llm_client"] is not None
     assert observed["request"].session_id == "session-001"  # type: ignore[attr-defined]
