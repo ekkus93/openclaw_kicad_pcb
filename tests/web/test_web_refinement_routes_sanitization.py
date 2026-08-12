@@ -6,17 +6,21 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web import refinement_routes
-from kicad_pcb_web.refinement_routes import RefinementRouteDependencies
+from kicad_pcb_web.deps import get_llm_client, get_settings
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
+from kicad_pcb_web.settings import LlmSettings, WebSettings
 
 
-def _dependencies(tmp_path: Path) -> RefinementRouteDependencies:
-    accepted = tmp_path / "accepted.kicad_sch"
-    accepted.write_bytes(b"accepted")
-    return RefinementRouteDependencies(
-        accepted_path=lambda: accepted,
-        runtime=object,  # type: ignore[arg-type]
+def _settings(tmp_path: Path) -> WebSettings:
+    return WebSettings(
+        data_dir=tmp_path / "data",
+        jobs_dir=tmp_path / "data" / "jobs",
+        llm=LlmSettings(
+            provider="openai",
+            model="vision-model",
+            vision_enabled=True,
+        ),
     )
 
 
@@ -42,12 +46,13 @@ def _client(monkeypatch, tmp_path: Path) -> TestClient:
             evidence_available=True,
         )
 
-    monkeypatch.setattr(refinement_routes, "run_configured_refinement_request", fake_run)
+    monkeypatch.setattr(refinement_routes, "run_wizard_refinement_request", fake_run)
     app = FastAPI()
+    app.dependency_overrides[get_settings] = lambda: _settings(tmp_path)
+    app.dependency_overrides[get_llm_client] = object
     refinement_routes.install_refinement_routes(
         app,
         config=RefinementFeatureConfig(enabled=True),
-        dependencies=_dependencies(tmp_path),
     )
     return TestClient(app)
 
