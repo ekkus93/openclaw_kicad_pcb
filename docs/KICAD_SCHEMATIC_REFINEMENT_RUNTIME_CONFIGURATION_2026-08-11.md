@@ -111,6 +111,25 @@ The accepted-render work directory is a fixed scratch location and is overwritte
 
 Session references are hash-bound to iteration manifests and are cross-checked against iteration ID, reason code, accepted hashes, candidate hash, and candidate layout fingerprint before the final session bundle is published.
 
+## Session idempotency and reservation
+
+A `session_id` is a one-shot evidence/mutation namespace. `refine_schematic()` atomically reserves that namespace before entering the refinement loop, which is before any refinement model dispatch or candidate mutation.
+
+The reservation is created under the configured server-owned evidence root. A request fails closed before refinement execution when any of the following already exists for the same session ID:
+
+- a completed or failed session evidence bundle;
+- an active reservation;
+- a stale/orphan reservation;
+- an orphan iteration evidence bundle anywhere in the supported round namespace.
+
+A stale reservation is never automatically stolen, expired, or overwritten. Recovery of an ambiguous orphan reservation therefore requires an explicit operator decision outside the automatic refinement path.
+
+The reservation remains held while the session runs and while terminal evidence is being published. On normal completion or a runtime failure, it is released only after the completed/failed session bundle has been durably published. Consequently, another same-ID request always encounters either the reservation or the durable terminal session bundle.
+
+If terminal session-evidence publication fails, the reservation is deliberately retained. The service does not remove the reservation and invite an ambiguous replay after model calls or accepted-state mutation may already have occurred.
+
+The reservation mechanism is scoped to the session ID. Production composition must still provide the correct canonical accepted schematic/project ownership boundary; callers must not use alternate session IDs as a substitute for safe project-level concurrency design.
+
 ## Stop and failure semantics
 
 Machine-readable normal stop reasons include:
@@ -123,6 +142,6 @@ Machine-readable normal stop reasons include:
 - `REFINEMENT_STOP_OSCILLATION`;
 - `REFINEMENT_STOP_OPERATION_BUDGET`.
 
-Hard runtime/provider/verification failures are re-raised. The service attempts to publish a failed session manifest with `REFINEMENT_STOP_HARD_FAILURE` and the original machine-readable failure code. If evidence finalization also fails, the original failure remains primary and the secondary evidence failure is attached as exception context/note rather than replacing the original cause.
+Hard runtime/provider/verification failures are re-raised. The service attempts to publish a failed session manifest with `REFINEMENT_STOP_HARD_FAILURE` and the original machine-readable failure code. If evidence finalization also fails, the original failure remains primary and the secondary evidence failure is attached as exception context/note rather than replacing the original cause. When that terminal evidence finalization fails, the session reservation remains in place to block ambiguous replay.
 
 Explicit user cancellation is **not implemented** and must not be claimed by API, CLI, UI, or documentation.
