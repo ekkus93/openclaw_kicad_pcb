@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+import os
+import tempfile
 import zipfile
 from pathlib import Path
 
 from kicad_pcb.errors import ErrorCode, UserError
 
+LOGGER = logging.getLogger("uvicorn.error")
 _UNSAFE_ARTIFACT_PARTS = ("..", "/", "\\")
 _PRIVATE_ARTIFACT_NAMES = frozenset({"job.json"})
 
@@ -53,12 +57,35 @@ def resolve_artifact_path(job_dir: Path, artifact_name: str) -> Path:
 
 
 def create_project_zip(project_dir: Path, artifacts_dir: Path) -> Path:
-    """Zip the generated project tree into ``artifacts/project.zip``."""
+    """Atomically publish the generated project tree as ``artifacts/project.zip``."""
 
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     zip_path = artifacts_dir / "project.zip"
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(project_dir.rglob("*")):
-            if path.is_file():
-                archive.write(path, arcname=path.relative_to(project_dir.parent))
-    return zip_path
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w+b",
+            dir=artifacts_dir,
+            prefix=".project.",
+            suffix=".zip.tmp",
+            delete=False,
+        ) as handle:
+            temp_path = Path(handle.name)
+            with zipfile.ZipFile(handle, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for path in sorted(project_dir.rglob("*")):
+                    if path.is_file():
+                        archive.write(path, arcname=path.relative_to(project_dir.parent))
+            handle.flush()
+            os.fsync(handle.fileno())
+        temp_path.replace(zip_path)
+        temp_path = None
+        return zip_path
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError as exc:
+                LOGGER.warning(
+                    "failed to remove temporary project archive",
+                    extra={"artifact_name": temp_path.name, "error_type": type(exc).__name__},
+                )
