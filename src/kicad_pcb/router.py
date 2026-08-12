@@ -170,8 +170,8 @@ from ._router_write import (
     _should_cluster_emitted_power_symbols,
     _simplify_wires,
     _split_wires_at_points,
+    write_routing,
 )
-from ._router_write_identity import write_routing
 
 # Explicit re-export list — prevents ruff from removing backward-compat imports.
 __all__ = [
