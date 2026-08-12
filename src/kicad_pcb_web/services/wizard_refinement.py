@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -286,18 +288,21 @@ def _refresh_derived_job_artifacts(
         raise PersistenceError(
             "Refinement was committed, but generated-job metadata could not be refreshed.",
             code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
-            details={
-                "session_id": target.wizard_session_id,
-                "job_id": target.job.id,
-                "authoritative_committed": True,
-            },
+            details=_committed_details(target),
         ) from exc
 
 
 def _refresh_preview(target: WizardRefinementTarget) -> str | None:
     preview_path = target.job.artifacts_dir / "schematic_preview.png"
+    temp_dir = Path(
+        tempfile.mkdtemp(
+            prefix=".refinement-preview-",
+            dir=target.job.artifacts_dir,
+        )
+    )
     try:
-        _generate_schematic_preview(target.accepted_path, target.job.artifacts_dir)
+        generated = _generate_schematic_preview(target.accepted_path, temp_dir)
+        generated.replace(preview_path)
     except PreviewGenerationError as exc:
         _remove_stale_artifact(preview_path, target, artifact="schematic preview")
         LOGGER.warning(
@@ -316,7 +321,26 @@ def _refresh_preview(target: WizardRefinementTarget) -> str | None:
             code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
             details=_committed_details(target),
         ) from exc
+    finally:
+        _cleanup_preview_scratch(temp_dir, target)
     return None
+
+
+def _cleanup_preview_scratch(temp_dir: Path, target: WizardRefinementTarget) -> None:
+    try:
+        shutil.rmtree(temp_dir)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        LOGGER.error(
+            "failed to remove refinement preview scratch",
+            extra={
+                "session_id": target.wizard_session_id,
+                "job_id": target.job.id,
+                "scratch_name": temp_dir.name,
+                "error_type": type(exc).__name__,
+            },
+        )
 
 
 def _refresh_project_archive(target: WizardRefinementTarget) -> None:
