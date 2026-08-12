@@ -149,7 +149,8 @@ def verify_schematic_electrical_invariance(
             native_nets = parse_kicadsexpr_nets(native_content)
         except (ParseError, ValueError) as exc:
             raise ToolError(
-                "Candidate KiCad native netlist could not be parsed during electrical verification.",
+                "Candidate KiCad native netlist could not be parsed during "
+                "electrical verification.",
                 code="ELECTRICAL_INVARIANCE_FAILED",
                 details={"reason": str(exc)},
             ) from exc
