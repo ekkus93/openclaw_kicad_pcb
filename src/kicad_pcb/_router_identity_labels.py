@@ -38,8 +38,10 @@ class ElectricalIdentityLabel:
 
 def identity_labels(routing: NetRouting) -> tuple[ElectricalIdentityLabel, ...]:
     """Return the hidden identity labels recorded for *routing*."""
-    stored = getattr(routing, _IDENTITY_LABELS_ATTRIBUTE, ())
-    return tuple(cast("list[ElectricalIdentityLabel] | tuple[()]", stored))
+    stored = getattr(routing, _IDENTITY_LABELS_ATTRIBUTE, None)
+    if stored is None:
+        return ()
+    return tuple(cast("list[ElectricalIdentityLabel]", stored))
 
 
 def append_identity_label(
