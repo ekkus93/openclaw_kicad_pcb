@@ -294,13 +294,15 @@ def _refresh_derived_job_artifacts(
 
 def _refresh_preview(target: WizardRefinementTarget) -> str | None:
     preview_path = target.job.artifacts_dir / "schematic_preview.png"
-    temp_dir = Path(
-        tempfile.mkdtemp(
-            prefix=".refinement-preview-",
-            dir=target.job.artifacts_dir,
-        )
-    )
+    temp_dir: Path | None = None
     try:
+        target.job.artifacts_dir.mkdir(parents=True, exist_ok=True)
+        temp_dir = Path(
+            tempfile.mkdtemp(
+                prefix=".refinement-preview-",
+                dir=target.job.artifacts_dir,
+            )
+        )
         generated = _generate_schematic_preview(target.accepted_path, temp_dir)
         generated.replace(preview_path)
     except PreviewGenerationError as exc:
@@ -322,7 +324,8 @@ def _refresh_preview(target: WizardRefinementTarget) -> str | None:
             details=_committed_details(target),
         ) from exc
     finally:
-        _cleanup_preview_scratch(temp_dir, target)
+        if temp_dir is not None:
+            _cleanup_preview_scratch(temp_dir, target)
     return None
 
 
