@@ -222,7 +222,8 @@ def test_terminal_evidence_failure_retains_reservation_and_blocks_replay(
             session_id="evidence-failed-session",
         )
 
-    reservation = runtime.evidence_root / "sessions" / ".reservations" / "evidence-failed-session.lock"
+    reservation_dir = runtime.evidence_root / "sessions" / ".reservations"
+    reservation = reservation_dir / "evidence-failed-session.lock"
     assert reservation.is_file()
     assert calls == 1
     assert accepted.read_bytes() == b"A"
