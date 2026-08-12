@@ -14,7 +14,12 @@ from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import UserError
 
-from ..errors import ConflictError, PersistedStateError, PersistenceError, ResourceNotFoundError
+from ..errors import (
+    ConflictError,
+    PersistedStateError,
+    PersistenceError,
+    ResourceNotFoundError,
+)
 from ..settings import WebSettings
 from ._wizard_session_io import read_wizard_session
 from .artifacts import create_project_zip
@@ -109,7 +114,10 @@ def resolve_wizard_refinement_target(
     )
 
 
-def _require_refinement_llm(settings: WebSettings, llm_client: LlmClient | None) -> LlmClient:
+def _require_refinement_llm(
+    settings: WebSettings,
+    llm_client: LlmClient | None,
+) -> LlmClient:
     if not settings.llm.enabled or llm_client is None or settings.llm.model is None:
         raise UserError(
             "Schematic refinement requires an enabled configured LLM provider and model.",
@@ -143,7 +151,7 @@ def _read_current_job(settings: WebSettings, job_id: str, *, session_id: str) ->
 
 def _require_job_matches_current_ir(
     job: JobRecord,
-    ir_json: dict[str, object],
+    ir_json: dict[str, Any],
     *,
     session_id: str,
 ) -> None:
@@ -158,7 +166,7 @@ def _require_job_matches_current_ir(
 
 def _load_authoritative_ir(
     job: JobRecord,
-    expected_ir_json: dict[str, object],
+    expected_ir_json: dict[str, Any],
     *,
     session_id: str,
 ) -> CircuitIR:
