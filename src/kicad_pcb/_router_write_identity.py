@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .sch_doc import SchematicDoc
 
 
-def write_routing(
+def write_routing(  # noqa: PLR0913
     *,
     doc: SchematicDoc,
     routing: NetRouting,
