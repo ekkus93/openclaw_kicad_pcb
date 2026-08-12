@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import shutil
 import tempfile
 from enum import StrEnum
 from pathlib import Path
@@ -47,13 +48,14 @@ class SchematicCandidateTransaction:
                     "actual_hash": self.starting_accepted_hash,
                 },
             )
-        fd, raw_path = tempfile.mkstemp(
-            prefix=f".{accepted_path.stem}.refinement.",
-            suffix=accepted_path.suffix,
-            dir=accepted_path.parent,
+
+        self.transaction_root = Path(
+            tempfile.mkdtemp(
+                prefix=f".{accepted_path.stem}.refinement.",
+                dir=accepted_path.parent,
+            )
         )
-        os.close(fd)
-        self.candidate_path = Path(raw_path)
+        self.candidate_path = self.transaction_root / accepted_path.name
         try:
             payload = accepted_path.read_bytes()
             with self.candidate_path.open("wb") as stream:
@@ -61,7 +63,7 @@ class SchematicCandidateTransaction:
                 stream.flush()
                 os.fsync(stream.fileno())
         except Exception:
-            self._cleanup()
+            self._cleanup(suppress_errors=True)
             raise
         self.state = CandidateState.CREATED
         self.validated_candidate_hash: str | None = None
@@ -70,8 +72,7 @@ class SchematicCandidateTransaction:
         return self
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        if self.state is not CandidateState.PROMOTED:
-            self._cleanup()
+        self._cleanup(suppress_errors=exc is not None)
 
     def mark_validated(self, *, candidate_hash: str) -> None:
         """Bind validation truth to the exact current candidate bytes."""
@@ -154,19 +155,29 @@ class SchematicCandidateTransaction:
                 details={"required_state": required.value, "actual_state": self.state.value},
             )
 
-    def _cleanup(self) -> None:
+    def _cleanup(self, *, suppress_errors: bool = False) -> None:
         try:
-            self.candidate_path.unlink()
+            shutil.rmtree(self.transaction_root)
         except FileNotFoundError:
             return
         except OSError as exc:
-            LOGGER.warning(
-                "failed to clean up schematic refinement candidate",
-                extra={
-                    "path": str(self.candidate_path),
-                    "error_type": type(exc).__name__,
+            if suppress_errors:
+                LOGGER.error(
+                    "failed to clean up schematic refinement transaction",
+                    extra={
+                        "path": str(self.transaction_root),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+                return
+            raise UserError(
+                "Failed to clean up schematic refinement transaction.",
+                code=ErrorCode.IO_ERROR,
+                details={
+                    "path": str(self.transaction_root),
+                    "reason": str(exc),
                 },
-            )
+            ) from exc
 
 
 def _sha256_file(path: Path) -> str:
