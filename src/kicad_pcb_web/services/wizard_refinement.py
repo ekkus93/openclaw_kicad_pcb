@@ -353,7 +353,8 @@ def _refresh_project_archive(target: WizardRefinementTarget) -> None:
     except Exception as exc:
         _remove_stale_artifact(zip_path, target, artifact="project archive")
         raise PersistenceError(
-            "Refinement was committed, but the downloadable project archive could not be refreshed.",
+            "Refinement was committed, but the downloadable project archive "
+            "could not be refreshed.",
             code="REFINEMENT_DERIVED_STATE_REFRESH_FAILED",
             details=_committed_details(target),
         ) from exc
