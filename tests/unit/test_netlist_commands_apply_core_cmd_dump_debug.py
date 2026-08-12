@@ -259,5 +259,7 @@ def test_cmd_apply_netlist_debug_dump_surfaces_profile_specific_local_output_rou
     assert digital_dump["routing_heuristic_policy"]["enable_compact_output_tails"] is False
     assert analog_hp_out["strategy"] == "compact_signal_tail"
     assert analog_hp_out["heuristic_override"] == "compact_output_tail"
-    assert digital_hp_out["strategy"] == "shared_lane"
+    # With compact analog-tail routing disabled, the corrected outward-facing
+    # pin stubs now take the router's documented generic 3-pin bus fallback.
+    assert digital_hp_out["strategy"] == "spine"
     assert digital_hp_out["heuristic_override"] is None
