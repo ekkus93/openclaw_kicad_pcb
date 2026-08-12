@@ -65,6 +65,18 @@ def _graphviz_timeout_for_ir(ir: CircuitIR, *, base_timeout: float) -> float:
     return max(base_timeout, min(_MAX_GRAPHVIZ_TIMEOUT_S, scaled_timeout))
 
 
+def _snap_final_symbol_positions(
+    positions: dict[str, tuple[float, float, float | None]],
+) -> dict[str, tuple[float, float, float | None]]:
+    """Snap ordinary symbols while preserving explicit power-row anchors."""
+    regular = {ref: pos for ref, pos in positions.items() if not ref.startswith("#")}
+    snapped_regular = snap_positions(regular)
+    return {
+        ref: positions[ref] if ref.startswith("#") else snapped_regular[ref]
+        for ref in positions
+    }
+
+
 def _prepare_layout_inputs(
     ir: CircuitIR,
     refs: list[str],
@@ -172,8 +184,9 @@ class GraphvizLayoutEngine:
         connectors get 180°; series passives get 0° (or 90° when y-spread
         dominates); shunt/bypass passives get 90°.
 
-        **Snapping:** All positions are snapped to the KiCad 50-mil grid
-        (1.27 mm) after the Graphviz raw output is processed.
+        **Snapping:** Ordinary component positions are snapped to the KiCad
+        50-mil grid (1.27 mm) after all late layout passes. Explicit ``#PWR``
+        and ``#FLG`` helpers retain their dedicated rail-row anchors.
 
         **Cache:** If *cache_path* was supplied and a cached result exists for
         the current circuit topology (keyed by sha256 of the DOT source), the
@@ -205,7 +218,6 @@ class GraphvizLayoutEngine:
         _roles = _classify_connector_roles(refs, _tiers, ir=ir)
         sds_scores = _compute_signal_distance_scores(ir, _roles)
 
-        # Build DOT source up-front so we can derive the cache key.
         affinity_order = _compute_affinity_groups(ir, _tiers)
         dot_source = _build_dot_source(
             ir,
@@ -222,14 +234,10 @@ class GraphvizLayoutEngine:
         )
         cache_key = _layout_cache_key(dot_source)
 
-        # --- Cache hit: return immediately without invoking dot. ---
         if self._cache_path is not None:
             cached_entry = _load_layout_cache_entry(self._cache_path, cache_key)
             if cached_entry is not None:
-                # Older layout passes could reintroduce sub-grid coordinates
-                # after the initial snap. Enforce the public 50-mil contract
-                # even when reading a persisted result.
-                cached = snap_positions(cached_entry.positions)
+                cached = cached_entry.positions
                 _log.debug("Layout cache hit (key %s…); skipping dot.", cache_key[:8])
                 decoupling_map = dict(cached_entry.decoupling_map)
                 if self._debug_dump_path is not None:
@@ -289,7 +297,6 @@ class GraphvizLayoutEngine:
                 f"Command: {self._dot} -Tplain -Gstart={self._seed}"
             )
 
-        # Verify all refs are covered.
         missing = [r for r in refs if _safe_id(r) not in positions]
         if missing:
             raise RuntimeError(
@@ -298,14 +305,12 @@ class GraphvizLayoutEngine:
                 "or file a bug with the circuit IR."
             )
 
-        # Re-key from safe_id → original ref
         safe_to_ref = {_safe_id(r): r for r in refs}
         raw_result: dict[str, tuple[float, float, float | None]] = {
             safe_to_ref[sid]: pos for sid, pos in positions.items() if sid in safe_to_ref
         }
         decoupling_map = _refine_shared_rail_decoupling_map(ir, raw_result, decoupling_map)
 
-        # Post-layout: apply all snap passes in canonical order.
         channels = _detect_stereo_channels(ir)
         post_snap_result = _apply_post_layout_snaps(
             raw_result,
@@ -323,7 +328,6 @@ class GraphvizLayoutEngine:
             strict=self._strict,
         )
 
-        # Compute component orientations and merge into result.
         _plain_positions: dict[str, tuple[float, float]] = {
             ref: (x, y) for ref, (x, y, _) in post_snap_result.items()
         }
@@ -339,10 +343,7 @@ class GraphvizLayoutEngine:
             ir,
             block_layout=block_layout,
         )
-        # Late layout/orientation passes can move otherwise-snapped symbols.
-        # Reassert the engine's documented 50-mil output invariant before
-        # debug serialization, cache persistence, and schematic generation.
-        result = snap_positions(result)
+        result = _snap_final_symbol_positions(result)
 
         if self._debug_dump_path is not None:
             halo_alignment = _analyze_halo_column_alignment(raw_result, post_snap_result, halo)
@@ -388,7 +389,6 @@ class GraphvizLayoutEngine:
                 },
             )
 
-        # --- Cache write: persist for next run. ---
         if self._cache_path is not None:
             _save_layout_cache(
                 self._cache_path,
