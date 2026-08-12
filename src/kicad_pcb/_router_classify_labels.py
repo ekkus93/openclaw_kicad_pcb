@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from ._router_identity_labels import append_identity_label, identity_label_points
 from ._router_types import (
     GlobalLabelPlacement,
     LabelPolicy,
@@ -292,7 +293,7 @@ def _append_promoted_visible_label(
     protected_points: set[tuple[float, float]] | None = None,
     shared_protected_points: set[tuple[float, float]] | None = None,
 ) -> None:
-    """Add the required identity label or a label promoted by the display policy."""
+    """Add hidden electrical identity and policy-selected display labels separately."""
     from ._router_geometry import (  # noqa: PLC0415
         _label_attachment_plan,
         _occupied_label_points,
@@ -316,15 +317,16 @@ def _append_promoted_visible_label(
     if not requires_identity and not promotes_display:
         return
 
+    occupied_label_points = _occupied_label_points(routing) | identity_label_points(routing)
     label_anchor = _safe_stub_label_anchor(
         pin_point=(wx, wy),
         pin_angle=wa,
-        occupied_label_points=_occupied_label_points(routing),
+        occupied_label_points=occupied_label_points,
         protected_points=protected_points,
         shared_protected_points=shared_protected_points,
     )
     if label_anchor is None:
-        occupied_points = _occupied_wire_points(routing.wires) | _occupied_label_points(routing)
+        occupied_points = _occupied_wire_points(routing.wires) | occupied_label_points
         label_route, ex, ey = _label_attachment_plan(
             pin_point=(wx, wy),
             pin_angle=wa,
@@ -341,12 +343,24 @@ def _append_promoted_visible_label(
         ex, ey = label_anchor
     routing.wires.extend(label_route)
     label_angle = int((wa + 180) % 360)
-    if promotion.net_name.startswith("/"):
-        global_label = GlobalLabelPlacement(promotion.net_name, ex, ey, label_angle)
-        if global_label not in routing.global_labels:
-            routing.global_labels.append(global_label)
+
+    if promotes_display:
+        if promotion.net_name.startswith("/"):
+            global_label = GlobalLabelPlacement(promotion.net_name, ex, ey, label_angle)
+            if global_label not in routing.global_labels:
+                routing.global_labels.append(global_label)
+            return
+
+        local_label = NetLabel(promotion.net_name, ex, ey, label_angle)
+        if local_label not in routing.labels:
+            routing.labels.append(local_label)
         return
 
-    local_label = NetLabel(promotion.net_name, ex, ey, label_angle)
-    if local_label not in routing.labels:
-        routing.labels.append(local_label)
+    append_identity_label(
+        routing,
+        name=promotion.net_name,
+        x=ex,
+        y=ey,
+        angle=label_angle,
+        global_scope=promotion.net_name.startswith("/"),
+    )
