@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.circuit_ir import CircuitIR, NetIR
 from kicad_pcb.compat import KiCadVersion
+from kicad_pcb.corpus.kicadsexpr import KicadSexprNet, parse_kicadsexpr_nets
 from kicad_pcb.corpus.kicadxml import (
     kicadxml_to_circuit_ir,
     parse_kicadxml_netlist,
@@ -23,12 +24,13 @@ from kicad_pcb.electrical_equivalence import (
     build_circuit_ir_fingerprint,
     compare_circuit_ir_equivalence,
 )
-from kicad_pcb.errors import ErrorCode, ToolError, UserError
+from kicad_pcb.errors import ErrorCode, ParseError, ToolError, UserError
 from kicad_pcb.sch_doc import SchematicDoc
 
 from .schematic_semantics import SchematicSemanticSnapshot, extract_schematic_semantics
 
 _MIN_REFINEMENT_KICAD = KiCadVersion(9, 0, 0)
+_log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -109,12 +111,17 @@ def verify_schematic_electrical_invariance(
 
     export_dir = work_dir or candidate_schematic.parent
     export_dir.mkdir(parents=True, exist_ok=True)
-    export_path = export_dir / f".{candidate_schematic.stem}.refinement.netlist.kicadxml"
+    xml_export_path = export_dir / f".{candidate_schematic.stem}.refinement.netlist.kicadxml"
+    native_export_path = export_dir / f".{candidate_schematic.stem}.refinement.netlist.kicadsexpr"
     try:
-        result, xml_content = adapter.export_netlist(candidate_schematic, export_path)
+        result, xml_content = adapter.export_netlist(
+            candidate_schematic,
+            xml_export_path,
+            netlist_format="kicadxml",
+        )
         if not result.ok or not xml_content.strip():
             raise ToolError(
-                "Candidate schematic netlist export failed during electrical verification.",
+                "Candidate schematic XML netlist export failed during electrical verification.",
                 code="ELECTRICAL_INVARIANCE_FAILED",
                 details={
                     "returncode": result.returncode,
@@ -123,7 +130,31 @@ def verify_schematic_electrical_invariance(
                 },
             )
 
-        parsed = parse_kicadxml_netlist(export_path)
+        native_result, native_content = adapter.export_netlist(
+            candidate_schematic,
+            native_export_path,
+            netlist_format="kicadsexpr",
+        )
+        if not native_result.ok or not native_content.strip():
+            raise ToolError(
+                "Candidate schematic native netlist export failed during electrical verification.",
+                code="ELECTRICAL_INVARIANCE_FAILED",
+                details={
+                    "returncode": native_result.returncode,
+                    "stderr": native_result.stderr,
+                    "stdout": native_result.stdout,
+                },
+            )
+        try:
+            native_nets = parse_kicadsexpr_nets(native_content)
+        except (ParseError, ValueError) as exc:
+            raise ToolError(
+                "Candidate KiCad native netlist could not be parsed during electrical verification.",
+                code="ELECTRICAL_INVARIANCE_FAILED",
+                details={"reason": str(exc)},
+            ) from exc
+
+        parsed = parse_kicadxml_netlist(xml_export_path)
         fallback_symbols = schematic_symbols_by_ref(SchematicDoc.load(candidate_schematic))
         try:
             candidate_ir = kicadxml_to_circuit_ir(
@@ -139,6 +170,12 @@ def verify_schematic_electrical_invariance(
 
         candidate_ir = _remove_explicit_helpers(candidate_ir, candidate_semantic.helper_refs)
         expected_ir = _authoritative_with_baseline_footprints(authoritative_ir, baseline)
+        candidate_ir = _supplement_xml_omitted_unnamed_nets(
+            expected_ir=expected_ir,
+            candidate_ir=candidate_ir,
+            native_nets=native_nets,
+            helper_refs=candidate_semantic.helper_refs,
+        )
 
         electrical = compare_circuit_ir_equivalence(
             expected_ir,
@@ -167,15 +204,8 @@ def verify_schematic_electrical_invariance(
             kicad_version=str(version),
         )
     finally:
-        try:
-            export_path.unlink()
-        except FileNotFoundError:
-            pass
-        except OSError as exc:
-            logging.getLogger(__name__).warning(
-                "failed to remove refinement netlist verification artifact",
-                extra={"path": str(export_path), "error_type": type(exc).__name__},
-            )
+        _remove_verification_artifact(xml_export_path)
+        _remove_verification_artifact(native_export_path)
 
 
 def require_schematic_electrical_invariance(
@@ -347,6 +377,80 @@ def _compare_schematic_semantics(
     return tuple(mismatches)
 
 
+def _supplement_xml_omitted_unnamed_nets(
+    *,
+    expected_ir: CircuitIR,
+    candidate_ir: CircuitIR,
+    native_nets: tuple[KicadSexprNet, ...],
+    helper_refs: tuple[str, ...],
+) -> CircuitIR:
+    """Recover only XML-omitted anonymous nets proven by native KiCad topology.
+
+    This is deliberately fail-closed. A candidate net is added only when one
+    unique native autogenerated net has the exact authoritative ref/pin
+    partition and none of those terminals is already assigned by the XML
+    export. Explicitly named native nets, ambiguous matches, changed topology,
+    and repeated ref/pin identities are never supplemented.
+    """
+
+    helper_set = set(helper_refs)
+    candidate_names = {net.name for net in candidate_ir.nets}
+    assigned_terminals = {
+        (pin.ref, pin.pin) for net in candidate_ir.nets for pin in net.pins
+    }
+    additions: list[NetIR] = []
+
+    for expected_net in expected_ir.nets:
+        if expected_net.name in candidate_names:
+            continue
+
+        expected_keys = {(pin.ref, pin.pin) for pin in expected_net.pins}
+        if len(expected_keys) != len(expected_net.pins):
+            continue
+        if expected_keys & assigned_terminals:
+            continue
+
+        matches: list[KicadSexprNet] = []
+        for native_net in native_nets:
+            if not native_net.autogenerated:
+                continue
+            native_keys = {
+                (pin.ref, pin.pin) for pin in native_net.pins if pin.ref not in helper_set
+            }
+            if native_keys == expected_keys:
+                matches.append(native_net)
+
+        if len(matches) != 1:
+            continue
+
+        native_net = matches[0]
+        additions.append(
+            NetIR(
+                name=native_net.name,
+                pins=[pin.model_copy(deep=True) for pin in expected_net.pins],
+            )
+        )
+        assigned_terminals.update(expected_keys)
+        _log.warning(
+            "KiCad XML netlist omitted unnamed net; recovered exact topology "
+            "from native kicadsexpr export",
+            extra={
+                "authoritative_net": expected_net.name,
+                "native_net": native_net.name,
+                "terminals": sorted(expected_keys),
+            },
+        )
+
+    if not additions:
+        return candidate_ir
+    return CircuitIR(
+        version=candidate_ir.version,
+        components=candidate_ir.components,
+        nets=[*candidate_ir.nets, *additions],
+        options=candidate_ir.options,
+    )
+
+
 def _remove_explicit_helpers(ir: CircuitIR, helper_refs: tuple[str, ...]) -> CircuitIR:
     helpers = set(helper_refs)
     if not helpers:
@@ -358,6 +462,18 @@ def _remove_explicit_helpers(ir: CircuitIR, helper_refs: tuple[str, ...]) -> Cir
         if pins:
             nets.append(NetIR(name=net.name, pins=pins))
     return CircuitIR(version=ir.version, components=components, nets=nets, options=ir.options)
+
+
+def _remove_verification_artifact(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        _log.warning(
+            "failed to remove refinement netlist verification artifact",
+            extra={"path": str(path), "error_type": type(exc).__name__},
+        )
 
 
 def _suffix_base(ref: str, source_refs: set[str]) -> str | None:
