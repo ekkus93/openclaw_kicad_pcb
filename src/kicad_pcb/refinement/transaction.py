@@ -72,9 +72,7 @@ class SchematicCandidateTransaction:
         return self
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        self._cleanup(
-            suppress_errors=exc is not None or self.state is CandidateState.PROMOTED
-        )
+        self._cleanup(suppress_errors=exc is not None or self.state is CandidateState.PROMOTED)
 
     def mark_validated(self, *, candidate_hash: str) -> None:
         """Bind validation truth to the exact current candidate bytes."""
