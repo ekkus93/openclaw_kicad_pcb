@@ -10,6 +10,10 @@ from kicad_pcb_web.errors import PersistenceError
 from kicad_pcb_web.services import artifacts
 
 
+def _staging_files(artifacts_dir: Path) -> list[Path]:
+    return list((artifacts_dir / ".staging").glob("*"))
+
+
 def test_project_zip_failure_preserves_previous_complete_archive(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -30,7 +34,8 @@ def test_project_zip_failure_preserves_previous_complete_archive(
         artifacts.create_project_zip(project_dir, artifacts_dir)
 
     assert zip_path.read_bytes() == b"previous-complete-archive"
-    assert not list(artifacts_dir.glob(".project.*.zip.tmp"))
+    assert _staging_files(artifacts_dir) == []
+    assert artifacts.list_artifacts(tmp_path) == ["project.zip"]
 
 
 def test_project_zip_success_replaces_previous_archive(tmp_path: Path) -> None:
@@ -48,7 +53,8 @@ def test_project_zip_success_replaces_previous_archive(tmp_path: Path) -> None:
     assert published == zip_path
     with zipfile.ZipFile(zip_path) as archive:
         assert archive.read("Demo/Demo.kicad_sch") == b"new schematic"
-    assert not list(artifacts_dir.glob(".project.*.zip.tmp"))
+    assert _staging_files(artifacts_dir) == []
+    assert artifacts.list_artifacts(tmp_path) == ["project.zip"]
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows symlink creation may require privileges")
@@ -68,4 +74,5 @@ def test_project_zip_rejects_symlink_without_replacing_previous_archive(tmp_path
 
     assert exc_info.value.code == "PROJECT_ARCHIVE_UNSAFE_PATH"
     assert zip_path.read_bytes() == b"previous-complete-archive"
-    assert not list(artifacts_dir.glob(".project.*.zip.tmp"))
+    assert not (artifacts_dir / ".staging").exists()
+    assert artifacts.list_artifacts(tmp_path) == ["project.zip"]
