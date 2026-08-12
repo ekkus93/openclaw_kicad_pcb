@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from itertools import count
 
 from kicad_pcb._router_identity_labels import append_identity_label
@@ -9,7 +10,7 @@ from kicad_pcb.sexpr.builder import L, atom
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode
 
 
-def _new_uuid_factory():
+def _new_uuid_factory() -> Callable[[], str]:
     sequence = count(1)
 
     def _new_uuid() -> str:
