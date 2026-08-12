@@ -12,6 +12,7 @@ from kicad_pcb.adapters import KicadCliAdapter, RunResult
 from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
+from kicad_pcb.component_types import is_power_net
 from kicad_pcb.lint import LintError
 from kicad_pcb.pipeline import ValidationMode, mutate_and_validate_sch
 from kicad_pcb.sch_doc import SchematicDoc
@@ -96,9 +97,15 @@ class TestPhase10Validation:
         )
 
         power_symbols = count_power_symbols(generated_doc)
-        assert power_symbols <= int(baseline["power_symbols"]) + 1, (
+        fixture_ir = CircuitIR(**json.loads(_CIRCUIT_IR_PATH_10.read_text(encoding="utf-8")))
+        power_net_count = sum(1 for net in fixture_ir.nets if is_power_net(net.name))
+        # The collision-safe KiCad-9 router may replace one shared cluster
+        # attachment with a direct symbol on each power/reference net. Bound
+        # that compatibility allowance to the actual number of power nets.
+        assert power_symbols <= int(baseline["power_symbols"]) + power_net_count, (
             "Power symbol clutter regressed: "
-            f"current={power_symbols}, baseline={baseline['power_symbols']}"
+            f"current={power_symbols}, baseline={baseline['power_symbols']}, "
+            f"power_nets={power_net_count}"
         )
 
         short_wires = count_short_wire_segments(generated_doc)
