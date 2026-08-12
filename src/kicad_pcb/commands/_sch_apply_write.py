@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from .. import placeholder_symbol as _placeholder_mod
+from .._router_geometry_basic import _stub_end
 from ..component_types import (
     component_type,
     is_power_net,
@@ -196,8 +197,9 @@ def _refine_two_pin_passive_mirrors(
                 if neighbors:
                     centroid_x = sum(px for px, _py in neighbors) / len(neighbors)
                     centroid_y = sum(py for _px, py in neighbors) / len(neighbors)
+                    stub_x, stub_y = _stub_end(*endpoint)
                     distance_score += math.dist(
-                        (endpoint[0], endpoint[1]),
+                        (stub_x, stub_y),
                         (centroid_x, centroid_y),
                     )
             return collision_count, distance_score
