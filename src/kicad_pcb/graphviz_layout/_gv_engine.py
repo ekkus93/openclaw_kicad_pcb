@@ -43,6 +43,7 @@ from .snap import (
     _gv_to_kicad,
     _parse_plain_positions,
     _snap_input_connector_signal_attachment,
+    snap_positions,
 )
 
 if TYPE_CHECKING:
@@ -225,7 +226,10 @@ class GraphvizLayoutEngine:
         if self._cache_path is not None:
             cached_entry = _load_layout_cache_entry(self._cache_path, cache_key)
             if cached_entry is not None:
-                cached = cached_entry.positions
+                # Older layout passes could reintroduce sub-grid coordinates
+                # after the initial snap. Enforce the public 50-mil contract
+                # even when reading a persisted result.
+                cached = snap_positions(cached_entry.positions)
                 _log.debug("Layout cache hit (key %s…); skipping dot.", cache_key[:8])
                 decoupling_map = dict(cached_entry.decoupling_map)
                 if self._debug_dump_path is not None:
@@ -335,6 +339,10 @@ class GraphvizLayoutEngine:
             ir,
             block_layout=block_layout,
         )
+        # Late layout/orientation passes can move otherwise-snapped symbols.
+        # Reassert the engine's documented 50-mil output invariant before
+        # debug serialization, cache persistence, and schematic generation.
+        result = snap_positions(result)
 
         if self._debug_dump_path is not None:
             halo_alignment = _analyze_halo_column_alignment(raw_result, post_snap_result, halo)

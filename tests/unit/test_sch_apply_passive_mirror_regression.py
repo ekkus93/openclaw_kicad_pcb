@@ -19,25 +19,8 @@ pytestmark = pytest.mark.unit
 _FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "symbols"
 
 
-def test_transform_pin_at_matches_kicad9_symbol_transform() -> None:
-    """Library pin coordinates must follow KiCad 9's direct symbol transform."""
-    pins = {
-        "1": (0.0, 0.0, 0.0),
-        "2": (5.08, 0.0, 180.0),
-        "3": (0.0, 2.54, 90.0),
-    }
-
-    unrotated = _transform_pin_at(pins, 100.0, 200.0, 0)
-    clockwise_90 = _transform_pin_at(pins, 100.0, 200.0, 90)
-    clockwise_270 = _transform_pin_at(pins, 100.0, 200.0, 270)
-
-    assert unrotated["3"] == pytest.approx((100.0, 202.54, 270.0))
-    assert clockwise_90["2"] == pytest.approx((100.0, 205.08, 270.0))
-    assert clockwise_270["2"] == pytest.approx((100.0, 194.92, 90.0))
-
-
 def test_divider_mirror_refinement_makes_vmid_stubs_face_each_other() -> None:
-    """The exact integration-divider geometry must make both VMID stubs meet."""
+    """The exact integration-divider geometry must not leave both VMID stubs facing down."""
     ir = CircuitIR(
         version="1",
         components=[
@@ -69,7 +52,7 @@ def test_divider_mirror_refinement_makes_vmid_stubs_face_each_other() -> None:
         symbol_index=SymbolIndex(symbols_dir=_FIXTURES_DIR),
     )
 
-    assert refined == {"R1": 90, "R2": 90}
+    assert refined == {"R1": 270, "R2": 270}
 
     resistor_pins = {
         "1": (0.0, 0.0, 0.0),

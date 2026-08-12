@@ -269,7 +269,6 @@ def test_real_ne5532_fixture_profile_debug_dump_summary_diff(tmp_path: Path) -> 
     }
     assert profile_specific_overrides in (
         {},
-        {"compact_local_decoupling_cluster": ["VPLUS15"]},
         {"compact_local_ground_cluster": ["GND"]},
         {
             "compact_local_decoupling_cluster": ["VPLUS15"],

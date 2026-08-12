@@ -12,7 +12,6 @@ from kicad_pcb.adapters import KicadCliAdapter, RunResult
 from kicad_pcb.block_detection import BlockRole, classify_circuit
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.commands.netlist import cmd_new_from_netlist
-from kicad_pcb.component_types import is_power_net
 from kicad_pcb.lint import LintError
 from kicad_pcb.pipeline import ValidationMode, mutate_and_validate_sch
 from kicad_pcb.sch_doc import SchematicDoc
@@ -83,10 +82,7 @@ class TestPhase10Validation:
         baseline = json.loads(_BASELINE_METRICS_PATH_10.read_text(encoding="utf-8"))
 
         current_spacing = average_symbol_spacing(generated_doc)
-        # The historical readability snapshot predates the KiCad-9 pin-transform
-        # correction. Correct power/support-symbol projection can move nearest
-        # neighbors slightly without changing the logical component layout.
-        assert current_spacing >= float(baseline["avg_spacing"]) - 0.75, (
+        assert current_spacing >= float(baseline["avg_spacing"]) - 0.5, (
             f"Average symbol spacing regressed: current={current_spacing:.3f}, "
             f"baseline={baseline['avg_spacing']:.3f}"
         )
@@ -97,15 +93,9 @@ class TestPhase10Validation:
         )
 
         power_symbols = count_power_symbols(generated_doc)
-        fixture_ir = CircuitIR(**json.loads(_CIRCUIT_IR_PATH_10.read_text(encoding="utf-8")))
-        power_net_count = sum(1 for net in fixture_ir.nets if is_power_net(net.name))
-        # The collision-safe KiCad-9 router may replace one shared cluster
-        # attachment with a direct symbol on each power/reference net. Bound
-        # that compatibility allowance to the actual number of power nets.
-        assert power_symbols <= int(baseline["power_symbols"]) + power_net_count, (
+        assert power_symbols <= int(baseline["power_symbols"]) + 1, (
             "Power symbol clutter regressed: "
-            f"current={power_symbols}, baseline={baseline['power_symbols']}, "
-            f"power_nets={power_net_count}"
+            f"current={power_symbols}, baseline={baseline['power_symbols']}"
         )
 
         short_wires = count_short_wire_segments(generated_doc)

@@ -40,17 +40,31 @@ def _transform_pin_at(
     origin_y: float,
     rotation: int,
 ) -> dict[str, tuple[float, float, float]]:
-    """Apply KiCad 9 symbol rotation and origin translation to a library pin map.
+    """Apply *rotation* and origin translation to a library-space pin map.
 
-    ``pin_at`` maps ``pin_num -> (px, py, pa)`` in library space. KiCad 9
-    applies the symbol transform directly to those coordinates; there is no
-    extra library-to-schematic Y-axis reflection. The returned angle is the
-    router's bodyward direction in screen coordinates, which is the negation
-    of KiCad's transformed pin angle so ``_stub_end`` extends outward.
+    ``pin_at`` maps ``pin_num -> (px, py, pa)`` in library space.
+    Returns ``{pin_num: (schematic_x, schematic_y, schematic_angle)}``.
+
+    KiCad symbol-library coordinates use a positive-up Y axis, while schematic
+    placement coordinates use a positive-down Y axis. KiCad pin angles point
+    from the connection point back toward the symbol body in library space, so
+    the bodyward direction vector must undergo the same rotation and Y-axis
+    reflection as the pin coordinate. The router's stub helper then expands
+    wires in the opposite, outward-facing direction.
+
+    When *rotation* is 0 this reduces to:
+      ``schematic_x = origin_x + px``
+      ``schematic_y = origin_y - py``
+
+    For non-zero *rotation* θ (degrees), the library-space point and bodyward
+    direction are rotated and then projected into schematic coordinates:
+      ``schematic_x = origin_x + cos(θ)·px − sin(θ)·py``
+      ``schematic_y = origin_y − (sin(θ)·px + cos(θ)·py)``
+      ``schematic_angle = (-θ − pa) % 360``
     """
     if rotation == 0:
         return {
-            pin_num: (origin_x + px, origin_y + py, (-pa) % 360)
+            pin_num: (origin_x + px, origin_y - py, (-pa) % 360)
             for pin_num, (px, py, pa) in pin_at.items()
         }
     theta = math.radians(rotation)
@@ -59,8 +73,8 @@ def _transform_pin_at(
     return {
         pin_num: (
             origin_x + cos_t * px - sin_t * py,
-            origin_y + sin_t * px + cos_t * py,
-            (rotation - pa) % 360,
+            origin_y - (sin_t * px + cos_t * py),
+            (-rotation - pa) % 360,
         )
         for pin_num, (px, py, pa) in pin_at.items()
     }
