@@ -22,21 +22,8 @@ from kicad_pcb_web.wizard_models import WizardIrValidation, WizardSessionDetail
 def _ir_json(*, value: str = "1k") -> dict[str, Any]:
     return {
         "version": "1",
-        "components": [
-            {
-                "ref": "R1",
-                "symbol": "Device:R",
-                "value": value,
-            },
-        ],
-        "nets": [
-            {
-                "name": "NET1",
-                "pins": [
-                    {"ref": "R1", "pin": "1"},
-                ],
-            },
-        ],
+        "components": [{"ref": "R1", "symbol": "Device:R", "value": value}],
+        "nets": [{"name": "NET1", "pins": [{"ref": "R1", "pin": "1"}]}],
     }
 
 
@@ -134,12 +121,11 @@ def test_resolver_binds_current_wizard_ir_job_and_contained_schematic(tmp_path: 
     assert target.accepted_path == schematic_path.resolve()
     assert target.authoritative_ir.components[0].ref == "R1"
     assert target.authoritative_ir.components[0].value == "1k"
-    assert target.work_dir == (
-        settings.data_dir / "wizard_sessions" / session.id / "refinement" / job.id / "work"
-    ).resolve()
-    assert target.evidence_root == (
-        settings.data_dir / "wizard_sessions" / session.id / "refinement" / job.id / "evidence"
-    ).resolve()
+    expected_refinement_dir = (
+        settings.data_dir / "wizard_sessions" / session.id / "refinement" / job.id
+    )
+    assert target.work_dir == (expected_refinement_dir / "work").resolve()
+    assert target.evidence_root == (expected_refinement_dir / "evidence").resolve()
 
 
 def test_stale_wizard_ir_cannot_dispatch_refinement(monkeypatch, tmp_path: Path) -> None:
@@ -268,11 +254,10 @@ def test_archive_refresh_failure_removes_stale_zip_and_reports_committed_state(
     stale_zip = job.artifacts_dir / "project.zip"
     stale_zip.write_bytes(b"stale")
 
-    monkeypatch.setattr(
-        service,
-        "run_configured_refinement_request",
-        lambda **kwargs: _response(session.id),
-    )
+    def fake_run(**kwargs):
+        return _response(session.id)
+
+    monkeypatch.setattr(service, "run_configured_refinement_request", fake_run)
 
     def fake_preview(path: Path, artifacts_dir: Path) -> Path:
         preview = artifacts_dir / "schematic_preview.png"
