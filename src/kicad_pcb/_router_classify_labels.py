@@ -305,15 +305,15 @@ def _append_promoted_visible_label(
 
     promoted_candidate = promotion.label_candidates[0]
     _pin_ref, (wx, wy, wa) = promoted_candidate
-    if not _requires_named_signal_identity(
-        promotion.classification
-    ) and not _should_promote_visible_label(
+    requires_identity = _requires_named_signal_identity(promotion.classification)
+    promotes_display = _should_promote_visible_label(
         promotion.net_name,
         promotion.refs,
         block_layout=promotion.block_layout,
         classification=promotion.classification,
         policy=policy,
-    ):
+    )
+    if not requires_identity and not promotes_display:
         return
 
     label_anchor = _safe_stub_label_anchor(
