@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
+from kicad_pcb.errors import UserError
 from kicad_pcb_web.errors import ConflictError, PersistedStateError, PersistenceError
 from kicad_pcb_web.services import wizard_refinement as service
 from kicad_pcb_web.services._wizard_session_io import _persist_session
 from kicad_pcb_web.services.jobs import JobRecord, read_job, write_job
 from kicad_pcb_web.services.refinement_api import RefinementRunRequest, RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
+from kicad_pcb_web.services.schematic_refinement import RefinementRuntime
 from kicad_pcb_web.settings import LlmSettings, WebSettings
 from kicad_pcb_web.wizard_models import WizardIrValidation, WizardSessionDetail
 
 
-def _ir_json(*, value: str = "1k") -> dict[str, object]:
+def _ir_json(*, value: str = "1k") -> dict[str, Any]:
     return {
         "version": "1",
         "components": [
@@ -62,7 +67,7 @@ def _seed_completed_project(
     project_dir.mkdir(parents=True)
     artifacts_dir.mkdir(parents=True)
     input_path.parent.mkdir(parents=True)
-    input_path.write_text(service.json.dumps(ir_json), encoding="utf-8")
+    input_path.write_text(json.dumps(ir_json), encoding="utf-8")
     schematic_path.write_text("(kicad_sch)", encoding="utf-8")
 
     job = JobRecord(
@@ -168,7 +173,7 @@ def test_unsafe_persisted_schematic_path_is_rejected(tmp_path: Path) -> None:
     settings, session, job, _ = _seed_completed_project(tmp_path)
     result = dict(job.result or {})
     result["schematic_path"] = "../../escape.kicad_sch"
-    write_job(settings, JobRecord(**{**job.__dict__, "result": result}))
+    write_job(settings, replace(job, result=result))
 
     with pytest.raises(PersistedStateError, match="unsafe schematic reference") as exc_info:
         service.resolve_wizard_refinement_target(settings, session.id)
@@ -176,7 +181,9 @@ def test_unsafe_persisted_schematic_path_is_rejected(tmp_path: Path) -> None:
     assert exc_info.value.code == "REFINEMENT_TARGET_PATH_INVALID"
 
 
-def test_vision_disabled_refuses_before_target_lookup_or_dispatch(monkeypatch, tmp_path: Path) -> None:
+def test_vision_disabled_refuses_before_target_lookup_or_dispatch(
+    monkeypatch, tmp_path: Path
+) -> None:
     settings = _settings(tmp_path, vision_enabled=False)
     calls = 0
 
@@ -187,7 +194,7 @@ def test_vision_disabled_refuses_before_target_lookup_or_dispatch(monkeypatch, t
 
     monkeypatch.setattr(service, "run_configured_refinement_request", fake_run)
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(UserError, match="does not enable image input") as exc_info:
         service.run_wizard_refinement_request(
             settings=settings,
             llm_client=object(),  # type: ignore[arg-type]
@@ -195,7 +202,7 @@ def test_vision_disabled_refuses_before_target_lookup_or_dispatch(monkeypatch, t
             config=RefinementFeatureConfig(enabled=True),
         )
 
-    assert getattr(exc_info.value, "code", None) == "VISION_CAPABILITY_UNAVAILABLE"
+    assert exc_info.value.code == "VISION_CAPABILITY_UNAVAILABLE"
     assert calls == 0
 
 
@@ -232,10 +239,11 @@ def test_success_refreshes_project_artifacts_and_job_metadata(monkeypatch, tmp_p
 
     assert response.final_accepted_hash == "b" * 64
     assert observed["accepted_path"] == schematic_path.resolve()
-    runtime = observed["runtime"]
-    assert runtime.authoritative_ir.components[0].ref == "R1"  # type: ignore[attr-defined]
-    assert runtime.provenance.provider == "openai"  # type: ignore[attr-defined]
-    assert runtime.provenance.model == "vision-model"  # type: ignore[attr-defined]
+    runtime = cast(RefinementRuntime, observed["runtime"])
+    assert runtime.authoritative_ir.components[0].ref == "R1"
+    assert runtime.provenance is not None
+    assert runtime.provenance.provider == "openai"
+    assert runtime.provenance.model == "vision-model"
 
     refreshed = read_job(settings, job.id)
     assert refreshed.result is not None
@@ -263,11 +271,13 @@ def test_archive_refresh_failure_removes_stale_zip_and_reports_committed_state(
         "run_configured_refinement_request",
         lambda **kwargs: _response(session.id),
     )
-    monkeypatch.setattr(
-        service,
-        "_generate_schematic_preview",
-        lambda path, artifacts_dir: artifacts_dir / "schematic_preview.png",
-    )
+
+    def fake_preview(path: Path, artifacts_dir: Path) -> Path:
+        preview = artifacts_dir / "schematic_preview.png"
+        preview.write_bytes(b"preview")
+        return preview
+
+    monkeypatch.setattr(service, "_generate_schematic_preview", fake_preview)
 
     def fail_zip(project_dir: Path, artifacts_dir: Path) -> Path:
         raise OSError("disk full")
