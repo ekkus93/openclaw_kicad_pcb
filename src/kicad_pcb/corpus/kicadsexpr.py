@@ -91,11 +91,7 @@ def parse_kicadsexpr_nets(content: str) -> tuple[KicadSexprNet, ...]:
 
 def _first_child(node: ListNode, key: str) -> ListNode | None:
     return next(
-        (
-            child
-            for child in node.items[1:]
-            if isinstance(child, ListNode) and child.key == key
-        ),
+        (child for child in node.items[1:] if isinstance(child, ListNode) and child.key == key),
         None,
     )
 
