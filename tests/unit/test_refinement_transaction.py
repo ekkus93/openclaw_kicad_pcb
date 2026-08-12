@@ -31,6 +31,8 @@ def test_exact_validated_candidate_is_promoted_atomically(tmp_path: Path) -> Non
     accepted.write_bytes(b"accepted")
 
     with SchematicCandidateTransaction(accepted) as transaction:
+        transaction_root = transaction.candidate_path.parent
+        assert transaction_root != accepted.parent
         transaction.candidate_path.write_bytes(b"validated candidate")
         candidate_hash = _hash(transaction.candidate_path)
         transaction.mark_validated(candidate_hash=candidate_hash)
@@ -39,6 +41,7 @@ def test_exact_validated_candidate_is_promoted_atomically(tmp_path: Path) -> Non
     assert promoted_hash == candidate_hash
     assert accepted.read_bytes() == b"validated candidate"
     assert transaction.state is CandidateState.PROMOTED
+    assert not transaction_root.exists()
 
 
 def test_candidate_transaction_removes_nested_render_scratch(tmp_path: Path) -> None:
@@ -47,6 +50,7 @@ def test_candidate_transaction_removes_nested_render_scratch(tmp_path: Path) -> 
 
     with SchematicCandidateTransaction(accepted) as transaction:
         transaction_root = transaction.candidate_path.parent
+        assert transaction_root != accepted.parent
         render_scratch = transaction_root / "post-edit-render"
         render_scratch.mkdir()
         (render_scratch / "schematic.svg").write_text("<svg/>", encoding="utf-8")
@@ -55,6 +59,7 @@ def test_candidate_transaction_removes_nested_render_scratch(tmp_path: Path) -> 
 
     assert not transaction_root.exists()
     assert not render_scratch.exists()
+    assert accepted.exists()
 
 
 def test_candidate_change_after_validation_is_rejected(tmp_path: Path) -> None:
