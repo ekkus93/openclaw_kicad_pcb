@@ -9,10 +9,10 @@ import pytest
 
 from kicad_pcb.errors import UserError
 from kicad_pcb_web.errors import ConflictError, PersistedStateError, PersistenceError
+from kicad_pcb_web.schemas import JobDetail
 from kicad_pcb_web.services import wizard as wizard_service
 from kicad_pcb_web.services import wizard_refinement as service
 from kicad_pcb_web.services._wizard_session_io import _persist_session
-from kicad_pcb_web.schemas import JobDetail
 from kicad_pcb_web.services.jobs import JobRecord, read_job, write_job
 from kicad_pcb_web.services.refinement_api import RefinementRunRequest, RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
