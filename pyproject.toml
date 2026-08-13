@@ -12,6 +12,9 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[project.scripts]
+kicad-refine = "kicad_pcb_web.refinement_cli:main"
+
 [project.optional-dependencies]
 dev = [
     "kiutils>=1.4",
