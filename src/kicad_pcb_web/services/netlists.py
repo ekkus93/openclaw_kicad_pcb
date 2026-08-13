@@ -13,7 +13,7 @@ from typing import Any, cast
 
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.commands._project import create_project_files
-from kicad_pcb.commands._sch_apply import _apply_netlist_to_project, _ApplyNetlistRequest
+from kicad_pcb.commands._sch_apply import _ApplyNetlistRequest, _apply_netlist_to_project
 from kicad_pcb.commands._validate import (
     advisory_warnings,
     full_validate,
@@ -38,8 +38,8 @@ from ..schemas import (
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
 from .jobs import (
-    JobRecord,
     WIZARD_SESSION_OWNER_REQUEST_KEY,
+    JobRecord,
     create_job_workspace,
     update_job_status,
 )
