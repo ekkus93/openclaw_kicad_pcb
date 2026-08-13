@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 
 from kicad_pcb.errors import UserError
 from kicad_pcb_web import refinement_routes
-from kicad_pcb_web.errors import PersistedStateError, ResourceNotFoundError
 from kicad_pcb_web.deps import get_llm_client, get_settings
+from kicad_pcb_web.errors import PersistedStateError, ResourceNotFoundError
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
 from kicad_pcb_web.settings import LlmSettings, WebSettings
