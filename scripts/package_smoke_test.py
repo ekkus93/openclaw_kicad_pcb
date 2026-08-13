@@ -10,6 +10,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from configparser import ConfigParser
 from email.parser import Parser
 from pathlib import Path
 
@@ -24,6 +25,7 @@ _REQUIRED_RUNTIME_REQUIREMENTS = frozenset({"pydantic"})
 _REQUIRED_WEB_REQUIREMENTS = frozenset(
     {"fastapi", "httpx", "jinja2", "python-multipart", "uvicorn"}
 )
+_REFINEMENT_CONSOLE_SCRIPT = "kicad_pcb_web.refinement_cli:main"
 
 
 def _single(pattern: str) -> Path:
@@ -62,6 +64,17 @@ def _assert_dependency_metadata(metadata_text: str) -> None:
         raise RuntimeError(f"Wheel metadata is missing web dependencies: {sorted(missing_web)}")
 
 
+def _assert_console_scripts(entry_points_text: str) -> None:
+    parser = ConfigParser()
+    parser.read_string(entry_points_text)
+    actual = parser.get("console_scripts", "kicad-refine", fallback=None)
+    if actual != _REFINEMENT_CONSOLE_SCRIPT:
+        raise RuntimeError(
+            "Wheel is missing the trusted refinement console script: "
+            f"expected {_REFINEMENT_CONSOLE_SCRIPT!r}, found {actual!r}"
+        )
+
+
 def _assert_distribution_contents(wheel: Path, sdist: Path) -> None:
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
@@ -69,8 +82,17 @@ def _assert_distribution_contents(wheel: Path, sdist: Path) -> None:
         if len(metadata_names) != 1:
             raise RuntimeError(f"Expected one wheel METADATA file, found {metadata_names}")
         metadata_text = archive.read(metadata_names[0]).decode("utf-8")
+        entry_points_names = [
+            name for name in names if name.endswith(".dist-info/entry_points.txt")
+        ]
+        if len(entry_points_names) != 1:
+            raise RuntimeError(
+                f"Expected one wheel entry_points.txt file, found {entry_points_names}"
+            )
+        entry_points_text = archive.read(entry_points_names[0]).decode("utf-8")
 
     _assert_dependency_metadata(metadata_text)
+    _assert_console_scripts(entry_points_text)
     for suffix in _REQUIRED_WHEEL_SUFFIXES:
         if not any(name.endswith(suffix) for name in names):
             raise RuntimeError(f"Wheel is missing required package data: {suffix}")
@@ -110,10 +132,12 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 import kicad_pcb_web
 from kicad_pcb_web.main import app
+from kicad_pcb_web.refinement_cli import main as refinement_cli_main
 
 install_root = Path(os.environ["KICAD_PCB_SMOKE_INSTALL_ROOT"]).resolve()
 package_file = Path(kicad_pcb_web.__file__).resolve()
 assert package_file.is_relative_to(install_root), (package_file, install_root)
+assert callable(refinement_cli_main)
 
 client = TestClient(app)
 bootstrap = client.get("/api/ui/bootstrap")
