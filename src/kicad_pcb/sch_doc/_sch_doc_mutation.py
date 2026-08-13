@@ -267,9 +267,12 @@ class _SchDocMixin:
             if isinstance(item, ListNode) and item.key == "symbol":
                 symbol_items = []
                 for symbol_item in item.items:
+                    symbol_replacement = symbol_item
                     if isinstance(symbol_item, ListNode) and symbol_item.key == "instances":
-                        symbol_item = _qualify_bare_instance_paths(symbol_item, qualified_path)
-                    symbol_items.append(symbol_item)
+                        symbol_replacement = _qualify_bare_instance_paths(
+                            symbol_item, qualified_path
+                        )
+                    symbol_items.append(symbol_replacement)
                 replacement = ListNode(tuple(symbol_items), item.pos)
             root_items.append(replacement)
         self.root = ListNode(tuple(root_items), self.root.pos)
