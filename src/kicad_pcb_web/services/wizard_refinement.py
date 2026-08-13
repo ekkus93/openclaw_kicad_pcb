@@ -27,8 +27,8 @@ from ._wizard_session_io import read_wizard_session
 from .artifacts import create_project_zip
 from .configured_refinement import run_configured_refinement_request
 from .jobs import (
-    JobRecord,
     WIZARD_SESSION_OWNER_REQUEST_KEY,
+    JobRecord,
     read_job,
     update_job_status,
 )
