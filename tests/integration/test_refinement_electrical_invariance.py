@@ -6,6 +6,7 @@ import json
 import shutil
 from argparse import Namespace
 from pathlib import Path
+from uuid import NAMESPACE_URL, uuid5
 
 import pytest
 
@@ -25,8 +26,8 @@ from kicad_pcb.refinement.schematic_semantics import (
 )
 from kicad_pcb.runner import find_kicad_cli
 from kicad_pcb.sch_doc import SchematicDoc
-from kicad_pcb.sexpr.builder import L, atom, fnum
-from kicad_pcb.sexpr.nodes import AtomNode, ListNode
+from kicad_pcb.sexpr.builder import L, atom, fnum, string
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
 
 
 def _divider_payload() -> dict[str, object]:
@@ -46,7 +47,13 @@ def _divider_payload() -> dict[str, object]:
                     {"ref": "R2", "pin": "1"},
                 ],
             },
-            {"name": "GND", "pins": [{"ref": "R2", "pin": "2"}]},
+            {
+                "name": "GND",
+                "pins": [
+                    {"ref": "R2", "pin": "2"},
+                    {"ref": "R3", "pin": "2"},
+                ],
+            },
             {"name": "AUX", "pins": [{"ref": "R3", "pin": "1"}]},
         ],
     }
@@ -142,10 +149,37 @@ def _wire_points(node: ListNode) -> list[tuple[float, float]]:
     return points
 
 
-def _replace_wire_points(node: ListNode, points: list[tuple[float, float]]) -> ListNode:
-    replacement = L(atom("pts"), *(L(atom("xy"), fnum(x, 2), fnum(y, 2)) for x, y in points))
+def _wire_uuid(node: ListNode) -> str:
+    uuid_node = next(
+        (child for child in node.items if isinstance(child, ListNode) and child.key == "uuid"),
+        None,
+    )
+    assert uuid_node is not None
+    assert len(uuid_node.items) >= 2
+    value = uuid_node.items[1]
+    assert isinstance(value, StringNode)
+    return value.value
+
+
+def _replace_wire_segment(
+    node: ListNode,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    *,
+    wire_uuid: str,
+) -> ListNode:
+    points = L(
+        atom("pts"),
+        L(atom("xy"), fnum(start[0], 2), fnum(start[1], 2)),
+        L(atom("xy"), fnum(end[0], 2), fnum(end[1], 2)),
+    )
+    uuid_node = L(atom("uuid"), string(wire_uuid))
     items = tuple(
-        replacement if isinstance(child, ListNode) and child.key == "pts" else child
+        points
+        if isinstance(child, ListNode) and child.key == "pts"
+        else uuid_node
+        if isinstance(child, ListNode) and child.key == "uuid"
+        else child
         for child in node.items
     )
     return ListNode(items, node.pos)
@@ -179,11 +213,25 @@ def _add_mid_wire_dogleg(candidate: Path) -> None:
         offset_y = first[1] - 2.54
         replacement_points = [first, (first[0], offset_y), (last[0], offset_y), last]
 
-    replacement = _replace_wire_points(target, replacement_points)
-    doc.root = ListNode(
-        tuple(replacement if item is target else item for item in doc.root.items),
-        doc.root.pos,
-    )
+    original_uuid = _wire_uuid(target)
+    replacement_segments = [
+        _replace_wire_segment(
+            target,
+            segment_start,
+            segment_end,
+            wire_uuid=str(uuid5(NAMESPACE_URL, f"{original_uuid}:a9:{index}")),
+        )
+        for index, (segment_start, segment_end) in enumerate(
+            zip(replacement_points, replacement_points[1:])
+        )
+    ]
+    items: list[Node] = []
+    for item in doc.root.items:
+        if item is target:
+            items.extend(replacement_segments)
+        else:
+            items.append(item)
+    doc.root = ListNode(tuple(items), doc.root.pos)
     doc.save(candidate)
 
 
@@ -196,10 +244,21 @@ def _semantic_corruption_payload(case: str) -> dict[str, object]:
 
     if case == "missing_component":
         payload["components"] = [item for item in components if item["ref"] != "R3"]
-        payload["nets"] = [item for item in nets if item["name"] != "AUX"]
+        retained_nets = []
+        for net in nets:
+            pins = [pin for pin in net["pins"] if pin["ref"] != "R3"]
+            if pins:
+                net["pins"] = pins
+                retained_nets.append(net)
+        payload["nets"] = retained_nets
     elif case == "extra_component":
         components.append({"ref": "R4", "symbol": "TestLib:R", "value": "40k"})
-        nets.append({"name": "EXTRA", "pins": [{"ref": "R4", "pin": "1"}]})
+        nets.extend(
+            [
+                {"name": "EXTRA_A", "pins": [{"ref": "R4", "pin": "1"}]},
+                {"name": "EXTRA_B", "pins": [{"ref": "R4", "pin": "2"}]},
+            ]
+        )
     elif case == "value_change":
         next(item for item in components if item["ref"] == "R2")["value"] = "22k"
     elif case == "pin_moved_net":
@@ -253,7 +312,7 @@ def test_real_kicad_export_preserves_generated_divider_electrically(tmp_path: Pa
         ),
         (
             "rotate_component",
-            {"target": {"ref": "R1", "unit": "1"}, "angle_deg": 0},
+            {"target": {"ref": "R1", "unit": "1"}, "angle_deg": 90},
         ),
     ],
 )
