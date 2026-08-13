@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..lib_symbol import _symbol_id, read_lib_symbol_def_flat
 from ..sexpr.builder import L, atom
-from ..sexpr.nodes import AtomNode, ListNode
+from ..sexpr.nodes import AtomNode, ListNode, StringNode
 from ..sexpr.utils import find_first, replace_section
 from .nodes import (
     make_global_label_node,
@@ -19,6 +19,31 @@ from .nodes import (
     make_text_node,
     make_wire_node,
 )
+
+
+def _qualify_bare_instance_paths(node: ListNode, qualified_path: str) -> ListNode:
+    """Replace bare ``/`` path values below an ``instances`` subtree."""
+    changed = False
+    items = []
+    for item in node.items:
+        replacement = item
+        if isinstance(item, ListNode):
+            if (
+                item.key == "path"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+                and item.items[1].value == "/"
+            ):
+                path_items = list(item.items)
+                path_items[1] = StringNode(qualified_path, item.items[1].pos)
+                replacement = ListNode(tuple(path_items), item.pos)
+            else:
+                replacement = _qualify_bare_instance_paths(item, qualified_path)
+        changed = changed or replacement is not item
+        items.append(replacement)
+    if not changed:
+        return node
+    return ListNode(tuple(items), node.pos)
 
 
 class _SchDocMixin:
@@ -213,6 +238,41 @@ class _SchDocMixin:
         )
         self._insert_before_sheet_instances(node)
         return True
+
+    def qualify_root_symbol_instance_paths(self) -> None:
+        """Qualify bare placed-symbol instance paths with the root sheet UUID.
+
+        KiCad root schematics use ``/<root-uuid>`` for each symbol's
+        ``instances/project/path``.  The root ``sheet_instances`` entry itself
+        remains ``/`` and is intentionally outside this normalization pass.
+        """
+        root_uuid: str | None = None
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "uuid"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+                and item.items[1].value
+            ):
+                root_uuid = item.items[1].value
+                break
+        if root_uuid is None:
+            raise ValueError("Schematic root UUID is missing or invalid")
+
+        qualified_path = f"/{root_uuid}"
+        root_items = []
+        for item in self.root.items:
+            replacement = item
+            if isinstance(item, ListNode) and item.key == "symbol":
+                symbol_items = []
+                for symbol_item in item.items:
+                    if isinstance(symbol_item, ListNode) and symbol_item.key == "instances":
+                        symbol_item = _qualify_bare_instance_paths(symbol_item, qualified_path)
+                    symbol_items.append(symbol_item)
+                replacement = ListNode(tuple(symbol_items), item.pos)
+            root_items.append(replacement)
+        self.root = ListNode(tuple(root_items), self.root.pos)
 
     # ------------------------------------------------------------------
     # Layout query
