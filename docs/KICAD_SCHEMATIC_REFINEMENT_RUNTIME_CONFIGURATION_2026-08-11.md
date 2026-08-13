@@ -24,9 +24,15 @@ Integer values must use canonical base-10 text. Whitespace, a leading `+`, leadi
 
 `src/kicad_pcb_web/main.py` loads this configuration when the application is composed. When disabled, the refinement router is empty and `/api/refinement/run` is not exposed. Invalid refinement configuration therefore fails application composition rather than silently producing an unintended runtime policy.
 
-Enabling the feature flag does not create a new mutation implementation. The production path remains:
+Enabling the feature flag does not create a new mutation implementation. The production paths are:
 
 `HTTP route -> run_wizard_refinement_request() -> run_configured_refinement_request() -> run_configured_refinement() -> refine_schematic()`
+
+and:
+
+`kicad-refine -> run_wizard_refinement_request() -> run_configured_refinement_request() -> run_configured_refinement() -> refine_schematic()`
+
+Both interfaces therefore share the same trusted wizard/current-job resolver and mutation implementation.
 
 ## Logical model-call bound
 
@@ -49,19 +55,19 @@ Iterative `refine_schematic()` requires explicit `RefinementProvenance` containi
 
 Product version and implementation Git SHA may also be supplied when the composition layer knows them. Provider/model identity is never guessed by inspecting an `LlmClient` implementation or parsing a model-name heuristic.
 
-`build_refinement_runtime()` receives the authoritative `CircuitIR`, KiCad adapter, LLM client, work/evidence directories, operation policy, and explicit provenance. Production HTTP composition supplies:
+`build_refinement_runtime()` receives the authoritative `CircuitIR`, KiCad adapter, LLM client, work/evidence directories, operation policy, and explicit provenance. Production HTTP/CLI composition supplies:
 
-- the request-scoped configured `LlmClient` from `get_llm_client()`;
+- the configured `LlmClient` built from validated `WebSettings`;
 - provider/model identity from validated `WebSettings`;
-- a server-created `KicadCliAdapter()` using the configured process environment rather than any request-selected executable;
+- a process-created `KicadCliAdapter()` using the configured environment rather than any caller-selected executable;
 - the authoritative `CircuitIR` reconstructed from trusted persisted wizard/job state;
 - server-derived work/evidence directories.
 
-API keys, authorization headers, provider payloads, and unrelated absolute paths are not provenance fields.
+HTTP obtains the configured client through its normal request dependency. The CLI loads the same validated process settings and builds the configured client before dispatch. API keys, authorization headers, provider payloads, and unrelated absolute paths are not provenance fields.
 
 ## Production wizard/project ownership boundary
 
-The mounted HTTP path treats `RefinementRunRequest.session_id` as the **wizard session ID** whose current generated project is eligible for refinement. The request does not contain a job ID or path.
+Both mounted HTTP and the production `kicad-refine` CLI treat `RefinementRunRequest.session_id` as the **wizard session ID** whose current generated project is eligible for refinement. Neither interface accepts a job ID or filesystem path.
 
 Before model dispatch or candidate mutation, `resolve_wizard_refinement_target()` requires all of the following:
 
@@ -88,15 +94,15 @@ Production refinement work/evidence directories are derived from trusted IDs:
 
 The job-specific namespace means a later successful regeneration can have a distinct refinement evidence root while preserving one-shot idempotency within the particular generated project.
 
-The wizard cross-process mutation lock is held across target resolution, provider/KiCad refinement work, terminal evidence publication, and derived-artifact refresh. The synchronous refinement path is executed through Starlette's threadpool from the async route so long-running provider/KiCad work does not run directly on the FastAPI event loop.
+The wizard cross-process mutation lock is held across target resolution, provider/KiCad refinement work, terminal evidence publication, and derived-artifact refresh. The synchronous HTTP path is executed through Starlette's threadpool so long-running provider/KiCad work does not run directly on the FastAPI event loop. The CLI is already synchronous and uses the same locked service boundary directly.
 
 ## Vision capability boundary
 
-The mounted production path requires:
+Both production interfaces require:
 
 - an enabled configured LLM provider;
 - an explicit configured model;
-- a request-scoped LLM client;
+- a configured LLM client;
 - `vision_enabled=true` in the validated LLM runtime configuration.
 
 If any of these is absent, refinement fails with `VISION_CAPABILITY_UNAVAILABLE` before target resolution/model dispatch. Provider/model names are not used as vision heuristics and there is no text-only fallback that masquerades as visual critique.
@@ -128,13 +134,21 @@ The HTTP response exposes hashes, stop reason, counts, model-call accounting, an
 
 ## CLI contract
 
-`execute_refinement_cli()` follows the canonical configured refinement service and accepts only:
+The installed package exposes:
 
 ```text
---session-id <safe-session-id>
+kicad-refine --session-id <safe-wizard-session-id>
 ```
 
-The CLI adapter itself cannot override paths, provider/model, credentials, or bounds. Production CLI composition with the same wizard/current-job ownership resolver remains a separate integration step; a standalone arbitrary-path mutation CLI must not be introduced.
+`main()` loads validated `WebSettings`, loads the strict refinement feature configuration, builds the configured LLM client, and executes the sanitized request through `run_wizard_refinement_request()`. The client is closed after the command completes.
+
+The CLI accepts no path, job ID, provider, model, credential, KiCad executable, operation-policy, or resource-bound override flags. `RefinementCliContext` contains only process-owned settings/client/configuration plus output streams; it no longer accepts a pre-resolved schematic path or externally constructed refinement runtime.
+
+Consequently the CLI inherits the same wizard/current-job ownership checks, current-IR/job binding, path containment, mutation lock, vision/provenance gate, reservation behavior, and derived-artifact refresh semantics as HTTP. A standalone arbitrary-path mutation CLI is intentionally not provided.
+
+Invalid arguments return `REFINEMENT_CLI_INVALID_ARGUMENTS`. Invalid process configuration returns `REFINEMENT_CLI_CONFIGURATION_INVALID`. Controlled refinement failures preserve their machine-readable failure code but return a generic message instead of reflecting internal exception text/details. Private paths, credentials, rejected flag values, and provider-internal details are not written to CLI JSON errors.
+
+The package metadata registers `kicad-refine = kicad_pcb_web.refinement_cli:main`, and package smoke verifies that the wheel emits this console entry point and that the installed CLI module is importable.
 
 ## Evidence and retention
 
