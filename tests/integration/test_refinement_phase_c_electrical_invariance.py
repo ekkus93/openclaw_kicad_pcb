@@ -134,9 +134,7 @@ def _verify(
 
 
 def _wire_points(node: ListNode) -> list[tuple[float, float]]:
-    pts = next(
-        child for child in node.items if isinstance(child, ListNode) and child.key == "pts"
-    )
+    pts = next(child for child in node.items if isinstance(child, ListNode) and child.key == "pts")
     points: list[tuple[float, float]] = []
     for item in pts.items:
         if not (isinstance(item, ListNode) and item.key == "xy"):
@@ -198,9 +196,7 @@ def _collapse_label_stubs(schematic: Path) -> None:
     assert len(replacements) == len(removed) == 6
     doc.root = ListNode(
         tuple(
-            replacements.get(id(item), item)
-            for item in doc.root.items
-            if id(item) not in removed
+            replacements.get(id(item), item) for item in doc.root.items if id(item) not in removed
         ),
         doc.root.pos,
     )
@@ -230,9 +226,7 @@ def _divider_arguments(schematic: Path, operation_type: str) -> dict[str, object
         return {"target": {"ref": "R1", "unit": "1"}, "angle_deg": (r1.rotation + 90) % 360}
     if operation_type == "move_power_symbol":
         power = next(
-            component
-            for component in semantic.components
-            if component.symbol_id == "power:VCC"
+            component for component in semantic.components if component.symbol_id == "power:VCC"
         )
         return {
             "target": {"ref": power.ref, "unit": power.unit},
