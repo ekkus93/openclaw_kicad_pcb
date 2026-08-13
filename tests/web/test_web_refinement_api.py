@@ -39,7 +39,10 @@ def test_refinement_request_accepts_only_session_id() -> None:
     assert request.session_id == "session-001"
 
 
-@pytest.mark.parametrize("session_id", ["../escape", "with/slash", "space id", ""])
+@pytest.mark.parametrize(
+    "session_id",
+    ["../escape", "with/slash", "space id", "", ".", "..", "session..alias"],
+)
 def test_refinement_request_rejects_unsafe_session_id(session_id: str) -> None:
     with pytest.raises(ValidationError):
         RefinementRunRequest.model_validate({"session_id": session_id})
@@ -48,10 +51,17 @@ def test_refinement_request_rejects_unsafe_session_id(session_id: str) -> None:
 def test_refinement_request_rejects_paths_limits_and_provider_overrides() -> None:
     for forbidden in (
         {"accepted_path": "/tmp/design.kicad_sch"},
+        {"work_dir": "/tmp/work"},
+        {"evidence_root": "/tmp/evidence"},
+        {"job_id": "job-other"},
+        {"refinement_session_id": "other-session"},
         {"max_rounds": 99},
+        {"max_model_calls": 99},
+        {"operation_policy": "unsafe"},
         {"provider": "other"},
         {"model": "other-model"},
         {"api_key": "secret"},
+        {"kicad_cli": "/tmp/kicad-cli"},
     ):
         with pytest.raises(ValidationError):
             RefinementRunRequest.model_validate({"session_id": "session-001", **forbidden})

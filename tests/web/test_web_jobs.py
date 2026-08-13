@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from kicad_pcb_web.main import app
+from kicad_pcb_web.services.jobs import JobRecord
 from tests.conftest import requires_generation_pipeline
 
 _VALID_NETLIST = {
@@ -69,3 +72,31 @@ def test_web_jobs_unknown_job_id_returns_404(tmp_path, monkeypatch) -> None:
     response = client.get("/api/jobs/not-a-real-job")
 
     assert response.status_code == 404
+
+
+def test_job_detail_hides_internal_wizard_owner_metadata(tmp_path: Path) -> None:
+    work_dir = tmp_path / "jobs" / "job-001"
+    record = JobRecord(
+        id="job-001",
+        status="succeeded",
+        project_name="Project",
+        created_at="2026-08-13T00:00:00Z",
+        updated_at="2026-08-13T00:00:00Z",
+        work_dir=work_dir,
+        input_path=work_dir / "input" / "circuit_ir.json",
+        project_dir=work_dir / "project" / "Project",
+        artifacts_dir=work_dir / "artifacts",
+        request={
+            "project_name": "Project",
+            "netlist_json": _VALID_NETLIST,
+            "_wizard_session_id": "wiz_private_owner",
+        },
+        result={"schematic_path": "project/Project/Project.kicad_sch"},
+    )
+
+    detail = record.to_detail()
+
+    assert detail.request["project_name"] == "Project"
+    assert "_wizard_session_id" not in detail.request
+    assert "wiz_private_owner" not in detail.model_dump_json()
+    assert record.request["_wizard_session_id"] == "wiz_private_owner"

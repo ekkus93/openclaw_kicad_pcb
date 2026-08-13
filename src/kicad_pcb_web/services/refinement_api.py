@@ -21,8 +21,12 @@ class RefinementRunRequest(BaseModel):
     @field_validator("session_id")
     @classmethod
     def validate_session_id(cls, value: str) -> str:
-        if any(ch not in _ALLOWED_SESSION_CHARS for ch in value):
-            raise ValueError("session_id contains unsupported characters")
+        if (
+            value in {".", ".."}
+            or ".." in value
+            or any(ch not in _ALLOWED_SESSION_CHARS for ch in value)
+        ):
+            raise ValueError("session_id contains unsupported path syntax")
         return value
 
 

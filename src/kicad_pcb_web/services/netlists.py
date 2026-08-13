@@ -37,7 +37,12 @@ from ..schemas import (
 )
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
-from .jobs import JobRecord, create_job_workspace, update_job_status
+from .jobs import (
+    JobRecord,
+    WIZARD_SESSION_OWNER_REQUEST_KEY,
+    create_job_workspace,
+    update_job_status,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -299,10 +304,14 @@ def generate_project_from_netlist_job(
     *,
     settings: WebSettings,
     request: CreateJobFromNetlistRequest,
+    owner_wizard_session_id: str | None = None,
 ) -> JobDetail:
     """Generate a project inside a job workspace and return the final job detail."""
 
-    record = create_job_workspace(settings, request.project_name, request.model_dump(mode="json"))
+    request_payload = request.model_dump(mode="json")
+    if owner_wizard_session_id is not None:
+        request_payload[WIZARD_SESSION_OWNER_REQUEST_KEY] = owner_wizard_session_id
+    record = create_job_workspace(settings, request.project_name, request_payload)
     _write_json(record.input_path, request.netlist_json)
     record = update_job_status(settings, record, status="running")
 

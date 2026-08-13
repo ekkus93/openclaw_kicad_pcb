@@ -26,6 +26,7 @@ _UNSAFE_JOB_ID_PARTS = ("..", "/", "\\")
 _SAFE_JOB_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _UNSAFE_PROJECT_CHARS_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 _MULTI_UNDERSCORE_RE = re.compile(r"_+")
+WIZARD_SESSION_OWNER_REQUEST_KEY = "_wizard_session_id"
 
 
 def _utc_now() -> str:
@@ -132,13 +133,16 @@ class JobRecord:
         )
 
     def to_detail(self, *, artifacts: list[str] | None = None) -> JobDetail:
+        public_request = {
+            key: value for key, value in self.request.items() if key != WIZARD_SESSION_OWNER_REQUEST_KEY
+        }
         return JobDetail(
             id=self.id,
             status=self.status,
             project_name=self.project_name,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            request=self.request,
+            request=public_request,
             result=self.result,
             error=self.error,
             artifacts=artifacts or [],

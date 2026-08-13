@@ -9,8 +9,10 @@ import pytest
 
 from kicad_pcb.errors import UserError
 from kicad_pcb_web.errors import ConflictError, PersistedStateError, PersistenceError
+from kicad_pcb_web.services import wizard as wizard_service
 from kicad_pcb_web.services import wizard_refinement as service
 from kicad_pcb_web.services._wizard_session_io import _persist_session
+from kicad_pcb_web.schemas import JobDetail
 from kicad_pcb_web.services.jobs import JobRecord, read_job, write_job
 from kicad_pcb_web.services.refinement_api import RefinementRunRequest, RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
@@ -67,7 +69,7 @@ def _seed_completed_project(
         input_path=input_path,
         project_dir=project_dir,
         artifacts_dir=artifacts_dir,
-        request={"netlist_json": ir_json},
+        request={"netlist_json": ir_json, "_wizard_session_id": "wiz_test"},
         result={
             "schematic_path": "project/Project/Project.kicad_sch",
             "project_zip": "artifacts/project.zip",
@@ -110,6 +112,45 @@ def _response(session_id: str) -> RefinementRunResponse:
         model_call_limit=6,
         evidence_available=True,
     )
+
+
+def test_wizard_project_generation_persists_owner_binding_argument(
+    monkeypatch, tmp_path: Path
+) -> None:
+    settings = _settings(tmp_path)
+    session = WizardSessionDetail(
+        id="wiz_owner",
+        status="ir_ready_for_generation",
+        created_at="2026-08-13T00:00:00Z",
+        updated_at="2026-08-13T00:00:00Z",
+        project_name="Project",
+        spec_approved=True,
+        ir_json=_ir_json(),
+        ir_validation=WizardIrValidation(valid=True, component_count=1, net_count=1),
+    )
+    _persist_session(settings, session)
+    observed: dict[str, object] = {}
+
+    def fake_generate(**kwargs):
+        observed.update(kwargs)
+        return JobDetail(
+            id="job-owned",
+            status="succeeded",
+            project_name="Project",
+            created_at="2026-08-13T00:00:00Z",
+            updated_at="2026-08-13T00:00:00Z",
+            request={},
+            result={},
+            artifacts=[],
+        )
+
+    monkeypatch.setattr(wizard_service, "generate_project_from_netlist_job", fake_generate)
+
+    response = wizard_service.generate_wizard_project(settings=settings, session_id=session.id)
+
+    assert observed["settings"] is settings
+    assert observed["owner_wizard_session_id"] == session.id
+    assert response.session.latest_job_id == "job-owned"
 
 
 def test_resolver_binds_current_wizard_ir_job_and_contained_schematic(tmp_path: Path) -> None:
@@ -165,6 +206,30 @@ def test_unsafe_persisted_schematic_path_is_rejected(tmp_path: Path) -> None:
         service.resolve_wizard_refinement_target(settings, session.id)
 
     assert exc_info.value.code == "REFINEMENT_TARGET_PATH_INVALID"
+
+
+def test_cross_session_job_reference_is_rejected_even_when_ir_matches(tmp_path: Path) -> None:
+    settings, session, job, _ = _seed_completed_project(tmp_path)
+    request = dict(job.request)
+    request["_wizard_session_id"] = "wiz_other"
+    write_job(settings, replace(job, request=request))
+
+    with pytest.raises(PersistedStateError, match="not bound") as exc_info:
+        service.resolve_wizard_refinement_target(settings, session.id)
+
+    assert exc_info.value.code == "REFINEMENT_TARGET_JOB_OWNERSHIP_INVALID"
+
+
+def test_unowned_job_reference_is_rejected_fail_closed(tmp_path: Path) -> None:
+    settings, session, job, _ = _seed_completed_project(tmp_path)
+    request = dict(job.request)
+    request.pop("_wizard_session_id")
+    write_job(settings, replace(job, request=request))
+
+    with pytest.raises(PersistedStateError, match="not bound") as exc_info:
+        service.resolve_wizard_refinement_target(settings, session.id)
+
+    assert exc_info.value.code == "REFINEMENT_TARGET_JOB_OWNERSHIP_INVALID"
 
 
 def test_vision_disabled_refuses_before_target_lookup_or_dispatch(

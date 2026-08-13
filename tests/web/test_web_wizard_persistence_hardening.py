@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from kicad_pcb_web.errors import PersistenceError
+from kicad_pcb.errors import UserError
+from kicad_pcb_web.errors import PersistedStateError, PersistenceError
 from kicad_pcb_web.services import _wizard_session_io
 from kicad_pcb_web.services._wizard_session_io import _persist_session, read_wizard_session
 from kicad_pcb_web.services.wizard import _llm_provenance
@@ -39,6 +40,57 @@ def _session() -> WizardSessionDetail:
         updated_at="2026-08-09T00:00:01Z",
         spec=CircuitSpec(purpose="Test persistence semantics."),
     )
+
+
+@pytest.mark.parametrize("session_id", [".", "..", "wiz..escape"])
+def test_wizard_session_io_rejects_parent_like_session_ids(
+    tmp_path: Path, session_id: str
+) -> None:
+    settings = _settings(tmp_path)
+
+    with pytest.raises(UserError, match="Unsafe wizard session id"):
+        read_wizard_session(settings, session_id)
+
+
+def test_wizard_session_io_rejects_symlinked_session_root(tmp_path: Path) -> None:
+    if os.name != "posix":
+        pytest.skip("symlink regression is POSIX-specific")
+    settings = _settings(tmp_path)
+    settings.data_dir.mkdir(parents=True)
+    outside = tmp_path / "outside-wizard-sessions"
+    outside.mkdir()
+    (settings.data_dir / "wizard_sessions").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(PersistenceError) as exc_info:
+        read_wizard_session(settings, "wiz_missing")
+
+    assert exc_info.value.code == "WIZARD_SESSION_PATH_INVALID"
+
+
+def test_wizard_session_io_rejects_symlink_alias_before_read(tmp_path: Path) -> None:
+    if os.name != "posix":
+        pytest.skip("symlink regression is POSIX-specific")
+    settings = _settings(tmp_path)
+    real = _session()
+    _persist_session(settings, real)
+    alias = settings.data_dir / "wizard_sessions" / "wiz_alias"
+    alias.symlink_to(settings.data_dir / "wizard_sessions" / real.id, target_is_directory=True)
+
+    with pytest.raises(UserError, match="Unsafe wizard session id"):
+        read_wizard_session(settings, "wiz_alias")
+
+
+def test_wizard_session_io_rejects_persisted_identifier_mismatch(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    session = _session()
+    _persist_session(settings, session)
+    state_path = settings.data_dir / "wizard_sessions" / session.id / "wizard.json"
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["id"] = "wiz_other"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(PersistedStateError, match="unreadable or invalid"):
+        read_wizard_session(settings, session.id)
 
 
 def test_derived_export_failure_reports_committed_canonical_state(

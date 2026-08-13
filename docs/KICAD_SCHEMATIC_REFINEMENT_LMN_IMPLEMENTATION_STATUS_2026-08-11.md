@@ -71,10 +71,11 @@ Implemented:
 - external response omits absolute evidence paths;
 - explicit runtime builder requires provider/model provenance;
 - route-side malformed/invalid request handling is generic and does not reflect rejected paths/credentials;
-- lower-layer refinement `UserError` responses preserve the machine code but not exception text/details;
+- controlled refinement `UserError` and trusted-resolver `WebServiceError` responses preserve the machine/status code but not exception text/details;
 - production CLI accepts only `--session-id` and cannot override paths/providers/credentials/limits;
 - production CLI dispatches through the same trusted wizard/current-job composition path as HTTP;
-- CLI configuration and service failures preserve the machine code while returning generic messages that do not reflect exception text/details;
+- CLI controlled, unexpected configuration, and unexpected service failures return fixed generic messages without reflecting exception text/details;
+- CLI client-cleanup failure is warning-visible without replacing the command result or logging exception text;
 - runtime configuration and retention semantics are documented in `docs/KICAD_SCHEMATIC_REFINEMENT_RUNTIME_CONFIGURATION_2026-08-11.md`.
 
 ### Production HTTP mounting — implemented
@@ -101,11 +102,14 @@ Before dispatch, the composition layer requires:
 - current `ir_json` exists and has valid `ir_validation`;
 - current `latest_job_id` exists;
 - referenced job is successful and has result metadata;
+- referenced job carries a private wizard-session owner marker that exactly equals the requesting wizard session;
 - job generation request IR exactly equals current wizard IR;
 - canonical job `input/circuit_ir.json` exactly equals current wizard IR and validates as `CircuitIR`;
 - persisted job `schematic_path` is relative, resolves beneath the canonical job workspace, has `.kicad_sch` suffix, and exists.
 
-`JobRecord` canonicalization derives workspace paths from the trusted `job.json` location rather than accepting persisted absolute path authority. A stale wizard IR/current-job mismatch or escaped schematic reference fails before refinement/model dispatch.
+`JobRecord` canonicalization derives workspace paths from the trusted `job.json` location rather than accepting persisted absolute path authority. The private wizard-owner marker is retained in canonical job state but removed from public `JobDetail.request` serialization. A stale wizard IR/current-job mismatch, cross-session/unowned job reference, or escaped schematic reference fails before refinement/model dispatch. Jobs created before the owner marker existed are intentionally not grandfathered into refinement; regenerating the current wizard project creates the required binding.
+
+Shared wizard-session persistence also rejects parent-like IDs, a symlinked `wizard_sessions` root, per-session symlink aliases, and a persisted `wizard.json` whose ID does not equal the requested session ID.
 
 Work/evidence roots are server-derived beneath:
 
@@ -138,11 +142,13 @@ Added/updated tests cover:
 
 - disabled router has no refinement routes;
 - enabled router uses request-scoped server dependencies and the threadpool boundary;
-- request-side path/bound override attempts fail before service dispatch;
+- request-side path/job/provider/model/credential/KiCad/bound/operation-policy/reservation override attempts fail before service dispatch;
 - malformed bodies are sanitized;
-- lower-layer path/secret-bearing errors are not reflected;
+- controlled `UserError` and trusted-resolver `WebServiceError` path/secret/session canaries are not reflected;
 - wizard/current-job/IR/schematic binding succeeds only for current trusted state;
+- cross-session and legacy unowned job references fail closed even when Circuit IR is identical;
 - stale wizard IR cannot dispatch or mutate;
+- parent-like/symlink-alias wizard-session paths and persisted-ID mismatch are rejected;
 - traversal-style persisted schematic references are rejected;
 - missing vision capability refuses before dispatch;
 - successful composition supplies authoritative IR and configured provenance and refreshes derived artifacts/job metadata;
@@ -153,7 +159,7 @@ Added/updated tests cover:
 
 ### CLI production composition — implemented
 
-`src/kicad_pcb_web/refinement_cli.py` now composes the CLI through `run_wizard_refinement_request()` rather than accepting a pre-resolved schematic path/runtime. `RefinementCliContext` contains only process-owned `WebSettings`, configured `LlmClient`, refinement feature configuration, and output streams.
+`src/kicad_pcb_web/refinement_cli.py` composes the CLI through `run_wizard_refinement_request()` rather than accepting a pre-resolved schematic path/runtime. `RefinementCliContext` contains only process-owned `WebSettings`, configured `LlmClient`, refinement feature configuration, and output streams.
 
 The installed package exposes:
 
@@ -163,22 +169,32 @@ kicad-refine --session-id <wizard-session-id>
 
 `main()` loads validated web settings and refinement feature configuration, builds the configured LLM client, executes the request through the trusted wizard/current-job resolver, and closes the client afterward. The CLI therefore inherits the same current-wizard/current-job/IR/path containment checks, mutation lock, vision/provenance gate, evidence namespace, and derived-artifact refresh behavior as HTTP.
 
-No CLI flag can select an accepted schematic path, job ID, work/evidence path, provider, model, API key, KiCad executable, operation policy, or loop/resource bound. Invalid arguments fail before dispatch. Controlled `UserError` and `WebServiceError` failures return only a machine-readable code plus a generic message; configuration failures are likewise generic, so private paths, credentials, and rejected values are not reflected.
+No CLI flag can select an accepted schematic path, job ID, work/evidence path, provider, model, API key, KiCad executable, operation policy, alternate refinement reservation ID, or loop/resource bound. Invalid arguments fail before dispatch. Controlled `UserError` and `WebServiceError` failures return only a machine-readable code plus a generic message. Unexpected configuration/request failures return `REFINEMENT_CLI_INTERNAL_ERROR` with fixed text while logging only exception type. Client cleanup failures are warning-visible without replacing the command result or logging provider exception text.
 
-Focused tests cover trusted-composition dispatch, rejection of path/job/provider/model/credential/KiCad/bound flags, unsafe session IDs, process-owned configuration/client composition and client closure, generic configuration-error output, and sanitization of both core `UserError` and wizard-resolver `WebServiceError` failures. Package smoke now verifies that the wheel emits the `kicad-refine` console entry point and that the installed module is importable.
+Focused tests cover trusted-composition dispatch, rejection of path/job/provider/model/credential/KiCad/bound/policy/reservation flags, unsafe session IDs, process-owned configuration/client composition, client cleanup, generic controlled/configuration/unexpected-error output, and sanitization of both core `UserError` and wizard-resolver `WebServiceError` failures. Package smoke verifies that the wheel emits the `kicad-refine` console entry point and that the installed CLI module is importable.
 
 Implementation commits:
 
 - `17d72f9a62b21696ea5945e1728607065f387efc` — trusted CLI production composition and focused tests;
 - `f0636cb6d700487788658d5d87fad3f6ad6796dd` — packaged console-entry-point smoke assertion.
 
+### Final HTTP/CLI adversarial production-boundary audit — completed
+
+The final adversarial production-boundary pass is recorded in:
+
+`docs/KICAD_SCHEMATIC_REFINEMENT_HTTP_CLI_ADVERSARIAL_PRODUCTION_BOUNDARY_AUDIT_2026-08-13.md`
+
+The audit explicitly covers arbitrary filesystem selection, provider/model/credential/KiCad/bound/policy selection, reservation bypass, stale/foreign project mutation, wizard path aliases, persisted identity mismatch, controlled and unexpected error reflection, and the absence of an alternate public low-level mutation route.
+
 ## Validation status
 
-The production HTTP/CLI composition changes and focused regression tests are committed on `webapp`. The sandbox can syntax-compile the modified standalone Python files, but it still cannot resolve `github.com`, so a complete local checkout and repository-wide Ruff/mypy/pytest run is unavailable here. This note therefore does **not** claim green permanent CI on the new CLI commits. CI monitoring remains outside this implementation loop unless explicitly requested.
+Local validation for the adversarial pass used the available sandbox Python environment. The expanded boundary/configuration/session/job matrix passed (`76 passed, 2 skipped`), shared wizard-generation/job regressions passed (`41 passed, 3 skipped`), and the available web regression sweep passed (`327 passed, 6 skipped`) while the current CLI sanitization slice also passed. `python3 -m compileall -q src/kicad_pcb_web` and changed-file syntax/whitespace checks passed.
+
+Ruff and mypy were not installed/cached in the sandbox, so this status does **not** claim those repository-wide gates locally. Permanent CI monitoring remains outside this implementation loop unless explicitly requested.
 
 ## Next implementation actions
 
-1. Reconcile any concrete Ruff/format/type/test/package-smoke failure reported for the exact CLI production-composition candidate without weakening its fail-closed contracts.
-2. Run/review the final HTTP/CLI adversarial production-boundary pass: no arbitrary filesystem access, provider/model/credential/bound selection, reservation bypass, stale-project mutation, or secret reflection.
-3. Reconcile the main refinement TODO/status checkboxes against actual implementation evidence.
-4. Continue the remaining experimental-corpus, final fallback/security audit, documentation, full validation, and exact-SHA release closure work.
+1. Reconcile the main refinement TODO/status checkboxes against actual implementation evidence.
+2. Continue the remaining experimental evaluation corpus work.
+3. Run the broader Phase O unsafe-fallback/silent-failure audit across the full refinement implementation, not just the HTTP/CLI production boundary.
+4. Complete remaining operator documentation, full static/test/KiCad/package validation, and exact-SHA release closure.

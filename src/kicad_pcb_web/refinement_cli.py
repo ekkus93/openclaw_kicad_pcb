@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ from .services.refinement_config import (
 )
 from .services.wizard_refinement import run_wizard_refinement_request
 from .settings import WebSettings, load_settings
+
+LOGGER = logging.getLogger("uvicorn.error")
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,17 @@ def execute_refinement_cli(
             message="Schematic refinement request could not be completed.",
         )
         return 2
+    except Exception as exc:
+        LOGGER.error(
+            "unexpected schematic refinement CLI request failure",
+            extra={"error_type": type(exc).__name__},
+        )
+        _write_error(
+            context.stderr,
+            code="REFINEMENT_CLI_INTERNAL_ERROR",
+            message="Schematic refinement CLI failed unexpectedly.",
+        )
+        return 1
 
     context.stdout.write(json.dumps(response.model_dump(mode="json"), sort_keys=True) + "\n")
     return 0
@@ -94,6 +108,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             message="Schematic refinement CLI configuration is invalid.",
         )
         return 2
+    except Exception as exc:
+        LOGGER.error(
+            "unexpected schematic refinement CLI configuration failure",
+            extra={"error_type": type(exc).__name__},
+        )
+        _write_error(
+            sys.stderr,
+            code="REFINEMENT_CLI_INTERNAL_ERROR",
+            message="Schematic refinement CLI failed unexpectedly.",
+        )
+        return 1
 
     try:
         return execute_refinement_cli(
@@ -107,9 +132,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         )
     finally:
-        close = getattr(llm_client, "close", None)
-        if callable(close):
-            close()
+        _close_llm_client(llm_client)
+
+
+def _close_llm_client(llm_client: LlmClient | None) -> None:
+    close = getattr(llm_client, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception as exc:
+        LOGGER.warning(
+            "schematic refinement CLI LLM client cleanup failed",
+            extra={"error_type": type(exc).__name__},
+        )
 
 
 def _parser() -> argparse.ArgumentParser:

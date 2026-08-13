@@ -53,9 +53,16 @@ def _utc_now() -> str:
 
 
 def _wizard_root(settings: WebSettings) -> Path:
-    path = settings.data_dir / "wizard_sessions"
+    data_root = settings.data_dir.resolve()
+    path = data_root / "wizard_sessions"
     path.mkdir(parents=True, exist_ok=True)
-    return path
+    resolved = path.resolve()
+    if resolved != path:
+        raise PersistenceError(
+            "Wizard session root must not be a symbolic-link alias.",
+            code="WIZARD_SESSION_PATH_INVALID",
+        )
+    return resolved
 
 
 def _new_session_id() -> str:
@@ -64,9 +71,19 @@ def _new_session_id() -> str:
 
 
 def _session_dir(settings: WebSettings, session_id: str) -> Path:
-    if not _SAFE_SESSION_ID_RE.fullmatch(session_id):
-        raise UserError(f"Unsafe wizard session id: {session_id!r}")
-    return _wizard_root(settings) / session_id
+    if (
+        not _SAFE_SESSION_ID_RE.fullmatch(session_id)
+        or session_id in {".", ".."}
+        or ".." in session_id
+    ):
+        raise UserError("Unsafe wizard session id.")
+
+    root = _wizard_root(settings)
+    expected = root / session_id
+    resolved = expected.resolve()
+    if resolved != expected:
+        raise UserError("Unsafe wizard session id.")
+    return resolved
 
 
 def _session_json_path(settings: WebSettings, session_id: str) -> Path:
@@ -390,7 +407,10 @@ def read_wizard_session(settings: WebSettings, session_id: str) -> WizardSession
     if not path.is_file():
         raise FileNotFoundError(path)
     try:
-        return WizardSessionDetail.model_validate_json(path.read_text(encoding="utf-8"))
+        session = WizardSessionDetail.model_validate_json(path.read_text(encoding="utf-8"))
+        if session.id != session_id:
+            raise ValueError("persisted wizard session identifier mismatch")
+        return session
     except (OSError, UnicodeError, json.JSONDecodeError, ValidationError, ValueError) as exc:
         LOGGER.error(
             "invalid persisted wizard state",

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from kicad_pcb.errors import UserError
 from kicad_pcb_web import refinement_routes
+from kicad_pcb_web.errors import PersistedStateError, ResourceNotFoundError
 from kicad_pcb_web.deps import get_llm_client, get_settings
 from kicad_pcb_web.services.refinement_api import RefinementRunResponse
 from kicad_pcb_web.services.refinement_config import RefinementFeatureConfig
@@ -105,6 +107,67 @@ def test_refinement_malformed_json_is_generic(monkeypatch, tmp_path: Path) -> No
         }
     }
     assert "session_id" not in response.text
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_status", "expected_code"),
+    [
+        (
+            ResourceNotFoundError(
+                "Missing wizard canary-session-secret.",
+                code="RESOURCE_NOT_FOUND",
+                details={"session_id": "canary-session-secret"},
+            ),
+            404,
+            "RESOURCE_NOT_FOUND",
+        ),
+        (
+            PersistedStateError(
+                "Unsafe /home/operator/private/board.kicad_sch for canary-session-secret.",
+                code="REFINEMENT_TARGET_PATH_INVALID",
+                details={
+                    "session_id": "canary-session-secret",
+                    "private_path": "/home/operator/private/board.kicad_sch",
+                    "credential": "provider-secret-token",
+                },
+            ),
+            500,
+            "REFINEMENT_TARGET_PATH_INVALID",
+        ),
+    ],
+)
+def test_refinement_web_service_errors_are_route_sanitized(
+    monkeypatch,
+    tmp_path: Path,
+    error,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    def fail_run(**kwargs):
+        raise error
+
+    monkeypatch.setattr(refinement_routes, "run_wizard_refinement_request", fail_run)
+    app = FastAPI()
+    app.dependency_overrides[get_settings] = lambda: _settings(tmp_path)
+    app.dependency_overrides[get_llm_client] = object
+    refinement_routes.install_refinement_routes(
+        app,
+        config=RefinementFeatureConfig(enabled=True),
+    )
+    client = TestClient(app)
+
+    response = client.post("/api/refinement/run", json={"session_id": "session-001"})
+
+    assert response.status_code == expected_status
+    assert response.json() == {
+        "detail": {
+            "code": expected_code,
+            "message": "Schematic refinement request could not be completed.",
+        }
+    }
+    assert "canary-session-secret" not in response.text
+    assert "/home/operator" not in response.text
+    assert "provider-secret-token" not in response.text
 
 
 def test_refinement_service_error_is_generic_and_does_not_echo_internal_data(

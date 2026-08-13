@@ -725,6 +725,7 @@ def generate_wizard_project(
                     validation="internal",
                     auto_fix=False,
                 ),
+                owner_wizard_session_id=session.id,
             )
         except Exception as exc:
             _persist_and_raise_failure(

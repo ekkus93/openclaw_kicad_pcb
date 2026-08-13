@@ -26,7 +26,12 @@ from ..settings import WebSettings
 from ._wizard_session_io import read_wizard_session
 from .artifacts import create_project_zip
 from .configured_refinement import run_configured_refinement_request
-from .jobs import JobRecord, read_job, update_job_status
+from .jobs import (
+    JobRecord,
+    WIZARD_SESSION_OWNER_REQUEST_KEY,
+    read_job,
+    update_job_status,
+)
 from .llm import LlmClient
 from .netlists import PreviewGenerationError, _generate_schematic_preview
 from .refinement_api import RefinementRunRequest, RefinementRunResponse
@@ -147,6 +152,12 @@ def _read_current_job(settings: WebSettings, job_id: str, *, session_id: str) ->
             "Wizard session does not reference a successful generated project.",
             code="REFINEMENT_TARGET_NOT_READY",
             details={"session_id": session_id, "job_id": job_id, "job_status": job.status},
+        )
+    if job.request.get(WIZARD_SESSION_OWNER_REQUEST_KEY) != session_id:
+        raise PersistedStateError(
+            "Generated job is not bound to the requesting wizard session.",
+            code="REFINEMENT_TARGET_JOB_OWNERSHIP_INVALID",
+            details={"session_id": session_id, "job_id": job_id},
         )
     return job
 

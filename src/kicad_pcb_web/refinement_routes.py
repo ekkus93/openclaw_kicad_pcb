@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from kicad_pcb.errors import UserError
 
 from .deps import get_llm_client, get_settings
+from .errors import WebServiceError
 from .services.llm import LlmClient
 from .services.refinement_api import RefinementRunRequest, RefinementRunResponse
 from .services.refinement_config import RefinementFeatureConfig
@@ -38,9 +39,9 @@ def build_refinement_router(*, config: RefinementFeatureConfig) -> APIRouter:
                 request=request,
                 config=config,
             )
-        except UserError as exc:
+        except (UserError, WebServiceError) as exc:
             raise HTTPException(
-                status_code=409,
+                status_code=_error_status_code(exc),
                 detail={
                     "code": _error_code(exc),
                     "message": "Schematic refinement request could not be completed.",
@@ -74,7 +75,11 @@ async def _validated_request(http_request: Request) -> RefinementRunRequest:
         ) from exc
 
 
-def _error_code(exc: UserError) -> str:
+def _error_status_code(exc: UserError | WebServiceError) -> int:
+    return exc.status_code if isinstance(exc, WebServiceError) else 409
+
+
+def _error_code(exc: UserError | WebServiceError) -> str:
     value = exc.code
     enum_value = getattr(value, "value", None)
     return str(enum_value if enum_value is not None else value)
