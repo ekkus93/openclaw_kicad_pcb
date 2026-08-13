@@ -132,8 +132,9 @@ def validate_generated_schematic(  # noqa: PLR0913
     expected_wire_count: int,
     min_component_placement_ratio: float = MIN_COMPONENT_PLACEMENT_RATIO,
 ) -> GeneratedSchematicDiagnostics:
-    """Reparse the generated schematic and enforce hard structural invariants."""
+    """Finalize root instance paths, reparse, and enforce structural invariants."""
 
+    doc.qualify_root_symbol_instance_paths()
     serialized = serialize(doc.root)
     try:
         reparsed_doc = SchematicDoc(cast(ListNode, parse(serialized)))
