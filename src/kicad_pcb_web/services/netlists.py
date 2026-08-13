@@ -38,8 +38,8 @@ from ..schemas import (
 from ..settings import WebSettings
 from .artifacts import create_project_zip, list_artifacts
 from .jobs import (
-    WIZARD_SESSION_OWNER_REQUEST_KEY,
     JobRecord,
+    WIZARD_SESSION_OWNER_REQUEST_KEY,
     create_job_workspace,
     update_job_status,
 )
