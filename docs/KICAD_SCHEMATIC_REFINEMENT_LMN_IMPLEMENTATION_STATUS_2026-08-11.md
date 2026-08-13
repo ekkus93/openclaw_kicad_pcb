@@ -72,8 +72,9 @@ Implemented:
 - explicit runtime builder requires provider/model provenance;
 - route-side malformed/invalid request handling is generic and does not reflect rejected paths/credentials;
 - lower-layer refinement `UserError` responses preserve the machine code but not exception text/details;
-- CLI adapter accepts only `--session-id` and cannot override paths/providers/credentials/limits;
-- CLI service errors likewise omit internal `UserError.details`;
+- production CLI accepts only `--session-id` and cannot override paths/providers/credentials/limits;
+- production CLI dispatches through the same trusted wizard/current-job composition path as HTTP;
+- CLI configuration and service failures preserve the machine code while returning generic messages that do not reflect exception text/details;
 - runtime configuration and retention semantics are documented in `docs/KICAD_SCHEMATIC_REFINEMENT_RUNTIME_CONFIGURATION_2026-08-11.md`.
 
 ### Production HTTP mounting — implemented
@@ -119,9 +120,9 @@ The wizard cross-process mutation lock remains held across target resolution, re
 
 ### Vision/provenance gate — implemented
 
-Production HTTP refinement requires an enabled configured LLM provider, explicit model, request-scoped client, and `vision_enabled=true`. Missing image capability fails with `VISION_CAPABILITY_UNAVAILABLE`; provider/model names do not imply vision and no text-only fallback is used.
+Production HTTP and CLI refinement require an enabled configured LLM provider, explicit model, configured client, and `vision_enabled=true`. Missing image capability fails with `VISION_CAPABILITY_UNAVAILABLE`; provider/model names do not imply vision and no text-only fallback is used.
 
-Runtime provider/model provenance comes directly from validated server settings. `KicadCliAdapter()` is server-created; the request cannot select a KiCad executable.
+Runtime provider/model provenance comes directly from validated process settings. `KicadCliAdapter()` is process-created; neither HTTP nor CLI can select a KiCad executable.
 
 ### Derived project-artifact synchronization — implemented
 
@@ -150,18 +151,34 @@ Added/updated tests cover:
 - project ZIP staging files are not exposed by the artifact listing API;
 - symlink-based archive escape attempts fail closed without replacing the prior complete archive.
 
-### CLI production composition — still open
+### CLI production composition — implemented
 
-The CLI parser/service boundary is hardened, but the CLI is not yet production-composed through the wizard/current-job resolver. That remains the next integration task. It must reuse the same trusted ownership rules rather than adding an arbitrary-path command.
+`src/kicad_pcb_web/refinement_cli.py` now composes the CLI through `run_wizard_refinement_request()` rather than accepting a pre-resolved schematic path/runtime. `RefinementCliContext` contains only process-owned `WebSettings`, configured `LlmClient`, refinement feature configuration, and output streams.
+
+The installed package exposes:
+
+```text
+kicad-refine --session-id <wizard-session-id>
+```
+
+`main()` loads validated web settings and refinement feature configuration, builds the configured LLM client, executes the request through the trusted wizard/current-job resolver, and closes the client afterward. The CLI therefore inherits the same current-wizard/current-job/IR/path containment checks, mutation lock, vision/provenance gate, evidence namespace, and derived-artifact refresh behavior as HTTP.
+
+No CLI flag can select an accepted schematic path, job ID, work/evidence path, provider, model, API key, KiCad executable, operation policy, or loop/resource bound. Invalid arguments fail before dispatch. Controlled `UserError` and `WebServiceError` failures return only a machine-readable code plus a generic message; configuration failures are likewise generic, so private paths, credentials, and rejected values are not reflected.
+
+Focused tests cover trusted-composition dispatch, rejection of path/job/provider/model/credential/KiCad/bound flags, unsafe session IDs, process-owned configuration/client composition and client closure, generic configuration-error output, and sanitization of both core `UserError` and wizard-resolver `WebServiceError` failures. Package smoke now verifies that the wheel emits the `kicad-refine` console entry point and that the installed module is importable.
+
+Implementation commits:
+
+- `17d72f9a62b21696ea5945e1728607065f387efc` — trusted CLI production composition and focused tests;
+- `f0636cb6d700487788658d5d87fad3f6ad6796dd` — packaged console-entry-point smoke assertion.
 
 ## Validation status
 
-The production mounting changes and focused regression tests are committed on `webapp`. Local checkout/verification from this ChatGPT sandbox remains unavailable because the environment cannot resolve `github.com`, and Ruff is not installed/cached locally. This note therefore does **not** claim a green Ruff/mypy/pytest or GitHub Actions result. CI monitoring remains outside this implementation loop unless explicitly requested.
+The production HTTP/CLI composition changes and focused regression tests are committed on `webapp`. The sandbox can syntax-compile the modified standalone Python files, but it still cannot resolve `github.com`, so a complete local checkout and repository-wide Ruff/mypy/pytest run is unavailable here. This note therefore does **not** claim green permanent CI on the new CLI commits. CI monitoring remains outside this implementation loop unless explicitly requested.
 
 ## Next implementation actions
 
-1. Reconcile any concrete Ruff/format/type/test failures reported for the mounted HTTP production path without weakening its fail-closed contracts.
-2. Compose the CLI through the same wizard/current-job ownership resolver; do not create a standalone arbitrary-path mutation command.
-3. Run the final HTTP/CLI adversarial production-boundary pass: no arbitrary filesystem access, provider/model/credential/bound selection, reservation bypass, stale-project mutation, or secret reflection.
-4. Reconcile the main refinement TODO/status checkboxes against actual implementation evidence.
-5. Complete the final full validation/release closure after the exact accepting SHA is green.
+1. Reconcile any concrete Ruff/format/type/test/package-smoke failure reported for the exact CLI production-composition candidate without weakening its fail-closed contracts.
+2. Run/review the final HTTP/CLI adversarial production-boundary pass: no arbitrary filesystem access, provider/model/credential/bound selection, reservation bypass, stale-project mutation, or secret reflection.
+3. Reconcile the main refinement TODO/status checkboxes against actual implementation evidence.
+4. Continue the remaining experimental-corpus, final fallback/security audit, documentation, full validation, and exact-SHA release closure work.
