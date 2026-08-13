@@ -22,13 +22,13 @@ def _doc(text: str) -> SchematicDoc:
 
 def _empty_doc() -> SchematicDoc:
     return _doc(
-        f'''(kicad_sch
+        f"""(kicad_sch
   (version 20230121)
   (generator eeschema)
   (uuid "{_ROOT_UUID}")
   (lib_symbols)
   (sheet_instances
-    (path "/" (page "1"))))'''
+    (path "/" (page "1"))))"""
     )
 
 
@@ -58,7 +58,7 @@ def _symbol_paths(doc: SchematicDoc) -> list[str]:
 
 def test_root_symbol_instance_paths_use_root_uuid_and_leave_sheet_root_bare() -> None:
     doc = _doc(
-        f'''(kicad_sch
+        f"""(kicad_sch
   (version 20230121)
   (generator eeschema)
   (uuid "{_ROOT_UUID}")
@@ -73,7 +73,7 @@ def test_root_symbol_instance_paths_use_root_uuid_and_leave_sheet_root_bare() ->
       (project "demo"
         (path "/" (reference "#PWR01") (unit 1)))))
   (sheet_instances
-    (path "/" (page "1"))))'''
+    (path "/" (page "1"))))"""
     )
 
     doc.qualify_root_symbol_instance_paths()
@@ -85,7 +85,7 @@ def test_root_symbol_instance_paths_use_root_uuid_and_leave_sheet_root_bare() ->
 def test_root_symbol_instance_path_normalization_preserves_existing_path() -> None:
     existing_path = "/parent/sheet"
     doc = _doc(
-        f'''(kicad_sch
+        f"""(kicad_sch
   (version 20230121)
   (generator eeschema)
   (uuid "{_ROOT_UUID}")
@@ -95,7 +95,7 @@ def test_root_symbol_instance_path_normalization_preserves_existing_path() -> No
       (project "demo"
         (path "{existing_path}" (reference "R1") (unit 1)))))
   (sheet_instances
-    (path "/" (page "1"))))'''
+    (path "/" (page "1"))))"""
     )
 
     doc.qualify_root_symbol_instance_paths()
@@ -106,7 +106,7 @@ def test_root_symbol_instance_path_normalization_preserves_existing_path() -> No
 
 def test_root_symbol_instance_path_normalization_requires_root_uuid() -> None:
     doc = _doc(
-        '''(kicad_sch
+        """(kicad_sch
   (version 20230121)
   (generator eeschema)
   (symbol
@@ -115,7 +115,7 @@ def test_root_symbol_instance_path_normalization_requires_root_uuid() -> None:
       (project "demo"
         (path "/" (reference "R1") (unit 1)))))
   (sheet_instances
-    (path "/" (page "1"))))'''
+    (path "/" (page "1"))))"""
     )
 
     with pytest.raises(ValueError, match="root UUID is missing or invalid"):
