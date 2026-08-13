@@ -134,7 +134,9 @@ class JobRecord:
 
     def to_detail(self, *, artifacts: list[str] | None = None) -> JobDetail:
         public_request = {
-            key: value for key, value in self.request.items() if key != WIZARD_SESSION_OWNER_REQUEST_KEY
+            key: value
+            for key, value in self.request.items()
+            if key != WIZARD_SESSION_OWNER_REQUEST_KEY
         }
         return JobDetail(
             id=self.id,
