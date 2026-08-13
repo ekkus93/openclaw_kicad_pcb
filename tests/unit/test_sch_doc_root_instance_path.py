@@ -9,7 +9,7 @@ from kicad_pcb.commands._sch_apply_artifacts import validate_generated_schematic
 from kicad_pcb.sch_doc import SchematicDoc
 from kicad_pcb.sexpr.nodes import ListNode, StringNode
 from kicad_pcb.sexpr.parser import parse
-from kicad_pcb.sexpr.utils import find_first
+from kicad_pcb.sexpr.utils import walk
 
 _ROOT_UUID = "11111111-2222-3333-4444-555555555555"
 
@@ -40,7 +40,14 @@ def _direct_child(doc: SchematicDoc, key: str) -> ListNode:
 
 
 def _path_value(node: ListNode) -> str:
-    path = find_first(node, "path")
+    path = next(
+        (
+            candidate
+            for candidate in walk(node)
+            if isinstance(candidate, ListNode) and candidate.key == "path"
+        ),
+        None,
+    )
     assert path is not None
     assert len(path.items) >= 2
     value = path.items[1]
@@ -122,7 +129,78 @@ def test_root_symbol_instance_path_normalization_requires_root_uuid() -> None:
         doc.qualify_root_symbol_instance_paths()
 
 
-def test_generated_schematic_validation_finalizes_root_symbol_instance_paths() -> None:
+def test_symbol_emitters_use_root_uuid_instance_path_immediately(monkeypatch) -> None:
+    doc = _empty_doc()
+    doc.add_symbol(
+        "TestLib:R",
+        "R1",
+        "10k",
+        "",
+        100.0,
+        100.0,
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        ["1"],
+        ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+        "demo",
+    )
+
+    power_def = parse('(symbol "power:GND")')
+    assert isinstance(power_def, ListNode)
+    monkeypatch.setattr(
+        "kicad_pcb.sch_doc._sch_doc_mutation.read_lib_symbol_def_flat",
+        lambda *args, **kwargs: power_def,
+    )
+    assert doc.add_power_symbol(
+        "GND",
+        120.0,
+        100.0,
+        "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        "#PWR01",
+        "demo",
+    )
+
+    assert _symbol_paths(doc) == [f"/{_ROOT_UUID}", f"/{_ROOT_UUID}"]
+    assert _path_value(_direct_child(doc, "sheet_instances")) == "/"
+
+
+def test_managed_path_rewrite_overrides_emitted_root_path_and_applies_to_later_symbols() -> None:
+    doc = _empty_doc()
+    doc.add_symbol(
+        "TestLib:R",
+        "R1",
+        "10k",
+        "",
+        100.0,
+        100.0,
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        ["1"],
+        ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+        "demo",
+    )
+    assert _symbol_paths(doc) == [f"/{_ROOT_UUID}"]
+
+    parent_uuid = "99999999-8888-7777-6666-555555555555"
+    doc.update_managed_path(parent_uuid)
+    doc.add_symbol(
+        "TestLib:R",
+        "R2",
+        "10k",
+        "",
+        120.0,
+        100.0,
+        "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        ["1"],
+        ["dddddddd-dddd-dddd-dddd-dddddddddddd"],
+        "demo",
+    )
+
+    expected_path = f"/{parent_uuid}/"
+    assert _symbol_paths(doc) == [expected_path, expected_path]
+    assert _path_value(_direct_child(doc, "sheet_instances")) == expected_path
+
+
+def test_generated_schematic_validation_preserves_root_symbol_instance_paths() -> None:
     doc = _empty_doc()
     doc.add_symbol(
         "TestLib:R",
@@ -174,7 +252,7 @@ def test_generated_schematic_validation_finalizes_root_symbol_instance_paths() -
         ],
     )
 
-    assert _symbol_paths(doc) == ["/", "/"]
+    assert _symbol_paths(doc) == [f"/{_ROOT_UUID}", f"/{_ROOT_UUID}"]
 
     diagnostics = validate_generated_schematic(
         doc=doc,

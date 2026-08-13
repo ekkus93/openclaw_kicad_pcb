@@ -46,6 +46,52 @@ def _qualify_bare_instance_paths(node: ListNode, qualified_path: str) -> ListNod
     return ListNode(tuple(items), node.pos)
 
 
+def _schematic_root_uuid_path(root: ListNode) -> str | None:
+    """Return ``/<root-uuid>`` for a schematic with a usable root UUID."""
+    for item in root.items:
+        if (
+            isinstance(item, ListNode)
+            and item.key == "uuid"
+            and len(item.items) >= 2
+            and isinstance(item.items[1], StringNode)
+            and item.items[1].value
+        ):
+            return f"/{item.items[1].value}"
+    return None
+
+
+def _symbol_instance_path_for_insertion(root: ListNode) -> str | None:
+    """Return the hierarchy path a newly inserted placed symbol should use."""
+    for item in root.items:
+        if not (isinstance(item, ListNode) and item.key == "sheet_instances"):
+            continue
+        for child in item.items:
+            if (
+                isinstance(child, ListNode)
+                and child.key == "path"
+                and len(child.items) >= 2
+                and isinstance(child.items[1], StringNode)
+                and child.items[1].value != "/"
+            ):
+                return child.items[1].value
+    return _schematic_root_uuid_path(root)
+
+
+def _qualify_symbol_instance_paths(symbol: ListNode, qualified_path: str) -> ListNode:
+    """Qualify bare paths only inside a placed symbol's ``instances`` child."""
+    changed = False
+    items = []
+    for item in symbol.items:
+        replacement = item
+        if isinstance(item, ListNode) and item.key == "instances":
+            replacement = _qualify_bare_instance_paths(item, qualified_path)
+        changed = changed or replacement is not item
+        items.append(replacement)
+    if not changed:
+        return symbol
+    return ListNode(tuple(items), symbol.pos)
+
+
 class _SchDocMixin:
     """Mixin providing embedding and element-addition methods for SchematicDoc."""
 
@@ -246,34 +292,15 @@ class _SchDocMixin:
         ``instances/project/path``.  The root ``sheet_instances`` entry itself
         remains ``/`` and is intentionally outside this normalization pass.
         """
-        root_uuid: str | None = None
-        for item in self.root.items:
-            if (
-                isinstance(item, ListNode)
-                and item.key == "uuid"
-                and len(item.items) >= 2
-                and isinstance(item.items[1], StringNode)
-                and item.items[1].value
-            ):
-                root_uuid = item.items[1].value
-                break
-        if root_uuid is None:
+        qualified_path = _schematic_root_uuid_path(self.root)
+        if qualified_path is None:
             raise ValueError("Schematic root UUID is missing or invalid")
 
-        qualified_path = f"/{root_uuid}"
         root_items = []
         for item in self.root.items:
             replacement = item
             if isinstance(item, ListNode) and item.key == "symbol":
-                symbol_items = []
-                for symbol_item in item.items:
-                    symbol_replacement = symbol_item
-                    if isinstance(symbol_item, ListNode) and symbol_item.key == "instances":
-                        symbol_replacement = _qualify_bare_instance_paths(
-                            symbol_item, qualified_path
-                        )
-                    symbol_items.append(symbol_replacement)
-                replacement = ListNode(tuple(symbol_items), item.pos)
+                replacement = _qualify_symbol_instance_paths(item, qualified_path)
             root_items.append(replacement)
         self.root = ListNode(tuple(root_items), self.root.pos)
 
@@ -311,6 +338,11 @@ class _SchDocMixin:
 
     def _insert_before_sheet_instances(self, node: ListNode) -> None:
         """Insert *node* in root items just before ``(sheet_instances …)``."""
+        if node.key == "symbol":
+            qualified_path = _symbol_instance_path_for_insertion(self.root)
+            if qualified_path is not None:
+                node = _qualify_symbol_instance_paths(node, qualified_path)
+
         items = list(self.root.items)
         insertion_idx = len(items)
         for i, item in enumerate(items):

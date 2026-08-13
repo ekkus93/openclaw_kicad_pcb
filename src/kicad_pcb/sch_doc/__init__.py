@@ -276,17 +276,30 @@ class SchematicDoc(_SchDocMixin):
         return sheet_uuid
 
     def update_managed_path(self, sheet_uuid: str) -> None:
-        """Qualify all bare ``(path "/" …)`` entries to ``(path "/{uuid}/" …)``.
+        """Qualify managed-sheet root paths to ``(path "/{uuid}/" …)``.
 
         KiCad requires sub-schematic ``(sheet_instances ...)`` and symbol
         ``(instances ...)`` paths to reference the parent sheet's UUID so that
         KiCad can resolve the hierarchy and assign correct reference
-        annotations.  This method walks the entire AST and replaces every
-        remaining unqualified root path ``"/"`` with ``"/{sheet_uuid}/"``.
+        annotations.  This method walks the entire AST and replaces both bare
+        root paths ``"/"`` and paths already qualified with this schematic's
+        own root UUID with ``"/{sheet_uuid}/"``.
 
         Call this on the managed ``SchematicDoc`` after writing all symbols and
         nets, before saving.
         """
+        current_root_paths = {"/"}
+        for item in self.root.items:
+            if (
+                isinstance(item, ListNode)
+                and item.key == "uuid"
+                and len(item.items) >= 2
+                and isinstance(item.items[1], StringNode)
+                and item.items[1].value
+            ):
+                root_uuid = item.items[1].value
+                current_root_paths.update({f"/{root_uuid}", f"/{root_uuid}/"})
+                break
 
         def _fix(node: Node) -> Node:  # noqa: PLR0911 — recursive walk helper
             if not isinstance(node, ListNode):
@@ -295,7 +308,7 @@ class SchematicDoc(_SchDocMixin):
                 node.key == "path"
                 and len(node.items) >= 2
                 and isinstance(node.items[1], StringNode)
-                and node.items[1].value == "/"
+                and node.items[1].value in current_root_paths
             ):
                 new_items = list(node.items)
                 new_items[1] = string(f"/{sheet_uuid}/")
