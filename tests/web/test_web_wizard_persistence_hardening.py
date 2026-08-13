@@ -43,9 +43,7 @@ def _session() -> WizardSessionDetail:
 
 
 @pytest.mark.parametrize("session_id", [".", "..", "wiz..escape"])
-def test_wizard_session_io_rejects_parent_like_session_ids(
-    tmp_path: Path, session_id: str
-) -> None:
+def test_wizard_session_io_rejects_parent_like_session_ids(tmp_path: Path, session_id: str) -> None:
     settings = _settings(tmp_path)
 
     with pytest.raises(UserError, match="Unsafe wizard session id"):
