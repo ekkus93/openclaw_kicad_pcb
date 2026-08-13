@@ -260,6 +260,129 @@ def _simple_schematic(
 """
 
 
+def test_multi_unit_terminal_corruption_fails() -> None:
+    source = CircuitIR(
+        version="1",
+        components=[ComponentIR(ref="U1", symbol="TestLib:DualOpAmp", value="Dual")],
+        nets=[
+            NetIR(name="IN_A", pins=[PinRefIR(ref="U1", pin="1", unit="1")]),
+            NetIR(name="VCC", pins=[PinRefIR(ref="U1", pin="8", unit="3")]),
+        ],
+    )
+    corrupted = CircuitIR(
+        version="1",
+        components=[
+            ComponentIR(ref="U1A", symbol="TestLib:DualOpAmp", value="Dual"),
+            ComponentIR(ref="U1P", symbol="TestLib:DualOpAmp", value="Dual"),
+        ],
+        nets=[
+            NetIR(name="IN_A", pins=[PinRefIR(ref="U1A", pin="1", unit="3")]),
+            NetIR(name="VCC", pins=[PinRefIR(ref="U1P", pin="8", unit="3")]),
+        ],
+    )
+
+    report = compare_circuit_ir_equivalence(source, corrupted)
+
+    assert report.status == "failed"
+    assert "NET_TERMINALS_MISMATCH" in {mismatch.code for mismatch in report.mismatches}
+
+
+def test_no_connect_loss_fails_production_verifier(tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted_nc.kicad_sch"
+    candidate = tmp_path / "candidate_nc_loss.kicad_sch"
+    accepted.write_text(_simple_schematic(no_connect=(17.62, 20.0)), encoding="utf-8")
+    candidate.write_text(_simple_schematic(), encoding="utf-8")
+    authoritative = CircuitIR(
+        version="1",
+        components=[ComponentIR(ref="R1", symbol="Device:R", value="10k")],
+        nets=[NetIR(name="SIGNAL", pins=[PinRefIR(ref="R1", pin="1")])],
+    )
+    baseline = build_schematic_electrical_baseline(authoritative, accepted)
+    xml = """<export>
+<design><source>candidate_nc_loss.kicad_sch</source></design>
+<components>
+  <comp ref="R1"><value>10k</value><libsource lib="Device" part="R"/></comp>
+</components>
+<nets><net code="1" name="SIGNAL"><node ref="R1" pin="1"/></net></nets>
+</export>"""
+
+    report = verify_schematic_electrical_invariance(
+        authoritative_ir=authoritative,
+        baseline=baseline,
+        candidate_schematic=candidate,
+        adapter=_WritingAdapter(xml),  # type: ignore[arg-type]
+        work_dir=tmp_path,
+    )
+
+    assert not report.passed
+    assert {mismatch.code for mismatch in report.mismatches} == {"NO_CONNECT_STATE_MISMATCH"}
+
+
+def test_no_connect_addition_fails_production_verifier(tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted_no_nc.kicad_sch"
+    candidate = tmp_path / "candidate_nc_added.kicad_sch"
+    accepted.write_text(_simple_schematic(), encoding="utf-8")
+    candidate.write_text(_simple_schematic(no_connect=(17.62, 20.0)), encoding="utf-8")
+    authoritative = CircuitIR(
+        version="1",
+        components=[ComponentIR(ref="R1", symbol="Device:R", value="10k")],
+        nets=[NetIR(name="SIGNAL", pins=[PinRefIR(ref="R1", pin="1")])],
+    )
+    baseline = build_schematic_electrical_baseline(authoritative, accepted)
+    xml = """<export>
+<design><source>candidate_nc_added.kicad_sch</source></design>
+<components>
+  <comp ref="R1"><value>10k</value><libsource lib="Device" part="R"/></comp>
+</components>
+<nets><net code="1" name="SIGNAL"><node ref="R1" pin="1"/></net></nets>
+</export>"""
+
+    report = verify_schematic_electrical_invariance(
+        authoritative_ir=authoritative,
+        baseline=baseline,
+        candidate_schematic=candidate,
+        adapter=_WritingAdapter(xml),  # type: ignore[arg-type]
+        work_dir=tmp_path,
+    )
+
+    assert not report.passed
+    assert {mismatch.code for mismatch in report.mismatches} == {"NO_CONNECT_STATE_MISMATCH"}
+
+
+def test_normal_component_with_power_like_ref_is_not_hidden_as_helper(tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted_helper_guard.kicad_sch"
+    candidate = tmp_path / "candidate_helper_guard.kicad_sch"
+    accepted.write_text(_simple_schematic(), encoding="utf-8")
+    candidate.write_text(_simple_schematic().replace('"R1"', '"#PWR99"'), encoding="utf-8")
+    authoritative = CircuitIR(
+        version="1",
+        components=[ComponentIR(ref="R1", symbol="Device:R", value="10k")],
+        nets=[NetIR(name="SIGNAL", pins=[PinRefIR(ref="R1", pin="1")])],
+    )
+    baseline = build_schematic_electrical_baseline(authoritative, accepted)
+    xml = """<export>
+<design><source>candidate_helper_guard.kicad_sch</source></design>
+<components>
+  <comp ref="#PWR99"><value>10k</value><libsource lib="Device" part="R"/></comp>
+</components>
+<nets><net code="1" name="SIGNAL"><node ref="#PWR99" pin="1"/></net></nets>
+</export>"""
+
+    report = verify_schematic_electrical_invariance(
+        authoritative_ir=authoritative,
+        baseline=baseline,
+        candidate_schematic=candidate,
+        adapter=_WritingAdapter(xml),  # type: ignore[arg-type]
+        work_dir=tmp_path,
+    )
+
+    assert not report.passed
+    refs_mismatch = next(
+        mismatch for mismatch in report.mismatches if mismatch.code == "COMPONENT_REFS_MISMATCH"
+    )
+    assert refs_mismatch.details["extra_refs"] == ["#PWR99"]
+
+
 def test_readability_fixture_explicit_no_connects_resolve_to_jack_ring_pins() -> None:
     fixture = (
         Path(__file__).parents[1]
