@@ -124,20 +124,10 @@ def _record_debug_stage(
     stage_markers.append({"stage": stage, **details})
 
 
-def validate_generated_schematic(  # noqa: PLR0913
-    *,
-    doc: SchematicDoc,
-    generation_ir: CircuitIR,
-    schematic_path: Path,
-    expected_wire_count: int,
-    min_component_placement_ratio: float = MIN_COMPONENT_PLACEMENT_RATIO,
-) -> GeneratedSchematicDiagnostics:
-    """Finalize root instance paths, reparse, and enforce structural invariants."""
-
-    doc.qualify_root_symbol_instance_paths()
-    serialized = serialize(doc.root)
+def _reparse_generated_schematic(serialized: str, schematic_path: Path) -> SchematicDoc:
+    """Reparse generated schematic text and preserve structured failure details."""
     try:
-        reparsed_doc = SchematicDoc(cast(ListNode, parse(serialized)))
+        return SchematicDoc(cast(ListNode, parse(serialized)))
     except Exception as exc:
         failure = _hard_failure(
             "REPARSE_FAILED",
@@ -161,6 +151,21 @@ def validate_generated_schematic(  # noqa: PLR0913
                 "generated_schematic_diagnostics": diagnostics.as_dict(),
             },
         ) from exc
+
+
+def validate_generated_schematic(  # noqa: PLR0913
+    *,
+    doc: SchematicDoc,
+    generation_ir: CircuitIR,
+    schematic_path: Path,
+    expected_wire_count: int,
+    min_component_placement_ratio: float = MIN_COMPONENT_PLACEMENT_RATIO,
+) -> GeneratedSchematicDiagnostics:
+    """Finalize root instance paths, reparse, and enforce structural invariants."""
+
+    doc.qualify_root_symbol_instance_paths()
+    serialized = serialize(doc.root)
+    reparsed_doc = _reparse_generated_schematic(serialized, schematic_path)
 
     expected_ref_list = [component.ref for component in generation_ir.components]
     expected_refs = sorted(set(expected_ref_list))
