@@ -133,8 +133,15 @@ def _verify(
     assert report.passed, report.mismatches
 
 
+def _list_child(node: ListNode, key: str) -> ListNode:
+    for child in node.items:
+        if isinstance(child, ListNode) and child.key == key:
+            return child
+    raise AssertionError(f"missing {key} child")
+
+
 def _wire_points(node: ListNode) -> list[tuple[float, float]]:
-    pts = next(child for child in node.items if isinstance(child, ListNode) and child.key == "pts")
+    pts = _list_child(node, "pts")
     points: list[tuple[float, float]] = []
     for item in pts.items:
         if not (isinstance(item, ListNode) and item.key == "xy"):
@@ -147,7 +154,7 @@ def _wire_points(node: ListNode) -> list[tuple[float, float]]:
 
 
 def _node_xy(node: ListNode) -> tuple[float, float]:
-    at = next(child for child in node.items if isinstance(child, ListNode) and child.key == "at")
+    at = _list_child(node, "at")
     x_node, y_node = at.items[1], at.items[2]
     assert isinstance(x_node, AtomNode)
     assert isinstance(y_node, AtomNode)
@@ -155,7 +162,7 @@ def _node_xy(node: ListNode) -> tuple[float, float]:
 
 
 def _replace_xy(node: ListNode, point: tuple[float, float]) -> ListNode:
-    at = next(child for child in node.items if isinstance(child, ListNode) and child.key == "at")
+    at = _list_child(node, "at")
     replacement_at = ListNode(
         (at.items[0], fnum(point[0], 2), fnum(point[1], 2), *at.items[3:]),
         at.pos,
@@ -167,9 +174,7 @@ def _replace_xy(node: ListNode, point: tuple[float, float]) -> ListNode:
 
 
 def _uuid(node: ListNode) -> str:
-    uuid_node = next(
-        child for child in node.items if isinstance(child, ListNode) and child.key == "uuid"
-    )
+    uuid_node = _list_child(node, "uuid")
     value = uuid_node.items[1]
     assert isinstance(value, StringNode)
     return value.value
@@ -178,11 +183,10 @@ def _uuid(node: ListNode) -> str:
 def _collapse_label_stubs(schematic: Path) -> None:
     doc = SchematicDoc.load(schematic)
     wires = [node for node in doc.root.items if isinstance(node, ListNode) and node.key == "wire"]
+    labels = [node for node in doc.root.items if isinstance(node, ListNode) and node.key == "label"]
     replacements: dict[int, ListNode] = {}
     removed: set[int] = set()
-    for label in (
-        node for node in doc.root.items if isinstance(node, ListNode) and node.key == "label"
-    ):
+    for label in labels:
         label_point = _node_xy(label)
         matches = [
             (wire, points[1] if points[0] == label_point else points[0])
@@ -194,12 +198,11 @@ def _collapse_label_stubs(schematic: Path) -> None:
         replacements[id(label)] = _replace_xy(label, pin_point)
         removed.add(id(wire))
     assert len(replacements) == len(removed) == 6
-    doc.root = ListNode(
-        tuple(
-            replacements.get(id(item), item) for item in doc.root.items if id(item) not in removed
-        ),
-        doc.root.pos,
-    )
+    updated_items = []
+    for item in doc.root.items:
+        if id(item) not in removed:
+            updated_items.append(replacements.get(id(item), item))
+    doc.root = ListNode(tuple(updated_items), doc.root.pos)
     doc.save(schematic)
 
 
@@ -222,12 +225,20 @@ def _divider_arguments(schematic: Path, operation_type: str) -> dict[str, object
     if operation_type == "move_component":
         return {"target": {"ref": "R1", "unit": "1"}, "dx_mm": 1.27, "dy_mm": 0.0}
     if operation_type == "rotate_component":
-        r1 = next(component for component in semantic.components if component.ref == "R1")
+        r1 = None
+        for component in semantic.components:
+            if component.ref == "R1":
+                r1 = component
+                break
+        assert r1 is not None
         return {"target": {"ref": "R1", "unit": "1"}, "angle_deg": (r1.rotation + 90) % 360}
     if operation_type == "move_power_symbol":
-        power = next(
-            component for component in semantic.components if component.symbol_id == "power:VCC"
-        )
+        power = None
+        for component in semantic.components:
+            if component.symbol_id == "power:VCC":
+                power = component
+                break
+        assert power is not None
         return {
             "target": {"ref": power.ref, "unit": power.unit},
             "dx_mm": 0.0,
@@ -240,22 +251,25 @@ def _divider_arguments(schematic: Path, operation_type: str) -> dict[str, object
             "dy_mm": 1.27,
         }
     if operation_type == "move_label":
-        label = next(
-            node
-            for node in doc.root.items
-            if isinstance(node, ListNode)
-            and node.key == "label"
-            and isinstance(node.items[1], StringNode)
-            and node.items[1].value == "AUX"
-        )
+        label = None
+        for node in doc.root.items:
+            if not (isinstance(node, ListNode) and node.key == "label"):
+                continue
+            if isinstance(node.items[1], StringNode) and node.items[1].value == "AUX":
+                label = node
+                break
+        assert label is not None
         label_point = _node_xy(label)
-        wire = next(
-            node
-            for node in doc.root.items
-            if isinstance(node, ListNode)
-            and node.key == "wire"
-            and label_point in _wire_points(node)
-        )
+        wire = None
+        for node in doc.root.items:
+            if (
+                isinstance(node, ListNode)
+                and node.key == "wire"
+                and label_point in _wire_points(node)
+            ):
+                wire = node
+                break
+        assert wire is not None
         points = _wire_points(wire)
         other = points[1] if points[0] == label_point else points[0]
         if label_point[0] == other[0]:
