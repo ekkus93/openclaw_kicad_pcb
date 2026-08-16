@@ -9,7 +9,10 @@ import pytest
 from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.metrics import compute_refinement_metrics
-from kicad_pcb.refinement.rendering import SchematicRenderArtifact
+from kicad_pcb.refinement.rendering import (
+    SchematicRenderArtifact,
+    SchematicRenderRegionArtifact,
+)
 from kicad_pcb.refinement.vision_context import build_vision_object_map
 
 
@@ -50,6 +53,7 @@ def test_object_map_binds_stable_ids_hashes_and_pixel_coordinates() -> None:
     )
 
     assert context.source_schematic_hash == metrics.schematic_hash
+    assert context.schema_version == "1.1"
     assert context.render_png_hash == "b" * 64
     assert context.page_mm == (297.0, 210.0)
     assert context.image_px == (2970, 2100)
@@ -67,6 +71,62 @@ def test_object_map_binds_stable_ids_hashes_and_pixel_coordinates() -> None:
     assert first.y_px == pytest.approx(first.y_mm * 10.0)
     assert all(pin.object_id.startswith("pin:") for pin in context.pins)
     assert all(net.object_id == f"net:{net.name}" for net in context.nets)
+    assert len(context.review_regions) == 1
+    assert context.review_regions[0].region_id == "r00-c00"
+    assert context.review_regions[0].view_box_mm == (0.0, 0.0, 297.0, 210.0)
+    assert context.review_regions[0].png_hash == "b" * 64
+
+
+def test_object_map_exposes_path_free_multi_region_coordinate_mapping() -> None:
+    schematic, ir = _fixture()
+    metrics = compute_refinement_metrics(schematic)
+    render = _render(schematic)
+    regions = (
+        SchematicRenderRegionArtifact(
+            region_id="r00-c00",
+            image_index=0,
+            row=0,
+            column=0,
+            svg_hash="c" * 64,
+            png_hash="d" * 64,
+            view_box_mm=(0.0, 0.0, 154.85, 210.0),
+            width_px=1239,
+            height_px=1680,
+            pixels_per_mm_x=8.001,
+            pixels_per_mm_y=8.0,
+            svg_path=Path("/private/region-0.svg"),
+            png_path=Path("/private/region-0.png"),
+        ),
+        SchematicRenderRegionArtifact(
+            region_id="r00-c01",
+            image_index=1,
+            row=0,
+            column=1,
+            svg_hash="e" * 64,
+            png_hash="f" * 64,
+            view_box_mm=(142.15, 0.0, 154.85, 210.0),
+            width_px=1239,
+            height_px=1680,
+            pixels_per_mm_x=8.001,
+            pixels_per_mm_y=8.0,
+            svg_path=Path("/private/region-1.svg"),
+            png_path=Path("/private/region-1.png"),
+        ),
+    )
+    render = SchematicRenderArtifact(**{**render.__dict__, "review_regions": regions})
+
+    context = build_vision_object_map(
+        schematic,
+        authoritative_ir=ir,
+        render=render,
+        metrics=metrics,
+    )
+
+    assert [region.image_index for region in context.review_regions] == [0, 1]
+    assert [region.png_hash for region in context.review_regions] == ["d" * 64, "f" * 64]
+    assert context.review_regions[1].view_box_mm == (142.15, 0.0, 154.85, 210.0)
+    serialized = context.to_dict()
+    assert "/private/" not in str(serialized)
 
 
 def test_object_map_rejects_stale_render_hash() -> None:

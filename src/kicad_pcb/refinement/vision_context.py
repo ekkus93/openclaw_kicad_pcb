@@ -83,6 +83,18 @@ class VisionNetObject:
 
 
 @dataclass(frozen=True)
+class VisionReviewRegion:
+    region_id: str
+    image_index: int
+    row: int
+    column: int
+    png_hash: str
+    view_box_mm: tuple[float, float, float, float]
+    image_px: tuple[int, int]
+    pixels_per_mm: tuple[float, float]
+
+
+@dataclass(frozen=True)
 class VisionObjectMap:
     schema_version: str
     source_schematic_hash: str
@@ -97,6 +109,7 @@ class VisionObjectMap:
     junctions: tuple[VisionJunctionObject, ...]
     nets: tuple[VisionNetObject, ...]
     deterministic_metrics: dict[str, object]
+    review_regions: tuple[VisionReviewRegion, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -224,8 +237,9 @@ def build_vision_object_map(
             key=lambda item: item.name,
         )
     )
+    review_regions = _vision_review_regions(render)
     return VisionObjectMap(
-        "1.0",
+        "1.1",
         render.schematic_hash,
         render.png_hash,
         render.sheet_id,
@@ -238,6 +252,36 @@ def build_vision_object_map(
         tuple(sorted(junctions, key=lambda j: j.object_id)),
         nets,
         metrics.to_dict(),
+        review_regions,
+    )
+
+
+def _vision_review_regions(render: SchematicRenderArtifact) -> tuple[VisionReviewRegion, ...]:
+    if not render.review_regions:
+        return (
+            VisionReviewRegion(
+                region_id="r00-c00",
+                image_index=0,
+                row=0,
+                column=0,
+                png_hash=render.png_hash,
+                view_box_mm=render.svg_view_box_mm,
+                image_px=(render.width_px, render.height_px),
+                pixels_per_mm=(render.pixels_per_mm_x, render.pixels_per_mm_y),
+            ),
+        )
+    return tuple(
+        VisionReviewRegion(
+            region_id=region.region_id,
+            image_index=region.image_index,
+            row=region.row,
+            column=region.column,
+            png_hash=region.png_hash,
+            view_box_mm=region.view_box_mm,
+            image_px=(region.width_px, region.height_px),
+            pixels_per_mm=(region.pixels_per_mm_x, region.pixels_per_mm_y),
+        )
+        for region in render.review_regions
     )
 
 

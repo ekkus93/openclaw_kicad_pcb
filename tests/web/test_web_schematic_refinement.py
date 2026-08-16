@@ -228,6 +228,26 @@ def test_analyze_and_plan_modes_are_read_only(monkeypatch, tmp_path: Path) -> No
     assert accepted.read_bytes() == before
 
 
+def test_analyze_passes_bound_render_review_images_to_critic(monkeypatch, tmp_path: Path) -> None:
+    accepted, ir = _fixture(tmp_path)
+    captured: list[tuple[Path, ...]] = []
+    monkeypatch.setattr(service, "render_schematic_for_refinement", _render_adapter)
+
+    def critic(*, context, image_paths, **kwargs):
+        captured.append(image_paths)
+        return _critic(context)
+
+    monkeypatch.setattr(service, "run_visual_critic", critic)
+
+    analysis = service.analyze_schematic_refinement(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path, ir),
+        max_critic_repairs=0,
+    )
+
+    assert captured == [analysis.render.review_image_paths]
+
+
 def test_plan_skips_planner_when_critic_has_no_actionable_issues(
     monkeypatch, tmp_path: Path
 ) -> None:

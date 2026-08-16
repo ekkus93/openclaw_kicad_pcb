@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from kicad_pcb.refinement.vision_context import (
     VisionComponentObject,
     VisionNetObject,
     VisionObjectMap,
+    VisionReviewRegion,
 )
 from kicad_pcb_web.errors import LlmInvalidStructuredOutputError
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
@@ -175,7 +177,9 @@ def test_visual_critic_sends_exact_bound_image_and_untrusted_data_instruction(
     context = _context(image)
     client = _FakeClient([_critic_payload(context)])
 
-    response = run_visual_critic(llm_client=client, context=context, image_path=path, max_repairs=0)
+    response = run_visual_critic(
+        llm_client=client, context=context, image_paths=(path,), max_repairs=0
+    )
 
     assert response.issues[0].issue_id == "i1"
     assert len(client.requests) == 1
@@ -184,6 +188,100 @@ def test_visual_critic_sends_exact_bound_image_and_untrusted_data_instruction(
     assert request.images[0].media_type == "image/png"
     assert "untrusted data" in request.messages[0].content
     assert "component:r1" in request.messages[1].content
+
+
+def test_visual_critic_sends_tiled_review_images_in_bound_region_order(tmp_path: Path) -> None:
+    first = b"tile-first"
+    second = b"tile-second"
+    first_path = tmp_path / "r00-c00.png"
+    second_path = tmp_path / "r00-c01.png"
+    first_path.write_bytes(first)
+    second_path.write_bytes(second)
+    context = replace(
+        _context(b"overview"),
+        review_regions=(
+            VisionReviewRegion(
+                "r00-c00",
+                0,
+                0,
+                0,
+                hashlib.sha256(first).hexdigest(),
+                (0.0, 0.0, 154.85, 210.0),
+                (1239, 1680),
+                (8.001, 8.0),
+            ),
+            VisionReviewRegion(
+                "r00-c01",
+                1,
+                0,
+                1,
+                hashlib.sha256(second).hexdigest(),
+                (142.15, 0.0, 154.85, 210.0),
+                (1239, 1680),
+                (8.001, 8.0),
+            ),
+        ),
+    )
+    client = _FakeClient([_critic_payload(context)])
+
+    response = run_visual_critic(
+        llm_client=client,
+        context=context,
+        image_paths=(first_path, second_path),
+        max_repairs=0,
+    )
+
+    assert response.issues[0].issue_id == "i1"
+    request = client.requests[0]
+    assert len(request.images) == 2
+    assert "ascending image_index order" in request.messages[1].content
+    assert '"region_id":"r00-c00"' in request.messages[1].content
+    assert '"region_id":"r00-c01"' in request.messages[1].content
+
+
+def test_visual_critic_rejects_stale_tiled_image_set_before_model_call(tmp_path: Path) -> None:
+    first = b"tile-first"
+    second = b"tile-second"
+    first_path = tmp_path / "r00-c00.png"
+    second_path = tmp_path / "r00-c01.png"
+    first_path.write_bytes(first)
+    second_path.write_bytes(b"tampered")
+    context = replace(
+        _context(b"overview"),
+        review_regions=(
+            VisionReviewRegion(
+                "r00-c00",
+                0,
+                0,
+                0,
+                hashlib.sha256(first).hexdigest(),
+                (0.0, 0.0, 154.85, 210.0),
+                (1239, 1680),
+                (8.001, 8.0),
+            ),
+            VisionReviewRegion(
+                "r00-c01",
+                1,
+                0,
+                1,
+                hashlib.sha256(second).hexdigest(),
+                (142.15, 0.0, 154.85, 210.0),
+                (1239, 1680),
+                (8.001, 8.0),
+            ),
+        ),
+    )
+    client = _FakeClient([])
+
+    with pytest.raises(UserError, match="review-region hash"):
+        run_visual_critic(
+            llm_client=client,
+            context=context,
+            image_paths=(first_path, second_path),
+            max_repairs=0,
+        )
+
+    assert client.requests == []
 
 
 def test_visual_critic_receives_bounded_prior_decisions(tmp_path: Path) -> None:
@@ -196,7 +294,7 @@ def test_visual_critic_receives_bounded_prior_decisions(tmp_path: Path) -> None:
     run_visual_critic(
         llm_client=client,
         context=context,
-        image_path=path,
+        image_paths=(path,),
         max_repairs=0,
         prior_decisions=(_history_entry(),),
     )
@@ -219,7 +317,7 @@ def test_visual_critic_rejects_oversized_prior_history_before_model_call(tmp_pat
         run_visual_critic(
             llm_client=client,
             context=_context(image),
-            image_path=path,
+            image_paths=(path,),
             max_repairs=0,
             prior_decisions=history,
         )
@@ -235,7 +333,7 @@ def test_visual_critic_rejects_stale_image_before_model_call(tmp_path: Path) -> 
         run_visual_critic(
             llm_client=client,
             context=_context(b"expected"),
-            image_path=path,
+            image_paths=(path,),
             max_repairs=0,
         )
     assert client.requests == []
@@ -248,7 +346,9 @@ def test_visual_critic_uses_bounded_structured_output_repair(tmp_path: Path) -> 
     context = _context(image)
     client = _FakeClient(["not-json", _critic_payload(context)])
 
-    response = run_visual_critic(llm_client=client, context=context, image_path=path, max_repairs=1)
+    response = run_visual_critic(
+        llm_client=client, context=context, image_paths=(path,), max_repairs=1
+    )
 
     assert response.issues[0].issue_id == "i1"
     assert len(client.requests) == 2
@@ -263,7 +363,7 @@ def test_visual_critic_never_exceeds_structured_repair_call_bound(tmp_path: Path
     client = _FakeClient(["not-json", "still-not-json", "also-not-json"])
 
     with pytest.raises(LlmInvalidStructuredOutputError):
-        run_visual_critic(llm_client=client, context=context, image_path=path, max_repairs=2)
+        run_visual_critic(llm_client=client, context=context, image_paths=(path,), max_repairs=2)
 
     assert len(client.requests) == 3
 
@@ -278,7 +378,7 @@ def test_visual_critic_rejects_invalid_repair_bound_before_model_call(tmp_path: 
         run_visual_critic(
             llm_client=client,
             context=_context(image),
-            image_path=path,
+            image_paths=(path,),
             max_repairs=-1,
         )
 
@@ -295,7 +395,9 @@ def test_visual_critic_rejects_semantically_unknown_object() -> None:
     try:
         client = _FakeClient([json.dumps(payload)])
         with pytest.raises(UserError, match="unknown schematic objects"):
-            run_visual_critic(llm_client=client, context=context, image_path=path, max_repairs=0)
+            run_visual_critic(
+                llm_client=client, context=context, image_paths=(path,), max_repairs=0
+            )
     finally:
         path.unlink(missing_ok=True)
 

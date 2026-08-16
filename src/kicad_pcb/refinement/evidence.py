@@ -18,7 +18,7 @@ from kicad_pcb.errors import UserError
 
 from .rendering import SchematicRenderArtifact
 
-ITERATION_EVIDENCE_SCHEMA_VERSION = "1.0"
+ITERATION_EVIDENCE_SCHEMA_VERSION = "1.1"
 SESSION_EVIDENCE_SCHEMA_VERSION = "1.0"
 RETENTION_POLICY_SCHEMA_VERSION = "1.0"
 _ALLOWED_ITERATION_DISPOSITIONS = frozenset(
@@ -408,6 +408,17 @@ def _copy_render(render: SchematicRenderArtifact, target: Path, *, prefix: str) 
         target_path = target / f"{prefix}{suffix}"
         shutil.copyfile(source, target_path)
         _fsync_file(target_path)
+    for region in render.review_regions:
+        for source, suffix in ((region.svg_path, ".svg"), (region.png_path, ".png")):
+            if not source.is_file():
+                raise UserError(
+                    "Refinement evidence review-region artifact is missing.",
+                    code="REFINEMENT_EVIDENCE_WRITE_FAILED",
+                    details={"artifact": f"{prefix}-{region.region_id}{suffix}"},
+                )
+            target_path = target / f"{prefix}-{region.region_id}{suffix}"
+            shutil.copyfile(source, target_path)
+            _fsync_file(target_path)
 
 
 def _render_metadata(render: SchematicRenderArtifact) -> dict[str, object]:
@@ -423,6 +434,22 @@ def _render_metadata(render: SchematicRenderArtifact) -> dict[str, object]:
         "svg_view_box_mm": list(render.svg_view_box_mm),
         "pixels_per_mm_x": render.pixels_per_mm_x,
         "pixels_per_mm_y": render.pixels_per_mm_y,
+        "review_regions": [
+            {
+                "region_id": region.region_id,
+                "image_index": region.image_index,
+                "row": region.row,
+                "column": region.column,
+                "svg_hash": region.svg_hash,
+                "png_hash": region.png_hash,
+                "view_box_mm": list(region.view_box_mm),
+                "width_px": region.width_px,
+                "height_px": region.height_px,
+                "pixels_per_mm_x": region.pixels_per_mm_x,
+                "pixels_per_mm_y": region.pixels_per_mm_y,
+            }
+            for region in render.review_regions
+        ],
     }
 
 

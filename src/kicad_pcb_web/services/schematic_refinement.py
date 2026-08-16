@@ -195,7 +195,7 @@ def analyze_schematic_refinement(
     critic = run_visual_critic(
         llm_client=runtime.llm_client,
         context=context,
-        image_path=render.png_path,
+        image_paths=render.review_image_paths,
         max_repairs=max_critic_repairs,
         prior_decisions=runtime.prior_decisions,
     )

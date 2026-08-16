@@ -178,7 +178,7 @@ def test_refine_no_op_stops_after_one_round_and_publishes_session(
     assert manifest["provider"] == "fake-provider"
     assert manifest["model"] == "fake-model"
     assert manifest["configured_bounds"]["max_rounds"] == 3
-    assert manifest["prompt_versions"] == {"critic": "1.0", "planner": "1.0"}
+    assert manifest["prompt_versions"] == {"critic": "1.1", "planner": "1.0"}
     assert "api_key" not in json.dumps(manifest)
 
 

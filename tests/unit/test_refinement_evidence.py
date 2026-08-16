@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -16,7 +16,10 @@ from kicad_pcb.refinement.evidence import (
     write_iteration_evidence_bundle,
     write_session_evidence_bundle,
 )
-from kicad_pcb.refinement.rendering import SchematicRenderArtifact
+from kicad_pcb.refinement.rendering import (
+    SchematicRenderArtifact,
+    SchematicRenderRegionArtifact,
+)
 
 
 class _Model(BaseModel):
@@ -60,6 +63,34 @@ def _render(tmp_path: Path, name: str) -> SchematicRenderArtifact:
         svg,
         png,
     )
+
+
+def _render_with_regions(tmp_path: Path, name: str) -> SchematicRenderArtifact:
+    render = _render(tmp_path, name)
+    regions = []
+    for index, region_id in enumerate(("r00-c00", "r00-c01")):
+        svg = tmp_path / f"{name}-{region_id}.svg"
+        png = tmp_path / f"{name}-{region_id}.png"
+        svg.write_text(f"<svg>{region_id}</svg>", encoding="utf-8")
+        png.write_bytes(f"png-{region_id}".encode())
+        regions.append(
+            SchematicRenderRegionArtifact(
+                region_id=region_id,
+                image_index=index,
+                row=0,
+                column=index,
+                svg_hash=f"{index + 1}" * 64,
+                png_hash=f"{index + 3}" * 64,
+                view_box_mm=(index * 142.15, 0.0, 154.85, 210.0),
+                width_px=1239,
+                height_px=1680,
+                pixels_per_mm_x=8.001,
+                pixels_per_mm_y=8.0,
+                svg_path=svg,
+                png_path=png,
+            )
+        )
+    return replace(render, schema_version="1.1", review_regions=tuple(regions))
 
 
 def _inputs(tmp_path: Path) -> IterationEvidenceInputs:
@@ -177,6 +208,28 @@ def test_evidence_bundle_is_complete_sanitized_and_atomic(tmp_path: Path) -> Non
     assert not any(
         path.name.startswith(".refinement-evidence-") for path in output.parent.iterdir()
     )
+
+
+def test_evidence_bundle_retains_review_regions_with_path_free_mapping(tmp_path: Path) -> None:
+    evidence = _inputs(tmp_path)
+    evidence = replace(
+        evidence,
+        before_render=_render_with_regions(tmp_path, "before-tiled"),
+        after_render=None,
+    )
+
+    output = write_iteration_evidence_bundle(tmp_path / "evidence", evidence)
+
+    assert (output / "before-r00-c00.svg").is_file()
+    assert (output / "before-r00-c00.png").is_file()
+    assert (output / "before-r00-c01.svg").is_file()
+    assert (output / "before-r00-c01.png").is_file()
+    manifest = json.loads((output / "manifest.json").read_text())
+    regions = manifest["before_render"]["review_regions"]
+    assert [region["region_id"] for region in regions] == ["r00-c00", "r00-c01"]
+    assert [region["image_index"] for region in regions] == [0, 1]
+    assert regions[1]["view_box_mm"] == [142.15, 0.0, 154.85, 210.0]
+    assert str(tmp_path) not in json.dumps(regions)
 
 
 def test_session_bundle_references_iteration_hashes_and_writes_human_summary(
