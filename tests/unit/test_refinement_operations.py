@@ -48,21 +48,21 @@ def _wire_chain(
     wires = []
     for index, (start, end) in enumerate(zip(points, points[1:]), 1):
         wires.append(
-            f'  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) '
-            f'(xy {end[0]:.2f} {end[1]:.2f})) '
+            f"  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) "
+            f"(xy {end[0]:.2f} {end[1]:.2f})) "
             f'(stroke (width 0) (type default)) (uuid "w{index}"))'
         )
     if branch_at is not None:
         wires.append(
-            f'  (wire (pts (xy {branch_at[0]:.2f} {branch_at[1]:.2f}) '
-            f'(xy {branch_at[0]:.2f} {branch_at[1] + 5.08:.2f})) '
+            f"  (wire (pts (xy {branch_at[0]:.2f} {branch_at[1]:.2f}) "
+            f"(xy {branch_at[0]:.2f} {branch_at[1] + 5.08:.2f})) "
             '(stroke (width 0) (type default)) (uuid "branch"))'
         )
     if overlap is not None:
         start, end = overlap
         wires.append(
-            f'  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) '
-            f'(xy {end[0]:.2f} {end[1]:.2f})) '
+            f"  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) "
+            f"(xy {end[0]:.2f} {end[1]:.2f})) "
             '(stroke (width 0) (type default)) (uuid "overlap"))'
         )
     wire_text = "\n".join(wires)
@@ -100,8 +100,7 @@ def _wire_ir() -> CircuitIR:
 def _wire_geometries(path: Path) -> list[list[tuple[float, float]]]:
     doc = refinement_operations.SchematicDoc.load(path)
     return [
-        refinement_operations._wire_points(node)
-        for node in refinement_operations._wire_nodes(doc)
+        refinement_operations._wire_points(node) for node in refinement_operations._wire_nodes(doc)
     ]
 
 

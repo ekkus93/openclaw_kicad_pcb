@@ -218,8 +218,7 @@ def _add_detour(schematic: Path) -> None:
 
 def _path_length(points: list[tuple[float, float]]) -> float:
     return sum(
-        abs(start[0] - end[0]) + abs(start[1] - end[1])
-        for start, end in zip(points, points[1:])
+        abs(start[0] - end[0]) + abs(start[1] - end[1]) for start, end in zip(points, points[1:])
     )
 
 

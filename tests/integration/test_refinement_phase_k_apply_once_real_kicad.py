@@ -303,8 +303,7 @@ def test_apply_once_model_directed_real_kicad_round_improves_fixture(
     assert _hash(accepted) == result.accepted_hash_after == result.candidate_hash
     after_metrics = compute_refinement_metrics(accepted)
     assert (
-        after_metrics.total_wire_manhattan_length_mm
-        < before_metrics.total_wire_manhattan_length_mm
+        after_metrics.total_wire_manhattan_length_mm < before_metrics.total_wire_manhattan_length_mm
     )
     assert after_metrics.bend_count < before_metrics.bend_count
     assert result.evidence_dir is not None

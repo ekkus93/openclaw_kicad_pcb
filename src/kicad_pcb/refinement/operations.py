@@ -773,8 +773,7 @@ def _wire_matches_segment(
 ) -> bool:
     points = _wire_points(node)
     return len(points) == 2 and (
-        (points[0] == start and points[1] == end)
-        or (points[0] == end and points[1] == start)
+        (points[0] == start and points[1] == end) or (points[0] == end and points[1] == start)
     )
 
 

@@ -134,9 +134,9 @@ def test_phase_n1_special_case_claims_are_grounded_in_source_artifacts() -> None
 
         if "multi_unit_symbol" in special_cases:
             semantic = extract_schematic_semantics_from_doc(SchematicDoc.load(schematic_path))
-            assert any(
-                component.unit != "1" for component in semantic.components
-            ), entry["fixture_id"]
+            assert any(component.unit != "1" for component in semantic.components), entry[
+                "fixture_id"
+            ]
 
         if "unnamed_net" in special_cases:
             assert any(net.name.startswith("Net-(") for net in circuit_ir.nets), entry["fixture_id"]
