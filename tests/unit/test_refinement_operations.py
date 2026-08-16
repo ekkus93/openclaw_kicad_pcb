@@ -48,22 +48,22 @@ def _wire_chain(
     wires = []
     for index, (start, end) in enumerate(zip(points, points[1:]), 1):
         wires.append(
-            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
-            '(stroke (width 0) (type default)) (uuid "w%d"))'
-            % (start[0], start[1], end[0], end[1], index)
+            f'  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) '
+            f'(xy {end[0]:.2f} {end[1]:.2f})) '
+            f'(stroke (width 0) (type default)) (uuid "w{index}"))'
         )
     if branch_at is not None:
         wires.append(
-            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
+            f'  (wire (pts (xy {branch_at[0]:.2f} {branch_at[1]:.2f}) '
+            f'(xy {branch_at[0]:.2f} {branch_at[1] + 5.08:.2f})) '
             '(stroke (width 0) (type default)) (uuid "branch"))'
-            % (branch_at[0], branch_at[1], branch_at[0], branch_at[1] + 5.08)
         )
     if overlap is not None:
         start, end = overlap
         wires.append(
-            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
+            f'  (wire (pts (xy {start[0]:.2f} {start[1]:.2f}) '
+            f'(xy {end[0]:.2f} {end[1]:.2f})) '
             '(stroke (width 0) (type default)) (uuid "overlap"))'
-            % (start[0], start[1], end[0], end[1])
         )
     wire_text = "\n".join(wires)
     path.write_text(
@@ -395,7 +395,10 @@ def test_reroute_existing_net_rewrites_real_segment_chain(tmp_path: Path) -> Non
         (66.04, 60.96),
         (71.12, 60.96),
     ]
-    path = _wire_chain(tmp_path, points)
+    path = _wire_chain(
+        tmp_path,
+        points,
+    )
     source = _hash(path)
 
     result = execute_layout_operations(

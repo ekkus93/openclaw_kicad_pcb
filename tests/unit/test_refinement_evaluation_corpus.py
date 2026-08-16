@@ -75,8 +75,8 @@ def test_phase_n1_manifest_covers_every_required_layout_category_and_special_cas
         if isinstance(special_case, str)
     }
 
-    assert _REQUIRED_CATEGORIES <= categories
-    assert _REQUIRED_SPECIAL_CASES <= special_cases
+    assert categories >= _REQUIRED_CATEGORIES
+    assert special_cases >= _REQUIRED_SPECIAL_CASES
 
 
 def test_phase_n1_defect_notes_do_not_prescribe_production_repairs() -> None:

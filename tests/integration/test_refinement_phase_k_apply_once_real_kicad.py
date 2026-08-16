@@ -36,7 +36,6 @@ from kicad_pcb_web.services.schematic_refinement import (
 )
 from tests.conftest import requires_kicad
 
-
 _FIXTURE_ROOT = Path(__file__).parents[1] / "fixtures" / "refinement" / "phase_k_apply_once"
 _AUTHORITATIVE_IR = _FIXTURE_ROOT / "authoritative_ir.json"
 _PRISTINE_SCHEMATIC = _FIXTURE_ROOT / "pristine.kicad_sch"
