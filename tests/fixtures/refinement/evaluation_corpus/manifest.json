@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "phase": "N1",
+  "source_corpus": "tests/fixtures/model_corpus",
+  "fixtures": [
+    {
+      "fixture_id": "n1-crowded-power-regulator",
+      "source_fixture_id": "12v-to-5v-3-3v-switching-regulator-module-aeonlabs-ai-volvo-mkii-open-hardware",
+      "categories": [
+        "crowded_layout",
+        "excessive_wire_bends"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Dense symbol packing and a large power-symbol population make local grouping difficult to read.",
+        "Several routes contain unnecessary orthogonal bends and short segments."
+      ]
+    },
+    {
+      "fixture_id": "n1-repeated-current-source",
+      "source_fixture_id": "4-channel-switched-constant-current-source",
+      "categories": [
+        "inconsistent_repeated_blocks",
+        "crowded_layout"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Four repeated current-source channels are arranged with enough local variation to exercise repeated-block consistency review.",
+        "The repeated channels contain dense local symbol groupings and overlapping readability regions."
+      ]
+    },
+    {
+      "fixture_id": "n1-power-heavy-multiunit",
+      "source_fixture_id": "5v-linear-voltage-regulator-eurorack",
+      "categories": [
+        "poor_power_symbol_organization",
+        "label_readability_collisions"
+      ],
+      "special_cases": [
+        "multi_unit_symbol"
+      ],
+      "known_visual_defects": [
+        "A very large power-symbol population competes with the functional signal path for visual attention.",
+        "Dense labels and symbol text create multiple readability conflicts across the sheet."
+      ]
+    },
+    {
+      "fixture_id": "n1-uart-flow-orientation",
+      "source_fixture_id": "dual-ttl-uart-to-rs232-max232-reference-design",
+      "categories": [
+        "poor_left_to_right_signal_flow",
+        "awkward_connector_orientation"
+      ],
+      "special_cases": [
+        "unnamed_net"
+      ],
+      "known_visual_defects": [
+        "The interface signal path does not present as a consistently progressive left-to-right flow.",
+        "Endpoint placement and orientation make the external connection direction harder to scan than necessary."
+      ]
+    },
+    {
+      "fixture_id": "n1-buck-support-passives",
+      "source_fixture_id": "lmr51450sdrrr-6v-36v-to-500v-4a-buck-converter",
+      "categories": [
+        "support_passives_detached_from_primary_ic"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Support passives are spread across several local groups instead of reading as one compact primary-IC support network."
+      ]
+    },
+    {
+      "fixture_id": "n1-can-connector-flow",
+      "source_fixture_id": "mcp2551-can-transciever",
+      "categories": [
+        "awkward_connector_orientation",
+        "poor_left_to_right_signal_flow"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "The transceiver and external bus endpoint do not form a clean directional visual chain.",
+        "The external connection geometry makes interface direction less immediately legible."
+      ]
+    },
+    {
+      "fixture_id": "n1-microsd-crossings",
+      "source_fixture_id": "microsd-card-in-spi-mode-with-hotswap-support",
+      "categories": [
+        "avoidable_wire_crossings",
+        "excessive_wire_bends"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "The sheet contains numerous non-junction wire crossings that increase tracing effort.",
+        "Several signal routes use more orthogonal turns than the local geometry appears to require."
+      ]
+    },
+    {
+      "fixture_id": "n1-rp2040-no-connect",
+      "source_fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
+      "categories": [
+        "label_readability_collisions",
+        "poor_power_symbol_organization"
+      ],
+      "special_cases": [
+        "explicit_no_connect"
+      ],
+      "known_visual_defects": [
+        "High label density and many power symbols compete with the core signal groupings.",
+        "The broad sheet footprint makes local functional group boundaries difficult to scan quickly."
+      ]
+    },
+    {
+      "fixture_id": "n1-solar-support-spacing",
+      "source_fixture_id": "solar-charger-mppt-circuit-sts1-pcb-sidepanel",
+      "categories": [
+        "support_passives_detached_from_primary_ic",
+        "crowded_layout"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Support components do not consistently read as tightly associated with the primary control function.",
+        "Several local symbol groups are visually crowded."
+      ]
+    },
+    {
+      "fixture_id": "n1-tft-label-density",
+      "source_fixture_id": "st7789-tft-lcd-interface-neuralnetwork-based-autonomouscar",
+      "categories": [
+        "label_readability_collisions",
+        "poor_left_to_right_signal_flow"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Very high local-label density creates repeated text and wire readability conflicts.",
+        "Multiple interface branches compete for a single obvious left-to-right signal-flow narrative."
+      ]
+    },
+    {
+      "fixture_id": "n1-stm32-spread",
+      "source_fixture_id": "stm32g030-minimal-system-circuit-electrical",
+      "categories": [
+        "excessive_spread",
+        "label_readability_collisions"
+      ],
+      "special_cases": [
+        "multi_unit_symbol",
+        "explicit_no_connect"
+      ],
+      "known_visual_defects": [
+        "Functional groups occupy a large fraction of the available sheet and are separated by long visual travel distances.",
+        "The combination of many labels, long routes, and distributed power symbols reduces scan efficiency."
+      ]
+    },
+    {
+      "fixture_id": "n1-tpic-crossings-unnamed",
+      "source_fixture_id": "tpic8101dwrg4-tpic8101dwrg4",
+      "categories": [
+        "avoidable_wire_crossings",
+        "excessive_wire_bends"
+      ],
+      "special_cases": [
+        "unnamed_net"
+      ],
+      "known_visual_defects": [
+        "The signal network contains many non-junction crossings that make connectivity harder to follow.",
+        "Long routes and repeated turns increase visual path length around the central device."
+      ]
+    },
+    {
+      "fixture_id": "n1-w5500-crowded-power",
+      "source_fixture_id": "w5500-spi-interface-decoupling-termination-openknx-reg1",
+      "categories": [
+        "crowded_layout",
+        "poor_power_symbol_organization",
+        "label_readability_collisions"
+      ],
+      "special_cases": [],
+      "known_visual_defects": [
+        "Dense decoupling and termination networks crowd the primary interface IC and nearby signal routes.",
+        "Power symbols and text are interleaved with signal wiring in a way that increases visual clutter."
+      ]
+    }
+  ]
+}
