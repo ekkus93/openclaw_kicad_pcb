@@ -194,3 +194,9 @@
 
 - Graphviz/layout decoupling detection now needs to keep the original private-net rule for plain signal-to-GND bypass parts while also recognizing supply-like and `*BIAS*` local rails such as `VCC_LOCAL` and `LOCAL_BIAS` as valid decoupling anchors.
 - A plain one-signal/one-ground capacitor on a normal signal net like `AUDIO_IN` must still stay vertical as a shunt/bypass part instead of being promoted into the horizontal decoupling lane.
+
+## 2026-08-16T09:40:36Z - GPT-5.6 Sol - Published Phase D real-KiCad wire geometry refinement
+
+- Phase D production wire operations now resolve exact expected polylines as chains of legal two-point KiCad wire segments, preserve an anchor UUID, reject ambiguous interior contacts and route collisions, and rewrite only legal two-point segments.
+- Added focused unit regressions plus three real-KiCad integration cases for remove_redundant_wire_bend, shorten_wire_path, and reroute_existing_net_orthogonal; local refinement-focused validation was 80/80 passed, while final real-kicad CI evidence remains pending.
+- Clean Phase D code commit: b3bfb1f7e000c3b6fbdbabeb3206469d4fc71c27 (fix: support real KiCad wire geometry refinement). The commit changes only operations.py, test_refinement_operations.py, and test_refinement_phase_d_electrical_invariance.py.
