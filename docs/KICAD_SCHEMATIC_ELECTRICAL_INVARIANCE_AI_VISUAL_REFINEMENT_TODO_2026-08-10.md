@@ -461,11 +461,16 @@ No silent fallback, approximate mutation, skipped hard verification, or `pass_wi
 
 ## F2 — Large schematic handling
 
-- [ ] Define threshold for whole-page readability.
-- [ ] Add deterministic tiling/cropping if needed.
-- [ ] Preserve mapping from tile pixels/regions back to schematic coordinates.
-- [ ] Do not shrink text/refs below a documented useful size merely to fit one image.
-- [ ] Add fixtures for multi-tile review if supported in v1.
+Implementation contract (2026-08-16): vision review renders at a fixed 8 px/mm,
+uses deterministic 12.7 mm overlapping regions capped at 3584 px per axis (448 mm),
+sends at most four row-major regions, and fails closed with
+`REFINEMENT_RENDER_TOO_LARGE` rather than shrinking below the readable scale.
+
+- [x] Define threshold for whole-page readability.
+- [x] Add deterministic tiling/cropping if needed.
+- [x] Preserve mapping from tile pixels/regions back to schematic coordinates.
+- [x] Do not shrink text/refs below a documented useful size merely to fit one image.
+- [x] Add fixtures for multi-tile review if supported in v1.
 
 ## F3 — Model context object map
 
