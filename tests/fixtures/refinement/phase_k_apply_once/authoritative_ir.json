@@ -1,0 +1,48 @@
+{
+  "components": [
+    {
+      "ref": "R1",
+      "symbol": "TestLib:R",
+      "value": "10k"
+    },
+    {
+      "ref": "R2",
+      "symbol": "TestLib:R",
+      "value": "20k"
+    }
+  ],
+  "nets": [
+    {
+      "name": "LEFT",
+      "pins": [
+        {
+          "pin": "1",
+          "ref": "R1"
+        }
+      ]
+    },
+    {
+      "name": "MID",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R1"
+        },
+        {
+          "pin": "1",
+          "ref": "R2"
+        }
+      ]
+    },
+    {
+      "name": "RIGHT",
+      "pins": [
+        {
+          "pin": "2",
+          "ref": "R2"
+        }
+      ]
+    }
+  ],
+  "version": "1"
+}

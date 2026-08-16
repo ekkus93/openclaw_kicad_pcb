@@ -7,15 +7,12 @@ import shutil
 import struct
 import xml.etree.ElementTree as ET
 import zlib
-from argparse import Namespace
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
 
 import pytest
 
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.commands.netlist import cmd_new_from_netlist
 from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement import rendering
@@ -30,8 +27,7 @@ from kicad_pcb.refinement.schematic_semantics import (
 )
 from kicad_pcb.runner import find_kicad_cli
 from kicad_pcb.sch_doc import SchematicDoc
-from kicad_pcb.sch_doc.nodes import make_wire_node
-from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
+from kicad_pcb.sexpr.nodes import AtomNode, ListNode, StringNode
 from kicad_pcb_web.services.llm import LlmCompletion, LlmRequest
 from kicad_pcb_web.services.schematic_refinement import (
     RefinementIterationLimits,
@@ -41,42 +37,16 @@ from kicad_pcb_web.services.schematic_refinement import (
 from tests.conftest import requires_kicad
 
 
-def _payload() -> dict[str, object]:
-    return {
-        "version": "1",
-        "components": [
-            {"ref": "R1", "symbol": "TestLib:R", "value": "10k"},
-            {"ref": "R2", "symbol": "TestLib:R", "value": "20k"},
-        ],
-        "nets": [
-            {"name": "LEFT", "pins": [{"ref": "R1", "pin": "1"}]},
-            {
-                "name": "MID",
-                "pins": [
-                    {"ref": "R1", "pin": "2"},
-                    {"ref": "R2", "pin": "1"},
-                ],
-            },
-            {"name": "RIGHT", "pins": [{"ref": "R2", "pin": "2"}]},
-        ],
-    }
+_FIXTURE_ROOT = Path(__file__).parents[1] / "fixtures" / "refinement" / "phase_k_apply_once"
+_AUTHORITATIVE_IR = _FIXTURE_ROOT / "authoritative_ir.json"
+_PRISTINE_SCHEMATIC = _FIXTURE_ROOT / "pristine.kicad_sch"
+_ACCEPTED_BEFORE_SCHEMATIC = _FIXTURE_ROOT / "accepted_before.kicad_sch"
 
 
-def _generate(root: Path, *, name: str) -> tuple[CircuitIR, Path]:
-    ir_path = root / f"{name}_ir.json"
-    ir_path.write_text(json.dumps(_payload()), encoding="utf-8")
-    generated = cmd_new_from_netlist(
-        Namespace(
-            name=name,
-            out_dir=str(root),
-            description="",
-            netlist=str(ir_path),
-            symbols_dir=str(Path(__file__).parents[1] / "fixtures" / "symbols"),
-            mode="internal",
-            layout="graphviz",
-        )
-    )
-    return CircuitIR.load(ir_path), generated.managed_schematic_path
+def _copy_real_fixture(root: Path, *, name: str) -> tuple[CircuitIR, Path]:
+    accepted = root / f"{name}.kicad_sch"
+    shutil.copy2(_ACCEPTED_BEFORE_SCHEMATIC, accepted)
+    return CircuitIR.load(_AUTHORITATIVE_IR), accepted
 
 
 def _hash(path: Path) -> str:
@@ -153,61 +123,6 @@ def _mid_chain(schematic: Path) -> tuple[list[ListNode], list[tuple[float, float
         previous = node
     assert current == end
     return nodes, points
-
-
-def _replace_segment(
-    schematic: Path,
-    target: ListNode,
-    replacement_points: list[tuple[float, float]],
-) -> None:
-    doc = SchematicDoc.load(schematic)
-    target_uuid = _wire_uuid(target)
-    replacements = [
-        make_wire_node(
-            start[0],
-            start[1],
-            end[0],
-            end[1],
-            str(uuid5(NAMESPACE_URL, f"{target_uuid}:phase-k-detour:{index}")),
-        )
-        for index, (start, end) in enumerate(zip(replacement_points, replacement_points[1:]))
-    ]
-    items: list[Node] = []
-    replaced = False
-    for item in doc.root.items:
-        if isinstance(item, ListNode) and item.key == "wire" and _wire_uuid(item) == target_uuid:
-            items.extend(replacements)
-            replaced = True
-        else:
-            items.append(item)
-    assert replaced
-    doc.root = ListNode(tuple(items), doc.root.pos)
-    doc.save(schematic)
-
-
-def _add_detour(schematic: Path) -> tuple[str, tuple[tuple[float, float], ...]]:
-    nodes, points = _mid_chain(schematic)
-    index = max(
-        range(len(nodes)),
-        key=lambda item: _path_length([points[item], points[item + 1]]),
-    )
-    start, end = points[index], points[index + 1]
-    if start[0] == end[0]:
-        offset = start[0] - 5.08
-        replacement = [start, (offset, start[1]), (offset, end[1]), end]
-    else:
-        offset = start[1] - 5.08
-        replacement = [start, (start[0], offset), (end[0], offset), end]
-    _replace_segment(schematic, nodes[index], replacement)
-    detour_nodes, detour_points = _mid_chain(schematic)
-    return _wire_uuid(detour_nodes[0]), tuple(detour_points)
-
-
-def _path_length(points: list[tuple[float, float]]) -> float:
-    return sum(
-        abs(start[0] - end[0]) + abs(start[1] - end[1])
-        for start, end in zip(points, points[1:])
-    )
 
 
 def _png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -341,13 +256,13 @@ def test_apply_once_model_directed_real_kicad_round_improves_fixture(
     monkeypatch: pytest.MonkeyPatch,
     home_tmp: Path,
 ) -> None:
-    authoritative, pristine = _generate(home_tmp, name="PhaseKApplyOnce")
-    accepted = home_tmp / "phase_k_accepted.kicad_sch"
-    shutil.copy2(pristine, accepted)
-    wire_uuid, expected_points = _add_detour(accepted)
+    authoritative, accepted = _copy_real_fixture(home_tmp, name="phase_k_accepted")
+    detour_nodes, expected_points = _mid_chain(accepted)
+    wire_uuid = _wire_uuid(detour_nodes[0])
     before_bytes = accepted.read_bytes()
+    before_hash = _hash(accepted)
     before_metrics = compute_refinement_metrics(accepted)
-    pristine_metrics = compute_refinement_metrics(pristine)
+    pristine_metrics = compute_refinement_metrics(_PRISTINE_SCHEMATIC)
     assert (
         before_metrics.total_wire_manhattan_length_mm
         > pristine_metrics.total_wire_manhattan_length_mm
@@ -357,7 +272,7 @@ def test_apply_once_model_directed_real_kicad_round_improves_fixture(
     adapter = KicadCliAdapter(kicad_cli=find_kicad_cli())
     precheck = verify_schematic_electrical_invariance(
         authoritative_ir=authoritative,
-        baseline=build_schematic_electrical_baseline(authoritative, pristine),
+        baseline=build_schematic_electrical_baseline(authoritative, _PRISTINE_SCHEMATIC),
         candidate_schematic=accepted,
         adapter=adapter,
         work_dir=home_tmp / "phase-k-precheck",
@@ -394,7 +309,31 @@ def test_apply_once_model_directed_real_kicad_round_improves_fixture(
     )
     assert after_metrics.bend_count < before_metrics.bend_count
     assert result.evidence_dir is not None
-    assert (result.evidence_dir / "manifest.json").is_file()
+    manifest = json.loads((result.evidence_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["accepted_hash_before"] == before_hash
+    assert manifest["accepted_hash_after"] == result.accepted_hash_after
+    assert manifest["candidate_hash"] == result.candidate_hash
+    assert manifest["disposition"] == "approved_for_promotion"
+    assert manifest["reason_code"] == "REFINEMENT_ACCEPTED"
+    evidence_names = (
+        "critic.json",
+        "plan.json",
+        "operations.json",
+        "electrical.json",
+        "structural.json",
+        "metrics_before.json",
+        "metrics_after.json",
+        "quality.json",
+    )
+    assert all((result.evidence_dir / name).is_file() for name in evidence_names)
+    electrical_evidence = json.loads(
+        (result.evidence_dir / "electrical.json").read_text(encoding="utf-8")
+    )
+    structural_evidence = json.loads(
+        (result.evidence_dir / "structural.json").read_text(encoding="utf-8")
+    )
+    assert electrical_evidence["status"] == "passed"
+    assert structural_evidence["status"] == "passed"
     assert len(model.requests) == 2
     assert model.requests[0].images
     assert not model.requests[1].images
@@ -405,10 +344,9 @@ def test_apply_once_stale_model_wire_plan_preserves_real_fixture_bytes(
     monkeypatch: pytest.MonkeyPatch,
     home_tmp: Path,
 ) -> None:
-    authoritative, pristine = _generate(home_tmp, name="PhaseKStalePlan")
-    accepted = home_tmp / "phase_k_stale_accepted.kicad_sch"
-    shutil.copy2(pristine, accepted)
-    wire_uuid, expected_points = _add_detour(accepted)
+    authoritative, accepted = _copy_real_fixture(home_tmp, name="phase_k_stale_accepted")
+    detour_nodes, expected_points = _mid_chain(accepted)
+    wire_uuid = _wire_uuid(detour_nodes[0])
     before = accepted.read_bytes()
     adapter = KicadCliAdapter(kicad_cli=find_kicad_cli())
 

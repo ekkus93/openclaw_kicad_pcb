@@ -1,0 +1,191 @@
+(kicad_sch
+  (version 20230121)
+  (generator eeschema)
+  (uuid "69c1153b-9b86-4099-9e67-a6e8456bb9c8")
+  (paper "A4")
+  (lib_symbols
+    (symbol
+      "TestLib:R"
+      (pin
+        passive
+        line
+        (at 0 0 0)
+        (length 2.54)
+        (name "A" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin
+        passive
+        line
+        (at 5.08 0 180)
+        (length 2.54)
+        (name "B" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+  (text
+    "kicad-pcb:generated=v1"
+    (at -1000.00 -1000.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (text
+    "kicad-pcb:region=managed"
+    (at -1000.00 -1010.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (symbol
+    (lib_id "TestLib:R")
+    (at 80.01 118.11 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "8ba83db1-8c25-4e3b-b6eb-0ebf3d859468")
+    (property
+      "Reference"
+      "R1"
+      (at 80.01 111.76 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "10k"
+      (at 80.01 124.46 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 80.01 118.11 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 80.01 118.11 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "c26c42d4-4898-47b4-993e-be12fde160cb"))
+    (pin "2" (uuid "f2498b07-6efc-40b2-97ec-5fbee285e88c"))
+    (instances
+      (project
+        "PhaseKApplyOnceFixture"
+        (path "/69c1153b-9b86-4099-9e67-a6e8456bb9c8" (reference "R1") (unit 1))
+      )
+    )
+  )
+  (symbol
+    (lib_id "TestLib:R")
+    (at 130.81 125.73 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (uuid "9cf5fa87-c338-4f2f-96db-f8ea8099a70b")
+    (property
+      "Reference"
+      "R2"
+      (at 130.81 119.38 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Value"
+      "20k"
+      (at 130.81 132.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property
+      "Footprint"
+      ""
+      (at 130.81 125.73 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property
+      "Datasheet"
+      "~"
+      (at 130.81 125.73 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid "db266ec9-5a36-4852-b2b5-360ba6d6818f"))
+    (pin "2" (uuid "6e138a7a-0b46-4149-a272-8f2dd1f39086"))
+    (instances
+      (project
+        "PhaseKApplyOnceFixture"
+        (path "/69c1153b-9b86-4099-9e67-a6e8456bb9c8" (reference "R2") (unit 1))
+      )
+    )
+  )
+  (wire
+    (pts (xy 80.01 118.11) (xy 74.93 118.11))
+    (stroke (width 0) (type default))
+    (uuid "d532b372-7aed-416a-aa5c-d4740b1ebec0")
+  )
+  (wire
+    (pts (xy 85.09 118.11) (xy 125.73 118.11))
+    (stroke (width 0) (type default))
+    (uuid "a93343b4-7c5c-48e8-80bd-e705a07388cf")
+  )
+  (wire
+    (pts (xy 130.81 125.73) (xy 125.73 125.73))
+    (stroke (width 0) (type default))
+    (uuid "d343a772-b048-4dcc-ad2b-723d890a5345")
+  )
+  (wire
+    (pts (xy 125.73 125.73) (xy 125.73 118.11))
+    (stroke (width 0) (type default))
+    (uuid "d3bc88b8-6e24-4f65-b0cd-efac47133e80")
+  )
+  (wire
+    (pts (xy 135.89 125.73) (xy 135.89 120.65))
+    (stroke (width 0) (type default))
+    (uuid "2e4966f2-b09f-4151-b9cf-fb1a2895cc93")
+  )
+  (label
+    "LEFT"
+    (at 74.93 118.11 180)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "63480772-3b8a-436f-b3ea-2209541faf5f")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (label
+    "RIGHT"
+    (at 135.89 120.65 0)
+    (fields_autoplaced yes)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid "74696e75-f3e2-4833-8487-82f5cf304924")
+    (property
+      "Intersheet References"
+      "${INTERSHEET_REFS}"
+      (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (hide yes))
+    )
+  )
+  (text
+    "kicad-pcb:bind={\"net_name\":\"LEFT\",\"pin\":\"1\",\"ref\":\"R1\"}"
+    (at -1200.00 -1500.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (text
+    "kicad-pcb:bind={\"net_name\":\"MID\",\"pin\":\"2\",\"ref\":\"R1\"}"
+    (at -1200.00 -1510.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (text
+    "kicad-pcb:bind={\"net_name\":\"MID\",\"pin\":\"1\",\"ref\":\"R2\"}"
+    (at -1200.00 -1520.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (text
+    "kicad-pcb:bind={\"net_name\":\"RIGHT\",\"pin\":\"2\",\"ref\":\"R2\"}"
+    (at -1200.00 -1530.00 0)
+    (effects (font (size 1.27 1.27)) (justify left) hide)
+  )
+  (sheet_instances (path "/" (page "1")))
+)
