@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal
+from uuid import NAMESPACE_URL, uuid5
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -15,7 +16,7 @@ from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
-from kicad_pcb.sexpr.builder import L, atom, fnum
+from kicad_pcb.sexpr.builder import L, atom, fnum, string
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
 
 from .page_geometry import schematic_page_bounds
@@ -436,14 +437,14 @@ def _apply_wire_operation(
 ) -> dict[str, object]:
     if operation_type == "remove_redundant_wire_bend":
         assert isinstance(args, RemoveRedundantWireBendArgs)
-        node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
+        nodes, points = _resolve_wire_chain(doc, args.wire_uuid, args.expected_points_mm)
         simplified = _simplify_orthogonal(points)
         if len(simplified) >= len(points):
             raise UserError(
                 "Wire has no redundant bend to remove.",
                 code="REFINEMENT_OPERATION_NO_EFFECT",
             )
-        _replace_top_level(doc, node, _replace_wire_points(node, simplified))
+        _replace_wire_chain(doc, nodes, simplified, anchor_uuid=args.wire_uuid)
         return {
             "wire_uuid": args.wire_uuid,
             "before_points": len(points),
@@ -457,7 +458,7 @@ def _apply_wire_operation(
         )
     if operation_type == "shorten_wire_path":
         assert isinstance(args, ShortenWirePathArgs)
-        node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
+        nodes, points = _resolve_wire_chain(doc, args.wire_uuid, args.expected_points_mm)
         _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
         replacement = _shorter_manhattan(points)
         if replacement is None:
@@ -467,11 +468,11 @@ def _apply_wire_operation(
             )
     else:
         assert isinstance(args, RerouteExistingNetOrthogonalArgs)
-        node, points = _resolve_wire(doc, args.wire_uuid, args.expected_points_mm)
+        nodes, points = _resolve_wire_chain(doc, args.wire_uuid, args.expected_points_mm)
         _validate_wire_net_context(doc, authoritative_ir, args.net_name, points)
         replacement = _bounded_reroute(args, points, policy)
-    _validate_route_collision(doc, node, replacement)
-    _replace_top_level(doc, node, _replace_wire_points(node, replacement))
+    _validate_route_collision(doc, nodes, replacement)
+    _replace_wire_chain(doc, nodes, replacement, anchor_uuid=args.wire_uuid)
     return {
         "wire_uuid": args.wire_uuid,
         "net_name": args.net_name,
@@ -716,21 +717,179 @@ def _validate_point(doc: SchematicDoc, x: float, y: float, policy: LayoutOperati
         )
 
 
-def _resolve_wire(
+def _resolve_wire_chain(
     doc: SchematicDoc,
     wire_uuid: str,
     expected: tuple[tuple[float, float], ...],
-) -> tuple[ListNode, list[tuple[float, float]]]:
-    node = _find_top_level_uuid(doc, wire_uuid, {"wire"})
-    points = _wire_points(node)
-    normalized_expected = [(round(x, 9), round(y, 9)) for x, y in expected]
-    if points != normalized_expected:
-        raise UserError(
-            "Wire endpoints/points changed since plan creation.",
-            code="REFINEMENT_STALE",
-        )
+) -> tuple[list[ListNode], list[tuple[float, float]]]:
+    anchor = _find_top_level_uuid(doc, wire_uuid, {"wire"})
+    points = [(round(x, 9), round(y, 9)) for x, y in expected]
     _validate_orthogonal(points)
-    return node, points
+    if len(points) != len(set(points)):
+        raise UserError(
+            "Wire chain contains repeated geometry points.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
+
+    anchor_points = _wire_points(anchor)
+    if anchor_points == points:
+        nodes = [anchor]
+    else:
+        wires = _wire_nodes(doc)
+        nodes = []
+        for start, end in zip(points, points[1:]):
+            matches = [node for node in wires if _wire_matches_segment(node, start, end)]
+            if len(matches) != 1:
+                raise UserError(
+                    "Wire segment chain changed since plan creation.",
+                    code="REFINEMENT_STALE",
+                    details={
+                        "wire_uuid": wire_uuid,
+                        "segment": [list(start), list(end)],
+                        "match_count": len(matches),
+                    },
+                )
+            node = matches[0]
+            if any(node is existing for existing in nodes):
+                raise UserError(
+                    "Wire chain reuses an existing segment.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+            nodes.append(node)
+        if not any(anchor is node for node in nodes):
+            raise UserError(
+                "Wire anchor is not part of the expected segment chain.",
+                code="REFINEMENT_STALE",
+            )
+
+    _validate_wire_chain_interior(doc, nodes, points)
+    return nodes, points
+
+
+def _wire_matches_segment(
+    node: ListNode,
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> bool:
+    points = _wire_points(node)
+    return len(points) == 2 and (
+        (points[0] == start and points[1] == end)
+        or (points[0] == end and points[1] == start)
+    )
+
+
+def _validate_wire_chain_interior(
+    doc: SchematicDoc,
+    source_nodes: list[ListNode],
+    points: list[tuple[float, float]],
+) -> None:
+    interior = set(points[1:-1])
+    if not interior:
+        return
+    source_ids = {id(node) for node in source_nodes}
+    for wire in _wire_nodes(doc):
+        if id(wire) in source_ids:
+            continue
+        other = _wire_points(wire)
+        for point in interior:
+            if any(_point_on_segment(point, a, b) for a, b in zip(other, other[1:])):
+                raise UserError(
+                    "Wire chain interior point has unrelated wire contact.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+    for node in doc.root.items:
+        if not isinstance(node, ListNode):
+            continue
+        if node.key in {"label", "global_label", "hierarchical_label", "junction", "no_connect"}:
+            if _node_at(node) in interior:
+                raise UserError(
+                    "Wire chain interior point carries anchored schematic geometry.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+    semantic = extract_schematic_semantics_from_doc(doc)
+    for component in semantic.components:
+        for positions in resolve_component_pin_position_candidates(doc, component).values():
+            if interior.intersection(positions):
+                raise UserError(
+                    "Wire chain interior point is a component terminal.",
+                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                )
+
+
+def _replace_wire_chain(
+    doc: SchematicDoc,
+    source_nodes: list[ListNode],
+    points: list[tuple[float, float]],
+    *,
+    anchor_uuid: str,
+) -> None:
+    segments = list(zip(points, points[1:]))
+    if not segments:
+        raise UserError(
+            "Wire replacement requires at least one segment.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
+    source_uuids: list[str] = []
+    for node in source_nodes:
+        segment_uuid = _string_child(node, "uuid")
+        if not segment_uuid:
+            raise UserError(
+                "Wire chain lacks stable segment UUIDs.",
+                code="REFINEMENT_AMBIGUOUS_TARGET",
+            )
+        source_uuids.append(segment_uuid)
+    if len(source_uuids) != len(set(source_uuids)):
+        raise UserError(
+            "Wire chain contains duplicate segment UUIDs.",
+            code="REFINEMENT_AMBIGUOUS_TARGET",
+        )
+    if anchor_uuid not in source_uuids:
+        raise UserError("Wire anchor became stale during mutation.", code="REFINEMENT_STALE")
+    reusable_uuids = [anchor_uuid]
+    reusable_uuids.extend(item for item in source_uuids if item != anchor_uuid)
+
+    replacements: list[ListNode] = []
+    for index, (start, end) in enumerate(segments):
+        template = source_nodes[min(index, len(source_nodes) - 1)]
+        if index < len(reusable_uuids):
+            segment_uuid = reusable_uuids[index]
+            assert segment_uuid is not None
+        else:
+            seed = (
+                f"{anchor_uuid}:refinement-wire:{index}:"
+                f"{start[0]:.9f},{start[1]:.9f}:{end[0]:.9f},{end[1]:.9f}"
+            )
+            segment_uuid = str(uuid5(NAMESPACE_URL, seed))
+        replacements.append(_replace_wire_segment(template, start, end, segment_uuid))
+
+    source_ids = {id(node) for node in source_nodes}
+    items: list[Node] = []
+    inserted = False
+    for item in doc.root.items:
+        if id(item) in source_ids:
+            if not inserted:
+                items.extend(replacements)
+                inserted = True
+            continue
+        items.append(item)
+    if not inserted:
+        raise UserError("Wire chain became stale during mutation.", code="REFINEMENT_STALE")
+    doc.root = ListNode(tuple(items), doc.root.pos)
+
+
+def _replace_wire_segment(
+    node: ListNode,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    wire_uuid: str,
+) -> ListNode:
+    replacement = _replace_wire_points(node, [start, end])
+    uuid_node = L(atom("uuid"), string(wire_uuid))
+    items = [
+        uuid_node if isinstance(child, ListNode) and child.key == "uuid" else child
+        for child in replacement.items
+    ]
+    return ListNode(tuple(items), replacement.pos)
 
 
 def _validate_wire_net_context(
@@ -843,26 +1002,58 @@ def _bounded_reroute(
 
 def _validate_route_collision(
     doc: SchematicDoc,
-    source_node: ListNode,
+    source_nodes: list[ListNode],
     points: list[tuple[float, float]],
 ) -> None:
     _validate_orthogonal(points)
     # Reject contacts with unrelated wire interiors/endpoints except our two endpoints.
     endpoints = {points[0], points[-1]}
+    source_ids = {id(node) for node in source_nodes}
     for wire in _wire_nodes(doc):
-        if wire is source_node:
+        if id(wire) in source_ids:
             continue
         other = _wire_points(wire)
         for a, b in zip(points, points[1:]):
             for c, d in zip(other, other[1:]):
-                intersection = _orthogonal_intersection(a, b, c, d)
-                if intersection is not None and intersection not in endpoints:
+                intersection, overlaps = _orthogonal_contact(a, b, c, d)
+                if overlaps or (intersection is not None and intersection not in endpoints):
                     raise UserError(
                         "Reroute would collide with unrelated wire geometry.",
                         code="REFINEMENT_ROUTE_COLLISION",
                     )
+    for node in doc.root.items:
+        if not isinstance(node, ListNode):
+            continue
+        if node.key not in {
+            "label",
+            "global_label",
+            "hierarchical_label",
+            "junction",
+            "no_connect",
+        }:
+            continue
+        point = _node_at(node)
+        if point not in endpoints and any(
+            _point_on_segment(point, a, b) for a, b in zip(points, points[1:])
+        ):
+            raise UserError(
+                "Reroute would contact unrelated anchored schematic geometry.",
+                code="REFINEMENT_ROUTE_COLLISION",
+            )
+
     semantic = extract_schematic_semantics_from_doc(doc)
     for component in semantic.components:
+        pin_positions = {
+            point
+            for positions in resolve_component_pin_position_candidates(doc, component).values()
+            for point in positions
+        }
+        for point in pin_positions - endpoints:
+            if any(_point_on_segment(point, a, b) for a, b in zip(points, points[1:])):
+                raise UserError(
+                    "Reroute would contact an unrelated component terminal.",
+                    code="REFINEMENT_ROUTE_COLLISION",
+                )
         bbox = (
             component.x - 5.08,
             component.y - 5.08,
@@ -1103,15 +1294,42 @@ def _point_on_polyline_interior(
     )
 
 
-def _orthogonal_intersection(a, b, c, d):
+def _orthogonal_contact(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    c: tuple[float, float],
+    d: tuple[float, float],
+) -> tuple[tuple[float, float] | None, bool]:
     first_vertical = a[0] == b[0]
     second_vertical = c[0] == d[0]
-    if first_vertical == second_vertical:
-        return None
-    v1, v2 = (a, b) if first_vertical else (c, d)
-    h1, h2 = (c, d) if first_vertical else (a, b)
-    point = (v1[0], h1[1])
-    return point if _point_on_segment(point, v1, v2) and _point_on_segment(point, h1, h2) else None
+    if first_vertical != second_vertical:
+        v1, v2 = (a, b) if first_vertical else (c, d)
+        h1, h2 = (c, d) if first_vertical else (a, b)
+        point = (v1[0], h1[1])
+        if _point_on_segment(point, v1, v2) and _point_on_segment(point, h1, h2):
+            return point, False
+        return None, False
+
+    if first_vertical:
+        if a[0] != c[0]:
+            return None, False
+        low = max(min(a[1], b[1]), min(c[1], d[1]))
+        high = min(max(a[1], b[1]), max(c[1], d[1]))
+        if low > high:
+            return None, False
+        if low == high:
+            return (a[0], low), False
+        return None, True
+
+    if a[1] != c[1]:
+        return None, False
+    low = max(min(a[0], b[0]), min(c[0], d[0]))
+    high = min(max(a[0], b[0]), max(c[0], d[0]))
+    if low > high:
+        return None, False
+    if low == high:
+        return (low, a[1]), False
+    return None, True
 
 
 def _segment_crosses_bbox(a, b, bbox):

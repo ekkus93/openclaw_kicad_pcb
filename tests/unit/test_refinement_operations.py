@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import kicad_pcb.refinement.operations as refinement_operations
+from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.operations import execute_layout_operations, registered_operation_schemas
 
@@ -34,6 +35,74 @@ def _simple(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+def _wire_chain(
+    tmp_path: Path,
+    points: list[tuple[float, float]],
+    *,
+    branch_at: tuple[float, float] | None = None,
+    overlap: tuple[tuple[float, float], tuple[float, float]] | None = None,
+) -> Path:
+    path = tmp_path / "wire_chain.kicad_sch"
+    wires = []
+    for index, (start, end) in enumerate(zip(points, points[1:]), 1):
+        wires.append(
+            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
+            '(stroke (width 0) (type default)) (uuid "w%d"))'
+            % (start[0], start[1], end[0], end[1], index)
+        )
+    if branch_at is not None:
+        wires.append(
+            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
+            '(stroke (width 0) (type default)) (uuid "branch"))'
+            % (branch_at[0], branch_at[1], branch_at[0], branch_at[1] + 5.08)
+        )
+    if overlap is not None:
+        start, end = overlap
+        wires.append(
+            '  (wire (pts (xy %.2f %.2f) (xy %.2f %.2f)) '
+            '(stroke (width 0) (type default)) (uuid "overlap"))'
+            % (start[0], start[1], end[0], end[1])
+        )
+    wire_text = "\n".join(wires)
+    path.write_text(
+        f"""(kicad_sch
+  (version 20230121)
+  (generator eeschema)
+  (uuid "root")
+  (paper "A4")
+  (lib_symbols
+    (symbol "Device:R"
+      (pin passive line (at 0 0 0) (length 2.54) (name "~") (number "1"))
+      (pin passive line (at 7.62 0 180) (length 2.54) (name "~") (number "2"))))
+  (symbol (lib_id "Device:R") (at 25.4 25.4 0) (unit 1) (in_bom yes) (on_board yes) (uuid "r1")
+    (property "Reference" "R1") (property "Value" "10k") (property "Footprint" ""))
+{wire_text}
+  (label "N" (at {points[0][0]:.2f} {points[0][1]:.2f} 0) (uuid "start-label"))
+  (label "N" (at {points[-1][0]:.2f} {points[-1][1]:.2f} 0) (uuid "end-label"))
+  (sheet_instances (path "/" (page "1"))))""",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _wire_ir() -> CircuitIR:
+    return CircuitIR.model_validate(
+        {
+            "version": "1",
+            "components": [{"ref": "R1", "symbol": "Device:R", "value": "10k"}],
+            "nets": [{"name": "N", "pins": [{"ref": "R1", "pin": "1"}]}],
+        }
+    )
+
+
+def _wire_geometries(path: Path) -> list[list[tuple[float, float]]]:
+    doc = refinement_operations.SchematicDoc.load(path)
+    return [
+        refinement_operations._wire_points(node)
+        for node in refinement_operations._wire_nodes(doc)
+    ]
 
 
 def test_registry_contains_only_explicit_layout_vocabulary() -> None:
@@ -194,3 +263,165 @@ def test_move_label_rejects_unknown_uuid(tmp_path: Path) -> None:
             ],
             expected_source_hash=source,
         )
+
+
+def test_remove_redundant_wire_bend_rewrites_real_segment_chain(tmp_path: Path) -> None:
+    points = [(50.8, 50.8), (60.96, 50.8), (71.12, 50.8)]
+    path = _wire_chain(tmp_path, points)
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "wire-remove-bend",
+                "source_schematic_hash": source,
+                "operation_type": "remove_redundant_wire_bend",
+                "arguments": {"wire_uuid": "w1", "expected_points_mm": points},
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.candidate_hash != source
+    assert _wire_geometries(path) == [[points[0], points[-1]]]
+
+
+def test_shorten_wire_path_rewrites_real_segment_chain(tmp_path: Path) -> None:
+    points = [
+        (50.8, 50.8),
+        (50.8, 45.72),
+        (66.04, 45.72),
+        (66.04, 60.96),
+        (71.12, 60.96),
+    ]
+    path = _wire_chain(tmp_path, points)
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "wire-shorten",
+                "source_schematic_hash": source,
+                "operation_type": "shorten_wire_path",
+                "arguments": {
+                    "wire_uuid": "w1",
+                    "net_name": "N",
+                    "expected_points_mm": points,
+                },
+            }
+        ],
+        expected_source_hash=source,
+        authoritative_ir=_wire_ir(),
+    )
+
+    geometries = _wire_geometries(path)
+    assert result.candidate_hash != source
+    assert len(geometries) == 2
+    assert all(len(segment) == 2 for segment in geometries)
+    assert {tuple(geometries[0][0]), tuple(geometries[-1][-1])} <= {points[0], points[-1]}
+
+
+def test_wire_chain_rejects_interior_branch_without_write(tmp_path: Path) -> None:
+    points = [(50.8, 50.8), (60.96, 50.8), (71.12, 50.8)]
+    path = _wire_chain(tmp_path, points, branch_at=points[1])
+    source = _hash(path)
+    before = path.read_bytes()
+
+    with pytest.raises(UserError, match="interior"):
+        execute_layout_operations(
+            path,
+            [
+                {
+                    "schema_version": "1.0",
+                    "operation_id": "wire-branch",
+                    "source_schematic_hash": source,
+                    "operation_type": "remove_redundant_wire_bend",
+                    "arguments": {"wire_uuid": "w1", "expected_points_mm": points},
+                }
+            ],
+            expected_source_hash=source,
+        )
+
+    assert path.read_bytes() == before
+
+
+def test_shorten_wire_path_rejects_collinear_unrelated_overlap(tmp_path: Path) -> None:
+    points = [
+        (50.8, 50.8),
+        (50.8, 45.72),
+        (66.04, 45.72),
+        (66.04, 60.96),
+        (71.12, 60.96),
+    ]
+    path = _wire_chain(
+        tmp_path,
+        points,
+        overlap=((55.88, 60.96), (60.96, 60.96)),
+    )
+    source = _hash(path)
+    before = path.read_bytes()
+
+    with pytest.raises(UserError, match="collide"):
+        execute_layout_operations(
+            path,
+            [
+                {
+                    "schema_version": "1.0",
+                    "operation_id": "wire-overlap",
+                    "source_schematic_hash": source,
+                    "operation_type": "shorten_wire_path",
+                    "arguments": {
+                        "wire_uuid": "w1",
+                        "net_name": "N",
+                        "expected_points_mm": points,
+                    },
+                }
+            ],
+            expected_source_hash=source,
+            authoritative_ir=_wire_ir(),
+        )
+
+    assert path.read_bytes() == before
+
+
+def test_reroute_existing_net_rewrites_real_segment_chain(tmp_path: Path) -> None:
+    points = [
+        (50.8, 50.8),
+        (66.04, 50.8),
+        (66.04, 60.96),
+        (71.12, 60.96),
+    ]
+    path = _wire_chain(tmp_path, points)
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "wire-reroute",
+                "source_schematic_hash": source,
+                "operation_type": "reroute_existing_net_orthogonal",
+                "arguments": {
+                    "wire_uuid": "w1",
+                    "net_name": "N",
+                    "expected_points_mm": points,
+                    "region_min_x_mm": 50.8,
+                    "region_min_y_mm": 50.8,
+                    "region_max_x_mm": 71.12,
+                    "region_max_y_mm": 60.96,
+                },
+            }
+        ],
+        expected_source_hash=source,
+        authoritative_ir=_wire_ir(),
+    )
+
+    geometries = _wire_geometries(path)
+    assert result.candidate_hash != source
+    assert all(len(segment) == 2 for segment in geometries)
+    assert result.results[0].details["points"] != [list(point) for point in points]
