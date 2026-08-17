@@ -111,11 +111,10 @@ def render_schematic_for_refinement(
     rasterizer = rasterizer or RsvgConvertRasterizer()
     temp_dir = Path(tempfile.mkdtemp(prefix="refinement-render-", dir=output_dir))
     try:
-        requested_svg = temp_dir / "render.svg"
-        result = adapter.export_svg_sch(schematic, requested_svg)
+        result = adapter.export_svg_sch(schematic, temp_dir)
         if not result.ok:
             raise ToolError(f"KiCad schematic SVG export failed with exit code {result.returncode}")
-        candidates = sorted(temp_dir.glob("*.svg"))
+        candidates = sorted(path for path in temp_dir.glob("*.svg") if path.is_file())
         if len(candidates) != 1:
             raise UserError(
                 "Refinement renderer requires exactly one schematic sheet.",

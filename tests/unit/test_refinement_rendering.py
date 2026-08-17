@@ -27,7 +27,8 @@ class _Adapter:
         self.height_mm = height_mm
 
     def export_svg_sch(self, _sch: Path, output: Path):
-        output.write_text(
+        assert output.is_dir()
+        (output / "rendered-sheet.svg").write_text(
             '<svg xmlns="http://www.w3.org/2000/svg" '
             f'viewBox="0 0 {self.width_mm:g} {self.height_mm:g}"></svg>',
             encoding="utf-8",
