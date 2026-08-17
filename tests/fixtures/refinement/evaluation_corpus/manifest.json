@@ -97,21 +97,6 @@
       ]
     },
     {
-      "fixture_id": "n1-rp2040-no-connect",
-      "source_fixture_id": "rp2040-microcontroller-core-circuit-mitayi-pico-d1",
-      "categories": [
-        "label_readability_collisions",
-        "poor_power_symbol_organization"
-      ],
-      "special_cases": [
-        "explicit_no_connect"
-      ],
-      "known_visual_defects": [
-        "High label density and many power symbols compete with the core signal groupings.",
-        "The broad sheet footprint makes local functional group boundaries difficult to scan quickly."
-      ]
-    },
-    {
       "fixture_id": "n1-solar-support-spacing",
       "source_fixture_id": "solar-charger-mppt-circuit-sts1-pcb-sidepanel",
       "categories": [

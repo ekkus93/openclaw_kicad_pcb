@@ -5,6 +5,15 @@ from .electrical import (
     ElectricalMismatch,
     compare_circuit_ir_equivalence,
 )
+from .refinement_baseline import (
+    REFINEMENT_BASELINE_SCHEMA_VERSION,
+    RefinementBaselineCaptureInputs,
+    RefinementBaselineCaptureRequest,
+    RefinementBaselineFixtureDefinition,
+    capture_refinement_baseline,
+    fixture_definition,
+    write_refinement_baseline_bundle,
+)
 from .reports import (
     ActionableFailure,
     CorpusEvaluationSummary,
@@ -23,6 +32,13 @@ __all__ = [
     "ElectricalMismatch",
     "EvaluationReport",
     "FixtureEvaluationSummary",
+    "REFINEMENT_BASELINE_SCHEMA_VERSION",
+    "RefinementBaselineCaptureInputs",
+    "RefinementBaselineCaptureRequest",
+    "RefinementBaselineFixtureDefinition",
+    "capture_refinement_baseline",
+    "fixture_definition",
+    "write_refinement_baseline_bundle",
     "IntrinsicQualityReport",
     "LayoutSimilarityReport",
     "compare_circuit_ir_equivalence",

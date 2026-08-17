@@ -1,6 +1,6 @@
 # Phase N refinement evaluation corpus
 
-This directory defines the **Phase N1 experimental fixture set** for schematic visual refinement.
+This directory defines the **Phase N experimental fixture set and baseline expectations** for schematic visual refinement.
 
 The fixture set intentionally references the repository's normalized real-schematic model corpus instead of copying those large schematic assets. Each manifest entry resolves its immutable inputs as:
 
@@ -13,7 +13,7 @@ The manifest records **observed visual defects and coverage categories only**. I
 
 ## N1 scope
 
-The selected set contains 13 fixtures, within the TODO target of approximately 10-20. Collectively they cover:
+The selected set contains 12 fixtures, within the TODO target of approximately 10-20. Collectively they cover:
 
 - crowded layout;
 - excessive spread;
@@ -29,8 +29,25 @@ The selected set contains 13 fixtures, within the TODO target of approximately 1
 - KiCad-generated unnamed nets such as `Net-(...)`;
 - explicit no-connect markers.
 
-`tests/unit/test_refinement_evaluation_corpus.py` keeps the manifest honest by validating the source artifacts, Circuit IRs, layout-warning evidence, required category coverage, and the three special-case claims.
+`tests/unit/test_refinement_evaluation_corpus.py` keeps the N1 manifest honest by validating the source artifacts, Circuit IRs, layout-warning evidence, required category coverage, and the three special-case claims.
 
-## Deliberate boundary with N2
+The original 13-fixture N1 set included the RP2040 core fixture. N2 baseline work exposed that its normalized artifact cannot currently produce refinement metrics because one `H3` pin geometry is unresolved. The RP2040 entry was removed instead of weakening the deterministic metric gate. The remaining STM32 fixture continues to provide explicit-no-connect coverage, and all N1 category/special-case requirements remain covered.
 
-N1 establishes the fixture population and coverage. It does **not** claim the Phase N2 real-KiCad baseline gate. N2 must still run every fixture through the real KiCad electrical baseline path, record deterministic metrics and baseline renders, and persist those results as evaluation evidence.
+## N2 baseline capture
+
+`baseline_expectations.json` records source-schematic hashes, authoritative electrical-fingerprint hashes, page geometry, and the exact deterministic refinement metrics for every N1 fixture. `tests/unit/test_refinement_evaluation_corpus_baselines.py` recomputes those values from the source corpus so stale or non-metric-compatible fixtures fail before real-KiCad evaluation begins.
+
+`src/kicad_pcb/evaluation/refinement_baseline.py` captures one baseline as an atomic, path-sanitized evidence bundle containing:
+
+- `manifest.json` with fixture/category/known-defect metadata and render metadata;
+- `electrical_baseline.json` binding the authoritative Circuit IR to the source schematic;
+- `electrical.json` with the real-KiCad invariance result;
+- `metrics.json` with the deterministic baseline metrics;
+- `render/baseline.svg` and `render/baseline.png`;
+- any deterministic review-region SVG/PNG artifacts under `render/review-regions/`.
+
+`tests/integration/test_refinement_phase_n_baseline_capture_real_kicad.py` runs that capture path for every fixture under the normal `requires_kicad` integration job. The N2 tracker gate must remain open until that real-KiCad run is reported green.
+
+## Deliberate boundary with N3
+
+N2 records immutable baseline evidence only. It does **not** prescribe expected repairs or evaluate model output. N3 will consume these baseline bindings and add critic analysis, repair plans, apply/refine results, final electrical equivalence, final metrics/renders, operations/rejections, and stop reasons.
