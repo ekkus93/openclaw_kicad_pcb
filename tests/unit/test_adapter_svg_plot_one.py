@@ -6,7 +6,7 @@ from kicad_pcb.adapters import FakeFs, FakeRunner, KicadCliAdapter
 from kicad_pcb.compat import KiCadVersion
 
 
-def test_export_svg_sch_plot_one_args() -> None:
+def test_export_svg_sch_plot_one_uses_pages_one() -> None:
     runner = FakeRunner()
     cli = KicadCliAdapter(runner=runner, fs=FakeFs(), version=KiCadVersion(9, 0, 0))
     schematic = Path("/proj/board.kicad_sch")
@@ -19,7 +19,8 @@ def test_export_svg_sch_plot_one_args() -> None:
         "sch",
         "export",
         "svg",
-        "--plot-one",
+        "--pages",
+        "1",
         "--output",
         str(output_dir),
         str(schematic),

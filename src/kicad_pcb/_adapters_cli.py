@@ -351,7 +351,7 @@ class KicadCliAdapter:
         """Export SVG preview of a schematic."""
         args = ["sch", "export", "svg"]
         if plot_one:
-            args.append("--plot-one")
+            args.extend(["--pages", "1"])
         args.extend(["--output", str(output_file), str(sch_file)])
         return self._run(args)
 
