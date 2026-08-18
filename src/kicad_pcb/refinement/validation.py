@@ -6,6 +6,7 @@ import logging
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeGuard
 
 from kicad_pcb.adapters import KicadCliAdapter
 from kicad_pcb.errors import ToolError, UserError
@@ -92,7 +93,7 @@ def _erc_violation_count(report: dict[str, object] | None) -> int:
     return count
 
 
-def _valid_violation_list(value: object) -> bool:
+def _valid_violation_list(value: object) -> TypeGuard[list[dict[str, object]]]:
     return isinstance(value, list) and all(isinstance(item, dict) for item in value)
 
 
