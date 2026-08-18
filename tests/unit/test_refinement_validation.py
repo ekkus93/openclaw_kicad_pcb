@@ -66,11 +66,11 @@ def test_erc_excluded_error_is_nonblocking_but_remains_counted() -> None:
                 {
                     "path": "/",
                     "violations": [
-                        {"severity": "error", "type": "error_a", "excluded": True}
+                        {"severity": "error", "type": "error_a", "excluded": True},
                     ],
-                }
-            ]
-        }
+                },
+            ],
+        },
     )
 
     assert summary.total_count == 1
