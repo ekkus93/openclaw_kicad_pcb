@@ -180,6 +180,22 @@ class SchematicCandidateTransaction:
             ) from exc
 
 
+def accepted_path_for_refinement_candidate(candidate_path: Path) -> Path | None:
+    """Resolve the canonical accepted schematic for a transaction candidate path."""
+
+    transaction_root = candidate_path.parent
+    expected_prefix = f".{candidate_path.stem}.refinement."
+    if not transaction_root.name.startswith(expected_prefix):
+        return None
+    accepted_path = transaction_root.parent / candidate_path.name
+    if not accepted_path.is_file():
+        raise UserError(
+            "Refinement transaction candidate has no canonical accepted baseline.",
+            code="REFINEMENT_STALE",
+        )
+    return accepted_path
+
+
 def _sha256_file(path: Path) -> str:
     try:
         return hashlib.sha256(path.read_bytes()).hexdigest()

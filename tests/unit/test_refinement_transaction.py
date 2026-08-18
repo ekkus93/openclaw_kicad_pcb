@@ -6,7 +6,11 @@ from pathlib import Path
 import pytest
 
 from kicad_pcb.errors import UserError
-from kicad_pcb.refinement.transaction import CandidateState, SchematicCandidateTransaction
+from kicad_pcb.refinement.transaction import (
+    CandidateState,
+    SchematicCandidateTransaction,
+    accepted_path_for_refinement_candidate,
+)
 
 
 def _hash(path: Path) -> str:
@@ -91,3 +95,18 @@ def test_stale_accepted_file_cannot_be_replaced(tmp_path: Path) -> None:
 
     assert accepted.read_bytes() == b"newer accepted"
     assert transaction.state is CandidateState.FAILED
+
+
+def test_transaction_candidate_resolves_canonical_accepted_baseline(tmp_path: Path) -> None:
+    accepted = tmp_path / "design.kicad_sch"
+    accepted.write_bytes(b"accepted")
+
+    with SchematicCandidateTransaction(accepted) as transaction:
+        assert accepted_path_for_refinement_candidate(transaction.candidate_path) == accepted
+
+
+def test_nontransaction_candidate_has_no_accepted_baseline(tmp_path: Path) -> None:
+    candidate = tmp_path / "design.kicad_sch"
+    candidate.write_bytes(b"candidate")
+
+    assert accepted_path_for_refinement_candidate(candidate) is None
