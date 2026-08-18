@@ -41,11 +41,7 @@ def test_erc_violation_count_accepts_kicad_sheet_scoped_report() -> None:
 
 def test_erc_warning_only_report_is_nonblocking_but_remains_counted() -> None:
     summary = validation._erc_violation_summary(
-        {
-            "sheets": [
-                {"path": "/", "violations": [{"severity": "warning", "type": "warning_a"}]}
-            ]
-        }
+        {"sheets": [{"path": "/", "violations": [{"severity": "warning", "type": "warning_a"}]}]}
     )
 
     assert summary.total_count == 1
