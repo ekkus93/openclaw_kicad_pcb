@@ -28,6 +28,12 @@ class CandidateStructuralValidationReport:
         return self.status == "passed"
 
 
+@dataclass(frozen=True)
+class _ErcViolationSummary:
+    total_count: int
+    blocking_count: int
+
+
 def validate_candidate_structure(
     candidate: Path,
     *,
@@ -49,12 +55,12 @@ def validate_candidate_structure(
         result, report = adapter.erc(candidate, Path(raw))
         if not result.ok:
             raise ToolError(f"KiCad ERC failed with exit code {result.returncode}")
-        count = _erc_violation_count(report)
+        summary = _erc_violation_summary(report)
         return CandidateStructuralValidationReport(
             "1.0",
-            "passed" if count == 0 else "failed",
+            "passed" if summary.blocking_count == 0 else "failed",
             (),
-            count,
+            summary.total_count,
         )
     finally:
         try:
@@ -69,6 +75,18 @@ def validate_candidate_structure(
 
 
 def _erc_violation_count(report: dict[str, object] | None) -> int:
+    return _erc_violation_summary(report).total_count
+
+
+def _erc_violation_summary(report: dict[str, object] | None) -> _ErcViolationSummary:
+    violations = _erc_violations(report)
+    return _ErcViolationSummary(
+        total_count=len(violations),
+        blocking_count=sum(_erc_violation_is_blocking(item) for item in violations),
+    )
+
+
+def _erc_violations(report: dict[str, object] | None) -> list[dict[str, object]]:
     if not isinstance(report, dict):
         raise _invalid_erc_report()
 
@@ -76,21 +94,32 @@ def _erc_violation_count(report: dict[str, object] | None) -> int:
         violations = report["violations"]
         if not _valid_violation_list(violations):
             raise _invalid_erc_report()
-        return len(violations)
+        return violations
 
     sheets = report.get("sheets")
     if not isinstance(sheets, list):
         raise _invalid_erc_report()
 
-    count = 0
+    violations: list[dict[str, object]] = []
     for sheet in sheets:
         if not isinstance(sheet, dict):
             raise _invalid_erc_report()
-        violations = sheet.get("violations")
-        if not _valid_violation_list(violations):
+        sheet_violations = sheet.get("violations")
+        if not _valid_violation_list(sheet_violations):
             raise _invalid_erc_report()
-        count += len(violations)
-    return count
+        violations.extend(sheet_violations)
+    return violations
+
+
+def _erc_violation_is_blocking(violation: dict[str, object]) -> bool:
+    severity = violation.get("severity")
+    if severity is None:
+        # Legacy reports did not consistently include severity. Preserve the old
+        # fail-closed behavior for an unclassified violation.
+        return True
+    if not isinstance(severity, str):
+        raise _invalid_erc_report()
+    return severity.strip().lower() != "warning"
 
 
 def _valid_violation_list(value: object) -> TypeGuard[list[dict[str, object]]]:
