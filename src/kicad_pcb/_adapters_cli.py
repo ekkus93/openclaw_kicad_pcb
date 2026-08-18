@@ -341,18 +341,19 @@ class KicadCliAdapter:
     # Preview / SVG export
     # ------------------------------------------------------------------
 
-    def export_svg_sch(self, sch_file: Path, output_file: Path) -> RunResult:
+    def export_svg_sch(
+        self,
+        sch_file: Path,
+        output_file: Path,
+        *,
+        plot_one: bool = False,
+    ) -> RunResult:
         """Export SVG preview of a schematic."""
-        return self._run(
-            [
-                "sch",
-                "export",
-                "svg",
-                "--output",
-                str(output_file),
-                str(sch_file),
-            ]
-        )
+        args = ["sch", "export", "svg"]
+        if plot_one:
+            args.append("--plot-one")
+        args.extend(["--output", str(output_file), str(sch_file)])
+        return self._run(args)
 
     def export_svg_pcb(self, pcb_file: Path, output_file: Path, layer: str) -> RunResult:
         """Export SVG preview for a single PCB layer."""

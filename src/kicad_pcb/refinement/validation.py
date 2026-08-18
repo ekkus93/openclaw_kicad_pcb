@@ -48,12 +48,7 @@ def validate_candidate_structure(
         result, report = adapter.erc(candidate, Path(raw))
         if not result.ok:
             raise ToolError(f"KiCad ERC failed with exit code {result.returncode}")
-        if not isinstance(report, dict) or not isinstance(report.get("violations"), list):
-            raise UserError(
-                "KiCad ERC did not produce a usable violation report.",
-                code="REFINEMENT_ERC_INVALID_REPORT",
-            )
-        count = len(report["violations"])
+        count = _erc_violation_count(report)
         return CandidateStructuralValidationReport(
             "1.0",
             "passed" if count == 0 else "failed",
@@ -70,3 +65,39 @@ def validate_candidate_structure(
                 "failed to remove temporary refinement ERC report",
                 extra={"error_type": type(exc).__name__},
             )
+
+
+def _erc_violation_count(report: dict[str, object] | None) -> int:
+    if not isinstance(report, dict):
+        raise _invalid_erc_report()
+
+    if "violations" in report:
+        violations = report["violations"]
+        if not _valid_violation_list(violations):
+            raise _invalid_erc_report()
+        return len(violations)
+
+    sheets = report.get("sheets")
+    if not isinstance(sheets, list):
+        raise _invalid_erc_report()
+
+    count = 0
+    for sheet in sheets:
+        if not isinstance(sheet, dict):
+            raise _invalid_erc_report()
+        violations = sheet.get("violations")
+        if not _valid_violation_list(violations):
+            raise _invalid_erc_report()
+        count += len(violations)
+    return count
+
+
+def _valid_violation_list(value: object) -> bool:
+    return isinstance(value, list) and all(isinstance(item, dict) for item in value)
+
+
+def _invalid_erc_report() -> UserError:
+    return UserError(
+        "KiCad ERC did not produce a usable violation report.",
+        code="REFINEMENT_ERC_INVALID_REPORT",
+    )

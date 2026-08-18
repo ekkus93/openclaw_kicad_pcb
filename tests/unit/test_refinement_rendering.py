@@ -26,8 +26,9 @@ class _Adapter:
         self.width_mm = width_mm
         self.height_mm = height_mm
 
-    def export_svg_sch(self, _sch: Path, output: Path):
+    def export_svg_sch(self, _sch: Path, output: Path, *, plot_one: bool = False):
         assert output.is_dir()
+        assert plot_one
         (output / "rendered-sheet.svg").write_text(
             '<svg xmlns="http://www.w3.org/2000/svg" '
             f'viewBox="0 0 {self.width_mm:g} {self.height_mm:g}"></svg>',
@@ -99,6 +100,17 @@ def test_render_binds_hashes_transform_and_readable_review_region(tmp_path: Path
     assert region.pixels_per_mm_x == pytest.approx(REVIEW_PIXELS_PER_MM)
     assert region.pixels_per_mm_y == pytest.approx(REVIEW_PIXELS_PER_MM)
     assert artifact.review_image_paths == (region.png_path,)
+
+
+def test_render_accepts_kicad_svg_page_rounding(tmp_path: Path) -> None:
+    artifact = render_schematic_for_refinement(
+        _fixture(),
+        tmp_path / "out",
+        adapter=_Adapter(297.0022, 210.0072),  # type: ignore[arg-type]
+        rasterizer=_Rasterizer(),
+    )
+
+    assert artifact.svg_view_box_mm[2:] == pytest.approx((297.0022, 210.0072))
 
 
 def test_a1_render_uses_deterministic_four_region_tiling(tmp_path: Path) -> None:

@@ -28,6 +28,7 @@ REVIEW_PIXELS_PER_MM = 8.0
 MAX_REVIEW_REGION_DIMENSION_PX = 3584
 MAX_REVIEW_REGIONS = 4
 REVIEW_REGION_OVERLAP_MM = 12.7
+PAPER_DIMENSION_TOLERANCE_MM = 0.1
 
 
 class SvgRasterizer(Protocol):
@@ -111,7 +112,7 @@ def render_schematic_for_refinement(
     rasterizer = rasterizer or RsvgConvertRasterizer()
     temp_dir = Path(tempfile.mkdtemp(prefix="refinement-render-", dir=output_dir))
     try:
-        result = adapter.export_svg_sch(schematic, temp_dir)
+        result = adapter.export_svg_sch(schematic, temp_dir, plot_one=True)
         if not result.ok:
             raise ToolError(f"KiCad schematic SVG export failed with exit code {result.returncode}")
         candidates = sorted(path for path in temp_dir.glob("*.svg") if path.is_file())
@@ -122,7 +123,10 @@ def render_schematic_for_refinement(
                 details={"svg_count": len(candidates)},
             )
         viewbox = _svg_view_box(candidates[0])
-        if abs(viewbox[2] - page.width_mm) > 0.1 or abs(viewbox[3] - page.height_mm) > 0.1:
+        if (
+            abs(viewbox[2] - page.width_mm) > PAPER_DIMENSION_TOLERANCE_MM
+            or abs(viewbox[3] - page.height_mm) > PAPER_DIMENSION_TOLERANCE_MM
+        ):
             raise UserError(
                 "Rendered SVG viewBox does not match schematic paper declaration.",
                 code="REFINEMENT_RENDER_GEOMETRY_MISMATCH",

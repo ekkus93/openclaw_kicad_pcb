@@ -9,15 +9,15 @@ import zlib
 from pathlib import Path
 
 import pytest
-
-from kicad_pcb.adapters import KicadCliAdapter
-from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.electrical_equivalence import build_circuit_ir_fingerprint
 from kicad_pcb.evaluation.refinement_baseline import (
     RefinementBaselineCaptureRequest,
     capture_refinement_baseline,
     fixture_definition,
 )
+
+from kicad_pcb.adapters import KicadCliAdapter
+from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.electrical_equivalence import build_circuit_ir_fingerprint
 from kicad_pcb.refinement import rendering
 from kicad_pcb.runner import find_kicad_cli
 from tests.conftest import requires_kicad
@@ -137,10 +137,11 @@ def test_phase_n2_captures_real_kicad_baseline_for_every_fixture(
     assert metrics == expectation["metrics"]
     assert manifest["source_schematic_sha256"] == expectation["source_schematic_sha256"]
     assert manifest["authoritative_ir_sha256"] == expectation["authoritative_fingerprint_sha256"]
-    assert manifest["render"]["view_box_mm"][2:] == [
-        expectation["page_mm"]["width"],
-        expectation["page_mm"]["height"],
-    ]
+    assert manifest["render"]["view_box_mm"][2:] == pytest.approx(
+        [expectation["page_mm"]["width"], expectation["page_mm"]["height"]],
+        rel=0.0,
+        abs=rendering.PAPER_DIMENSION_TOLERANCE_MM,
+    )
     assert (output / "render" / "baseline.svg").is_file()
     assert (output / "render" / "baseline.svg").stat().st_size > 0
     assert (output / "render" / "baseline.png").is_file()
