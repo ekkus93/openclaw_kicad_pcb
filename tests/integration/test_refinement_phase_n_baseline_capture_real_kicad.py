@@ -9,15 +9,15 @@ import zlib
 from pathlib import Path
 
 import pytest
+
+from kicad_pcb.adapters import KicadCliAdapter
+from kicad_pcb.circuit_ir import CircuitIR
+from kicad_pcb.electrical_equivalence import build_circuit_ir_fingerprint
 from kicad_pcb.evaluation.refinement_baseline import (
     RefinementBaselineCaptureRequest,
     capture_refinement_baseline,
     fixture_definition,
 )
-
-from kicad_pcb.adapters import KicadCliAdapter
-from kicad_pcb.circuit_ir import CircuitIR
-from kicad_pcb.electrical_equivalence import build_circuit_ir_fingerprint
 from kicad_pcb.refinement import rendering
 from kicad_pcb.runner import find_kicad_cli
 from tests.conftest import requires_kicad
