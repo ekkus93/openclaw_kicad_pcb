@@ -91,24 +91,24 @@ def _erc_violations(report: dict[str, object] | None) -> list[dict[str, object]]
         raise _invalid_erc_report()
 
     if "violations" in report:
-        violations = report["violations"]
-        if not _valid_violation_list(violations):
+        direct_violations = report["violations"]
+        if not _valid_violation_list(direct_violations):
             raise _invalid_erc_report()
-        return violations
+        return direct_violations
 
     sheets = report.get("sheets")
     if not isinstance(sheets, list):
         raise _invalid_erc_report()
 
-    violations: list[dict[str, object]] = []
+    all_violations: list[dict[str, object]] = []
     for sheet in sheets:
         if not isinstance(sheet, dict):
             raise _invalid_erc_report()
         sheet_violations = sheet.get("violations")
         if not _valid_violation_list(sheet_violations):
             raise _invalid_erc_report()
-        violations.extend(sheet_violations)
-    return violations
+        all_violations.extend(sheet_violations)
+    return all_violations
 
 
 def _erc_violation_is_blocking(violation: dict[str, object]) -> bool:
