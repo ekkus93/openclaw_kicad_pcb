@@ -10,6 +10,8 @@ LIVE_EVALUATION_WORKFLOW = Path(".github/workflows/refinement-live-evaluation.ym
 OLLAMA_PREFLIGHT = Path("scripts/preflight_n3_ollama.py")
 OLLAMA_CLIENT = Path("src/kicad_pcb_web/services/llm/ollama_client.py")
 EVALUATION_CLI = Path("src/kicad_pcb_web/refinement_evaluation_cli.py")
+REFINEMENT_RENDERING = Path("src/kicad_pcb/refinement/rendering.py")
+REFINEMENT_LLM = Path("src/kicad_pcb_web/services/refinement_llm.py")
 
 
 def main() -> int:
@@ -33,6 +35,7 @@ def main() -> int:
     problems.extend(_ollama_preflight_problems())
     problems.extend(_ollama_client_problems())
     problems.extend(_evaluation_cli_problems())
+    problems.extend(_refinement_context_budget_problems())
     if problems:
         raise SystemExit("\n".join(problems))
     return 0
@@ -74,10 +77,6 @@ def _live_evaluation_problems() -> list[str]:
         "\n  pull_request:",
         "sudo apt-get",
         "install-deps",
-        "N3_OLLAMA_PROBE_CONTEXT_BYTES",
-        "--probe-context-bytes",
-        "qwen3-vl:8b-instruct-n3-64k",
-        'N3_OLLAMA_NUM_CTX: "65536"',
     )
     problems = [
         f"missing required Phase N3 live-evaluation fragment: {item}"
@@ -101,18 +100,11 @@ def _ollama_preflight_problems() -> list[str]:
         "_solid_white_png",
         "Ollama A3 vision capability probe",
     )
-    forbidden = ("_stress_context", "probe_context_bytes", "--probe-context-bytes")
-    problems = [
+    return [
         f"missing required N3 Ollama preflight fragment: {item}"
         for item in required
         if item not in text
     ]
-    problems.extend(
-        f"forbidden N3 Ollama preflight fragment remains: {item}"
-        for item in forbidden
-        if item in text
-    )
-    return problems
 
 
 def _ollama_client_problems() -> list[str]:
@@ -146,6 +138,33 @@ def _evaluation_cli_problems() -> list[str]:
         for item in required
         if item not in text
     ]
+
+
+def _refinement_context_budget_problems() -> list[str]:
+    rendering = REFINEMENT_RENDERING.read_text(encoding="utf-8")
+    llm = REFINEMENT_LLM.read_text(encoding="utf-8")
+    required_rendering = (
+        "REVIEW_PIXELS_PER_MM = 4.0",
+        "REVIEW_TILING_REFERENCE_PIXELS_PER_MM = 8.0",
+        "MAX_REVIEW_REGION_DIMENSION_PX / REVIEW_TILING_REFERENCE_PIXELS_PER_MM",
+    )
+    required_llm = (
+        '"vision_object_map": _critic_context_payload(context)',
+        "def _critic_context_payload(context: VisionObjectMap)",
+        '"positions_mm": item.positions_mm',
+        '"points_mm": item.points_mm',
+    )
+    problems = [
+        f"missing required refinement render-budget fragment: {item}"
+        for item in required_rendering
+        if item not in rendering
+    ]
+    problems.extend(
+        f"missing required refinement critic-budget fragment: {item}"
+        for item in required_llm
+        if item not in llm
+    )
+    return problems
 
 
 if __name__ == "__main__":
