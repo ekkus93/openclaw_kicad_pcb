@@ -2,6 +2,17 @@
 
 This document records the reproducible Phase N3.3 live/model-directed corpus experiment.
 
+## Selected experiment environment
+
+The current selected N3.3 environment is local Ollama on the self-hosted runner:
+
+- provider: `ollama`
+- model: `qwen3-vl:8b`
+- base URL: `http://127.0.0.1:11434`
+- API key: not required
+
+The repository workflow is pre-filled with these values. The Ollama client uses the native `/api/chat` endpoint and the workflow performs a cheap `/api/tags` preflight to verify that the exact selected model is installed before any fixture evaluation starts.
+
 ## Workflow
 
 GitHub Actions workflow:
@@ -13,18 +24,20 @@ GitHub Actions workflow:
 - permitted execution branch: `webapp` only
 - corpus: all 12 fixtures in `tests/fixtures/refinement/evaluation_corpus/manifest.json`
 
-The workflow deliberately has no `push`, `pull_request`, or scheduled trigger because it performs real model calls and may incur provider cost.
+The workflow deliberately has no `push`, `pull_request`, or scheduled trigger because it performs real model calls and can consume substantial local compute.
 
 ## Provider configuration
 
 The workflow exposes these dispatch inputs:
 
-- `provider`: `openai`, `llama_server`, or `ollama`
-- `model`: explicit provider model identifier
-- `base_url`: required for `llama_server` and `ollama`; optional for an OpenAI-compatible override
+- `provider`: `ollama`, `llama_server`, or `openai`; current default is `ollama`
+- `model`: explicit provider model identifier; current default is `qwen3-vl:8b`
+- `base_url`: required for `llama_server` and `ollama`; current default is `http://127.0.0.1:11434`
 - `confirm_12_fixture_live_run`: must be enabled before the experiment is allowed to start
 
 All three enabled provider families have explicit image-input capability contracts in production code. The workflow also sets `KICAD_PCB_WEB_LLM_VISION_ENABLED=true`; model names are not used to infer vision capability.
+
+For the selected local Ollama configuration, no API-key secret is required.
 
 For `openai`, configure this repository Actions secret before dispatch:
 
@@ -34,6 +47,20 @@ The secret is scoped only to the provider preflight and actual evaluation comman
 
 For `llama_server` and `ollama`, no API-key secret is required by the current provider contract, but a reachable `base_url` must be supplied.
 
+## Ollama preflight
+
+When `provider=ollama`, the workflow queries:
+
+`<base_url>/api/tags`
+
+before running the corpus. The preflight fails if:
+
+- Ollama is unreachable;
+- the response is not valid JSON in the expected native Ollama shape;
+- the exact selected model is not installed.
+
+This avoids spending time on KiCad/model evaluation when the runner-local inference service is not ready.
+
 ## Preprovisioned self-hosted runner requirements
 
 The workflow reuses the persistent self-hosted runner and fails fast rather than installing heavyweight OS packages. The runner must already provide:
@@ -41,6 +68,8 @@ The workflow reuses the persistent self-hosted runner and fails fast rather than
 - Graphviz `dot`
 - KiCad 9 `kicad-cli`
 - KiCad symbol libraries at `/usr/share/kicad/symbols`
+- Ollama reachable at the configured base URL for an Ollama run
+- selected model already pulled into Ollama
 
 Python 3.11 and uv are resolved through the existing Actions setup tools, while uv package downloads reuse the persistent project cache:
 
@@ -99,4 +128,4 @@ The underlying Phase N3 evaluation runner retains the evidence needed for subseq
 
 ## Completion rule
 
-Creating this workflow does **not** close Phase N3.3. Phase N3.3 closes only after a real model-directed run across all 12 fixtures completes, the generated artifact is retained, and the evidence is reconciled for Phase N4 human visual disposition.
+Creating and configuring this workflow does **not** close Phase N3.3. Phase N3.3 closes only after a real model-directed run across all 12 fixtures completes, the generated artifact is retained, and the evidence is reconciled for Phase N4 human visual disposition.
