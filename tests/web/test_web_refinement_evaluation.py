@@ -266,9 +266,7 @@ def _assert_complete_bundle(
     assert manifest["refine"]["stop_reason"] == "REFINEMENT_STOP_MAX_ROUNDS"
     assert manifest["final_electrical_status"] == "passed"
     assert manifest["before_after"]["before_render"]["png"] == "analyze/render/schematic.png"
-    assert manifest["before_after"]["after_render"]["png"] == (
-        "refine/final/render/schematic.png"
-    )
+    assert manifest["before_after"]["after_render"]["png"] == "refine/final/render/schematic.png"
     assert (result.output_dir / "operations.json").is_file()
     assert (result.output_dir / "apply_once" / "final" / "metrics.json").is_file()
     assert (result.output_dir / "refine" / "final" / "electrical.json").is_file()
