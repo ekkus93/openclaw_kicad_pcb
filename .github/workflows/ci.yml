@@ -248,20 +248,39 @@ jobs:
 
   integration-tests:
     name: KiCad integration tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: python-quality
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install KiCad 9 and Graphviz
+      - name: Isolate uv cache
+        shell: bash
+        run: echo "UV_CACHE_DIR=$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
+
+      - name: Verify KiCad 9 and Graphviz
+        timeout-minutes: 10
+        shell: bash
         run: |
-          sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
-          sudo apt-get update -q
-          sudo apt-get install -y graphviz kicad
+          set -euo pipefail
+          needs_install=0
+          command -v dot >/dev/null 2>&1 || needs_install=1
+          if ! command -v kicad-cli >/dev/null 2>&1; then
+            needs_install=1
+          elif [[ "$(kicad-cli version)" != 9.* ]]; then
+            needs_install=1
+          fi
+          if ((needs_install)); then
+            sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
+            sudo apt-get update -q
+            sudo apt-get install -y graphviz kicad
+          fi
           DOT_BIN="$(command -v dot)"
+          KICAD_VERSION="$(kicad-cli version)"
           echo "GRAPHVIZ_DOT=$DOT_BIN" >> "$GITHUB_ENV"
           "$DOT_BIN" -V
-          kicad-cli version
+          echo "KiCad $KICAD_VERSION"
+          [[ "$KICAD_VERSION" == 9.* ]]
+          test -d "$KICAD_SYMBOLS_DIR"
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -271,7 +290,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          enable-cache: true
+          enable-cache: false
 
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
