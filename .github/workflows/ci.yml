@@ -22,14 +22,22 @@ env:
 jobs:
   python-quality:
     name: Python lint, types, unit and web tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
 
       - name: Install system dependencies
+        timeout-minutes: 10
+        shell: bash
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y graphviz kicad-symbols
+          set -euo pipefail
+          missing=()
+          command -v dot >/dev/null 2>&1 || missing+=(graphviz)
+          test -d "$KICAD_SYMBOLS_DIR" || missing+=(kicad-symbols)
+          if ((${#missing[@]})); then
+            sudo apt-get update -q
+            sudo apt-get install -y "${missing[@]}"
+          fi
           command -v dot
           test -d "$KICAD_SYMBOLS_DIR"
 
