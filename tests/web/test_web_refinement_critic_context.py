@@ -86,8 +86,8 @@ def _context() -> VisionObjectMap:
                 0,
                 "c" * 64,
                 (0.0, 0.0, 420.0, 297.0),
-                (1680, 1188),
-                (4.0, 4.0),
+                (1260, 891),
+                (3.0, 3.0),
             ),
         ),
     )
@@ -104,20 +104,29 @@ def test_critic_context_projection_keeps_binding_and_mm_geometry_only() -> None:
 
     region = payload["review_regions"][0]
     assert region["view_box_mm"] == (0.0, 0.0, 420.0, 297.0)
-    assert region["image_px"] == (1680, 1188)
-    assert region["pixels_per_mm"] == (4.0, 4.0)
+    assert region["image_px"] == (1260, 891)
+    assert region["pixels_per_mm"] == (3.0, 3.0)
     assert "png_hash" not in region
+    assert "row" not in region
+    assert "column" not in region
 
     component = payload["components"][0]
     assert component["object_id"] == "component:component-uuid"
+    assert component["ref"] == "U1"
+    assert component["unit"] == "1"
     assert (component["x_mm"], component["y_mm"]) == (100.0, 80.0)
     assert "uuid" not in component
+    assert "symbol_id" not in component
+    assert "value" not in component
     assert "x_px" not in component
     assert "y_px" not in component
 
     pin = payload["pins"][0]
     assert pin["object_id"] == "pin:U1:1:1"
     assert pin["positions_mm"] == ((95.0, 80.0),)
+    assert "ref" not in pin
+    assert "unit" not in pin
+    assert "pin" not in pin
     assert "positions_px" not in pin
 
     wire = payload["wires"][0]
@@ -136,8 +145,4 @@ def test_critic_context_projection_keeps_binding_and_mm_geometry_only() -> None:
     assert "x_px" not in junction
 
     net = payload["nets"][0]
-    assert net == {
-        "object_id": "net:VIN",
-        "name": "VIN",
-        "terminals": ("pin:U1:1:1",),
-    }
+    assert net == {"object_id": "net:VIN", "name": "VIN"}
