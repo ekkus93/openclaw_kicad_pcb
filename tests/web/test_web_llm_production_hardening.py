@@ -120,6 +120,7 @@ def test_p3_mismatched_capability_contract_fails_closed() -> None:
                 "stream": False,
                 "options": {"temperature": 0.25, "num_predict": 321},
                 "format": "json",
+                "think": False,
             },
         ),
     ],
