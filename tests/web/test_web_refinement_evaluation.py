@@ -117,24 +117,44 @@ def _electrical_report(
     )
 
 
-def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    request = _request()
-    baseline_bytes = request.baseline_schematic.read_bytes()
-    baseline_hash = hashlib.sha256(baseline_bytes).hexdigest()
-    starts: list[tuple[str, bytes]] = []
+def _electrical(
+    *,
+    authoritative_ir,
+    baseline,
+    candidate_schematic: Path,
+    adapter,
+    work_dir,
+) -> SchematicElectricalVerificationReport:
+    del authoritative_ir, adapter, work_dir
+    return SchematicElectricalVerificationReport(
+        status="passed",
+        authoritative_hash=baseline.authoritative_hash,
+        accepted_schematic_hash=baseline.accepted_schematic_hash,
+        candidate_schematic_hash=_sha(candidate_schematic),
+        candidate_fingerprint_hash=baseline.authoritative_hash,
+        kicad_version="9.0.0",
+    )
 
-    def analyze(*, accepted_path: Path, runtime, max_critic_repairs: int):
+
+class _HappyPathHarness:
+    def __init__(
+        self,
+        request: evaluation.RefinementEvaluationRequest,
+        baseline_hash: str,
+    ) -> None:
+        self.request = request
+        self.baseline_hash = baseline_hash
+        self.starts: list[tuple[str, bytes]] = []
+
+    def analyze(self, *, accepted_path: Path, runtime, max_critic_repairs: int):
         del max_critic_repairs
-        starts.append(("analyze", accepted_path.read_bytes()))
-        return _analysis(accepted_path, request, runtime.work_dir)
+        self.starts.append(("analyze", accepted_path.read_bytes()))
+        return _analysis(accepted_path, self.request, runtime.work_dir)
 
-    def plan(*, accepted_path: Path, runtime, iteration_id: str, limits):
+    def plan(self, *, accepted_path: Path, runtime, iteration_id: str, limits):
         del limits
-        starts.append(("plan", accepted_path.read_bytes()))
-        analysis = _analysis(accepted_path, request, runtime.work_dir)
+        self.starts.append(("plan", accepted_path.read_bytes()))
+        analysis = _analysis(accepted_path, self.request, runtime.work_dir)
         return service.RefinementPlanResult(
             analysis=analysis,
             plan=ValidatedRepairPlan(
@@ -145,9 +165,9 @@ def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
             ),
         )
 
-    def apply_once(*, accepted_path: Path, runtime, iteration_id: str, limits):
+    def apply_once(self, *, accepted_path: Path, runtime, iteration_id: str, limits):
         del limits
-        starts.append(("apply_once", accepted_path.read_bytes()))
+        self.starts.append(("apply_once", accepted_path.read_bytes()))
         before = _sha(accepted_path)
         accepted_path.write_bytes(accepted_path.read_bytes() + b"\n")
         after = _sha(accepted_path)
@@ -167,15 +187,15 @@ def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
             candidate_hash=after,
             evidence_dir=evidence_dir,
             operations=operations,
-            electrical=_electrical_report(request, baseline_hash, accepted_path),
+            electrical=_electrical_report(self.request, self.baseline_hash, accepted_path),
             structural=None,
             quality=None,
             candidate_layout_fingerprint=after,
         )
 
-    def refine(*, accepted_path: Path, runtime, session_id: str, limits):
+    def refine(self, *, accepted_path: Path, runtime, session_id: str, limits):
         del limits
-        starts.append(("refine", accepted_path.read_bytes()))
+        self.starts.append(("refine", accepted_path.read_bytes()))
         before = _sha(accepted_path)
         accepted_path.write_bytes(accepted_path.read_bytes() + b"\n\n")
         after = _sha(accepted_path)
@@ -214,30 +234,23 @@ def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
             session_evidence_dir=session_dir,
         )
 
-    def electrical(*, authoritative_ir, baseline, candidate_schematic, adapter, work_dir):
-        del authoritative_ir, adapter, work_dir
-        return SchematicElectricalVerificationReport(
-            status="passed",
-            authoritative_hash=baseline.authoritative_hash,
-            accepted_schematic_hash=baseline.accepted_schematic_hash,
-            candidate_schematic_hash=_sha(candidate_schematic),
-            candidate_fingerprint_hash=baseline.authoritative_hash,
-            kicad_version="9.0.0",
-        )
+    def install(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(evaluation, "analyze_schematic_refinement", self.analyze)
+        monkeypatch.setattr(evaluation, "plan_schematic_refinement", self.plan)
+        monkeypatch.setattr(evaluation, "apply_once_schematic_refinement", self.apply_once)
+        monkeypatch.setattr(evaluation, "refine_schematic", self.refine)
+        monkeypatch.setattr(evaluation, "require_schematic_electrical_invariance", _electrical)
+        monkeypatch.setattr(evaluation, "render_schematic_for_refinement", _render)
 
-    monkeypatch.setattr(evaluation, "analyze_schematic_refinement", analyze)
-    monkeypatch.setattr(evaluation, "plan_schematic_refinement", plan)
-    monkeypatch.setattr(evaluation, "apply_once_schematic_refinement", apply_once)
-    monkeypatch.setattr(evaluation, "refine_schematic", refine)
-    monkeypatch.setattr(evaluation, "require_schematic_electrical_invariance", electrical)
-    monkeypatch.setattr(evaluation, "render_schematic_for_refinement", _render)
 
-    result = evaluation.run_refinement_evaluation(
-        request,
-        output_root=tmp_path / "out",
-        work_root=tmp_path / "work",
-    )
-
+def _assert_complete_bundle(
+    *,
+    result: evaluation.RefinementEvaluationResult,
+    starts: list[tuple[str, bytes]],
+    baseline_bytes: bytes,
+    baseline_hash: str,
+    tmp_path: Path,
+) -> None:
     assert [name for name, _ in starts] == ["analyze", "plan", "apply_once", "refine"]
     assert all(payload == baseline_bytes for _, payload in starts)
     assert result.baseline_hash == baseline_hash
@@ -269,6 +282,31 @@ def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
         for path in (tmp_path / "out").iterdir()
     )
     assert list((tmp_path / "work").iterdir()) == []
+
+
+def test_phase_n3_runner_isolates_modes_and_publishes_complete_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    request = _request()
+    baseline_bytes = request.baseline_schematic.read_bytes()
+    baseline_hash = hashlib.sha256(baseline_bytes).hexdigest()
+    harness = _HappyPathHarness(request, baseline_hash)
+    harness.install(monkeypatch)
+
+    result = evaluation.run_refinement_evaluation(
+        request,
+        output_root=tmp_path / "out",
+        work_root=tmp_path / "work",
+    )
+
+    _assert_complete_bundle(
+        result=result,
+        starts=harness.starts,
+        baseline_bytes=baseline_bytes,
+        baseline_hash=baseline_hash,
+        tmp_path=tmp_path,
+    )
 
 
 def test_phase_n3_runner_refuses_existing_fixture_output(tmp_path: Path) -> None:
