@@ -1,0 +1,191 @@
+name: Phase N3 Live Evaluation
+
+run-name: N3 live eval / ${{ inputs.provider }} / ${{ inputs.model }} / ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Vision-capable provider family
+        required: true
+        type: choice
+        options:
+          - openai
+          - llama_server
+          - ollama
+      model:
+        description: Explicit provider model identifier
+        required: true
+        type: string
+      base_url:
+        description: Required for llama_server/ollama; optional OpenAI-compatible override
+        required: false
+        default: ""
+        type: string
+      confirm_12_fixture_live_run:
+        description: Confirm real model calls across all 12 Phase N3 fixtures
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-n3-live-evaluation
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.11"
+  KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
+  KICAD_PCB_WEB_LLM_PROVIDER: ${{ inputs.provider }}
+  KICAD_PCB_WEB_LLM_MODEL: ${{ inputs.model }}
+  KICAD_PCB_WEB_LLM_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
+  KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
+  KICAD_PCB_WEB_LLM_TIMEOUT_S: "180"
+  KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
+  KICAD_PCB_WEB_LLM_REQUEST_LOG_REDACTION: "true"
+  KICAD_PCB_WEB_LLM_DEBUG_ARTIFACT_CAPTURE: "false"
+  KICAD_WEBAPP_REFINEMENT_ENABLED: "true"
+
+jobs:
+  evaluate:
+    name: Run 12-fixture model-directed evaluation
+    runs-on: self-hosted
+    timeout-minutes: 240
+    env:
+      EVAL_BASE_URL: ${{ inputs.base_url }}
+      EVAL_CONFIRM: ${{ inputs.confirm_12_fixture_live_run }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Confirm live full-corpus run
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]; then
+            echo "This live evaluation is permitted only from the webapp branch." >&2
+            exit 2
+          fi
+          if [[ "$EVAL_CONFIRM" != "true" ]]; then
+            echo "confirm_12_fixture_live_run must be enabled for this paid/live experiment." >&2
+            exit 2
+          fi
+          if [[ -z "$KICAD_PCB_WEB_LLM_MODEL" ]]; then
+            echo "A model identifier is required." >&2
+            exit 2
+          fi
+          if [[ "$KICAD_PCB_WEB_LLM_PROVIDER" == "openai" ]]; then
+            if [[ -z "${KICAD_PCB_WEB_LLM_API_KEY:-}" ]]; then
+              echo "Repository secret KICAD_PCB_REFINEMENT_LLM_API_KEY is required for openai." >&2
+              exit 2
+            fi
+          elif [[ -z "$EVAL_BASE_URL" ]]; then
+            echo "base_url is required for llama_server and ollama." >&2
+            exit 2
+          fi
+          if [[ -n "$EVAL_BASE_URL" ]]; then
+            printf 'KICAD_PCB_WEB_LLM_BASE_URL=%s\n' "$EVAL_BASE_URL" >> "$GITHUB_ENV"
+          fi
+
+      - name: Reuse persistent uv cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/refinement-live-evaluation"
+          mkdir -p "$cache_dir"
+          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
+
+      - name: Verify preprovisioned KiCad toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v dot >/dev/null
+          command -v kicad-cli >/dev/null
+          KICAD_VERSION="$(kicad-cli version)"
+          [[ "$KICAD_VERSION" == 9.* ]]
+          test -d "$KICAD_SYMBOLS_DIR"
+          echo "Graphviz: $(command -v dot)"
+          echo "KiCad: $KICAD_VERSION"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: false
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --extra dev --extra web
+
+      - name: Prepare unique evidence paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_root="$RUNNER_TEMP/phase-n3-live-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          output_root="$run_root/evidence"
+          work_root="$run_root/work"
+          data_root="$run_root/web-data"
+          mkdir -p "$run_root" "$output_root" "$work_root" "$data_root"
+          echo "N3_RUN_ROOT=$run_root" >> "$GITHUB_ENV"
+          echo "N3_OUTPUT_ROOT=$output_root" >> "$GITHUB_ENV"
+          echo "N3_WORK_ROOT=$work_root" >> "$GITHUB_ENV"
+          echo "KICAD_PCB_WEB_DATA_DIR=$data_root" >> "$GITHUB_ENV"
+
+      - name: Run Phase N3 full corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          uv run kicad-refine-eval \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
+            --expectations tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json \
+            --output-root "$N3_OUTPUT_ROOT" \
+            --work-root "$N3_WORK_ROOT" \
+            --implementation-sha "$GITHUB_SHA" \
+            --max-rounds 3 \
+            --max-operations-per-round 4 \
+            --max-total-accepted-operations 8 \
+            --max-candidate-rejections 2 \
+            --max-critic-repairs 0 \
+            --max-planner-repairs 0 \
+            2>&1 | tee "$N3_RUN_ROOT/evaluation.log"
+
+      - name: Validate complete 12-fixture evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["N3_OUTPUT_ROOT"])
+          summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
+          fixture_ids = summary.get("fixture_ids")
+          if summary.get("phase") != "N3" or summary.get("status") != "completed":
+              raise SystemExit("Phase N3 summary is not completed")
+          if summary.get("fixture_count") != 12 or not isinstance(fixture_ids, list):
+              raise SystemExit("Phase N3 summary does not contain exactly 12 fixtures")
+          if len(fixture_ids) != 12 or len(set(fixture_ids)) != 12:
+              raise SystemExit("Phase N3 fixture IDs are missing or duplicated")
+          missing = [fixture_id for fixture_id in fixture_ids if not (root / fixture_id).is_dir()]
+          if missing:
+              raise SystemExit(f"Missing Phase N3 evidence bundle(s): {missing}")
+          print("Validated 12 complete Phase N3 evidence bundles")
+          PY
+
+      - name: Upload Phase N3 evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: phase-n3-live-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.N3_OUTPUT_ROOT }}
+            ${{ env.N3_RUN_ROOT }}/evaluation.log
+          if-no-files-found: warn
+          retention-days: 30
