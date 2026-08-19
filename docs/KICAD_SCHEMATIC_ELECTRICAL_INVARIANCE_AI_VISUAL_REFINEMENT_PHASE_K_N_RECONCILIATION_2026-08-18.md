@@ -4,7 +4,7 @@ Repository: `ekkus93/openclaw_kicad_pcb`
 Branch: `webapp`
 Governing TODO: `docs/KICAD_SCHEMATIC_ELECTRICAL_INVARIANCE_AI_VISUAL_REFINEMENT_TODO_2026-08-10.md`
 
-This addendum records the authoritative Phase K and Phase N1/N2 closure disposition and the Phase N3 infrastructure status. It exists separately because the GitHub connector used for this update replaces whole text files and the governing TODO is large; preserving the existing tracker without a risky full-file rewrite takes precedence over cosmetic checkbox churn.
+This addendum records the authoritative Phase K and Phase N closure disposition as implementation and evidence progress beyond the older governing TODO. It exists separately because preserving the large original tracker without risky cosmetic checkbox churn takes precedence over rewriting historical status in place.
 
 ## Phase K — closed
 
@@ -13,7 +13,7 @@ This addendum records the authoritative Phase K and Phase N1/N2 closure disposit
 - [x] Rejected candidates preserve the accepted schematic.
 - [x] The accepted-baseline ERC no-regression fix landed in `7a54f52cf96db7a721e3a57149ec3a29d5622874`.
 - [x] Follow-up formatting fixes landed in `4be7171ed49c40db5f318bef0a1610876d4fe723` and `22ae0cbb1e3761c89d5f1f4b9e9c6040bb4fff52`.
-- [x] The user confirmed the permanent CI jobs were green on 2026-08-18 after those fixes. No CI run IDs are inferred or claimed here.
+- [x] Permanent CI was confirmed green after the Phase K fixes.
 
 Disposition: the Phase K hard exit is complete.
 
@@ -40,7 +40,7 @@ Required special cases:
 - [x] unnamed-net example;
 - [x] explicit no-connect example.
 
-Coverage is enforced by `tests/unit/test_refinement_evaluation_corpus.py`.
+Coverage is enforced by the refinement evaluation corpus tests.
 
 Disposition: Phase N1 is complete.
 
@@ -54,27 +54,20 @@ For every corpus fixture, the implementation and tests cover:
 - [x] deterministic baseline render capture;
 - [x] fixture category and known visual-defect metadata without hard-coded production repairs.
 
-Implementation and evidence:
+Implementation and evidence include:
 
 - `src/kicad_pcb/evaluation/refinement_baseline.py`
 - `tests/unit/test_refinement_evaluation_baseline.py`
 - `tests/unit/test_refinement_evaluation_corpus_baselines.py`
 - `tests/integration/test_refinement_phase_n_baseline_capture_real_kicad.py`
 
-The user-confirmed green permanent CI on 2026-08-18 includes the real-KiCad integration gate relevant to this disposition.
-
 Disposition: Phase N2 is complete.
 
-## Phase N3 — evaluation runner infrastructure complete; corpus execution open
+## Phase N3 — infrastructure complete; live corpus execution open
 
-Implementation commit: `a09e2c84a7dff623f845679da54732f6e2722b41` (`feat: add Phase N3 refinement evaluation runner`).
+### N3.1 — per-fixture evaluation runner complete
 
-New implementation:
-
-- `src/kicad_pcb_web/services/refinement_evaluation.py`
-- `tests/web/test_web_refinement_evaluation.py`
-
-Runner guarantees:
+The evaluation runner in `src/kicad_pcb_web/services/refinement_evaluation.py` guarantees:
 
 - [x] `analyze`, `plan`, one-round `apply_once`, and bounded `refine` each start from an independent copy of identical baseline schematic bytes;
 - [x] each stage is hash-bound to the expected isolated artifact;
@@ -88,23 +81,60 @@ Runner guarantees:
 - [x] partial output/work directories are removed on failure;
 - [x] temporary absolute paths are not emitted into the published manifest.
 
-Local sandbox validation performed before publication:
+Disposition: N3.1 is complete.
 
-- [x] 3/3 new runner-specific tests passed;
-- [x] 39/39 focused N3 + N1/N2 + Phase K transaction/validation tests passed;
-- [x] 249/249 broader `test_refinement_*` and web refinement tests passed;
-- [x] Python compilation passed for the new runner and tests;
-- [x] new Python files have no lines over the repository's 100-character configured limit.
+### N3.2 — corpus harness, CLI, and regression coverage complete
 
-Not claimed locally because the sandbox lacks the required tooling/dependencies:
+The corpus-level runner and CLI now exist:
 
-- Ruff execution;
-- mypy execution;
-- real `kicad-cli` execution.
+- `src/kicad_pcb_web/services/refinement_evaluation_corpus.py`
+- `src/kicad_pcb_web/refinement_evaluation_cli.py`
+- console entry point: `kicad-refine-eval`
 
-Those remain permanent-CI responsibilities. This update does not monitor CI.
+The corpus implementation performs full preflight before execution, binds all fixtures to the Phase N2 baseline expectations, preserves manifest ordering, attributes fixture failures, refuses output collisions, and publishes the aggregate summary only after full success.
 
-### N3 experiment outputs still required for every fixture
+Focused N3 corpus/CLI regression coverage is present under `tests/web/`.
+
+Permanent CI run `32289721240` was verified green on 2026-08-19 across:
+
+- [x] Python lint, format, mypy, unit, and web tests;
+- [x] frontend lint, unit tests, and production build;
+- [x] KiCad integration tests;
+- [x] wheel/sdist package smoke;
+- [x] Playwright browser smoke.
+
+Disposition: N3.2 is complete.
+
+### N3.3a — reproducible manual live-evaluation workflow ready
+
+The manual-only workflow now exists at:
+
+- `.github/workflows/refinement-live-evaluation.yml`
+- display name: `Phase N3 Live Evaluation`
+
+The workflow is also registered on the repository default branch so GitHub exposes manual dispatch, while execution is hard-gated to `refs/heads/webapp`.
+
+Workflow guarantees:
+
+- [x] `workflow_dispatch` only; no push/PR/schedule trigger;
+- [x] explicit provider and model inputs;
+- [x] explicit confirmation before real calls across all 12 fixtures;
+- [x] self-hosted runner only;
+- [x] preprovisioned KiCad 9/Graphviz verification with no automatic `apt` installation;
+- [x] persistent project-specific uv download cache;
+- [x] OpenAI API key scoped only to preflight and the actual evaluation command;
+- [x] fixed canonical N3 bounds for reproducibility;
+- [x] unique output/work roots per GitHub run attempt;
+- [x] final hard validation of exactly 12 completed fixture bundles;
+- [x] `always()` artifact upload for completed evidence and the evaluation log;
+- [x] 30-day artifact retention;
+- [x] normal CI guard rejects accidental automatic triggers, hosted-runner migration, package-manager provisioning, or evidence-upload removal.
+
+Operational details are documented in `docs/PHASE_N3_LIVE_EVALUATION.md`.
+
+Disposition: the N3.3a execution mechanism is implemented. The live experiment itself is not yet complete because no real 12-fixture provider run/evidence artifact has been accepted yet.
+
+### N3.3 — experiment outputs still required for every fixture
 
 - [ ] analyze output;
 - [ ] plan output;
@@ -116,11 +146,12 @@ Those remain permanent-CI responsibilities. This update does not monitor CI.
 - [ ] operations/rejections;
 - [ ] stop reason.
 
-Disposition: the reusable N3 evaluation machinery is implemented. Phase N3 itself remains open until the real/model-directed evaluation is executed across the 12-fixture corpus and its evidence bundles are reviewed.
+Disposition: Phase N3 remains open until the real/model-directed evaluation is executed across all 12 fixtures and its evidence bundles are retained and reviewed.
 
 ## Next work
 
-1. Add the corpus-level N3 execution harness/entry point that maps all 12 manifest fixtures into `RefinementEvaluationRequest` values using an explicitly selected vision-capable provider/model.
-2. Run the evaluation under the real KiCad/provider environment and retain one atomic evidence bundle per fixture.
-3. Reconcile the produced evidence into Phase N3 completion status.
-4. Proceed to Phase N4 human disposition and Phase N5 heuristic-discovery reporting; do not auto-promote experimental observations into production heuristics.
+1. Configure the selected live provider/model for `Phase N3 Live Evaluation`.
+2. For an OpenAI run, configure repository Actions secret `KICAD_PCB_REFINEMENT_LLM_API_KEY`; for `llama_server`/`ollama`, supply the reachable base URL.
+3. Manually dispatch the workflow from the `webapp` branch with `confirm_12_fixture_live_run=true`.
+4. Retain the resulting `phase-n3-live-evidence-<run-id>-<run-attempt>` artifact and reconcile every fixture against the required N3 evidence list.
+5. Proceed to Phase N4 human visual disposition and Phase N5 heuristic-discovery reporting; do not auto-promote experimental observations into production heuristics.
