@@ -24,7 +24,12 @@ from .page_geometry import schematic_page_bounds
 LOGGER = logging.getLogger(__name__)
 
 RENDER_SCHEMA_VERSION = "1.1"
-REVIEW_PIXELS_PER_MM = 8.0
+# Review images are model-facing derivatives. Keep them below the N3 vision-token
+# envelope without reducing the independently stored full-sheet evidence render.
+REVIEW_PIXELS_PER_MM = 4.0
+# Preserve the established tiling geometry even though model-facing tiles are now
+# rasterized at a lower density. This keeps A3/A2/A1/A0 region-count behavior stable.
+REVIEW_TILING_REFERENCE_PIXELS_PER_MM = 8.0
 MAX_REVIEW_REGION_DIMENSION_PX = 3584
 MAX_REVIEW_REGIONS = 4
 REVIEW_REGION_OVERLAP_MM = 12.7
@@ -200,7 +205,7 @@ def _render_review_regions(
     rasterizer: SvgRasterizer,
 ) -> tuple[SchematicRenderRegionArtifact, ...]:
     x, y, width_mm, height_mm = viewbox
-    max_span_mm = MAX_REVIEW_REGION_DIMENSION_PX / REVIEW_PIXELS_PER_MM
+    max_span_mm = MAX_REVIEW_REGION_DIMENSION_PX / REVIEW_TILING_REFERENCE_PIXELS_PER_MM
     x_windows = _axis_windows(x, width_mm, max_span_mm)
     y_windows = _axis_windows(y, height_mm, max_span_mm)
     region_count = len(x_windows) * len(y_windows)
