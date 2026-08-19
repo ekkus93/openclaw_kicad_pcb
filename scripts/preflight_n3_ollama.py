@@ -127,8 +127,7 @@ def _provision_model(config: PreflightConfig) -> None:
         raise SystemExit("--num-ctx is required when --source-model is provided")
     _ensure_model(config.base_url, config.source_model)
     print(
-        f"Provisioning {config.model!r} from {config.source_model!r} "
-        f"with num_ctx={config.num_ctx}."
+        f"Provisioning {config.model!r} from {config.source_model!r} with num_ctx={config.num_ctx}."
     )
     _post_json(
         config.base_url,
@@ -170,8 +169,7 @@ def _validate_chat_content(chat: dict[str, Any], *, operation: str) -> None:
         thinking = message.get("thinking") if isinstance(message, dict) else None
         thinking_chars = len(thinking) if isinstance(thinking, str) else 0
         raise SystemExit(
-            f"{operation} returned no usable message.content "
-            f"(thinking_chars={thinking_chars})"
+            f"{operation} returned no usable message.content (thinking_chars={thinking_chars})"
         )
     try:
         parsed = json.loads(content)
