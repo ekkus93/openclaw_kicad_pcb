@@ -7,6 +7,7 @@ from pathlib import Path
 
 WORKFLOW = Path(".github/workflows/ci.yml")
 LIVE_EVALUATION_WORKFLOW = Path(".github/workflows/refinement-live-evaluation.yml")
+OLLAMA_PREFLIGHT = Path("scripts/preflight_n3_ollama.py")
 OLLAMA_CLIENT = Path("src/kicad_pcb_web/services/llm/ollama_client.py")
 EVALUATION_CLI = Path("src/kicad_pcb_web/refinement_evaluation_cli.py")
 
@@ -29,6 +30,7 @@ def main() -> int:
     problems = [f"missing required CI fragment: {item}" for item in required if item not in text]
     problems.extend(f"stale CI fragment remains: {item}" for item in forbidden if item in text)
     problems.extend(_live_evaluation_problems())
+    problems.extend(_ollama_preflight_problems())
     problems.extend(_ollama_client_problems())
     problems.extend(_evaluation_cli_problems())
     if problems:
@@ -45,14 +47,21 @@ def _live_evaluation_problems() -> list[str]:
         "- n3-eval-run",
         "confirm_12_fixture_live_run:",
         'AUTO_PROVIDER: "ollama"',
-        'AUTO_MODEL: "qwen3-vl:8b"',
+        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
         'AUTO_BASE_URL: "http://127.0.0.1:11434"',
+        'N3_OLLAMA_SOURCE_MODEL: "qwen3-vl:8b-instruct"',
+        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
+        'N3_OLLAMA_NUM_CTX: "32768"',
         "runs-on: self-hosted",
         'refs/heads/n3-eval-run',
         'refs/heads/webapp',
         "KICAD_PCB_REFINEMENT_LLM_API_KEY",
-        "Verify Ollama model is available",
-        'f"{base_url}/api/tags"',
+        "Verify Ollama N3 vision capability",
+        "scripts/preflight_n3_ollama.py",
+        "--probe-width 3360",
+        "--probe-height 2376",
+        "--source-model",
+        "--num-ctx",
         "uv run kicad-refine-eval",
         "--max-rounds 3",
         "--max-operations-per-round 4",
@@ -79,6 +88,22 @@ def _live_evaluation_problems() -> list[str]:
     return problems
 
 
+def _ollama_preflight_problems() -> list[str]:
+    text = OLLAMA_PREFLIGHT.read_text(encoding="utf-8")
+    required = (
+        '"/api/create"',
+        '"parameters": {"num_ctx": config.num_ctx}',
+        'message["images"] = [image_b64]',
+        "_solid_white_png",
+        "Ollama A3 vision capability probe",
+    )
+    return [
+        f"missing required N3 Ollama preflight fragment: {item}"
+        for item in required
+        if item not in text
+    ]
+
+
 def _ollama_client_problems() -> list[str]:
     text = OLLAMA_CLIENT.read_text(encoding="utf-8")
     required = (
@@ -96,9 +121,13 @@ def _ollama_client_problems() -> list[str]:
 def _evaluation_cli_problems() -> list[str]:
     text = EVALUATION_CLI.read_text(encoding="utf-8")
     required = (
-        '"fixture_id", "cause_code", "cause_type"',
+        '"cause_message"',
+        '"cause_status_code"',
+        '"cause_endpoint"',
+        '"cause_retryable"',
         "details=_safe_error_details(exc)",
         "def _safe_error_details",
+        "_SAFE_DETAIL_VALUE_TYPES",
     )
     return [
         f"missing required N3 safe-diagnostic fragment: {item}"
