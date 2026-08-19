@@ -15,27 +15,23 @@ from kicad_pcb_web.settings import LlmSettings, WebSettings
 def _context(
     tmp_path: Path,
     *,
-    provider: str = "openai",
-    model: str | None = "vision-model",
     vision_enabled: bool = True,
     enabled: bool = True,
     llm_client: object | None = None,
 ) -> cli.RefinementEvaluationCliContext:
-    effective_provider = provider if enabled else "disabled"
+    effective_provider = "openai" if enabled else "disabled"
     settings = WebSettings(
         data_dir=tmp_path / "data",
         jobs_dir=tmp_path / "jobs",
         llm=LlmSettings(
             provider=effective_provider,  # type: ignore[arg-type]
-            model=model,
+            model="vision-model",
             vision_enabled=vision_enabled,
         ),
     )
     return cli.RefinementEvaluationCliContext(
         settings=settings,
-        llm_client=(
-            object() if llm_client is None and enabled else llm_client
-        ),  # type: ignore[arg-type]
+        llm_client=(object() if llm_client is None and enabled else llm_client),  # type: ignore[arg-type]
         config=RefinementFeatureConfig(enabled=True),
         adapter=object(),  # type: ignore[arg-type]
         stdout=io.StringIO(),

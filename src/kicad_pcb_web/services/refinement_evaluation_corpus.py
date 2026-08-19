@@ -20,6 +20,11 @@ from ._refinement_evaluation_corpus_models import (
     RefinementCorpusPreparedFixture,
 )
 from ._refinement_evaluation_corpus_preflight import prepare_refinement_evaluation_corpus
+from .refinement_evaluation import (
+    RefinementEvaluationFixture,
+    RefinementEvaluationRequest,
+    run_refinement_evaluation,
+)
 
 __all__ = [
     "REFINEMENT_CORPUS_EVALUATION_SCHEMA_VERSION",
@@ -106,12 +111,6 @@ def _execute_fixture(
     output_root: Path,
     work_root: Path,
 ) -> RefinementCorpusFixtureResult:
-    from .refinement_evaluation import (
-        RefinementEvaluationFixture,
-        RefinementEvaluationRequest,
-        run_refinement_evaluation,
-    )
-
     result = run_refinement_evaluation(
         RefinementEvaluationRequest(
             fixture=RefinementEvaluationFixture(
