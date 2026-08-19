@@ -26,11 +26,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Isolate uv cache
+      - name: Reuse persistent uv cache
         shell: bash
-        run: echo "UV_CACHE_DIR=$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/$GITHUB_JOB"
+          mkdir -p "$cache_dir"
+          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
 
-      - name: Install system dependencies
+      - name: Verify system dependencies
         timeout-minutes: 10
         shell: bash
         run: |
@@ -103,7 +107,7 @@ jobs:
 
   frontend-quality:
     name: Frontend lint, unit tests and production build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
 
@@ -111,8 +115,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install locked frontend dependencies
         working-directory: frontend
@@ -152,10 +154,18 @@ jobs:
 
   package-smoke:
     name: Build and install wheel/sdist
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [python-quality, frontend-quality]
     steps:
       - uses: actions/checkout@v6
+
+      - name: Reuse persistent uv cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/$GITHUB_JOB"
+          mkdir -p "$cache_dir"
+          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -165,7 +175,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          enable-cache: true
+          enable-cache: false
 
       - name: Sync locked runtime dependencies
         run: uv sync --frozen --extra web
@@ -191,15 +201,33 @@ jobs:
 
   browser-smoke:
     name: Browser smoke tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [python-quality, frontend-quality]
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install system dependencies
+      - name: Reuse persistent uv cache
+        shell: bash
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y graphviz kicad-symbols
+          set -euo pipefail
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/$GITHUB_JOB"
+          mkdir -p "$cache_dir"
+          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
+
+      - name: Verify system dependencies
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          command -v dot >/dev/null 2>&1 || missing+=(graphviz)
+          test -d "$KICAD_SYMBOLS_DIR" || missing+=(kicad-symbols)
+          if ((${#missing[@]})); then
+            sudo apt-get update -q
+            sudo apt-get install -y "${missing[@]}"
+          fi
+          command -v dot
+          test -d "$KICAD_SYMBOLS_DIR"
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -209,7 +237,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          enable-cache: true
+          enable-cache: false
 
       - name: Sync locked Python dependencies
         run: uv sync --frozen --extra dev --extra web
@@ -218,16 +246,28 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Install Chromium
+      - name: Ensure Playwright system dependencies
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          playwright_version="$(node -p "require('@playwright/test/package.json').version")"
+          marker="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/playwright-deps-$playwright_version"
+          if [[ ! -f "$marker" ]]; then
+            npx playwright install-deps chromium
+            mkdir -p "$(dirname "$marker")"
+            touch "$marker"
+          fi
+
+      - name: Ensure Chromium
+        working-directory: frontend
+        run: npx playwright install chromium
 
       - name: Run Playwright smoke tests
         working-directory: frontend
@@ -253,9 +293,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Isolate uv cache
+      - name: Reuse persistent uv cache
         shell: bash
-        run: echo "UV_CACHE_DIR=$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/$GITHUB_JOB"
+          mkdir -p "$cache_dir"
+          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
 
       - name: Verify KiCad 9 and Graphviz
         timeout-minutes: 10
