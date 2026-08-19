@@ -20,7 +20,7 @@ on:
       model:
         description: Explicit provider model identifier
         required: true
-        default: qwen3-vl:8b-instruct-n3-32k
+        default: qwen3-vl:8b-instruct-n3-64k
         type: string
       base_url:
         description: Required for llama_server/ollama; optional OpenAI-compatible override
@@ -44,11 +44,12 @@ env:
   PYTHON_VERSION: "3.11"
   KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
   AUTO_PROVIDER: "ollama"
-  AUTO_MODEL: "qwen3-vl:8b-instruct-n3-32k"
+  AUTO_MODEL: "qwen3-vl:8b-instruct-n3-64k"
   AUTO_BASE_URL: "http://127.0.0.1:11434"
   N3_OLLAMA_SOURCE_MODEL: "qwen3-vl:8b-instruct"
-  N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-32k"
-  N3_OLLAMA_NUM_CTX: "32768"
+  N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"
+  N3_OLLAMA_NUM_CTX: "65536"
+  N3_OLLAMA_PROBE_CONTEXT_BYTES: "65536"
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "180"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
@@ -159,6 +160,7 @@ jobs:
             --model "$KICAD_PCB_WEB_LLM_MODEL"
             --probe-width 3360
             --probe-height 2376
+            --probe-context-bytes "$N3_OLLAMA_PROBE_CONTEXT_BYTES"
           )
           if [[ "$KICAD_PCB_WEB_LLM_MODEL" == "$N3_OLLAMA_MODEL" ]]; then
             args+=(
