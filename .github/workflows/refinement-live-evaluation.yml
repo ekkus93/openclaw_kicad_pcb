@@ -8,19 +8,21 @@ on:
       provider:
         description: Vision-capable provider family
         required: true
+        default: ollama
         type: choice
         options:
-          - openai
-          - llama_server
           - ollama
+          - llama_server
+          - openai
       model:
         description: Explicit provider model identifier
         required: true
+        default: qwen3-vl:8b
         type: string
       base_url:
         description: Required for llama_server/ollama; optional OpenAI-compatible override
         required: false
-        default: ""
+        default: "http://127.0.0.1:11434"
         type: string
       confirm_12_fixture_live_run:
         description: Confirm real model calls across all 12 Phase N3 fixtures
@@ -69,7 +71,7 @@ jobs:
             exit 2
           fi
           if [[ "$EVAL_CONFIRM" != "true" ]]; then
-            echo "confirm_12_fixture_live_run must be enabled for this paid/live experiment." >&2
+            echo "confirm_12_fixture_live_run must be enabled for this live experiment." >&2
             exit 2
           fi
           if [[ -z "$KICAD_PCB_WEB_LLM_MODEL" ]]; then
@@ -118,6 +120,41 @@ jobs:
 
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
+
+      - name: Verify Ollama model is available
+        if: ${{ inputs.provider == 'ollama' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EVAL_BASE_URL KICAD_PCB_WEB_LLM_MODEL
+          uv run python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          base_url = os.environ["EVAL_BASE_URL"].rstrip("/")
+          model = os.environ["KICAD_PCB_WEB_LLM_MODEL"]
+          try:
+              with urllib.request.urlopen(f"{base_url}/api/tags", timeout=10) as response:
+                  payload = json.load(response)
+          except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+              raise SystemExit(f"Unable to query Ollama at {base_url}: {type(exc).__name__}") from exc
+
+          models = payload.get("models")
+          if not isinstance(models, list):
+              raise SystemExit("Ollama /api/tags response does not contain a model list")
+          installed = {
+              str(item.get("name") or item.get("model"))
+              for item in models
+              if isinstance(item, dict) and (item.get("name") or item.get("model"))
+          }
+          if model not in installed:
+              raise SystemExit(
+                  f"Required Ollama model {model!r} is not installed; available={sorted(installed)!r}"
+              )
+          print(f"Ollama model ready: {model} at {base_url}")
+          PY
 
       - name: Prepare unique evidence paths
         shell: bash
