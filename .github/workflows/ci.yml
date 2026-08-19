@@ -206,13 +206,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Reuse persistent uv cache
+      - name: Reuse persistent tool caches
         shell: bash
         run: |
           set -euo pipefail
-          cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/uv/$GITHUB_JOB"
-          mkdir -p "$cache_dir"
-          echo "UV_CACHE_DIR=$cache_dir" >> "$GITHUB_ENV"
+          cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb"
+          uv_cache="$cache_root/uv/$GITHUB_JOB"
+          playwright_cache="$cache_root/playwright"
+          mkdir -p "$uv_cache" "$playwright_cache"
+          echo "UV_CACHE_DIR=$uv_cache" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$playwright_cache" >> "$GITHUB_ENV"
 
       - name: Verify system dependencies
         timeout-minutes: 10
@@ -251,23 +254,31 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Ensure Playwright system dependencies
-        working-directory: frontend
-        timeout-minutes: 10
-        shell: bash
-        run: |
-          set -euo pipefail
-          playwright_version="$(node -p "require('@playwright/test/package.json').version")"
-          marker="${XDG_CACHE_HOME:-$HOME/.cache}/openclaw-kicad-pcb/playwright-deps-$playwright_version"
-          if [[ ! -f "$marker" ]]; then
-            npx playwright install-deps chromium
-            mkdir -p "$(dirname "$marker")"
-            touch "$marker"
-          fi
-
       - name: Ensure Chromium
         working-directory: frontend
         run: npx playwright install chromium
+
+      - name: Verify Chromium can launch
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node <<'NODE'
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+          then
+            echo "Playwright Chromium cannot start on this self-hosted runner." >&2
+            echo "Provision its OS dependencies once with:" >&2
+            echo "  cd frontend && npx playwright install-deps chromium" >&2
+            exit 1
+          fi
 
       - name: Run Playwright smoke tests
         working-directory: frontend
