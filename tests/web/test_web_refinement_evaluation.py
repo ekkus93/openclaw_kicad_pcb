@@ -14,14 +14,19 @@ from kicad_pcb.refinement.electrical import (
     build_schematic_electrical_baseline,
 )
 from kicad_pcb.refinement.metrics import compute_refinement_metrics
-from kicad_pcb.refinement.operations import LayoutOperationBatchResult, LayoutOperationResult
+from kicad_pcb.refinement.operations import (
+    LayoutOperationBatchResult,
+    LayoutOperationResult,
+)
 from kicad_pcb.refinement.planner import ValidatedRepairPlan
 from kicad_pcb.refinement.rendering import SchematicRenderArtifact
 from kicad_pcb_web.services import refinement_evaluation as evaluation
 from kicad_pcb_web.services import schematic_refinement as service
 
-_FIXTURE = (
-    Path(__file__).parents[1] / "fixtures" / "readability" / "ne5532_headphone_amp_left_current"
+_FIXTURE = Path(__file__).parents[1].joinpath(
+    "fixtures",
+    "readability",
+    "ne5532_headphone_amp_left_current",
 )
 
 
@@ -67,7 +72,10 @@ def _request() -> evaluation.RefinementEvaluationRequest:
         baseline_schematic=schematic,
         adapter=object(),  # type: ignore[arg-type]
         llm_client=object(),  # type: ignore[arg-type]
-        provenance=service.RefinementProvenance(provider="fake-provider", model="fake-model"),
+        provenance=service.RefinementProvenance(
+            provider="fake-provider",
+            model="fake-model",
+        ),
         iteration_limits=service.RefinementIterationLimits(
             max_critic_repairs=0,
             max_planner_repairs=0,
@@ -81,13 +89,12 @@ def _analysis(path: Path, request: evaluation.RefinementEvaluationRequest, work:
     baseline = build_schematic_electrical_baseline(request.authoritative_ir, path)
     metrics = compute_refinement_metrics(path)
     render = _render(path, work / "render", adapter=request.adapter)
-    critic = CriticResponse.model_validate(
-        {
-            "source_schematic_hash": baseline.accepted_schematic_hash,
-            "render_png_hash": render.png_hash,
-            "issues": [],
-        }
-    )
+    critic_payload = {
+        "source_schematic_hash": baseline.accepted_schematic_hash,
+        "render_png_hash": render.png_hash,
+        "issues": [],
+    }
+    critic = CriticResponse.model_validate(critic_payload)
     return service.RefinementAnalysisResult(
         accepted_hash=baseline.accepted_schematic_hash,
         baseline=baseline,
@@ -187,7 +194,11 @@ class _HappyPathHarness:
             candidate_hash=after,
             evidence_dir=evidence_dir,
             operations=operations,
-            electrical=_electrical_report(self.request, self.baseline_hash, accepted_path),
+            electrical=_electrical_report(
+                self.request,
+                self.baseline_hash,
+                accepted_path,
+            ),
             structural=None,
             quality=None,
             candidate_layout_fingerprint=after,
@@ -235,12 +246,36 @@ class _HappyPathHarness:
         )
 
     def install(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(evaluation, "analyze_schematic_refinement", self.analyze)
-        monkeypatch.setattr(evaluation, "plan_schematic_refinement", self.plan)
-        monkeypatch.setattr(evaluation, "apply_once_schematic_refinement", self.apply_once)
-        monkeypatch.setattr(evaluation, "refine_schematic", self.refine)
-        monkeypatch.setattr(evaluation, "require_schematic_electrical_invariance", _electrical)
-        monkeypatch.setattr(evaluation, "render_schematic_for_refinement", _render)
+        monkeypatch.setattr(
+            evaluation,
+            "analyze_schematic_refinement",
+            self.analyze,
+        )
+        monkeypatch.setattr(
+            evaluation,
+            "plan_schematic_refinement",
+            self.plan,
+        )
+        monkeypatch.setattr(
+            evaluation,
+            "apply_once_schematic_refinement",
+            self.apply_once,
+        )
+        monkeypatch.setattr(
+            evaluation,
+            "refine_schematic",
+            self.refine,
+        )
+        monkeypatch.setattr(
+            evaluation,
+            "require_schematic_electrical_invariance",
+            _electrical,
+        )
+        monkeypatch.setattr(
+            evaluation,
+            "render_schematic_for_refinement",
+            _render,
+        )
 
 
 def _assert_complete_bundle(
@@ -257,11 +292,11 @@ def _assert_complete_bundle(
     assert result.apply_once_status == "accepted"
     assert result.refine_stop_reason == "REFINEMENT_STOP_MAX_ROUNDS"
 
-    manifest = json.loads((result.output_dir / "manifest.json").read_text(encoding="utf-8"))
+    manifest_path = result.output_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    expected_isolation_policy = "each mode starts from identical baseline schematic bytes"
     assert manifest["phase"] == "N3"
-    assert manifest["isolation_policy"] == (
-        "each mode starts from identical baseline schematic bytes"
-    )
+    assert manifest["isolation_policy"] == expected_isolation_policy
     assert manifest["apply_once"]["status"] == "accepted"
     assert manifest["refine"]["stop_reason"] == "REFINEMENT_STOP_MAX_ROUNDS"
     assert manifest["final_electrical_status"] == "passed"
@@ -270,9 +305,8 @@ def _assert_complete_bundle(
     assert (result.output_dir / "operations.json").is_file()
     assert (result.output_dir / "apply_once" / "final" / "metrics.json").is_file()
     assert (result.output_dir / "refine" / "final" / "electrical.json").is_file()
-    assert (result.output_dir / "refine" / "final" / "accepted.kicad_sch").read_bytes() == (
-        baseline_bytes + b"\n\n"
-    )
+    refined_schematic = result.output_dir / "refine" / "final" / "accepted.kicad_sch"
+    assert refined_schematic.read_bytes() == baseline_bytes + b"\n\n"
     serialized = json.dumps(manifest)
     assert str(tmp_path) not in serialized
     assert not any(
