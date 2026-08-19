@@ -96,7 +96,7 @@ def test_render_binds_hashes_transform_and_readable_review_region(tmp_path: Path
     assert region.region_id == "r00-c00"
     assert region.image_index == 0
     assert region.view_box_mm == (0.0, 0.0, 297.0, 210.0)
-    assert (region.width_px, region.height_px) == (2376, 1680)
+    assert (region.width_px, region.height_px) == (1188, 840)
     assert region.pixels_per_mm_x == pytest.approx(REVIEW_PIXELS_PER_MM)
     assert region.pixels_per_mm_y == pytest.approx(REVIEW_PIXELS_PER_MM)
     assert artifact.review_image_paths == (region.png_path,)
