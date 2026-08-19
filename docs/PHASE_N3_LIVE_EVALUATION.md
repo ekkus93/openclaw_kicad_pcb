@@ -2,16 +2,16 @@
 
 This document records the reproducible Phase N3.3 live/model-directed corpus experiment.
 
-## Selected experiment environment
+## Selected local environment
 
-The current selected N3.3 environment is local Ollama on the self-hosted runner:
+The current experiment target is a local Ollama service on the self-hosted runner:
 
 - provider: `ollama`
 - model: `qwen3-vl:8b`
 - base URL: `http://127.0.0.1:11434`
-- API key: not required
+- external API key: not required
 
-The repository workflow is pre-filled with these values. The Ollama client uses the native `/api/chat` endpoint and the workflow performs a cheap `/api/tags` preflight to verify that the exact selected model is installed before any fixture evaluation starts.
+The production Ollama client uses the native `/api/chat` endpoint and sends images with Ollama's native `images` message field. Structured JSON requests explicitly send `think: false`; the application consumes the schema-bound final `message.content` and does not consume a separate reasoning channel.
 
 ## Workflow
 
@@ -19,47 +19,26 @@ GitHub Actions workflow:
 
 - `.github/workflows/refinement-live-evaluation.yml`
 - display name: **Phase N3 Live Evaluation**
-- trigger: `workflow_dispatch` only
+- triggers: explicit `n3-eval-run` branch push or manual `workflow_dispatch`
 - runner: `self-hosted`
-- permitted execution branch: `webapp` only
+- automated provider/model/base URL: the selected local environment above
+- manual dispatch remains available as a fallback
 - corpus: all 12 fixtures in `tests/fixtures/refinement/evaluation_corpus/manifest.json`
 
-The workflow deliberately has no `push`, `pull_request`, or scheduled trigger because it performs real model calls and can consume substantial local compute.
+Ordinary `webapp` pushes do not launch the live experiment. To launch an automated experiment, advance `n3-eval-run` to the `webapp` SHA that should be evaluated.
 
 ## Provider configuration
 
-The workflow exposes these dispatch inputs:
+The manual fallback exposes these dispatch inputs:
 
-- `provider`: `ollama`, `llama_server`, or `openai`; current default is `ollama`
-- `model`: explicit provider model identifier; current default is `qwen3-vl:8b`
-- `base_url`: required for `llama_server` and `ollama`; current default is `http://127.0.0.1:11434`
-- `confirm_12_fixture_live_run`: must be enabled before the experiment is allowed to start
+- `provider`: `ollama`, `llama_server`, or `openai`
+- `model`: explicit provider model identifier
+- `base_url`: required for `llama_server` and `ollama`; optional for an OpenAI-compatible override
+- `confirm_12_fixture_live_run`: must be enabled before a manual experiment is allowed to start
 
-All three enabled provider families have explicit image-input capability contracts in production code. The workflow also sets `KICAD_PCB_WEB_LLM_VISION_ENABLED=true`; model names are not used to infer vision capability.
+All three enabled provider families have explicit image-input capability contracts in production code. The workflow sets `KICAD_PCB_WEB_LLM_VISION_ENABLED=true`; model names are not used to infer image capability.
 
-For the selected local Ollama configuration, no API-key secret is required.
-
-For `openai`, configure this repository Actions secret before dispatch:
-
-- `KICAD_PCB_REFINEMENT_LLM_API_KEY`
-
-The secret is scoped only to the provider preflight and actual evaluation command. It is not exposed to checkout, Python setup, uv setup, or artifact-upload actions.
-
-For `llama_server` and `ollama`, no API-key secret is required by the current provider contract, but a reachable `base_url` must be supplied.
-
-## Ollama preflight
-
-When `provider=ollama`, the workflow queries:
-
-`<base_url>/api/tags`
-
-before running the corpus. The preflight fails if:
-
-- Ollama is unreachable;
-- the response is not valid JSON in the expected native Ollama shape;
-- the exact selected model is not installed.
-
-This avoids spending time on KiCad/model evaluation when the runner-local inference service is not ready.
+For `openai`, configure repository Actions secret `KICAD_PCB_REFINEMENT_LLM_API_KEY` before a manual OpenAI dispatch. For the selected local Ollama experiment, no API-key secret is required.
 
 ## Preprovisioned self-hosted runner requirements
 
@@ -68,8 +47,10 @@ The workflow reuses the persistent self-hosted runner and fails fast rather than
 - Graphviz `dot`
 - KiCad 9 `kicad-cli`
 - KiCad symbol libraries at `/usr/share/kicad/symbols`
-- Ollama reachable at the configured base URL for an Ollama run
-- selected model already pulled into Ollama
+- Ollama reachable at `http://127.0.0.1:11434`
+- `qwen3-vl:8b` installed in Ollama
+
+The workflow queries Ollama `/api/tags` before corpus execution and fails before schematic work if the selected model is unavailable.
 
 Python 3.11 and uv are resolved through the existing Actions setup tools, while uv package downloads reuse the persistent project cache:
 
@@ -90,6 +71,16 @@ The N3.3 workflow pins the experiment to these bounds rather than inheriting mut
 
 These values are recorded again in the generated corpus summary.
 
+## Diagnostics
+
+The CLI keeps normal production errors sanitized. For `REFINEMENT_EVALUATION_FIXTURE_FAILED`, it additionally emits only these safe diagnostic fields when available:
+
+- `fixture_id`
+- `cause_code`
+- `cause_type`
+
+Raw provider payloads, prompts, model responses, temporary paths, and secrets are not included in this CLI diagnostic tuple.
+
 ## Evidence layout
 
 Each GitHub run/attempt receives a unique temporary root:
@@ -100,17 +91,13 @@ The corpus runner writes atomic per-fixture bundles under `evidence/` and publis
 
 The workflow performs a final hard check that the summary is Phase `N3`, has status `completed`, contains exactly 12 unique fixture IDs, and has a directory for every fixture.
 
-Whether the evaluation succeeds or fails, the workflow attempts to upload:
-
-- all completed atomic fixture evidence bundles;
-- `summary.json` when the full corpus completed;
-- `evaluation.log`.
+Whether the evaluation succeeds or fails, the workflow attempts to upload completed atomic fixture evidence bundles and `evaluation.log`.
 
 Artifact name:
 
 `phase-n3-live-evidence-<run-id>-<run-attempt>`
 
-Artifact retention: 30 days.
+The workflow requests 30-day retention; repository-level retention policy may cap the actual artifact lifetime to a smaller value.
 
 ## Expected evidence per completed fixture
 
@@ -128,4 +115,4 @@ The underlying Phase N3 evaluation runner retains the evidence needed for subseq
 
 ## Completion rule
 
-Creating and configuring this workflow does **not** close Phase N3.3. Phase N3.3 closes only after a real model-directed run across all 12 fixtures completes, the generated artifact is retained, and the evidence is reconciled for Phase N4 human visual disposition.
+Creating and automating this workflow does **not** close Phase N3.3. Phase N3.3 closes only after a real model-directed run across all 12 fixtures completes, the generated artifact is retained, and the evidence is reconciled for Phase N4 human visual disposition.
