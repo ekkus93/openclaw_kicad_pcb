@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 RENDER_SCHEMA_VERSION = "1.1"
 # Review images are model-facing derivatives. Keep them below the N3 vision-token
 # envelope without reducing the independently stored full-sheet evidence render.
-REVIEW_PIXELS_PER_MM = 4.0
+REVIEW_PIXELS_PER_MM = 3.0
 # Preserve the established tiling geometry even though model-facing tiles are now
 # rasterized at a lower density. This keeps A3/A2/A1/A0 region-count behavior stable.
 REVIEW_TILING_REFERENCE_PIXELS_PER_MM = 8.0
