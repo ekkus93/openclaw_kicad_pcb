@@ -3,13 +3,35 @@ import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const WEB_PORT_TEXT = process.env.PLAYWRIGHT_WEB_PORT ?? '8000'
-const WEB_PORT = Number(WEB_PORT_TEXT)
 
-if (!Number.isInteger(WEB_PORT) || WEB_PORT < 1 || WEB_PORT > 65_535) {
-  throw new Error(`Invalid PLAYWRIGHT_WEB_PORT: ${WEB_PORT_TEXT}`)
+function parseWebPort(value: string, source: string): number {
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`Invalid ${source}: ${value}`)
+  }
+  const port = Number(value)
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error(`Invalid ${source}: ${value}`)
+  }
+  return port
 }
 
+function resolveWebPort(): number {
+  const configured = process.env.PLAYWRIGHT_WEB_PORT
+  if (configured) {
+    return parseWebPort(configured, 'PLAYWRIGHT_WEB_PORT')
+  }
+
+  const runId = process.env.GITHUB_RUN_ID
+  const runAttempt = process.env.GITHUB_RUN_ATTEMPT ?? '1'
+  if (process.env.CI && runId && /^\d+$/.test(runId) && /^\d+$/.test(runAttempt)) {
+    const runKey = BigInt(runId) * 100n + BigInt(runAttempt)
+    return 30_000 + Number(runKey % 20_000n)
+  }
+
+  return 8000
+}
+
+const WEB_PORT = resolveWebPort()
 const WEB_BASE_URL = `http://127.0.0.1:${WEB_PORT}`
 
 export default defineConfig({
