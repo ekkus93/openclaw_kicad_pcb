@@ -32,6 +32,17 @@ def test_phase_n3_preflight_png_preserves_requested_dimensions() -> None:
     assert (width, height) == (3360, 2376)
 
 
+def test_phase_n3_preflight_stress_context_meets_byte_floor_and_is_deterministic() -> None:
+    module = _load_module()
+
+    first = module._stress_context(65536)
+    second = module._stress_context(65536)
+
+    assert first == second
+    assert len(first.encode("utf-8")) >= 65536
+    assert '"object_id":"component:' in first
+
+
 def test_phase_n3_preflight_provisions_context_bound_alias(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -40,11 +51,12 @@ def test_phase_n3_preflight_provisions_context_bound_alias(
     posted: list[tuple[str, dict[str, object]]] = []
     config = module.PreflightConfig(
         base_url="http://127.0.0.1:11434",
-        model="qwen3-vl:8b-instruct-n3-32k",
+        model="qwen3-vl:8b-instruct-n3-64k",
         source_model="qwen3-vl:8b-instruct",
-        num_ctx=32768,
+        num_ctx=65536,
         probe_width=3360,
         probe_height=2376,
+        probe_context_bytes=65536,
     )
 
     monkeypatch.setattr(
@@ -70,7 +82,7 @@ def test_phase_n3_preflight_provisions_context_bound_alias(
             {
                 "model": config.model,
                 "from": config.source_model,
-                "parameters": {"num_ctx": 32768},
+                "parameters": {"num_ctx": 65536},
                 "stream": False,
             },
         )
@@ -84,11 +96,12 @@ def test_phase_n3_preflight_vision_probe_uses_native_ollama_images(
     captured: dict[str, object] = {}
     config = module.PreflightConfig(
         base_url="http://127.0.0.1:11434",
-        model="qwen3-vl:8b-instruct-n3-32k",
+        model="qwen3-vl:8b-instruct-n3-64k",
         source_model=None,
         num_ctx=None,
         probe_width=3360,
         probe_height=2376,
+        probe_context_bytes=65536,
     )
 
     def post_json(base_url, path, payload, **kwargs):
@@ -97,7 +110,12 @@ def test_phase_n3_preflight_vision_probe_uses_native_ollama_images(
 
     monkeypatch.setattr(module, "_post_json", post_json)
 
-    module._probe_chat(config, image_b64="base64-image", operation="vision probe")
+    module._probe_chat(
+        config,
+        image_b64="base64-image",
+        operation="vision probe",
+        content="stress-prompt",
+    )
 
     payload = captured["payload"]
     assert isinstance(payload, dict)
@@ -106,4 +124,5 @@ def test_phase_n3_preflight_vision_probe_uses_native_ollama_images(
     assert payload["think"] is False
     messages = payload["messages"]
     assert isinstance(messages, list)
+    assert messages[0]["content"] == "stress-prompt"
     assert messages[0]["images"] == ["base64-image"]
