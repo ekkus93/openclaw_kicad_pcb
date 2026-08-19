@@ -36,7 +36,17 @@ from .settings import WebSettings, load_settings
 LOGGER = logging.getLogger("uvicorn.error")
 _DEFAULT_MANIFEST = Path("tests/fixtures/refinement/evaluation_corpus/manifest.json")
 _FIXTURE_FAILURE_CODE = "REFINEMENT_EVALUATION_FIXTURE_FAILED"
-_SAFE_FIXTURE_DETAIL_KEYS = ("fixture_id", "cause_code", "cause_type")
+_SAFE_FIXTURE_DETAIL_KEYS = (
+    "fixture_id",
+    "cause_code",
+    "cause_type",
+    "cause_message",
+    "cause_provider",
+    "cause_status_code",
+    "cause_endpoint",
+    "cause_retryable",
+)
+_SAFE_DETAIL_VALUE_TYPES = (str, int, float, bool, type(None))
 
 
 @dataclass(frozen=True)
@@ -279,7 +289,7 @@ def _safe_error_details(exc: UserError) -> dict[str, object] | None:
     details = {
         key: exc.details[key]
         for key in _SAFE_FIXTURE_DETAIL_KEYS
-        if key in exc.details and isinstance(exc.details[key], (str, type(None)))
+        if key in exc.details and isinstance(exc.details[key], _SAFE_DETAIL_VALUE_TYPES)
     }
     return details or None
 
