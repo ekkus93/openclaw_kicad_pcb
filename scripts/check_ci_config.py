@@ -38,11 +38,17 @@ def _live_evaluation_problems() -> list[str]:
         "name: Phase N3 Live Evaluation",
         "workflow_dispatch:",
         "confirm_12_fixture_live_run:",
+        "push:",
+        "- n3-eval-run",
         "default: ollama",
         "default: qwen3-vl:8b",
         'default: "http://127.0.0.1:11434"',
+        "inputs.provider || 'ollama'",
+        "inputs.model || 'qwen3-vl:8b'",
+        "inputs.base_url || 'http://127.0.0.1:11434'",
         "runs-on: self-hosted",
-        'if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]',
+        '"refs/heads/n3-eval-run"',
+        '"refs/heads/webapp"',
         "KICAD_PCB_REFINEMENT_LLM_API_KEY",
         "Verify Ollama model is available",
         'f"{base_url}/api/tags"',
@@ -55,8 +61,8 @@ def _live_evaluation_problems() -> list[str]:
         "retention-days: 30",
     )
     forbidden = (
-        "\n  push:",
         "\n  pull_request:",
+        "\n  schedule:",
         "sudo apt-get",
         "install-deps",
     )

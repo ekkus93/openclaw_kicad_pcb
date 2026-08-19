@@ -1,6 +1,6 @@
 name: Phase N3 Live Evaluation
 
-run-name: N3 live eval / ${{ inputs.provider }} / ${{ inputs.model }} / ${{ github.ref_name }}
+run-name: N3 live eval / ${{ inputs.provider || 'ollama' }} / ${{ inputs.model || 'qwen3-vl:8b' }} / ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -29,6 +29,9 @@ on:
         required: true
         default: false
         type: boolean
+  push:
+    branches:
+      - n3-eval-run
 
 permissions:
   contents: read
@@ -40,8 +43,8 @@ concurrency:
 env:
   PYTHON_VERSION: "3.11"
   KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
-  KICAD_PCB_WEB_LLM_PROVIDER: ${{ inputs.provider }}
-  KICAD_PCB_WEB_LLM_MODEL: ${{ inputs.model }}
+  KICAD_PCB_WEB_LLM_PROVIDER: ${{ inputs.provider || 'ollama' }}
+  KICAD_PCB_WEB_LLM_MODEL: ${{ inputs.model || 'qwen3-vl:8b' }}
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "180"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
@@ -55,7 +58,7 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 240
     env:
-      EVAL_BASE_URL: ${{ inputs.base_url }}
+      EVAL_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:11434' }}
       EVAL_CONFIRM: ${{ inputs.confirm_12_fixture_live_run }}
     steps:
       - uses: actions/checkout@v6
@@ -66,12 +69,22 @@ jobs:
           EVAL_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]; then
-            echo "This live evaluation is permitted only from the webapp branch." >&2
-            exit 2
-          fi
-          if [[ "$EVAL_CONFIRM" != "true" ]]; then
-            echo "confirm_12_fixture_live_run must be enabled for this live experiment." >&2
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            if [[ "$GITHUB_REF" != "refs/heads/n3-eval-run" ]]; then
+              echo "Automated live evaluation is permitted only from n3-eval-run." >&2
+              exit 2
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]; then
+              echo "Manual live evaluation is permitted only from the webapp branch." >&2
+              exit 2
+            fi
+            if [[ "$EVAL_CONFIRM" != "true" ]]; then
+              echo "confirm_12_fixture_live_run must be enabled for a manual live experiment." >&2
+              exit 2
+            fi
+          else
+            echo "Unsupported Phase N3 live-evaluation trigger: $GITHUB_EVENT_NAME" >&2
             exit 2
           fi
           if [[ -z "$KICAD_PCB_WEB_LLM_MODEL" ]]; then
@@ -122,10 +135,12 @@ jobs:
         run: uv sync --frozen --extra dev --extra web
 
       - name: Verify Ollama model is available
-        if: ${{ inputs.provider == 'ollama' }}
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "$KICAD_PCB_WEB_LLM_PROVIDER" != "ollama" ]]; then
+            exit 0
+          fi
           export EVAL_BASE_URL KICAD_PCB_WEB_LLM_MODEL
           uv run python - <<'PY'
           import json
