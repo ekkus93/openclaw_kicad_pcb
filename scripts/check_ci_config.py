@@ -144,7 +144,7 @@ def _refinement_context_budget_problems() -> list[str]:
     rendering = REFINEMENT_RENDERING.read_text(encoding="utf-8")
     llm = REFINEMENT_LLM.read_text(encoding="utf-8")
     required_rendering = (
-        "REVIEW_PIXELS_PER_MM = 4.0",
+        "REVIEW_PIXELS_PER_MM = 3.0",
         "REVIEW_TILING_REFERENCE_PIXELS_PER_MM = 8.0",
         "MAX_REVIEW_REGION_DIMENSION_PX / REVIEW_TILING_REFERENCE_PIXELS_PER_MM",
     )
@@ -153,6 +153,14 @@ def _refinement_context_budget_problems() -> list[str]:
         "def _critic_context_payload(context: VisionObjectMap)",
         '"positions_mm": item.positions_mm',
         '"points_mm": item.points_mm',
+        '"nets": [{"object_id": item.object_id, "name": item.name} for item in context.nets]',
+    )
+    forbidden_llm = (
+        '"symbol_id": item.symbol_id',
+        '"value": item.value',
+        '"terminals": item.terminals',
+        '"row": item.row',
+        '"column": item.column',
     )
     problems = [
         f"missing required refinement render-budget fragment: {item}"
@@ -163,6 +171,11 @@ def _refinement_context_budget_problems() -> list[str]:
         f"missing required refinement critic-budget fragment: {item}"
         for item in required_llm
         if item not in llm
+    )
+    problems.extend(
+        f"forbidden redundant refinement critic fragment remains: {item}"
+        for item in forbidden_llm
+        if item in llm
     )
     return problems
 
