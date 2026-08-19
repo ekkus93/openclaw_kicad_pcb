@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
 
@@ -37,6 +37,8 @@ __all__ = [
     "run_refinement_evaluation_corpus",
 ]
 
+_SAFE_CAUSE_DETAIL_KEYS = frozenset({"provider", "status_code", "endpoint", "retryable"})
+
 
 def run_refinement_evaluation_corpus(
     request: RefinementCorpusEvaluationRequest,
@@ -67,8 +69,7 @@ def run_refinement_evaluation_corpus(
                 code="REFINEMENT_EVALUATION_FIXTURE_FAILED",
                 details={
                     "fixture_id": item.fixture.fixture_id,
-                    "cause_code": _exception_code(exc),
-                    "cause_type": type(exc).__name__,
+                    **_exception_diagnostics(exc),
                 },
             ) from exc
         results.append(result)
@@ -188,6 +189,21 @@ def _publish_summary(
         temp_path.unlink(missing_ok=True)
         raise
     return summary
+
+
+def _exception_diagnostics(exc: Exception) -> dict[str, object]:
+    diagnostics: dict[str, object] = {
+        "cause_code": _exception_code(exc),
+        "cause_type": type(exc).__name__,
+        "cause_message": str(exc),
+    }
+    details = getattr(exc, "details", None)
+    if isinstance(details, Mapping):
+        for key in _SAFE_CAUSE_DETAIL_KEYS:
+            value = details.get(key)
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                diagnostics[f"cause_{key}"] = value
+    return diagnostics
 
 
 def _exception_code(exc: Exception) -> str | None:
