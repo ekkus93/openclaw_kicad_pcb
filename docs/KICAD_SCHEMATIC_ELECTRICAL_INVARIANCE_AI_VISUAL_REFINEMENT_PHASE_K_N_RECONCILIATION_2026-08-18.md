@@ -105,34 +105,42 @@ Permanent CI run `32289721240` was verified green on 2026-08-19 across:
 
 Disposition: N3.2 is complete.
 
-### N3.3a — reproducible manual live-evaluation workflow ready
+### N3.3a — reproducible automated local live-evaluation workflow ready
 
-The manual-only workflow now exists at:
+The workflow exists at `.github/workflows/refinement-live-evaluation.yml` and supports both an explicit automated trigger branch and manual fallback.
 
-- `.github/workflows/refinement-live-evaluation.yml`
-- display name: `Phase N3 Live Evaluation`
+Selected automated environment:
 
-The workflow is also registered on the repository default branch so GitHub exposes manual dispatch, while execution is hard-gated to `refs/heads/webapp`.
+- provider: `ollama`
+- model: `qwen3-vl:8b`
+- base URL: `http://127.0.0.1:11434`
+- runner: `self-hosted`
+- external API key: none
 
 Workflow guarantees:
 
-- [x] `workflow_dispatch` only; no push/PR/schedule trigger;
-- [x] explicit provider and model inputs;
-- [x] explicit confirmation before real calls across all 12 fixtures;
-- [x] self-hosted runner only;
+- [x] ordinary `webapp` pushes do not launch the live experiment;
+- [x] moving `n3-eval-run` to an evaluated `webapp` SHA launches the experiment;
+- [x] manual dispatch remains available as a fallback;
 - [x] preprovisioned KiCad 9/Graphviz verification with no automatic `apt` installation;
+- [x] Ollama `/api/tags` preflight verifies the selected model before schematic work;
 - [x] persistent project-specific uv download cache;
-- [x] OpenAI API key scoped only to preflight and the actual evaluation command;
 - [x] fixed canonical N3 bounds for reproducibility;
 - [x] unique output/work roots per GitHub run attempt;
 - [x] final hard validation of exactly 12 completed fixture bundles;
 - [x] `always()` artifact upload for completed evidence and the evaluation log;
-- [x] 30-day artifact retention;
-- [x] normal CI guard rejects accidental automatic triggers, hosted-runner migration, package-manager provisioning, or evidence-upload removal.
+- [x] normal CI guards the workflow's automated trigger, selected local model, tool provisioning policy, and evidence upload.
+
+The first automated run (`32301536216`) proved the runner/tool/Ollama preflight path but failed during the first corpus fixture. Follow-up hardening now:
+
+- [x] explicitly sends `think: false` for Ollama structured JSON requests so thinking-capable Qwen3-VL variants return schema-bound final content without a separate reasoning channel consuming the structured call;
+- [x] retains ordinary free-text Ollama behavior unchanged;
+- [x] exposes only `fixture_id`, `cause_code`, and `cause_type` for corpus fixture failures in CLI JSON diagnostics;
+- [x] adds focused regression tests for both behaviors.
 
 Operational details are documented in `docs/PHASE_N3_LIVE_EVALUATION.md`.
 
-Disposition: the N3.3a execution mechanism is implemented. The live experiment itself is not yet complete because no real 12-fixture provider run/evidence artifact has been accepted yet.
+Disposition: N3.3a is implemented. The live experiment itself is still open until all 12 real fixture bundles complete successfully.
 
 ### N3.3 — experiment outputs still required for every fixture
 
@@ -150,8 +158,7 @@ Disposition: Phase N3 remains open until the real/model-directed evaluation is e
 
 ## Next work
 
-1. Configure the selected live provider/model for `Phase N3 Live Evaluation`.
-2. For an OpenAI run, configure repository Actions secret `KICAD_PCB_REFINEMENT_LLM_API_KEY`; for `llama_server`/`ollama`, supply the reachable base URL.
-3. Manually dispatch the workflow from the `webapp` branch with `confirm_12_fixture_live_run=true`.
-4. Retain the resulting `phase-n3-live-evidence-<run-id>-<run-attempt>` artifact and reconcile every fixture against the required N3 evidence list.
-5. Proceed to Phase N4 human visual disposition and Phase N5 heuristic-discovery reporting; do not auto-promote experimental observations into production heuristics.
+1. Run the corrected automated `ollama` / `qwen3-vl:8b` corpus experiment on the self-hosted runner.
+2. If any fixture still fails, use the allowlisted `fixture_id` / `cause_code` / `cause_type` diagnostic tuple to correct the real failure without exposing raw model content or secrets.
+3. Retain the resulting `phase-n3-live-evidence-<run-id>-<run-attempt>` artifact and reconcile every fixture against the required N3 evidence list.
+4. Proceed to Phase N4 human visual disposition and Phase N5 heuristic-discovery reporting; do not auto-promote experimental observations into production heuristics.
