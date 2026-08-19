@@ -146,7 +146,7 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
 
-      - name: Verify Ollama model is available
+      - name: Verify Ollama model and structured chat capability
         shell: bash
         run: |
           set -euo pipefail
@@ -162,13 +162,40 @@ jobs:
 
           base_url = os.environ["EVAL_BASE_URL"].rstrip("/")
           model = os.environ["KICAD_PCB_WEB_LLM_MODEL"]
-          try:
-              with urllib.request.urlopen(f"{base_url}/api/tags", timeout=10) as response:
-                  payload = json.load(response)
-          except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
-              raise SystemExit(f"Unable to query Ollama at {base_url}: {type(exc).__name__}") from exc
 
-          models = payload.get("models")
+          def get_json(path: str, *, timeout: float = 10.0) -> dict[str, object]:
+              try:
+                  with urllib.request.urlopen(f"{base_url}{path}", timeout=timeout) as response:
+                      payload = json.load(response)
+              except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+                  raise SystemExit(
+                      f"Unable to query Ollama {path} at {base_url}: {type(exc).__name__}"
+                  ) from exc
+              if not isinstance(payload, dict):
+                  raise SystemExit(f"Ollama {path} returned a non-object JSON payload")
+              return payload
+
+          def provider_error(exc: urllib.error.HTTPError) -> str:
+              try:
+                  raw = exc.read(4096).decode("utf-8", errors="replace")
+                  payload = json.loads(raw)
+              except (OSError, UnicodeError, json.JSONDecodeError):
+                  return "unavailable"
+              if not isinstance(payload, dict):
+                  return "unavailable"
+              error = payload.get("error")
+              if isinstance(error, str):
+                  return error[:500]
+              if isinstance(error, dict) and isinstance(error.get("message"), str):
+                  return str(error["message"])[:500]
+              return "unavailable"
+
+          version_payload = get_json("/api/version")
+          version = version_payload.get("version")
+          print(f"Ollama version: {version if isinstance(version, str) else 'unknown'}")
+
+          tags = get_json("/api/tags")
+          models = tags.get("models")
           if not isinstance(models, list):
               raise SystemExit("Ollama /api/tags response does not contain a model list")
           installed = {
@@ -180,7 +207,57 @@ jobs:
               raise SystemExit(
                   f"Required Ollama model {model!r} is not installed; available={sorted(installed)!r}"
               )
-          print(f"Ollama model ready: {model} at {base_url}")
+
+          probe_payload = json.dumps(
+              {
+                  "model": model,
+                  "messages": [
+                      {
+                          "role": "user",
+                          "content": 'Return exactly one JSON object: {"ok":true}',
+                      }
+                  ],
+                  "stream": False,
+                  "format": "json",
+                  "think": False,
+                  "options": {"temperature": 0, "num_predict": 128},
+              }
+          ).encode("utf-8")
+          request = urllib.request.Request(
+              f"{base_url}/api/chat",
+              data=probe_payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=180) as response:
+                  chat = json.load(response)
+          except urllib.error.HTTPError as exc:
+              raise SystemExit(
+                  "Ollama structured chat capability probe failed: "
+                  f"HTTP {exc.code}; error={provider_error(exc)!r}"
+              ) from exc
+          except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+              raise SystemExit(
+                  f"Ollama structured chat capability probe failed: {type(exc).__name__}"
+              ) from exc
+
+          if not isinstance(chat, dict):
+              raise SystemExit("Ollama structured chat capability probe returned non-object JSON")
+          message = chat.get("message")
+          content = message.get("content") if isinstance(message, dict) else None
+          if not isinstance(content, str) or not content.strip():
+              raise SystemExit(
+                  "Ollama structured chat capability probe returned no usable message.content"
+              )
+          try:
+              parsed = json.loads(content)
+          except json.JSONDecodeError as exc:
+              raise SystemExit("Ollama structured chat capability probe returned invalid JSON") from exc
+          if not isinstance(parsed, dict):
+              raise SystemExit("Ollama structured chat capability probe returned non-object content")
+
+          print(f"Ollama model ready for structured chat: {model} at {base_url}")
           PY
 
       - name: Prepare unique evidence paths
