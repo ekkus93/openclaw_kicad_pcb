@@ -23,6 +23,8 @@ jobs:
   python-quality:
     name: Python lint, types, unit and web tests
     runs-on: self-hosted
+    env:
+      UV_CACHE_DIR: ${{ runner.temp }}/uv-cache
     steps:
       - uses: actions/checkout@v6
 
@@ -47,9 +49,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9.0.0
         with:
-          enable-cache: true
+          enable-cache: false
 
       - name: Sync locked dependencies
         run: uv sync --frozen --extra dev --extra web
@@ -159,7 +161,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
@@ -203,7 +205,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
@@ -265,7 +267,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
