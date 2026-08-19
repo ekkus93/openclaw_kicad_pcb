@@ -315,7 +315,7 @@ def run_repair_planner(
 
 
 def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
-    """Return the model-facing projection without redundant derived pixel/UUID fields."""
+    """Return the model-facing geometry index without redundant semantic/derived fields."""
 
     return {
         "schema_version": context.schema_version,
@@ -328,8 +328,6 @@ def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
             {
                 "region_id": item.region_id,
                 "image_index": item.image_index,
-                "row": item.row,
-                "column": item.column,
                 "view_box_mm": item.view_box_mm,
                 "image_px": item.image_px,
                 "pixels_per_mm": item.pixels_per_mm,
@@ -341,8 +339,6 @@ def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
                 "object_id": item.object_id,
                 "ref": item.ref,
                 "unit": item.unit,
-                "symbol_id": item.symbol_id,
-                "value": item.value,
                 "x_mm": item.x_mm,
                 "y_mm": item.y_mm,
                 "rotation_deg": item.rotation_deg,
@@ -352,9 +348,6 @@ def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
         "pins": [
             {
                 "object_id": item.object_id,
-                "ref": item.ref,
-                "unit": item.unit,
-                "pin": item.pin,
                 "positions_mm": item.positions_mm,
             }
             for item in context.pins
@@ -376,10 +369,7 @@ def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
             {"object_id": item.object_id, "x_mm": item.x_mm, "y_mm": item.y_mm}
             for item in context.junctions
         ],
-        "nets": [
-            {"object_id": item.object_id, "name": item.name, "terminals": item.terminals}
-            for item in context.nets
-        ],
+        "nets": [{"object_id": item.object_id, "name": item.name} for item in context.nets],
         "deterministic_metrics": context.deterministic_metrics,
     }
 
