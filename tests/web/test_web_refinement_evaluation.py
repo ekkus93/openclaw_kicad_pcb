@@ -23,10 +23,14 @@ from kicad_pcb.refinement.rendering import SchematicRenderArtifact
 from kicad_pcb_web.services import refinement_evaluation as evaluation
 from kicad_pcb_web.services import schematic_refinement as service
 
-_FIXTURE = Path(__file__).parents[1].joinpath(
-    "fixtures",
-    "readability",
-    "ne5532_headphone_amp_left_current",
+_FIXTURE = (
+    Path(__file__)
+    .parents[1]
+    .joinpath(
+        "fixtures",
+        "readability",
+        "ne5532_headphone_amp_left_current",
+    )
 )
 
 
@@ -310,8 +314,7 @@ def _assert_complete_bundle(
     serialized = json.dumps(manifest)
     assert str(tmp_path) not in serialized
     assert not any(
-        path.name.startswith(".refinement-evaluation-")
-        for path in (tmp_path / "out").iterdir()
+        path.name.startswith(".refinement-evaluation-") for path in (tmp_path / "out").iterdir()
     )
     assert list((tmp_path / "work").iterdir()) == []
 
