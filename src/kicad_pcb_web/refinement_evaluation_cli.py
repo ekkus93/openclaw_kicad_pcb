@@ -35,6 +35,8 @@ from .settings import WebSettings, load_settings
 
 LOGGER = logging.getLogger("uvicorn.error")
 _DEFAULT_MANIFEST = Path("tests/fixtures/refinement/evaluation_corpus/manifest.json")
+_FIXTURE_FAILURE_CODE = "REFINEMENT_EVALUATION_FIXTURE_FAILED"
+_SAFE_FIXTURE_DETAIL_KEYS = ("fixture_id", "cause_code", "cause_type")
 
 
 @dataclass(frozen=True)
@@ -103,6 +105,7 @@ def execute_refinement_evaluation_cli(
             context.stderr,
             code=_error_code(exc),
             message="Refinement evaluation could not be completed.",
+            details=_safe_error_details(exc),
         )
         return 2
     except Exception as exc:
@@ -257,9 +260,28 @@ def _close_llm_client(llm_client: LlmClient | None) -> None:
         )
 
 
-def _write_error(stream: TextIO, *, code: str, message: str) -> None:
-    payload = {"status": "error", "code": code, "message": message}
+def _write_error(
+    stream: TextIO,
+    *,
+    code: str,
+    message: str,
+    details: dict[str, object] | None = None,
+) -> None:
+    payload: dict[str, object] = {"status": "error", "code": code, "message": message}
+    if details:
+        payload["details"] = details
     stream.write(json.dumps(payload, sort_keys=True) + "\n")
+
+
+def _safe_error_details(exc: UserError) -> dict[str, object] | None:
+    if _error_code(exc) != _FIXTURE_FAILURE_CODE:
+        return None
+    details = {
+        key: exc.details[key]
+        for key in _SAFE_FIXTURE_DETAIL_KEYS
+        if key in exc.details and isinstance(exc.details[key], (str, type(None)))
+    }
+    return details or None
 
 
 def _error_code(exc: UserError) -> str:
