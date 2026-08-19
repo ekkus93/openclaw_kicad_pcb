@@ -40,7 +40,6 @@ env:
   KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
   KICAD_PCB_WEB_LLM_PROVIDER: ${{ inputs.provider }}
   KICAD_PCB_WEB_LLM_MODEL: ${{ inputs.model }}
-  KICAD_PCB_WEB_LLM_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "180"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
@@ -61,6 +60,8 @@ jobs:
 
       - name: Confirm live full-corpus run
         shell: bash
+        env:
+          EVAL_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]; then
@@ -76,16 +77,13 @@ jobs:
             exit 2
           fi
           if [[ "$KICAD_PCB_WEB_LLM_PROVIDER" == "openai" ]]; then
-            if [[ -z "${KICAD_PCB_WEB_LLM_API_KEY:-}" ]]; then
+            if [[ -z "${EVAL_API_KEY:-}" ]]; then
               echo "Repository secret KICAD_PCB_REFINEMENT_LLM_API_KEY is required for openai." >&2
               exit 2
             fi
           elif [[ -z "$EVAL_BASE_URL" ]]; then
             echo "base_url is required for llama_server and ollama." >&2
             exit 2
-          fi
-          if [[ -n "$EVAL_BASE_URL" ]]; then
-            printf 'KICAD_PCB_WEB_LLM_BASE_URL=%s\n' "$EVAL_BASE_URL" >> "$GITHUB_ENV"
           fi
 
       - name: Reuse persistent uv cache
@@ -137,9 +135,14 @@ jobs:
 
       - name: Run Phase N3 full corpus
         shell: bash
+        env:
+          KICAD_PCB_WEB_LLM_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
         run: |
           set -euo pipefail
           set -o pipefail
+          if [[ -n "$EVAL_BASE_URL" ]]; then
+            export KICAD_PCB_WEB_LLM_BASE_URL="$EVAL_BASE_URL"
+          fi
           uv run kicad-refine-eval \
             --repo-root "$GITHUB_WORKSPACE" \
             --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
@@ -185,7 +188,7 @@ jobs:
         with:
           name: phase-n3-live-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ env.N3_OUTPUT_ROOT }}
-            ${{ env.N3_RUN_ROOT }}/evaluation.log
+            ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/evidence
+            ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/evaluation.log
           if-no-files-found: warn
           retention-days: 30
