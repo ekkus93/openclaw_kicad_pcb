@@ -200,7 +200,7 @@ def _placed_symbol_nodes(doc: SchematicDoc) -> list[ListNode]:
 
 def _placed_component(node: ListNode) -> PlacedSchematicComponent:
     symbol_id = _list_string(node, "lib_id")
-    uuid = _list_string(node, "uuid")
+    uuid = _list_uuid(node)
     unit = _list_atom(node, "unit") or "1"
     x, y, rotation = _at(node)
     properties = _properties(node)
@@ -436,6 +436,18 @@ def _list_string(node: ListNode, key: str) -> str:
             and child.key == key
             and len(child.items) >= 2
             and isinstance(child.items[1], StringNode)
+        ):
+            return child.items[1].value
+    return ""
+
+
+def _list_uuid(node: ListNode) -> str:
+    for child in node.items:
+        if (
+            isinstance(child, ListNode)
+            and child.key == "uuid"
+            and len(child.items) >= 2
+            and isinstance(child.items[1], (AtomNode, StringNode))
         ):
             return child.items[1].value
     return ""

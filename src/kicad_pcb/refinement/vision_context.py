@@ -299,7 +299,7 @@ def _uuid(node: ListNode) -> str:
             isinstance(child, ListNode)
             and child.key == "uuid"
             and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
+            and isinstance(child.items[1], (AtomNode, StringNode))
         ):
             return child.items[1].value
     return ""
