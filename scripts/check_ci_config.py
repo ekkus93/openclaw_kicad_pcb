@@ -47,12 +47,11 @@ def _live_evaluation_problems() -> list[str]:
         "- n3-eval-run",
         "confirm_12_fixture_live_run:",
         'AUTO_PROVIDER: "ollama"',
-        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
+        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
         'AUTO_BASE_URL: "http://127.0.0.1:11434"',
         'N3_OLLAMA_SOURCE_MODEL: "qwen3-vl:8b-instruct"',
-        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
-        'N3_OLLAMA_NUM_CTX: "65536"',
-        'N3_OLLAMA_PROBE_CONTEXT_BYTES: "65536"',
+        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
+        'N3_OLLAMA_NUM_CTX: "32768"',
         "runs-on: self-hosted",
         'refs/heads/n3-eval-run',
         'refs/heads/webapp',
@@ -61,7 +60,6 @@ def _live_evaluation_problems() -> list[str]:
         "scripts/preflight_n3_ollama.py",
         "--probe-width 3360",
         "--probe-height 2376",
-        "--probe-context-bytes",
         "--source-model",
         "--num-ctx",
         "uv run kicad-refine-eval",
@@ -76,6 +74,10 @@ def _live_evaluation_problems() -> list[str]:
         "\n  pull_request:",
         "sudo apt-get",
         "install-deps",
+        "N3_OLLAMA_PROBE_CONTEXT_BYTES",
+        "--probe-context-bytes",
+        "qwen3-vl:8b-instruct-n3-64k",
+        'N3_OLLAMA_NUM_CTX: "65536"',
     )
     problems = [
         f"missing required Phase N3 live-evaluation fragment: {item}"
@@ -97,15 +99,20 @@ def _ollama_preflight_problems() -> list[str]:
         '"parameters": {"num_ctx": config.num_ctx}',
         'message["images"] = [image_b64]',
         "_solid_white_png",
-        "_stress_context",
-        "probe_context_bytes",
-        "Ollama A3 plus context vision capability probe",
+        "Ollama A3 vision capability probe",
     )
-    return [
+    forbidden = ("_stress_context", "probe_context_bytes", "--probe-context-bytes")
+    problems = [
         f"missing required N3 Ollama preflight fragment: {item}"
         for item in required
         if item not in text
     ]
+    problems.extend(
+        f"forbidden N3 Ollama preflight fragment remains: {item}"
+        for item in forbidden
+        if item in text
+    )
+    return problems
 
 
 def _ollama_client_problems() -> list[str]:
@@ -129,6 +136,7 @@ def _evaluation_cli_problems() -> list[str]:
         '"cause_status_code"',
         '"cause_endpoint"',
         '"cause_retryable"',
+        '"cause_provider_error"',
         "details=_safe_error_details(exc)",
         "def _safe_error_details",
         "_SAFE_DETAIL_VALUE_TYPES",
