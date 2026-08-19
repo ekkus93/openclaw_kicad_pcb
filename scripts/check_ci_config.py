@@ -8,6 +8,7 @@ from pathlib import Path
 WORKFLOW = Path(".github/workflows/ci.yml")
 LIVE_EVALUATION_WORKFLOW = Path(".github/workflows/refinement-live-evaluation.yml")
 OLLAMA_CLIENT = Path("src/kicad_pcb_web/services/llm/ollama_client.py")
+EVALUATION_CLI = Path("src/kicad_pcb_web/refinement_evaluation_cli.py")
 
 
 def main() -> int:
@@ -29,6 +30,7 @@ def main() -> int:
     problems.extend(f"stale CI fragment remains: {item}" for item in forbidden if item in text)
     problems.extend(_live_evaluation_problems())
     problems.extend(_ollama_client_problems())
+    problems.extend(_evaluation_cli_problems())
     if problems:
         raise SystemExit("\n".join(problems))
     return 0
@@ -86,6 +88,20 @@ def _ollama_client_problems() -> list[str]:
     )
     return [
         f"missing required Ollama structured-JSON fragment: {item}"
+        for item in required
+        if item not in text
+    ]
+
+
+def _evaluation_cli_problems() -> list[str]:
+    text = EVALUATION_CLI.read_text(encoding="utf-8")
+    required = (
+        '"fixture_id", "cause_code", "cause_type"',
+        "details=_safe_error_details(exc)",
+        "def _safe_error_details",
+    )
+    return [
+        f"missing required N3 safe-diagnostic fragment: {item}"
         for item in required
         if item not in text
     ]
