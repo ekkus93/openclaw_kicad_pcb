@@ -62,6 +62,10 @@ class OllamaLlmClient(BaseHttpLlmClient):
                     },
                 )
             payload["format"] = "json"
+            # Structured callers consume only the final JSON content. Explicitly disable
+            # thinking so thinking-capable Ollama models do not emit a separate reasoning
+            # channel or starve the schema-bound final response.
+            payload["think"] = False
         return "/api/chat", payload
 
     def _parse_completion(self, payload: dict[str, Any]) -> LlmCompletion:
