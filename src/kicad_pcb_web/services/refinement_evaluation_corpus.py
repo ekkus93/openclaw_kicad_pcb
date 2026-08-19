@@ -38,6 +38,7 @@ __all__ = [
 ]
 
 _SAFE_CAUSE_DETAIL_KEYS = frozenset({"provider", "status_code", "endpoint", "retryable"})
+_MAX_PROVIDER_ERROR_CHARS = 500
 
 
 def run_refinement_evaluation_corpus(
@@ -203,7 +204,31 @@ def _exception_diagnostics(exc: Exception) -> dict[str, object]:
             value = details.get(key)
             if isinstance(value, (str, int, float, bool)) or value is None:
                 diagnostics[f"cause_{key}"] = value
+    provider_error = _ollama_provider_error(exc, details=details)
+    if provider_error is not None:
+        diagnostics["cause_provider_error"] = provider_error
     return diagnostics
+
+
+def _ollama_provider_error(exc: Exception, *, details: object) -> str | None:
+    if not isinstance(details, Mapping) or details.get("provider") != "ollama":
+        return None
+    cause = exc.__cause__
+    response = getattr(cause, "response", None)
+    if response is None:
+        return None
+    try:
+        payload = response.json()
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    error = payload.get("error")
+    if isinstance(error, Mapping):
+        error = error.get("message")
+    if not isinstance(error, str) or not error.strip():
+        return None
+    return " ".join(error.split())[:_MAX_PROVIDER_ERROR_CHARS]
 
 
 def _exception_code(exc: Exception) -> str | None:
