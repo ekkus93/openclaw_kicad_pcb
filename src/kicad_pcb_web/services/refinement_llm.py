@@ -177,7 +177,7 @@ def run_visual_critic(
     images = _load_bound_images(_validate_critic_image_paths(image_paths), context)
     context_json = _bounded_json(
         {
-            "vision_object_map": context.to_dict(),
+            "vision_object_map": _critic_context_payload(context),
             "prior_decisions": _decision_history_payload(prior_decisions),
         },
         label="vision critic context",
@@ -312,6 +312,76 @@ def run_repair_planner(
         expected_iteration_id=options.iteration_id,
         max_operations=options.max_operations,
     )
+
+
+def _critic_context_payload(context: VisionObjectMap) -> dict[str, object]:
+    """Return the model-facing projection without redundant derived pixel/UUID fields."""
+
+    return {
+        "schema_version": context.schema_version,
+        "source_schematic_hash": context.source_schematic_hash,
+        "render_png_hash": context.render_png_hash,
+        "sheet_id": context.sheet_id,
+        "page_mm": context.page_mm,
+        "image_px": context.image_px,
+        "review_regions": [
+            {
+                "region_id": item.region_id,
+                "image_index": item.image_index,
+                "row": item.row,
+                "column": item.column,
+                "view_box_mm": item.view_box_mm,
+                "image_px": item.image_px,
+                "pixels_per_mm": item.pixels_per_mm,
+            }
+            for item in context.review_regions
+        ],
+        "components": [
+            {
+                "object_id": item.object_id,
+                "ref": item.ref,
+                "unit": item.unit,
+                "symbol_id": item.symbol_id,
+                "value": item.value,
+                "x_mm": item.x_mm,
+                "y_mm": item.y_mm,
+                "rotation_deg": item.rotation_deg,
+            }
+            for item in context.components
+        ],
+        "pins": [
+            {
+                "object_id": item.object_id,
+                "ref": item.ref,
+                "unit": item.unit,
+                "pin": item.pin,
+                "positions_mm": item.positions_mm,
+            }
+            for item in context.pins
+        ],
+        "wires": [
+            {"object_id": item.object_id, "points_mm": item.points_mm} for item in context.wires
+        ],
+        "labels": [
+            {
+                "object_id": item.object_id,
+                "kind": item.kind,
+                "text": item.text,
+                "x_mm": item.x_mm,
+                "y_mm": item.y_mm,
+            }
+            for item in context.labels
+        ],
+        "junctions": [
+            {"object_id": item.object_id, "x_mm": item.x_mm, "y_mm": item.y_mm}
+            for item in context.junctions
+        ],
+        "nets": [
+            {"object_id": item.object_id, "name": item.name, "terminals": item.terminals}
+            for item in context.nets
+        ],
+        "deterministic_metrics": context.deterministic_metrics,
+    }
 
 
 def _decision_history_payload(
