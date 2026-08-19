@@ -1,8 +1,11 @@
 name: Phase N3 Live Evaluation
 
-run-name: N3 live eval / ${{ inputs.provider || 'ollama' }} / ${{ inputs.model || 'qwen3-vl:8b' }} / ${{ github.ref_name }}
+run-name: N3 live eval / ${{ github.event_name }} / ${{ github.ref_name }}
 
 on:
+  push:
+    branches:
+      - n3-eval-run
   workflow_dispatch:
     inputs:
       provider:
@@ -29,9 +32,6 @@ on:
         required: true
         default: false
         type: boolean
-  push:
-    branches:
-      - n3-eval-run
 
 permissions:
   contents: read
@@ -43,8 +43,9 @@ concurrency:
 env:
   PYTHON_VERSION: "3.11"
   KICAD_SYMBOLS_DIR: /usr/share/kicad/symbols
-  KICAD_PCB_WEB_LLM_PROVIDER: ${{ inputs.provider || 'ollama' }}
-  KICAD_PCB_WEB_LLM_MODEL: ${{ inputs.model || 'qwen3-vl:8b' }}
+  AUTO_PROVIDER: "ollama"
+  AUTO_MODEL: "qwen3-vl:8b"
+  AUTO_BASE_URL: "http://127.0.0.1:11434"
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "180"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
@@ -58,14 +59,16 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 240
     env:
-      EVAL_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:11434' }}
       EVAL_CONFIRM: ${{ inputs.confirm_12_fixture_live_run }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: Confirm live full-corpus run
+      - name: Resolve live evaluation configuration
         shell: bash
         env:
+          MANUAL_PROVIDER: ${{ inputs.provider }}
+          MANUAL_MODEL: ${{ inputs.model }}
+          MANUAL_BASE_URL: ${{ inputs.base_url }}
           EVAL_API_KEY: ${{ secrets.KICAD_PCB_REFINEMENT_LLM_API_KEY }}
         run: |
           set -euo pipefail
@@ -74,6 +77,9 @@ jobs:
               echo "Automated live evaluation is permitted only from n3-eval-run." >&2
               exit 2
             fi
+            provider="$AUTO_PROVIDER"
+            model="$AUTO_MODEL"
+            base_url="$AUTO_BASE_URL"
           elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             if [[ "$GITHUB_REF" != "refs/heads/webapp" ]]; then
               echo "Manual live evaluation is permitted only from the webapp branch." >&2
@@ -83,23 +89,29 @@ jobs:
               echo "confirm_12_fixture_live_run must be enabled for a manual live experiment." >&2
               exit 2
             fi
+            provider="$MANUAL_PROVIDER"
+            model="$MANUAL_MODEL"
+            base_url="$MANUAL_BASE_URL"
           else
             echo "Unsupported Phase N3 live-evaluation trigger: $GITHUB_EVENT_NAME" >&2
             exit 2
           fi
-          if [[ -z "$KICAD_PCB_WEB_LLM_MODEL" ]]; then
+          if [[ -z "$model" ]]; then
             echo "A model identifier is required." >&2
             exit 2
           fi
-          if [[ "$KICAD_PCB_WEB_LLM_PROVIDER" == "openai" ]]; then
+          if [[ "$provider" == "openai" ]]; then
             if [[ -z "${EVAL_API_KEY:-}" ]]; then
               echo "Repository secret KICAD_PCB_REFINEMENT_LLM_API_KEY is required for openai." >&2
               exit 2
             fi
-          elif [[ -z "$EVAL_BASE_URL" ]]; then
+          elif [[ -z "$base_url" ]]; then
             echo "base_url is required for llama_server and ollama." >&2
             exit 2
           fi
+          echo "KICAD_PCB_WEB_LLM_PROVIDER=$provider" >> "$GITHUB_ENV"
+          echo "KICAD_PCB_WEB_LLM_MODEL=$model" >> "$GITHUB_ENV"
+          echo "EVAL_BASE_URL=$base_url" >> "$GITHUB_ENV"
 
       - name: Reuse persistent uv cache
         shell: bash
