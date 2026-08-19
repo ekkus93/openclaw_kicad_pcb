@@ -100,8 +100,7 @@ def test_phase_n3_corpus_rejects_drift_from_certified_n2_baseline(tmp_path: Path
     source_manifest = json.loads((_REPO_ROOT / _MANIFEST).read_text(encoding="utf-8"))
     source_expectations = json.loads(
         (
-            _REPO_ROOT
-            / "tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json"
+            _REPO_ROOT / "tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json"
         ).read_text(encoding="utf-8")
     )
     entry = source_manifest["fixtures"][0]
