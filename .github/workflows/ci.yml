@@ -23,10 +23,12 @@ jobs:
   python-quality:
     name: Python lint, types, unit and web tests
     runs-on: self-hosted
-    env:
-      UV_CACHE_DIR: ${{ runner.temp }}/uv-cache
     steps:
       - uses: actions/checkout@v6
+
+      - name: Isolate uv cache
+        shell: bash
+        run: echo "UV_CACHE_DIR=$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
 
       - name: Install system dependencies
         timeout-minutes: 10
