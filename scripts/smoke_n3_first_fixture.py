@@ -164,7 +164,7 @@ def _safe_failure(exc: Exception) -> dict[str, object]:
     if isinstance(details, dict):
         for key in ("provider", "status_code", "endpoint", "retryable"):
             value = details.get(key)
-            if isinstance(value, (str, int, float, bool)) or value is None:
+            if isinstance(value, str | int | float | bool) or value is None:
                 payload[f"cause_{key}"] = value
     return payload
 
