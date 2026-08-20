@@ -264,6 +264,143 @@ def test_move_label_rejects_unknown_uuid(tmp_path: Path) -> None:
         )
 
 
+def test_move_label_snaps_off_grid_target_to_executor_grid(tmp_path: Path) -> None:
+    path = _simple(tmp_path)
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "move-label-off-grid",
+                "source_schematic_hash": source,
+                "operation_type": "move_label",
+                "arguments": {
+                    "label_uuid": "l1",
+                    "x_mm": 26.2,
+                    "y_mm": 39.0,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.results[0].details == {
+        "label_uuid": "l1",
+        "x_mm": 26.67,
+        "y_mm": 39.37,
+    }
+    assert '(label "N" (at 26.67 39.37 0)' in path.read_text()
+
+
+def test_move_label_resolves_unquoted_kicad_uuid_atom(tmp_path: Path) -> None:
+    path = _simple(tmp_path)
+    path.write_text(path.read_text().replace('(uuid "l1")', "(uuid l1)"))
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "move-label-uuid-atom",
+                "source_schematic_hash": source,
+                "operation_type": "move_label",
+                "arguments": {
+                    "label_uuid": "l1",
+                    "x_mm": 26.2,
+                    "y_mm": 39.0,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.results[0].details == {
+        "label_uuid": "l1",
+        "x_mm": 26.67,
+        "y_mm": 39.37,
+    }
+
+
+def test_move_component_zero_delta_preserves_unchanged_off_grid_axis(tmp_path: Path) -> None:
+    path = _simple(tmp_path)
+    path.write_text(
+        path.read_text().replace(
+            '(symbol (lib_id "Device:R") (at 25.4 25.4 0)',
+            '(symbol (lib_id "Device:R") (at 25.4254 25.4254 0)',
+        )
+    )
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "move-off-grid-axis",
+                "source_schematic_hash": source,
+                "operation_type": "move_component",
+                "arguments": {
+                    "target": {"ref": "R1", "unit": "1"},
+                    "dx_mm": 1.27,
+                    "dy_mm": 0.0,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.results[0].details == {
+        "ref": "R1",
+        "unit": "1",
+        "x_mm": 26.67,
+        "y_mm": 25.4254,
+    }
+    doc = refinement_operations.SchematicDoc.load(path)
+    component = next(
+        item
+        for item in refinement_operations.extract_schematic_semantics_from_doc(doc).components
+        if item.ref == "R1"
+    )
+    assert (component.x, component.y) == (26.67, 25.4254)
+
+
+def test_rotate_component_preserves_existing_off_grid_position(tmp_path: Path) -> None:
+    path = _simple(tmp_path)
+    path.write_text(
+        path.read_text().replace(
+            '(symbol (lib_id "Device:R") (at 25.4 25.4 0)',
+            '(symbol (lib_id "Device:R") (at 25.4254 25.4254 0)',
+        )
+    )
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "rotate-off-grid",
+                "source_schematic_hash": source,
+                "operation_type": "rotate_component",
+                "arguments": {"target": {"ref": "R1", "unit": "1"}, "angle_deg": 90},
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.results[0].details == {"ref": "R1", "unit": "1", "angle_deg": 90}
+    doc = refinement_operations.SchematicDoc.load(path)
+    component = next(
+        item
+        for item in refinement_operations.extract_schematic_semantics_from_doc(doc).components
+        if item.ref == "R1"
+    )
+    assert (component.x, component.y, component.rotation) == (25.4254, 25.4254, 90)
+
+
 def test_remove_redundant_wire_bend_rewrites_real_segment_chain(tmp_path: Path) -> None:
     points = [(50.8, 50.8), (60.96, 50.8), (71.12, 50.8)]
     path = _wire_chain(tmp_path, points)

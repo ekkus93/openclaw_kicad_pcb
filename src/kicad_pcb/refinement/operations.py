@@ -16,7 +16,7 @@ from kicad_pcb.circuit_ir import CircuitIR
 from kicad_pcb.electrical_equivalence import ElectricalTerminal
 from kicad_pcb.errors import UserError
 from kicad_pcb.sch_doc import SchematicDoc
-from kicad_pcb.sexpr.builder import L, atom, fnum, string
+from kicad_pcb.sexpr.builder import L, atom, fnum, fnum_or_keep, string
 from kicad_pcb.sexpr.nodes import AtomNode, ListNode, Node, StringNode
 
 from .page_geometry import schematic_page_bounds
@@ -347,14 +347,16 @@ def _apply_label_operation(
     policy: LayoutOperationPolicy,
 ) -> dict[str, object]:
     assert isinstance(args, MoveLabelArgs)
-    _validate_point(doc, args.x_mm, args.y_mm, policy)
+    x = _snap(args.x_mm, policy.grid_mm)
+    y = _snap(args.y_mm, policy.grid_mm)
+    _validate_point(doc, x, y, policy)
     node = _find_top_level_uuid(
         doc,
         args.label_uuid,
         {"label", "global_label", "hierarchical_label"},
     )
-    _replace_top_level(doc, node, _replace_at(node, args.x_mm, args.y_mm))
-    return {"label_uuid": args.label_uuid, "x_mm": args.x_mm, "y_mm": args.y_mm}
+    _replace_top_level(doc, node, _replace_at(node, x, y))
+    return {"label_uuid": args.label_uuid, "x_mm": x, "y_mm": y}
 
 
 def _apply_alignment_operation(
@@ -418,8 +420,8 @@ def _apply_group_move_operation(
             doc,
             ComponentTarget(ref=original.ref, unit=original.unit),
         )
-        x = _snap(current.x + args.dx_mm, policy.grid_mm)
-        y = _snap(current.y + args.dy_mm, policy.grid_mm)
+        x = current.x if args.dx_mm == 0 else _snap(current.x + args.dx_mm, policy.grid_mm)
+        y = current.y if args.dy_mm == 0 else _snap(current.y + args.dy_mm, policy.grid_mm)
         _move_component(doc, current, (x, y, current.rotation), policy)
     return {
         "refs": [c.ref for c in components],
@@ -536,7 +538,9 @@ def _resolve_move(
                 "Component move exceeds configured distance bound.",
                 code="REFINEMENT_OPERATION_OUT_OF_BOUNDS",
             )
-        x, y = component.x + args.dx_mm, component.y + args.dy_mm
+        x = component.x if args.dx_mm == 0 else _snap(component.x + args.dx_mm, policy.grid_mm)
+        y = component.y if args.dy_mm == 0 else _snap(component.y + args.dy_mm, policy.grid_mm)
+        return x, y
     return _snap(x, policy.grid_mm), _snap(y, policy.grid_mm)
 
 
@@ -547,7 +551,13 @@ def _move_component(
     policy: LayoutOperationPolicy,
 ) -> None:
     x, y, rotation = placement
-    _validate_point(doc, x, y, policy)
+    _validate_point(
+        doc,
+        x,
+        y,
+        policy,
+        grid_requirements=(x != component.x, y != component.y),
+    )
     node = _find_component_node(doc, component)
     pin_candidates = resolve_component_pin_position_candidates(doc, component)
     mapping = _attached_pin_mapping(doc, component, placement, pin_candidates)
@@ -701,10 +711,19 @@ def _retarget_anchors(
     doc.root = ListNode(tuple(items), doc.root.pos)
 
 
-def _validate_point(doc: SchematicDoc, x: float, y: float, policy: LayoutOperationPolicy) -> None:
+def _validate_point(
+    doc: SchematicDoc,
+    x: float,
+    y: float,
+    policy: LayoutOperationPolicy,
+    grid_requirements: tuple[bool, bool] = (True, True),
+) -> None:
     if not (math.isfinite(x) and math.isfinite(y)):
         raise UserError("Non-finite layout coordinate.", code="REFINEMENT_OPERATION_OUT_OF_BOUNDS")
-    if not (_on_grid(x, policy.grid_mm) and _on_grid(y, policy.grid_mm)):
+    require_grid_x, require_grid_y = grid_requirements
+    if (require_grid_x and not _on_grid(x, policy.grid_mm)) or (
+        require_grid_y and not _on_grid(y, policy.grid_mm)
+    ):
         raise UserError(
             "Layout coordinate is off the executor grid.",
             code="REFINEMENT_OPERATION_OFF_GRID",
@@ -1179,7 +1198,13 @@ def _replace_at(node: ListNode, x: float, y: float, rotation: int | None = None)
             angle = rotation
             if angle is None and len(child.items) >= 4:
                 angle = int(_num(child.items[3]))
-            at_items: list[Node] = [atom("at"), fnum(x, 2), fnum(y, 2)]
+            x_node = child.items[1]
+            y_node = child.items[2]
+            at_items: list[Node] = [
+                atom("at"),
+                fnum_or_keep(x, x_node, 2) if isinstance(x_node, AtomNode) else fnum(x, 2),
+                fnum_or_keep(y, y_node, 2) if isinstance(y_node, AtomNode) else fnum(y, 2),
+            ]
             if angle is not None:
                 at_items.append(atom(str(angle)))
             items.append(ListNode(tuple(at_items), child.pos))
@@ -1221,7 +1246,7 @@ def _string_child(node: ListNode, key: str) -> str:
             isinstance(child, ListNode)
             and child.key == key
             and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
+            and isinstance(child.items[1], AtomNode | StringNode)
         ):
             return child.items[1].value
     return ""
