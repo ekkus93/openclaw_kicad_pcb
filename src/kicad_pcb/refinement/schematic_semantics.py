@@ -26,6 +26,7 @@ class PlacedSchematicComponent:
 
     ref: str
     symbol_id: str
+    embedded_symbol_name: str
     value: str
     footprint: str
     unit: str
@@ -137,15 +138,23 @@ def resolve_component_pin_position_candidates(
 
     library_symbols = _embedded_library_symbols(doc)
     points: list[tuple[str, float, float]] = []
-    embedded = library_symbols.get(component.symbol_id)
-    if embedded is not None:
-        points.extend(_library_pin_points(embedded, unit=component.unit))
+    embedded_keys = tuple(
+        dict.fromkeys(key for key in (component.symbol_id, component.embedded_symbol_name) if key)
+    )
+    for embedded_key in embedded_keys:
+        embedded = library_symbols.get(embedded_key)
+        if embedded is not None:
+            points.extend(_library_pin_points(embedded, unit=component.unit))
     points.extend(_external_library_pin_points(component))
     if not points:
         raise UserError(
             f"Cannot resolve pin geometry for {component.ref}.",
             code=ErrorCode.VALIDATION_FAILED,
-            details={"ref": component.ref, "symbol_id": component.symbol_id},
+            details={
+                "ref": component.ref,
+                "symbol_id": component.symbol_id,
+                "embedded_symbol_name": component.embedded_symbol_name,
+            },
         )
 
     result: dict[ElectricalTerminal, set[tuple[float, float]]] = {}
@@ -214,6 +223,7 @@ def _placed_component(node: ListNode) -> PlacedSchematicComponent:
     return PlacedSchematicComponent(
         ref=ref,
         symbol_id=symbol_id,
+        embedded_symbol_name=_list_string(node, "lib_name"),
         value=properties.get("Value", ""),
         footprint=properties.get("Footprint", ""),
         unit=unit,
@@ -447,7 +457,7 @@ def _list_uuid(node: ListNode) -> str:
             isinstance(child, ListNode)
             and child.key == "uuid"
             and len(child.items) >= 2
-            and isinstance(child.items[1], (AtomNode, StringNode))
+            and isinstance(child.items[1], AtomNode | StringNode)
         ):
             return child.items[1].value
     return ""
