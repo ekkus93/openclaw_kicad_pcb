@@ -50,19 +50,20 @@ def _live_evaluation_problems() -> list[str]:
         "- n3-eval-run",
         "confirm_12_fixture_live_run:",
         'AUTO_PROVIDER: "ollama"',
-        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
+        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
         'AUTO_BASE_URL: "http://127.0.0.1:11434"',
         'N3_OLLAMA_SOURCE_MODEL: "qwen3-vl:8b-instruct"',
-        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
-        'N3_OLLAMA_NUM_CTX: "32768"',
+        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
+        'N3_OLLAMA_NUM_CTX: "65536"',
+        'KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"',
         "runs-on: self-hosted",
         "refs/heads/n3-eval-run",
         "refs/heads/webapp",
         "KICAD_PCB_REFINEMENT_LLM_API_KEY",
         "Verify Ollama N3 vision capability",
         "scripts/preflight_n3_ollama.py",
-        "--probe-width 3360",
-        "--probe-height 2376",
+        "--probe-width 1260",
+        "--probe-height 891",
         "--source-model",
         "--num-ctx",
         "uv run kicad-refine-eval",
@@ -77,6 +78,11 @@ def _live_evaluation_problems() -> list[str]:
         "\n  pull_request:",
         "sudo apt-get",
         "install-deps",
+        'AUTO_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
+        'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-32k"',
+        'N3_OLLAMA_NUM_CTX: "32768"',
+        "--probe-width 3360",
+        "--probe-height 2376",
     )
     problems = [
         f"missing required Phase N3 live-evaluation fragment: {item}"
@@ -99,19 +105,31 @@ def _ollama_preflight_problems() -> list[str]:
         'message["images"] = [image_b64]',
         "_solid_white_png",
         "Ollama A3 vision capability probe",
+        'parser.add_argument("--probe-width", type=_positive_int, default=1260)',
+        'parser.add_argument("--probe-height", type=_positive_int, default=891)',
     )
-    return [
+    forbidden = (
+        'default=3360',
+        'default=2376',
+    )
+    problems = [
         f"missing required N3 Ollama preflight fragment: {item}"
         for item in required
         if item not in text
     ]
+    problems.extend(
+        f"stale N3 Ollama preflight fragment remains: {item}"
+        for item in forbidden
+        if item in text
+    )
+    return problems
 
 
 def _ollama_client_problems() -> list[str]:
     text = OLLAMA_CLIENT.read_text(encoding="utf-8")
     required = (
         'if request.response_format == "json":',
-        'payload["format"] = "json"',
+        'payload["format"] = request.json_schema if request.json_schema is not None else "json"',
         'payload["think"] = False',
     )
     return [
