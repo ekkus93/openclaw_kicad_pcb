@@ -7,7 +7,7 @@ This document records the reproducible Phase N3.3 live/model-directed corpus exp
 The current experiment target is a local Ollama service on the self-hosted runner:
 
 - provider: `ollama`
-- model: `qwen3-vl:8b`
+- model: `qwen3-vl:8b-instruct-n3-64k`
 - base URL: `http://127.0.0.1:11434`
 - external API key: not required
 
@@ -48,7 +48,7 @@ The workflow reuses the persistent self-hosted runner and fails fast rather than
 - KiCad 9 `kicad-cli`
 - KiCad symbol libraries at `/usr/share/kicad/symbols`
 - Ollama reachable at `http://127.0.0.1:11434`
-- `qwen3-vl:8b` installed in Ollama
+- source model `qwen3-vl:8b-instruct` available to Ollama; the preflight provisions `qwen3-vl:8b-instruct-n3-64k` with `num_ctx=65536`
 
 The workflow queries Ollama `/api/tags` before corpus execution and fails before schematic work if the selected model is unavailable.
 
@@ -66,7 +66,7 @@ The N3.3 workflow pins the experiment to these bounds rather than inheriting mut
 - maximum candidate rejections: `2`
 - maximum critic repairs: `0`
 - maximum planner repairs: `0`
-- per-request LLM timeout: `180` seconds
+- per-request LLM timeout: `300` seconds
 - workflow timeout: `240` minutes
 
 These values are recorded again in the generated corpus summary.
@@ -89,15 +89,49 @@ Each GitHub run/attempt receives a unique temporary root:
 
 The corpus runner writes atomic per-fixture bundles under `evidence/` and publishes `evidence/summary.json` only after the selected corpus completes successfully.
 
-The workflow performs a final hard check that the summary is Phase `N3`, has status `completed`, contains exactly 12 unique fixture IDs, and has a directory for every fixture.
+The workflow performs its final acceptance through the reusable `kicad-refine-eval-validate` command. The validator independently binds the artifact to the expected implementation SHA, provider, model, source-manifest hash, baseline-expectations hash, canonical experiment bounds, and exact 12-fixture manifest order. It then verifies each fixture bundle, including baseline/final schematic hashes, analyze/plan metric bindings, render bytes and recorded render hashes, apply/refine result bindings, final electrical status, final metric hashes, operations evidence, and stop reason.
 
-Whether the evaluation succeeds or fails, the workflow attempts to upload completed atomic fixture evidence bundles and `evaluation.log`.
+On success the workflow writes `acceptance.json` and then generates `n4-review-packet.json`, an objective Phase N4 input containing render paths, baseline/final metrics and deltas, critic/plan output, operations/rejections, refine summary data, and stop reasons. Whether the evaluation succeeds or fails, the workflow attempts to upload completed atomic fixture evidence bundles, `evaluation.log`, and any completed acceptance/review reports.
 
 Artifact name:
 
 `phase-n3-live-evidence-<run-id>-<run-attempt>`
 
 The workflow requests 30-day retention; repository-level retention policy may cap the actual artifact lifetime to a smaller value.
+
+## Post-hoc acceptance of an earlier implementation SHA
+
+The acceptance validator is intentionally independent of the workflow revision that invokes it. This permits a completed artifact from an earlier implementation SHA to be validated with the stronger current acceptance code without repeating the expensive model run.
+
+For the Phase N3 run launched from `805e1226b3f97e28005eefbf5a0461a31da6d4bc`, use the exact full implementation SHA recorded in `summary.json`:
+
+```bash
+uv run kicad-refine-eval-validate \
+  --evidence-root /path/to/unpacked/evidence \
+  --implementation-sha 805e1226b3f97e28005eefbf5a0461a31da6d4bc \
+  --provider ollama \
+  --model qwen3-vl:8b-instruct-n3-64k \
+  --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
+  --expectations tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json \
+  --report phase-n3-acceptance.json
+```
+
+Do not substitute a branch-tip SHA for `--implementation-sha`; it must exactly match the implementation SHA recorded by the artifact. A successful `phase-n3-acceptance.json` is the machine-readable binding used to begin Phase N4.
+
+After acceptance, prepare the objective N4 packet without making any model calls or modifying the evidence:
+
+```bash
+uv run kicad-refine-eval-review \
+  --evidence-root /path/to/unpacked/evidence \
+  --implementation-sha 805e1226b3f97e28005eefbf5a0461a31da6d4bc \
+  --provider ollama \
+  --model qwen3-vl:8b-instruct-n3-64k \
+  --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
+  --expectations tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json \
+  --output phase-n4-review-packet.json
+```
+
+The review-packet command re-runs the full N3 acceptance validator first. It does not assign `improved`, `neutral`, or `worse`; those remain human-review decisions.
 
 ## Expected evidence per completed fixture
 

@@ -211,226 +211,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run python - <<'PY'
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
+          uv run kicad-refine-eval-validate \
+            --evidence-root "$N3_OUTPUT_ROOT" \
+            --implementation-sha "$GITHUB_SHA" \
+            --provider "$KICAD_PCB_WEB_LLM_PROVIDER" \
+            --model "$KICAD_PCB_WEB_LLM_MODEL" \
+            --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
+            --expectations tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json \
+            --report "$N3_RUN_ROOT/acceptance.json"
 
-          root = Path(os.environ["N3_OUTPUT_ROOT"]).resolve()
-
-          def read_json(path: Path, label: str) -> dict[str, object]:
-              if not path.is_file():
-                  raise SystemExit(f"Missing {label}: {path}")
-              payload = json.loads(path.read_text(encoding="utf-8"))
-              if not isinstance(payload, dict):
-                  raise SystemExit(f"{label} is not a JSON object: {path}")
-              return payload
-
-          def require_mapping(value: object, label: str) -> dict[str, object]:
-              if not isinstance(value, dict):
-                  raise SystemExit(f"{label} is not an object")
-              return value
-
-          def require_file(bundle: Path, relative: object, label: str) -> Path:
-              if not isinstance(relative, str) or not relative:
-                  raise SystemExit(f"{label} does not contain a relative file path")
-              relative_path = Path(relative)
-              if relative_path.is_absolute() or ".." in relative_path.parts:
-                  raise SystemExit(f"{label} contains an unsafe path: {relative}")
-              path = (bundle / relative_path).resolve()
-              if bundle != path and bundle not in path.parents:
-                  raise SystemExit(f"{label} escapes its fixture bundle: {relative}")
-              if not path.is_file():
-                  raise SystemExit(f"Missing {label}: {relative}")
-              return path
-
-          def sha256(path: Path) -> str:
-              return hashlib.sha256(path.read_bytes()).hexdigest()
-
-          summary = read_json(root / "summary.json", "Phase N3 summary")
-          fixture_ids = summary.get("fixture_ids")
-          results = summary.get("results")
-          if summary.get("phase") != "N3" or summary.get("status") != "completed":
-              raise SystemExit("Phase N3 summary is not completed")
-          if summary.get("implementation_sha") != os.environ["GITHUB_SHA"]:
-              raise SystemExit("Phase N3 summary is not bound to the workflow implementation SHA")
-          if summary.get("provider") != os.environ["KICAD_PCB_WEB_LLM_PROVIDER"]:
-              raise SystemExit("Phase N3 summary provider does not match the configured provider")
-          if summary.get("model") != os.environ["KICAD_PCB_WEB_LLM_MODEL"]:
-              raise SystemExit("Phase N3 summary model does not match the configured model")
-          if summary.get("fixture_count") != 12 or not isinstance(fixture_ids, list):
-              raise SystemExit("Phase N3 summary does not contain exactly 12 fixtures")
-          if (
-              len(fixture_ids) != 12
-              or len(set(fixture_ids)) != 12
-              or any(not isinstance(item, str) or not item for item in fixture_ids)
-          ):
-              raise SystemExit("Phase N3 fixture IDs are missing, invalid, or duplicated")
-          if not isinstance(results, list) or len(results) != 12:
-              raise SystemExit("Phase N3 summary does not contain exactly 12 result records")
-
-          result_by_id: dict[str, dict[str, object]] = {}
-          for item in results:
-              result = require_mapping(item, "Phase N3 result record")
-              fixture_id = result.get("fixture_id")
-              if not isinstance(fixture_id, str) or not fixture_id:
-                  raise SystemExit("Phase N3 result record has an invalid fixture_id")
-              if fixture_id in result_by_id:
-                  raise SystemExit(f"Duplicate Phase N3 result record: {fixture_id}")
-              result_by_id[fixture_id] = result
-          if set(result_by_id) != set(fixture_ids):
-              raise SystemExit("Phase N3 result records do not match the fixture ID set")
-
-          for fixture_id in fixture_ids:
-              result = result_by_id[fixture_id]
-              bundle = (root / fixture_id).resolve()
-              if not bundle.is_dir() or root not in bundle.parents:
-                  raise SystemExit(f"Missing or unsafe Phase N3 evidence bundle: {fixture_id}")
-              if result.get("bundle") != fixture_id:
-                  raise SystemExit(f"Summary bundle binding mismatch: {fixture_id}")
-
-              manifest = read_json(bundle / "manifest.json", f"{fixture_id} manifest")
-              if manifest.get("phase") != "N3" or manifest.get("fixture_id") != fixture_id:
-                  raise SystemExit(f"Invalid Phase N3 fixture manifest: {fixture_id}")
-              if manifest.get("isolation_policy") != (
-                  "each mode starts from identical baseline schematic bytes"
-              ):
-                  raise SystemExit(f"Invalid mode-isolation policy: {fixture_id}")
-              if manifest.get("baseline_schematic_sha256") != result.get("baseline_hash"):
-                  raise SystemExit(f"Baseline hash binding mismatch: {fixture_id}")
-              if manifest.get("final_accepted_hash") != result.get("final_accepted_hash"):
-                  raise SystemExit(f"Final accepted hash binding mismatch: {fixture_id}")
-              if manifest.get("final_electrical_status") != "passed":
-                  raise SystemExit(f"Final electrical invariance did not pass: {fixture_id}")
-              if manifest.get("stop_reason") != result.get("refine_stop_reason"):
-                  raise SystemExit(f"Refine stop-reason binding mismatch: {fixture_id}")
-
-              baseline_path = bundle / "baseline" / "accepted.kicad_sch"
-              if not baseline_path.is_file() or sha256(baseline_path) != result.get("baseline_hash"):
-                  raise SystemExit(f"Baseline schematic bytes do not match summary: {fixture_id}")
-
-              analyze = require_mapping(manifest.get("analyze"), f"{fixture_id} analyze")
-              plan = require_mapping(manifest.get("plan"), f"{fixture_id} plan")
-              apply_once = require_mapping(manifest.get("apply_once"), f"{fixture_id} apply_once")
-              refine = require_mapping(manifest.get("refine"), f"{fixture_id} refine")
-              before_after = require_mapping(
-                  manifest.get("before_after"), f"{fixture_id} before_after"
-              )
-              before_render = require_mapping(
-                  before_after.get("before_render"), f"{fixture_id} before render"
-              )
-              after_render = require_mapping(
-                  before_after.get("after_render"), f"{fixture_id} after render"
-              )
-              analyze_render = require_mapping(
-                  analyze.get("render"), f"{fixture_id} analyze render"
-              )
-              refine_render = require_mapping(
-                  refine.get("after_render"), f"{fixture_id} refine render"
-              )
-              if before_render.get("png") != analyze_render.get("png"):
-                  raise SystemExit(f"Before-render binding mismatch: {fixture_id}")
-              if after_render.get("png") != refine_render.get("png"):
-                  raise SystemExit(f"After-render binding mismatch: {fixture_id}")
-
-              require_file(bundle, analyze.get("result"), f"{fixture_id} analyze result")
-              require_file(bundle, plan.get("result"), f"{fixture_id} plan result")
-              require_file(bundle, before_render.get("png"), f"{fixture_id} before render PNG")
-              require_file(bundle, after_render.get("png"), f"{fixture_id} after render PNG")
-              operations_path = require_file(
-                  bundle, manifest.get("operations"), f"{fixture_id} operation record"
-              )
-              operations = read_json(operations_path, f"{fixture_id} operation record")
-              if not isinstance(operations.get("apply_once"), dict) or not isinstance(
-                  operations.get("refine"), list
-              ):
-                  raise SystemExit(f"Invalid operation record shape: {fixture_id}")
-
-              apply_result_path = require_file(
-                  bundle, apply_once.get("result"), f"{fixture_id} apply_once result"
-              )
-              apply_electrical_path = require_file(
-                  bundle,
-                  apply_once.get("final_electrical"),
-                  f"{fixture_id} apply_once electrical result",
-              )
-              apply_metrics_path = require_file(
-                  bundle,
-                  apply_once.get("final_metrics"),
-                  f"{fixture_id} apply_once metrics",
-              )
-              apply_schematic = require_file(
-                  bundle,
-                  apply_once.get("final_schematic"),
-                  f"{fixture_id} apply_once final schematic",
-              )
-              apply_result = read_json(apply_result_path, f"{fixture_id} apply_once result")
-              apply_electrical = read_json(
-                  apply_electrical_path, f"{fixture_id} apply_once electrical result"
-              )
-              apply_metrics = read_json(apply_metrics_path, f"{fixture_id} apply_once metrics")
-              apply_hash = sha256(apply_schematic)
-              if apply_once.get("status") != result.get("apply_once_status") or apply_once.get(
-                  "code"
-              ) != result.get("apply_once_code"):
-                  raise SystemExit(f"Apply-once summary binding mismatch: {fixture_id}")
-              if apply_result.get("status") != apply_once.get("status") or apply_result.get(
-                  "code"
-              ) != apply_once.get("code"):
-                  raise SystemExit(f"Apply-once result binding mismatch: {fixture_id}")
-              if apply_result.get("accepted_hash_after") != apply_hash:
-                  raise SystemExit(f"Apply-once final schematic hash mismatch: {fixture_id}")
-              if apply_electrical.get("status") != "passed" or apply_electrical.get(
-                  "candidate_schematic_hash"
-              ) != apply_hash:
-                  raise SystemExit(f"Apply-once electrical evidence mismatch: {fixture_id}")
-              if apply_metrics.get("schematic_hash") != apply_hash:
-                  raise SystemExit(f"Apply-once metric hash mismatch: {fixture_id}")
-
-              refine_result_path = require_file(
-                  bundle, refine.get("result"), f"{fixture_id} refine result"
-              )
-              refine_electrical_path = require_file(
-                  bundle,
-                  refine.get("final_electrical"),
-                  f"{fixture_id} refine electrical result",
-              )
-              refine_metrics_path = require_file(
-                  bundle, refine.get("final_metrics"), f"{fixture_id} refine metrics"
-              )
-              refine_schematic = require_file(
-                  bundle,
-                  refine.get("final_schematic"),
-                  f"{fixture_id} refine final schematic",
-              )
-              refine_result = read_json(refine_result_path, f"{fixture_id} refine result")
-              refine_electrical = read_json(
-                  refine_electrical_path, f"{fixture_id} refine electrical result"
-              )
-              refine_metrics = read_json(refine_metrics_path, f"{fixture_id} refine metrics")
-              refine_hash = sha256(refine_schematic)
-              if refine.get("status") != result.get("refine_status") or refine.get(
-                  "stop_reason"
-              ) != result.get("refine_stop_reason"):
-                  raise SystemExit(f"Refine summary binding mismatch: {fixture_id}")
-              if refine_result.get("status") != refine.get("status") or refine_result.get(
-                  "stop_reason"
-              ) != refine.get("stop_reason"):
-                  raise SystemExit(f"Refine result binding mismatch: {fixture_id}")
-              if refine_result.get("final_accepted_hash") != refine_hash:
-                  raise SystemExit(f"Refine final schematic hash mismatch: {fixture_id}")
-              if refine_electrical.get("status") != "passed" or refine_electrical.get(
-                  "candidate_schematic_hash"
-              ) != refine_hash:
-                  raise SystemExit(f"Refine electrical evidence mismatch: {fixture_id}")
-              if refine_metrics.get("schematic_hash") != refine_hash:
-                  raise SystemExit(f"Refine metric hash mismatch: {fixture_id}")
-              if refine_hash != result.get("final_accepted_hash"):
-                  raise SystemExit(f"Refine hash does not match corpus summary: {fixture_id}")
-
-          print("Validated 12 complete, hash-bound Phase N3 evidence bundles")
-          PY
+      - name: Prepare Phase N4 review packet
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run kicad-refine-eval-review \
+            --evidence-root "$N3_OUTPUT_ROOT" \
+            --implementation-sha "$GITHUB_SHA" \
+            --provider "$KICAD_PCB_WEB_LLM_PROVIDER" \
+            --model "$KICAD_PCB_WEB_LLM_MODEL" \
+            --manifest tests/fixtures/refinement/evaluation_corpus/manifest.json \
+            --expectations tests/fixtures/refinement/evaluation_corpus/baseline_expectations.json \
+            --output "$N3_RUN_ROOT/n4-review-packet.json"
 
       - name: Upload Phase N3 evidence
         if: always()
@@ -440,5 +241,7 @@ jobs:
           path: |
             ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/evidence
             ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/evaluation.log
+            ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/acceptance.json
+            ${{ runner.temp }}/phase-n3-live-${{ github.run_id }}-${{ github.run_attempt }}/n4-review-packet.json
           if-no-files-found: warn
           retention-days: 30

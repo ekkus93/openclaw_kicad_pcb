@@ -21,9 +21,15 @@ Fill these fields from the accepted Phase N3 run before recording any dispositio
 - Model: **PENDING**
 - Source manifest SHA-256: **PENDING**
 - Baseline expectations SHA-256: **PENDING**
-- N3 acceptance result: **PENDING**
+- N3 acceptance result/report: **PENDING**
 
-Do not complete N4 against a partial, failed, stale, or non-hash-bound N3 artifact.
+Do not complete N4 against a partial, failed, stale, or non-hash-bound N3 artifact. The preferred acceptance record is the JSON emitted by `kicad-refine-eval-validate`; copy its implementation/provider/model/corpus-hash bindings here before assigning any fixture disposition.
+
+## Objective review packet
+
+Generate `phase-n4-review-packet.json` with `kicad-refine-eval-review` only after the N3 evidence passes acceptance. The packet preserves the exact fixture order and supplies the non-subjective inputs needed below: before/after render paths, baseline/final metrics and numeric deltas, critic output, plan output, apply-once/refine operation evidence, refine iteration summary, and stop reason. Its disposition/reason fields remain `PENDING` by design.
+
+The packet is an aid to review, not a substitute for visual judgment. Final dispositions must still be based on direct inspection of the accepted before/after PNGs and the supporting evidence.
 
 ## Disposition rubric
 

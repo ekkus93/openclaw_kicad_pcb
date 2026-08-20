@@ -71,6 +71,10 @@ def _live_evaluation_problems() -> list[str]:
         "--max-operations-per-round 4",
         "--max-total-accepted-operations 8",
         "Validate complete 12-fixture evidence",
+        "uv run kicad-refine-eval-validate",
+        '--report "$N3_RUN_ROOT/acceptance.json"',
+        "Prepare Phase N4 review packet",
+        "uv run kicad-refine-eval-review",
         "actions/upload-artifact@v6",
         "retention-days: 30",
     )

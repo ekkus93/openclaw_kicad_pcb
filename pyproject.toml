@@ -15,6 +15,8 @@ dependencies = [
 [project.scripts]
 kicad-refine = "kicad_pcb_web.refinement_cli:main"
 kicad-refine-eval = "kicad_pcb_web.refinement_evaluation_cli:main"
+kicad-refine-eval-validate = "kicad_pcb_web.refinement_evaluation_acceptance_cli:main"
+kicad-refine-eval-review = "kicad_pcb_web.refinement_evaluation_review_cli:main"
 
 [project.optional-dependencies]
 dev = [
