@@ -10,6 +10,7 @@ LIVE_EVALUATION_WORKFLOW = Path(".github/workflows/refinement-live-evaluation.ym
 OLLAMA_PREFLIGHT = Path("scripts/preflight_n3_ollama.py")
 OLLAMA_CLIENT = Path("src/kicad_pcb_web/services/llm/ollama_client.py")
 EVALUATION_CLI = Path("src/kicad_pcb_web/refinement_evaluation_cli.py")
+N3_FIRST_FIXTURE_SMOKE = Path("scripts/smoke_n3_first_fixture.py")
 REFINEMENT_RENDERING = Path("src/kicad_pcb/refinement/rendering.py")
 REFINEMENT_LLM = Path("src/kicad_pcb_web/services/refinement_llm.py")
 
@@ -35,6 +36,7 @@ def main() -> int:
     problems.extend(_ollama_preflight_problems())
     problems.extend(_ollama_client_problems())
     problems.extend(_evaluation_cli_problems())
+    problems.extend(_n3_first_fixture_smoke_problems())
     problems.extend(_refinement_context_budget_problems())
     if problems:
         raise SystemExit("\n".join(problems))
@@ -56,7 +58,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
         'N3_OLLAMA_NUM_CTX: "65536"',
         'KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"',
-        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "1024"',
         "runs-on: self-hosted",
         "refs/heads/n3-eval-run",
         "refs/heads/webapp",
@@ -67,6 +69,9 @@ def _live_evaluation_problems() -> list[str]:
         "--probe-height 891",
         "--source-model",
         "--num-ctx",
+        "Smoke test first N3 critic fixture",
+        "scripts/smoke_n3_first_fixture.py",
+        "critic-smoke.log",
         "uv run kicad-refine-eval",
         "--max-rounds 3",
         "--max-operations-per-round 4",
@@ -88,6 +93,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_NUM_CTX: "32768"',
         "--probe-width 3360",
         "--probe-height 2376",
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
     )
     problems = [
         f"missing required Phase N3 live-evaluation fragment: {item}"
@@ -156,6 +162,22 @@ def _evaluation_cli_problems() -> list[str]:
     )
     return [
         f"missing required N3 safe-diagnostic fragment: {item}"
+        for item in required
+        if item not in text
+    ]
+
+
+def _n3_first_fixture_smoke_problems() -> list[str]:
+    text = N3_FIRST_FIXTURE_SMOKE.read_text(encoding="utf-8")
+    required = (
+        '_FIRST_FIXTURE_ID = "n1-crowded-power-regulator"',
+        "prepare_refinement_evaluation_corpus",
+        "analyze_schematic_refinement",
+        "fixture_ids=(_FIRST_FIXTURE_ID,)",
+        "max_critic_repairs=iteration_limits.max_critic_repairs",
+    )
+    return [
+        f"missing required N3 first-fixture smoke fragment: {item}"
         for item in required
         if item not in text
     ]
