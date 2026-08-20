@@ -67,9 +67,12 @@ The N3.3 workflow pins the experiment to these bounds rather than inheriting mut
 - maximum critic repairs: `0`
 - maximum planner repairs: `0`
 - per-request LLM timeout: `300` seconds
+- maximum generated tokens per LLM response: `4096`
 - workflow timeout: `240` minutes
 
-These values are recorded again in the generated corpus summary.
+The transport timeout remains the validated production maximum of 300 seconds. The explicit 4096-token generation cap is essential for the local Ollama experiment: it maps to Ollama `options.num_predict=4096`, preventing an otherwise unbounded structured critic/planner generation from occupying the entire non-streaming request timeout.
+
+Run `32363895399` attempt 2 demonstrated this requirement: the Ollama capability preflight completed successfully, but the first real fixture (`n1-crowded-power-regulator`) had no configured output-token ceiling and reached the 300-second transport timeout before Ollama returned a response. Ambiguous transport failures remain non-retryable; the repair bounds generation rather than replaying the request or weakening the timeout contract.
 
 ## Diagnostics
 

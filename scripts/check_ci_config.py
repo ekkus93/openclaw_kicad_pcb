@@ -56,6 +56,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
         'N3_OLLAMA_NUM_CTX: "65536"',
         'KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"',
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
         "runs-on: self-hosted",
         "refs/heads/n3-eval-run",
         "refs/heads/webapp",
