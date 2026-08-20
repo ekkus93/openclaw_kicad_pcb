@@ -38,13 +38,9 @@ def _fixture_review_record(root: Path, fixture_id: str) -> dict[str, object]:
     plan_result = _read_json(bundle / _relative_path(plan.get("result"), fixture_id))
     refine_result = _read_json(bundle / _relative_path(refine.get("result"), fixture_id))
     operations = _read_json(bundle / _relative_path(manifest.get("operations"), fixture_id))
-    final_metrics = _read_json(
-        bundle / _relative_path(refine.get("final_metrics"), fixture_id)
-    )
+    final_metrics = _read_json(bundle / _relative_path(refine.get("final_metrics"), fixture_id))
     baseline_metrics = _mapping(analyze_result.get("metrics"), f"{fixture_id} baseline metrics")
-    before_render = _mapping(
-        before_after.get("before_render"), f"{fixture_id} before render"
-    )
+    before_render = _mapping(before_after.get("before_render"), f"{fixture_id} before render")
     after_render = _mapping(before_after.get("after_render"), f"{fixture_id} after render")
 
     return {
