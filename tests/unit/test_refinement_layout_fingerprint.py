@@ -107,3 +107,31 @@ def test_layout_fingerprint_changes_for_deterministic_geometry_edit(tmp_path: Pa
 
     assert after.digest != before.digest
     assert after.labels != before.labels
+
+
+def test_layout_fingerprint_accepts_unquoted_kicad_uuid_atoms(tmp_path: Path) -> None:
+    path = tmp_path / "uuid_atoms.kicad_sch"
+    path.write_text(
+        """(kicad_sch
+  (version 20230121)
+  (generator eeschema)
+  (uuid root)
+  (paper "A4")
+  (lib_symbols
+    (symbol "Device:R"
+      (pin passive line (at 0 0 0) (length 2.54) (name "~") (number "1"))
+      (pin passive line (at 7.62 0 180) (length 2.54) (name "~") (number "2"))))
+  (symbol (lib_id "Device:R") (at 25.4 25.4 0) (unit 1) (in_bom yes) (on_board yes) (uuid r1)
+    (property "Reference" "R1") (property "Value" "10k") (property "Footprint" ""))
+  (junction (at 25.4 38.1) (diameter 0) (color 0 0 0 0) (uuid j1))
+  (wire (pts (xy 25.4 25.4) (xy 25.4 38.1)) (uuid w1))
+  (label "N" (at 25.4 38.1 0) (uuid l1))
+  (sheet_instances (path "/" (page "1"))))""",
+        encoding="utf-8",
+    )
+
+    fingerprint = compute_schematic_layout_fingerprint(path)
+
+    assert fingerprint.wires == (("w1", ((25.4, 25.4), (25.4, 38.1))),)
+    assert fingerprint.labels == (("l1", "label", "N", 25.4, 38.1, 0),)
+    assert fingerprint.junctions == (("j1", 25.4, 38.1),)

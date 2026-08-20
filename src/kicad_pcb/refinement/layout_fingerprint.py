@@ -126,7 +126,7 @@ def _required_uuid(node: ListNode, *, kind: str) -> str:
             isinstance(child, ListNode)
             and child.key == "uuid"
             and len(child.items) >= 2
-            and isinstance(child.items[1], StringNode)
+            and isinstance(child.items[1], AtomNode | StringNode)
             and child.items[1].value
         ):
             return child.items[1].value
@@ -158,7 +158,7 @@ def _at(node: ListNode) -> tuple[float, float, int]:
     return x, y, rotation
 
 
-def _wire_points(node: ListNode) -> list[tuple[float, float]]:
+def _wire_points(node: ListNode) -> list[tuple[float, float]:
     pts = next(
         (child for child in node.items if isinstance(child, ListNode) and child.key == "pts"),
         None,
@@ -192,7 +192,7 @@ def _num(node: Node) -> float:
     except ValueError as exc:
         raise UserError(
             "Layout geometry contains an invalid numeric atom.",
-            code="REFINEMENT_LAYOUT_FINGERPRINT_INVALID",
+            code="REFINEMENT_LAYOUT_FINERPRINT_INVALID",
         ) from exc
     if not math.isfinite(value):
         raise UserError(
