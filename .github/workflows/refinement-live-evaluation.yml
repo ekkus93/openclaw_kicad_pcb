@@ -157,8 +157,8 @@ jobs:
           args=(
             --base-url "$EVAL_BASE_URL"
             --model "$KICAD_PCB_WEB_LLM_MODEL"
-            --probe-width 3360
-            --probe-height 2376
+            --probe-width 1260
+            --probe-height 891
           )
           if [[ "$KICAD_PCB_WEB_LLM_MODEL" == "$N3_OLLAMA_MODEL" ]]; then
             args+=(
