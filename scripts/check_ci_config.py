@@ -109,8 +109,8 @@ def _ollama_preflight_problems() -> list[str]:
         'parser.add_argument("--probe-height", type=_positive_int, default=891)',
     )
     forbidden = (
-        'default=3360',
-        'default=2376',
+        "default=3360",
+        "default=2376",
     )
     problems = [
         f"missing required N3 Ollama preflight fragment: {item}"
