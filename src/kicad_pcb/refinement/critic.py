@@ -26,6 +26,7 @@ CriticCategory = Literal[
     "ambiguous_junction",
 ]
 CriticSeverity = Literal["info", "warning", "error"]
+MAX_CRITIC_ISSUES_PER_ROUND = 6
 
 
 class _Strict(BaseModel):
@@ -63,7 +64,7 @@ class CriticResponse(_Strict):
     schema_version: Literal["1.0"] = "1.0"
     source_schematic_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     render_png_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
-    issues: tuple[CriticIssue, ...] = Field(default=(), max_length=64)
+    issues: tuple[CriticIssue, ...] = Field(default=(), max_length=MAX_CRITIC_ISSUES_PER_ROUND)
     rubric: CriticRubric | None = None
 
     @model_validator(mode="after")
