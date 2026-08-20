@@ -158,7 +158,7 @@ def _at(node: ListNode) -> tuple[float, float, int]:
     return x, y, rotation
 
 
-def _wire_points(node: ListNode) -> list[tuple[float, float]:
+def _wire_points(node: ListNode) -> list[tuple[float, float]]:
     pts = next(
         (child for child in node.items if isinstance(child, ListNode) and child.key == "pts"),
         None,
@@ -192,7 +192,7 @@ def _num(node: Node) -> float:
     except ValueError as exc:
         raise UserError(
             "Layout geometry contains an invalid numeric atom.",
-            code="REFINEMENT_LAYOUT_FINERPRINT_INVALID",
+            code="REFINEMENT_LAYOUT_FINGERPRINT_INVALID",
         ) from exc
     if not math.isfinite(value):
         raise UserError(
