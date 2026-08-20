@@ -9,7 +9,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from kicad_pcb.errors import UserError
-from kicad_pcb.refinement.critic import CriticResponse, validate_critic_response
+from kicad_pcb.refinement.critic import (
+    MAX_CRITIC_ISSUES_PER_ROUND,
+    CriticResponse,
+    validate_critic_response,
+)
 from kicad_pcb.refinement.operations import registered_operation_schemas
 from kicad_pcb.refinement.planner import (
     RepairPlanResponse,
@@ -192,7 +196,12 @@ def run_visual_critic(
                 "are supplemental anti-oscillation evidence only: avoid recommending a previously "
                 "attempted layout pattern when a different safe improvement exists. Do not propose "
                 "component/value/symbol/footprint/net changes. Reference only object_id values "
-                "supplied in the object map. Return JSON only."
+                "supplied in the object map. Each round is triage, not an exhaustive audit: "
+                f"return at most {MAX_CRITIC_ISSUES_PER_ROUND} highest-priority actionable issues "
+                "in descending priority order. Prefer the issues with the largest expected visual "
+                "readability benefit in this round; later rounds will re-render and re-evaluate "
+                "remaining defects. Keep observation, desired_outcome, evidence, and constraints "
+                "concise. Return JSON only."
             ),
         ),
         LlmMessage(
