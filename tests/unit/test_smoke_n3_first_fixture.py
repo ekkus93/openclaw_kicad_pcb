@@ -77,12 +77,14 @@ def test_n3_first_fixture_smoke_runs_real_analyze_path_and_cleans_work(
     context = _context(module, tmp_path)
 
     result = module.run_smoke(
-        repo_root=tmp_path,
-        manifest_path=Path("manifest.json"),
-        expectations_path=Path("expectations.json"),
-        work_root=tmp_path / "work",
-        implementation_sha="c" * 40,
-        context=context,
+        module.SmokeRequest(
+            repo_root=tmp_path,
+            manifest_path=Path("manifest.json"),
+            expectations_path=Path("expectations.json"),
+            work_root=tmp_path / "work",
+            implementation_sha="c" * 40,
+        ),
+        context,
     )
 
     request = captured["request"]
@@ -120,12 +122,14 @@ def test_n3_first_fixture_smoke_rejects_missing_vision_capability(
 
     with pytest.raises(Exception) as exc_info:
         module.run_smoke(
-            repo_root=tmp_path,
-            manifest_path=Path("manifest.json"),
-            expectations_path=None,
-            work_root=tmp_path / "work",
-            implementation_sha="c" * 40,
-            context=_context(module, tmp_path),
+            module.SmokeRequest(
+                repo_root=tmp_path,
+                manifest_path=Path("manifest.json"),
+                expectations_path=None,
+                work_root=tmp_path / "work",
+                implementation_sha="c" * 40,
+            ),
+            _context(module, tmp_path),
         )
 
     assert getattr(exc_info.value, "code", None) == "REFINEMENT_EVALUATION_VISION_REQUIRED"

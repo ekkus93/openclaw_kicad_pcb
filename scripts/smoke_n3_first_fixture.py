@@ -49,15 +49,16 @@ class SmokeContext:
     llm_client: LlmClient
 
 
-def run_smoke(
-    *,
-    repo_root: Path,
-    manifest_path: Path,
-    expectations_path: Path | None,
-    work_root: Path,
-    implementation_sha: str | None,
-    context: SmokeContext,
-) -> dict[str, object]:
+@dataclass(frozen=True)
+class SmokeRequest:
+    repo_root: Path
+    manifest_path: Path
+    expectations_path: Path | None
+    work_root: Path
+    implementation_sha: str | None
+
+
+def run_smoke(request: SmokeRequest, context: SmokeContext) -> dict[str, object]:
     """Execute the production analyze/critic path for the certified first N3 fixture."""
 
     require_refinement_enabled(context.config)
@@ -71,19 +72,19 @@ def run_smoke(
     provenance = RefinementProvenance(
         provider=provider,
         model=model,
-        implementation_sha=implementation_sha,
+        implementation_sha=request.implementation_sha,
     )
     preparation = prepare_refinement_evaluation_corpus(
         RefinementCorpusEvaluationRequest(
-            repo_root=repo_root,
-            manifest_path=manifest_path,
+            repo_root=request.repo_root,
+            manifest_path=request.manifest_path,
             adapter=context.adapter,
             llm_client=context.llm_client,
             provenance=provenance,
             iteration_limits=iteration_limits,
             loop_limits=loop_limits,
             fixture_ids=(_FIRST_FIXTURE_ID,),
-            expectations_path=expectations_path,
+            expectations_path=request.expectations_path,
         )
     )
     if len(preparation.fixtures) != 1:
@@ -93,11 +94,11 @@ def run_smoke(
         )
 
     prepared = preparation.fixtures[0]
-    work_root.mkdir(parents=True, exist_ok=True)
+    request.work_root.mkdir(parents=True, exist_ok=True)
     smoke_tmp = Path(
         tempfile.mkdtemp(
             prefix=f".{_FIRST_FIXTURE_ID}-critic-smoke-",
-            dir=work_root,
+            dir=request.work_root,
         )
     )
     try:
@@ -211,12 +212,14 @@ def main() -> int:
                 code="REFINEMENT_EVALUATION_LLM_REQUIRED",
             )
         payload = run_smoke(
-            repo_root=args.repo_root,
-            manifest_path=args.manifest,
-            expectations_path=args.expectations,
-            work_root=args.work_root,
-            implementation_sha=args.implementation_sha or os.environ.get("GITHUB_SHA"),
-            context=SmokeContext(
+            SmokeRequest(
+                repo_root=args.repo_root,
+                manifest_path=args.manifest,
+                expectations_path=args.expectations,
+                work_root=args.work_root,
+                implementation_sha=args.implementation_sha or os.environ.get("GITHUB_SHA"),
+            ),
+            SmokeContext(
                 settings=settings,
                 config=config,
                 adapter=KicadCliAdapter(kicad_cli=find_kicad_cli()),
