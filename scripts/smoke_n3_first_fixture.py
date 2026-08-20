@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the real first-fixture N3 critic request as a fail-fast smoke gate."""
+"""Run two real first-fixture N3 critic requests as a fail-fast smoke gate."""
 
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ from kicad_pcb_web.services.schematic_refinement import (
 from kicad_pcb_web.settings import WebSettings, load_settings
 
 _FIRST_FIXTURE_ID = "n1-crowded-power-regulator"
+_SMOKE_PASS_COUNT = 2
 _DEFAULT_MANIFEST = Path("tests/fixtures/refinement/evaluation_corpus/manifest.json")
 
 
@@ -59,7 +60,7 @@ class SmokeRequest:
 
 
 def run_smoke(request: SmokeRequest, context: SmokeContext) -> dict[str, object]:
-    """Execute the production analyze/critic path for the certified first N3 fixture."""
+    """Execute two production analyze/critic passes for the certified first N3 fixture."""
 
     require_refinement_enabled(context.config)
     provider, model = _require_vision_model(context)
@@ -95,38 +96,47 @@ def run_smoke(request: SmokeRequest, context: SmokeContext) -> dict[str, object]
 
     prepared = preparation.fixtures[0]
     request.work_root.mkdir(parents=True, exist_ok=True)
-    smoke_tmp = Path(
-        tempfile.mkdtemp(
-            prefix=f".{_FIRST_FIXTURE_ID}-critic-smoke-",
-            dir=request.work_root,
+    passes: list[dict[str, object]] = []
+    for pass_index in range(1, _SMOKE_PASS_COUNT + 1):
+        smoke_tmp = Path(
+            tempfile.mkdtemp(
+                prefix=f".{_FIRST_FIXTURE_ID}-critic-smoke-{pass_index}-",
+                dir=request.work_root,
+            )
         )
-    )
-    try:
-        accepted_path = smoke_tmp / "accepted.kicad_sch"
-        shutil.copyfile(prepared.baseline_schematic, accepted_path)
-        analysis = analyze_schematic_refinement(
-            accepted_path=accepted_path,
-            runtime=RefinementRuntime(
-                authoritative_ir=prepared.authoritative_ir,
-                adapter=context.adapter,
-                llm_client=context.llm_client,
-                work_dir=smoke_tmp / "runtime",
-                evidence_root=smoke_tmp / "evidence",
-                provenance=provenance,
-            ),
-            max_critic_repairs=iteration_limits.max_critic_repairs,
-        )
-    finally:
-        shutil.rmtree(smoke_tmp, ignore_errors=True)
+        try:
+            accepted_path = smoke_tmp / "accepted.kicad_sch"
+            shutil.copyfile(prepared.baseline_schematic, accepted_path)
+            analysis = analyze_schematic_refinement(
+                accepted_path=accepted_path,
+                runtime=RefinementRuntime(
+                    authoritative_ir=prepared.authoritative_ir,
+                    adapter=context.adapter,
+                    llm_client=context.llm_client,
+                    work_dir=smoke_tmp / "runtime",
+                    evidence_root=smoke_tmp / "evidence",
+                    provenance=provenance,
+                ),
+                max_critic_repairs=iteration_limits.max_critic_repairs,
+            )
+            passes.append(
+                {
+                    "pass_index": pass_index,
+                    "accepted_hash": analysis.accepted_hash,
+                    "render_png_hash": analysis.context.render_png_hash,
+                    "issue_count": len(analysis.critic.issues),
+                }
+            )
+        finally:
+            shutil.rmtree(smoke_tmp, ignore_errors=True)
 
     return {
         "status": "smoke_passed",
         "fixture_id": _FIRST_FIXTURE_ID,
         "provider": provider,
         "model": model,
-        "accepted_hash": analysis.accepted_hash,
-        "render_png_hash": analysis.context.render_png_hash,
-        "issue_count": len(analysis.critic.issues),
+        "pass_count": len(passes),
+        "passes": passes,
     }
 
 
