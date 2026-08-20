@@ -246,8 +246,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", required=True)
     parser.add_argument("--source-model")
     parser.add_argument("--num-ctx", type=_positive_int)
-    parser.add_argument("--probe-width", type=_positive_int, default=3360)
-    parser.add_argument("--probe-height", type=_positive_int, default=2376)
+    parser.add_argument("--probe-width", type=_positive_int, default=1260)
+    parser.add_argument("--probe-height", type=_positive_int, default=891)
     return parser
 
 
