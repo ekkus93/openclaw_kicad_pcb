@@ -118,9 +118,7 @@ def _ollama_preflight_problems() -> list[str]:
         if item not in text
     ]
     problems.extend(
-        f"stale N3 Ollama preflight fragment remains: {item}"
-        for item in forbidden
-        if item in text
+        f"stale N3 Ollama preflight fragment remains: {item}" for item in forbidden if item in text
     )
     return problems
 
