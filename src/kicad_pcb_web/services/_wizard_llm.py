@@ -291,6 +291,7 @@ def _call_llm_for_json_once(
     request = LlmRequest(
         messages=list(messages),
         response_format="json",
+        json_schema=response_model.model_json_schema(),
         images=options.images,
     )
     prompt_chars = sum(len(message.content) for message in request.messages)

@@ -102,7 +102,11 @@ def test_phase_n3_preflight_vision_probe_uses_native_ollama_images(
     payload = captured["payload"]
     assert isinstance(payload, dict)
     assert payload["model"] == config.model
-    assert payload["format"] == "json"
+    format_schema = payload["format"]
+    assert isinstance(format_schema, dict)
+    assert format_schema["type"] == "object"
+    assert format_schema["required"] == ["ok"]
+    assert format_schema["additionalProperties"] is False
     assert payload["think"] is False
     messages = payload["messages"]
     assert isinstance(messages, list)

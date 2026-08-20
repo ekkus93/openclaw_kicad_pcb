@@ -61,7 +61,7 @@ class OllamaLlmClient(BaseHttpLlmClient):
                         "json_mode": self.capabilities.json_mode.value,
                     },
                 )
-            payload["format"] = "json"
+            payload["format"] = request.json_schema if request.json_schema is not None else "json"
             # Structured callers consume only the final JSON content. Explicitly disable
             # thinking so thinking-capable Ollama models do not emit a separate reasoning
             # channel or starve the schema-bound final response.

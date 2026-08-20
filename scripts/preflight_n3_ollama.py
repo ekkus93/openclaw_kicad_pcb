@@ -193,7 +193,12 @@ def _probe_chat(config: PreflightConfig, *, image_b64: str | None, operation: st
             "model": config.model,
             "messages": [message],
             "stream": False,
-            "format": "json",
+            "format": {
+                "type": "object",
+                "properties": {"ok": {"type": "boolean"}},
+                "required": ["ok"],
+                "additionalProperties": False,
+            },
             "think": False,
             "options": {"temperature": 0, "num_predict": 128},
         },

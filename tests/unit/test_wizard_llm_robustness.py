@@ -170,6 +170,8 @@ def test_d2_no_content_repairs_then_recovers() -> None:
     )
     assert result.value == "ok"
     assert len(client.requests) == 2
+    assert client.requests[0].json_schema == _Envelope.model_json_schema()
+    assert client.requests[1].json_schema == _Envelope.model_json_schema()
 
 
 def test_d2_no_content_exhaustion_is_distinct() -> None:

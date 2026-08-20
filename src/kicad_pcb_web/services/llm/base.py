@@ -79,6 +79,7 @@ class LlmRequest:
     response_format: LlmResponseFormat = "text"
     temperature: float | None = None
     max_tokens: int | None = None
+    json_schema: dict[str, Any] | None = None
     images: tuple[LlmImage, ...] = ()
 
 

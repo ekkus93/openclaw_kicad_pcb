@@ -119,7 +119,12 @@ def test_p3_mismatched_capability_contract_fails_closed() -> None:
                 "messages": [{"role": "user", "content": "json please"}],
                 "stream": False,
                 "options": {"temperature": 0.25, "num_predict": 321},
-                "format": "json",
+                "format": {
+                    "type": "object",
+                    "properties": {"ok": {"type": "boolean"}},
+                    "required": ["ok"],
+                    "additionalProperties": False,
+                },
                 "think": False,
             },
         ),
@@ -159,6 +164,12 @@ def test_p3_exact_provider_payloads(
         LlmRequest(
             messages=[LlmMessage(role="user", content="json please")],
             response_format="json",
+            json_schema={
+                "type": "object",
+                "properties": {"ok": {"type": "boolean"}},
+                "required": ["ok"],
+                "additionalProperties": False,
+            },
         )
     )
     client.close()  # type: ignore[attr-defined]
