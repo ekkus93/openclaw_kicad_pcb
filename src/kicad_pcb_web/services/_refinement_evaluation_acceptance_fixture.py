@@ -162,4 +162,3 @@ def validate_fixture(
 
     _validate_apply_once(bundle, fixture_id, result, apply_once, baseline_fixture)
     _validate_refine(bundle, fixture_id, result, refine, baseline_fixture)
-

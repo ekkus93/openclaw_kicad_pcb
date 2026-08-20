@@ -240,4 +240,3 @@ def _validate_render(
             _sha256(region_svg),
             f"Review-region SVG hash mismatch: {fixture_id}",
         )
-

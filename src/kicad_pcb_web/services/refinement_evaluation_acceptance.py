@@ -160,4 +160,3 @@ def validate_phase_n3_evidence(
         baseline_expectations_sha256=baseline_expectations_hash,
         fixture_ids=tuple(fixture_ids),
     )
-
