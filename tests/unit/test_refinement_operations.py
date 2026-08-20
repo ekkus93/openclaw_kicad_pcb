@@ -524,6 +524,86 @@ def test_shorten_wire_path_rejects_collinear_unrelated_overlap(tmp_path: Path) -
     assert path.read_bytes() == before
 
 
+def test_wire_precondition_stale_on_source_still_fails_closed(tmp_path: Path) -> None:
+    points = [
+        (50.8, 50.8),
+        (66.04, 50.8),
+        (66.04, 60.96),
+        (71.12, 60.96),
+    ]
+    path = _wire_chain(tmp_path, points)
+    source = _hash(path)
+    before = path.read_bytes()
+    stale_points = [points[0], (63.5, 50.8), (63.5, 60.96), points[-1]]
+
+    with pytest.raises(UserError, match="changed since plan creation") as exc_info:
+        execute_layout_operations(
+            path,
+            [
+                {
+                    "schema_version": "1.0",
+                    "operation_id": "wire-stale",
+                    "source_schematic_hash": source,
+                    "operation_type": "shorten_wire_path",
+                    "arguments": {
+                        "wire_uuid": "w1",
+                        "net_name": "N",
+                        "expected_points_mm": stale_points,
+                    },
+                }
+            ],
+            expected_source_hash=source,
+            authoritative_ir=_wire_ir(),
+        )
+
+    assert exc_info.value.code == "REFINEMENT_STALE"
+    assert path.read_bytes() == before
+
+
+def test_later_wire_operation_invalidated_by_same_batch_is_rejected(tmp_path: Path) -> None:
+    points = [
+        (50.8, 50.8),
+        (66.04, 50.8),
+        (66.04, 60.96),
+        (71.12, 60.96),
+    ]
+    path = _wire_chain(tmp_path, points)
+    source = _hash(path)
+    first = {
+        "schema_version": "1.0",
+        "operation_id": "wire-reroute-1",
+        "source_schematic_hash": source,
+        "operation_type": "reroute_existing_net_orthogonal",
+        "arguments": {
+            "wire_uuid": "w1",
+            "net_name": "N",
+            "expected_points_mm": points,
+            "region_min_x_mm": 50.8,
+            "region_min_y_mm": 50.8,
+            "region_max_x_mm": 71.12,
+            "region_max_y_mm": 60.96,
+        },
+    }
+    second = {
+        **first,
+        "operation_id": "wire-reroute-2",
+    }
+
+    result = execute_layout_operations(
+        path,
+        [first, second],
+        expected_source_hash=source,
+        authoritative_ir=_wire_ir(),
+    )
+
+    assert result.candidate_hash != source
+    assert [item.status for item in result.results] == ["applied", "rejected"]
+    assert result.results[1].details == {
+        "reason_code": "REFINEMENT_INTRA_BATCH_CONFLICT",
+        "cause_code": "REFINEMENT_STALE",
+    }
+
+
 def test_reroute_existing_net_rewrites_real_segment_chain(tmp_path: Path) -> None:
     points = [
         (50.8, 50.8),

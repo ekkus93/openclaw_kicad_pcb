@@ -323,6 +323,59 @@ def test_refine_enforces_total_operation_budget(monkeypatch, tmp_path: Path) -> 
     assert result.stop_reason == "REFINEMENT_STOP_OPERATION_BUDGET"
 
 
+def test_refine_counts_only_applied_operations_in_mixed_batch(monkeypatch, tmp_path: Path) -> None:
+    accepted = tmp_path / "accepted.kicad_sch"
+    accepted.write_bytes(b"A")
+
+    def apply_once(**kwargs):
+        path = kwargs["accepted_path"]
+        before = _sha(path)
+        path.write_bytes(path.read_bytes() + b"x")
+        after = _sha(path)
+        operations = LayoutOperationBatchResult(
+            before,
+            after,
+            (
+                LayoutOperationResult("op-1", "reroute_existing_net_orthogonal", "applied", {}),
+                LayoutOperationResult(
+                    "op-2",
+                    "reroute_existing_net_orthogonal",
+                    "rejected",
+                    {"reason_code": "REFINEMENT_INTRA_BATCH_CONFLICT"},
+                ),
+            ),
+        )
+        return service.RefinementApplyResult(
+            "accepted",
+            "REFINEMENT_ACCEPTED",
+            before,
+            after,
+            after,
+            None,
+            operations,
+            None,
+            None,
+            None,
+            candidate_layout_fingerprint=after,
+        )
+
+    monkeypatch.setattr(service, "apply_once_schematic_refinement", apply_once)
+    result = service.refine_schematic(
+        accepted_path=accepted,
+        runtime=_runtime(tmp_path),
+        session_id="mixed-operation-results",
+        limits=service.RefinementLoopLimits(max_rounds=1),
+    )
+
+    assert result.accepted_operations == 1
+    assert result.accepted_rounds == 1
+    assert result.iterations[0].operations is not None
+    assert [item.status for item in result.iterations[0].operations.results] == [
+        "applied",
+        "rejected",
+    ]
+
+
 def test_refine_three_round_improvement_stops_at_max_rounds(monkeypatch, tmp_path: Path) -> None:
     accepted = tmp_path / "accepted.kicad_sch"
     accepted.write_bytes(b"A")

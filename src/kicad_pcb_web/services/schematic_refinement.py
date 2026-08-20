@@ -836,7 +836,12 @@ def _handle_accepted_round(
             "Accepted refinement result does not match persisted schematic bytes.",
             code="REFINEMENT_CANDIDATE_HASH_MISMATCH",
         )
-    if result.operations is None or not result.operations.results:
+    applied_results = (
+        tuple(item for item in result.operations.results if item.status == "applied")
+        if result.operations is not None
+        else ()
+    )
+    if not applied_results:
         raise UserError(
             "Accepted refinement round contains no applied operations.",
             code="REFINEMENT_INVALID_RESULT",
@@ -847,7 +852,7 @@ def _handle_accepted_round(
             code="REFINEMENT_INVALID_RESULT",
         )
 
-    applied_count = len(result.operations.results)
+    applied_count = len(applied_results)
     allowed_operations = min(
         context.limits.max_operations_per_round,
         outcome.remaining_operations,

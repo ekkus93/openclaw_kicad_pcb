@@ -30,6 +30,9 @@ OPERATION_SCHEMA_VERSION: Literal["1.0"] = "1.0"
 DEFAULT_GRID_MM = 1.27
 DEFAULT_MAX_OPERATIONS = 32
 MAX_COORDINATE_ABS_MM = 2000.0
+_WIRE_OPERATION_TYPES = frozenset(
+    {"remove_redundant_wire_bend", "shorten_wire_path", "reroute_existing_net_orthogonal"}
+)
 
 
 class _StrictModel(BaseModel):
@@ -262,9 +265,31 @@ def execute_layout_operations(
         max_operations=policy.max_operations,
     )
     doc = SchematicDoc.load(candidate_path)
+    wire_preconditions = _prevalidate_wire_preconditions(doc, parsed)
     results: list[LayoutOperationResult] = []
+    applied_operations = 0
     for envelope, args in parsed:
-        details = _apply_operation(doc, envelope.operation_type, args, authoritative_ir, policy)
+        try:
+            details = _apply_operation(doc, envelope.operation_type, args, authoritative_ir, policy)
+        except UserError as exc:
+            if (
+                applied_operations > 0
+                and envelope.operation_id in wire_preconditions
+                and exc.code == "REFINEMENT_STALE"
+            ):
+                results.append(
+                    LayoutOperationResult(
+                        envelope.operation_id,
+                        envelope.operation_type,
+                        "rejected",
+                        {
+                            "reason_code": "REFINEMENT_INTRA_BATCH_CONFLICT",
+                            "cause_code": exc.code,
+                        },
+                    )
+                )
+                continue
+            raise
         results.append(
             LayoutOperationResult(
                 envelope.operation_id,
@@ -273,9 +298,29 @@ def execute_layout_operations(
                 details,
             )
         )
+        applied_operations += 1
     doc.save(candidate_path)
     candidate_hash = hashlib.sha256(candidate_path.read_bytes()).hexdigest()
     return LayoutOperationBatchResult(current_hash, candidate_hash, tuple(results))
+
+
+def _prevalidate_wire_preconditions(
+    doc: SchematicDoc,
+    parsed: tuple[tuple[LayoutOperationEnvelope, _StrictModel], ...],
+) -> frozenset[str]:
+    """Bind wire preconditions to the source snapshot before ordered batch mutation."""
+
+    valid: set[str] = set()
+    for envelope, args in parsed:
+        if envelope.operation_type not in _WIRE_OPERATION_TYPES:
+            continue
+        if isinstance(
+            args,
+            RemoveRedundantWireBendArgs | ShortenWirePathArgs | RerouteExistingNetOrthogonalArgs,
+        ):
+            _resolve_wire_chain(doc, args.wire_uuid, args.expected_points_mm)
+            valid.add(envelope.operation_id)
+    return frozenset(valid)
 
 
 def _apply_operation(
