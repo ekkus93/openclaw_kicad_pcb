@@ -3,9 +3,14 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+import kicad_pcb.refinement.planner as refinement_planner
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.critic import CriticResponse
-from kicad_pcb.refinement.planner import RepairPlanResponse, validate_repair_plan
+from kicad_pcb.refinement.planner import (
+    RepairPlanResponse,
+    model_plannable_operation_schemas,
+    validate_repair_plan,
+)
 from kicad_pcb.refinement.vision_context import (
     VisionComponentObject,
     VisionLabelObject,
@@ -143,15 +148,25 @@ def test_plan_rejects_unknown_critic_issue() -> None:
         )
 
 
-def test_plan_rejects_unsupported_or_semantic_operation() -> None:
-    with pytest.raises(UserError, match="Unsupported layout operation"):
-        validate_repair_plan(
-            _plan("replace_symbol", {"ref": "R1", "symbol": "Device:C"}),
-            critic=_critic(),
-            context=_context(),
-            expected_iteration_id="iter-1",
-            max_operations=4,
-        )
+def test_plan_schema_rejects_unsupported_or_semantic_operation() -> None:
+    payload = _plan().model_dump(mode="json")
+    payload["operations"][0]["operation_type"] = "replace_symbol"
+    payload["operations"][0]["arguments"] = {"ref": "R1", "symbol": "Device:C"}
+    with pytest.raises(ValidationError, match="union_tag_invalid"):
+        RepairPlanResponse.model_validate(payload)
+
+
+def test_plan_schema_does_not_offer_unbound_multi_segment_wire_operation() -> None:
+    payload = _plan().model_dump(mode="json")
+    payload["operations"][0]["operation_type"] = "remove_redundant_wire_bend"
+    payload["operations"][0]["arguments"] = {
+        "wire_uuid": "w1",
+        "expected_points_mm": [[270.9164, 98.8822], [274.1422, 98.8822]],
+    }
+
+    with pytest.raises(ValidationError, match="union_tag_invalid"):
+        RepairPlanResponse.model_validate(payload)
+    assert "remove_redundant_wire_bend" not in model_plannable_operation_schemas()
 
 
 def test_plan_rejects_unknown_and_ambiguous_component_targets() -> None:
@@ -180,8 +195,8 @@ def test_plan_rejects_unknown_label_wire_and_net() -> None:
     cases = [
         _plan("move_label", {"label_uuid": "missing", "x_mm": 10.16, "y_mm": 10.16}),
         _plan(
-            "remove_redundant_wire_bend",
-            {"wire_uuid": "missing", "expected_points_mm": [[10, 10], [15, 10], [20, 10]]},
+            "shorten_wire_path",
+            {"wire_uuid": "missing", "net_name": "SIG", "expected_points_mm": [[10, 10], [20, 10]]},
         ),
         _plan(
             "shorten_wire_path",
@@ -197,6 +212,30 @@ def test_plan_rejects_unknown_label_wire_and_net() -> None:
                 expected_iteration_id="iter-1",
                 max_operations=4,
             )
+
+
+def test_post_schema_operation_validation_is_normalized(monkeypatch: pytest.MonkeyPatch) -> None:
+    validation_error = ValidationError.from_exception_data(
+        "OperationArgs",
+        [{"type": "missing", "loc": ("expected_points_mm",), "input": {}}],
+    )
+
+    def fail_validation(*args, **kwargs):
+        raise validation_error
+
+    monkeypatch.setattr(refinement_planner, "validate_operation_envelopes", fail_validation)
+
+    with pytest.raises(UserError) as exc_info:
+        validate_repair_plan(
+            _plan(),
+            critic=_critic(),
+            context=_context(),
+            expected_iteration_id="iter-1",
+            max_operations=4,
+        )
+
+    assert exc_info.value.code == "REFINEMENT_PLAN_INVALID"
+    assert exc_info.value.details == {"error_type": "ValidationError"}
 
 
 def test_plan_operation_budget_and_duplicate_ids_fail_closed() -> None:

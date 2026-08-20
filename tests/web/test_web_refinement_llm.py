@@ -444,7 +444,7 @@ def test_repair_planner_emits_only_validated_registered_operations() -> None:
 
     assert result.operation_payloads[0]["operation_type"] == "move_component"
     assert not client.requests[0].images
-    assert "registered_operation_schemas" in client.requests[0].messages[1].content
+    assert "model_plannable_operation_schemas" in client.requests[0].messages[1].content
 
 
 def test_repair_planner_receives_prior_decisions_as_supplemental_evidence() -> None:
@@ -507,7 +507,7 @@ def test_repair_planner_does_not_approximate_unsupported_operation() -> None:
         ]
     )
 
-    with pytest.raises(UserError, match="Unsupported layout operation"):
+    with pytest.raises(LlmInvalidStructuredOutputError):
         run_repair_planner(
             llm_client=client,
             context=context,
@@ -518,3 +518,40 @@ def test_repair_planner_does_not_approximate_unsupported_operation() -> None:
                 max_operations=4,
             ),
         )
+
+
+def test_repair_planner_provider_schema_excludes_unbound_wire_chain_operation() -> None:
+    image = b"render"
+    context = _context(image)
+    critic = CriticResponse.model_validate(json.loads(_critic_payload(context)))
+    client = _FakeClient(
+        [
+            json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "iteration_id": "iter-1",
+                    "source_schematic_hash": context.source_schematic_hash,
+                    "operations": [],
+                }
+            )
+        ]
+    )
+
+    run_repair_planner(
+        llm_client=client,
+        context=context,
+        critic=critic,
+        options=RepairPlannerOptions(
+            iteration_id="iter-1",
+            max_repairs=0,
+            max_operations=4,
+        ),
+    )
+
+    schema = client.requests[0].json_schema
+    assert schema is not None
+    assert "RemoveRedundantWireBendArgs" not in schema["$defs"]
+    user_prompt = client.requests[0].messages[1].content
+    assert '"remove_redundant_wire_bend"' not in user_prompt
+    system_prompt = client.requests[0].messages[0].content
+    assert "must not be approximated" in system_prompt

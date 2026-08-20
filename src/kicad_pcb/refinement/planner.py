@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from kicad_pcb.errors import UserError
 
 from .critic import CriticResponse
-from .operations import validate_operation_envelopes
+from .operations import (
+    AlignComponentsArgs,
+    DistributeComponentsArgs,
+    MoveComponentArgs,
+    MoveComponentGroupArgs,
+    MoveLabelArgs,
+    MovePowerSymbolArgs,
+    RerouteExistingNetOrthogonalArgs,
+    RotateComponentArgs,
+    ShortenWirePathArgs,
+    registered_operation_schemas,
+    validate_operation_envelopes,
+)
 from .vision_context import VisionObjectMap
 
 
@@ -19,12 +31,93 @@ class _Strict(BaseModel):
     )
 
 
-class PlannedOperation(_Strict):
+class _PlannedOperationBase(_Strict):
     operation_id: str = Field(min_length=1, max_length=128)
     issue_ids: tuple[str, ...] = Field(min_length=1, max_length=16)
     expected_visual_benefit: str = Field(min_length=1, max_length=1000)
-    operation_type: str = Field(min_length=1, max_length=64)
-    arguments: dict[str, object]
+
+
+class _MoveComponentOperation(_PlannedOperationBase):
+    operation_type: Literal["move_component"]
+    arguments: MoveComponentArgs
+
+
+class _RotateComponentOperation(_PlannedOperationBase):
+    operation_type: Literal["rotate_component"]
+    arguments: RotateComponentArgs
+
+
+class _MoveLabelOperation(_PlannedOperationBase):
+    operation_type: Literal["move_label"]
+    arguments: MoveLabelArgs
+
+
+class _MovePowerSymbolOperation(_PlannedOperationBase):
+    operation_type: Literal["move_power_symbol"]
+    arguments: MovePowerSymbolArgs
+
+
+class _AlignComponentsOperation(_PlannedOperationBase):
+    operation_type: Literal["align_components"]
+    arguments: AlignComponentsArgs
+
+
+class _DistributeComponentsOperation(_PlannedOperationBase):
+    operation_type: Literal["distribute_components"]
+    arguments: DistributeComponentsArgs
+
+
+class _MoveComponentGroupOperation(_PlannedOperationBase):
+    operation_type: Literal["move_component_group"]
+    arguments: MoveComponentGroupArgs
+
+
+class _ShortenWirePathOperation(_PlannedOperationBase):
+    operation_type: Literal["shorten_wire_path"]
+    arguments: ShortenWirePathArgs
+
+
+class _RerouteExistingNetOrthogonalOperation(_PlannedOperationBase):
+    operation_type: Literal["reroute_existing_net_orthogonal"]
+    arguments: RerouteExistingNetOrthogonalArgs
+
+
+PlannedOperation = Annotated[
+    _MoveComponentOperation
+    | _RotateComponentOperation
+    | _MoveLabelOperation
+    | _MovePowerSymbolOperation
+    | _AlignComponentsOperation
+    | _DistributeComponentsOperation
+    | _MoveComponentGroupOperation
+    | _ShortenWirePathOperation
+    | _RerouteExistingNetOrthogonalOperation,
+    Field(discriminator="operation_type"),
+]
+
+
+MODEL_PLANNABLE_OPERATION_TYPES = frozenset(
+    {
+        "move_component",
+        "rotate_component",
+        "move_label",
+        "move_power_symbol",
+        "align_components",
+        "distribute_components",
+        "move_component_group",
+        "shorten_wire_path",
+        "reroute_existing_net_orthogonal",
+    }
+)
+
+
+def model_plannable_operation_schemas() -> dict[str, dict[str, object]]:
+    """Return operations whose exact preconditions exist in the model-visible context."""
+    return {
+        name: schema
+        for name, schema in registered_operation_schemas().items()
+        if name in MODEL_PLANNABLE_OPERATION_TYPES
+    }
 
 
 class RepairPlanResponse(_Strict):
@@ -82,12 +175,21 @@ def validate_repair_plan(
                 "operation_id": operation.operation_id,
                 "source_schematic_hash": response.source_schematic_hash,
                 "operation_type": operation.operation_type,
-                "arguments": operation.arguments,
+                "arguments": operation.arguments.model_dump(mode="json"),
             }
         )
-    validate_operation_envelopes(
-        payloads, expected_source_hash=context.source_schematic_hash, max_operations=max_operations
-    )
+    try:
+        validate_operation_envelopes(
+            payloads,
+            expected_source_hash=context.source_schematic_hash,
+            max_operations=max_operations,
+        )
+    except ValidationError as exc:
+        raise UserError(
+            "Repair plan contains invalid operation arguments.",
+            code="REFINEMENT_PLAN_INVALID",
+            details={"error_type": type(exc).__name__},
+        ) from exc
     _validate_object_targets(payloads, context)
     return ValidatedRepairPlan(
         iteration_id=response.iteration_id,

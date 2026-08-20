@@ -14,10 +14,10 @@ from kicad_pcb.refinement.critic import (
     CriticResponse,
     validate_critic_response,
 )
-from kicad_pcb.refinement.operations import registered_operation_schemas
 from kicad_pcb.refinement.planner import (
     RepairPlanResponse,
     ValidatedRepairPlan,
+    model_plannable_operation_schemas,
     validate_repair_plan,
 )
 from kicad_pcb.refinement.vision_context import VisionObjectMap
@@ -282,7 +282,7 @@ def run_repair_planner(
             ],
             "nets": [{"object_id": item.object_id, "name": item.name} for item in context.nets],
         },
-        "registered_operation_schemas": registered_operation_schemas(),
+        "model_plannable_operation_schemas": model_plannable_operation_schemas(),
         "max_operations": options.max_operations,
     }
     context_json = _bounded_json(planner_context, label="repair planner context")
@@ -297,8 +297,11 @@ def run_repair_planner(
                 "a different safe registered repair exists. Never emit KiCad S-expressions, shell "
                 "commands, file paths, source code, semantic component edits, net renames, "
                 "label-scope changes, or substitute operations for unsupported requests. "
-                "If no safe registered repair exists, return an empty operations list. "
-                "Return JSON only."
+                "If no safe model-plannable repair exists, return an empty operations list. "
+                "For wire operations, copy exact current geometry from objects.wires rather than "
+                "inventing, shortening, or joining precondition points across wire objects. "
+                "Multi-segment chain operations that lack an exact model-visible chain are not "
+                "model-plannable and must not be approximated. Return JSON only."
             ),
         ),
         LlmMessage(
