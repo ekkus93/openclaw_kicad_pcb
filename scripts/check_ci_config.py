@@ -58,7 +58,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
         'N3_OLLAMA_NUM_CTX: "65536"',
         'KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"',
-        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "1024"',
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "2048"',
         "runs-on: self-hosted",
         "refs/heads/n3-eval-run",
         "refs/heads/webapp",
@@ -93,6 +93,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_NUM_CTX: "32768"',
         "--probe-width 3360",
         "--probe-height 2376",
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "1024"',
         'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
     )
     problems = [
@@ -171,9 +172,11 @@ def _n3_first_fixture_smoke_problems() -> list[str]:
     text = N3_FIRST_FIXTURE_SMOKE.read_text(encoding="utf-8")
     required = (
         '_FIRST_FIXTURE_ID = "n1-crowded-power-regulator"',
+        "_SMOKE_PASS_COUNT = 2",
         "prepare_refinement_evaluation_corpus",
         "analyze_schematic_refinement",
         "fixture_ids=(_FIRST_FIXTURE_ID,)",
+        "for pass_index in range(1, _SMOKE_PASS_COUNT + 1):",
         "max_critic_repairs=iteration_limits.max_critic_repairs",
     )
     return [
