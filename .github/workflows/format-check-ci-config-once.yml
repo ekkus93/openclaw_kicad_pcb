@@ -39,3 +39,5 @@ jobs:
           git add scripts/check_ci_config.py
           git commit -m "style: format CI configuration guard"
           git push origin HEAD:webapp
+
+# Trigger after workflow registration.
