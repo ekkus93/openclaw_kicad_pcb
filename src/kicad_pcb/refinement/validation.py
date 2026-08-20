@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 from collections import Counter
 from dataclasses import dataclass
@@ -66,6 +67,7 @@ def validate_candidate_structure(
     )
     directory = work_dir or candidate.parent
     fd, raw = tempfile.mkstemp(prefix="refinement-erc-", suffix=".json", dir=directory)
+    os.close(fd)
     Path(raw).unlink(missing_ok=True)
     try:
         result, report = adapter.erc(candidate, Path(raw))
