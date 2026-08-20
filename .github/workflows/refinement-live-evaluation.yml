@@ -51,7 +51,7 @@ env:
   N3_OLLAMA_NUM_CTX: "65536"
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"
-  KICAD_PCB_WEB_LLM_MAX_TOKENS: "1024"
+  KICAD_PCB_WEB_LLM_MAX_TOKENS: "2048"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
   KICAD_PCB_WEB_LLM_REQUEST_LOG_REDACTION: "true"
   KICAD_PCB_WEB_LLM_DEBUG_ARTIFACT_CAPTURE: "false"
@@ -182,7 +182,6 @@ jobs:
           echo "N3_OUTPUT_ROOT=$output_root" >> "$GITHUB_ENV"
           echo "N3_WORK_ROOT=$work_root" >> "$GITHUB_ENV"
           echo "KICAD_PCB_WEB_DATA_DIR=$data_root" >> "$GITHUB_ENV"
-
 
       - name: Smoke test first N3 critic fixture
         shell: bash
