@@ -58,7 +58,7 @@ def _live_evaluation_problems() -> list[str]:
         'N3_OLLAMA_MODEL: "qwen3-vl:8b-instruct-n3-64k"',
         'N3_OLLAMA_NUM_CTX: "65536"',
         'KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"',
-        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "2048"',
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
         "runs-on: self-hosted",
         "refs/heads/n3-eval-run",
         "refs/heads/webapp",
@@ -76,6 +76,9 @@ def _live_evaluation_problems() -> list[str]:
         "--max-rounds 3",
         "--max-operations-per-round 4",
         "--max-total-accepted-operations 8",
+        "--max-candidate-rejections 2",
+        "--max-critic-repairs 1",
+        "--max-planner-repairs 1",
         "Validate complete 12-fixture evidence",
         "uv run kicad-refine-eval-validate",
         '--report "$N3_RUN_ROOT/acceptance.json"',
@@ -94,7 +97,9 @@ def _live_evaluation_problems() -> list[str]:
         "--probe-width 3360",
         "--probe-height 2376",
         'KICAD_PCB_WEB_LLM_MAX_TOKENS: "1024"',
-        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"',
+        'KICAD_PCB_WEB_LLM_MAX_TOKENS: "2048"',
+        "--max-critic-repairs 0",
+        "--max-planner-repairs 0",
     )
     problems = [
         f"missing required Phase N3 live-evaluation fragment: {item}"
