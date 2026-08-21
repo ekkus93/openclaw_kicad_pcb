@@ -56,6 +56,10 @@ from kicad_pcb.refinement.validation import (
 )
 from kicad_pcb.refinement.vision_context import VisionObjectMap, build_vision_object_map
 
+from ._refinement_metric_recovery import (
+    MetricFailureRecoveryInputs,
+    recover_candidate_metric_failure,
+)
 from .llm import LlmClient
 from .refinement_llm import (
     RefinementDecisionHistoryEntry,
@@ -317,7 +321,40 @@ def apply_planned_refinement(
             authoritative_ir=runtime.authoritative_ir,
             policy=runtime.operation_policy,
         )
-        candidate_metrics = compute_refinement_metrics(transaction.candidate_path)
+        try:
+            candidate_metrics = compute_refinement_metrics(transaction.candidate_path)
+        except UserError as exc:
+            recovery = recover_candidate_metric_failure(
+                MetricFailureRecoveryInputs(
+                    transaction=transaction,
+                    accepted_path=accepted_path,
+                    accepted_hash=analysis.accepted_hash,
+                    authoritative_hash=analysis.baseline.authoritative_hash,
+                    critic=analysis.critic,
+                    plan=plan,
+                    operations=operations,
+                    metrics_before=analysis.metrics,
+                    before_render=analysis.render,
+                    evidence_root=runtime.evidence_root,
+                    iteration_id=iteration_id,
+                ),
+                exc,
+            )
+            if recovery is None:
+                raise
+            return RefinementApplyResult(
+                status="rejected",
+                code=recovery.code,
+                accepted_hash_before=analysis.accepted_hash,
+                accepted_hash_after=analysis.accepted_hash,
+                candidate_hash=recovery.candidate_hash,
+                evidence_dir=recovery.evidence_dir,
+                operations=operations,
+                electrical=None,
+                structural=None,
+                quality=None,
+                candidate_layout_fingerprint=recovery.candidate_layout_fingerprint,
+            )
         candidate_hash = candidate_metrics.schematic_hash
         if candidate_hash != operations.candidate_hash:
             raise UserError(
