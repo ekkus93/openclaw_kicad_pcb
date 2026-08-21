@@ -123,16 +123,17 @@ def _repair_plan_response_model(
             cls,
             by_alias: bool = True,
             ref_template: str = "#/$defs/{model}",
-            union_format: Literal["any_of", "primitive_type_array"] = "any_of",
             schema_generator: type[GenerateJsonSchema] = GenerateJsonSchema,
             mode: JsonSchemaMode = "validation",
+            *,
+            union_format: Literal["any_of", "primitive_type_array"] = "any_of",
         ) -> dict[str, Any]:
             schema = super().model_json_schema(
                 by_alias=by_alias,
                 ref_template=ref_template,
-                union_format=union_format,
                 schema_generator=schema_generator,
                 mode=mode,
+                union_format=union_format,
             )
             for property_name, values in (
                 ("ref", component_refs),
