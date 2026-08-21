@@ -34,7 +34,11 @@ _WIRE_OPERATION_TYPES = frozenset(
     {"remove_redundant_wire_bend", "shorten_wire_path", "reroute_existing_net_orthogonal"}
 )
 _OPERATION_REJECTION_CODES = frozenset(
-    {"REFINEMENT_OPERATION_COLLISION", "REFINEMENT_OPERATION_INVALID_TARGET_SET"}
+    {
+        "REFINEMENT_OPERATION_COLLISION",
+        "REFINEMENT_OPERATION_INVALID_TARGET_SET",
+        "REFINEMENT_OPERATION_INVALID_WIRE_CONTEXT",
+    }
 )
 
 
@@ -1007,7 +1011,7 @@ def _validate_wire_net_context(
     if not endpoints <= evidence:
         raise UserError(
             "Wire endpoints lack direct authoritative net evidence.",
-            code="REFINEMENT_WIRE_CONTEXT_REQUIRED",
+            code="REFINEMENT_OPERATION_INVALID_WIRE_CONTEXT",
             details={"net_name": net_name, "endpoints": [list(p) for p in sorted(endpoints)]},
         )
     for point in endpoints:
