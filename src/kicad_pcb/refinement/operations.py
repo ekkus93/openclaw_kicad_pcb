@@ -33,6 +33,7 @@ MAX_COORDINATE_ABS_MM = 2000.0
 _WIRE_OPERATION_TYPES = frozenset(
     {"remove_redundant_wire_bend", "shorten_wire_path", "reroute_existing_net_orthogonal"}
 )
+_OPERATION_REJECTION_CODES = frozenset({"REFINEMENT_OPERATION_COLLISION"})
 
 
 class _StrictModel(BaseModel):
@@ -269,27 +270,39 @@ def execute_layout_operations(
     results: list[LayoutOperationResult] = []
     applied_operations = 0
     for envelope, args in parsed:
+        root_before = doc.root
         try:
             details = _apply_operation(doc, envelope.operation_type, args, authoritative_ir, policy)
         except UserError as exc:
+            doc.root = root_before
+            rejection_details: dict[str, object] | None = None
             if (
                 applied_operations > 0
                 and envelope.operation_id in wire_preconditions
                 and exc.code == "REFINEMENT_STALE"
             ):
-                results.append(
-                    LayoutOperationResult(
-                        envelope.operation_id,
-                        envelope.operation_type,
-                        "rejected",
-                        {
-                            "reason_code": "REFINEMENT_INTRA_BATCH_CONFLICT",
-                            "cause_code": exc.code,
-                        },
-                    )
+                rejection_details = {
+                    "reason_code": "REFINEMENT_INTRA_BATCH_CONFLICT",
+                    "cause_code": exc.code,
+                }
+            elif exc.code in _OPERATION_REJECTION_CODES:
+                rejection_details = {
+                    "reason_code": exc.code,
+                    "reason": str(exc),
+                }
+                if exc.details:
+                    rejection_details["reason_details"] = exc.details
+            if rejection_details is None:
+                raise
+            results.append(
+                LayoutOperationResult(
+                    envelope.operation_id,
+                    envelope.operation_type,
+                    "rejected",
+                    rejection_details,
                 )
-                continue
-            raise
+            )
+            continue
         results.append(
             LayoutOperationResult(
                 envelope.operation_id,
@@ -299,7 +312,8 @@ def execute_layout_operations(
             )
         )
         applied_operations += 1
-    doc.save(candidate_path)
+    if applied_operations:
+        doc.save(candidate_path)
     candidate_hash = hashlib.sha256(candidate_path.read_bytes()).hexdigest()
     return LayoutOperationBatchResult(current_hash, candidate_hash, tuple(results))
 
@@ -714,7 +728,7 @@ def _validate_anchor_move_safety(
     if moving_new & stationary_positions:
         raise UserError(
             "Component move would collide with a stationary pin.",
-            code="REFINEMENT_AMBIGUOUS_TARGET",
+            code="REFINEMENT_OPERATION_COLLISION",
         )
     for wire in _wire_nodes(doc):
         points = _wire_points(wire)
@@ -722,14 +736,14 @@ def _validate_anchor_move_safety(
             if _point_on_polyline_interior(old, points):
                 raise UserError(
                     "Moving pin touches wire interior; mutation is ambiguous.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                    code="REFINEMENT_OPERATION_COLLISION",
                 )
         for new in mapping.values():
             contacts_wire = any(_point_on_segment(new, a, b) for a, b in zip(points, points[1:]))
             if contacts_wire and new not in points:
                 raise UserError(
                     "Moved pin would create an unintended wire contact.",
-                    code="REFINEMENT_AMBIGUOUS_TARGET",
+                    code="REFINEMENT_OPERATION_COLLISION",
                 )
 
 
