@@ -206,8 +206,8 @@ def _build_evidence(tmp_path: Path) -> tuple[Path, PhaseN3AcceptanceExpectation]
         "source_manifest_sha256": _sha(source_manifest),
         "baseline_expectations_sha256": _sha(baseline_expectations),
         "iteration_limits": {
-            "max_critic_repairs": 0,
-            "max_planner_repairs": 0,
+            "max_critic_repairs": 1,
+            "max_planner_repairs": 1,
             "max_operations": 4,
         },
         "loop_limits": {
@@ -215,8 +215,8 @@ def _build_evidence(tmp_path: Path) -> tuple[Path, PhaseN3AcceptanceExpectation]
             "max_operations_per_round": 4,
             "max_total_accepted_operations": 8,
             "max_candidate_rejections": 2,
-            "max_critic_repairs": 0,
-            "max_planner_repairs": 0,
+            "max_critic_repairs": 1,
+            "max_planner_repairs": 1,
         },
         "fixture_count": 1,
         "fixture_ids": [_FIXTURE_ID],

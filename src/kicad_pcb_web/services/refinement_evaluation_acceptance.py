@@ -86,7 +86,7 @@ def validate_phase_n3_evidence(
     _require_equal(summary.get("model"), expectation.model, "Phase N3 summary model mismatch")
     _require_equal(
         summary.get("iteration_limits"),
-        {"max_critic_repairs": 0, "max_planner_repairs": 0, "max_operations": 4},
+        {"max_critic_repairs": 1, "max_planner_repairs": 1, "max_operations": 4},
         "Phase N3 iteration limits do not match the canonical experiment bounds",
     )
     _require_equal(
@@ -96,8 +96,8 @@ def validate_phase_n3_evidence(
             "max_operations_per_round": 4,
             "max_total_accepted_operations": 8,
             "max_candidate_rejections": 2,
-            "max_critic_repairs": 0,
-            "max_planner_repairs": 0,
+            "max_critic_repairs": 1,
+            "max_planner_repairs": 1,
         },
         "Phase N3 loop limits do not match the canonical experiment bounds",
     )

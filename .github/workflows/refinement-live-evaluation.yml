@@ -51,7 +51,7 @@ env:
   N3_OLLAMA_NUM_CTX: "65536"
   KICAD_PCB_WEB_LLM_VISION_ENABLED: "true"
   KICAD_PCB_WEB_LLM_TIMEOUT_S: "300"
-  KICAD_PCB_WEB_LLM_MAX_TOKENS: "2048"
+  KICAD_PCB_WEB_LLM_MAX_TOKENS: "4096"
   KICAD_PCB_WEB_LLM_ENABLE_STREAMING: "false"
   KICAD_PCB_WEB_LLM_REQUEST_LOG_REDACTION: "true"
   KICAD_PCB_WEB_LLM_DEBUG_ARTIFACT_CAPTURE: "false"
@@ -222,8 +222,8 @@ jobs:
             --max-operations-per-round 4 \
             --max-total-accepted-operations 8 \
             --max-candidate-rejections 2 \
-            --max-critic-repairs 0 \
-            --max-planner-repairs 0 \
+            --max-critic-repairs 1 \
+            --max-planner-repairs 1 \
             2>&1 | tee "$N3_RUN_ROOT/evaluation.log"
 
       - name: Validate complete 12-fixture evidence

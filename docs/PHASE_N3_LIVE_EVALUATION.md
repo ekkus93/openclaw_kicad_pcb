@@ -64,15 +64,17 @@ The N3.3 workflow pins the experiment to these bounds rather than inheriting mut
 - maximum operations per round: `4`
 - maximum total accepted operations: `8`
 - maximum candidate rejections: `2`
-- maximum critic repairs: `0`
-- maximum planner repairs: `0`
+- maximum critic repairs: `1`
+- maximum planner repairs: `1`
 - per-request LLM timeout: `300` seconds
 - maximum generated tokens per LLM response: `4096`
 - workflow timeout: `240` minutes
 
+A critic or planner structured response that fails JSON/schema validation may receive exactly one schema-correction request. The correction request retains the same strict response schema and includes the validation failure needed to repair the serialization. If the corrected response is still invalid, the call fails closed with `LLM_INVALID_STRUCTURED_OUTPUT`. This repair allowance does not retry ambiguous transport failures, relax semantic validation, or permit unbounded model calls.
+
 The transport timeout remains the validated production maximum of 300 seconds. The explicit 4096-token generation cap is essential for the local Ollama experiment: it maps to Ollama `options.num_predict=4096`, preventing an otherwise unbounded structured critic/planner generation from occupying the entire non-streaming request timeout.
 
-Run `32363895399` attempt 2 demonstrated this requirement: the Ollama capability preflight completed successfully, but the first real fixture (`n1-crowded-power-regulator`) had no configured output-token ceiling and reached the 300-second transport timeout before Ollama returned a response. Ambiguous transport failures remain non-retryable; the repair bounds generation rather than replaying the request or weakening the timeout contract.
+Run `32363895399` attempt 2 demonstrated this requirement: the Ollama capability preflight completed successfully, but the first real fixture (`n1-crowded-power-regulator`) had no configured output-token ceiling and reached the 300-second transport timeout before Ollama returned a response. Ambiguous transport failures remain non-retryable; the token cap bounds generation rather than replaying the request or weakening the timeout contract.
 
 ## Diagnostics
 
@@ -104,7 +106,7 @@ The workflow requests 30-day retention; repository-level retention policy may ca
 
 ## Post-hoc acceptance of an earlier implementation SHA
 
-The acceptance validator is intentionally independent of the workflow revision that invokes it. This permits a completed artifact from an earlier implementation SHA to be validated with the stronger current acceptance code without repeating the expensive model run.
+The acceptance validator is intentionally independent of the workflow revision that invokes it. This permits a completed artifact from an earlier implementation SHA to be validated with the stronger current acceptance code without repeating the expensive model run, provided that artifact was produced under the currently accepted canonical experiment bounds.
 
 For the Phase N3 run launched from `805e1226b3f97e28005eefbf5a0461a31da6d4bc`, use the exact full implementation SHA recorded in `summary.json`:
 
