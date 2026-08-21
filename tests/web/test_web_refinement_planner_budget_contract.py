@@ -29,6 +29,22 @@ def _payload(operation_count: int) -> dict[str, object]:
     }
 
 
+def _property_schemas(schema: object, property_name: str) -> list[dict[str, object]]:
+    found: list[dict[str, object]] = []
+    if isinstance(schema, dict):
+        properties = schema.get("properties")
+        if isinstance(properties, dict):
+            candidate = properties.get(property_name)
+            if isinstance(candidate, dict):
+                found.append(candidate)
+        for value in schema.values():
+            found.extend(_property_schemas(value, property_name))
+    elif isinstance(schema, list):
+        for value in schema:
+            found.extend(_property_schemas(value, property_name))
+    return found
+
+
 def test_provider_repair_plan_schema_uses_runtime_operation_cap() -> None:
     response_model = _repair_plan_response_model(4)
 
@@ -40,3 +56,25 @@ def test_provider_repair_plan_schema_uses_runtime_operation_cap() -> None:
         response_model.model_validate(_payload(5))
 
     assert any(error["type"] == "too_long" for error in exc_info.value.errors())
+
+
+def test_provider_repair_plan_schema_binds_model_visible_identifiers() -> None:
+    response_model = _repair_plan_response_model(
+        4,
+        component_refs=("R1", "U1"),
+        label_uuids=("label-a", "label-b"),
+        wire_uuids=("wire-a", "wire-b"),
+        net_names=("GND", "SIG"),
+    )
+
+    schema = response_model.model_json_schema()
+    expected = {
+        "ref": ["R1", "U1"],
+        "label_uuid": ["label-a", "label-b"],
+        "wire_uuid": ["wire-a", "wire-b"],
+        "net_name": ["GND", "SIG"],
+    }
+    for property_name, values in expected.items():
+        property_schemas = _property_schemas(schema, property_name)
+        assert property_schemas
+        assert all(item["enum"] == values for item in property_schemas)

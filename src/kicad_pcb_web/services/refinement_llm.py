@@ -8,8 +8,10 @@ import json
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Any, Literal
 
 from pydantic import Field
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaMode
 
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.critic import (
@@ -65,9 +67,46 @@ class RepairPlannerOptions:
         )
 
 
-@lru_cache(maxsize=_MAX_OPERATIONS_PER_ROUND)
-def _repair_plan_response_model(max_operations: int) -> type[RepairPlanResponse]:
-    """Return a provider schema whose operation bound matches this planner call."""
+def _bind_schema_string_enum(
+    schema: dict[str, Any],
+    *,
+    property_name: str,
+    values: tuple[str, ...],
+) -> None:
+    if not values:
+        return
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        property_schema = properties.get(property_name)
+        if isinstance(property_schema, dict):
+            property_schema["enum"] = list(values)
+    for value in schema.values():
+        if isinstance(value, dict):
+            _bind_schema_string_enum(
+                value,
+                property_name=property_name,
+                values=values,
+            )
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _bind_schema_string_enum(
+                        item,
+                        property_name=property_name,
+                        values=values,
+                    )
+
+
+@lru_cache(maxsize=128)
+def _repair_plan_response_model(
+    max_operations: int,
+    *,
+    component_refs: tuple[str, ...] = (),
+    label_uuids: tuple[str, ...] = (),
+    wire_uuids: tuple[str, ...] = (),
+    net_names: tuple[str, ...] = (),
+) -> type[RepairPlanResponse]:
+    """Return a provider schema bound to this planner call and its exact identifiers."""
 
     _require_bounded_int(
         "max_operations",
@@ -78,6 +117,35 @@ def _repair_plan_response_model(max_operations: int) -> type[RepairPlanResponse]
 
     class _BoundedRepairPlanResponse(RepairPlanResponse):
         operations: tuple[PlannedOperation, ...] = Field(default=(), max_length=max_operations)
+
+        @classmethod
+        def model_json_schema(
+            cls,
+            by_alias: bool = True,
+            ref_template: str = "#/$defs/{model}",
+            union_format: Literal["any_of", "primitive_type_array"] = "any_of",
+            schema_generator: type[GenerateJsonSchema] = GenerateJsonSchema,
+            mode: JsonSchemaMode = "validation",
+        ) -> dict[str, Any]:
+            schema = super().model_json_schema(
+                by_alias=by_alias,
+                ref_template=ref_template,
+                union_format=union_format,
+                schema_generator=schema_generator,
+                mode=mode,
+            )
+            for property_name, values in (
+                ("ref", component_refs),
+                ("label_uuid", label_uuids),
+                ("wire_uuid", wire_uuids),
+                ("net_name", net_names),
+            ):
+                _bind_schema_string_enum(
+                    schema,
+                    property_name=property_name,
+                    values=values,
+                )
+            return schema
 
     _BoundedRepairPlanResponse.__name__ = f"RepairPlanResponseMax{max_operations}"
     return _BoundedRepairPlanResponse
@@ -337,7 +405,13 @@ def run_repair_planner(
     response = _call_llm_for_json(
         llm_client=llm_client,
         messages=messages,
-        response_model=_repair_plan_response_model(options.max_operations),
+        response_model=_repair_plan_response_model(
+            options.max_operations,
+            component_refs=tuple(sorted({item.ref for item in context.components})),
+            label_uuids=tuple(sorted({item.uuid for item in context.labels})),
+            wire_uuids=tuple(sorted({item.uuid for item in context.wires})),
+            net_names=tuple(sorted({item.name for item in context.nets})),
+        ),
         options=StructuredJsonCallOptions(max_repairs=options.max_repairs),
     )
     return validate_repair_plan(
