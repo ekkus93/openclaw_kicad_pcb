@@ -159,7 +159,7 @@ def validate_repair_plan(
         )
     if len(response.operations) > max_operations:
         raise UserError(
-            "Repair plan exceeds configured operation budget.",
+            "Repair plan exceeds configured maximum operation budget.",
             code="REFINEMENT_PLAN_INVALID",
             details={"count": len(response.operations), "max_operations": max_operations},
         )
