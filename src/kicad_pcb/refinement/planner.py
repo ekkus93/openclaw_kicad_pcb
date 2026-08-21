@@ -157,6 +157,12 @@ def validate_repair_plan(
         raise UserError(
             "Repair plan is stale for current iteration/schematic.", code="REFINEMENT_STALE"
         )
+    if len(response.operations) > max_operations:
+        raise UserError(
+            "Repair plan exceeds configured operation budget.",
+            code="REFINEMENT_PLAN_INVALID",
+            details={"count": len(response.operations), "max_operations": max_operations},
+        )
     issue_ids = {issue.issue_id for issue in critic.issues}
     payloads: list[dict[str, object]] = []
     addressed: set[str] = set()

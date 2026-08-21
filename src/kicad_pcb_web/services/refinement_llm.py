@@ -6,7 +6,10 @@ import base64
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from pathlib import Path
+
+from pydantic import Field
 
 from kicad_pcb.errors import UserError
 from kicad_pcb.refinement.critic import (
@@ -15,6 +18,7 @@ from kicad_pcb.refinement.critic import (
     validate_critic_response,
 )
 from kicad_pcb.refinement.planner import (
+    PlannedOperation,
     RepairPlanResponse,
     ValidatedRepairPlan,
     model_plannable_operation_schemas,
@@ -59,6 +63,24 @@ class RepairPlannerOptions:
             minimum=1,
             maximum=_MAX_OPERATIONS_PER_ROUND,
         )
+
+
+@lru_cache(maxsize=_MAX_OPERATIONS_PER_ROUND)
+def _repair_plan_response_model(max_operations: int) -> type[RepairPlanResponse]:
+    """Return a provider schema whose operation bound matches this planner call."""
+
+    _require_bounded_int(
+        "max_operations",
+        max_operations,
+        minimum=1,
+        maximum=_MAX_OPERATIONS_PER_ROUND,
+    )
+
+    class _BoundedRepairPlanResponse(RepairPlanResponse):
+        operations: tuple[PlannedOperation, ...] = Field(default=(), max_length=max_operations)
+
+    _BoundedRepairPlanResponse.__name__ = f"RepairPlanResponseMax{max_operations}"
+    return _BoundedRepairPlanResponse
 
 
 @dataclass(frozen=True)
@@ -297,6 +319,7 @@ def run_repair_planner(
                 "a different safe registered repair exists. Never emit KiCad S-expressions, shell "
                 "commands, file paths, source code, semantic component edits, net renames, "
                 "label-scope changes, or substitute operations for unsupported requests. "
+                f"Return at most {options.max_operations} operations for this iteration. "
                 "If no safe model-plannable repair exists, return an empty operations list. "
                 "For wire operations, copy exact current geometry from objects.wires rather than "
                 "inventing, shortening, or joining precondition points across wire objects. "
@@ -314,7 +337,7 @@ def run_repair_planner(
     response = _call_llm_for_json(
         llm_client=llm_client,
         messages=messages,
-        response_model=RepairPlanResponse,
+        response_model=_repair_plan_response_model(options.max_operations),
         options=StructuredJsonCallOptions(max_repairs=options.max_repairs),
     )
     return validate_repair_plan(
