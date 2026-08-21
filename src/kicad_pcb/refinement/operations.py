@@ -33,7 +33,9 @@ MAX_COORDINATE_ABS_MM = 2000.0
 _WIRE_OPERATION_TYPES = frozenset(
     {"remove_redundant_wire_bend", "shorten_wire_path", "reroute_existing_net_orthogonal"}
 )
-_OPERATION_REJECTION_CODES = frozenset({"REFINEMENT_OPERATION_COLLISION"})
+_OPERATION_REJECTION_CODES = frozenset(
+    {"REFINEMENT_OPERATION_COLLISION", "REFINEMENT_OPERATION_INVALID_TARGET_SET"}
+)
 
 
 class _StrictModel(BaseModel):
@@ -577,7 +579,7 @@ def _resolve_targets(
     if len(keys) != len(set(keys)):
         raise UserError(
             "Duplicate component targets are not allowed.",
-            code="REFINEMENT_AMBIGUOUS_TARGET",
+            code="REFINEMENT_OPERATION_INVALID_TARGET_SET",
         )
     return [_resolve_component(doc, target) for target in targets]
 

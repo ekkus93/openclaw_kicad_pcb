@@ -113,6 +113,42 @@ def test_all_rejected_operations_leave_candidate_bytes_unchanged(tmp_path: Path)
     assert path.read_bytes() == before
 
 
+def test_duplicate_component_targets_are_structured_rejection(tmp_path: Path) -> None:
+    path = _collision_fixture(tmp_path)
+    before = path.read_bytes()
+    source = _hash(path)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "duplicate-targets",
+                "source_schematic_hash": source,
+                "operation_type": "align_components",
+                "arguments": {
+                    "targets": [
+                        {"ref": "R1", "unit": "1"},
+                        {"ref": "R1", "unit": "1"},
+                    ],
+                    "axis": "x",
+                    "coordinate_mm": 25.4,
+                },
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.source_hash == source
+    assert result.candidate_hash == source
+    assert result.results[0].status == "rejected"
+    assert result.results[0].details == {
+        "reason_code": "REFINEMENT_OPERATION_INVALID_TARGET_SET",
+        "reason": "Duplicate component targets are not allowed.",
+    }
+    assert path.read_bytes() == before
+
+
 def test_unclassified_executor_error_still_fails_closed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
