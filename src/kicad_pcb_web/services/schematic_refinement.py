@@ -310,6 +310,25 @@ def apply_planned_refinement(
             quality=None,
         )
 
+    return _apply_candidate_transaction(
+        accepted_path=accepted_path,
+        runtime=runtime,
+        planned=planned,
+        iteration_id=iteration_id,
+        enforce_best_known_retention=enforce_best_known_retention,
+    )
+
+
+def _apply_candidate_transaction(
+    *,
+    accepted_path: Path,
+    runtime: RefinementRuntime,
+    planned: RefinementPlanResult,
+    iteration_id: str,
+    enforce_best_known_retention: bool,
+) -> RefinementApplyResult:
+    analysis = planned.analysis
+    plan = planned.plan
     with SchematicCandidateTransaction(
         accepted_path,
         expected_accepted_hash=analysis.accepted_hash,
