@@ -149,6 +149,46 @@ def test_duplicate_component_targets_are_structured_rejection(tmp_path: Path) ->
     assert path.read_bytes() == before
 
 
+def test_no_effect_operation_is_structured_rejection_and_preserves_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = _collision_fixture(tmp_path)
+    before = path.read_bytes()
+    source = _hash(path)
+
+    def reject_no_effect(*_args: object, **_kwargs: object) -> None:
+        raise UserError(
+            "No safe shorter orthogonal path exists.",
+            code="REFINEMENT_OPERATION_NO_EFFECT",
+        )
+
+    monkeypatch.setattr(refinement_operations, "_apply_operation", reject_no_effect)
+
+    result = execute_layout_operations(
+        path,
+        [
+            {
+                "schema_version": "1.0",
+                "operation_id": "move-label",
+                "source_schematic_hash": source,
+                "operation_type": "move_label",
+                "arguments": {"label_uuid": "l1", "x_mm": 26.67, "y_mm": 76.2},
+            }
+        ],
+        expected_source_hash=source,
+    )
+
+    assert result.source_hash == source
+    assert result.candidate_hash == source
+    assert result.results[0].status == "rejected"
+    assert result.results[0].details == {
+        "reason_code": "REFINEMENT_OPERATION_NO_EFFECT",
+        "reason": "No safe shorter orthogonal path exists.",
+    }
+    assert path.read_bytes() == before
+
+
 def test_unclassified_executor_error_still_fails_closed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
