@@ -8,6 +8,7 @@ import base64
 import binascii
 import json
 import struct
+import time
 import urllib.error
 import urllib.request
 import zlib
@@ -20,6 +21,9 @@ _MAX_PROVIDER_ERROR_CHARS = 500
 _DEFAULT_TIMEOUT_S = 180.0
 _PULL_TIMEOUT_S = 3600.0
 _CREATE_TIMEOUT_S = 600.0
+_READINESS_ATTEMPT_TIMEOUT_S = 10.0
+_READINESS_ATTEMPTS = 6
+_READINESS_RETRY_DELAY_S = 2.0
 
 
 @dataclass(frozen=True)
@@ -54,17 +58,40 @@ def _http_failure(operation: str, exc: urllib.error.HTTPError) -> NoReturn:
     ) from exc
 
 
-def _get_json(base_url: str, path: str, *, timeout_s: float = 10.0) -> dict[str, Any]:
-    try:
-        with urllib.request.urlopen(f"{base_url}{path}", timeout=timeout_s) as response:
-            payload = json.load(response)
-    except urllib.error.HTTPError as exc:
-        _http_failure(f"Ollama {path}", exc)
-    except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
-        raise SystemExit(f"Unable to query Ollama {path}: {type(exc).__name__}") from exc
-    if not isinstance(payload, dict):
-        raise SystemExit(f"Ollama {path} returned non-object JSON")
-    return payload
+def _get_json(
+    base_url: str,
+    path: str,
+    *,
+    timeout_s: float = 10.0,
+    attempts: int = 1,
+    retry_delay_s: float = 0.0,
+) -> dict[str, Any]:
+    if attempts < 1:
+        raise ValueError("attempts must be positive")
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(
+                f"{base_url}{path}", timeout=timeout_s
+            ) as response:
+                payload = json.load(response)
+        except urllib.error.HTTPError as exc:
+            _http_failure(f"Ollama {path}", exc)
+        except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            if attempt == attempts:
+                suffix = f" after {attempts} attempts" if attempts > 1 else ""
+                raise SystemExit(
+                    f"Unable to query Ollama {path}{suffix}: {type(exc).__name__}"
+                ) from exc
+            print(
+                f"Ollama {path} not ready ({type(exc).__name__}); "
+                f"retrying {attempt + 1}/{attempts}."
+            )
+            time.sleep(retry_delay_s)
+            continue
+        if not isinstance(payload, dict):
+            raise SystemExit(f"Ollama {path} returned non-object JSON")
+        return payload
+    raise AssertionError("unreachable")
 
 
 def _post_json(
@@ -209,7 +236,13 @@ def _probe_chat(config: PreflightConfig, *, image_b64: str | None, operation: st
 
 
 def run_preflight(config: PreflightConfig) -> None:
-    version = _get_json(config.base_url, "/api/version").get("version")
+    version = _get_json(
+        config.base_url,
+        "/api/version",
+        timeout_s=_READINESS_ATTEMPT_TIMEOUT_S,
+        attempts=_READINESS_ATTEMPTS,
+        retry_delay_s=_READINESS_RETRY_DELAY_S,
+    ).get("version")
     print(f"Ollama version: {version if isinstance(version, str) else 'unknown'}")
     _provision_model(config)
     _probe_chat(config, image_b64=None, operation="Ollama structured chat capability probe")
