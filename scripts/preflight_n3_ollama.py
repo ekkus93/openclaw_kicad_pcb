@@ -70,9 +70,7 @@ def _get_json(
         raise ValueError("attempts must be positive")
     for attempt in range(1, attempts + 1):
         try:
-            with urllib.request.urlopen(
-                f"{base_url}{path}", timeout=timeout_s
-            ) as response:
+            with urllib.request.urlopen(f"{base_url}{path}", timeout=timeout_s) as response:
                 payload = json.load(response)
         except urllib.error.HTTPError as exc:
             _http_failure(f"Ollama {path}", exc)
@@ -143,9 +141,7 @@ def _ensure_model(base_url: str, model: str) -> None:
         operation=f"Ollama pull for {model!r}",
     )
     if model not in _installed_models(base_url):
-        raise SystemExit(
-            f"Ollama pull completed but model {model!r} is still unavailable"
-        )
+        raise SystemExit(f"Ollama pull completed but model {model!r} is still unavailable")
 
 
 def _provision_model(config: PreflightConfig) -> None:
@@ -176,9 +172,7 @@ def _provision_model(config: PreflightConfig) -> None:
 
 def _png_chunk(kind: bytes, payload: bytes) -> bytes:
     checksum = binascii.crc32(kind + payload) & 0xFFFFFFFF
-    return (
-        struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
-    )
+    return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
 
 
 def _solid_white_png(width: int, height: int) -> bytes:
@@ -210,9 +204,7 @@ def _validate_chat_content(chat: dict[str, Any], *, operation: str) -> None:
         raise SystemExit(f"{operation} returned non-object JSON content")
 
 
-def _probe_chat(
-    config: PreflightConfig, *, image_b64: str | None, operation: str
-) -> None:
+def _probe_chat(config: PreflightConfig, *, image_b64: str | None, operation: str) -> None:
     message: dict[str, Any] = {
         "role": "user",
         "content": 'Return exactly one JSON object: {"ok":true}',
@@ -251,14 +243,10 @@ def run_preflight(config: PreflightConfig) -> None:
     ).get("version")
     print(f"Ollama version: {version if isinstance(version, str) else 'unknown'}")
     _provision_model(config)
-    _probe_chat(
-        config, image_b64=None, operation="Ollama structured chat capability probe"
-    )
+    _probe_chat(config, image_b64=None, operation="Ollama structured chat capability probe")
     probe_png = _solid_white_png(config.probe_width, config.probe_height)
     image_b64 = base64.b64encode(probe_png).decode("ascii")
-    _probe_chat(
-        config, image_b64=image_b64, operation="Ollama A3 vision capability probe"
-    )
+    _probe_chat(config, image_b64=image_b64, operation="Ollama A3 vision capability probe")
     print(
         f"Ollama model ready for N3 vision evaluation: {config.model} at {config.base_url} "
         f"(probe={config.probe_width}x{config.probe_height})"
