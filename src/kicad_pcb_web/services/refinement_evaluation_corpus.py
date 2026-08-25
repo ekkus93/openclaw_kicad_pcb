@@ -37,7 +37,18 @@ __all__ = [
     "run_refinement_evaluation_corpus",
 ]
 
-_SAFE_CAUSE_DETAIL_KEYS = frozenset({"provider", "status_code", "endpoint", "retryable"})
+_SAFE_CAUSE_DETAIL_KEYS = frozenset(
+    {
+        "provider",
+        "status_code",
+        "endpoint",
+        "retryable",
+        "error_type",
+        "elapsed_ms",
+        "ambiguous_delivery",
+        "automatic_retry",
+    }
+)
 _MAX_PROVIDER_ERROR_CHARS = 500
 
 

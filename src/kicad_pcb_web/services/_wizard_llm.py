@@ -443,7 +443,6 @@ def _call_llm_for_json(
     response_model: type[_MODEL_T],
     options: StructuredJsonCallOptions = StructuredJsonCallOptions(),
 ) -> _MODEL_T:
-    schema_json = json.dumps(response_model.model_json_schema(), indent=2)
     current_messages = list(messages)
     max_attempts = options.max_repairs + 1
     for attempt in range(1, max_attempts + 1):
@@ -466,8 +465,8 @@ def _call_llm_for_json(
                 LlmMessage(
                     role="user",
                     content=(
-                        f"{exc.repair_message} Return corrected JSON only.\n"
-                        f"JSON schema:\n{schema_json}"
+                        f"{exc.repair_message} Return corrected JSON only. "
+                        "The same JSON schema is enforced separately for this request."
                     ),
                 )
             )

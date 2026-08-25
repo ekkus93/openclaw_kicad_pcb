@@ -45,6 +45,10 @@ _SAFE_FIXTURE_DETAIL_KEYS = (
     "cause_status_code",
     "cause_endpoint",
     "cause_retryable",
+    "cause_error_type",
+    "cause_elapsed_ms",
+    "cause_ambiguous_delivery",
+    "cause_automatic_retry",
     "cause_provider_error",
 )
 _SAFE_DETAIL_VALUE_TYPES = (str, int, float, bool, type(None))
