@@ -7,8 +7,11 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +43,7 @@ from kicad_pcb_web.settings import WebSettings, load_settings
 _FIRST_FIXTURE_ID = "n1-crowded-power-regulator"
 _SMOKE_PASS_COUNT = 2
 _DEFAULT_MANIFEST = Path("tests/fixtures/refinement/evaluation_corpus/manifest.json")
+_RESIDENCY_TIMEOUT_S = 10.0
 
 
 @dataclass(frozen=True)
@@ -57,6 +61,55 @@ class SmokeRequest:
     expectations_path: Path | None
     work_root: Path
     implementation_sha: str | None
+
+
+def _diagnostic_warning(message: str, exc: Exception | None = None) -> None:
+    payload: dict[str, object] = {
+        "status": "warning",
+        "message": message,
+    }
+    if exc is not None:
+        payload["cause_type"] = type(exc).__name__
+    print(json.dumps(payload, sort_keys=True), file=sys.stderr)
+
+
+def _report_ollama_residency(settings: WebSettings) -> None:
+    """Emit best-effort Ollama residency diagnostics immediately before critic inference."""
+
+    if settings.llm.provider != "ollama":
+        return
+
+    print("=== Ollama model residency before N3 critic smoke ===")
+    try:
+        completed = subprocess.run(
+            ["ollama", "ps"],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=_RESIDENCY_TIMEOUT_S,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _diagnostic_warning("Unable to execute ollama ps for N3 residency diagnostics.", exc)
+    else:
+        print(completed.stdout.rstrip() or "<ollama ps produced no stdout>")
+        if completed.stderr.strip():
+            print(f"ollama ps stderr: {completed.stderr.strip()}", file=sys.stderr)
+        print(f"ollama ps exit_code={completed.returncode}")
+
+    base_url = settings.llm.base_url
+    if not base_url:
+        _diagnostic_warning("Ollama /api/ps diagnostic skipped because base_url is not configured.")
+        return
+
+    try:
+        with urllib.request.urlopen(
+            f"{str(base_url).rstrip('/')}/api/ps", timeout=_RESIDENCY_TIMEOUT_S
+        ) as response:
+            payload = json.load(response)
+    except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+        _diagnostic_warning("Unable to query Ollama /api/ps for N3 residency diagnostics.", exc)
+        return
+    print("Ollama /api/ps: " + json.dumps(payload, sort_keys=True))
 
 
 def run_smoke(request: SmokeRequest, context: SmokeContext) -> dict[str, object]:
@@ -96,6 +149,7 @@ def run_smoke(request: SmokeRequest, context: SmokeContext) -> dict[str, object]
 
     prepared = preparation.fixtures[0]
     request.work_root.mkdir(parents=True, exist_ok=True)
+    _report_ollama_residency(context.settings)
     passes: list[dict[str, object]] = []
     for pass_index in range(1, _SMOKE_PASS_COUNT + 1):
         smoke_tmp = Path(
