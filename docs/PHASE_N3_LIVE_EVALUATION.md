@@ -66,15 +66,17 @@ The N3.3 workflow pins the experiment to these bounds rather than inheriting mut
 - maximum candidate rejections: `2`
 - maximum critic repairs: `1`
 - maximum planner repairs: `1`
-- per-request LLM timeout: `300` seconds
+- per-request LLM timeout: `600` seconds
 - maximum generated tokens per LLM response: `4096`
 - workflow timeout: `240` minutes
 
 A critic or planner structured response that fails JSON/schema validation may receive exactly one schema-correction request. The correction request retains the same strict response schema and includes the validation failure needed to repair the serialization. If the corrected response is still invalid, the call fails closed with `LLM_INVALID_STRUCTURED_OUTPUT`. This repair allowance does not retry ambiguous transport failures, relax semantic validation, or permit unbounded model calls.
 
-The transport timeout remains the validated production maximum of 300 seconds. The explicit 4096-token generation cap is essential for the local Ollama experiment: it maps to Ollama `options.num_predict=4096`, preventing an otherwise unbounded structured critic/planner generation from occupying the entire non-streaming request timeout.
+The transport timeout is a bounded 600 seconds. The application default remains 60 seconds; the higher ceiling exists so the canonical local N3 workload can complete a schema-bound 64K-context vision request without replaying an ambiguous timeout. Ambiguous transport failures remain non-retryable.
 
-Run `32363895399` attempt 2 demonstrated this requirement: the Ollama capability preflight completed successfully, but the first real fixture (`n1-crowded-power-regulator`) had no configured output-token ceiling and reached the 300-second transport timeout before Ollama returned a response. Ambiguous transport failures remain non-retryable; the token cap bounds generation rather than replaying the request or weakening the timeout contract.
+Run `32363895399` attempt 2 demonstrated that an explicit output-token ceiling is required: the Ollama capability preflight completed successfully, but the first real fixture (`n1-crowded-power-regulator`) had no configured output-token ceiling and reached the then-300-second transport timeout before Ollama returned a response. The explicit 4096-token generation cap maps to Ollama `options.num_predict=4096`, bounding generation rather than replaying the request.
+
+Run `32825791453` demonstrated that the 4096-token cap alone does not guarantee a 300-second response for the canonical 64K-context vision critic. The capability preflight completed successfully, then the first real critic request remained response-silent through the 300-second HTTPX timeout and failed with an ambiguous-delivery `ToolError`. N3 therefore uses a 600-second bounded request timeout while retaining the same no-replay transport policy.
 
 ## Diagnostics
 

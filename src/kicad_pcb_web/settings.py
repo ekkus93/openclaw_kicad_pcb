@@ -385,8 +385,8 @@ def _require_non_empty(value: str | None, *, field_name: str) -> None:
 def _validate_llm_settings(settings: LlmSettings) -> None:
     if settings.timeout_s <= 0:
         raise ValueError("llm.timeout_s must be greater than zero")
-    if settings.timeout_s > 300:
-        raise ValueError("llm.timeout_s must be 300 seconds or less")
+    if settings.timeout_s > 600:
+        raise ValueError("llm.timeout_s must be 600 seconds or less")
     if settings.temperature_mode not in _VALID_TEMPERATURE_MODES:
         raise ValueError("llm.temperature_mode must be one of: omit, send")
     if settings.provider == "ollama" and settings.temperature_mode == "omit":
