@@ -117,7 +117,7 @@ def test_p3_mismatched_capability_contract_fails_closed() -> None:
             {
                 "model": "model-under-test",
                 "messages": [{"role": "user", "content": "json please"}],
-                "stream": False,
+                "stream": True,
                 "options": {"temperature": 0.25, "num_predict": 321},
                 "format": {
                     "type": "object",
