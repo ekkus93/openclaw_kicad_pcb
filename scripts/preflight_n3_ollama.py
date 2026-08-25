@@ -170,6 +170,39 @@ def _provision_model(config: PreflightConfig) -> None:
         raise SystemExit(f"Ollama created model {config.model!r} is unavailable")
 
 
+def _resident_model(base_url: str, model: str) -> dict[str, Any]:
+    models = _get_json(base_url, "/api/ps").get("models")
+    if not isinstance(models, list):
+        raise SystemExit("Ollama /api/ps response does not contain a model list")
+    matches = [
+        item
+        for item in models
+        if isinstance(item, dict) and (item.get("name") == model or item.get("model") == model)
+    ]
+    if len(matches) != 1:
+        raise SystemExit(f"Ollama model {model!r} is not uniquely resident after capability probes")
+    return matches[0]
+
+
+def _require_gpu_residency(config: PreflightConfig) -> None:
+    resident = _resident_model(config.base_url, config.model)
+    size_vram = resident.get("size_vram")
+    size = resident.get("size")
+    context_length = resident.get("context_length")
+    if isinstance(size_vram, bool) or not isinstance(size_vram, int) or size_vram <= 0:
+        raise SystemExit(
+            f"Ollama N3 model {config.model!r} is CPU-only after capability probes "
+            f"(size_vram={size_vram!r}, size={size!r}, context_length={context_length!r}). "
+            "Phase N3 requires GPU residency. Configure the Ollama daemon with "
+            "OLLAMA_FLASH_ATTENTION=1 and OLLAMA_KV_CACHE_TYPE=q8_0, restart Ollama, "
+            "and rerun N3."
+        )
+    print(
+        f"Ollama GPU residency verified: model={config.model}, size_vram={size_vram}, "
+        f"size={size}, context_length={context_length}"
+    )
+
+
 def _png_chunk(kind: bytes, payload: bytes) -> bytes:
     checksum = binascii.crc32(kind + payload) & 0xFFFFFFFF
     return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
@@ -247,6 +280,7 @@ def run_preflight(config: PreflightConfig) -> None:
     probe_png = _solid_white_png(config.probe_width, config.probe_height)
     image_b64 = base64.b64encode(probe_png).decode("ascii")
     _probe_chat(config, image_b64=image_b64, operation="Ollama A3 vision capability probe")
+    _require_gpu_residency(config)
     print(
         f"Ollama model ready for N3 vision evaluation: {config.model} at {config.base_url} "
         f"(probe={config.probe_width}x{config.probe_height})"

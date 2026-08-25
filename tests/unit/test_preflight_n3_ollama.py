@@ -114,6 +114,76 @@ def test_phase_n3_preflight_vision_probe_uses_native_ollama_images(
     assert messages[0]["images"] == ["base64-image"]
 
 
+def test_phase_n3_preflight_requires_gpu_residency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    config = module.PreflightConfig(
+        base_url="http://127.0.0.1:11434",
+        model="qwen3-vl:8b-instruct-n3-64k",
+        source_model="qwen3-vl:8b-instruct",
+        num_ctx=65536,
+        probe_width=1260,
+        probe_height=891,
+    )
+
+    monkeypatch.setattr(
+        module,
+        "_get_json",
+        lambda base_url, path: {
+            "models": [
+                {
+                    "name": config.model,
+                    "model": config.model,
+                    "size": 16_494_550_976,
+                    "size_vram": 8_000_000_000,
+                    "context_length": 65536,
+                }
+            ]
+        },
+    )
+
+    module._require_gpu_residency(config)
+
+
+def test_phase_n3_preflight_rejects_cpu_only_residency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    config = module.PreflightConfig(
+        base_url="http://127.0.0.1:11434",
+        model="qwen3-vl:8b-instruct-n3-64k",
+        source_model="qwen3-vl:8b-instruct",
+        num_ctx=65536,
+        probe_width=1260,
+        probe_height=891,
+    )
+
+    monkeypatch.setattr(
+        module,
+        "_get_json",
+        lambda base_url, path: {
+            "models": [
+                {
+                    "name": config.model,
+                    "model": config.model,
+                    "size": 16_494_550_976,
+                    "size_vram": 0,
+                    "context_length": 65536,
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(SystemExit) as caught:
+        module._require_gpu_residency(config)
+
+    message = str(caught.value)
+    assert "CPU-only after capability probes" in message
+    assert "OLLAMA_FLASH_ATTENTION=1" in message
+    assert "OLLAMA_KV_CACHE_TYPE=q8_0" in message
+
+
 def test_phase_n3_preflight_get_json_retries_transient_timeout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
