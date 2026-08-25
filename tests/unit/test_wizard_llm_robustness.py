@@ -279,7 +279,7 @@ def test_d3_unknown_temperature_mode_rejects(
     ("values", "message"),
     [
         ({"timeout_s": 0}, "greater than zero"),
-        ({"timeout_s": 301}, "300 seconds or less"),
+        ({"timeout_s": 601}, "600 seconds or less"),
         ({"retry_max_delay_s": 61}, "60 seconds or less"),
         ({"retry_base_delay_s": 5, "retry_max_delay_s": 4}, "at least llm.retry_base_delay_s"),
         ({"retry_max_attempts": 0}, "between 1 and 10"),
